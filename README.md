@@ -18,8 +18,8 @@ Status: scoping. No code yet.
 
 ## License
 
-The engine (`AprsMap.Contracts`, `AprsMap.Core`, `AprsMap.Client.Remote`) is MIT. The UIs and gateway are
-AGPL-3.0-only. See [LICENSE](LICENSE).
+The repository is AGPL-3.0-only ([LICENSE](LICENSE)). The engine (`AprsMap.Contracts`, `AprsMap.Core`,
+`AprsMap.Client.Remote`) and the docs are MIT so other tools can reuse them. Details: [LICENSING.md](LICENSING.md).
 
 APRSIS32 and APRSISCE are the work of Lynn Deffenbaugh, KJ4ERJ. This project is unaffiliated and uses none of its code
 or assets. Its published AGPL source is deliberately not consulted; see [docs/clean-room.md](docs/clean-room.md).

@@ -12,7 +12,7 @@ works with it**, then design our own engine and UI with modern patterns. No APRS
   (github.com/APRSFoundation/APRSISCE, 2025-02-06). AGPL covers the code's *expression*. Functionality, workflows
   and the purpose of features, learned from user documentation and observation, are not that expression.
 - **APRS.NET and AprsMap's engine (`Contracts`, `Core`, `Client.Remote`) are MIT.** They stay MIT only if nothing in
-  them is derived from AGPL code. The UIs are AGPL-3.0 by choice (see [LICENSE](../LICENSE)), but they come out of the
+  them is derived from AGPL code. The UIs are AGPL-3.0 by choice (see [LICENSING.md](../LICENSING.md)), but they come out of the
   same clean process: the AGPL choice is not permission to read the APRSISCE source.
 
 ## Stages
