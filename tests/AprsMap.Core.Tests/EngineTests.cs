@@ -179,12 +179,13 @@ public class EngineTests
     [Fact]
     public async Task EachSessionIsTracedWithTheServerName()
     {
-        var stopped = new List<System.Diagnostics.Activity>();
+        // The listener is process-wide, so it also sees sessions from tests running in parallel (HostingTests).
+        var stopped = new System.Collections.Concurrent.ConcurrentQueue<System.Diagnostics.Activity>();
         using var listener = new System.Diagnostics.ActivityListener
         {
             ShouldListenTo = s => s.Name == EngineTelemetry.Name,
             Sample = (ref _) => System.Diagnostics.ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = a => stopped.Add(a),
+            ActivityStopped = stopped.Enqueue,
         };
         System.Diagnostics.ActivitySource.AddActivityListener(listener);
         var sources = new FakeSourceFactory();
@@ -197,8 +198,10 @@ public class EngineTests
         await cts.CancelAsync();
         await run;
 
-        var activity = Assert.Single(stopped, a => a.OperationName == "aprs-is.session");
-        Assert.Equal("T2TRACE", activity.GetTagItem("aprs-is.server"));
+        Assert.Single(
+            stopped,
+            a => a.OperationName == "aprs-is.session" && Equals(a.GetTagItem("aprs-is.server"), "T2TRACE")
+        );
     }
 
     /// <summary>Steps the fake clock one second at a time until the condition holds; returns the seconds taken.</summary>

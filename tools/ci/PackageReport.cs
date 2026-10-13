@@ -2,6 +2,7 @@
 #:property TargetFrameworks=
 #:property PublishAot=false
 // SPDX-License-Identifier: MIT
+
 // Copied from APRS.NET (same author, MIT) so both repos report packages the same way.
 
 // Turns `dotnet list package --format json` output into the markdown package report that CI posts to the run summary

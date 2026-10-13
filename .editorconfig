@@ -38,6 +38,10 @@ file_header_template = SPDX-License-Identifier: AGPL-3.0-only
 [{src,tests}/{AprsMap.Contracts,AprsMap.Core,AprsMap.Client.Remote}{,.Tests}/**.cs]
 file_header_template = SPDX-License-Identifier: MIT
 
+# Copied from APRS.NET, so it keeps that repository's MIT licence.
+[tools/ci/PackageReport.cs]
+file_header_template = SPDX-License-Identifier: MIT
+
 # Generated code carries its own header.
 [**/{obj,bin}/**.cs]
 dotnet_diagnostic.IDE0073.severity = none
