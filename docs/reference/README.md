@@ -7,6 +7,7 @@ They describe *function*, never implementation.
 | File | Contents |
 | --- | --- |
 | [functional-inventory.md](functional-inventory.md) | Every capability found in the public docs, grouped by area, with the scope ID it maps to |
+| [observation-2026-10-13.md](observation-2026-10-13.md) | Black-box UI observation of the running app (menus, dialogs, pop-ups), with open questions |
 
 ## Exposure log
 

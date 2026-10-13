@@ -1,6 +1,7 @@
 # Scope
 
-The feature inventory for AprsMap, phased. Derived from the [functional inventory](reference/functional-inventory.md);
+The feature inventory for AprsMap, phased. Derived from the [functional inventory](reference/functional-inventory.md) and the
+[2026-10-13 observation](reference/observation-2026-10-13.md);
 the UI shape is in [ux.md](ux.md). "Reference topic" names the public APRSIS32 documentation topic
 (aprsisce.wikidot.com) that the feature spec will cite. It is a pointer for spec writing, not a requirement to match
 APRSIS32 exactly. "Needs" lists the APRS.NET gaps ([aprsnet/gaps.md](aprsnet/gaps.md)) that block the feature.
@@ -20,7 +21,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F0.1 | Solution scaffold, CI (build, test, format), Directory.Build.props matching APRS.NET's rigor | App | — | scoped |
 | F0.2 | `IAprsMapService` contracts, in-process and SignalR implementations, round-trip tests | App | — | scoped |
 | F0.3 | Spikes: Mapsui in WASM, SignalR streaming in WASM, symbol atlas, tile cache ([architecture.md](architecture.md#spikes-before-phase-1-each-one-is-a-timeboxed-throwaway)) | App | — | scoped |
-| F0.4 | Settings model and persistence (desktop: JSON in the user's config folder; gateway: server-side store) | App | — | scoped |
+| F0.4 | Settings model and persistence (desktop: JSON in the user's config folder; gateway: server-side store); units chosen per quantity (altitude, distance, pressure, rain, temperature, wind) | App | — | scoped |
 | F0.5 | First-run wizard: callsign → location → server → optional passcode ([ux.md](ux.md#key-flows)) | App | — | scoped |
 
 ## Phase 1: Receive-only APRS-IS map (MVP, desktop + web)
@@ -30,12 +31,12 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.1 | APRS-IS connection: server pick, login (receive-only without a passcode), status, auto-reconnect | Passcode | App | G03 | scoped |
 | F1.2 | Automatic filter: range filter around the map viewport, updated on pan and zoom, plus tracked and buddy stations | Automatic Filters | App | G04 | scoped |
 | F1.3 | Station store: latest state per station, object and item ownership, kill handling, aging and expiry, duplicate drop | No Visible Stations | App | G05, G06 | scoped |
-| F1.4 | Map: OSM-style tiles, symbols with overlays, labels, selectable tile providers, transparency | Screen Elements, Transparency | App | — | scoped |
+| F1.4 | Map: OSM-style tiles, symbols with overlays, labels, selectable tile providers, transparency, map dimming, symbol size, wind barbs, auto-zoom-to-fit | Screen Elements, Transparency | App | — | scoped |
 | F1.5 | Tracks / trails for moving stations, with configurable history length | — (core feature list) | App | G08 | scoped |
 | F1.6 | Station info panel: last packet, path, comment, speed/course/altitude, distance and bearing from me, device | Station Info | App | G07, G08, G20 | scoped |
 | F1.7 | Station list: sortable and searchable; center on, track (keep centered) | — | App | G08 | scoped |
 | F1.8 | Raw packet scroller with filters, plus parse-issue display for debugging | Debug Logs | App | — | scoped |
-| F1.9 | View filters: RF only, message-capable, weather, objects, by symbol category, by age | (View menu) | App | G20 | scoped |
+| F1.9 | View filters: RF only, message-capable, weather, objects, by symbol category, by age, by platform, by Mic-E status, by `!shriek!` and `#hashtag` tags | (View menu) | App | G20 | scoped |
 | F1.10 | Weather station display: current readings, units preference | Weather Stations | App | — | scoped |
 | F1.11 | Telemetry: latest values with PARM/UNIT/EQNS applied | Telemetry | App | G09 | scoped |
 | F1.12 | Area objects and signposts drawn as shapes | — | App | — | scoped |
@@ -47,6 +48,8 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.18 | Set destination: distance and bearing to a chosen point | Station Info | App | G08 | scoped |
 | F1.19 | Data housekeeping: clear stations, tracks, messages, bulletins, telemetry, saved texts | (Clear menu) | App | — | scoped |
 | F1.20 | Packet and station anomaly flags (duplicate positions, impossible speed, sub-second repeats, invalid) | Scroller | App | G24 | scoped |
+| F1.21 | RF path visualization: per-packet digipeater paths, digipeater-to-digipeater network links, local-RF-only mode | (observed) | App | G20 | scoped |
+| F1.22 | Statistics: heard platforms (device families) and symbols with counts and percentages | (observed) | App | G07 | scoped |
 
 ## Phase 2: Transmit via APRS-IS
 
@@ -55,7 +58,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F2.1 | Own station: callsign, SSID guidance, symbol, comment, passcode, transmit enable and safety interlocks | SSID, Passcode, Why Won't APRSIS Transmit | App | G01, G02 | scoped |
 | F2.2 | Fixed and SmartBeaconing-style position beacons, status beacons, PHG | PHG | App | G01, G11 | scoped |
 | F2.3 | Predictive beaconing indicator: show where others last saw you versus where you are (our own name for the feature) | Red Dot | App | G11 | scoped |
-| F2.4 | Messaging: chat per correspondent, ack/retry status, reply-ack, rejects, offline queue | APRS Messaging Explained | App | G01, G10 | scoped |
+| F2.4 | Messaging: chat per correspondent, ack/retry status, reply-ack, rejects, offline queue, selectable retry profiles (default, APRS-IS, none, slow HF modem), optional double-ack on RF | APRS Messaging Explained | App | G01, G10 | scoped |
 | F2.5 | Bulletins and announcements, group bulletins; ANSRVR group join and leave | ANSRVR | App | G10 | scoped |
 | F2.6 | Email via the APRS email gateway, and the QRU/query service helpers | Email, QRU | App | G10 | scoped |
 | F2.7 | Objects and items: create, move, re-beacon with decay, kill; multiline objects | Multiline | App | G01, G11 | scoped |
@@ -63,6 +66,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F2.9 | Gateway auth: transmit features require a signed-in operator | — | App | — | scoped |
 | F2.10 | Auto-reply with delay and rate limits | Auto-Reply | App | G10 | scoped |
 | F2.11 | Status reports with saved alternatives | (Configure › Status Report) | App | G01 | scoped |
+| F2.12 | Mic-E status codes: choose the status to send; per-code filtering and alert styles for received ones, with emergency handling | (observed) | App | G01 | scoped |
 
 ## Phase 3: RF, GPS, IGate, digipeater
 
@@ -78,6 +82,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F3.8 | AGWPE over TCP as an RF port | Port Configuration | App | G22 | scoped |
 | F3.9 | CWOP weather feed port (unfiltered; filtered locally) | CWOP | App | G21 | scoped |
 | F3.10 | IS-Server: re-serve our stream to other apps/instances over TCP, with per-type pass-through and direction controls | IS-Server Port | App | G21 | scoped |
+| F3.11 | Frequency monitor: decode frequency objects and comment frequency specs, flag malformed ones, list by frequency | (observed) | App | G25 | scoped |
 
 ## Phase 4: Enhancements
 
@@ -89,13 +94,14 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F4.4 | Satellite tracking and operation (ISS passes, SATSRV) | Satellite Tracking, SATSRV | App | — (third-party SGP4) | scoped |
 | F4.5 | Offline tiles: preload a region from a provider that permits it, purge policy | Disable OSM Tile Purging | App | — | scoped |
 | F4.6 | Reverse geocode a station's address | Lookup Address | App | — | scoped |
-| F4.7 | Alerts and sounds: messages, proximity, specific callsigns; nicknames | Quick Keys | App | — | scoped |
+| F4.7 | Alerts and sounds: messages, proximity, specific callsigns; nicknames and tactical callsigns | Quick Keys | App | — | scoped |
 | F4.8 | Packaging: Windows installer/MSIX, Linux AppImage/Flatpak, macOS bundle, gateway container image | — | App | — | scoped |
 | F4.9 | Raw weather station input (Peet Bros, Ultimeter) for local weather beacons | Weather Stations | App | G18 | scoped |
 | F4.10 | Direction-finding circles and DF reports | (Screen menu) | App | — | scoped |
 | F4.11 | DX tracking (furthest zero-hop station, alerts) and AltNet monitor/ignore | Configure DX, Configure AltNet | App | G20, G08 | scoped |
 | F4.12 | Overlays: GPX and UI-View POS files, waypoint → object, drive a route to prefetch tiles | Overlays | App | — | scoped |
 | F4.13 | Logging exports: GPX track auto-save, beacon-trigger CSV | (Enables menu) | App | — | scoped |
+| F4.14 | Digital-mode activity objects (FT8 / JS8Call / JT65); semantics pending maintainer observation | (observed) | App | G01 | scoped |
 
 ## Order of work
 

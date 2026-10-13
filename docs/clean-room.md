@@ -36,7 +36,8 @@ source).
   aprs-deviceid list. APRS.NET mirrors many under `docs/spec/`.
 - APRSIS32's **public user documentation**: aprsisce.wikidot.com, the groups.io APRSISCE group, published user guides
   (for example G4ILO's), and videos showing the program in use.
-- Black-box observation of APRSIS32 running, reported by the maintainer: what appears on screen, which options exist,
+- Black-box observation of APRSIS32 running (by the maintainer, or by Claude driving the UI with the maintainer's
+  permission; screenshots stay out of the repo): what appears on screen, which options exist,
   what goes on the wire (packet captures of its transmissions are protocol behavior).
 - Other APRS software's **user documentation** for general domain knowledge.
 

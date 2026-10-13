@@ -33,6 +33,7 @@ Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13).
 | G21 | APRS-IS server side: client logins, passcode check, filter evaluation | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |
 | G22 | AGWPE TCP transport | new: AprsNet.Agw | 3 | — |
 | G24 | Station track anomaly analysis | Packets (or new AprsNet.Analysis) | 1 | — |
+| G25 | Frequency specification parsing and validation | Packets | 3 | — |
 
 ---
 
@@ -135,7 +136,8 @@ the IGate heard it directly (no used hops), remaining WIDEn-N hops, and trace pa
 **Scope.** `Callsign.Parse`/`TryParse` (AX.25-valid and APRS-IS forms), plus builders that produce an `AprsPacket` (so
 `Raw` stays the source of truth) for: position (uncompressed, compressed, with timestamp/messaging/course-speed/PHG/
 altitude/DAO), status, message/ack/rej with message ID and reply-ack, bulletins, objects and items (live and kill),
-telemetry and its definitions, weather. Mic-E encoding can come later.
+telemetry and its definitions, weather. Mic-E encoding (with a chosen Mic-E status code) is needed by AprsMap F2.12
+and can follow the first release of the encoder.
 
 **Acceptance.** Every builder output parses back to an equal payload (property tests); APRS101 vectors encode
 byte-for-byte; validation errors are reported rather than producing invalid packets.
@@ -295,3 +297,17 @@ backwards, and position jumps on ambiguity changes. It returns flags and does no
 and G08.
 
 **Acceptance.** Synthetic tracks plus corpus-derived cases (for example digipeated delayed duplicates).
+
+## G25: Frequency specification parsing and validation
+
+**Need.** AprsMap F3.11 (frequency monitor) and F3.7 (frequency objects). The reference app counts frequency objects
+and flags "frequency objects with issues", so validation is part of the need, not only decoding.
+
+**Scope.** Decode the APRS 1.2 frequency spec in comments and object names: `FFF.FFFMHz`, tone `Tnnn`/`tnnn`, DCS
+`Dnnn`, offset `+nnn`/`-nnn`, range `Rnnm`/`Rnnk`, the frequency-object naming convention (object name is the
+frequency), and the AFRS conventions. Return a `FrequencySpec` with typed parts. Malformed input gets specific
+`ParseIssue` warnings (bad case, offset not in 10 kHz units, unknown tone) rather than being silently dropped.
+
+**Spec refs.** APRS.NET `docs/spec/aprs12/frequency-afrs.md`; APRS 1.2 frequency spec.
+
+**Acceptance.** Vectors from the spec; corpus repeater objects; each warning code has a test.
