@@ -1,0 +1,97 @@
+# UX direction
+
+How AprsMap meets the needs in the [functional inventory](reference/functional-inventory.md) with a modern,
+cross-platform UI. The reference's capability set is the bar. Its menu tree is not: it grew on 240×320 Windows Mobile
+screens, so it puts nearly everything in one menu bar with 20 Configure submenus. We keep the functions and redesign
+how users get to them.
+
+## Principles
+
+1. **Map first.** The map is always the main surface. Everything else is a pane, panel or sheet over or beside it.
+2. **Find any command by typing.** A command palette (Ctrl/Cmd+K) reaches every action and every settings page, and
+   also searches stations. Deep menus aren't needed.
+3. **State is always visible.** Connection health per port, TX armed or not, unread messages, and GPS fix live in the top
+   bar, not in a status corner you have to know about.
+4. **Transmitting is deliberate and obvious.** A clear TX-armed indicator, a first-beacon interlock, and a gateway login
+   are required before anything leaves the station.
+5. **Never block the UI.** Every command is an async, cancellable `IAsyncRelayCommand`. Long work shows progress inline,
+   not in a modal.
+6. **One layout system for every screen size.** The same views reflow from a wide desktop (docked panes) to a phone
+   browser (bottom sheets) through Avalonia container queries. There are no separate "mobile" views.
+7. **Settings are searchable pages with good defaults**, not dialogs. Changes apply live, with Undo where it's cheap.
+8. **Context first.** Right-click (or long-press) on the map, a station or a packet offers the relevant actions.
+   Global menus are the fallback.
+9. Fluent theme with light and dark modes, keyboard navigable, screen-reader labels, colour never the only signal (the
+   reference's scroller colours become colour + icon + tooltip).
+
+## Shell
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ◉ N0CALL-9 [TX armed]  ● APRS-IS ● KISS-1 ○ GPS   🔍 Search / Ctrl+K   ⚡ 🔔3 │  top bar
+├────┬───────────────────────────────────────────────────┬─────────────────────┤
+│ 🗺 │                                                   │ Station details     │
+│ 💬 │                  MAP                              │  N0ABC-7  🚗        │
+│ 📡 │   [layers] [filters]                              │  12.4 km  NE 041°   │
+│ 📋 │                                   [+]             │  via WIDE1-1*,qAR   │
+│ 📍 │                                   [-]             │  [Message] [Follow] │
+│ ☁  │   (my predictive-beacon widget)   [◎ me] [🔒]     │  [Track] [⋯]        │
+│ ⚙  │                                                   │                     │
+├────┴───────────────────────────────────────────────────┴─────────────────────┤
+│ Packets ▾ | Log    (dock: live packet list, collapsible)                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+ rail: Map · Messages · Stations · Packets · Objects · Weather & Telemetry · Settings
+```
+
+- **Top bar**: identity chip (callsign, symbol, TX state; menu: Beacon now, Send status, Disarm TX), one pill per
+  connection (green/amber/red, click for details and reconnect), search/command palette, quick toggles (⚡), and a
+  notification inbox (🔔: messages, bulletins, alerts, DX).
+- **Rail**: top-level pages. On narrow screens it becomes a bottom tab bar.
+- **Right pane**: details for the current selection. It replaces the reference's pop-up station menu, and becomes a
+  bottom sheet on narrow screens.
+- **Bottom dock**: the live packet list and logs. Collapsible; it can be undocked into its own window on desktop.
+- **Extra map views** (the reference's "multitrack"): pin a station into a split view. On desktop, a split view can
+  also be torn off into its own window.
+
+## Where the reference's menus went
+
+| Reference menu | AprsMap |
+| --- | --- |
+| Transmit | Identity chip → *Beacon now* (Ctrl+B); palette command |
+| Enables | Quick toggles flyout (⚡): APRS-IS, internet access, GPS, beaconing, telemetry, sound, tile fetching, logging. Each toggle is also in Settings |
+| Enables → Ports | Connection pills (per-port enable) plus *Settings › Connections*; a global "receive only" toggle in ⚡ |
+| Messages | *Messages* page: conversation list + thread, compose (Ctrl+M), pending/unacked filter, bulletins tab, groups (announcement servers) tab, auto-reply in *Settings › Messaging* |
+| Screen (labels, tracks, PHG, DF, dead reckoning, tile set) | **Layers** panel on the map |
+| Screen → Follow (find, centre, me, lock) | Search box, map buttons (◎ me, 🔒 follow), station context menu |
+| View (category, platform, RF, transport, symbol, shriek filters) | **Filters** panel on the map: chips with counts. The station list and packet list share the same filter model, so "what you see" stays consistent |
+| Configure (20 submenus) | **Settings** pages, searchable: Station · Beaconing · Messaging · Connections · Map & tiles · Display · Objects & overlays · Weather & NWS · Alerts & sounds · Advanced (DX, AltNet, logging) · Data · About |
+| Clear | *Settings › Data*, grouped with confirmation (and Undo where possible); contextual "Clear track" on a station |
+| About | *Settings › About*, including the AGPL "Source" link required for the web gateway |
+| Exit | OS window close; the gateway keeps running headless |
+
+## Key flows
+
+- **First run** (wizard, ≤ 4 steps): callsign-SSID → location (GPS, browser geolocation, or click the map) → APRS-IS
+  server (default rotate pool) → optional passcode ("skip: receive only"). Units are inferred from the locale and can be
+  changed later. The user is on a live map within a minute.
+- **Messaging**: messenger-style threads. Each outgoing message shows its state: queued → sent → retry *n* → acked /
+  rejected / failed / final, with a route badge (RF / IS / best). Long text is split into 64-character parts, with a live
+  character counter while typing.
+- **Predictive beaconing**: a small widget on the map shows the drift between where others think you are and where you
+  are, and how close it is to triggering a beacon. Clicking it explains why the last beacon was sent.
+- **Objects**: right-click the map → *Create object here*. Drag to move (confirm before it is transmitted), and the
+  object's own pane has *Kill*.
+- **Packets**: the list pauses automatically when you scroll up or hover (with a "resume live" pill). Anomalies get icons
+  and tooltips, not only colours.
+
+## Avalonia implementation notes
+
+- Avalonia 12, Fluent theme with app-level design tokens (colour, spacing, typography) in one resource dictionary.
+- CommunityToolkit.Mvvm: `[ObservableProperty]`, `[RelayCommand]` (async, cancellable), messenger for cross-pane events.
+- Virtualized lists (`ItemsRepeater`/`ListBox` virtualization) for packets and stations; batched UI updates
+  (coalesce change streams to the frame rate) so a busy feed can't flood the UI thread.
+- Adaptive layout through container queries and `SplitView`. Avoid a docking library unless a spike shows it works in
+  the browser.
+- Command palette and settings search are driven from one registry of commands and settings, so both stay complete
+  automatically.
+- Notifications: in-app toasts plus the inbox; native OS notifications on desktop where available.
