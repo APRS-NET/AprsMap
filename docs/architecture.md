@@ -21,9 +21,9 @@ the engine:
  Desktop process                         Gateway process (server / Pi / home PC)
 ┌──────────────────────────┐            ┌──────────────────────────────────────┐
 │ AprsMap.Desktop (head)   │            │ AprsMap.Gateway (ASP.NET Core)       │
-│   AprsMap.UI (views/VMs) │            │   SignalR hub ── IAprsMapService     │
+│   AprsMap.UI (views/VMs) │            │   SignalR hub ── IEngineService     │
 │        │                 │            │   static files: AprsMap.Browser      │
-│  IAprsMapService         │            │        │                             │
+│  IEngineService         │            │        │                             │
 │  (in-process impl)       │            │  AprsMap.Core engine                 │
 │        │                 │            │        │                             │
 │  AprsMap.Core engine     │            │  APRS.NET (IS client, KISS, AX.25…)  │
@@ -35,7 +35,7 @@ the engine:
                                         ┌──────────┴───────────────┐
                                         │ Browser: AprsMap.Browser │
                                         │   AprsMap.UI (same VMs)  │
-                                        │   IAprsMapService        │
+                                        │   IEngineService        │
                                         │   (SignalR client impl)  │
                                         └──────────────────────────┘
 ```
@@ -47,10 +47,10 @@ engine.
 
 | Project | License | Target | Depends on | Holds |
 | --- | --- | --- | --- | --- |
-| `AprsMap.Contracts` | MIT | net10.0 | — | `IAprsMapService`, DTOs (`StationSnapshot`, `TrackPoint`, `ChatMessage`…), change events. Serializable with System.Text.Json source generation. No APRS.NET types leak out. |
-| `AprsMap.Core` | MIT | net10.0 | Contracts, APRS.NET | The engine: connection manager, station store, tracks, message center, object manager, beacon scheduler host, settings, the in-process `IAprsMapService`. No UI references. |
-| `AprsMap.Client.Remote` | MIT | net10.0 (browser-safe) | Contracts | `IAprsMapService` over SignalR. |
-| `AprsMap.UI` | AGPL-3.0 | net10.0 | Contracts, Avalonia, Mapsui | Shared views, view models, map layers, symbol rendering. Depends only on `IAprsMapService`, never on Core. |
+| `AprsMap.Contracts` | MIT | net10.0 | — | `IEngineService`, DTOs (`StationSnapshot`, `TrackPoint`, `ChatMessage`…), change events. Serializable with System.Text.Json source generation. No APRS.NET types leak out. |
+| `AprsMap.Core` | MIT | net10.0 | Contracts, APRS.NET | The engine: connection manager, station store, tracks, message center, object manager, beacon scheduler host, settings, the in-process `IEngineService`. No UI references. |
+| `AprsMap.Client.Remote` | MIT | net10.0 (browser-safe) | Contracts | `IEngineService` over SignalR. |
+| `AprsMap.UI` | AGPL-3.0 | net10.0 | Contracts, Avalonia, Mapsui | Shared views, view models, map layers, symbol rendering. Depends only on `IEngineService`, never on Core. |
 | `AprsMap.Desktop` | AGPL-3.0 | net10.0 | UI, Core | Desktop head; composes Core in-process. Disk tile cache, serial/GPS device pickers. |
 | `AprsMap.Browser` | AGPL-3.0 | net10.0-browser | UI, Client.Remote | WebAssembly head. |
 | `AprsMap.Gateway` | AGPL-3.0 | net10.0 | Core, Contracts | ASP.NET Core host: SignalR hub, auth, serves the Browser bundle, headless operation (IGate/digi without any UI attached). |
@@ -62,12 +62,12 @@ AGPL code. AGPL projects may reference MIT ones, and the Gateway's AGPL network 
 web UI.
 
 The rule that keeps both UIs equal: **`AprsMap.UI` may only reference `AprsMap.Contracts`.** Anything a view needs is a
-method or an event on `IAprsMapService`.
+method or an event on `IEngineService`.
 
 ## Service interface shape (draft)
 
 ```csharp
-public interface IAprsMapService
+public interface IEngineService
 {
     // State: snapshot plus a change stream, so a late-joining browser can catch up.
     Task<StationSetSnapshot> GetStationsAsync(MapViewport viewport, CancellationToken ct);

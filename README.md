@@ -11,7 +11,8 @@ Status: scoping. No code yet.
 | [docs/clean-room.md](docs/clean-room.md) | What sources may and may not be used, and how provenance is recorded |
 | [docs/architecture.md](docs/architecture.md) | Projects, the desktop/web split, the gateway, the APRS.NET ownership rule, spikes |
 | [docs/reference/](docs/reference/) | Behavioral analysis of the reference app from public docs |
-| [docs/ux.md](docs/ux.md) | Modern UX direction, and where each reference menu went |
+| [docs/ux/](docs/ux/) | UX direction, visual style, appearance options, and the approved mockups |
+| [docs/branding.md](docs/branding.md) | How the product name is kept in one place and renamed |
 | [docs/scope.md](docs/scope.md) | Phased feature inventory |
 | [docs/aprsnet/gaps.md](docs/aprsnet/gaps.md) | Capabilities to be built in APRS.NET, one issue each |
 | [docs/features/](docs/features/) | Per-feature specs (the implementation's only behavioral input) |

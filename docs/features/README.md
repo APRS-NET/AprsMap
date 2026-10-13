@@ -13,7 +13,7 @@ Status: draft | reviewed | implemented
 
 ## User story
 ## Behavior            (numbered, testable statements)
-## Service surface     (IAprsMapService methods/events added or used)
+## Service surface     (IEngineService methods/events added or used)
 ## APRS.NET dependencies (gap IDs, and any temporary SHIM)
 ## Desktop vs web differences
 ## Acceptance tests

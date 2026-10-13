@@ -1,0 +1,27 @@
+<!-- SPDX-License-Identifier: MIT -->
+<!-- The single source of product identity. See docs/branding.md. Imported by Directory.Build.props. -->
+<Project>
+  <PropertyGroup>
+    <!-- Code-facing name: namespace prefix and project-name prefix. Change with tools/rename-product.py. -->
+    <ProductName>AprsMap</ProductName>
+    <!-- What users see in titles, About, installers and the web manifest. -->
+    <ProductDisplayName>AprsMap</ProductDisplayName>
+    <!-- Lower-case slug: config/cache folder, container image, URLs. -->
+    <ProductSlug>aprsmap</ProductSlug>
+    <!-- Earlier slugs, semicolon-separated, so user data can be migrated after a rename. -->
+    <PreviousSlugs></PreviousSlugs>
+    <!-- Transmitted device ID. Placeholder in the experimental APZ range until one is registered in aprs-deviceid. -->
+    <ProductTocall>APZAMP</ProductTocall>
+    <ProductSourceUrl>https://github.com/APRS-NET/AprsMap</ProductSourceUrl>
+    <Company>Derek Rowland</Company>
+    <Product>$(ProductDisplayName)</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="Brand.DisplayName" Value="$(ProductDisplayName)" />
+    <AssemblyMetadata Include="Brand.Slug" Value="$(ProductSlug)" />
+    <AssemblyMetadata Include="Brand.PreviousSlugs" Value="$(PreviousSlugs)" />
+    <AssemblyMetadata Include="Brand.Tocall" Value="$(ProductTocall)" />
+    <AssemblyMetadata Include="Brand.SourceUrl" Value="$(ProductSourceUrl)" />
+  </ItemGroup>
+</Project>
