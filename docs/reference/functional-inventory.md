@@ -7,7 +7,7 @@ carried over, with the reason given.
 Notes on reading this file:
 
 - The reference grew on Windows Mobile and was later run on desktop Windows, so many items are workarounds for small
-  screens and single-window UIs. [ux.md](../ux.md) decides how each need is met in a modern layout.
+  screens and single-window UIs. [ux](../ux/README.md) decides how each need is met in a modern layout.
 - Several wiki pages are stubs; gaps are marked "(docs thin)" and need maintainer observation before a spec is
   written.
 
@@ -177,7 +177,7 @@ Notes on reading this file:
 | GPS status: satellites, fix, precision, altitude, speed, heading, odometer | F3.6 |
 | Clock display (local, UTC, GPS) | — (OS provides it; we show times in UTC/local per preference) |
 | Battery bar | — (OS provides it) |
-| Windows Mobile soft keys, orientation modes | — (replaced by responsive layout, [ux.md](../ux.md)) |
+| Windows Mobile soft keys, orientation modes | — (replaced by responsive layout, [ux](../ux/README.md)) |
 
 ## Sources
 

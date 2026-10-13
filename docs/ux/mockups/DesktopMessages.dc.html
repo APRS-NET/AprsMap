@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprsMap desktop: messaging</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FAE}a:hover{color:#174A88}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-s{width:16px;height:16px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;border:1px solid #DCE0E6;background:#fff;color:#16191D;font:500 14px 'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.btn-tx{background:#C2410C;border-color:#C2410C;color:#fff}
+.icon-btn{width:40px;height:40px;padding:0;justify-content:center}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:500;border:1px solid #DCE0E6;background:#fff;color:#16191D;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rail-btn{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;padding:10px 0;border:0;background:none;border-radius:10px;color:#4A515C;font:500 11px 'IBM Plex Sans',sans-serif;cursor:pointer;position:relative}
+.rail-btn.on{background:#E6EEF8;color:#1F5FAE}
+.badge{min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:#B42318;color:#fff;font:600 11px/18px 'IBM Plex Sans',sans-serif;text-align:center}
+.muted{color:#5A6270}
+.conv{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border:0;border-bottom:1px solid #F0F2F5;background:#fff;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.conv.on{background:#EEF4FB}
+.av{width:36px;height:36px;border-radius:50%;background:#E6EEF8;color:#174A88;display:flex;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono',monospace;flex:none}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #DCE0E6}
+.tabs button{height:40px;padding:0 12px;border:0;background:none;font:500 13.5px 'IBM Plex Sans',sans-serif;color:#4A515C;border-bottom:2px solid transparent;cursor:pointer}
+.tabs button.on{color:#174A88;border-bottom-color:#1F5FAE}
+.msg{max-width:440px;padding:10px 12px;border-radius:12px;font-size:14px;line-height:1.4}
+.in{background:#fff;border:1px solid #DCE0E6;align-self:flex-start;border-top-left-radius:4px}
+.out{background:#1F5FAE;color:#fff;align-self:flex-end;border-top-right-radius:4px}
+.meta{display:flex;gap:6px;align-items:center;font-size:12px;margin-top:4px}
+.seg{display:inline-flex;border:1px solid #DCE0E6;border-radius:8px;overflow:hidden;background:#fff}
+.seg button{height:30px;padding:0 10px;border:0;background:#fff;font:500 12.5px 'IBM Plex Sans',sans-serif;color:#3B4350;cursor:pointer}
+.seg button+button{border-left:1px solid #DCE0E6}
+.seg button.on{background:#1F5FAE;color:#fff}
+.kv{display:grid;grid-template-columns:96px 1fr;gap:6px 10px;font-size:13px;margin:0}
+.kv dt{color:#5A6270}.kv dd{margin:0}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #F4F5F7; font-family: 'IBM Plex Sans', sans-serif; color: #16191D; font-size: 14px">
+<svg aria-hidden="true" style="display: none">
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"></path></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"></path></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"></path></symbol>
+<symbol id="i-term" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM7.5 9.5l3 2.5-3 2.5M12.5 15h4"></path></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"></path><circle cx="12" cy="10" r="2.3"></circle></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"></path></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2.5v3M12 18.5v3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M2.5 12h3M18.5 12h3M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20.5a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5 14h6l-1 7 8-11h-6z"></path></symbol>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M4 15l1.6-4.8A2 2 0 0 1 7.5 8.8h9a2 2 0 0 1 1.9 1.4L20 15v3.5H4zM4 15h16M7 18.5V20M17 18.5V20"></path></symbol>
+<symbol id="i-walk" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="1.6"></circle><path d="M10 21l2-6 3 3v3M8.5 12.5l2.5-5 3 2 2 3"></path></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"></path></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"></path></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19zM12 10v4.5M12 17.5h.01"></path></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4"></path></symbol>
+<symbol id="i-signal" viewBox="0 0 24 24"><path d="M12 12v9M8.5 8.5a5 5 0 0 1 7 0M5.5 5.5a9.2 9.2 0 0 1 13 0"></path></symbol>
+</svg>
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 16px; background: #FFFFFF; border-bottom: 1px solid #DCE0E6">
+<button class="btn" style="height: 40px; padding: 0 12px 0 8px; gap: 10px" aria-label="My station N0CALL-9, transmit armed">
+<span style="width: 28px; height: 28px; border-radius: 50%; background: #FFF1E6; color: #C2410C; display: flex; align-items: center; justify-content: center"><svg class="ic ic-s"><use href="#i-car"></use></svg></span>
+<span class="mono" style="font-weight: 600">N0CALL-9</span>
+<span class="pill" style="height: 22px; background: #FDECD3; border-color: #F6C48C; color: #8A3B00; font-size: 12px">TX armed</span>
+</button>
+<div style="display: flex; flex-wrap: wrap; gap: 8px"><span class="pill"><span class="dot" style="background: #1E7A4C"></span>APRS-IS</span><span class="pill"><span class="dot" style="background: #1E7A4C"></span>RF · Direwolf KISS</span></div>
+<div style="flex: 1 1 280px; display: flex; justify-content: center"><label style="position: relative; display: flex; align-items: center; width: 100%; max-width: 460px"><span class="sr">Search</span><svg class="ic ic-s muted" style="position: absolute; left: 12px"><use href="#i-search"></use></svg><input type="search" placeholder="Search stations, places, commands…" style="width: 100%; height: 38px; box-sizing: border-box; padding: 0 12px 0 36px; border: 1px solid #DCE0E6; border-radius: 10px; background: #F4F5F7; font: 14px 'IBM Plex Sans', sans-serif"></label></div>
+<div style="display: flex; gap: 8px"><button class="btn icon-btn" aria-label="Quick toggles"><svg class="ic"><use href="#i-bolt"></use></svg></button><button class="btn icon-btn" aria-label="Notifications"><svg class="ic"><use href="#i-bell"></use></svg></button><button class="btn btn-tx"><svg class="ic ic-s"><use href="#i-signal"></use></svg>Beacon now</button></div>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap; min-height: 0">
+<nav aria-label="Main" style="flex: 0 0 80px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 0; background: #FFFFFF; border-right: 1px solid #DCE0E6">
+<button class="rail-btn"><svg class="ic"><use href="#i-map"></use></svg>Map</button>
+<button class="rail-btn on" aria-current="page"><svg class="ic"><use href="#i-chat"></use></svg>Messages</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-list"></use></svg>Stations</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-term"></use></svg>Packets</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-pin"></use></svg>Objects</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-cloud"></use></svg>Weather</button>
+<div style="flex: 1"></div>
+<button class="rail-btn"><svg class="ic"><use href="#i-gear"></use></svg>Settings</button>
+</nav>
+
+<section aria-label="Conversations" style="flex: 1 1 300px; max-width: 340px; min-width: 0; background: #FFFFFF; border-right: 1px solid #DCE0E6; display: flex; flex-direction: column">
+<div style="padding: 16px 16px 0; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; justify-content: space-between"><h1 style="margin: 0; font-size: 18px">Messages</h1><button class="btn" style="height: 32px"><svg class="ic ic-s"><use href="#i-edit"></use></svg>New</button></div>
+<label style="position: relative; display: flex; align-items: center"><span class="sr">Search messages</span><svg class="ic ic-s muted" style="position: absolute; left: 10px"><use href="#i-search"></use></svg><input type="text" placeholder="Search messages" style="width: 100%; height: 34px; box-sizing: border-box; padding: 0 10px 0 32px; border: 1px solid #DCE0E6; border-radius: 8px; font: 14px 'IBM Plex Sans', sans-serif"></label>
+<div class="tabs" role="tablist"><button role="tab" aria-selected="true" class="on">Chats</button><button role="tab" aria-selected="false">Bulletins <span class="muted">4</span></button><button role="tab" aria-selected="false">Groups</button><button role="tab" aria-selected="false">Pending <span class="badge" style="display: inline-block">1</span></button></div>
+</div>
+<button class="conv on"><span class="av">AF</span><span style="flex: 1; min-width: 0"><span style="display: flex; justify-content: space-between"><span class="mono" style="font-weight: 600">N0AAF-7</span><span class="muted" style="font-size: 12px">16:30</span></span><span class="muted" style="display: block; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Meet at the trailhead at 5?</span></span></button>
+<button class="conv"><span class="av">AD</span><span style="flex: 1; min-width: 0"><span style="display: flex; justify-content: space-between"><span class="mono" style="font-weight: 600">WA0AAD</span><span class="muted" style="font-size: 12px">15:02</span></span><span style="display: flex; gap: 6px; align-items: center; font-size: 13px; color: #8A3B00"><svg class="ic ic-s"><use href="#i-clock"></use></svg>Retry 3 of 7 · next in 32 s</span></span></button>
+<button class="conv"><span class="av">EM</span><span style="flex: 1; min-width: 0"><span style="display: flex; justify-content: space-between"><span class="mono" style="font-weight: 600">EMAIL-2</span><span class="muted" style="font-size: 12px">Yesterday</span></span><span class="muted" style="display: block; font-size: 13px">to [ADDRESS] · delivered</span></span></button>
+<button class="conv"><span class="av">AN</span><span style="flex: 1; min-width: 0"><span style="display: flex; justify-content: space-between"><span class="mono" style="font-weight: 600">ANSRVR · group HOTG</span><span class="muted" style="font-size: 12px">Mon</span></span><span class="muted" style="display: block; font-size: 13px">Joined · keep-alive daily</span></span></button>
+</section>
+
+<main style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; background: #F7F8FA">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #DCE0E6">
+<span style="width: 34px; height: 34px; border-radius: 50%; border: 2px solid #1F5FAE; color: #1F5FAE; display: flex; align-items: center; justify-content: center"><svg class="ic ic-s"><use href="#i-walk"></use></svg></span>
+<div style="flex: 1"><h2 class="mono" style="margin: 0; font-size: 16px">N0AAF-7</h2><div class="muted" style="font-size: 12.5px">Heard on RF direct 40 s ago · 2.1 km SW · supports reply-acks</div></div>
+<button class="btn" style="height: 32px"><svg class="ic ic-s"><use href="#i-map"></use></svg>On map</button>
+</div>
+<div style="flex: 1; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div class="muted" style="text-align: center; font-size: 12px">Today</div>
+<div class="msg out"><div>Heading out now, ETA 20 min</div><div class="meta" style="color: #DCE7F5"><span class="mono">16:12</span><svg class="ic ic-s"><use href="#i-check"></use></svg><span>Acked · first try · RF</span></div></div>
+<div class="msg in"><div>Copy. Parking lot is full, try the north lot</div><div class="meta muted"><span class="mono">16:14</span><span>· RF direct</span></div></div>
+<div class="msg out"><div>Roger, north lot. Do you have the spare radio for Sam, or should I swing by the club station and pick one up on the way?</div><div class="meta" style="color: #DCE7F5"><span class="mono">16:16</span><svg class="ic ic-s"><use href="#i-check"></use></svg><span>Acked · sent as 2 parts · 1 retry · RF</span></div></div>
+<div class="msg in"><div>Meet at the trailhead at 5?</div><div class="meta muted"><span class="mono">16:30</span><span>· RF direct · ack sent</span></div></div>
+<div class="msg out" style="background: #E6EEF8; color: #16191D; border: 1px dashed #9DB9DD"><div>Yes, see you at 5</div><div class="meta" style="color: #8A3B00"><svg class="ic ic-s"><use href="#i-clock"></use></svg><span>Sending · retry 1 of 7 · next in 16 s · RF</span><button style="border: 0; background: none; color: #1F5FAE; font: 500 12px 'IBM Plex Sans', sans-serif; cursor: pointer; padding: 0 0 0 6px">Cancel</button></div></div>
+</div>
+<div style="padding: 12px 20px 16px; background: #fff; border-top: 1px solid #DCE0E6; display: flex; flex-direction: column; gap: 10px">
+<label for="compose" class="sr">Message to N0AAF-7</label>
+<textarea id="compose" rows="2" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #9DB9DD; border-radius: 10px; font: 14px 'IBM Plex Sans', sans-serif; resize: none">I'll bring extra water and the spare HT. Can you grab the folding table from the club?</textarea>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<span class="muted" style="font-size: 12.5px"><span class="mono">87 / 300</span> · sends as <strong style="color: #16191D">2 messages</strong> (67 + 20)</span>
+<div style="flex: 1"></div>
+<div class="seg" role="group" aria-label="Route"><button class="on">Best (RF)</button><button>RF only</button><button>IS only</button></div>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 13px"><input type="checkbox" checked style="width: 16px; height: 16px; accent-color: #1F5FAE">Request ack</label>
+<button class="btn btn-tx"><svg class="ic ic-s"><use href="#i-send"></use></svg>Send</button>
+</div>
+</div>
+</main>
+
+<aside aria-label="Delivery settings" style="flex: 1 1 260px; max-width: 300px; min-width: 0; background: #FFFFFF; border-left: 1px solid #DCE0E6; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+<h2 style="margin: 0; font-size: 15px">Delivery</h2>
+<dl class="kv">
+<dt>Route now</dt><dd>RF, because N0AAF-7 was heard direct in the last 10 min</dd>
+<dt>Retry profile</dt><dd>Default <span class="mono muted" style="font-size: 12px">8 16 8 32 64 96 128 s</span></dd>
+<dt>If no ack</dt><dd>Second round when the station is heard again, then held as Failed</dd>
+<dt>Message IDs</dt><dd>Reply-ack (APRS 1.1)</dd>
+</dl>
+<div style="border-top: 1px solid #E6E9EE; padding-top: 14px; display: flex; flex-direction: column; gap: 8px">
+<h3 style="margin: 0; font-size: 13px">Retry profile</h3>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 13px"><input type="radio" name="rp" checked style="accent-color: #1F5FAE">Default</label>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 13px"><input type="radio" name="rp" style="accent-color: #1F5FAE">Internet-friendly (≥ 30 s apart)</label>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 13px"><input type="radio" name="rp" style="accent-color: #1F5FAE">Slow HF modem</label>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 13px"><input type="radio" name="rp" style="accent-color: #1F5FAE">No retries (satellite)</label>
+</div>
+<div style="border-top: 1px solid #E6E9EE; padding-top: 14px; display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px" class="muted"><svg class="ic ic-s" style="color: #B45309; margin-top: 1px"><use href="#i-alert"></use></svg><span>Receive-only IGates nearby can drop replies. Check “IS only” if the station is outside RF range.</span></div>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

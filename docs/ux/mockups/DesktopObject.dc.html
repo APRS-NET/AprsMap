@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprsMap desktop: create object</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FAE}a:hover{color:#174A88}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-s{width:16px;height:16px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;border:1px solid #DCE0E6;background:#fff;color:#16191D;font:500 14px 'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.btn-tx{background:#C2410C;border-color:#C2410C;color:#fff}
+.icon-btn{width:40px;height:40px;padding:0;justify-content:center}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:500;border:1px solid #DCE0E6;background:#fff;color:#16191D;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.panel{background:#fff;border:1px solid #DCE0E6;border-radius:12px}
+.rail-btn{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;padding:10px 0;border:0;background:none;border-radius:10px;color:#4A515C;font:500 11px 'IBM Plex Sans',sans-serif;cursor:pointer;position:relative}
+.rail-btn.on{background:#E6EEF8;color:#1F5FAE}
+.muted{color:#5A6270}
+.stn{position:absolute;display:flex;align-items:center;gap:4px;transform:translate(-14px,-14px)}
+.sym{width:28px;height:28px;box-sizing:border-box;border-radius:50%;background:#fff;border:2px solid #A7AEB8;display:flex;align-items:center;justify-content:center;color:#7A828E}
+.lbl{font:600 11px 'IBM Plex Mono',monospace;background:rgba(255,255,255,.94);padding:1px 5px;border-radius:4px;color:#5A6270;white-space:nowrap}
+.menu{display:flex;flex-direction:column;padding:6px;min-width:230px}
+.menu button{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border:0;border-radius:6px;background:none;font:14px 'IBM Plex Sans',sans-serif;color:#16191D;text-align:left;cursor:pointer}
+.menu button.on{background:#E6EEF8;color:#174A88}
+.menu hr{border:0;border-top:1px solid #E6E9EE;margin:4px 0}
+.lab{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:500;color:#4A515C}
+.field{height:36px;box-sizing:border-box;padding:0 10px;border:1px solid #DCE0E6;border-radius:8px;font:14px 'IBM Plex Sans',sans-serif;color:#16191D;background:#fff;width:100%}
+.seg{display:inline-flex;border:1px solid #DCE0E6;border-radius:8px;overflow:hidden;background:#fff}
+.seg button{height:32px;padding:0 12px;border:0;background:#fff;font:500 13px 'IBM Plex Sans',sans-serif;color:#3B4350;cursor:pointer}
+.seg button+button{border-left:1px solid #DCE0E6}
+.seg button.on{background:#1F5FAE;color:#fff}
+.ck{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.ck input{width:16px;height:16px;accent-color:#1F5FAE}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #F4F5F7; font-family: 'IBM Plex Sans', sans-serif; color: #16191D; font-size: 14px">
+<svg aria-hidden="true" style="display: none">
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"></path></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"></path></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"></path></symbol>
+<symbol id="i-term" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM7.5 9.5l3 2.5-3 2.5M12.5 15h4"></path></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"></path><circle cx="12" cy="10" r="2.3"></circle></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"></path></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2.5v3M12 18.5v3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M2.5 12h3M18.5 12h3M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path></symbol>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M4 15l1.6-4.8A2 2 0 0 1 7.5 8.8h9a2 2 0 0 1 1.9 1.4L20 15v3.5H4zM4 15h16M7 18.5V20M17 18.5V20"></path></symbol>
+<symbol id="i-house" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9H4zM10 20v-5h4v5"></path></symbol>
+<symbol id="i-aid" viewBox="0 0 24 24"><path d="M4 6h16v13H4zM12 9v7M8.5 12.5h7"></path></symbol>
+<symbol id="i-ruler" viewBox="0 0 24 24"><path d="M3 17 17 3l4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2"></path></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 8h11v11H8zM5 16V5h11"></path></symbol>
+<symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"></circle><circle cx="12" cy="12" r="2"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="i-signal" viewBox="0 0 24 24"><path d="M12 12v9M8.5 8.5a5 5 0 0 1 7 0M5.5 5.5a9.2 9.2 0 0 1 13 0"></path></symbol>
+</svg>
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 16px; background: #FFFFFF; border-bottom: 1px solid #DCE0E6">
+<button class="btn" style="height: 40px; padding: 0 12px 0 8px; gap: 10px" aria-label="My station N0CALL-9, transmit armed">
+<span style="width: 28px; height: 28px; border-radius: 50%; background: #FFF1E6; color: #C2410C; display: flex; align-items: center; justify-content: center"><svg class="ic ic-s"><use href="#i-car"></use></svg></span>
+<span class="mono" style="font-weight: 600">N0CALL-9</span>
+<span class="pill" style="height: 22px; background: #FDECD3; border-color: #F6C48C; color: #8A3B00; font-size: 12px">TX armed</span>
+</button>
+<div style="display: flex; flex-wrap: wrap; gap: 8px"><span class="pill"><span class="dot" style="background: #1E7A4C"></span>APRS-IS</span><span class="pill"><span class="dot" style="background: #1E7A4C"></span>RF · Direwolf KISS</span></div>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap; min-height: 0">
+<nav aria-label="Main" style="flex: 0 0 80px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 0; background: #FFFFFF; border-right: 1px solid #DCE0E6">
+<button class="rail-btn on" aria-current="page"><svg class="ic"><use href="#i-map"></use></svg>Map</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-chat"></use></svg>Messages</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-list"></use></svg>Stations</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-term"></use></svg>Packets</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-pin"></use></svg>Objects</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-cloud"></use></svg>Weather</button>
+<div style="flex: 1"></div>
+<button class="rail-btn"><svg class="ic"><use href="#i-gear"></use></svg>Settings</button>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; position: relative; min-height: 700px; overflow: hidden; background: #E8EDE4">
+<svg aria-hidden="true" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%">
+<rect width="1200" height="760" fill="#E8EDE4"></rect>
+<path d="M380 220h330v260H380z" fill="#D5E5CD"></path>
+<path d="M440 260 C520 240 600 300 660 280 S700 400 640 440 520 460 460 420 400 300 440 260z" fill="none" stroke="#9C8A63" stroke-width="3" stroke-dasharray="2 6"></path>
+<path d="M-20 600C200 560 320 660 520 640S860 520 1220 560" stroke="#C3D8EA" stroke-width="26" fill="none"></path>
+<g stroke="#FFFFFF" stroke-width="5"><path d="M0 120H1200M0 540H1200M0 700H1200M140 0V760M300 0V760M800 0V760M960 0V760M1110 0V760"></path></g>
+<path d="M0 180C300 170 360 200 380 220M710 480C760 520 900 520 1200 500" stroke="#F4D696" stroke-width="8" fill="none"></path>
+</svg>
+<span class="muted" style="position: absolute; left: 38%; top: 30%; font-size: 12px; font-style: italic">Trail loop (overlay)</span>
+<div class="stn" style="left: 24%; top: 22%"><span class="sym"><svg class="ic ic-s"><use href="#i-house"></use></svg></span><span class="lbl">WA0AAD</span></div>
+<div class="stn" style="left: 86%; top: 74%"><span class="sym" style="border-color: #C2410C; color: #C2410C"><svg class="ic ic-s"><use href="#i-car"></use></svg></span><span class="lbl" style="color: #8A3B00">N0CALL-9</span></div>
+<div aria-hidden="true" style="position: absolute; left: 54%; top: 54%; width: 22px; height: 22px; transform: translate(-11px,-11px); border: 2px solid #1F5FAE; border-radius: 50%; background: rgba(31,95,174,.15)"></div>
+<div class="stn" style="left: 54%; top: 54%; transform: translate(-16px,-16px)"><span class="sym" style="width: 32px; height: 32px; border: 2px dashed #B42318; color: #B42318; background: #FFF5F5"><svg class="ic ic-s"><use href="#i-aid"></use></svg></span><span class="lbl" style="color: #16191D">AIDSTN1 (draft)</span></div>
+<div class="panel menu" role="menu" aria-label="Map point actions" style="position: absolute; left: calc(54% + 16px); top: calc(54% + 16px); box-shadow: 0 10px 30px rgba(0,0,0,.18)">
+<div class="mono muted" style="font-size: 12px; padding: 4px 10px 6px">40.0687 N, 105.2836 W · DN70kb</div>
+<button role="menuitem" class="on"><svg class="ic ic-s"><use href="#i-pin"></use></svg>Create object here…</button>
+<button role="menuitem"><svg class="ic ic-s"><use href="#i-locate"></use></svg>Set as my position</button>
+<button role="menuitem"><svg class="ic ic-s"><use href="#i-ruler"></use></svg>Distance from me: 3.4 km</button>
+<hr>
+<button role="menuitem"><svg class="ic ic-s"><use href="#i-copy"></use></svg>Copy coordinates</button>
+<button role="menuitem"><svg class="ic ic-s"><use href="#i-map"></use></svg>Centre map here</button>
+</div>
+</main>
+
+<aside aria-label="New object" style="flex: 1 1 360px; max-width: 420px; min-width: 0; background: #FFFFFF; border-left: 1px solid #DCE0E6; display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; gap: 10px; padding: 16px; border-bottom: 1px solid #E6E9EE"><h2 style="margin: 0; font-size: 17px; flex: 1">New object</h2><button class="btn icon-btn" style="width: 34px; height: 34px" aria-label="Close"><svg class="ic ic-s"><use href="#i-x"></use></svg></button></div>
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<div class="seg" role="group" aria-label="Kind"><button class="on">Object</button><button>Item</button><button>Area / shape</button></div>
+<label class="lab">Name<span style="position: relative; display: flex"><input class="field mono" value="AIDSTN1" style="padding-right: 52px"><span class="mono muted" style="position: absolute; right: 10px; top: 9px; font-size: 12px">7/9</span></span></label>
+<div style="display: flex; gap: 10px; align-items: flex-end"><div class="lab" style="flex: none">Symbol<button class="btn" style="gap: 6px"><svg class="ic ic-s" style="color: #B42318"><use href="#i-aid"></use></svg>First aid</button></div><label class="lab" style="flex: 1">Comment<input class="field" value="Aid station 1 · water, medical"></label></div>
+<label class="lab">Frequency (optional)<input class="field mono" placeholder="146.520MHz T100 +060"></label>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<label class="lab">Re-send every<select class="field"><option>10 min</option></select></label>
+<label class="lab">After a change<select class="field"><option>Fast, then slow down</option></select></label>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px"><span class="lab">Send on</span><label class="ck"><input type="checkbox" checked>APRS-IS</label><label class="ck"><input type="checkbox" checked>RF · Direwolf <span class="mono muted" style="font-size: 12.5px">WIDE2-1</span></label></div>
+<div style="padding: 12px; border-radius: 10px; background: #16191D; color: #E8ECF1"><code class="mono" style="font-size: 12px; line-height: 1.6; word-break: break-all">N0CALL-9&gt;APZAMP,WIDE2-1:;AIDSTN1  *131630z4004.12N/10517.02Wa Aid station 1 · water, medical</code></div>
+<p class="muted" style="margin: 0; font-size: 12.5px">Drag the object on the map to move it. Moves are confirmed before they are sent. Kill it from its details pane when done.</p>
+</div>
+<div style="flex: 1"></div>
+<div style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 16px; border-top: 1px solid #E6E9EE"><button class="btn">Save, don’t send</button><button class="btn btn-tx"><svg class="ic ic-s"><use href="#i-signal"></use></svg>Create and send</button></div>
+</aside>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

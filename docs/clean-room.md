@@ -23,7 +23,7 @@ be consulted**.
 | Stage | Input allowed | Output |
 | --- | --- | --- |
 | Reference analysis | The allowed sources below | `docs/reference/*.md`: what the reference does, in our words, with citations |
-| Scope and UX design | Reference analysis, protocol specs, modern UI practice | `docs/scope.md`, `docs/ux.md` |
+| Scope and UX design | Reference analysis, protocol specs, modern UI practice | `docs/scope.md`, `docs/ux/README.md` |
 | Feature spec | All of the above | `docs/features/F*.md` |
 | Implementation | Feature specs, protocol specs, APRS.NET source and docs | Code in `src/` |
 

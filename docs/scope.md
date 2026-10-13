@@ -2,7 +2,7 @@
 
 The feature inventory for AprsMap, phased. Derived from the [functional inventory](reference/functional-inventory.md) and the
 [2026-10-13 observation](reference/observation-2026-10-13.md);
-the UI shape is in [ux.md](ux.md). "Reference topic" names the public APRSIS32 documentation topic
+the UI shape is in [ux](ux/README.md). "Reference topic" names the public APRSIS32 documentation topic
 (aprsisce.wikidot.com) that the feature spec will cite. It is a pointer for spec writing, not a requirement to match
 APRSIS32 exactly. "Needs" lists the APRS.NET gaps ([aprsnet/gaps.md](aprsnet/gaps.md)) that block the feature.
 
@@ -19,10 +19,12 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | ID | Feature | Owner | Needs | Status |
 | --- | --- | --- | --- | --- |
 | F0.1 | Solution scaffold, CI (build, test, format), Directory.Build.props matching APRS.NET's rigor | App | — | scoped |
-| F0.2 | `IAprsMapService` contracts, in-process and SignalR implementations, round-trip tests | App | — | scoped |
+| F0.2 | `IEngineService` contracts, in-process and SignalR implementations, round-trip tests | App | — | scoped |
 | F0.3 | Spikes: Mapsui in WASM, SignalR streaming in WASM, symbol atlas, tile cache ([architecture.md](architecture.md#spikes-before-phase-1-each-one-is-a-timeboxed-throwaway)) | App | — | scoped |
 | F0.4 | Settings model and persistence (desktop: JSON in the user's config folder; gateway: server-side store); units chosen per quantity (altitude, distance, pressure, rain, temperature, wind) | App | — | scoped |
-| F0.5 | First-run wizard: callsign → location → server → optional passcode ([ux.md](ux.md#key-flows)) | App | — | scoped |
+| F0.5 | First-run wizard: callsign → location → server → optional passcode ([ux](ux/README.md#key-flows)) | App | — | scoped |
+| F0.6 | Appearance: theme (light/dark/auto), palettes (standard, high contrast, colour-vision-safe), text and icon size, map symbol size, corner style, density, reduced motion; token-based so it applies live ([ux](ux/README.md#appearance-and-accessibility)) | App | — | scoped |
+| F0.7 | Rebrandable: product identity in `build/Branding.props`, `Brand` accessor, rename script ([branding.md](branding.md)) | App | — | scoped |
 
 ## Phase 1: Receive-only APRS-IS map (MVP, desktop + web)
 

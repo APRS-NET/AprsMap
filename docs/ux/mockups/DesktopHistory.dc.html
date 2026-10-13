@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprsMap desktop: station history</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FAE}a:hover{color:#174A88}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-s{width:16px;height:16px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;border:1px solid #DCE0E6;background:#fff;color:#16191D;font:500 14px 'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.btn-primary{background:#1F5FAE;border-color:#1F5FAE;color:#fff}
+.btn-tx{background:#C2410C;border-color:#C2410C;color:#fff}
+.icon-btn{width:40px;height:40px;padding:0;justify-content:center}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:500;border:1px solid #DCE0E6;background:#fff;color:#16191D;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.panel{background:#fff;border:1px solid #DCE0E6;border-radius:12px}
+.rail-btn{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;padding:10px 0;border:0;background:none;border-radius:10px;color:#4A515C;font:500 11px 'IBM Plex Sans',sans-serif;cursor:pointer;position:relative}
+.rail-btn.on{background:#E6EEF8;color:#1F5FAE}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;font:600 11px 'IBM Plex Sans',sans-serif;background:#EEF1F5;color:#3B4350}
+.muted{color:#5A6270}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #DCE0E6;flex-wrap:wrap}
+.tabs button{height:40px;padding:0 14px;border:0;background:none;font:500 14px 'IBM Plex Sans',sans-serif;color:#4A515C;border-bottom:2px solid transparent;cursor:pointer}
+.tabs button.on{color:#174A88;border-bottom-color:#1F5FAE}
+.seg{display:inline-flex;border:1px solid #DCE0E6;border-radius:8px;overflow:hidden;background:#fff}
+.seg button{height:32px;padding:0 12px;border:0;background:#fff;font:500 13px 'IBM Plex Sans',sans-serif;color:#3B4350;cursor:pointer}
+.seg button+button{border-left:1px solid #DCE0E6}
+.seg button.on{background:#1F5FAE;color:#fff}
+.chart h3{margin:0;font-size:13px;font-weight:600}
+.prow{display:grid;grid-template-columns:150px 140px minmax(0,1fr);gap:14px;padding:8px 16px;font-size:12.5px;border-bottom:1px solid #F0F2F5;align-items:start}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:13px;margin:0}
+.kv dt{color:#5A6270}.kv dd{margin:0}
+.bar{height:8px;border-radius:4px;background:#EEF1F5;overflow:hidden}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #F4F5F7; font-family: 'IBM Plex Sans', sans-serif; color: #16191D; font-size: 14px">
+<svg aria-hidden="true" style="display: none">
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"></path></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"></path></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"></path></symbol>
+<symbol id="i-term" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM7.5 9.5l3 2.5-3 2.5M12.5 15h4"></path></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"></path><circle cx="12" cy="10" r="2.3"></circle></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"></path></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2.5v3M12 18.5v3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M2.5 12h3M18.5 12h3M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20.5a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3 5 14h6l-1 7 8-11h-6z"></path></symbol>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M4 15l1.6-4.8A2 2 0 0 1 7.5 8.8h9a2 2 0 0 1 1.9 1.4L20 15v3.5H4zM4 15h16M7 18.5V20M17 18.5V20"></path></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"></path></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19zM12 10v4.5M12 17.5h.01"></path></symbol>
+<symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></symbol>
+<symbol id="i-signal" viewBox="0 0 24 24"><path d="M12 12v9M8.5 8.5a5 5 0 0 1 7 0M5.5 5.5a9.2 9.2 0 0 1 13 0"></path></symbol>
+</svg>
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 16px; background: #FFFFFF; border-bottom: 1px solid #DCE0E6">
+<button class="btn" style="height: 40px; padding: 0 12px 0 8px; gap: 10px" aria-label="My station N0CALL-9, transmit armed">
+<span style="width: 28px; height: 28px; border-radius: 50%; background: #FFF1E6; color: #C2410C; display: flex; align-items: center; justify-content: center"><svg class="ic ic-s"><use href="#i-car"></use></svg></span>
+<span class="mono" style="font-weight: 600">N0CALL-9</span>
+<span class="pill" style="height: 22px; background: #FDECD3; border-color: #F6C48C; color: #8A3B00; font-size: 12px">TX armed</span>
+</button>
+<div style="display: flex; flex-wrap: wrap; gap: 8px"><span class="pill"><span class="dot" style="background: #1E7A4C"></span>APRS-IS</span><span class="pill"><span class="dot" style="background: #1E7A4C"></span>RF · Direwolf KISS</span></div>
+<div style="flex: 1 1 280px; display: flex; justify-content: center"><label style="position: relative; display: flex; align-items: center; width: 100%; max-width: 460px"><span class="sr">Search</span><svg class="ic ic-s muted" style="position: absolute; left: 12px"><use href="#i-search"></use></svg><input type="search" placeholder="Search stations, places, commands…" style="width: 100%; height: 38px; box-sizing: border-box; padding: 0 12px 0 36px; border: 1px solid #DCE0E6; border-radius: 10px; background: #F4F5F7; font: 14px 'IBM Plex Sans', sans-serif"></label></div>
+<div style="display: flex; gap: 8px"><button class="btn icon-btn" aria-label="Quick toggles"><svg class="ic"><use href="#i-bolt"></use></svg></button><button class="btn icon-btn" aria-label="Notifications"><svg class="ic"><use href="#i-bell"></use></svg></button><button class="btn btn-tx"><svg class="ic ic-s"><use href="#i-signal"></use></svg>Beacon now</button></div>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap; min-height: 0">
+<nav aria-label="Main" style="flex: 0 0 80px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 0; background: #FFFFFF; border-right: 1px solid #DCE0E6">
+<button class="rail-btn"><svg class="ic"><use href="#i-map"></use></svg>Map</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-chat"></use></svg>Messages</button>
+<button class="rail-btn on" aria-current="page"><svg class="ic"><use href="#i-list"></use></svg>Stations</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-term"></use></svg>Packets</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-pin"></use></svg>Objects</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-cloud"></use></svg>Weather</button>
+<div style="flex: 1"></div>
+<button class="rail-btn"><svg class="ic"><use href="#i-gear"></use></svg>Settings</button>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+<nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 6px; font-size: 13px" class="muted"><a href="#">Stations</a><svg class="ic ic-s"><use href="#i-right"></use></svg><span class="mono">W0AAB-13</span></nav>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+<span style="width: 52px; height: 52px; border-radius: 50%; border: 3px solid #0F766E; color: #0F766E; display: flex; align-items: center; justify-content: center; background: #fff"><svg class="ic" style="width: 26px; height: 26px"><use href="#i-cloud"></use></svg></span>
+<div style="flex: 1 1 300px">
+<h1 class="mono" style="margin: 0; font-size: 26px">W0AAB-13</h1>
+<div class="muted">Weather station · Davis Vantage Pro2 via WeeWX · 7.4 km NE of me · first heard 3 days ago</div>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn"><svg class="ic ic-s"><use href="#i-map"></use></svg>Show on map</button><button class="btn"><svg class="ic ic-s"><use href="#i-chat"></use></svg>Message</button><button class="btn"><svg class="ic ic-s"><use href="#i-download"></use></svg>Export CSV</button></div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+<div class="tabs" role="tablist" style="flex: 1 1 auto"><button role="tab" aria-selected="false">Overview</button><button role="tab" aria-selected="true" class="on">Weather</button><button role="tab" aria-selected="false">Telemetry</button><button role="tab" aria-selected="false">Packets <span class="muted">412</span></button><button role="tab" aria-selected="false">Messages</button></div>
+<div class="seg" role="group" aria-label="Time range"><button>6 h</button><button class="on">24 h</button><button>7 d</button><button>Custom…</button></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px">
+<section class="panel chart" style="padding: 14px 16px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><h3>Temperature</h3><span class="mono" style="font-size: 20px; font-weight: 600">61°F</span></div>
+<div class="muted" style="font-size: 12px">24 h low 47° · high 66°</div>
+<svg role="img" aria-label="Temperature over 24 hours, low 47 overnight, high 66 mid-afternoon" viewBox="0 0 300 110" style="width: 100%; height: 110px; margin-top: 8px">
+<g stroke="#EEF1F5"><path d="M0 20H300M0 55H300M0 90H300"></path></g>
+<path d="M0 70 C30 78 60 92 90 95 S150 70 180 40 S240 18 260 24 S290 34 300 38" fill="none" stroke="#C2410C" stroke-width="2.5"></path>
+</svg>
+<div class="mono muted" style="display: flex; justify-content: space-between; font-size: 11px"><span>16:00</span><span>00:00</span><span>08:00</span><span>16:00</span></div>
+</section>
+<section class="panel chart" style="padding: 14px 16px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><h3>Wind</h3><span class="mono" style="font-size: 20px; font-weight: 600">7 mph · 220°</span></div>
+<div class="muted" style="font-size: 12px">gust 15 mph at 13:40</div>
+<svg role="img" aria-label="Wind speed over 24 hours, mostly 3 to 10 miles per hour with gusts to 15" viewBox="0 0 300 110" style="width: 100%; height: 110px; margin-top: 8px">
+<g stroke="#EEF1F5"><path d="M0 20H300M0 55H300M0 90H300"></path></g>
+<path d="M0 90 L20 86 L40 92 L60 88 L80 94 L100 80 L120 70 L140 60 L160 50 L180 40 L200 30 L220 45 L240 52 L260 58 L280 62 L300 64" fill="none" stroke="#1F5FAE" stroke-width="2.5"></path>
+<path d="M0 84 L40 82 L80 86 L120 56 L160 34 L190 20 L220 30 L260 44 L300 50" fill="none" stroke="#1F5FAE" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7"></path>
+</svg>
+<div class="mono muted" style="display: flex; justify-content: space-between; font-size: 11px"><span>16:00</span><span>00:00</span><span>08:00</span><span>16:00</span></div>
+</section>
+<section class="panel chart" style="padding: 14px 16px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><h3>Pressure</h3><span class="mono" style="font-size: 20px; font-weight: 600">1014.2 mb</span></div>
+<div class="muted" style="font-size: 12px">falling 1.8 mb / 3 h</div>
+<svg role="img" aria-label="Pressure over 24 hours, steady then falling in the afternoon" viewBox="0 0 300 110" style="width: 100%; height: 110px; margin-top: 8px">
+<g stroke="#EEF1F5"><path d="M0 20H300M0 55H300M0 90H300"></path></g>
+<path d="M0 30 C60 26 120 28 170 32 S250 62 300 74" fill="none" stroke="#0F766E" stroke-width="2.5"></path>
+</svg>
+<div class="mono muted" style="display: flex; justify-content: space-between; font-size: 11px"><span>16:00</span><span>00:00</span><span>08:00</span><span>16:00</span></div>
+</section>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<section class="panel" style="flex: 999 1 520px; min-width: 0; overflow: hidden">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #E6E9EE">
+<h2 style="margin: 0; font-size: 15px">Recent packets</h2>
+<div class="seg" role="group" aria-label="Packet view"><button class="on">Decoded</button><button>Raw</button></div>
+</div>
+<div class="prow"><span class="mono muted">Today 16:31:04</span><span class="mono muted">qAR · K0AAC-10</span><span>Weather: 61°F, wind 220° 7 mph gust 9, rain 0.00 in/h, 48%, 1014.2 mb</span></div>
+<div class="prow"><span class="mono muted">Today 16:26:03</span><span class="mono muted">RF direct</span><span>Weather: 61°F, wind 215° 6 mph gust 11, 48%, 1014.5 mb</span></div>
+<div class="prow" style="background: #FFF7ED"><span class="mono muted">Today 16:21:02</span><span class="mono muted">RF direct</span><span style="display: flex; gap: 6px"><svg class="ic ic-s" style="color: #B45309" role="img" aria-label="Warning"><use href="#i-alert"></use></svg><span>Weather parsed with a warning: humidity sent as <span class="mono">h100</span> (three digits), read as 100%</span></span></div>
+<div class="prow"><span class="mono muted">Today 16:00:00</span><span class="mono muted">qAR · W0AAG-1</span><span>Telemetry #482: battery 13.4 V, solar 1.2 A, enclosure 74°F</span></div>
+<div class="prow"><span class="mono muted">Today 15:00:00</span><span class="mono muted">qAR · W0AAG-1</span><span>Status: “Vantage Pro2 · solar powered · weewx 5.1”</span></div>
+</section>
+<section class="panel" style="flex: 1 1 280px; padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 15px">How it reaches us (24 h)</h2>
+<div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px">
+<div><div style="display: flex; justify-content: space-between"><span>RF direct</span><span class="mono">62%</span></div><div class="bar"><div style="width: 62%; height: 100%; background: #1F5FAE"></div></div></div>
+<div><div style="display: flex; justify-content: space-between"><span>RF via digipeater</span><span class="mono">21%</span></div><div class="bar"><div style="width: 21%; height: 100%; background: #6D28D9"></div></div></div>
+<div><div style="display: flex; justify-content: space-between"><span>APRS-IS only</span><span class="mono">17%</span></div><div class="bar"><div style="width: 17%; height: 100%; background: #7A828E"></div></div></div>
+</div>
+<dl class="kv">
+<dt>Position</dt><dd class="mono">40°13.21′ N 105°09.84′ W</dd>
+<dt>Grid</dt><dd class="mono">DN70kf</dd>
+<dt>TOCALL</dt><dd class="mono">APRS · generic</dd>
+<dt>Digipeaters</dt><dd class="mono">K0AAC-10, W0AAG-1</dd>
+<dt>Packets</dt><dd>412 in 24 h · 0 duplicates</dd>
+</dl>
+</section>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

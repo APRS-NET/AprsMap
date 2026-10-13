@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprsMap desktop: connections</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FAE}a:hover{color:#174A88}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-s{width:16px;height:16px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;border:1px solid #DCE0E6;background:#fff;color:#16191D;font:500 14px 'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.btn-primary{background:#1F5FAE;border-color:#1F5FAE;color:#fff}
+.pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:12.5px;font-weight:500;border:1px solid #DCE0E6;background:#fff;color:#16191D;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.panel{background:#fff;border:1px solid #DCE0E6;border-radius:12px}
+.muted{color:#5A6270}
+.snav a{display:flex;align-items:center;height:36px;padding:0 12px;border-radius:8px;color:#16191D;text-decoration:none;font-size:14px}
+.snav a.on{background:#E6EEF8;color:#174A88;font-weight:600}
+.conn{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;font-size:13px;margin:0}
+.kv div{display:flex;flex-direction:column;gap:2px}
+.kv dt{color:#5A6270;font-size:12px}.kv dd{margin:0;font-weight:500}
+.role{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.role input{width:16px;height:16px;accent-color:#1F5FAE}
+.type{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid #DCE0E6;border-radius:10px;background:#fff;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.type.on{border:2px solid #1F5FAE;padding:11px;background:#F5F9FE}
+.type b{font-size:13.5px}
+.type span{font-size:12px;color:#5A6270}
+.field{height:36px;box-sizing:border-box;padding:0 10px;border:1px solid #DCE0E6;border-radius:8px;font:14px 'IBM Plex Sans',sans-serif;color:#16191D;background:#fff;width:100%}
+.lab{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:500;color:#4A515C}
+</style>
+</helmet>
+<div style="position: relative; min-height: 900px; display: flex; flex-direction: column; background: #F4F5F7; font-family: 'IBM Plex Sans', sans-serif; color: #16191D; font-size: 14px">
+<svg aria-hidden="true" style="display: none">
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"></circle><path d="M3.5 12h17M12 3.5c3 3 3 14 0 17M12 3.5c-3 3-3 14 0 17"></path></symbol>
+<symbol id="i-radio" viewBox="0 0 24 24"><path d="M5 9h14v11H5zM8 9l8-5M9 14.5h.01M13 13v3M16 13v3"></path></symbol>
+<symbol id="i-sat" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1"></path></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"></path></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"></path></symbol>
+</svg>
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 16px; background: #FFFFFF; border-bottom: 1px solid #DCE0E6">
+<button class="btn" style="border-color: transparent"><svg class="ic ic-s"><use href="#i-back"></use></svg>Back to map</button>
+<h1 style="margin: 0; font-size: 17px">Settings</h1>
+<div style="flex: 1 1 260px; display: flex; justify-content: center"><label style="position: relative; display: flex; align-items: center; width: 100%; max-width: 420px"><span class="sr">Search settings</span><svg class="ic ic-s muted" style="position: absolute; left: 12px"><use href="#i-search"></use></svg><input type="search" placeholder="Search settings" style="width: 100%; height: 38px; box-sizing: border-box; padding: 0 12px 0 36px; border: 1px solid #DCE0E6; border-radius: 10px; background: #F4F5F7; font: 14px 'IBM Plex Sans', sans-serif"></label></div>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap; gap: 20px; padding: 20px 24px; align-items: flex-start">
+<nav aria-label="Settings sections" class="snav panel" style="flex: 0 1 220px; padding: 8px; display: flex; flex-direction: column; gap: 2px">
+<a href="#">Station</a><a href="#">Beaconing</a><a href="#">Messaging</a><a href="#" class="on" aria-current="page">Connections</a><a href="#">Filters</a><a href="#">Map &amp; tiles</a><a href="#">Display</a><a href="#">Objects &amp; overlays</a><a href="#">Weather &amp; NWS</a><a href="#">Alerts &amp; sounds</a><a href="#">Advanced</a><a href="#">Data</a><a href="#">About</a>
+</nav>
+
+<div style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px"><h2 style="margin: 0; font-size: 18px; flex: 1">Connections</h2><label class="role"><input type="checkbox">Receive only (no transmitting anywhere)</label><button class="btn btn-primary"><svg class="ic ic-s"><use href="#i-plus"></use></svg>Add connection</button></div>
+
+<section class="panel conn">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><svg class="ic" style="color: #1F5FAE"><use href="#i-globe"></use></svg><h3 style="margin: 0; font-size: 15px; flex: 1">APRS-IS</h3><span class="pill" style="background: #E7F4EC; border-color: #B7DEC6; color: #145C38"><span class="dot" style="background: #1E7A4C"></span>Connected · verified</span><button class="btn" style="height: 32px"><svg class="ic ic-s"><use href="#i-refresh"></use></svg>Reconnect</button><button class="btn" style="height: 32px">Edit</button></div>
+<dl class="kv"><div><dt>Server</dt><dd class="mono">T2EDGE · rotate.aprs2.net:14580</dd></div><div><dt>Up</dt><dd>3 h 12 m</dd></div><div><dt>Received</dt><dd>38 pkt/min</dd></div><div><dt>Sent</dt><dd>41 today</dd></div><div><dt>Reconnect if quiet</dt><dd>60 s</dd></div></dl>
+<div style="display: flex; flex-wrap: wrap; gap: 16px"><label class="role"><input type="checkbox" checked>Transmit</label><label class="role"><input type="checkbox" checked>Messages</label><label class="role"><input type="checkbox" checked>Bulletins</label><label class="role"><input type="checkbox">Telemetry</label></div>
+</section>
+
+<section class="panel conn">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><svg class="ic" style="color: #6D28D9"><use href="#i-radio"></use></svg><h3 style="margin: 0; font-size: 15px; flex: 1">RF · Direwolf KISS</h3><span class="pill" style="background: #E7F4EC; border-color: #B7DEC6; color: #145C38"><span class="dot" style="background: #1E7A4C"></span>Connected</span><button class="btn" style="height: 32px">Edit</button></div>
+<dl class="kv"><div><dt>Link</dt><dd class="mono">KISS over TCP · 127.0.0.1:8001</dd></div><div><dt>Channel</dt><dd>144.390 MHz · port 0</dd></div><div><dt>Heard</dt><dd>9 pkt/min · 12 direct</dd></div><div><dt>Sent</dt><dd>17 today</dd></div><div><dt>Reconnect if quiet</dt><dd>10 min</dd></div></dl>
+<div style="display: flex; flex-wrap: wrap; gap: 16px"><label class="role"><input type="checkbox" checked>Transmit</label><label class="role"><input type="checkbox" checked>IGate RF → internet</label><label class="role"><input type="checkbox">IGate internet → RF (messages)</label><label class="role"><input type="checkbox">Digipeat (fill-in WIDE1-1)</label></div>
+</section>
+
+<section class="panel conn">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><svg class="ic" style="color: #0F766E"><use href="#i-sat"></use></svg><h3 style="margin: 0; font-size: 15px; flex: 1">GPS</h3><span class="pill" style="background: #FEF3E2; border-color: #F6C48C; color: #8A3B00"><span class="dot" style="background: #B45309"></span>2D fix · 5 satellites</span><button class="btn" style="height: 32px">Edit</button></div>
+<dl class="kv"><div><dt>Source</dt><dd class="mono">gpsd · localhost:2947</dd></div><div><dt>Accuracy</dt><dd>±12 m</dd></div><div><dt>Fallback</dt><dd>Fixed home position</dd></div></dl>
+</section>
+</div>
+</div>
+
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(22, 25, 29, .42)"></div>
+<div role="dialog" aria-modal="true" aria-labelledby="addt" class="panel" style="position: absolute; left: 50%; top: 70px; transform: translateX(-50%); width: min(760px, calc(100% - 32px)); box-shadow: 0 20px 50px rgba(0,0,0,.25); display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid #E6E9EE"><h2 id="addt" style="margin: 0; font-size: 17px; flex: 1">Add connection</h2><span class="muted" style="font-size: 13px">Step 2 of 2</span><button class="btn" style="width: 34px; height: 34px; padding: 0; justify-content: center" aria-label="Close"><svg class="ic ic-s"><use href="#i-x"></use></svg></button></div>
+<div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px" role="radiogroup" aria-label="Connection type">
+<button class="type" role="radio" aria-checked="false"><b>APRS-IS server</b><span>Internet feed, with filters</span></button>
+<button class="type on" role="radio" aria-checked="true"><b>KISS over TCP</b><span>Direwolf, soundmodem, network TNC</span></button>
+<button class="type" role="radio" aria-checked="false"><b>KISS over serial</b><span>USB or Bluetooth TNC</span></button>
+<button class="type" role="radio" aria-checked="false"><b>Radio with built-in TNC</b><span>Kenwood, Yaesu</span></button>
+<button class="type" role="radio" aria-checked="false"><b>Text-mode TNC</b><span>Setup and close commands</span></button>
+<button class="type" role="radio" aria-checked="false"><b>AGWPE</b><span>AGW protocol over TCP</span></button>
+<button class="type" role="radio" aria-checked="false"><b>GPS</b><span>NMEA serial, gpsd, OS location</span></button>
+<button class="type" role="radio" aria-checked="false"><b>Weather feed (CWOP)</b><span>Receive only</span></button>
+<button class="type" role="radio" aria-checked="false"><b>Share my feed</b><span>Serve to other apps on this network</span></button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px">
+<label class="lab">Name<input class="field" value="Shack Direwolf"></label>
+<label class="lab">Host<input class="field mono" value="192.168.1.40"></label>
+<label class="lab">Port<input class="field mono" value="8001"></label>
+<label class="lab">KISS port<input class="field mono" value="0"></label>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #E7F4EC; color: #145C38; font-size: 13px"><svg class="ic ic-s"><use href="#i-check"></use></svg>Test passed: connected and heard 3 frames in 20 s.</div>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid #E6E9EE"><button class="btn">Back</button><button class="btn">Test again</button><button class="btn btn-primary">Add connection</button></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

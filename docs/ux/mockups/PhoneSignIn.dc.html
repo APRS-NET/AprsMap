@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprsMap web on a phone: operator sign-in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-s{width:16px;height:16px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.muted{color:#5A6270}
+.lab{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#3B4350}
+.field{height:48px;box-sizing:border-box;padding:0 12px;border:1px solid #C5CBD3;border-radius:10px;font:16px 'IBM Plex Sans',sans-serif;color:#16191D;background:#fff;width:100%}
+.can{display:flex;gap:10px;align-items:center;font-size:14px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; overflow: hidden; background: #F4F5F7; font-family: 'IBM Plex Sans', sans-serif; color: #16191D; font-size: 14px">
+<svg aria-hidden="true" style="display: none">
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></symbol>
+<symbol id="i-house" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9H4zM10 20v-5h4v5"></path></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"></path></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="2.8"></circle></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path></symbol>
+</svg>
+<header style="display: flex; align-items: center; gap: 6px; padding: 10px 12px"><button aria-label="Back to map" style="width: 44px; height: 44px; border: 0; background: none; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg class="ic"><use href="#i-back"></use></svg></button></header>
+<div style="flex: 1; padding: 8px 24px 24px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
+<span style="width: 52px; height: 52px; border-radius: 14px; background: #FFF1E6; color: #C2410C; display: flex; align-items: center; justify-content: center"><svg class="ic" style="width: 28px; height: 28px"><use href="#i-house"></use></svg></span>
+<div><h1 style="margin: 0; font-size: 24px">Operator sign-in</h1><p class="muted" style="margin: 6px 0 0">Gateway station <span class="mono" style="color: #16191D; font-weight: 600">N0CALL-10</span></p></div>
+</div>
+<div style="padding: 14px; border-radius: 12px; background: #fff; border: 1px solid #DCE0E6; display: flex; flex-direction: column; gap: 10px">
+<strong style="font-size: 14px">Signing in lets you</strong>
+<span class="can"><svg class="ic ic-s" style="color: #1E7A4C"><use href="#i-check"></use></svg>Send messages as the gateway station</span>
+<span class="can"><svg class="ic ic-s" style="color: #1E7A4C"><use href="#i-check"></use></svg>Beacon, and create or move objects</span>
+<span class="can"><svg class="ic ic-s" style="color: #1E7A4C"><use href="#i-check"></use></svg>Change the gateway’s filters and settings</span>
+</div>
+<label class="lab">Username<input class="field" value="[OPERATOR]" autocomplete="username"></label>
+<label class="lab">Password<span style="position: relative; display: flex"><input class="field" type="password" value="xxxxxxxxxx" autocomplete="current-password" style="padding-right: 52px"><button aria-label="Show password" style="position: absolute; right: 4px; top: 2px; width: 44px; height: 44px; border: 0; background: none; color: #5A6270; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg class="ic"><use href="#i-eye"></use></svg></button></span></label>
+<button style="height: 52px; border-radius: 12px; border: 0; background: #1F5FAE; color: #fff; font: 600 16px 'IBM Plex Sans', sans-serif; cursor: pointer">Sign in</button>
+<div style="display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px" class="muted"><svg class="ic ic-s" style="color: #4A515C; margin-top: 1px"><use href="#i-shield"></use></svg><span>Only licensed operators the station owner has added can transmit. Every transmission is logged with who sent it.</span></div>
+<div style="flex: 1"></div>
+<a href="WebBrowser.dc.html" style="align-self: center; font-size: 14px; color: #1F5FAE; padding: 12px">Continue as guest (view only)</a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

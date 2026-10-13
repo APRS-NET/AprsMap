@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprsMap web on a phone: filters</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.muted{color:#5A6270}
+.chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;font:500 13.5px 'IBM Plex Sans',sans-serif;border:1px solid #DCE0E6;background:#fff;color:#16191D;white-space:nowrap;cursor:pointer}
+.chip.on{background:#E6EEF8;border-color:#9DB9DD;color:#174A88}
+.chip .n{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5A6270}
+.chip.on .n{color:#174A88}
+h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#4A515C}
+.sw{width:40px;height:24px;border-radius:12px;background:#C5CBD3;position:relative;flex:none}
+.sw::after{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff}
+.sw.on{background:#1F5FAE}.sw.on::after{left:19px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #E8EDE4; font-family: 'IBM Plex Sans', sans-serif; color: #16191D; font-size: 14px">
+<svg aria-hidden="true" style="display: none">
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+</svg>
+<svg aria-hidden="true" viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%">
+<rect width="390" height="844" fill="#E8EDE4"></rect>
+<path d="M-10 230C80 200 160 280 240 260S340 200 400 220" stroke="#C3D8EA" stroke-width="18" fill="none"></path>
+<g stroke="#FFFFFF" stroke-width="4"><path d="M0 110H390M0 170H390M60 0V844M150 0V844M240 0V844M330 0V844"></path></g>
+</svg>
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(22,25,29,.35)"></div>
+<section role="dialog" aria-modal="true" aria-labelledby="ft" style="position: absolute; left: 0; right: 0; bottom: 0; height: 690px; background: #fff; border-radius: 18px 18px 0 0; display: flex; flex-direction: column">
+<div aria-hidden="true" style="width: 40px; height: 4px; border-radius: 2px; background: #C5CBD3; margin: 8px auto 0"></div>
+<div style="display: flex; align-items: center; padding: 8px 8px 8px 16px"><h2 id="ft" style="margin: 0; font-size: 18px; flex: 1">Filters</h2><button style="height: 44px; padding: 0 12px; border: 0; background: none; color: #1F5FAE; font: 500 14px 'IBM Plex Sans', sans-serif; cursor: pointer">Reset</button><button aria-label="Close filters" style="width: 44px; height: 44px; border: 0; background: none; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg class="ic"><use href="#i-x"></use></svg></button></div>
+<div style="flex: 1; padding: 4px 16px 0; display: flex; flex-direction: column; gap: 18px; overflow: hidden">
+<div><h3>Heard via</h3><div style="display: flex; flex-wrap: wrap; gap: 8px"><button class="chip on">RF + IS <span class="n">82</span></button><button class="chip">RF only <span class="n">31</span></button><button class="chip">IS only <span class="n">51</span></button></div></div>
+<div><h3>Age</h3><div style="display: flex; flex-wrap: wrap; gap: 8px"><button class="chip">30 min</button><button class="chip">1 h</button><button class="chip on">2 h</button><button class="chip">24 h</button></div></div>
+<div><h3>Kinds</h3><div style="display: flex; flex-wrap: wrap; gap: 8px"><button class="chip on">Moving <span class="n">14</span></button><button class="chip on">Fixed <span class="n">31</span></button><button class="chip on">Weather <span class="n">9</span></button><button class="chip on">Digis <span class="n">6</span></button><button class="chip">Objects <span class="n">11</span></button></div></div>
+<div><h3>Tags heard</h3><div style="display: flex; flex-wrap: wrap; gap: 8px"><button class="chip mono">#BikeTour <span class="n">7</span></button><button class="chip mono">!SAR! <span class="n">3</span></button></div></div>
+<div style="padding: 12px; border-radius: 12px; background: #F4F5F7; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 12px"><div style="flex: 1"><strong style="font-size: 14px">Fetch around the map view</strong><div class="muted" style="font-size: 12.5px">Changes the gateway’s server filter</div></div><span class="sw on" aria-hidden="true"></span></div>
+<div class="muted" style="font-size: 12px">Operator only. Guests change what they see, not what the gateway fetches.</div>
+</div>
+</div>
+<div style="padding: 12px 16px 16px; border-top: 1px solid #E6E9EE"><button style="width: 100%; height: 48px; border-radius: 12px; border: 0; background: #1F5FAE; color: #fff; font: 600 15px 'IBM Plex Sans', sans-serif; cursor: pointer">Show 64 stations</button></div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

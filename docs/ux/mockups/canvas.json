@@ -1,0 +1,46 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-13T16:30:00Z" },
+  "title": "AprsMap UI Mockups",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 900, "title": "Desktop · Main map", "expand": "fill" },
+    "DesktopTrack.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 900, "title": "Desktop · Moving station + track history", "expand": "fill" },
+    "DesktopHistory.dc.html": { "x": 3040, "y": 0, "w": 1440, "h": 900, "title": "Desktop · Station history", "expand": "fill" },
+    "DesktopMessages.dc.html": { "x": 0, "y": 1020, "w": 1440, "h": 900, "title": "Desktop · Messaging", "expand": "fill" },
+    "DesktopFilters.dc.html": { "x": 1520, "y": 1020, "w": 1440, "h": 900, "title": "Desktop · Filters (server + view)", "expand": "fill" },
+    "DesktopBeacon.dc.html": { "x": 3040, "y": 1020, "w": 1440, "h": 900, "title": "Desktop · Beaconing setup", "expand": "fill" },
+    "DesktopPorts.dc.html": { "x": 0, "y": 2040, "w": 1440, "h": 900, "title": "Desktop · Connections", "expand": "fill" },
+    "DesktopFirstRun.dc.html": { "x": 1520, "y": 2040, "w": 1440, "h": 900, "title": "Desktop · First run", "expand": "fill" },
+    "DesktopObject.dc.html": { "x": 3040, "y": 2040, "w": 1440, "h": 900, "title": "Desktop · Create object", "expand": "fill" },
+    "WebBrowser.dc.html": { "x": 0, "y": 3600, "w": 1440, "h": 960, "title": "Web · Browser via gateway", "expand": "fill" },
+    "PhoneMap.dc.html": { "x": 1520, "y": 3600, "w": 390, "h": 844, "title": "Web · Phone map" },
+    "PhoneTrack.dc.html": { "x": 1990, "y": 3600, "w": 390, "h": 844, "title": "Web · Phone station sheet" },
+    "PhoneMessages.dc.html": { "x": 2460, "y": 3600, "w": 390, "h": 844, "title": "Web · Phone chat" },
+    "PhoneFilters.dc.html": { "x": 2930, "y": 3600, "w": 390, "h": 844, "title": "Web · Phone filters" },
+    "PhoneSignIn.dc.html": { "x": 3400, "y": 3600, "w": 390, "h": 844, "title": "Web · Operator sign-in" }
+  },
+  "order": [
+    "Main.dc.html",
+    "DesktopTrack.dc.html",
+    "DesktopHistory.dc.html",
+    "DesktopMessages.dc.html",
+    "DesktopFilters.dc.html",
+    "DesktopBeacon.dc.html",
+    "DesktopPorts.dc.html",
+    "DesktopFirstRun.dc.html",
+    "DesktopObject.dc.html",
+    "WebBrowser.dc.html",
+    "PhoneMap.dc.html",
+    "PhoneTrack.dc.html",
+    "PhoneMessages.dc.html",
+    "PhoneFilters.dc.html",
+    "PhoneSignIn.dc.html"
+  ],
+  "notes": {
+    "desk": { "x": 0, "y": -300, "text": "Standalone desktop app (Windows · Linux · macOS)", "kind": "title1", "maxW": 4480 },
+    "web": { "x": 0, "y": 3300, "text": "Web app (same UI, served by the gateway)", "kind": "title1", "maxW": 3790 }
+  },
+  "designSystems": []
+}

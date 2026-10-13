@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprsMap web on a phone: station sheet with track</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-s{width:16px;height:16px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.muted{color:#5A6270}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 12px;border-radius:10px;border:1px solid #DCE0E6;background:#fff;color:#16191D;font:500 14px 'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.btn-primary{background:#1F5FAE;border-color:#1F5FAE;color:#fff}
+.btn-on{background:#E6EEF8;border-color:#9DB9DD;color:#174A88}
+.stat{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid #E6E9EE;border-radius:10px}
+.stat b{font-size:15px;font-weight:600}
+.stat span{font-size:11.5px;color:#5A6270}
+.seg{display:flex;border:1px solid #DCE0E6;border-radius:8px;overflow:hidden;background:#fff}
+.seg button{flex:1;height:34px;border:0;background:#fff;font:500 13px 'IBM Plex Sans',sans-serif;color:#3B4350;cursor:pointer}
+.seg button+button{border-left:1px solid #DCE0E6}
+.seg button.on{background:#1F5FAE;color:#fff}
+.r{display:grid;grid-template-columns:70px 54px 44px 1fr;gap:8px;padding:8px 0;border-top:1px solid #F0F2F5;font-size:12.5px}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #E8EDE4; font-family: 'IBM Plex Sans', sans-serif; color: #16191D; font-size: 14px">
+<svg aria-hidden="true" style="display: none">
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M4 15l1.6-4.8A2 2 0 0 1 7.5 8.8h9a2 2 0 0 1 1.9 1.4L20 15v3.5H4zM4 15h16M7 18.5V20M17 18.5V20"></path></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"></path></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><path d="M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3"></path></symbol>
+<symbol id="i-history" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4M12 8v4l3 2"></path></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"></path></symbol>
+</svg>
+<svg aria-hidden="true" viewBox="0 0 390 360" preserveAspectRatio="xMidYMid slice" style="position: absolute; left: 0; top: 0; width: 390px; height: 360px">
+<rect width="390" height="360" fill="#E8EDE4"></rect>
+<path d="M-10 170C80 150 160 210 240 196S340 150 400 160" stroke="#C3D8EA" stroke-width="16" fill="none"></path>
+<g stroke="#FFFFFF" stroke-width="4"><path d="M0 80H390M0 260H390M70 0V360M170 0V360M270 0V360"></path></g>
+<path d="M40 340C70 300 110 280 150 250S220 200 250 160 300 110 320 80" stroke="#1F5FAE" stroke-width="4" fill="none" stroke-linecap="round"></path>
+<path d="M320 80 L336 54" stroke="#1F5FAE" stroke-width="3" stroke-dasharray="5 6"></path>
+<g fill="#fff" stroke="#1F5FAE" stroke-width="2.5"><circle cx="40" cy="340" r="4.5"></circle><circle cx="80" cy="296" r="4.5"></circle><circle cx="118" cy="274" r="4.5"></circle><circle cx="150" cy="250" r="4.5"></circle><circle cx="190" cy="222" r="4.5"></circle><circle cx="226" cy="190" r="4.5"></circle><circle cx="250" cy="160" r="4.5"></circle><circle cx="282" cy="124" r="4.5"></circle></g>
+<circle cx="320" cy="80" r="15" fill="#fff" stroke="#1F5FAE" stroke-width="3"></circle>
+</svg>
+<span style="position: absolute; left: 309px; top: 69px; color: #1F5FAE"><svg class="ic ic-s" style="width: 22px; height: 22px"><use href="#i-car"></use></svg></span>
+<button aria-label="Back to map" style="position: absolute; left: 12px; top: 12px; width: 44px; height: 44px; border-radius: 12px; border: 1px solid #DCE0E6; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(20,25,30,.15); cursor: pointer"><svg class="ic"><use href="#i-back"></use></svg></button>
+
+<section aria-label="Station KD0AAA-9" style="position: absolute; left: 0; right: 0; top: 300px; bottom: 0; background: #fff; border-radius: 18px 18px 0 0; box-shadow: 0 -4px 16px rgba(20,25,30,.14); padding: 8px 16px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px">
+<div aria-hidden="true" style="width: 40px; height: 4px; border-radius: 2px; background: #C5CBD3; margin: 0 auto"></div>
+<div style="display: flex; gap: 12px; align-items: center">
+<span style="width: 42px; height: 42px; border-radius: 50%; border: 3px solid #1F5FAE; color: #1F5FAE; display: flex; align-items: center; justify-content: center; box-sizing: border-box"><svg class="ic"><use href="#i-car"></use></svg></span>
+<div style="flex: 1; min-width: 0"><h2 class="mono" style="margin: 0; font-size: 18px">KD0AAA-9</h2><div class="muted" style="font-size: 12.5px">Kenwood TM-D710 · En route · 9 s ago</div></div>
+<button aria-label="More actions" style="width: 44px; height: 44px; border: 0; background: none; cursor: pointer"><svg class="ic"><use href="#i-more"></use></svg></button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<button class="btn btn-primary"><svg class="ic ic-s"><use href="#i-chat"></use></svg>Message</button>
+<button class="btn btn-on"><svg class="ic ic-s"><use href="#i-lock"></use></svg>Following</button>
+<button class="btn"><svg class="ic ic-s"><use href="#i-history"></use></svg>History</button>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<div class="stat"><span>Speed</span><b>42 mph</b></div>
+<div class="stat"><span>Course</span><b>318° NW</b></div>
+<div class="stat"><span>From me</span><b>6.8 km</b></div>
+</div>
+<div class="seg" role="group" aria-label="Track window"><button>30 m</button><button class="on">1 h</button><button>6 h</button><button>24 h</button></div>
+<div>
+<div style="display: flex; justify-content: space-between; font-size: 12.5px; padding-bottom: 4px"><strong>14 reports · 31.4 km</strong><span class="muted">RF direct for the last 4</span></div>
+<div class="r"><span class="mono">16:31:07</span><span>42 mph</span><span>318°</span><span class="mono muted">RF direct</span></div>
+<div class="r"><span class="mono">16:29:52</span><span>45 mph</span><span>322°</span><span class="mono muted">RF direct</span></div>
+<div class="r"><span class="mono">16:27:30</span><span>51 mph</span><span>311°</span><span class="mono muted">K0AAC-10*</span></div>
+<div class="r"><span class="mono">16:12:40</span><span>38 mph</span><span>304°</span><span class="mono muted">K0AAC-10*</span></div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

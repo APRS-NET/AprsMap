@@ -1,7 +1,7 @@
 # Reference analysis
 
 What APRSIS32 does and how a user works with it, written in our own words from **allowed sources only** (see
-[clean-room.md](../clean-room.md)). These files feed [scope.md](../scope.md), [ux.md](../ux.md) and the feature specs.
+[clean-room.md](../clean-room.md)). These files feed [scope.md](../scope.md), [ux](../ux/README.md) and the feature specs.
 They describe *function*, never implementation.
 
 | File | Contents |

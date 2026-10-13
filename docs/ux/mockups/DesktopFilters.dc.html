@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprsMap desktop: filter settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F5F7}
+a{color:#1F5FAE}a:hover{color:#174A88}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-s{width:16px;height:16px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;border:1px solid #DCE0E6;background:#fff;color:#16191D;font:500 14px 'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.btn-primary{background:#1F5FAE;border-color:#1F5FAE;color:#fff}
+.icon-btn{width:36px;height:36px;padding:0;justify-content:center}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:500;border:1px solid #DCE0E6;background:#fff;color:#16191D;white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;font:500 13px 'IBM Plex Sans',sans-serif;border:1px solid #DCE0E6;background:#fff;color:#16191D;cursor:pointer}
+.chip.on{background:#E6EEF8;border-color:#9DB9DD;color:#174A88}
+.chip .n{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5A6270}
+.chip.on .n{color:#174A88}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.panel{background:#fff;border:1px solid #DCE0E6;border-radius:12px}
+.muted{color:#5A6270}
+.snav a{display:flex;align-items:center;height:36px;padding:0 12px;border-radius:8px;color:#16191D;text-decoration:none;font-size:14px}
+.snav a.on{background:#E6EEF8;color:#174A88;font-weight:600}
+.toggle{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #F0F2F5}
+.sw{width:36px;height:20px;border-radius:10px;background:#C5CBD3;position:relative;flex:none;margin-top:2px}
+.sw::after{content:'';position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.sw.on{background:#1F5FAE}.sw.on::after{left:18px}
+.part{display:grid;grid-template-columns:130px minmax(0,1fr) 36px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #F0F2F5}
+.field{height:34px;box-sizing:border-box;padding:0 10px;border:1px solid #DCE0E6;border-radius:8px;font:14px 'IBM Plex Sans',sans-serif;color:#16191D;background:#fff;width:100%}
+.sel{height:34px;box-sizing:border-box;padding:0 8px;border:1px solid #DCE0E6;border-radius:8px;font:500 13px 'IBM Plex Sans',sans-serif;background:#fff;color:#16191D;width:100%}
+h3.sub{margin:16px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#4A515C}
+</style>
+</helmet>
+<div style="min-height: 900px; display: flex; flex-direction: column; background: #F4F5F7; font-family: 'IBM Plex Sans', sans-serif; color: #16191D; font-size: 14px">
+<svg aria-hidden="true" style="display: none">
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"></path></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><path d="M8 8h11v11H8zM5 16V5h11"></path></symbol>
+<symbol id="i-save" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6"></path></symbol>
+</svg>
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 16px; background: #FFFFFF; border-bottom: 1px solid #DCE0E6">
+<button class="btn" style="border-color: transparent"><svg class="ic ic-s"><use href="#i-back"></use></svg>Back to map</button>
+<h1 style="margin: 0; font-size: 17px">Settings</h1>
+<div style="flex: 1 1 260px; display: flex; justify-content: center"><label style="position: relative; display: flex; align-items: center; width: 100%; max-width: 420px"><span class="sr">Search settings</span><svg class="ic ic-s muted" style="position: absolute; left: 12px"><use href="#i-search"></use></svg><input type="search" value="filter" style="width: 100%; height: 38px; box-sizing: border-box; padding: 0 12px 0 36px; border: 1px solid #DCE0E6; border-radius: 10px; background: #F4F5F7; font: 14px 'IBM Plex Sans', sans-serif"></label></div>
+<span class="pill"><span class="dot" style="background: #1E7A4C"></span>Changes apply live</span>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap; gap: 20px; padding: 20px 24px; align-items: flex-start">
+<nav aria-label="Settings sections" class="snav panel" style="flex: 0 1 220px; padding: 8px; display: flex; flex-direction: column; gap: 2px">
+<a href="#">Station</a><a href="#">Beaconing</a><a href="#">Messaging</a><a href="#">Connections</a><a href="#" class="on" aria-current="page">Filters</a><a href="#">Map &amp; tiles</a><a href="#">Display</a><a href="#">Objects &amp; overlays</a><a href="#">Weather &amp; NWS</a><a href="#">Alerts &amp; sounds</a><a href="#">Advanced</a><a href="#">Data</a><a href="#">About</a>
+</nav>
+
+<section class="panel" aria-labelledby="srv" style="flex: 999 1 480px; min-width: 0; padding: 20px">
+<h2 id="srv" style="margin: 0; font-size: 17px">What APRS-IS sends</h2>
+<p class="muted" style="margin: 4px 0 4px; font-size: 13px">The server filter decides which packets reach this station. Automatic parts follow what you are doing; add your own below.</p>
+
+<h3 class="sub">Automatic</h3>
+<div class="toggle"><span class="sw on" aria-hidden="true"></span><div style="flex: 1"><label style="font-weight: 600">Follow the map view</label><div class="muted" style="font-size: 13px">Range filter around the map centre, sized to what is on screen. Updates as you pan and zoom.</div></div></div>
+<div class="toggle"><span class="sw on" aria-hidden="true"></span><div style="flex: 1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><div style="flex: 1 1 220px"><label for="rng" style="font-weight: 600">Always include around me</label><div class="muted" style="font-size: 13px">Even when the map is elsewhere.</div></div><div style="display: flex; align-items: center; gap: 6px"><input id="rng" class="field mono" value="40" style="width: 70px; text-align: right"><span class="muted">km</span></div></div></div>
+<div class="toggle"><span class="sw on" aria-hidden="true"></span><div style="flex: 1"><label style="font-weight: 600">Include followed, pinned and buddy stations</label><div class="muted" style="font-size: 13px">Wherever they are: KD0AAA-9, N0AAF-*</div></div></div>
+<div class="toggle"><span class="sw" aria-hidden="true"></span><div style="flex: 1"><label style="font-weight: 600">Include messages to anyone nearby</label><div class="muted" style="font-size: 13px">Useful when running as an IGate.</div></div></div>
+
+<h3 class="sub">Your filter parts</h3>
+<div class="part"><select class="sel" aria-label="Part type"><option>Buddy list</option></select><input class="field mono" aria-label="Buddy callsigns" value="KD0AAA-9  N0AAF-*  W0AAB-13"><button class="btn icon-btn" aria-label="Remove part"><svg class="ic ic-s"><use href="#i-x"></use></svg></button></div>
+<div class="part"><select class="sel" aria-label="Part type"><option>Area box</option></select><div style="display: flex; gap: 6px; flex-wrap: wrap"><input class="field mono" aria-label="North" value="40.90 N" style="flex: 1 1 80px"><input class="field mono" aria-label="West" value="105.90 W" style="flex: 1 1 80px"><input class="field mono" aria-label="South" value="39.40 N" style="flex: 1 1 80px"><input class="field mono" aria-label="East" value="104.40 W" style="flex: 1 1 80px"></div><button class="btn icon-btn" aria-label="Remove part"><svg class="ic ic-s"><use href="#i-x"></use></svg></button></div>
+<div class="part" style="background: #FBF7F2"><select class="sel" aria-label="Part type"><option>Exclude prefix</option></select><input class="field mono" aria-label="Prefixes to exclude" value="CW  DW  EW"><button class="btn icon-btn" aria-label="Remove part"><svg class="ic ic-s"><use href="#i-x"></use></svg></button></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; padding-top: 12px">
+<button class="btn"><svg class="ic ic-s"><use href="#i-plus"></use></svg>Add part</button>
+<span class="muted" style="font-size: 12.5px; align-self: center">Range · Friend range · Area · Prefix · Buddy · Object · Type · Symbol · Digipeater · Entry · Group · q-construct, each can be excluded</span>
+</div>
+
+<div style="margin-top: 18px; padding: 14px; border-radius: 10px; background: #F4F5F7; border: 1px solid #E6E9EE; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap"><strong style="font-size: 13px">Filter sent to the server</strong><span style="display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: #1E7A4C"><svg class="ic ic-s"><use href="#i-check"></use></svg>Accepted by T2EDGE 4 s ago · about 38 packets/min</span></div>
+<code class="mono" style="font-size: 12.5px; line-height: 1.6; word-break: break-all">r/40.016/-105.270/62 r/40.103/-105.188/40 b/KD0AAA-9/N0AAF-*/W0AAB-13 a/40.90/-105.90/39.40/-104.40 -p/CW/DW/EW</code>
+<div style="display: flex; gap: 8px"><button class="btn" style="height: 30px; font-size: 13px"><svg class="ic ic-s"><use href="#i-copy"></use></svg>Copy</button><button class="btn" style="height: 30px; font-size: 13px">Edit as text</button></div>
+</div>
+</section>
+
+<section class="panel" aria-labelledby="vw" style="flex: 1 1 380px; min-width: 0; padding: 20px">
+<h2 id="vw" style="margin: 0; font-size: 17px">What the map shows</h2>
+<p class="muted" style="margin: 4px 0 0; font-size: 13px">View filters hide stations locally. The station list and packet list use the same view.</p>
+
+<h3 class="sub">Heard via</h3>
+<div style="display: flex; flex-wrap: wrap; gap: 8px"><button class="chip on">RF + IS <span class="n">82</span></button><button class="chip">RF only <span class="n">31</span></button><button class="chip">RF direct <span class="n">12</span></button><button class="chip">IS only <span class="n">51</span></button></div>
+
+<h3 class="sub">Age</h3>
+<div style="display: flex; flex-wrap: wrap; gap: 8px"><button class="chip">30 min</button><button class="chip">1 h</button><button class="chip on">2 h</button><button class="chip">6 h</button><button class="chip">24 h</button></div>
+
+<h3 class="sub">Kinds</h3>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button class="chip on">Moving <span class="n">14</span></button><button class="chip on">Fixed <span class="n">31</span></button><button class="chip on">Weather <span class="n">9</span></button><button class="chip on">Digipeaters <span class="n">6</span></button><button class="chip on">IGates <span class="n">4</span></button><button class="chip">Objects <span class="n">11</span></button><button class="chip on">Items <span class="n">2</span></button><button class="chip on">Telemetry <span class="n">3</span></button>
+</div>
+
+<h3 class="sub">Only show</h3>
+<div style="display: flex; flex-wrap: wrap; gap: 8px"><button class="chip">Message-capable <span class="n">31</span></button><button class="chip">Buddies <span class="n">3</span></button><button class="chip">Nicknamed <span class="n">2</span></button><button class="chip">Has problems <span class="n">5</span></button></div>
+
+<h3 class="sub">Tags heard</h3>
+<div style="display: flex; flex-wrap: wrap; gap: 8px"><button class="chip mono">!SAR! <span class="n">3</span></button><button class="chip mono">#BikeTour <span class="n">7</span></button><button class="chip mono">#ARES <span class="n">2</span></button></div>
+
+<h3 class="sub">Device and Mic-E status</h3>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><select class="sel" aria-label="Device family" style="flex: 1 1 140px"><option>All devices (17 kinds)</option></select><select class="sel" aria-label="Mic-E status" style="flex: 1 1 140px"><option>All Mic-E statuses</option></select></div>
+
+<div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #E6E9EE; display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<strong style="font-size: 13px; flex: 1 1 100%">Presets</strong>
+<button class="chip on">Everyday</button><button class="chip">Bike tour support</button><button class="chip">RF health check</button>
+<div style="flex: 1"></div>
+<button class="btn" style="height: 32px"><svg class="ic ic-s"><use href="#i-save"></use></svg>Save as preset</button>
+</div>
+</section>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprsMap web: browser via gateway</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#D9DDE3}
+a{color:#1F5FAE}a:hover{color:#174A88}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-s{width:16px;height:16px}
+.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:8px;border:1px solid #DCE0E6;background:#fff;color:#16191D;font:500 14px 'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
+.btn-primary{background:#1F5FAE;border-color:#1F5FAE;color:#fff}
+.icon-btn{width:40px;height:40px;padding:0;justify-content:center}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:500;border:1px solid #DCE0E6;background:#fff;color:#16191D;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.panel{background:#fff;border:1px solid #DCE0E6;border-radius:12px}
+.rail-btn{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;padding:10px 0;border:0;background:none;border-radius:10px;color:#4A515C;font:500 11px 'IBM Plex Sans',sans-serif;cursor:pointer;position:relative}
+.rail-btn.on{background:#E6EEF8;color:#1F5FAE}
+.rail-btn[disabled]{color:#9AA1AB;cursor:not-allowed}
+.muted{color:#5A6270}
+.stn{position:absolute;display:flex;align-items:center;gap:4px;transform:translate(-14px,-14px)}
+.sym{width:28px;height:28px;box-sizing:border-box;border-radius:50%;background:#fff;border:2px solid #1F5FAE;display:flex;align-items:center;justify-content:center;color:#1F5FAE;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.sym.wx{border-color:#0F766E;color:#0F766E}
+.sym.digi{border-color:#6D28D9;color:#6D28D9}
+.sym.gw{border-color:#C2410C;color:#C2410C}
+.lbl{font:600 11px 'IBM Plex Mono',monospace;background:rgba(255,255,255,.94);padding:1px 5px;border-radius:4px;color:#16191D;white-space:nowrap}
+.mapctl{display:flex;flex-direction:column;background:#fff;border:1px solid #DCE0E6;border-radius:10px;box-shadow:0 2px 8px rgba(20,25,30,.12);overflow:hidden}
+.mapctl button{width:40px;height:40px;border:0;background:#fff;color:#16191D;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mapctl button+button{border-top:1px solid #E6E9EE}
+.st-item{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #F0F2F5}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:5px;font:600 11px 'IBM Plex Sans',sans-serif;background:#EEF1F5;color:#3B4350}
+</style>
+</helmet>
+<div style="min-height: 960px; padding: 24px; box-sizing: border-box; background: #D9DDE3; font-family: 'IBM Plex Sans', sans-serif; color: #16191D; font-size: 14px">
+<svg aria-hidden="true" style="display: none">
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"></path></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"></path></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"></path></symbol>
+<symbol id="i-term" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM7.5 9.5l3 2.5-3 2.5M12.5 15h4"></path></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"></path><circle cx="12" cy="10" r="2.3"></circle></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z"></path></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2.5v3M12 18.5v3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M2.5 12h3M18.5 12h3M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"></path></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><path d="M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3"></path></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="2.8"></circle></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+<symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"></circle><circle cx="12" cy="12" r="2"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5zM2 13l10 5 10-5"></path></symbol>
+<symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 5h16l-6 8v5l-4 2v-7z"></path></symbol>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M4 15l1.6-4.8A2 2 0 0 1 7.5 8.8h9a2 2 0 0 1 1.9 1.4L20 15v3.5H4zM4 15h16M7 18.5V20M17 18.5V20"></path></symbol>
+<symbol id="i-house" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9H4zM10 20v-5h4v5"></path></symbol>
+<symbol id="i-tower" viewBox="0 0 24 24"><path d="M12 9v12M8.5 21 12 9l3.5 12M8 6.5a5.5 5.5 0 0 1 8 0M5.5 4a9 9 0 0 1 13 0"></path></symbol>
+<symbol id="i-server" viewBox="0 0 24 24"><path d="M4 4h16v6H4zM4 14h16v6H4zM8 7h.01M8 17h.01"></path></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"></circle><path d="M3 20a6 6 0 0 1 12 0M16 4.5a3.2 3.2 0 0 1 0 6.4M17.5 14a6 6 0 0 1 3.5 6"></path></symbol>
+<symbol id="i-code" viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"></path></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></symbol>
+<symbol id="i-fwd" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"></path></symbol>
+</svg>
+<div style="max-width: 1392px; margin: 0 auto; border-radius: 12px; overflow: hidden; border: 1px solid #B9C0C9; box-shadow: 0 16px 40px rgba(20,25,30,.18); background: #fff">
+<div aria-label="Browser window" style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #ECEEF1; border-bottom: 1px solid #D3D8DE">
+<span aria-hidden="true" style="display: flex; gap: 6px"><span style="width: 11px; height: 11px; border-radius: 50%; background: #C9CDD3"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #C9CDD3"></span><span style="width: 11px; height: 11px; border-radius: 50%; background: #C9CDD3"></span></span>
+<span aria-hidden="true" style="display: flex; gap: 2px; color: #5A6270"><svg class="ic ic-s"><use href="#i-back"></use></svg><svg class="ic ic-s"><use href="#i-fwd"></use></svg><svg class="ic ic-s"><use href="#i-refresh"></use></svg></span>
+<div style="flex: 1; display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 8px; background: #fff; border: 1px solid #D3D8DE; font-size: 13px"><svg class="ic ic-s" style="color: #1E7A4C"><use href="#i-lock"></use></svg><span class="mono">https://aprs.[YOUR-SHACK].example/</span></div>
+</div>
+
+<div style="display: flex; flex-direction: column; min-height: 860px; background: #F4F5F7">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 10px 16px; background: #FFFFFF; border-bottom: 1px solid #DCE0E6">
+<div style="display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px 0 8px; border: 1px solid #DCE0E6; border-radius: 8px">
+<span style="width: 28px; height: 28px; border-radius: 50%; background: #FFF1E6; color: #C2410C; display: flex; align-items: center; justify-content: center"><svg class="ic ic-s"><use href="#i-house"></use></svg></span>
+<span style="display: flex; flex-direction: column; line-height: 1.15"><span class="mono" style="font-weight: 600">N0CALL-10</span><span class="muted" style="font-size: 11.5px">Shack gateway station</span></span>
+</div>
+<span class="pill" style="background: #EEF1F5"><svg class="ic ic-s"><use href="#i-eye"></use></svg>Viewing as guest · read only</span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<span class="pill"><svg class="ic ic-s muted"><use href="#i-server"></use></svg><span class="dot" style="background: #1E7A4C"></span>Gateway live</span>
+<span class="pill"><span class="dot" style="background: #1E7A4C"></span>APRS-IS</span>
+<span class="pill"><span class="dot" style="background: #1E7A4C"></span>RF · IGate</span>
+<span class="pill"><svg class="ic ic-s muted"><use href="#i-users"></use></svg>4 viewers</span>
+</div>
+<div style="flex: 1 1 240px; display: flex; justify-content: center"><label style="position: relative; display: flex; align-items: center; width: 100%; max-width: 400px"><span class="sr">Search</span><svg class="ic ic-s muted" style="position: absolute; left: 12px"><use href="#i-search"></use></svg><input type="search" placeholder="Search stations…" style="width: 100%; height: 38px; box-sizing: border-box; padding: 0 12px 0 36px; border: 1px solid #DCE0E6; border-radius: 10px; background: #F4F5F7; font: 14px 'IBM Plex Sans', sans-serif"></label></div>
+<a href="PhoneSignIn.dc.html" class="btn btn-primary" style="text-decoration: none"><svg class="ic ic-s"><use href="#i-lock"></use></svg>Sign in to transmit</a>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap; min-height: 0">
+<nav aria-label="Main" style="flex: 0 0 80px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 0; background: #FFFFFF; border-right: 1px solid #DCE0E6">
+<button class="rail-btn on" aria-current="page"><svg class="ic"><use href="#i-map"></use></svg>Map</button>
+<button class="rail-btn" disabled title="Sign in to use messaging"><svg class="ic"><use href="#i-chat"></use></svg>Messages</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-list"></use></svg>Stations</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-term"></use></svg>Packets</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-pin"></use></svg>Objects</button>
+<button class="rail-btn"><svg class="ic"><use href="#i-cloud"></use></svg>Weather</button>
+<div style="flex: 1"></div>
+<button class="rail-btn"><svg class="ic"><use href="#i-gear"></use></svg>View options</button>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; position: relative; min-height: 600px; overflow: hidden; background: #E8EDE4">
+<svg aria-hidden="true" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%">
+<rect width="1200" height="760" fill="#E8EDE4"></rect>
+<path d="M60 520h200v150H60zM820 90h170v120H820zM700 560h140v110H700z" fill="#D5E5CD"></path>
+<path d="M-20 310C180 270 320 390 520 352S860 222 1220 282" stroke="#C3D8EA" stroke-width="28" fill="none"></path>
+<g stroke="#FFFFFF" stroke-width="5"><path d="M0 120H1200M0 220H1200M0 440H1200M0 560H1200M0 680H1200M140 0V760M300 0V760M460 0V760M620 0V760M780 0V760M940 0V760M1100 0V760"></path></g>
+<g stroke="#F4D696" stroke-width="8" fill="none"><path d="M0 640C260 600 420 470 600 420S960 360 1200 180M380 0C400 200 560 300 600 420S640 640 660 760"></path></g>
+</svg>
+<div class="stn" style="left: 50%; top: 52%"><span class="sym gw"><svg class="ic ic-s"><use href="#i-house"></use></svg></span><span class="lbl" style="color: #8A3B00">N0CALL-10 · gateway</span></div>
+<div class="stn" style="left: 36%; top: 30%"><span class="sym"><svg class="ic ic-s"><use href="#i-car"></use></svg></span><span class="lbl">KD0AAA-9</span></div>
+<div class="stn" style="left: 63%; top: 38%"><span class="sym wx"><svg class="ic ic-s"><use href="#i-cloud"></use></svg></span><span class="lbl">W0AAB-13</span></div>
+<div class="stn" style="left: 72%; top: 64%"><span class="sym digi"><svg class="ic ic-s"><use href="#i-tower"></use></svg></span><span class="lbl">K0AAC-10</span></div>
+<div class="stn" style="left: 28%; top: 66%"><span class="sym"><svg class="ic ic-s"><use href="#i-house"></use></svg></span><span class="lbl">WA0AAD</span></div>
+<div style="position: absolute; left: 16px; top: 16px; display: flex; gap: 8px; flex-wrap: wrap"><button class="btn" style="box-shadow: 0 2px 8px rgba(20,25,30,.12)"><svg class="ic ic-s"><use href="#i-layers"></use></svg>Layers</button><button class="btn" style="box-shadow: 0 2px 8px rgba(20,25,30,.12)"><svg class="ic ic-s"><use href="#i-filter"></use></svg>Filters</button></div>
+<div style="position: absolute; right: 16px; top: 16px" class="mapctl"><button aria-label="Zoom in"><svg class="ic"><use href="#i-plus"></use></svg></button><button aria-label="Zoom out"><svg class="ic"><use href="#i-minus"></use></svg></button><button aria-label="Show my location (browser)"><svg class="ic"><use href="#i-locate"></use></svg></button></div>
+<span style="position: absolute; right: 12px; bottom: 8px; font-size: 11px; color: #3B4350; background: rgba(255,255,255,.85); padding: 2px 6px; border-radius: 4px">© OpenStreetMap contributors</span>
+</main>
+
+<aside aria-label="Stations" style="flex: 1 1 300px; max-width: 360px; min-width: 0; background: #FFFFFF; border-left: 1px solid #DCE0E6; display: flex; flex-direction: column">
+<div style="padding: 14px 16px; border-bottom: 1px solid #E6E9EE"><h2 style="margin: 0; font-size: 16px">Stations <span class="muted" style="font-size: 13px; font-weight: 400">· 64 heard by this gateway</span></h2></div>
+<div class="st-item"><span class="sym"><svg class="ic ic-s"><use href="#i-car"></use></svg></span><div style="flex: 1"><div class="mono" style="font-weight: 600">KD0AAA-9</div><div class="muted" style="font-size: 12.5px">6.8 km NW · 42 mph · 9 s</div></div><span class="tag">moving</span></div>
+<div class="st-item"><span class="sym wx"><svg class="ic ic-s"><use href="#i-cloud"></use></svg></span><div style="flex: 1"><div class="mono" style="font-weight: 600">W0AAB-13</div><div class="muted" style="font-size: 12.5px">7.4 km NE · 61°F · 12 s</div></div><span class="tag">wx</span></div>
+<div class="st-item"><span class="sym digi"><svg class="ic ic-s"><use href="#i-tower"></use></svg></span><div style="flex: 1"><div class="mono" style="font-weight: 600">K0AAC-10</div><div class="muted" style="font-size: 12.5px">11.2 km SE · digi · 2 m</div></div><span class="tag">digi</span></div>
+<div style="margin: 16px; padding: 14px; border-radius: 10px; background: #F4F5F7; border: 1px solid #E6E9EE; font-size: 13px; display: flex; flex-direction: column; gap: 8px">
+<strong>Guests can look, not transmit</strong>
+<span class="muted">Messaging, beacons and objects need an operator account on this gateway. Your view settings are kept in this browser only.</span>
+</div>
+<div style="flex: 1"></div>
+<footer style="padding: 12px 16px; border-top: 1px solid #E6E9EE; display: flex; flex-wrap: wrap; gap: 12px; font-size: 12.5px" class="muted"><a href="#" style="display: inline-flex; gap: 6px; align-items: center"><svg class="ic ic-s"><use href="#i-code"></use></svg>Source (AGPL-3.0)</a><span>AprsMap gateway [VERSION]</span></footer>
+</aside>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
