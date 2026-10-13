@@ -40,6 +40,10 @@ footer to the squash-merge commit of the first `feat:` PR (or any later commit):
 Release-As: 0.1.0-alpha.1
 ```
 
+The footer only counts on a commit that changes a file release-please considers part of the package: an empty
+commit, or one that only touches `docs/`, `tests/`, `tools/` or `.github/`, is skipped ("Found 0 files" in the
+release job's log).
+
 To start a new milestone later, use the same footer, for example `Release-As: 0.2.0-alpha.1`.
 
 ## APRS.NET

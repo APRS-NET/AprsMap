@@ -105,7 +105,8 @@ NuGet (so each APRS.NET alpha arrives quickly) and weekly for GitHub Actions, th
 
 [release-please](https://github.com/googleapis/release-please) keeps a release PR open on `main`; merging it tags
 `vX.Y.Z`, and the `release` workflow attaches the desktop archives and pushes the container image. Versions come from
-the tag through [MinVer](https://github.com/adamralph/minver). See [docs/versioning.md](docs/versioning.md).
+the tag through [MinVer](https://github.com/adamralph/minver). The series starts at `0.1.0-alpha.1`. See
+[docs/versioning.md](docs/versioning.md).
 
 ## Documentation
 
