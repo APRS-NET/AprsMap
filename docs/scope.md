@@ -1,6 +1,7 @@
 # Scope
 
-The feature inventory for AprsMap, phased. "Reference topic" names the public APRSIS32 documentation topic
+The feature inventory for AprsMap, phased. Derived from the [functional inventory](reference/functional-inventory.md);
+the UI shape is in [ux.md](ux.md). "Reference topic" names the public APRSIS32 documentation topic
 (aprsisce.wikidot.com) that the feature spec will cite. It is a pointer for spec writing, not a requirement to match
 APRSIS32 exactly. "Needs" lists the APRS.NET gaps ([aprsnet/gaps.md](aprsnet/gaps.md)) that block the feature.
 
@@ -20,6 +21,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F0.2 | `IAprsMapService` contracts, in-process and SignalR implementations, round-trip tests | App | — | scoped |
 | F0.3 | Spikes: Mapsui in WASM, SignalR streaming in WASM, symbol atlas, tile cache ([architecture.md](architecture.md#spikes-before-phase-1-each-one-is-a-timeboxed-throwaway)) | App | — | scoped |
 | F0.4 | Settings model and persistence (desktop: JSON in the user's config folder; gateway: server-side store) | App | — | scoped |
+| F0.5 | First-run wizard: callsign → location → server → optional passcode ([ux.md](ux.md#key-flows)) | App | — | scoped |
 
 ## Phase 1: Receive-only APRS-IS map (MVP, desktop + web)
 
@@ -39,6 +41,12 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.12 | Area objects and signposts drawn as shapes | — | App | — | scoped |
 | F1.13 | My location: fixed position (set by map click or coordinates), used for distance and the default filter | Set Location | App | G08 | scoped |
 | F1.14 | Gateway: hosts the engine, browser bundle, anonymous read-only viewing | — | App | — | scoped |
+| F1.15 | Quick toggles: APRS-IS, internet-access master switch (gates tiles too), GPS, beaconing, sound, tile fetching | (Enables menu) | App | — | scoped |
+| F1.16 | Extra map views following one station each (split view; desktop tear-off windows), auto-added to the server filter | Station Info, Automatic Filters | App | G04 | scoped |
+| F1.17 | Dead-reckoned positions for moving stations, with a freshness indicator | (Screen menu) | App | G11 | scoped |
+| F1.18 | Set destination: distance and bearing to a chosen point | Station Info | App | G08 | scoped |
+| F1.19 | Data housekeeping: clear stations, tracks, messages, bulletins, telemetry, saved texts | (Clear menu) | App | — | scoped |
+| F1.20 | Packet and station anomaly flags (duplicate positions, impossible speed, sub-second repeats, invalid) | Scroller | App | G24 | scoped |
 
 ## Phase 2: Transmit via APRS-IS
 
@@ -53,6 +61,8 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F2.7 | Objects and items: create, move, re-beacon with decay, kill; multiline objects | Multiline | App | G01, G11 | scoped |
 | F2.8 | Respond to directed queries (?APRSP, ?APRSS…) | — | App | G19 | scoped |
 | F2.9 | Gateway auth: transmit features require a signed-in operator | — | App | — | scoped |
+| F2.10 | Auto-reply with delay and rate limits | Auto-Reply | App | G10 | scoped |
+| F2.11 | Status reports with saved alternatives | (Configure › Status Report) | App | G01 | scoped |
 
 ## Phase 3: RF, GPS, IGate, digipeater
 
@@ -65,6 +75,9 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F3.5 | Digipeater: WIDEn-N, fill-in, own-call digipeat | Digipeating | App | G15 | scoped |
 | F3.6 | GPS: NMEA from serial or TCP (gpsd), the OS location API on desktop, browser geolocation sent to the gateway | Android GPS | App | G17 | scoped |
 | F3.7 | Frequency objects and radio tune format in comments | Frequencies, Radio Tune Format | App | G01 | scoped |
+| F3.8 | AGWPE over TCP as an RF port | Port Configuration | App | G22 | scoped |
+| F3.9 | CWOP weather feed port (unfiltered; filtered locally) | CWOP | App | G21 | scoped |
+| F3.10 | IS-Server: re-serve our stream to other apps/instances over TCP, with per-type pass-through and direction controls | IS-Server Port | App | G21 | scoped |
 
 ## Phase 4: Enhancements
 
@@ -79,10 +92,14 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F4.7 | Alerts and sounds: messages, proximity, specific callsigns; nicknames | Quick Keys | App | — | scoped |
 | F4.8 | Packaging: Windows installer/MSIX, Linux AppImage/Flatpak, macOS bundle, gateway container image | — | App | — | scoped |
 | F4.9 | Raw weather station input (Peet Bros, Ultimeter) for local weather beacons | Weather Stations | App | G18 | scoped |
+| F4.10 | Direction-finding circles and DF reports | (Screen menu) | App | — | scoped |
+| F4.11 | DX tracking (furthest zero-hop station, alerts) and AltNet monitor/ignore | Configure DX, Configure AltNet | App | G20, G08 | scoped |
+| F4.12 | Overlays: GPX and UI-View POS files, waypoint → object, drive a route to prefetch tiles | Overlays | App | — | scoped |
+| F4.13 | Logging exports: GPX track auto-save, beacon-trigger CSV | (Enables menu) | App | — | scoped |
 
 ## Order of work
 
 1. Phase 0 completely, including spikes; their results may change architecture.md.
 2. Write the Phase 1 feature specs (`docs/features/1xx-*.md`) and get them reviewed before coding.
-3. In parallel, APRS.NET picks up the Phase 1 gaps (G03–G09, G20). Phase 1 needs no encoder, so it can ship before
+3. In parallel, APRS.NET picks up the Phase 1 gaps (G03–G09, G20, G24). Phase 1 needs no encoder, so it can ship before
    any transmit work lands in APRS.NET.

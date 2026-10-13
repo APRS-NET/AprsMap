@@ -1,0 +1,19 @@
+AprsMap is dual-licensed by project. Each project's .csproj states its license
+(PackageLicenseExpression), and each source file carries an SPDX header.
+
+  MIT (LICENSES/MIT.txt)
+    src/AprsMap.Contracts
+    src/AprsMap.Core
+    src/AprsMap.Client.Remote
+    and their tests
+
+  AGPL-3.0-only (LICENSES/AGPL-3.0-only.txt)
+    src/AprsMap.UI
+    src/AprsMap.Desktop
+    src/AprsMap.Browser
+    src/AprsMap.Gateway
+    and their tests
+
+Documentation in docs/ is MIT.
+
+Copyright (c) 2026 Derek Rowland

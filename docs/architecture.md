@@ -45,16 +45,21 @@ engine.
 
 ## Solution layout
 
-| Project | Target | Depends on | Holds |
-| --- | --- | --- | --- |
-| `AprsMap.Contracts` | net10.0 | — | `IAprsMapService`, DTOs (`StationSnapshot`, `TrackPoint`, `ChatMessage`…), change events. Serializable with System.Text.Json source generation. No APRS.NET types leak out. |
-| `AprsMap.Core` | net10.0 | Contracts, APRS.NET | The engine: connection manager, station store, tracks, message center, object manager, beacon scheduler host, settings, the in-process `IAprsMapService`. No UI references. |
-| `AprsMap.Client.Remote` | net10.0 (browser-safe) | Contracts | `IAprsMapService` over SignalR. |
-| `AprsMap.UI` | net10.0 | Contracts, Avalonia, Mapsui | Shared views, view models, map layers, symbol rendering. Depends only on `IAprsMapService`, never on Core. |
-| `AprsMap.Desktop` | net10.0 | UI, Core | Desktop head; composes Core in-process. Disk tile cache, serial/GPS device pickers. |
-| `AprsMap.Browser` | net10.0-browser | UI, Client.Remote | WebAssembly head. |
-| `AprsMap.Gateway` | net10.0 | Core, Contracts | ASP.NET Core host: SignalR hub, auth, serves the Browser bundle, headless operation (IGate/digi without any UI attached). |
+| Project | License | Target | Depends on | Holds |
+| --- | --- | --- | --- | --- |
+| `AprsMap.Contracts` | MIT | net10.0 | — | `IAprsMapService`, DTOs (`StationSnapshot`, `TrackPoint`, `ChatMessage`…), change events. Serializable with System.Text.Json source generation. No APRS.NET types leak out. |
+| `AprsMap.Core` | MIT | net10.0 | Contracts, APRS.NET | The engine: connection manager, station store, tracks, message center, object manager, beacon scheduler host, settings, the in-process `IAprsMapService`. No UI references. |
+| `AprsMap.Client.Remote` | MIT | net10.0 (browser-safe) | Contracts | `IAprsMapService` over SignalR. |
+| `AprsMap.UI` | AGPL-3.0 | net10.0 | Contracts, Avalonia, Mapsui | Shared views, view models, map layers, symbol rendering. Depends only on `IAprsMapService`, never on Core. |
+| `AprsMap.Desktop` | AGPL-3.0 | net10.0 | UI, Core | Desktop head; composes Core in-process. Disk tile cache, serial/GPS device pickers. |
+| `AprsMap.Browser` | AGPL-3.0 | net10.0-browser | UI, Client.Remote | WebAssembly head. |
+| `AprsMap.Gateway` | AGPL-3.0 | net10.0 | Core, Contracts | ASP.NET Core host: SignalR hub, auth, serves the Browser bundle, headless operation (IGate/digi without any UI attached). |
 | `tests/*` | | | Core unit tests (fake `TimeProvider`, recorded packet corpora), contract round-trip tests, headless Avalonia UI tests. |
+
+**Licensing.** The engine side (Contracts, Core, Client.Remote) is MIT, like APRS.NET, so other tools can reuse it.
+The UI side is AGPL-3.0: improvements to the apps, including a hosted gateway, stay open. MIT code never references
+AGPL code. AGPL projects may reference MIT ones, and the Gateway's AGPL network clause is met by a "Source" link in the
+web UI.
 
 The rule that keeps both UIs equal: **`AprsMap.UI` may only reference `AprsMap.Contracts`.** Anything a view needs is a
 method or an event on `IAprsMapService`.

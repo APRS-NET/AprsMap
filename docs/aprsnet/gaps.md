@@ -30,6 +30,9 @@ Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13).
 | G16 | IGate engine | new: AprsNet.IGate | 3 | — |
 | G17 | NMEA sentence parsing and `$` packets | Packets | 3 | — |
 | G18 | Raw weather station data and storm objects | Packets | 4 | — |
+| G21 | APRS-IS server side: client logins, passcode check, filter evaluation | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |
+| G22 | AGWPE TCP transport | new: AprsNet.Agw | 3 | — |
+| G24 | Station track anomaly analysis | Packets (or new AprsNet.Analysis) | 1 | — |
 
 ---
 
@@ -152,8 +155,9 @@ widely documented, and needed for setup UX).
 **Need.** F2.4–F2.6, and IGate message gating (G16).
 
 **Scope.** Transport-agnostic: the engine takes incoming `AprsPacket`s and emits packets to send plus events. Outgoing:
-message ID allocation (per correspondent, persistent across restarts via a caller-supplied store), retry with a decaying
-schedule, stop on ack/rej, timeout to failed, APRS 1.1 reply-ack. Incoming: ack generation, duplicate suppression of
+message ID allocation (per correspondent, persistent across restarts via a caller-supplied store), retry with a configurable decaying
+schedule (the default should avoid resending to APRS-IS inside its 30 s duplicate window, and allow a second round when
+the recipient is heard again), stop on ack/rej, timeout to failed, APRS 1.1 reply-ack. Incoming: ack generation, duplicate suppression of
 retries, rejects for unsupported content. Bulletins: track by ID and sender, replace on update.
 
 **Acceptance.** `FakeTimeProvider` scenarios: ack after 2 retries, reply-ack piggyback, duplicate retries delivered
@@ -255,3 +259,39 @@ count), along with the sender's position once, wrapped as third-party; rate limi
 `\@` objects (type, sustained and peak wind, pressure, radii).
 
 **Acceptance.** Vectors from APRS101 ch. 12 and manufacturer documentation.
+
+## G21: APRS-IS server side: client logins, passcode check, filter evaluation
+
+**Need.** AprsMap F3.10 (re-serve our stream to other apps and instances) and F3.9 (CWOP feeds ignore filters, so we
+filter locally). The gateway could also use filter evaluation to give each browser its own view of one shared stream.
+
+**Scope.** (1) **Filter evaluation**: `AprsIsFilter.Matches(AprsPacket, context)`, which needs G04's typed filter and
+station-position context for `m/`, `f/` and `b/`. Pure and testable. (2) A minimal **server listener**: accept TCP
+clients, parse the `user … pass … vers … filter …` login, verify the passcode (G02), send `# logresp`, apply each
+client's filter to the outgoing stream, accept client-originated packets with the right q-construct (`qAC`/`qAX`
+rules), and send server keepalive comments.
+
+**Spec refs.** aprs-is.net login, q-construct and filter documentation.
+
+**Acceptance.** A filter test per part type against corpus packets; interop: `AprsIsClient` connects to the listener and
+receives a filtered stream.
+
+## G22: AGWPE TCP transport
+
+**Need.** AprsMap F3.8. AGWPE-protocol TCP (default port 8000) is still offered by soundmodem software and Direwolf.
+
+**Scope.** AGW frame header codec, registration, monitoring of UI frames (`U`/`K` frames, raw AX.25 via `k`), sending
+unproto/raw frames, multi-port enumeration (`G`). It feeds G12 `Ax25Frame` so packets join the same pipeline as KISS.
+
+**Acceptance.** Recorded sessions; Direwolf AGW interop smoke test (manual).
+
+## G24: Station track anomaly analysis
+
+**Need.** AprsMap F1.20 and the packet-list anomaly flags; useful to any tracker or map.
+
+**Scope.** Given a station's previous position reports and a new one: duplicate position (same position resent after the
+dupe window), impossible implied speed (configurable; default far above aircraft speed), sub-second repeats, time going
+backwards, and position jumps on ambiguity changes. It returns flags and does not decide what to display. It builds on G05
+and G08.
+
+**Acceptance.** Synthetic tracks plus corpus-derived cases (for example digipeated delayed duplicates).
