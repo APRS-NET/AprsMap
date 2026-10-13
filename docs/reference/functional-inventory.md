@@ -73,7 +73,7 @@ Notes on reading this file:
 | Capability | Scope |
 | --- | --- |
 | Find a station by name and go to it | F1.7 |
-| Centre on the last selected station, or on me | F1.7 |
+| Re-centre the map on whichever station was picked most recently (falls back to my own position) | F1.7 |
 | Lock: keep the map centred on a moving station | F1.7 |
 | Multitrack: extra map windows, each following one station | F1.16 |
 | Set destination: distance and bearing to a chosen point | F1.18 |
@@ -114,7 +114,7 @@ Notes on reading this file:
 
 | Capability | Scope |
 | --- | --- |
-| Chat window per correspondent; compose up to 300 characters, split automatically into 64-character APRS messages | F2.4 |
+| Chat window per correspondent; one compose box takes up to 300 characters and the client sends it as several messages of at most 64 characters | F2.4 |
 | Per chat: request acknowledgement on or off (off for satellite use); routing "best" (chosen from where the station was last heard), RF only, or IS only | F2.4 |
 | Retry schedule: decaying intervals, 7 tries over about 6 minutes, avoiding retries under 30 s to APRS-IS (duplicate filter); a second round restarts when the recipient is heard again; then a "final" state until manually retriggered or an `?APRSM` query arrives | F2.4 (G10) |
 | Pending (unacknowledged) messages list with highlighting | F2.4 |
@@ -181,6 +181,7 @@ Notes on reading this file:
 
 ## Sources
 
+Facts only; no text copied (checked with `tools/overlap-check.py`: no shared run of 8+ words). The wiki is CC BY-SA 3.0.
 All accessed 2026-10-13, aprsisce.wikidot.com: `/start`, `/menu:tree`, `/menus`, `/doc:documentation`,
 `/menu:enables`, `/menu:screen`, `/menu:view`, `/menu:clear`, `/menu:configure`, `/menu:messages`,
 `/menu:configure-general`, `/menu:configure-beacon`, `/en-geniusbeaconing`, `/port-configuration`, `/port-kiss`,

@@ -41,6 +41,32 @@ source).
   what goes on the wire (packet captures of its transmissions are protocol behavior).
 - Other APRS software's **user documentation** for general domain knowledge.
 
+## Documentation licenses: read freely, copy nothing
+
+Reading is never a license issue. Licenses and copyright control *copying*. The sources above have their own terms:
+
+| Source | Terms | Consequence |
+| --- | --- | --- |
+| aprsisce.wikidot.com | **CC BY-SA 3.0** (site footer) | Copied or closely paraphrased text would be a derivative, which must be CC BY-SA with attribution. That is incompatible with our MIT docs, so we copy none |
+| groups.io posts, guides, videos | All rights reserved by each author (no license) | Read and watch only |
+| Protocol specs | Various, published for implementers | Implement freely; quote sparingly with attribution, as APRS.NET already does |
+
+Rules for reference notes (`docs/reference/`) and feature specs:
+
+1. **Facts and functions only**: which features exist, what they do, defaults, numbers, protocol behavior. These are
+   not copyrightable; the author's sentences, examples, tables, page structure and screenshots are.
+2. **Write from understanding, not from the page.** Read, close the page, then write in our own structure (grouped by
+   user goal, not the wiki's page order).
+3. **Quotes**: only a short name where it is needed to identify something (for example a menu name), marked as a quote.
+   Never sentences.
+4. **No images** from any source, including the wiki, in the repo.
+5. **Skip** wiki pages that document the configuration XML (for example "Editing XML Configuration") or that contain
+   code, and don't follow links to the source repository.
+6. **Attribute anyway**: each reference file lists the pages it drew facts from, and notes "facts only, no text
+   copied". Attribution for facts isn't required, but it is honest and costs nothing.
+7. **Check overlap** before committing reference docs: no run of 8 or more consecutive words may match the source
+   text, except protocol tokens, numbers and names (see `tools/overlap-check.py`).
+
 ## Prohibited
 
 - **The APRSISCE source repository in any form**: github.com/APRSFoundation/APRSISCE and any fork or mirror,
