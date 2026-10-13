@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AprsMapLicense>MIT</AprsMapLicense>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/AprsMap.Core/AprsMap.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+</Project>

@@ -3,6 +3,13 @@
 Clean-room reimplementation of APRSIS32's functionality as AprsMap (.NET 10, Avalonia 12, desktop + WASM web via an
 ASP.NET Core gateway). Read `docs/clean-room.md` and `docs/architecture.md` before any work.
 
+## Commands
+
+- Build and test: `dotnet build` and `dotnet test` (solution `AprsMap.slnx`); format: `dotnet csharpier format .`
+- Run: `dotnet run --project src/AprsMap.Desktop` or `src/AprsMap.Gateway`; web app: `docker compose up --build`
+- Conventions mirror APRS.NET (`../APRS.NET`): xUnit v3, test names as PascalCase sentences, TimeProvider for time,
+  BannedSymbols*.txt, central package versions. `AprsMap.UI.Tests` pins xUnit v3 3.x (Avalonia.Headless.XUnit).
+
 ## Hard rules
 
 - **Clean room.** Never decompile or inspect APRSIS32 binaries or config schemas, and never copy its text, icons or

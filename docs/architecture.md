@@ -51,9 +51,10 @@ engine.
 | `AprsMap.Core` | MIT | net10.0 | Contracts, APRS.NET | The engine: connection manager, station store, tracks, message center, object manager, beacon scheduler host, settings, the in-process `IEngineService`. No UI references. |
 | `AprsMap.Client.Remote` | MIT | net10.0 (browser-safe) | Contracts | `IEngineService` over SignalR. |
 | `AprsMap.UI` | AGPL-3.0 | net10.0 | Contracts, Avalonia, Mapsui | Shared views, view models, map layers, symbol rendering. Depends only on `IEngineService`, never on Core. |
-| `AprsMap.Desktop` | AGPL-3.0 | net10.0 | UI, Core | Desktop head; composes Core in-process. Disk tile cache, serial/GPS device pickers. |
+| `AprsMap.Desktop` | AGPL-3.0 | net10.0 | UI, Hosting | Desktop head; composes Core in-process. Disk tile cache, serial/GPS device pickers. |
 | `AprsMap.Browser` | AGPL-3.0 | net10.0-browser | UI, Client.Remote | WebAssembly head. |
-| `AprsMap.Gateway` | AGPL-3.0 | net10.0 | Core, Contracts | ASP.NET Core host: SignalR hub, auth, serves the Browser bundle, headless operation (IGate/digi without any UI attached). |
+| `AprsMap.Gateway` | AGPL-3.0 | net10.0 | Hosting | ASP.NET Core host: SignalR hub, auth, serves the Browser bundle, headless operation (IGate/digi without any UI attached). |
+| `AprsMap.Hosting` | AGPL-3.0 | net10.0 | Core | Host wiring shared by Desktop and Gateway: engine configuration binding and OpenTelemetry (OTLP export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set). |
 | `tests/*` | | | Core unit tests (fake `TimeProvider`, recorded packet corpora), contract round-trip tests, headless Avalonia UI tests. |
 
 **Licensing.** The engine side (Contracts, Core, Client.Remote) is MIT, like APRS.NET, so other tools can reuse it.

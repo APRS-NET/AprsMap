@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AprsMapUsesAvalonia>true</AprsMapUsesAvalonia>
+    <Description>Shared Avalonia views, view models and themes for the desktop and browser apps.</Description>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AprsMap.UI.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The UI sees only the contract, never the engine, so the browser app (over SignalR) and the desktop app
+         (in-process) get exactly the same views. -->
+    <ProjectReference Include="../AprsMap.Contracts/AprsMap.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+</Project>

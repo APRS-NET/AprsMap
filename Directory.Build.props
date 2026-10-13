@@ -1,0 +1,52 @@
+<Project>
+  <!-- Product identity (name, slug, TOCALL, URLs) lives in one file so the product can be renamed. docs/branding.md -->
+  <Import Project="build/Branding.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <!-- Audit transitive packages too. With TreatWarningsAsErrors, a known-vulnerable package fails the build. -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <!-- Deterministic /_/ source paths for shipped code only: test projects keep real paths so failure annotations
+         (GitHubActionsTestLogger) point at files GitHub can link. -->
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' And !$(MSBuildProjectName.EndsWith('Tests'))"
+      >true</ContinuousIntegrationBuild>
+    <!-- Nothing here is a NuGet package; the apps ship as release archives and a container image. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>Derek Rowland</Authors>
+    <Copyright>Copyright (c) Derek Rowland 2026</Copyright>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <!-- MinVer's default pre-release identifiers, matching the alpha releases from release-please. -->
+    <MinVerDefaultPreReleaseIdentifiers>alpha.0</MinVerDefaultPreReleaseIdentifiers>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AprsMapProjectArea>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectDirectory)'))</AprsMapProjectArea>
+    <AprsMapIsShipped>$(AprsMapProjectArea.StartsWith('src'))</AprsMapIsShipped>
+  </PropertyGroup>
+
+  <!-- Every shipped project gets its version from the nearest vX.Y.Z tag. No version lives in the repo. -->
+  <ItemGroup Condition="'$(AprsMapIsShipped)' == 'true'">
+    <PackageReference Include="MinVer" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Banned APIs (RS0030) for shipped code only. Tests and tools may use real time and the console.
+       BannedSymbols.txt: every project. BannedSymbols.Engine.txt: the MIT engine (no UI, no console).
+       BannedSymbols.UI.txt: Avalonia projects (theme tokens instead of literal colours). -->
+  <ItemGroup Condition="'$(AprsMapIsShipped)' == 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" PrivateAssets="all" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" />
+  </ItemGroup>
+</Project>

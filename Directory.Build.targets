@@ -1,0 +1,35 @@
+<Project>
+  <!-- Licence per project (LICENSING.md). A project opts into MIT with <AprsMapLicense>MIT</AprsMapLicense>; everything
+       else is the repository default. -->
+  <PropertyGroup>
+    <AprsMapLicense Condition="'$(AprsMapLicense)' == ''">AGPL-3.0-only</AprsMapLicense>
+    <PackageLicenseExpression>$(AprsMapLicense)</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(AprsMapIsShipped)' == 'true' And '$(AprsMapLicense)' == 'MIT'">
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.Engine.txt" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(AprsMapIsShipped)' == 'true' And '$(AprsMapUsesAvalonia)' == 'true'">
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.UI.txt" />
+  </ItemGroup>
+
+  <!-- Expose a project's licence to other projects. -->
+  <Target Name="AprsMapGetLicense" Returns="$(AprsMapLicense)" />
+
+  <!-- MIT code must never depend on AGPL code, or it would stop being MIT in practice. Fails the build when an MIT
+       project references a project with any other licence. -->
+  <Target
+    Name="AprsMapCheckLicenceBoundary"
+    BeforeTargets="ResolveProjectReferences"
+    Condition="'$(AprsMapLicense)' == 'MIT' And '@(ProjectReference)' != ''"
+  >
+    <MSBuild Projects="@(ProjectReference)" Targets="AprsMapGetLicense" BuildInParallel="true">
+      <Output TaskParameter="TargetOutputs" ItemName="_AprsMapReferenceLicence" />
+    </MSBuild>
+    <Error
+      Condition="'%(_AprsMapReferenceLicence.Identity)' != 'MIT'"
+      Text="$(MSBuildProjectName) is MIT and must not reference %(_AprsMapReferenceLicence.MSBuildSourceProjectFile), which is %(_AprsMapReferenceLicence.Identity). See LICENSING.md."
+    />
+  </Target>
+</Project>

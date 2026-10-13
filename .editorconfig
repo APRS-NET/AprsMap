@@ -1,0 +1,43 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{csproj,props,targets,slnx,json,yml,yaml,axaml,xaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_using_directive_placement = outside_namespace:warning
+dotnet_sort_system_directives_first = true
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+dotnet_style_qualification_for_field = false:warning
+dotnet_naming_rule.private_fields_underscore.severity = suggestion
+dotnet_naming_rule.private_fields_underscore.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore.style = underscore_camel
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel.required_prefix = _
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+
+# Every C# file starts with its project's SPDX licence line (IDE0073, an error with EnforceCodeStyleInBuild and
+# TreatWarningsAsErrors). The repository default is AGPL-3.0-only; the engine projects and their tests are MIT.
+# See LICENSING.md. The IDE quick fix inserts the header.
+dotnet_diagnostic.IDE0073.severity = warning
+file_header_template = SPDX-License-Identifier: AGPL-3.0-only
+
+[{src,tests}/{AprsMap.Contracts,AprsMap.Core,AprsMap.Client.Remote}{,.Tests}/**.cs]
+file_header_template = SPDX-License-Identifier: MIT
+
+# Generated code carries its own header.
+[**/{obj,bin}/**.cs]
+dotnet_diagnostic.IDE0073.severity = none

@@ -1,0 +1,57 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Daily, because APRS.NET publishes a new alpha often and AprsMap should track it closely. Dependabot offers
+  # pre-releases for packages already on a pre-release, so each AprsNet.* alpha arrives as its own grouped PR.
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      aprs-net:
+        patterns: ["AprsNet.*"]
+      avalonia:
+        patterns: ["Avalonia*"]
+      microsoft-extensions:
+        patterns: ["Microsoft.Extensions.*", "Microsoft.AspNetCore.*"]
+      opentelemetry:
+        patterns: ["OpenTelemetry*"]
+      test:
+        patterns: ["xunit*", "Microsoft.NET.Test.Sdk", "coverlet.*", "GitHubActionsTestLogger"]
+    ignore:
+      # AprsMap.UI.Tests pins xUnit v3 3.x via VersionOverride until Avalonia.Headless.XUnit supports 4.x; ignoring
+      # majors keeps that pin while 4.x patches still flow to the other test projects. Revisit with each Avalonia bump.
+      - dependency-name: "xunit.v3.mtp-off"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "xunit.runner.visualstudio"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    # global.json is a floor, not a pin: any 10.0.x SDK >= 10.0.100 may build.
+    # Distro SDKs (e.g. Fedora) lag on the 1xx feature band, so don't raise it.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]

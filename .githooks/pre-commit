@@ -1,0 +1,35 @@
+#!/bin/sh
+# Formats staged C# and MSBuild files with CSharpier before each commit, the same check the CI format job runs.
+# Enable once per clone:  git config core.hooksPath .githooks
+set -eu
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR -- '*.cs' '*.csproj' '*.props' '*.targets')
+[ -n "$staged" ] || exit 0
+
+# A file that also has unstaged edits is only checked: formatting and re-staging it would sweep those edits into the
+# commit.
+format=""
+check=""
+for file in $staged; do
+    if git diff --quiet -- "$file"; then
+        format="$format $file"
+    else
+        check="$check $file"
+    fi
+done
+
+if [ -n "$format" ]; then
+    # shellcheck disable=SC2086 # word splitting is intended: one argument per file
+    dotnet csharpier format $format
+    # shellcheck disable=SC2086
+    git add $format
+fi
+
+if [ -n "$check" ]; then
+    # shellcheck disable=SC2086
+    dotnet csharpier check $check || {
+        echo "pre-commit: these files have unstaged changes too, so they were not formatted:$check" >&2
+        echo "pre-commit: run 'dotnet csharpier format .' and stage the result, then commit again." >&2
+        exit 1
+    }
+fi

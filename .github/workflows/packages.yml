@@ -1,0 +1,66 @@
+name: packages
+
+# Checks NuGet packages for known vulnerabilities and available updates. Runs on code changes and weekly, because new
+# advisories appear without any change here. On pull requests it keeps one comment with the report up to date.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same pull request cancels the older run; runs on main always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write # only to create or update the package report comment
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          dotnet-version: 10.0.x
+      # NuGet's own audit would fail the restore on a vulnerable package (warnings are errors here); this job reports
+      # it instead, then fails below.
+      - run: dotnet restore AprsMap.slnx -p:NuGetAudit=false
+      - name: Package report
+        id: report
+        run: |
+          dotnet list AprsMap.slnx package --vulnerable --include-transitive --format json > vulnerable.json
+          dotnet list AprsMap.slnx package --outdated --format json > outdated.json
+          dotnet run tools/ci/PackageReport.cs -- --vulnerable vulnerable.json --outdated outdated.json --out package-report.md
+          cat package-report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment on the pull request
+        # Fork PRs get a read-only token, so only same-repository PRs are commented on.
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          marker='<!-- aprsmap-package-report -->'
+          id="$(gh api --paginate "repos/$GITHUB_REPOSITORY/issues/$PR/comments" \
+            --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$marker\"))) | .id" | head -n 1)"
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F body=@package-report.md > /dev/null
+            echo "Updated package report comment $id."
+          else
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file package-report.md
+          fi
+      - name: Fail on vulnerable packages
+        if: steps.report.outputs.vulnerable != '0'
+        run: |
+          echo "::error::${{ steps.report.outputs.vulnerable }} vulnerable package advisories. See the package report in the run summary."
+          exit 1

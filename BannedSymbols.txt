@@ -1,0 +1,17 @@
+P:System.DateTime.Now;Use an injected TimeProvider so time can be faked in tests
+P:System.DateTime.UtcNow;Use an injected TimeProvider so time can be faked in tests
+P:System.DateTime.Today;Use an injected TimeProvider so time can be faked in tests
+P:System.DateTimeOffset.Now;Use an injected TimeProvider so time can be faked in tests
+P:System.DateTimeOffset.UtcNow;Use an injected TimeProvider so time can be faked in tests
+M:System.Threading.Tasks.Task.Delay(System.Int32);Pass a TimeProvider: Task.Delay(TimeSpan, TimeProvider, CancellationToken)
+M:System.Threading.Tasks.Task.Delay(System.TimeSpan);Pass a TimeProvider: Task.Delay(TimeSpan, TimeProvider, CancellationToken)
+M:System.Threading.Tasks.Task.Delay(System.Int32,System.Threading.CancellationToken);Pass a TimeProvider: Task.Delay(TimeSpan, TimeProvider, CancellationToken)
+M:System.Threading.Tasks.Task.Delay(System.TimeSpan,System.Threading.CancellationToken);Pass a TimeProvider: Task.Delay(TimeSpan, TimeProvider, CancellationToken)
+M:System.Threading.Thread.Sleep(System.Int32);Blocks a thread; await Task.Delay with a TimeProvider instead
+M:System.Threading.Thread.Sleep(System.TimeSpan);Blocks a thread; await Task.Delay with a TimeProvider instead
+M:System.Threading.Tasks.Task.Wait;Blocking on async code can deadlock; await it
+M:System.Threading.Tasks.Task.Wait(System.Int32);Blocking on async code can deadlock; await it
+M:System.Threading.Tasks.Task.Wait(System.TimeSpan);Blocking on async code can deadlock; await it
+M:System.Threading.Tasks.Task.Wait(System.Threading.CancellationToken);Blocking on async code can deadlock; await it
+M:System.Threading.Tasks.Task.Wait(System.Int32,System.Threading.CancellationToken);Blocking on async code can deadlock; await it
+P:System.Threading.Tasks.Task`1.Result;Blocking on async code can deadlock; await it

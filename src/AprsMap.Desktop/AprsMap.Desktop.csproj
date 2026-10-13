@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AprsMapUsesAvalonia>true</AprsMapUsesAvalonia>
+    <AssemblyName>$(ProductSlug)</AssemblyName>
+    <Description>The standalone desktop app (Windows, Linux, macOS). Runs the engine in-process.</Description>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsMap.UI/AprsMap.UI.csproj" />
+    <ProjectReference Include="../AprsMap.Hosting/AprsMap.Hosting.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

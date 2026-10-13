@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AprsMapLicense>MIT</AprsMapLicense>
+    <Description>IEngineService over SignalR, for UIs that talk to a gateway (the browser app).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsMap.Contracts/AprsMap.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+  </ItemGroup>
+</Project>

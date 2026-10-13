@@ -1,0 +1,125 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same pull request cancels the older run; runs on main always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # MinVer needs tags
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          dotnet-version: 10.0.x
+      - run: dotnet build -c Release
+      - run: dotnet test -c Release --no-build --logger GitHubActions
+
+  coverage:
+    # Coverage on one platform is enough. The gate covers the MIT engine (Contracts, Core, Client.Remote), where the
+    # logic lives; UI and host projects are reported but not gated.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # only to push coverage badges to the badges branch on main
+    concurrency:
+      group: coverage-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # MinVer needs tags
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          dotnet-version: 10.0.x
+      - run: dotnet build -c Release
+      - run: dotnet test -c Release --no-build --logger GitHubActions --collect:"XPlat Code Coverage" --results-directory coverage
+      - name: Coverage report
+        run: |
+          dotnet tool restore
+          dotnet reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:coverage/report \
+            -reporttypes:"MarkdownSummaryGithub;JsonSummary;Badges" \
+            -assemblyfilters:"+AprsMap.Contracts;+AprsMap.Core;+AprsMap.Client.Remote"
+          cat coverage/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Coverage gate
+        env:
+          MIN_LINE: 85 # raise these when coverage improves; do not lower them to get a change through
+          MIN_BRANCH: 80
+        run: |
+          jq -r '.summary | "line \(.linecoverage)%, branch \(.branchcoverage)%"' coverage/report/Summary.json
+          jq -e ".summary.linecoverage >= $MIN_LINE" coverage/report/Summary.json > /dev/null \
+            || { echo "::error::Line coverage is below $MIN_LINE%"; exit 1; }
+          jq -e ".summary.branchcoverage >= $MIN_BRANCH" coverage/report/Summary.json > /dev/null \
+            || { echo "::error::Branch coverage is below $MIN_BRANCH%"; exit 1; }
+      - name: Publish coverage badges
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          # Commit to the orphan badges branch only when a badge changed (the SVGs carry no timestamp).
+          url="https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          dir="$(mktemp -d)"
+          if git ls-remote --exit-code --heads "$url" badges > /dev/null; then
+            git clone --quiet --depth 1 --branch badges "$url" "$dir"
+          else
+            git init --quiet "$dir"
+            git -C "$dir" checkout --quiet --orphan badges
+          fi
+          cp coverage/report/badge_linecoverage.svg coverage/report/badge_branchcoverage.svg "$dir"/
+          cd "$dir"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Coverage badges unchanged."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "Update coverage badges for ${GITHUB_SHA::7}"
+          git push --quiet "$url" HEAD:badges
+
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+      - run: dotnet tool restore
+      - run: dotnet csharpier check .
+
+  container:
+    # Builds the gateway image (including the browser app, which needs the wasm-tools workload) without pushing it,
+    # so a broken Dockerfile shows up on the pull request rather than at release time.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

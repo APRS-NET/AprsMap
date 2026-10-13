@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AprsMapUsesAvalonia>true</AprsMapUsesAvalonia>
+    <Description>The web app: the shared UI compiled to WebAssembly, talking to the gateway over SignalR.</Description>
+    <!-- SkiaSharp and HarfBuzz are native libraries that must be linked into dotnet.wasm, which needs the wasm-tools
+         workload. Only publishing does that (CI and the Dockerfile install the workload), so a plain local build works
+         on any SDK; the output of a plain build does not render. -->
+    <WasmBuildNative Condition="'$(_IsPublishing)' == 'true'">true</WasmBuildNative>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AprsMap.UI/AprsMap.UI.csproj" />
+    <ProjectReference Include="../AprsMap.Client.Remote/AprsMap.Client.Remote.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Browser" />
+  </ItemGroup>
+</Project>

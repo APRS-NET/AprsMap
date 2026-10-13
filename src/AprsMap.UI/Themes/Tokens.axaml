@@ -1,0 +1,52 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- Design tokens: the only place colours live. Views reference these keys with DynamicResource, never literal values,
+     so theme, palette, size and corner options apply live (docs/ux/README.md#appearance-and-accessibility).
+     Quiet palette by intent: muted neutrals, one blue accent, burnt orange reserved for transmitting. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="Color.Ground">#F4F5F7</Color>
+      <Color x:Key="Color.Surface">#FFFFFF</Color>
+      <Color x:Key="Color.Border">#DCE0E6</Color>
+      <Color x:Key="Color.Text">#16191D</Color>
+      <Color x:Key="Color.TextMuted">#5A6270</Color>
+      <Color x:Key="Color.Accent">#1F5FAE</Color>
+      <Color x:Key="Color.AccentSoft">#E6EEF8</Color>
+      <Color x:Key="Color.Transmit">#C2410C</Color>
+      <Color x:Key="Color.Ok">#1E7A4C</Color>
+      <Color x:Key="Color.Warn">#B45309</Color>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="Color.Ground">#15181C</Color>
+      <Color x:Key="Color.Surface">#1D2126</Color>
+      <Color x:Key="Color.Border">#323840</Color>
+      <Color x:Key="Color.Text">#E6E9ED</Color>
+      <Color x:Key="Color.TextMuted">#A3ABB6</Color>
+      <Color x:Key="Color.Accent">#7FA7DA</Color>
+      <Color x:Key="Color.AccentSoft">#24334A</Color>
+      <Color x:Key="Color.Transmit">#E08A5C</Color>
+      <Color x:Key="Color.Ok">#6FBF93</Color>
+      <Color x:Key="Color.Warn">#D9A15B</Color>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <SolidColorBrush x:Key="Brush.Ground" Color="{DynamicResource Color.Ground}" />
+  <SolidColorBrush x:Key="Brush.Surface" Color="{DynamicResource Color.Surface}" />
+  <SolidColorBrush x:Key="Brush.Border" Color="{DynamicResource Color.Border}" />
+  <SolidColorBrush x:Key="Brush.Text" Color="{DynamicResource Color.Text}" />
+  <SolidColorBrush x:Key="Brush.TextMuted" Color="{DynamicResource Color.TextMuted}" />
+  <SolidColorBrush x:Key="Brush.Accent" Color="{DynamicResource Color.Accent}" />
+  <SolidColorBrush x:Key="Brush.AccentSoft" Color="{DynamicResource Color.AccentSoft}" />
+  <SolidColorBrush x:Key="Brush.Transmit" Color="{DynamicResource Color.Transmit}" />
+  <SolidColorBrush x:Key="Brush.Ok" Color="{DynamicResource Color.Ok}" />
+  <SolidColorBrush x:Key="Brush.Warn" Color="{DynamicResource Color.Warn}" />
+
+  <!-- Size and shape tokens. AppearanceService overwrites these at runtime for text size, icon size and corners. -->
+  <x:Double x:Key="Text.Body">14</x:Double>
+  <x:Double x:Key="Text.Small">12.5</x:Double>
+  <x:Double x:Key="Text.Title">17</x:Double>
+  <x:Double x:Key="Icon.Size">20</x:Double>
+  <CornerRadius x:Key="Radius.Control">8</CornerRadius>
+  <CornerRadius x:Key="Radius.Panel">12</CornerRadius>
+  <FontFamily x:Key="Font.Mono">Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace</FontFamily>
+</ResourceDictionary>

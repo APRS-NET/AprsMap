@@ -1,0 +1,59 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="AI-DECLARATION.md" />
+    <File Path="BannedSymbols.txt" />
+    <File Path="BannedSymbols.Engine.txt" />
+    <File Path="BannedSymbols.UI.txt" />
+    <File Path="build/Branding.props" />
+    <File Path="CLAUDE.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Dockerfile" />
+    <File Path="compose.yaml" />
+    <File Path="global.json" />
+    <File Path=".config/dotnet-tools.json" />
+    <File Path=".csharpierrc.yaml" />
+    <File Path=".csharpierignore" />
+    <File Path=".dockerignore" />
+    <File Path=".editorconfig" />
+    <File Path="LICENSE" />
+    <File Path="LICENSING.md" />
+    <File Path="nuget.config" />
+    <File Path="README.md" />
+    <File Path="release-please-config.json" />
+    <File Path=".release-please-manifest.json" />
+  </Folder>
+  <Folder Name="/.github/">
+    <File Path=".github/dependabot.yml" />
+  </Folder>
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/packages.yml" />
+    <File Path=".github/workflows/pr-title.yml" />
+    <File Path=".github/workflows/release.yml" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/architecture.md" />
+    <File Path="docs/branding.md" />
+    <File Path="docs/deployment.md" />
+    <File Path="docs/scope.md" />
+    <File Path="docs/versioning.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/AprsMap.Browser/AprsMap.Browser.csproj" />
+    <Project Path="src/AprsMap.Client.Remote/AprsMap.Client.Remote.csproj" />
+    <Project Path="src/AprsMap.Contracts/AprsMap.Contracts.csproj" />
+    <Project Path="src/AprsMap.Core/AprsMap.Core.csproj" />
+    <Project Path="src/AprsMap.Desktop/AprsMap.Desktop.csproj" />
+    <Project Path="src/AprsMap.Gateway/AprsMap.Gateway.csproj" />
+    <Project Path="src/AprsMap.Hosting/AprsMap.Hosting.csproj" />
+    <Project Path="src/AprsMap.UI/AprsMap.UI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <File Path="tests/Directory.Build.props" />
+    <Project Path="tests/AprsMap.Core.Tests/AprsMap.Core.Tests.csproj" />
+    <Project Path="tests/AprsMap.Gateway.Tests/AprsMap.Gateway.Tests.csproj" />
+    <Project Path="tests/AprsMap.UI.Tests/AprsMap.UI.Tests.csproj" />
+  </Folder>
+</Solution>

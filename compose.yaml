@@ -1,0 +1,16 @@
+# Run the gateway locally:  docker compose up --build   then open http://localhost:8080
+# Settings come from environment variables (Engine__Callsign etc.); see docs/deployment.md.
+services:
+  gateway:
+    build: .
+    image: ghcr.io/aprs-net/aprsmap:local
+    ports:
+      - "8080:8080"
+    environment:
+      Engine__Callsign: N0CALL
+      Engine__Passcode: "-1"
+      Engine__Server: rotate.aprs2.net:14580
+      Engine__Filter: r/40.0/-105.0/50
+      # Uncomment to export logs, metrics and traces to an OpenTelemetry collector:
+      # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    restart: unless-stopped
