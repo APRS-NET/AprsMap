@@ -21,6 +21,7 @@ public class HostingTests
         var engine = provider.GetRequiredService<Engine>();
         Assert.Same(engine, provider.GetRequiredService<IEngineService>());
         Assert.Single(provider.GetServices<IHostedService>());
+        Assert.IsType<NominatimGeocoder>(provider.GetRequiredService<IGeocoder>());
         var store = Assert.IsType<FileSettingsStore>(provider.GetRequiredService<ISettingsStore>());
         Assert.StartsWith(Path.Combine(Path.GetTempPath(), "never-written"), store.FilePath, StringComparison.Ordinal);
     }

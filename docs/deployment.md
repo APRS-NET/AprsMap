@@ -29,11 +29,16 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | First-run server-side filter | `Engine__Filter` | none |
 | Let browsers change settings and switch profiles | `Gateway__AllowSettingsChanges` | `false` |
 | Packets kept for new viewers | `Engine__RecentPacketCapacity` | `500` |
+| Address lookup server (Nominatim); empty turns lookup off | `Geocoding__Endpoint` | `https://nominatim.openstreetmap.org` |
+| That server's usage policy, linked in the setup wizard | `Geocoding__UsagePolicyUrl` | the OSMF policy for the public server |
 | OpenTelemetry export | `OTEL_EXPORTER_OTLP_ENDPOINT` (+ standard `OTEL_*`) | off |
 
 Browsers see the gateway's settings read-only, with passcodes hidden. A profile switch changes the station for every
 viewer, so it is an operator action; until operator sign-in exists (scope F2.9), `Gateway__AllowSettingsChanges=true`
-lets *any* browser do it and see passcodes. Set it only on a network where everyone may operate the station.
+lets *any* browser do it and see passcodes. Set it only on a network where everyone may operate the station. The
+same switch gates address lookup and the passcode calculator in the setup wizard, so a public gateway is not an open
+geocoding proxy. Lookups go through the gateway, at most one a second, with results cached in memory; a gateway with
+many users should point `Geocoding__Endpoint` at its own Nominatim, as the public server's usage policy asks.
 
 Endpoints:
 

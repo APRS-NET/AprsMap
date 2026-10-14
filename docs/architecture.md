@@ -69,8 +69,9 @@ method or an event on `IEngineService`.
 
 ## Service interface shape (draft)
 
-Built so far: `GetStatusAsync`, `WatchPacketsAsync` and `WatchStationsAsync` (F0.2), and `GetSettingsAsync` /
-`SaveSettingsAsync` (F0.4). The rest arrives with the features that need it.
+Built so far: `GetStatusAsync`, `WatchPacketsAsync` and `WatchStationsAsync` (F0.2), `GetSettingsAsync` /
+`SaveSettingsAsync` (F0.4), and `GetGeocodingInfoAsync` / `GeocodeAsync` / `ComputePasscodeAsync` (F0.5). The rest
+arrives with the features that need it.
 
 ```csharp
 public interface IEngineService
@@ -95,6 +96,11 @@ public interface IEngineService
     // Settings
     Task<AppSettings> GetSettingsAsync(CancellationToken ct);
     Task SaveSettingsAsync(AppSettings settings, CancellationToken ct);
+
+    // First-run setup (F0.5); operator-only on a gateway
+    Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken ct);
+    Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(string query, string? language, CancellationToken ct);
+    Task<int> ComputePasscodeAsync(string callsign, CancellationToken ct);
 }
 ```
 

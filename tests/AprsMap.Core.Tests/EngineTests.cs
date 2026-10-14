@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using AprsMap.Contracts;
 using AprsMap.Core;
+using AprsNet.AprsIsTcpClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -439,6 +440,46 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task ThePasscodeCalculatorUsesTheBaseCallsign()
+    {
+        var engine = CreateEngine(new FakeTimeProvider());
+        var expected = AprsIsPasscode.Compute("N0CALL");
+
+        Assert.Equal(expected, await engine.ComputePasscodeAsync(" n0call-9 ", Ct));
+        Assert.Equal(expected, await engine.ComputePasscodeAsync("N0CALL", Ct));
+        await Assert.ThrowsAsync<ArgumentException>(() => engine.ComputePasscodeAsync(" ", Ct));
+        await Assert.ThrowsAsync<ArgumentException>(() => engine.ComputePasscodeAsync("NOT A CALL", Ct));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => engine.ComputePasscodeAsync(null!, Ct));
+    }
+
+    [Fact]
+    public async Task WithoutAGeocoderAddressLookupIsOff()
+    {
+        var engine = CreateEngine(new FakeTimeProvider());
+
+        Assert.Equal(GeocodingInfo.Disabled, await engine.GetGeocodingInfoAsync(Ct));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => engine.GeocodeAsync("Boulder", null, Ct));
+    }
+
+    [Fact]
+    public async Task AddressLookupGoesToTheGeocoder()
+    {
+        var geocoder = new FakeGeocoder();
+        using var engine = new Engine(
+            Options.Create(new EngineOptions()),
+            new FakeSourceFactory(),
+            new InMemorySettingsStore(),
+            new FakeTimeProvider(),
+            NullLogger<Engine>.Instance,
+            geocoder
+        );
+
+        Assert.Same(geocoder.Info, await engine.GetGeocodingInfoAsync(Ct));
+        var result = Assert.Single(await engine.GeocodeAsync("Boulder", "en-US", Ct));
+        Assert.Equal("Boulder|en-US", result.DisplayName);
+    }
+
+    [Fact]
     public void GuardsAgainstNullArguments()
     {
         var engine = CreateEngine(new FakeTimeProvider());
@@ -531,6 +572,17 @@ public class EngineTests
             await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, Ct);
         }
         Assert.Fail("Condition was not met in time.");
+    }
+
+    private sealed class FakeGeocoder : IGeocoder
+    {
+        public GeocodingInfo Info { get; } = new(true, "geo.example", null);
+
+        public Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(
+            string query,
+            string? language,
+            CancellationToken cancellationToken = default
+        ) => Task.FromResult<IReadOnlyList<GeocodeResult>>([new($"{query}|{language}", 40, -105)]);
     }
 
     private sealed class ListLogger : ILogger<Engine>

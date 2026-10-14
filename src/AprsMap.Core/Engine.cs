@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using AprsMap.Contracts;
+using AprsNet.AprsIsTcpClient;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,6 +21,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly EngineOptions _options;
     private readonly IPacketLineSourceFactory _sources;
     private readonly ISettingsStore _settingsStore;
+    private readonly IGeocoder _geocoder;
     private readonly SemaphoreSlim _settingsLock = new(1, 1);
     private readonly TimeProvider _time;
     private readonly ILogger<Engine> _logger;
@@ -41,13 +43,15 @@ public sealed partial class Engine : IEngineService, IDisposable
         IPacketLineSourceFactory sources,
         ISettingsStore settingsStore,
         TimeProvider time,
-        ILogger<Engine> logger
+        ILogger<Engine> logger,
+        IGeocoder? geocoder = null
     )
     {
         ArgumentNullException.ThrowIfNull(options);
         _options = options.Value;
         _sources = sources;
         _settingsStore = settingsStore;
+        _geocoder = geocoder ?? NoGeocoder.Instance;
         _time = time;
         _logger = logger;
     }
@@ -103,6 +107,31 @@ public sealed partial class Engine : IEngineService, IDisposable
         finally
         {
             _settingsLock.Release();
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_geocoder.Info);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(
+        string query,
+        string? language,
+        CancellationToken cancellationToken = default
+    ) => _geocoder.GeocodeAsync(query, language, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<int> ComputePasscodeAsync(string callsign, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(callsign);
+        try
+        {
+            return Task.FromResult(AprsIsPasscode.Compute(callsign.Trim()));
+        }
+        catch (ArgumentException ex)
+        {
+            return Task.FromException<int>(ex);
         }
     }
 

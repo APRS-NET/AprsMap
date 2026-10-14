@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Client.Remote;
 using AprsMap.Contracts;
+using AprsMap.Core;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AprsMap.Gateway.Tests;
@@ -23,8 +25,13 @@ public class GatewayFactory : WebApplicationFactory<Program>
 
     protected virtual bool AllowSettingsChanges => false;
 
+    /// <summary>Stands in for Nominatim, so tests never send lookups to the public server.</summary>
+    public FakeGeocoder Geocoder { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder) =>
         builder
+            .ConfigureTestServices(s => s.AddSingleton<IGeocoder>(Geocoder))
+            .UseSetting("Geocoding:Endpoint", "https://geo.example/")
             .UseSetting("Engine:Enabled", "false")
             .UseSetting("Engine:SettingsFolder", SettingsFolder)
             .UseSetting("Engine:Callsign", Callsign)
@@ -64,4 +71,27 @@ public class GatewayFactory : WebApplicationFactory<Program>
 public sealed class TrustedGatewayFactory : GatewayFactory
 {
     protected override bool AllowSettingsChanges => true;
+}
+
+/// <summary>Answers lookups from a script and records the queries.</summary>
+public sealed class FakeGeocoder : IGeocoder
+{
+    public const string FailingQuery = "fail";
+    public const string FailureMessage = "The address lookup server is refusing requests for now.";
+
+    public GeocodingInfo Info { get; } = new(true, "geo.example", "https://geo.example/policy");
+
+    public System.Collections.Concurrent.ConcurrentQueue<(string Query, string? Language)> Lookups { get; } = new();
+
+    public Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(
+        string query,
+        string? language,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Lookups.Enqueue((query, language));
+        return query == FailingQuery
+            ? Task.FromException<IReadOnlyList<GeocodeResult>>(new InvalidOperationException(FailureMessage))
+            : Task.FromResult<IReadOnlyList<GeocodeResult>>([new($"{query}, Colorado", 40.015, -105.27)]);
+    }
 }

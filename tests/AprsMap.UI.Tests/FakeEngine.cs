@@ -90,6 +90,39 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
+    public GeocodingInfo Geocoding { get; set; } = new(true, "nominatim.example", "https://nominatim.example/policy");
+
+    /// <summary>What <see cref="GeocodeAsync"/> returns, or throws when it is an exception.</summary>
+    public Func<string, IReadOnlyList<GeocodeResult>> Geocoder { get; set; } = _ => [];
+
+    public List<(string Query, string? Language)> Lookups { get; } = [];
+
+    public Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Geocoding);
+
+    public Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(
+        string query,
+        string? language,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Lookups.Add((query, language));
+        try
+        {
+            return Task.FromResult(Geocoder(query));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Task.FromException<IReadOnlyList<GeocodeResult>>(ex);
+        }
+    }
+
+    /// <summary>Not the real algorithm: the UI only shows what the engine returns.</summary>
+    public Task<int> ComputePasscodeAsync(string callsign, CancellationToken cancellationToken = default) =>
+        string.IsNullOrWhiteSpace(callsign)
+            ? Task.FromException<int>(new ArgumentException("The callsign is empty.", nameof(callsign)))
+            : Task.FromResult(callsign.Split('-')[0].Length * 1000);
+
     public static AppSettings TwoProfiles() =>
         new(
             [
