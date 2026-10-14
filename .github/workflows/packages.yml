@@ -2,6 +2,7 @@ name: packages
 
 # Checks NuGet packages for known vulnerabilities and available updates. Runs on code changes and weekly, because new
 # advisories appear without any change here. On pull requests it keeps one comment with the report up to date.
+# Versions a project pins with VersionOverride are marked and listed with the reason from the comment above the pin.
 on:
   push:
     branches: [main]
