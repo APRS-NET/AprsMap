@@ -124,9 +124,12 @@ How it is built:
 
 ## Key flows
 
-- **First run** (wizard, ≤ 4 steps): callsign-SSID → location (GPS, browser geolocation, or click the map) → APRS-IS
-  server (default rotate pool) → optional passcode ("skip: receive only"). Units are inferred from the locale and can be
-  changed later. The user is on a live map within a minute.
+- **First run** (wizard, ≤ 4 steps): callsign-SSID → location (Maidenhead locator, address or ZIP/postal code, typed
+  coordinates, GPS or browser geolocation, or a map picker with a crosshair; [scope](../scope.md#settings-storage-and-profiles))
+  → APRS-IS server (default rotate pool) → optional passcode ("skip: receive only"). Units are inferred from the locale
+  and can be changed later. The user is on a live map within a minute. The answers become the first settings profile.
+- **Profiles**: a profile switcher (callsign shown in the status bar) changes callsign, filters and location together.
+  Switching disconnects from APRS-IS and reconnects with the new profile.
 - **Messaging**: messenger-style threads. Each outgoing message shows its state: queued → sent → retry *n* → acked /
   rejected / failed / final, with a route badge (RF / IS / best). Long text is split into 64-character parts, with a live
   character counter while typing.
