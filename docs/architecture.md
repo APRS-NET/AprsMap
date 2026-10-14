@@ -182,6 +182,22 @@ If an app feature needs a missing protocol capability, the app spec links the ga
 uses a clearly marked temporary internal shim (`// SHIM: replace with APRS.NET <gap id>`), which is deleted when the
 package ships.
 
+### Alternatives considered
+
+**Packet.NET's `Packet.Aprs`** (M0LTE; <https://www.nuget.org/packages/Packet.Aprs>), reviewed 2026-10-14 at 0.54.0. A
+well-tested APRS encoder and decoder (checked against three million APRS-IS packets, per its README), released often.
+Not used, and APRS.NET stays the protocol library, because:
+
+- **Licence.** It and its base `Packet.Core` are AGPL-3.0-or-later since 0.24.0 (2026-07-20). `AprsMap.Core`,
+  `Contracts` and `Client.Remote` are MIT and must not reference AGPL code. 0.23.0, the last MIT release, is frozen.
+- **Scope.** It is an encoder and decoder only; its README puts an APRS-IS client out of scope, and that client is what
+  AprsMap uses most. Its AX.25 and KISS packages, which would cover G12 and G13, are AGPL too.
+- **Fit.** It is one part of a larger packet-node stack with one main maintainer and lockstep versions across all its
+  packages. APRS.NET's scope and release pace follow AprsMap's needs.
+
+**Clean room.** Because APRS.NET is MIT and covers the same ground, nobody working on it reads Packet.NET's source or its
+AGPL test vectors. The review above used only the NuGet metadata, the README and repository statistics.
+
 ## Settings
 
 The engine owns settings (`AppSettings`: station profiles, the active one, and shared units), so the desktop and

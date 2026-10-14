@@ -154,6 +154,21 @@ byte-for-byte; validation errors are reported rather than producing invalid pack
 **Delivered** (by `0.1.0-alpha.12`): `Callsign.Parse`/`TryParse`, and `AprsPacket.Create` with builders for position,
 status and message payloads. Still open: the other payload builders and Mic-E encoding.
 
+**Next: an address for outgoing packets.** An app transmits as one station: the same source, destination (its TOCALL)
+and usually the same path on every packet, so every `AprsPacket.Create` call repeats them. Add a small immutable record
+that holds the TNC2 address part (source `Callsign`, destination `Callsign`, default path) and has
+`Create(AprsPayload)` and `Create(AprsPayload, path)`, both calling `AprsPacket.Create`. It is not a fluent builder and
+adds no second model: payloads stay the parser's records, so round-trip tests and `with` edits keep working. It is
+validated when it is made (a source that can transmit, a destination that is a valid TOCALL, valid path entries), and
+`with { Path = … }` gives an RF or an APRS-IS variant. Whatever transmits (G02 send, the G13 KISS transports, G11
+beacons, G10 messaging) takes the packets it makes. Name it from APRS.NET's own conventions, not after Packet.NET's API
+([architecture.md, alternatives considered](../architecture.md#alternatives-considered)). Mic-E puts the latitude in
+the destination, so for a Mic-E payload `Create` replaces the TOCALL; that lands with Mic-E encoding.
+
+**Acceptance (address).** `Create(payload)` equals `AprsPacket.Create` with the same parts; an invalid source, TOCALL
+or path entry is refused when the record is made, not on each packet; a path given to `Create` replaces the default for
+that packet only.
+
 ## G02: Transmit through APRS-IS, and passcode generation
 
 **Need.** F2.x. `AprsIsClient` has no public send.
