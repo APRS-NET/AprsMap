@@ -57,83 +57,62 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         _connection.InvokeAsync<AppSettings>(EngineHub.GetSettings, cancellationToken);
 
     /// <inheritdoc />
-    public async Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await _connection.InvokeAsync(EngineHub.SaveSettings, settings, cancellationToken).ConfigureAwait(false);
-        }
-        catch (HubException ex) when (ex.Message.Contains(EngineHub.SettingsReadOnlyMessage, StringComparison.Ordinal))
-        {
-            throw new UnauthorizedAccessException(EngineHub.SettingsReadOnlyMessage, ex);
-        }
-        catch (HubException ex)
-        {
-            // The gateway sends the engine's validation message; SignalR prefixes it with its own text.
-            throw new ArgumentException(ServerMessage(ex), nameof(settings), ex);
-        }
-    }
+    public Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SaveSettings, settings, cancellationToken));
 
     /// <inheritdoc />
     public Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken cancellationToken = default) =>
         _connection.InvokeAsync<GeocodingInfo>(EngineHub.GetGeocodingInfo, cancellationToken);
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(
+    public Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(
         string query,
         string? language,
         CancellationToken cancellationToken = default
     )
     {
         ArgumentNullException.ThrowIfNull(query);
-        try
-        {
-            return await _connection
-                .InvokeAsync<IReadOnlyList<GeocodeResult>>(EngineHub.Geocode, query, language, cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (HubException ex) when (IsOperatorOnly(ex))
-        {
-            throw new UnauthorizedAccessException(EngineHub.OperatorOnlyMessage, ex);
-        }
-        catch (HubException ex)
-        {
-            throw new InvalidOperationException(ServerMessage(ex), ex);
-        }
+        return WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<GeocodeResult>>(EngineHub.Geocode, query, language, cancellationToken)
+        );
     }
 
     /// <inheritdoc />
-    public async Task<int> ComputePasscodeAsync(string callsign, CancellationToken cancellationToken = default)
+    public Task<int> ComputePasscodeAsync(string callsign, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(callsign);
-        try
-        {
-            return await _connection
-                .InvokeAsync<int>(EngineHub.ComputePasscode, callsign, cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (HubException ex) when (IsOperatorOnly(ex))
-        {
-            throw new UnauthorizedAccessException(EngineHub.OperatorOnlyMessage, ex);
-        }
-        catch (HubException ex)
-        {
-            throw new ArgumentException(ServerMessage(ex), nameof(callsign), ex);
-        }
+        return WithEngineErrors(() =>
+            _connection.InvokeAsync<int>(EngineHub.ComputePasscode, callsign, cancellationToken)
+        );
     }
 
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
 
-    private static bool IsOperatorOnly(HubException exception) =>
-        exception.Message.Contains(EngineHub.OperatorOnlyMessage, StringComparison.Ordinal);
-
-    // "An unexpected error occurred invoking 'X' on the server. HubException: <message>" → "<message>"
-    internal static string ServerMessage(HubException exception)
+    /// <summary>Raises the gateway's <see cref="EngineError"/> as the same exception the in-process engine throws.</summary>
+    private static async Task WithEngineErrors(Func<Task> call)
     {
-        const string marker = "HubException: ";
-        var at = exception.Message.LastIndexOf(marker, StringComparison.Ordinal);
-        return at < 0 ? exception.Message : exception.Message[(at + marker.Length)..];
+        try
+        {
+            await call().ConfigureAwait(false);
+        }
+        catch (HubException ex) when (EngineHub.TryDecodeError(ex.Message, out var error))
+        {
+            throw EngineErrors.ToException(error, ex);
+        }
+    }
+
+    /// <inheritdoc cref="WithEngineErrors(Func{Task})"/>
+    private static async Task<T> WithEngineErrors<T>(Func<Task<T>> call)
+    {
+        try
+        {
+            return await call().ConfigureAwait(false);
+        }
+        catch (HubException ex) when (EngineHub.TryDecodeError(ex.Message, out var error))
+        {
+            throw EngineErrors.ToException(error, ex);
+        }
     }
 
     /// <summary>

@@ -133,7 +133,8 @@ public sealed class GeocodingTests : IDisposable
         var waiting = geocoder.GeocodeAsync("Denver", null, Ct);
         var newer = geocoder.GeocodeAsync("Golden", null, Ct);
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => waiting);
+        var ex = await Assert.ThrowsAsync<EngineOperationException>(() => waiting);
+        Assert.Equal(EngineErrorCodes.GeocodingSuperseded, ex.EngineError.Code);
         Assert.Equal(NominatimGeocoder.SupersededMessage, ex.Message);
         _time.Advance(TimeSpan.FromSeconds(1));
         await newer;
@@ -183,14 +184,15 @@ public sealed class GeocodingTests : IDisposable
         var geocoder = Create();
         _handler.Respond = _ => Json("{}", status);
 
-        var refused = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var refused = await Assert.ThrowsAsync<EngineOperationException>(() =>
             geocoder.GeocodeAsync("Boulder", null, Ct)
         );
+        Assert.Equal(EngineErrorCodes.GeocodingRefused, refused.EngineError.Code);
         Assert.Equal(NominatimGeocoder.BlockedMessage, refused.Message);
 
         _handler.Respond = _ => Json(Boulder);
         _time.Advance(TimeSpan.FromSeconds(59));
-        var paused = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var paused = await Assert.ThrowsAsync<EngineOperationException>(() =>
             geocoder.GeocodeAsync("Denver", null, Ct)
         );
         Assert.Equal(NominatimGeocoder.BlockedMessage, paused.Message);
@@ -210,18 +212,31 @@ public sealed class GeocodingTests : IDisposable
         );
     }
 
-    public static TheoryData<string, Func<HttpRequestMessage, HttpResponseMessage>> Failures() =>
+    public static TheoryData<string, string, Func<HttpRequestMessage, HttpResponseMessage>> Failures() =>
         new()
         {
-            { "returned an error (500)", _ => Json("oops", HttpStatusCode.InternalServerError) },
-            { NominatimGeocoder.UnreadableMessage, _ => Json("{ not json") },
-            { NominatimGeocoder.UnreachableMessage, _ => throw new HttpRequestException("no route") },
-            { NominatimGeocoder.UnreachableMessage, _ => throw new TaskCanceledException("timed out") },
+            {
+                EngineErrorCodes.GeocodingHttpError,
+                "returned an error (500)",
+                _ => Json("oops", HttpStatusCode.InternalServerError)
+            },
+            { EngineErrorCodes.GeocodingUnreadable, NominatimGeocoder.UnreadableMessage, _ => Json("{ not json") },
+            {
+                EngineErrorCodes.GeocodingUnreachable,
+                NominatimGeocoder.UnreachableMessage,
+                _ => throw new HttpRequestException("no route")
+            },
+            {
+                EngineErrorCodes.GeocodingUnreachable,
+                NominatimGeocoder.UnreachableMessage,
+                _ => throw new TaskCanceledException("timed out")
+            },
         };
 
     [Theory]
     [MemberData(nameof(Failures))]
     public async Task FailuresAreReportedForTheUserAndNotCached(
+        string code,
         string message,
         Func<HttpRequestMessage, HttpResponseMessage> respond
     )
@@ -229,8 +244,13 @@ public sealed class GeocodingTests : IDisposable
         var geocoder = Create();
         _handler.Respond = respond;
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => geocoder.GeocodeAsync("Boulder", null, Ct));
+        var ex = await Assert.ThrowsAsync<EngineOperationException>(() => geocoder.GeocodeAsync("Boulder", null, Ct));
+        Assert.Equal(code, ex.EngineError.Code);
         Assert.Contains(message, ex.Message, StringComparison.Ordinal);
+        if (code == EngineErrorCodes.GeocodingHttpError)
+        {
+            Assert.Equal("500", ex.EngineError.Arg(EngineErrorArgs.Status));
+        }
 
         _handler.Respond = _ => Json(Boulder);
         _time.Advance(TimeSpan.FromSeconds(1));
@@ -245,7 +265,7 @@ public sealed class GeocodingTests : IDisposable
         await geocoder.GeocodeAsync("Secret Street 1", null, Ct);
         _handler.Respond = _ => Json("oops", HttpStatusCode.BadGateway);
         _time.Advance(TimeSpan.FromSeconds(1));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => geocoder.GeocodeAsync("Hidden Road", null, Ct));
+        await Assert.ThrowsAsync<EngineOperationException>(() => geocoder.GeocodeAsync("Hidden Road", null, Ct));
 
         Assert.NotEmpty(_logger.Entries);
         Assert.All(
@@ -312,7 +332,8 @@ public sealed class GeocodingTests : IDisposable
         var geocoder = Create(new GeocodingOptions { Endpoint = endpoint });
 
         Assert.Equal(GeocodingInfo.Disabled, geocoder.Info);
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => geocoder.GeocodeAsync("Boulder", null, Ct));
+        var ex = await Assert.ThrowsAsync<EngineOperationException>(() => geocoder.GeocodeAsync("Boulder", null, Ct));
+        Assert.Equal(EngineErrorCodes.GeocodingDisabled, ex.EngineError.Code);
         Assert.Equal(NominatimGeocoder.DisabledMessage, ex.Message);
         Assert.Empty(_handler.Requests);
     }

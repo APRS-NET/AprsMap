@@ -76,9 +76,10 @@ public class HostingTests
     {
         var factory = new AprsIsLineSourceFactory(NullLoggerFactory.Instance, TimeProvider.System);
 
-        Assert.Throws<InvalidOperationException>(() =>
+        var ex = Assert.Throws<AprsNet.Packets.AprsValidationException>(() =>
             factory.Create(InMemorySettingsStore.Profile("N0CALL") with { Server = "bad host:x" })
         );
+        Assert.Equal(AprsNet.Packets.AprsValidationErrorCode.ServerHostInvalid, ex.Code);
     }
 
     [Fact]

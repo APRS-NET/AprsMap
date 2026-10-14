@@ -38,19 +38,14 @@ internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayO
     [HubMethodName(EngineHub.SaveSettings)]
     public async Task SaveSettings(AppSettings settings)
     {
-        if (!AllowSettingsChanges)
-        {
-            throw new HubException(EngineHub.SettingsReadOnlyMessage);
-        }
-
+        Require(EngineErrorCodes.SettingsReadOnly, EngineHub.SettingsReadOnlyMessage);
         try
         {
             await engine.SaveSettingsAsync(settings, Context.ConnectionAborted).ConfigureAwait(false);
         }
-        catch (ArgumentException ex)
+        catch (Exception ex) when (ToHubException(ex) is { } hub)
         {
-            // Only HubException messages reach the client; this one is meant for the user.
-            throw new HubException(ex.Message);
+            throw hub;
         }
     }
 
@@ -64,36 +59,51 @@ internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayO
     [HubMethodName(EngineHub.Geocode)]
     public async Task<IReadOnlyList<GeocodeResult>> Geocode(string query, string? language)
     {
-        RequireOperator();
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
         try
         {
             return await engine.GeocodeAsync(query, language, Context.ConnectionAborted).ConfigureAwait(false);
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex) when (ToHubException(ex) is { } hub)
         {
-            throw new HubException(ex.Message);
+            throw hub;
         }
     }
 
     [HubMethodName(EngineHub.ComputePasscode)]
     public async Task<int> ComputePasscode(string callsign)
     {
-        RequireOperator();
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
         try
         {
             return await engine.ComputePasscodeAsync(callsign, Context.ConnectionAborted).ConfigureAwait(false);
         }
-        catch (ArgumentException ex)
+        catch (Exception ex) when (ToHubException(ex) is { } hub)
         {
-            throw new HubException(ex.Message);
+            throw hub;
         }
     }
 
-    private void RequireOperator()
+    /// <summary>Refuses the call with <paramref name="code"/> unless this gateway allows settings changes.</summary>
+    private void Require(string code, string message)
     {
         if (!AllowSettingsChanges)
         {
-            throw new HubException(EngineHub.OperatorOnlyMessage);
+            throw new HubException(EngineHub.EncodeError(new EngineError(code, message)));
         }
     }
+
+    /// <summary>
+    /// The hub error for an engine error the user should see. Only <see cref="HubException"/> messages reach the
+    /// client, so the <see cref="EngineError"/> travels inside one as JSON; anything else stays a server error.
+    /// </summary>
+    private static HubException? ToHubException(Exception exception) =>
+        exception switch
+        {
+            IHasEngineError coded => new HubException(EngineHub.EncodeError(coded.EngineError)),
+            ArgumentException invalid => new HubException(
+                EngineHub.EncodeError(new EngineError(EngineErrorCodes.Invalid, invalid.Message))
+            ),
+            _ => null,
+        };
 }

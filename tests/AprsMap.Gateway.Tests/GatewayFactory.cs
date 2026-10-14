@@ -91,7 +91,9 @@ public sealed class FakeGeocoder : IGeocoder
     {
         Lookups.Enqueue((query, language));
         return query == FailingQuery
-            ? Task.FromException<IReadOnlyList<GeocodeResult>>(new InvalidOperationException(FailureMessage))
+            ? Task.FromException<IReadOnlyList<GeocodeResult>>(
+                EngineErrors.Create(EngineErrorCodes.GeocodingRefused, FailureMessage)
+            )
             : Task.FromResult<IReadOnlyList<GeocodeResult>>([new($"{query}, Colorado", 40.015, -105.27)]);
     }
 }
