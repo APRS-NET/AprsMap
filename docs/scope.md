@@ -21,10 +21,45 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F0.1 | Solution scaffold, CI (build, test, format), Directory.Build.props matching APRS.NET's rigor | App | — | done |
 | F0.2 | `IEngineService` contracts, in-process and SignalR implementations, round-trip tests | App | — | building |
 | F0.3 | Spikes: Mapsui in WASM, SignalR streaming in WASM, symbol atlas, tile cache ([architecture.md](architecture.md#spikes-before-phase-1-each-one-is-a-timeboxed-throwaway), write-ups in [spikes](spikes/)) | App | — | done |
-| F0.4 | Settings model and persistence (desktop: JSON in the user's config folder; gateway: server-side store); units chosen per quantity (altitude, distance, pressure, rain, temperature, wind) | App | — | scoped |
-| F0.5 | First-run wizard: callsign → location → server → optional passcode ([ux](ux/README.md#key-flows)) | App | — | scoped |
+| F0.4 | Settings model and persistence in per-user storage ([below](#settings-storage-and-profiles)); gateway: server-side store; units chosen per quantity (altitude, distance, pressure, rain, temperature, wind) | App | — | scoped |
+| F0.5 | First-run wizard: callsign → location → server → optional passcode ([ux](ux/README.md#key-flows)). Location by Maidenhead locator, street address, ZIP/postal code, GPS coordinates, or a map picker with a crosshair ([below](#settings-storage-and-profiles)) | App | G08 | scoped |
 | F0.6 | Appearance: theme (light/dark/auto), palettes (standard, high contrast, colour-vision-safe), text and icon size, map symbol size, corner style, density, reduced motion; token-based so it applies live ([ux](ux/README.md#appearance-and-accessibility)) | App | — | scoped |
 | F0.7 | Rebrandable: product identity in `build/Branding.props`, `Brand` accessor, rename script ([branding.md](branding.md)) | App | — | scoped |
+| F0.8 | Settings profiles: after first run, several named profiles (callsign, filters, location…); switching profiles disconnects from APRS-IS and reconnects with the new one ([below](#settings-storage-and-profiles)) | App | — | scoped |
+
+### Settings storage and profiles
+
+- **Per-user storage (F0.4).** Settings live in the user's own folder, never next to the executable or in a shared
+  location:
+
+  | OS | Folder |
+  | --- | --- |
+  | Windows | `%APPDATA%\aprsnet\<slug>` (roaming; caches such as tiles go under `%LOCALAPPDATA%`) |
+  | Linux | `~/.aprsnet/<slug>` |
+  | macOS | `~/Library/Application Support/aprsnet/<slug>` |
+
+  `<slug>` is `Brand.Slug` (`aprsmap` today), so a rename moves the folder and migrates it through `PreviousSlugs`
+  ([branding.md](branding.md)). The gateway keeps the same model in its server-side store. The browser app stores
+  nothing itself: its settings belong to the gateway's station.
+- **First-run location (F0.5).** The wizard asks for the callsign and the station's location. The location can be entered
+  in any of these ways, and every one ends as latitude and longitude shown on a small map for confirmation:
+  - Maidenhead locator (4–10 characters; conversion is APRS.NET gap G08);
+  - street address or ZIP/postal code, looked up with a geocoding service only when the user asks. This sends the text
+    to a third party, so the wizard says so, and the service's usage policy applies (for example, Nominatim's limits on
+    request rate and no autocomplete);
+  - GPS coordinates typed in (decimal degrees or degrees and minutes), or read from a GPS or the browser's geolocation;
+  - a map picker: a modal map with a fixed crosshair in the centre that the user pans under. It reuses the F1.4 map,
+    so until that lands the wizard offers the other ways only.
+- **Profiles (F0.8).** The first-run answers become the first profile. After that the user can add, rename, copy and
+  delete profiles; each holds its own callsign-SSID, passcode, APRS-IS server and filters, and location (for example,
+  home and portable, or a club callsign). Settings that describe the person or the machine (appearance, units, tile
+  cache) are shared, not per profile. Switching profiles:
+  - disconnects from APRS-IS and reconnects with the new profile's login and filter, with the connection status
+    showing each step;
+  - never transmits anything queued under the old callsign (messages, beacons, objects) with the new one: queued items
+    stay with their profile;
+  - on the gateway, changes the station identity for every viewer, so it needs an authenticated operator, like
+    transmitting.
 
 ## Phase 1: Receive-only APRS-IS map (MVP, desktop + web)
 
