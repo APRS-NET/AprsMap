@@ -27,6 +27,28 @@
           FontWeight="SemiBold"
           VerticalAlignment="Center"
         />
+        <ComboBox
+          x:Name="ProfilePicker"
+          ItemsSource="{Binding Profiles}"
+          SelectedItem="{Binding SelectedProfile}"
+          IsEnabled="{Binding CanSwitchProfiles}"
+          IsVisible="{Binding !!Profiles.Count}"
+          VerticalAlignment="Center"
+          ToolTip.Tip="Station profile"
+        >
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="c:StationProfile">
+              <TextBlock>
+                <Run Text="{Binding Name}" />
+                <Run
+                  Text="{Binding Callsign}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                />
+              </TextBlock>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
         <Border
           CornerRadius="{DynamicResource Radius.Control}"
           BorderBrush="{DynamicResource Brush.Border}"

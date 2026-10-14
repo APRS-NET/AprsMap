@@ -37,13 +37,18 @@ RUN set -eu; \
     dotnet publish src/AprsMap.Browser/AprsMap.Browser.csproj -c Release -o /out/browser $version; \
     dotnet publish src/AprsMap.Gateway/AprsMap.Gateway.csproj -c Release -a $TARGETARCH --no-restore \
         -o /out/gateway $version; \
-    cp -r /out/browser/wwwroot/. /out/gateway/wwwroot/
+    cp -r /out/browser/wwwroot/. /out/gateway/wwwroot/; \
+    mkdir -p /out/data
 
 # Chiseled: no shell or package manager, runs as the non-root 'app' user, listens on 8080.
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble-chiseled AS runtime
 WORKDIR /app
 COPY --from=build /out/gateway/ ./
-ENV ASPNETCORE_HTTP_PORTS=8080
+# Settings (station profiles) live in /data; mount a volume there to keep them. Owned by the image's 'app' user.
+COPY --from=build --chown=$APP_UID:$APP_UID /out/data /data
+ENV ASPNETCORE_HTTP_PORTS=8080 \
+    Engine__SettingsFolder=/data
+VOLUME /data
 EXPOSE 8080
 LABEL org.opencontainers.image.title="AprsMap gateway" \
       org.opencontainers.image.description="APRS map: engine, web UI and SignalR gateway" \

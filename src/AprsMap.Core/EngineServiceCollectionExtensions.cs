@@ -3,6 +3,7 @@ using AprsMap.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace AprsMap.Core;
 
@@ -18,6 +19,9 @@ public static class EngineServiceCollectionExtensions
         services.AddOptions<EngineOptions>();
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddSingleton<IPacketLineSourceFactory, AprsIsLineSourceFactory>();
+        services.TryAddSingleton<ISettingsStore>(sp =>
+            SettingsLocation.CreateStore(sp.GetRequiredService<IOptions<EngineOptions>>().Value)
+        );
         services.TryAddSingleton<Engine>();
         services.TryAddSingleton<IEngineService>(sp => sp.GetRequiredService<Engine>());
         services.AddHostedService<EngineHostedService>();
@@ -26,8 +30,7 @@ public static class EngineServiceCollectionExtensions
 }
 
 /// <summary>Runs the engine for the lifetime of the host, unless <see cref="EngineOptions.Enabled"/> is off.</summary>
-internal sealed class EngineHostedService(Engine engine, Microsoft.Extensions.Options.IOptions<EngineOptions> options)
-    : BackgroundService
+internal sealed class EngineHostedService(Engine engine, IOptions<EngineOptions> options) : BackgroundService
 {
     protected override Task ExecuteAsync(CancellationToken stoppingToken) =>
         options.Value.Enabled ? engine.RunAsync(stoppingToken) : Task.CompletedTask;

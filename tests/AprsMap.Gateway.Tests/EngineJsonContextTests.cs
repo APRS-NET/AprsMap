@@ -54,6 +54,31 @@ public class EngineJsonContextTests
         Assert.Equal(["LEADER"], copy.Removed);
     }
 
+    [Fact]
+    public void SettingsRoundTripWithoutReflection()
+    {
+        var profile = new StationProfile(
+            "home",
+            "Home",
+            "N0CALL-9",
+            12345,
+            "rotate.aprs2.net:14580",
+            "r/40/-105/50",
+            40,
+            -105
+        );
+        var settings = new AppSettings([profile], "home", UnitSettings.Imperial, ReadOnly: true);
+
+        var copy = RoundTrip(settings);
+
+        Assert.NotNull(copy);
+        Assert.Equal(profile, Assert.Single(copy.Profiles));
+        Assert.Equal("home", copy.ActiveProfileId);
+        Assert.Equal(UnitSettings.Imperial, copy.Units);
+        Assert.True(copy.ReadOnly);
+        Assert.Equal(profile, copy.GetActiveProfile());
+    }
+
     private static T? RoundTrip<T>(T value) =>
         JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(value, WithoutReflection), WithoutReflection);
 

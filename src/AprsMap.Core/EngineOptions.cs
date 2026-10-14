@@ -10,16 +10,25 @@ public sealed class EngineOptions
     /// <summary>Whether the engine connects to APRS-IS at all.</summary>
     public bool Enabled { get; set; } = true;
 
-    /// <summary>The callsign used to log in. Without a passcode the login is receive-only.</summary>
-    public string Callsign { get; set; } = "N0CALL";
+    /// <summary>
+    /// Where settings are stored. Empty means the user's own settings folder (<see cref="SettingsLocation"/>); the
+    /// gateway's container points it at a volume.
+    /// </summary>
+    public string? SettingsFolder { get; set; }
 
-    /// <summary>The APRS-IS passcode, or -1 for a receive-only login.</summary>
+    /// <summary>
+    /// First-run defaults: when no settings are stored yet and <see cref="Callsign"/> is set, the engine creates its
+    /// first profile from these values. After that the stored settings win, and these are ignored.
+    /// </summary>
+    public string Callsign { get; set; } = string.Empty;
+
+    /// <summary>First-run default: the APRS-IS passcode, or -1 for a receive-only login.</summary>
     public int Passcode { get; set; } = -1;
 
-    /// <summary>APRS-IS server as <c>host</c> or <c>host:port</c>.</summary>
+    /// <summary>First-run default: APRS-IS server as <c>host</c> or <c>host:port</c>.</summary>
     public string Server { get; set; } = "rotate.aprs2.net:14580";
 
-    /// <summary>The server-side filter sent at login.</summary>
+    /// <summary>First-run default: the server-side filter sent at login.</summary>
     public string? Filter { get; set; }
 
     /// <summary>How many recent packets the engine keeps for clients that connect later.</summary>

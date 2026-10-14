@@ -20,31 +20,47 @@ internal sealed class AprsIsLineSource(AprsIsClient client) : IPacketLineSource
     public ValueTask DisposeAsync() => client.DisposeAsync();
 }
 
-/// <summary>Creates APRS.NET clients from <see cref="EngineOptions"/>.</summary>
+/// <summary>Creates APRS.NET clients from a <see cref="StationProfile"/>.</summary>
 internal sealed class AprsIsLineSourceFactory(ILoggerFactory loggerFactory, TimeProvider timeProvider)
     : IPacketLineSourceFactory
 {
-    public IPacketLineSource Create(EngineOptions options)
+    public IPacketLineSource Create(StationProfile profile) =>
+        new AprsIsLineSource(
+            new AprsIsClient(ClientOptions(profile, timeProvider), loggerFactory.CreateLogger<AprsIsClient>())
+        );
+
+    /// <summary>
+    /// The APRS.NET client options for <paramref name="profile"/>, validated by APRS.NET (which owns the login rules).
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The server, callsign, passcode or filter is not usable.</exception>
+    internal static AprsIsClientOptions ClientOptions(StationProfile profile, TimeProvider timeProvider)
     {
-        if (!AprsIsEndpoint.TryParse(options.Server, out var endpoint))
+        if (!AprsIsEndpoint.TryParse(profile.Server, out var endpoint))
         {
             throw new InvalidOperationException(
-                $"'{options.Server}' is not a valid APRS-IS server (host or host:port)."
+                $"'{profile.Server}' is not a valid APRS-IS server (host or host:port)."
             );
         }
 
         var clientOptions = new AprsIsClientOptions
         {
-            Callsign = options.Callsign,
-            Passcode = options.Passcode,
-            Filter = options.Filter,
+            Callsign = profile.Callsign,
+            Passcode = profile.Passcode,
+            Filter = profile.Filter,
             Endpoint = endpoint,
             SoftwareName = SoftwareToken(Brand.DisplayName),
             SoftwareVersion = SoftwareToken(Brand.Version.Split('+')[0]),
             TimeProvider = timeProvider,
         };
-        clientOptions.Validate();
-        return new AprsIsLineSource(new AprsIsClient(clientOptions, loggerFactory.CreateLogger<AprsIsClient>()));
+        try
+        {
+            clientOptions.Validate();
+        }
+        catch (ArgumentException ex)
+        {
+            throw new InvalidOperationException(ex.Message, ex);
+        }
+        return clientOptions;
     }
 
     // APRS-IS login fields are space-separated tokens.

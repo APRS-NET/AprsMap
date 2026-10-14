@@ -15,4 +15,14 @@ public static class EngineHub
 
     /// <summary>Hub streaming method for <see cref="IEngineService.WatchStationsAsync"/>.</summary>
     public const string WatchStations = "WatchStations";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetSettingsAsync"/>.</summary>
+    public const string GetSettings = "GetSettings";
+
+    /// <summary>Hub method for <see cref="IEngineService.SaveSettingsAsync"/>.</summary>
+    public const string SaveSettings = "SaveSettings";
+
+    /// <summary>The gateway's refusal when settings may not be changed remotely; the client maps it back.</summary>
+    public const string SettingsReadOnlyMessage =
+        "This gateway's settings can't be changed from the browser: operator sign-in isn't available yet.";
 }

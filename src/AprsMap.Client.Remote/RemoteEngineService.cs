@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 using AprsMap.Contracts;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -52,7 +53,37 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         _connection.StreamAsync<StationBatch>(EngineHub.WatchStations, cancellationToken);
 
     /// <inheritdoc />
+    public Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default) =>
+        _connection.InvokeAsync<AppSettings>(EngineHub.GetSettings, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _connection.InvokeAsync(EngineHub.SaveSettings, settings, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HubException ex) when (ex.Message.Contains(EngineHub.SettingsReadOnlyMessage, StringComparison.Ordinal))
+        {
+            throw new UnauthorizedAccessException(EngineHub.SettingsReadOnlyMessage, ex);
+        }
+        catch (HubException ex)
+        {
+            // The gateway sends the engine's validation message; SignalR prefixes it with its own text.
+            throw new ArgumentException(ServerMessage(ex), nameof(settings), ex);
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
+
+    // "An unexpected error occurred invoking 'X' on the server. HubException: <message>" → "<message>"
+    internal static string ServerMessage(HubException exception)
+    {
+        const string marker = "HubException: ";
+        var at = exception.Message.LastIndexOf(marker, StringComparison.Ordinal);
+        return at < 0 ? exception.Message : exception.Message[(at + marker.Length)..];
+    }
 
     /// <summary>
     /// Reconnects quickly at first, then every 30 seconds for as long as it takes. SignalR's default gives up after

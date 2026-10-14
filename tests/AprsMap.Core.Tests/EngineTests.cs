@@ -21,7 +21,8 @@ public class EngineTests
         FakeTimeProvider time,
         IPacketLineSourceFactory? sources = null,
         int capacity = 10,
-        ILogger<Engine>? logger = null
+        ILogger<Engine>? logger = null,
+        ISettingsStore? settings = null
     ) =>
         new(
             Options.Create(
@@ -33,6 +34,7 @@ public class EngineTests
                 }
             ),
             sources ?? new FakeSourceFactory(),
+            settings ?? InMemorySettingsStore.WithProfile(),
             time,
             logger ?? NullLogger<Engine>.Instance
         );
@@ -217,6 +219,157 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task FirstRunCreatesAProfileFromTheConfiguredDefaults()
+    {
+        var store = new InMemorySettingsStore();
+        var engine = new Engine(
+            Options.Create(new EngineOptions { Callsign = " n0call-9 ", Filter = "r/40/-105/50" }),
+            new FakeSourceFactory(),
+            store,
+            new FakeTimeProvider(),
+            NullLogger<Engine>.Instance
+        );
+
+        var settings = await engine.GetSettingsAsync(Ct);
+
+        var profile = Assert.Single(settings.Profiles);
+        Assert.Equal("N0CALL-9", profile.Callsign);
+        Assert.Equal("N0CALL-9", profile.Name);
+        Assert.Equal("r/40/-105/50", profile.Filter);
+        Assert.Equal(profile.Id, settings.ActiveProfileId);
+        Assert.Same(settings, store.Stored);
+        Assert.Same(settings, await engine.GetSettingsAsync(Ct)); // loaded once
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("N0CALL-TOOLONGSSID")]
+    public async Task WithoutUsableDefaultsTheEngineWaitsForSetupThenConnects(string callsign)
+    {
+        var store = new InMemorySettingsStore();
+        var sources = new FakeSourceFactory();
+        var session = sources.Enqueue("T2SETUP");
+        var engine = new Engine(
+            Options.Create(new EngineOptions { Callsign = callsign }),
+            sources,
+            store,
+            new FakeTimeProvider(),
+            NullLogger<Engine>.Instance
+        );
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.NotConfigured);
+        Assert.Empty((await engine.GetSettingsAsync(Ct)).Profiles);
+        Assert.Null(store.Stored); // nothing to store yet
+        Assert.Equal(0, sources.Attempts);
+
+        var profile = InMemorySettingsStore.Profile("N0NEW");
+        await engine.SaveSettingsAsync(new AppSettings([profile], profile.Id, UnitSettings.Metric), Ct);
+        await session.Connected.Task.WaitAsync(Ct);
+
+        var status = await engine.GetStatusAsync(Ct);
+        Assert.Equal("N0NEW", status.Callsign);
+        Assert.Equal(profile.Id, status.ProfileId);
+        Assert.Equal("N0NEW", Assert.Single(sources.Profiles).Callsign);
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task SwitchingProfilesReconnectsWithTheNewLogin()
+    {
+        var home = InMemorySettingsStore.Profile("N0HOME");
+        var away = InMemorySettingsStore.Profile("N0AWAY") with { Filter = "r/1/2/3" };
+        var store = new InMemorySettingsStore(new AppSettings([home, away], home.Id, UnitSettings.Metric));
+        var sources = new FakeSourceFactory();
+        var first = sources.Enqueue("T2HOME");
+        var second = sources.Enqueue("T2AWAY");
+        var engine = CreateEngine(new FakeTimeProvider(), sources, settings: store);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await first.Connected.Task.WaitAsync(Ct);
+        var settings = await engine.GetSettingsAsync(Ct);
+
+        // Units and names don't touch the connection.
+        await engine.SaveSettingsAsync(settings with { Units = UnitSettings.Imperial }, Ct);
+        await Task.Delay(TimeSpan.FromMilliseconds(50), TimeProvider.System, Ct);
+        Assert.Equal(1, sources.Attempts);
+
+        await engine.SaveSettingsAsync(settings with { ActiveProfileId = away.Id }, Ct);
+        await second.Connected.Task.WaitAsync(Ct);
+
+        Assert.True(first.Disposed);
+        Assert.Equal(["N0HOME", "N0AWAY"], sources.Profiles.Select(p => p.Callsign));
+        Assert.Equal("r/1/2/3", sources.Profiles.Last().Filter);
+        Assert.Equal(away.Id, store.Stored!.ActiveProfileId);
+        Assert.Equal(UnitSettings.Metric, store.Stored.Units);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Server == "T2AWAY");
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task AProfileChangeWhileWaitingToRetryConnectsAtOnce()
+    {
+        var sources = new FakeSourceFactory();
+        sources.EnqueueFailure();
+        var fixedUp = sources.Enqueue("T2FIXED");
+        var store = InMemorySettingsStore.WithProfile();
+        var engine = CreateEngine(new FakeTimeProvider(), sources, settings: store);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Faulted);
+        var settings = await engine.GetSettingsAsync(Ct);
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Profiles = [settings.Profiles[0] with { Server = "noam.aprs2.net:14580" }],
+            },
+            Ct
+        );
+
+        await fixedUp.Connected.Task.WaitAsync(Ct); // without advancing the fake clock past the retry delay
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task InvalidSettingsAreRejectedAndNotStored()
+    {
+        var store = InMemorySettingsStore.WithProfile();
+        var engine = CreateEngine(new FakeTimeProvider(), settings: store);
+        var settings = await engine.GetSettingsAsync(Ct);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            engine.SaveSettingsAsync(settings with { ActiveProfileId = "nobody" }, Ct)
+        );
+
+        Assert.Equal(0, store.Saves);
+        Assert.Same(settings, await engine.GetSettingsAsync(Ct));
+    }
+
+    [Fact]
+    public async Task RemovingEveryProfileDisconnectsUntilSetupAgain()
+    {
+        var sources = new FakeSourceFactory();
+        var session = sources.Enqueue("T2TEST");
+        var engine = CreateEngine(new FakeTimeProvider(), sources);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await session.Connected.Task.WaitAsync(Ct);
+        await engine.SaveSettingsAsync(AppSettings.Empty, Ct);
+
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.NotConfigured);
+        Assert.True(session.Disposed);
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
     public async Task RunConnectsReadsLinesAndReportsTheServer()
     {
         var sources = new FakeSourceFactory();
@@ -292,7 +445,13 @@ public class EngineTests
 
         Assert.Throws<ArgumentNullException>(() => engine.Accept(null!));
         Assert.Throws<ArgumentNullException>(() =>
-            new Engine(null!, new FakeSourceFactory(), TimeProvider.System, NullLogger<Engine>.Instance)
+            new Engine(
+                null!,
+                new FakeSourceFactory(),
+                new InMemorySettingsStore(),
+                TimeProvider.System,
+                NullLogger<Engine>.Instance
+            )
         );
     }
 
@@ -400,6 +559,9 @@ public class EngineTests
 
         public int Attempts => Volatile.Read(ref _attempts);
 
+        /// <summary>The profile of every connection attempt, in order.</summary>
+        public System.Collections.Concurrent.ConcurrentQueue<StationProfile> Profiles { get; } = new();
+
         public FakeSource Enqueue(string server)
         {
             var source = new FakeSource(server);
@@ -409,8 +571,9 @@ public class EngineTests
 
         public void EnqueueFailure() => _script.Enqueue(null);
 
-        public IPacketLineSource Create(EngineOptions options)
+        public IPacketLineSource Create(StationProfile profile)
         {
+            Profiles.Enqueue(profile);
             Interlocked.Increment(ref _attempts);
             return _script.TryDequeue(out var next) && next is not null ? next : new FakeSource(server: null);
         }

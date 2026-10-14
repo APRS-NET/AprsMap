@@ -18,6 +18,8 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
     public static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
 
     private readonly Dictionary<string, StationState> _stations = new(StringComparer.Ordinal);
+    private AppSettings? _settings;
+    private bool _showingSettings;
 
     /// <summary>The product name, from branding.</summary>
     public string Title { get; } = Brand.DisplayName;
@@ -33,6 +35,17 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
 
     [ObservableProperty]
     public partial int StationCount { get; set; }
+
+    /// <summary>The station profiles, to switch between; empty before first-run setup.</summary>
+    public ObservableCollection<StationProfile> Profiles { get; } = [];
+
+    /// <summary>The active profile. Choosing another one switches the engine to it (and reconnects).</summary>
+    [ObservableProperty]
+    public partial StationProfile? SelectedProfile { get; set; }
+
+    /// <summary>Whether there is more than one profile and this engine accepts the switch.</summary>
+    [ObservableProperty]
+    public partial bool CanSwitchProfiles { get; set; }
 
     /// <summary>The latest error talking to the engine (for example, the gateway is unreachable), or null.</summary>
     [ObservableProperty]
@@ -75,6 +88,52 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
         StationCount = _stations.Count;
     }
 
+    /// <summary>Shows freshly loaded settings without treating them as the user's choice.</summary>
+    internal void Show(AppSettings settings)
+    {
+        _settings = settings;
+        _showingSettings = true;
+        try
+        {
+            Profiles.Clear();
+            foreach (var profile in settings.Profiles)
+            {
+                Profiles.Add(profile);
+            }
+            SelectedProfile = Profiles.FirstOrDefault(p => p.Id == settings.ActiveProfileId);
+            CanSwitchProfiles = !settings.ReadOnly && Profiles.Count > 1;
+        }
+        finally
+        {
+            _showingSettings = false;
+        }
+    }
+
+    partial void OnSelectedProfileChanged(StationProfile? value)
+    {
+        if (!_showingSettings && value is not null && _settings is { } settings && value.Id != settings.ActiveProfileId)
+        {
+            _ = SwitchProfileAsync(settings, value);
+        }
+    }
+
+    /// <summary>Asks the engine to use <paramref name="profile"/>; on failure, shows why and the profile still in use.</summary>
+    internal async Task SwitchProfileAsync(AppSettings settings, StationProfile profile)
+    {
+        var switched = settings with { ActiveProfileId = profile.Id };
+        try
+        {
+            await engine.SaveSettingsAsync(switched);
+            _settings = switched;
+            ErrorText = null;
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            ErrorText = ex.Message;
+            Show(settings);
+        }
+    }
+
     internal void Show(EngineStatus status)
     {
         PacketCount = status.PacketsReceived;
@@ -83,6 +142,7 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
             ConnectionState.Connected => $"APRS-IS connected · {status.Server}",
             ConnectionState.Connecting => "APRS-IS connecting…",
             ConnectionState.Faulted => "APRS-IS connection failed · retrying",
+            ConnectionState.NotConfigured => "APRS-IS not set up · add a callsign",
             _ => "APRS-IS disconnected",
         };
     }
@@ -167,6 +227,11 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
             }
             Show(status);
             ErrorText = null;
+            if (_settings is null || status.ProfileId != _settings.ActiveProfileId)
+            {
+                // First poll, or the profile changed elsewhere (another window, another browser).
+                Show(await engine.GetSettingsAsync(cancellationToken));
+            }
         } while (await timer.WaitForNextTickAsync(cancellationToken));
     }
 }
