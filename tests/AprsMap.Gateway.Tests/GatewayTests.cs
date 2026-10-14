@@ -64,7 +64,8 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
         await cts.CancelAsync();
     }
 
-    // TestServer has no real sockets; long polling runs through its in-memory handler.
+    // TestServer has no real sockets; long polling runs through its in-memory handler. JSON uses only the
+    // source-generated metadata, as in the published browser app, so a missing hub type fails here and not in a browser.
     private RemoteEngineService CreateRemote()
     {
         var server = factory.Server;
@@ -77,6 +78,7 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
                     o.Transports = HttpTransportType.LongPolling;
                 }
             )
+            .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolver = EngineJsonContext.Default)
             .Build();
         return new RemoteEngineService(connection);
     }
