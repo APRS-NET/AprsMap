@@ -8,8 +8,8 @@ Working product name: **AprsMap** (placeholder; rename before the first release)
   interface**.
 - All APRS protocol work (packets, KISS, AX.25, TNC, APRS-IS, messaging rules, digipeating, IGating) lives in
   **APRS.NET**. This repo owns the application: station state, maps, settings, UI. See [ownership](#ownership-rule).
-- Modern stack: .NET 10, Avalonia 12, MVVM (CommunityToolkit.Mvvm), Mapsui 5 for the map, async streams throughout,
-  `TimeProvider` for testable time.
+- Modern stack: .NET 10, Avalonia 12, MVVM (CommunityToolkit.Mvvm), Mapsui 5 for the base map, async streams
+  throughout, `TimeProvider` for testable time.
 
 ## The browser constraint
 
@@ -40,20 +40,22 @@ the engine:
                                         └──────────────────────────┘
 ```
 
-Map tiles are fetched directly by each UI (desktop: disk cache; browser: HTTP cache), never proxied through the
-engine.
+Map tiles never go through `IEngineService`. Both heads use one tile cache (`AprsMap.Tiles`): the desktop in-process,
+and the browser through the gateway's same-origin `/tiles/{provider}/{z}/{x}/{y}.png` endpoint, which serves the same
+cache over plain HTTP. See [Map tiles](#map-tiles).
 
 ## Solution layout
 
 | Project | License | Target | Depends on | Holds |
 | --- | --- | --- | --- | --- |
-| `AprsMap.Contracts` | MIT | net10.0 | — | `IEngineService`, DTOs (`StationSnapshot`, `TrackPoint`, `ChatMessage`…), change events. Serializable with System.Text.Json source generation. No APRS.NET types leak out. |
+| `AprsMap.Contracts` | MIT | net10.0 | — | `IEngineService`, DTOs (`StationSnapshot`, `TrackPoint`, `ChatMessage`…), change events. Every type that crosses the hub is listed in `EngineJsonContext` (System.Text.Json source generation), because browser builds have reflection-based JSON turned off. No APRS.NET types leak out. |
 | `AprsMap.Core` | MIT | net10.0 | Contracts, APRS.NET | The engine: connection manager, station store, tracks, message center, object manager, beacon scheduler host, settings, the in-process `IEngineService`. No UI references. |
 | `AprsMap.Client.Remote` | MIT | net10.0 (browser-safe) | Contracts | `IEngineService` over SignalR. |
-| `AprsMap.UI` | AGPL-3.0 | net10.0 | Contracts, Avalonia, Mapsui | Shared views, view models, map layers, symbol rendering. Depends only on `IEngineService`, never on Core. |
-| `AprsMap.Desktop` | AGPL-3.0 | net10.0 | UI, Hosting | Desktop head; composes Core in-process. Disk tile cache, serial/GPS device pickers. |
-| `AprsMap.Browser` | AGPL-3.0 | net10.0-browser | UI, Client.Remote | WebAssembly head. |
-| `AprsMap.Gateway` | AGPL-3.0 | net10.0 | Hosting | ASP.NET Core host: SignalR hub, auth, serves the Browser bundle, headless operation (IGate/digi without any UI attached). |
+| `AprsMap.Tiles` | MIT | net10.0 | — | Map tile cache: disk store, HTTP fetch that follows each provider's usage policy (User-Agent from branding, cache headers, conditional revalidation, merged duplicate downloads, capped concurrency). No UI, no Mapsui or BruTile. |
+| `AprsMap.UI` | AGPL-3.0 | net10.0 | Contracts, Avalonia, Mapsui (core) | Shared views, view models, the `MapView` control, the station layer and symbol atlas, and the tile source adapter (fed by the head). Depends only on `IEngineService`, never on Core. |
+| `AprsMap.Desktop` | AGPL-3.0 | net10.0 | UI, Hosting, Tiles | Desktop head; composes Core in-process and gives the map `AprsMap.Tiles` directly. Serial/GPS device pickers. |
+| `AprsMap.Browser` | AGPL-3.0 | net10.0-browser | UI, Client.Remote | WebAssembly head; fetches tiles from the gateway's `/tiles` endpoint. AOT in Release builds. |
+| `AprsMap.Gateway` | AGPL-3.0 | net10.0 | Hosting, Tiles | ASP.NET Core host: SignalR hub, `/tiles` endpoint, auth, serves the Browser bundle, headless operation (IGate/digi without any UI attached). |
 | `AprsMap.Hosting` | AGPL-3.0 | net10.0 | Core | Host wiring shared by Desktop and Gateway: engine configuration binding and OpenTelemetry (OTLP export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set). |
 | `tests/*` | | | Core unit tests (fake `TimeProvider`, recorded packet corpora), contract round-trip tests, headless Avalonia UI tests. |
 
@@ -95,6 +97,64 @@ public interface IEngineService
 
 SignalR supports `IAsyncEnumerable<T>` server-to-client streaming, so the remote implementation maps one to one.
 
+Stream shapes (from [spike 2](spikes/signalr-stream.md)):
+
+- **The map gets station changes, not packets.** `WatchStationsAsync` yields compact changes (callsign, position,
+  symbol, time) in batches about every 250 ms, keeping only the latest change per station in each batch. At the real
+  full feed that is about 5 KB/s against 28–36 KB/s for per-packet messages, and the latency it adds is invisible on a
+  map.
+- **Raw packets are opt-in.** `WatchRawAsync` (raw text plus summary) is only for the raw packet scroller.
+- **A late joiner gets a snapshot first.** Even 40,000 stations arrive in well under a second.
+- **Wire format: MessagePack between gateway and browser**, 20–40 % smaller than JSON. JSON stays available for
+  debugging, and every hub type stays in `EngineJsonContext` so it keeps working.
+
+Throughput is not a constraint: the browser kept up with 20× the full worldwide feed, and one gateway served 100
+viewers on a third of one core.
+
+## Map rendering
+
+From [spike 1](spikes/map-wasm.md) and [spike 3](spikes/symbols.md):
+
+- **Mapsui for the base map only**: tiles, projection, navigation and tile fetching. Mapsui.Avalonia 5.1 doesn't run
+  on Avalonia 12, so `AprsMap.UI` owns a small `MapView` control that hosts Mapsui's core and draws through Skia.
+- **Stations, tracks and labels are our own Skia layer**, not Mapsui features. Mapsui's per-feature pipeline cost 3–5×
+  more than drawing directly.
+- **Symbols come from one sprite sheet (atlas) drawn with a single `SKCanvas.DrawAtlas` call per frame**: under 1 ms
+  for 2,000 symbols in the browser. Never draw the SVGs per frame (16 fps).
+  - The atlas is built at runtime from `AprsNet.Symbols` (Svg.Skia, with a cached typeface provider; without it each
+    symbol takes 47 ms in font lookups).
+  - The 188 base symbols are built up front (40 ms desktop, about 0.3 s browser); overlay symbols are added the first
+    time a packet uses one.
+  - The atlas is rebuilt when symbol size, screen scale or style changes.
+- **Labels are the expensive part** (about 10 ms per 2,000 per frame). Declutter them, cache rendered labels, and
+  treat label density as a performance setting.
+- **The GPU resource budget must fit the tiles on screen.** Avalonia's default of 28 MB makes Skia re-upload every
+  tile each frame on large canvases. Set `SkiaOptions.MaxGpuResourceSizeBytes` from the screen area (96 MB covers
+  2256 × 1352).
+- **Browser Release builds use AOT**, which roughly doubles managed drawing speed. The cost is a download of about
+  73 MB against 35 MB uncompressed, and a slower publish.
+
+## Map tiles
+
+From [spike 4](spikes/tile-cache.md). `AprsMap.Tiles` follows the
+[OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/) and the equivalent rules of any other
+provider:
+
+- **Identity:** a User-Agent built from branding (`Brand.DisplayName`, version, `Brand.SourceUrl`); the browser's
+  Referer is passed through unchanged.
+- **Freshness:**
+  - honour `Cache-Control`, `Age`, `Expires` and the ETag, with a 7-day default;
+  - revalidate expired tiles with conditional requests;
+  - serve stale tiles only within the `stale-while-revalidate` and `stale-if-error` windows the server grants.
+- **Load:** at most 4 upstream requests in flight, and concurrent requests for one tile share one download.
+- **No bulk downloads:** only tiles a user is viewing. Region preloading (F4.5) uses only providers that allow it.
+- **Size cap with least-recently-used purging.**
+
+The gateway's `/tiles` endpoint is same-origin, so the browser needs no CORS or User-Agent of its own (BruTile's HTTP
+source refuses requests without one, so the browser uses a small `HttpClient` tile source instead). It bounds
+coordinates and providers so it isn't an open proxy. All viewers share the gateway's cache: 10 viewers asking for the
+same 25 new tiles cause 25 upstream requests.
+
 ## Ownership rule
 
 Ask: *would another APRS application (a digipeater, a tracker, a logger) need this exactly as written?*
@@ -123,10 +183,20 @@ package ships.
 
 ## Spikes before Phase 1 (each one is a timeboxed throwaway)
 
+All four are done (2026-10-13/14). Their conclusions are folded into the sections above. Each write-up is in
+`docs/spikes/`, and the throwaway code is on its `spike/*` branch, never merged.
+
 1. **Mapsui 5.1 + Avalonia 12 in WebAssembly**: OSM tiles, 2,000 moving symbol features, pan and zoom performance.
-   Fallback: a custom Skia tile/point layer.
+   Fallback: a custom Skia tile/point layer. **Done:** [map-wasm.md](spikes/map-wasm.md).
 2. **SignalR client in Avalonia.Browser**: stream `IAsyncEnumerable` changes to the WASM app; measure throughput for a
-   busy full feed.
-3. **Symbol rendering**: rasterize `AprsNet.Symbols` SVGs (both styles, with overlays) into a cached Skia atlas.
+   busy full feed. **Done:** [signalr-stream.md](spikes/signalr-stream.md).
+3. **Symbol rendering**: rasterize `AprsNet.Symbols` SVGs (both styles, with overlays) into a cached Skia atlas. **Done:**
+   [symbols.md](spikes/symbols.md).
 4. **Tile cache**: a desktop disk cache honoring the OSM tile usage policy (User-Agent, cache headers, no bulk preload
-   from openstreetmap.org; preload only from providers that permit it).
+   from openstreetmap.org; preload only from providers that permit it). **Done:** [tile-cache.md](spikes/tile-cache.md).
+
+Smaller fixes the spikes turned up, for the Phase 0 and Phase 1 work that touches them:
+
+- `Engine.Accept` lets a parse exception escape; it should catch and count bad lines.
+- `MainViewModel` swallows hub errors, so a failure looks like "Starting…" forever.
+- The default `N0CALL` login is rejected by APRS-IS servers; the first-run wizard (F0.5) must collect a callsign.
