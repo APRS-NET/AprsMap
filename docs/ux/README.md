@@ -59,6 +59,7 @@ web.
 | Corners | Rounded · Sharp | Rounded | Rounded: 8 px controls, 12 px panels. Sharp: 2 px and 0 px. |
 | Density | Comfortable · Compact | Comfortable | Compact tightens list rows and paddings; touch targets stay ≥ 44 px on touch devices. |
 | Motion | Follow OS · Reduced | Follow OS | |
+| Language | System default · each translated language, in its own name | System default | OS language on desktop, browser language on the web. Switches live. Numbers, dates and units follow it; callsigns and packet text never change ([F0.9](../features/F0.9-localization.md)). |
 
 How it is built:
 
