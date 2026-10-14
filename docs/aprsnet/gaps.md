@@ -34,6 +34,7 @@ Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13).
 | G22 | AGWPE TCP transport | new: AprsNet.Agw | 3 | — |
 | G24 | Station track anomaly analysis | Packets (or new AprsNet.Analysis) | 1 | — |
 | G25 | Frequency specification parsing and validation | Packets | 3 | — |
+| G26 | APRS-IS server presets a UI can list | AprsIsTcpClient | 0 | — |
 
 ---
 
@@ -104,6 +105,9 @@ bounding box for an `AprsPosition`, compass point names, and unit conversions (k
 radio horizon `sqrt(2*h)` and the PHG range formula from APRS101 p.28.
 
 **Acceptance.** Known reference distances; antimeridian and pole cases; Maidenhead round-trip.
+
+**Order.** The Maidenhead part (locator ↔ latitude/longitude, with validation) is needed first, by the F0.5 first-run
+wizard, and can ship ahead of the rest of G08.
 
 ## G09: Telemetry definitions applied to reports
 
@@ -311,3 +315,17 @@ frequency), and the AFRS conventions. Return a `FrequencySpec` with typed parts.
 **Spec refs.** APRS.NET `docs/spec/aprs12/frequency-afrs.md`; APRS 1.2 frequency spec.
 
 **Acceptance.** Vectors from the spec; corpus repeater objects; each warning code has a test.
+
+## G26: APRS-IS server presets a UI can list
+
+**Need.** AprsMap F0.5 (first-run wizard, server step) and the connection settings: offer the worldwide and regional
+aprs2.net rotates by name instead of hard-coding host names in the app.
+
+**Scope.** `AprsIsEndpoint` already has the presets (`Rotate`, `NorthAmerica`, `SouthAmerica`, `Europe`, `Asia`,
+`Oceania`). Add an enumerable list of them, each with a short English region name (for example "Worldwide", "North
+America", "Europe and Africa") and a stable key, in a fixed order with the worldwide rotate first. Optionally, a lookup
+from a host string back to its preset.
+
+**Spec refs.** <https://www.aprs2.net/> (regional rotate names; port 14580 for user-defined filters).
+
+**Acceptance.** The list matches the existing preset properties one to one; keys are stable; worldwide first.
