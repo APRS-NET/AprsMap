@@ -12,12 +12,17 @@ public class HostingTests
     [Fact]
     public void AddAprsMapEngineRegistersOneEngineBehindTheContract()
     {
-        var services = new ServiceCollection().AddLogging().AddAprsMapEngine();
+        var services = new ServiceCollection()
+            .AddLogging()
+            .AddAprsMapEngine()
+            .Configure<EngineOptions>(o => o.SettingsFolder = Path.Combine(Path.GetTempPath(), "never-written"));
         using var provider = services.BuildServiceProvider();
 
         var engine = provider.GetRequiredService<Engine>();
         Assert.Same(engine, provider.GetRequiredService<IEngineService>());
         Assert.Single(provider.GetServices<IHostedService>());
+        var store = Assert.IsType<FileSettingsStore>(provider.GetRequiredService<ISettingsStore>());
+        Assert.StartsWith(Path.Combine(Path.GetTempPath(), "never-written"), store.FilePath, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -25,6 +30,7 @@ public class HostingTests
     {
         var services = new ServiceCollection()
             .AddLogging()
+            .AddSingleton<ISettingsStore>(InMemorySettingsStore.WithProfile())
             .AddAprsMapEngine()
             .Configure<EngineOptions>(o => o.Enabled = false);
         await using var provider = services.BuildServiceProvider();
@@ -46,6 +52,7 @@ public class HostingTests
         var services = new ServiceCollection()
             .AddLogging()
             .AddSingleton<IPacketLineSourceFactory>(factory)
+            .AddSingleton<ISettingsStore>(InMemorySettingsStore.WithProfile())
             .AddAprsMapEngine();
         await using var provider = services.BuildServiceProvider();
         var hosted = provider.GetRequiredService<IHostedService>();
@@ -68,7 +75,9 @@ public class HostingTests
     {
         var factory = new AprsIsLineSourceFactory(NullLoggerFactory.Instance, TimeProvider.System);
 
-        Assert.Throws<InvalidOperationException>(() => factory.Create(new EngineOptions { Server = "bad host:x" }));
+        Assert.Throws<InvalidOperationException>(() =>
+            factory.Create(InMemorySettingsStore.Profile("N0CALL") with { Server = "bad host:x" })
+        );
     }
 
     [Fact]
@@ -76,7 +85,13 @@ public class HostingTests
     {
         var factory = new AprsIsLineSourceFactory(NullLoggerFactory.Instance, TimeProvider.System);
 
-        var source = factory.Create(new EngineOptions { Server = "localhost:14580", Filter = "r/40/-105/50" });
+        var source = factory.Create(
+            InMemorySettingsStore.Profile("N0CALL") with
+            {
+                Server = "localhost:14580",
+                Filter = "r/40/-105/50",
+            }
+        );
 
         await source.DisposeAsync();
     }
@@ -104,7 +119,7 @@ public class HostingTests
     {
         public TaskCompletionSource Created { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public IPacketLineSource Create(EngineOptions options)
+        public IPacketLineSource Create(StationProfile profile)
         {
             Created.TrySetResult();
             return this;

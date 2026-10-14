@@ -15,6 +15,9 @@ public enum ConnectionState
 
     /// <summary>The last attempt failed; the engine will retry.</summary>
     Faulted,
+
+    /// <summary>No station profile yet: first-run setup has to supply a callsign before the engine connects.</summary>
+    NotConfigured,
 }
 
 /// <summary>A snapshot of the engine.</summary>
@@ -22,4 +25,13 @@ public enum ConnectionState
 /// <param name="Server">The server name reported at login, when connected.</param>
 /// <param name="PacketsReceived">Packets received since the engine started.</param>
 /// <param name="Version">The engine's build version.</param>
-public sealed record EngineStatus(ConnectionState Connection, string? Server, long PacketsReceived, string Version);
+/// <param name="ProfileId">The active <see cref="StationProfile.Id"/>, so a UI notices when another one switches it.</param>
+/// <param name="Callsign">The active profile's callsign, when there is one.</param>
+public sealed record EngineStatus(
+    ConnectionState Connection,
+    string? Server,
+    long PacketsReceived,
+    string Version,
+    string? ProfileId = null,
+    string? Callsign = null
+);

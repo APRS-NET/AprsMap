@@ -1,5 +1,6 @@
-# Run the gateway locally:  docker compose up --build   then open http://localhost:8080
-# Settings come from environment variables (Engine__Callsign etc.); see docs/deployment.md.
+# Run the gateway locally:  APRS_CALLSIGN=N0CALL-10 docker compose up --build   then open http://localhost:8080
+# The callsign and the other Engine__* values are first-run defaults: they create the station's first profile when the
+# settings volume is empty. After that the stored settings win; see docs/deployment.md.
 services:
   gateway:
     build: .
@@ -7,10 +8,16 @@ services:
     ports:
       - "8080:8080"
     environment:
-      Engine__Callsign: N0CALL
+      Engine__Callsign: ${APRS_CALLSIGN:-}
       Engine__Passcode: "-1"
       Engine__Server: rotate.aprs2.net:14580
       Engine__Filter: r/40.0/-105.0/50
+      Engine__SettingsFolder: /data
       # Uncomment to export logs, metrics and traces to an OpenTelemetry collector:
       # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    volumes:
+      - settings:/data
     restart: unless-stopped
+
+volumes:
+  settings:

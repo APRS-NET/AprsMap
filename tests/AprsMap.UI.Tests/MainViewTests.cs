@@ -14,7 +14,7 @@ public class MainViewTests
     public void ShowsConnectionAndPackets()
     {
         var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
-        vm.Show(new(Contracts.ConnectionState.Connected, "T2TEST", 1, "1.0.0"));
+        vm.Show(new Contracts.EngineStatus(Contracts.ConnectionState.Connected, "T2TEST", 1, "1.0.0"));
         vm.Add(FakeEngine.Packet("N0CALL-9"));
         var window = new Window
         {
@@ -29,6 +29,23 @@ public class MainViewTests
         Assert.Equal("APRS-IS connected · T2TEST", label.Text);
         var list = window.GetLogicalDescendants().OfType<ListBox>().Single(l => l.Name == "PacketList");
         Assert.Equal(1, list.ItemCount);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void ShowsTheProfilePickerOnlyOnceThereAreProfiles()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
+        var window = new Window { Content = new MainView { DataContext = vm } };
+        window.Show();
+        var picker = window.GetLogicalDescendants().OfType<ComboBox>().Single(c => c.Name == "ProfilePicker");
+
+        Assert.False(picker.IsVisible);
+        vm.Show(FakeEngine.TwoProfiles());
+        Assert.True(picker.IsVisible);
+        Assert.True(picker.IsEnabled);
+        Assert.Equal(2, picker.ItemCount);
+        Assert.Equal("home", (picker.SelectedItem as Contracts.StationProfile)?.Id);
         window.Close();
     }
 

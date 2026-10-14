@@ -69,8 +69,8 @@ method or an event on `IEngineService`.
 
 ## Service interface shape (draft)
 
-Built so far (F0.2): `GetStatusAsync`, `WatchPacketsAsync` and `WatchStationsAsync`. The rest arrives with the
-features that need it.
+Built so far: `GetStatusAsync`, `WatchPacketsAsync` and `WatchStationsAsync` (F0.2), and `GetSettingsAsync` /
+`SaveSettingsAsync` (F0.4). The rest arrives with the features that need it.
 
 ```csharp
 public interface IEngineService
@@ -181,6 +181,24 @@ Ask: *would another APRS application (a digipeater, a tracker, a logger) need th
 If an app feature needs a missing protocol capability, the app spec links the gap section, and the app code waits or
 uses a clearly marked temporary internal shim (`// SHIM: replace with APRS.NET <gap id>`), which is deleted when the
 package ships.
+
+## Settings
+
+The engine owns settings (`AppSettings`: station profiles, the active one, and shared units), so the desktop and
+browser UIs read and change them through `IEngineService` like everything else.
+
+- **Storage:** one `settings.json` per user ([scope](scope.md#settings-storage-and-profiles)), written atomically. A
+  file that can't be read is moved aside to `settings.json.invalid`, and the app starts as on a first run.
+- **First run:** with no stored settings, the engine creates the first profile from the configured defaults
+  (`Engine:Callsign` and friends) if they name a usable callsign. Otherwise it stays `NotConfigured` and doesn't
+  connect until a profile exists.
+- **Validation:** the engine checks every save. Login fields go through APRS.NET's own `AprsIsClientOptions.Validate`,
+  so the login rules live in one place.
+- **Switching:** saving a different active profile, or a change to its callsign, passcode, server or filter, ends the
+  APRS-IS session and reconnects at once with the new values. Other changes (names, location, units) don't reconnect.
+- **Gateway:** browsers get the settings read-only (`AppSettings.ReadOnly`, passcodes hidden) and can't save, because a
+  profile switch changes the station for every viewer. `Gateway:AllowSettingsChanges` lifts that on a trusted
+  network until operator sign-in (F2.9) exists.
 
 ## Gateway concerns
 

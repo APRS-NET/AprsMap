@@ -17,6 +17,7 @@ builder
 builder
     .Services.AddSignalR()
     .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default));
+builder.Services.AddOptions<GatewayOptions>().BindConfiguration(GatewayOptions.SectionName);
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();

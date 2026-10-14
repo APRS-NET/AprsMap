@@ -12,12 +12,19 @@ internal sealed class FakeEngine : IEngineService
     private int _stationSubscriptions;
     private int _packetSubscriptions;
 
-    public EngineStatus Status { get; set; } = new(ConnectionState.Connected, "T2TEST", 0, "0.0.0");
+    public EngineStatus Status { get; set; } = new(ConnectionState.Connected, "T2TEST", 0, "0.0.0", "home", "N0CALL");
 
     /// <summary>When set, <see cref="GetStatusAsync"/> throws it (the gateway is unreachable).</summary>
     public Exception? StatusFailure { get; set; }
 
     public int StationSubscriptions => Volatile.Read(ref _stationSubscriptions);
+
+    public AppSettings Settings { get; set; } = TwoProfiles();
+
+    /// <summary>When set, <see cref="SaveSettingsAsync"/> throws it.</summary>
+    public Exception? SaveFailure { get; set; }
+
+    public List<AppSettings> Saved { get; } = [];
 
     public int PacketSubscriptions => Volatile.Read(ref _packetSubscriptions);
 
@@ -67,6 +74,31 @@ internal sealed class FakeEngine : IEngineService
             yield return batch;
         }
     }
+
+    public Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Settings);
+
+    public Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default)
+    {
+        if (SaveFailure is { } failure)
+        {
+            return Task.FromException(failure);
+        }
+        Saved.Add(settings);
+        Settings = settings;
+        Status = Status with { ProfileId = settings.ActiveProfileId };
+        return Task.CompletedTask;
+    }
+
+    public static AppSettings TwoProfiles() =>
+        new(
+            [
+                new("home", "Home", "N0CALL", -1, "rotate.aprs2.net:14580", null, null, null),
+                new("portable", "Portable", "N0CALL-7", -1, "rotate.aprs2.net:14580", null, null, null),
+            ],
+            "home",
+            UnitSettings.Metric
+        );
 
     public static PacketView Packet(string source) =>
         new(DateTimeOffset.UnixEpoch, source, "Status", "Status", $"{source}>APRS:>hi");

@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+using AprsMap.Contracts;
+
 namespace AprsMap.Core;
 
 /// <summary>One connection's worth of raw TNC2 packet lines. The engine opens a new source after each failure.</summary>
@@ -14,6 +16,6 @@ public interface IPacketLineSource : IAsyncDisposable
 /// <summary>Creates a fresh <see cref="IPacketLineSource"/> for each connection attempt.</summary>
 public interface IPacketLineSourceFactory
 {
-    /// <summary>Creates a source configured from <paramref name="options"/>.</summary>
-    IPacketLineSource Create(EngineOptions options);
+    /// <summary>Creates a source that logs in with <paramref name="profile"/>.</summary>
+    IPacketLineSource Create(StationProfile profile);
 }

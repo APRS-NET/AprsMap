@@ -17,7 +17,8 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        // Settings live next to the executable, wherever it was started from.
+        // appsettings.json next to the executable holds first-run defaults and logging; the user's settings live in
+        // their own settings folder (SettingsLocation).
         var builder = Host.CreateApplicationBuilder(
             new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory }
         );

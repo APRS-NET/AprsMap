@@ -12,6 +12,7 @@ public class MainViewModelTests
     [InlineData(ConnectionState.Connecting, "APRS-IS connecting…")]
     [InlineData(ConnectionState.Faulted, "APRS-IS connection failed · retrying")]
     [InlineData(ConnectionState.Disconnected, "APRS-IS disconnected")]
+    [InlineData(ConnectionState.NotConfigured, "APRS-IS not set up · add a callsign")]
     public void ShowDescribesTheConnection(ConnectionState state, string expected)
     {
         var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
@@ -109,6 +110,76 @@ public class MainViewModelTests
         engine.Push(FakeEngine.Packet("N0NEW"));
         await AdvanceUntil(time, () => vm.Packets.Count == 2);
         Assert.Equal(["N0NEW", "N0CALL"], vm.Packets.Select(p => p.Source));
+
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public void SettingsShowTheProfilesAndTheActiveOne()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
+
+        vm.Show(FakeEngine.TwoProfiles());
+
+        Assert.Equal(["Home", "Portable"], vm.Profiles.Select(p => p.Name));
+        Assert.Equal("home", vm.SelectedProfile?.Id);
+        Assert.True(vm.CanSwitchProfiles);
+
+        vm.Show(FakeEngine.TwoProfiles() with { ReadOnly = true });
+        Assert.False(vm.CanSwitchProfiles);
+        vm.Show(AppSettings.Empty);
+        Assert.False(vm.CanSwitchProfiles);
+        Assert.Null(vm.SelectedProfile);
+    }
+
+    [Fact]
+    public async Task ChoosingAnotherProfileSwitchesTheEngine()
+    {
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        vm.Show(engine.Settings);
+
+        vm.SelectedProfile = vm.Profiles[1];
+        await WaitUntil(() => engine.Saved.Count == 1);
+
+        Assert.Equal("portable", engine.Saved[0].ActiveProfileId);
+        Assert.Equal(engine.Settings.Profiles, engine.Saved[0].Profiles);
+        Assert.Null(vm.ErrorText);
+
+        vm.SelectedProfile = vm.Profiles[1]; // already active: nothing to do
+        Assert.Single(engine.Saved);
+    }
+
+    [Fact]
+    public async Task ARefusedSwitchShowsWhyAndKeepsTheActiveProfile()
+    {
+        var engine = new FakeEngine { SaveFailure = new UnauthorizedAccessException("Not allowed here") };
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        vm.Show(engine.Settings);
+
+        await vm.SwitchProfileAsync(engine.Settings, vm.Profiles[1]);
+
+        Assert.Equal("Not allowed here", vm.ErrorText);
+        Assert.Equal("home", vm.SelectedProfile?.Id);
+        Assert.Empty(engine.Saved);
+    }
+
+    [Fact]
+    public async Task AProfileSwitchedElsewhereIsPickedUpByTheStatusPoll()
+    {
+        var engine = new FakeEngine();
+        var time = new FakeTimeProvider();
+        var vm = new MainViewModel(engine, time);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        var run = vm.StartAsync(cts.Token);
+        await WaitUntil(() => vm.SelectedProfile?.Id == "home");
+
+        engine.Settings = engine.Settings with { ActiveProfileId = "portable" };
+        engine.Status = engine.Status with { ProfileId = "portable" };
+        await AdvanceUntil(time, () => vm.SelectedProfile?.Id == "portable");
+        Assert.Empty(engine.Saved); // shown, not switched again
 
         await cts.CancelAsync();
         await run;
