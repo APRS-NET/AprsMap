@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-10-14)
+
+
+### Bug Fixes
+
+* **web:** give the SignalR hub source-generated JSON metadata ([7d2f169](https://github.com/APRS-NET/AprsMap/commit/7d2f169929b1ca10b82d3c3bdbd1709e52f994b3))
+* **web:** give the SignalR hub source-generated JSON metadata ([d595d29](https://github.com/APRS-NET/AprsMap/commit/d595d2933cceec240085285afaf0d3c6b6d9d96a))
+
 ## 0.1.0-alpha.1 (2026-10-13)
 
 
