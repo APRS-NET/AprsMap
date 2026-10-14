@@ -36,6 +36,7 @@ baseline is noted under **Delivered** in each section.
 | G24 | Station track anomaly analysis | Packets (or new AprsNet.Analysis) | 1 | — |
 | G25 | Frequency specification parsing and validation | Packets | 3 | — |
 | G26 | APRS-IS server presets a UI can list (delivered) | AprsIsTcpClient | 0 | — |
+| G27 | Validation errors with stable codes | AprsIsTcpClient, Packets | 0 | — |
 
 ---
 
@@ -357,3 +358,22 @@ from a host string back to its preset.
 
 **Delivered** (`0.1.0-alpha.12`): `AprsIsServerPreset.All` (`Key`, `Name`, `Endpoint`) and `TryFind` by key, host string
 or endpoint.
+
+## G27: Validation errors with stable codes
+
+**Need.** AprsMap F0.9 (ready for translation). The app shows APRS.NET's validation errors to users in their own
+language, and on the web the error is raised on the gateway, far from the viewer. An English message can't be
+translated reliably, and matching on its text breaks whenever the wording changes.
+
+**Scope.** Wherever APRS.NET throws `ArgumentException` for input a user typed, also expose a stable code and the
+offending value: `AprsIsClientOptions.Validate` (callsign, software name and version, filter), `AprsIsPasscode.Compute`
+(base callsign), `Callsign.Parse`, `PathEntry.Parse` and `AprsIsEndpoint` parsing (host, port). For example, an
+`AprsNetArgumentException : ArgumentException` with `Code` (a string or enum such as `CallsignInvalidLength`,
+`CallsignInvalidCharacter`, `FilterControlCharacter`, `ServerPortOutOfRange`), plus `ParamName` and the offending
+value or position where useful. The English message stays as it is. Alternatively, `TryValidate` methods could return
+an error object, like `MaidenheadLocator.TryParse` does with `MaidenheadParseError`. Codes are documented and never
+renamed.
+
+**Acceptance.** Every user-input `ArgumentException` the listed members throw has a code; a test lists them and checks
+that each code is unique and documented; existing catch blocks for `ArgumentException` keep working.
+
