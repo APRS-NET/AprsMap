@@ -79,6 +79,17 @@ public class EngineJsonContextTests
         Assert.Equal(profile, copy.GetActiveProfile());
     }
 
+    [Fact]
+    public void GeocodingTypesRoundTripWithoutReflection()
+    {
+        IReadOnlyList<GeocodeResult> results = [new("Boulder, Colorado", 40.015, -105.27)];
+        var info = new GeocodingInfo(true, "nominatim.openstreetmap.org", "https://example.org/policy");
+
+        Assert.Equal(results, RoundTrip(results));
+        Assert.Equal(info, RoundTrip(info));
+        Assert.Equal(GeocodingInfo.Disabled, RoundTrip(GeocodingInfo.Disabled));
+    }
+
     private static T? RoundTrip<T>(T value) =>
         JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(value, WithoutReflection), WithoutReflection);
 

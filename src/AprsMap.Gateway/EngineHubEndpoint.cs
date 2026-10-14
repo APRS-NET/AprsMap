@@ -53,4 +53,47 @@ internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayO
             throw new HubException(ex.Message);
         }
     }
+
+    /// <summary>Address lookup is offered only where settings can be changed, so the gateway isn't an open proxy.</summary>
+    [HubMethodName(EngineHub.GetGeocodingInfo)]
+    public async Task<GeocodingInfo> GetGeocodingInfo() =>
+        AllowSettingsChanges
+            ? await engine.GetGeocodingInfoAsync(Context.ConnectionAborted).ConfigureAwait(false)
+            : GeocodingInfo.Disabled;
+
+    [HubMethodName(EngineHub.Geocode)]
+    public async Task<IReadOnlyList<GeocodeResult>> Geocode(string query, string? language)
+    {
+        RequireOperator();
+        try
+        {
+            return await engine.GeocodeAsync(query, language, Context.ConnectionAborted).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new HubException(ex.Message);
+        }
+    }
+
+    [HubMethodName(EngineHub.ComputePasscode)]
+    public async Task<int> ComputePasscode(string callsign)
+    {
+        RequireOperator();
+        try
+        {
+            return await engine.ComputePasscodeAsync(callsign, Context.ConnectionAborted).ConfigureAwait(false);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new HubException(ex.Message);
+        }
+    }
+
+    private void RequireOperator()
+    {
+        if (!AllowSettingsChanges)
+        {
+            throw new HubException(EngineHub.OperatorOnlyMessage);
+        }
+    }
 }

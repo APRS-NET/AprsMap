@@ -75,7 +75,58 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     }
 
     /// <inheritdoc />
+    public Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken cancellationToken = default) =>
+        _connection.InvokeAsync<GeocodingInfo>(EngineHub.GetGeocodingInfo, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(
+        string query,
+        string? language,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        try
+        {
+            return await _connection
+                .InvokeAsync<IReadOnlyList<GeocodeResult>>(EngineHub.Geocode, query, language, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (HubException ex) when (IsOperatorOnly(ex))
+        {
+            throw new UnauthorizedAccessException(EngineHub.OperatorOnlyMessage, ex);
+        }
+        catch (HubException ex)
+        {
+            throw new InvalidOperationException(ServerMessage(ex), ex);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<int> ComputePasscodeAsync(string callsign, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(callsign);
+        try
+        {
+            return await _connection
+                .InvokeAsync<int>(EngineHub.ComputePasscode, callsign, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (HubException ex) when (IsOperatorOnly(ex))
+        {
+            throw new UnauthorizedAccessException(EngineHub.OperatorOnlyMessage, ex);
+        }
+        catch (HubException ex)
+        {
+            throw new ArgumentException(ServerMessage(ex), nameof(callsign), ex);
+        }
+    }
+
+    /// <inheritdoc />
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
+
+    private static bool IsOperatorOnly(HubException exception) =>
+        exception.Message.Contains(EngineHub.OperatorOnlyMessage, StringComparison.Ordinal);
 
     // "An unexpected error occurred invoking 'X' on the server. HubException: <message>" → "<message>"
     internal static string ServerMessage(HubException exception)

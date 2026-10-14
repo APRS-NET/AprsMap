@@ -33,4 +33,32 @@ public interface IEngineService
     /// <exception cref="ArgumentException">The settings are not valid; the message says why.</exception>
     /// <exception cref="UnauthorizedAccessException">This caller may not change settings (a gateway without operator sign-in).</exception>
     Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default);
+
+    /// <summary>Whether <see cref="GeocodeAsync"/> is available to this caller, and which server it sends queries to.</summary>
+    Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Looks up an address or postal code (docs/features/F0.5-first-run-wizard.md, behaviors 13–22). Results are
+    /// cached in memory, so repeating a query sends nothing; requests are spaced at least a second apart, and a lookup
+    /// that has to wait is replaced by a newer one. A blank query returns no results without sending anything.
+    /// </summary>
+    /// <param name="query">The text the user typed. It is not stored or logged above Debug level.</param>
+    /// <param name="language">The UI's language (an IETF tag such as <c>en-GB</c>) for the place names, or null.</param>
+    /// <param name="cancellationToken">Cancels the lookup.</param>
+    /// <returns>Up to five matches, best first; empty when nothing matched.</returns>
+    /// <exception cref="InvalidOperationException">The lookup failed or is unavailable; the message is meant for the user.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not use lookup (a gateway without operator sign-in).</exception>
+    Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(
+        string query,
+        string? language,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// Computes the APRS-IS passcode for <paramref name="callsign"/>'s base callsign (the SSID doesn't change it), for
+    /// the passcode calculator. Only for a licensed amateur's own callsign; the UI asks the user to confirm that first.
+    /// </summary>
+    /// <exception cref="ArgumentException">The callsign can't have a passcode; the message says why.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not use it (a gateway without operator sign-in).</exception>
+    Task<int> ComputePasscodeAsync(string callsign, CancellationToken cancellationToken = default);
 }

@@ -17,12 +17,13 @@ public static class HostingExtensions
     /// <summary>The environment variable that switches OpenTelemetry export on (same convention as APRS.NET).</summary>
     public const string OtlpEndpointVariable = "OTEL_EXPORTER_OTLP_ENDPOINT";
 
-    /// <summary>Adds the engine, bound to the <c>Engine</c> configuration section.</summary>
+    /// <summary>Adds the engine, bound to the <c>Engine</c> and <c>Geocoding</c> configuration sections.</summary>
     public static IHostApplicationBuilder AddAprsMapEngine(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.AddAprsMapEngine();
         builder.Services.Configure<EngineOptions>(builder.Configuration.GetSection(EngineOptions.SectionName));
+        builder.Services.Configure<GeocodingOptions>(builder.Configuration.GetSection(GeocodingOptions.SectionName));
         return builder;
     }
 

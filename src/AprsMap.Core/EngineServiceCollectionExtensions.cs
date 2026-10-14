@@ -12,12 +12,19 @@ public static class EngineServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the engine, its <see cref="IEngineService"/> registration and the background service that runs it.
-    /// Configure it with <c>services.Configure&lt;EngineOptions&gt;(...)</c> or the <c>Engine</c> config section.
+    /// Configure it with <c>services.Configure&lt;EngineOptions&gt;(...)</c> or the <c>Engine</c> config section, and
+    /// address lookup with <see cref="GeocodingOptions"/> (the <c>Geocoding</c> section).
     /// </summary>
     public static IServiceCollection AddAprsMapEngine(this IServiceCollection services)
     {
         services.AddOptions<EngineOptions>();
+        services.AddOptions<GeocodingOptions>();
         services.TryAddSingleton(TimeProvider.System);
+        services.AddHttpClient(
+            NominatimGeocoder.HttpClientName,
+            (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<GeocodingOptions>>().Value.Timeout
+        );
+        services.TryAddSingleton<IGeocoder, NominatimGeocoder>();
         services.TryAddSingleton<IPacketLineSourceFactory, AprsIsLineSourceFactory>();
         services.TryAddSingleton<ISettingsStore>(sp =>
             SettingsLocation.CreateStore(sp.GetRequiredService<IOptions<EngineOptions>>().Value)
