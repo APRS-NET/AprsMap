@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-10-14)
+
+
+### Features
+
+* **settings:** per-user settings with station profiles and switching ([8830c21](https://github.com/APRS-NET/AprsMap/commit/8830c21229667b6f76aa73b74380d122ef0546cc))
+* **settings:** per-user settings with station profiles and switching ([f11f587](https://github.com/APRS-NET/AprsMap/commit/f11f587ec7959b208b5ecda726db38684606c0f8))
+
 ## [0.1.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-10-14)
 
 
