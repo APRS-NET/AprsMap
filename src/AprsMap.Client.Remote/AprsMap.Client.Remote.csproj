@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="AprsMap.Gateway.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../AprsMap.Contracts/AprsMap.Contracts.csproj" />
   </ItemGroup>
 

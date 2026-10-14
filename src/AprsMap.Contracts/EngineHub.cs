@@ -12,4 +12,7 @@ public static class EngineHub
 
     /// <summary>Hub streaming method for <see cref="IEngineService.WatchPacketsAsync"/>.</summary>
     public const string WatchPackets = "WatchPackets";
+
+    /// <summary>Hub streaming method for <see cref="IEngineService.WatchStationsAsync"/>.</summary>
+    public const string WatchStations = "WatchStations";
 }

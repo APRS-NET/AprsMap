@@ -64,6 +64,33 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
         await cts.CancelAsync();
     }
 
+    [Fact]
+    public async Task RemoteClientGetsTheStationSnapshotThenChanges()
+    {
+        const string name = "N0MAP"; // not used by other tests: the fixture's engine is shared
+        var engine = factory.Services.GetRequiredService<Engine>();
+        engine.Accept($"{name}>APRS:!4903.50N/07201.75W>");
+        await using var remote = CreateRemote();
+        await remote.StartAsync(Ct);
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        await using var watch = remote.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        Assert.True(await watch.MoveNextAsync());
+        var station = Assert.Single(watch.Current.Changed, s => s.Name == name);
+        Assert.Equal("/>", station.Symbol);
+        Assert.Equal(49.0583, station.Latitude, 4);
+
+        engine.Accept($"{name}>APRS:!4904.00N/07202.00W-");
+        do
+        {
+            Assert.True(await watch.MoveNextAsync());
+        } while (!watch.Current.Changed.Any(s => s.Name == name));
+        var moved = watch.Current.Changed.Single(s => s.Name == name);
+        Assert.Equal("/-", moved.Symbol);
+        Assert.Equal(49.0667, moved.Latitude, 4);
+        await cts.CancelAsync();
+    }
+
     // TestServer has no real sockets; long polling runs through its in-memory handler. JSON uses only the
     // source-generated metadata, as in the published browser app, so a missing hub type fails here and not in a browser.
     private RemoteEngineService CreateRemote()

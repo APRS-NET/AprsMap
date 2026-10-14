@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using AprsMap.Contracts;
 using AprsMap.Core;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
@@ -19,7 +20,8 @@ public class EngineTests
     private static Engine CreateEngine(
         FakeTimeProvider time,
         IPacketLineSourceFactory? sources = null,
-        int capacity = 10
+        int capacity = 10,
+        ILogger<Engine>? logger = null
     ) =>
         new(
             Options.Create(
@@ -32,7 +34,7 @@ public class EngineTests
             ),
             sources ?? new FakeSourceFactory(),
             time,
-            NullLogger<Engine>.Instance
+            logger ?? NullLogger<Engine>.Instance
         );
 
     [Fact]
@@ -94,6 +96,124 @@ public class EngineTests
         }
 
         Assert.Equal(["N2CALL", "N3CALL", "N4CALL"], replay.Select(p => p.Source));
+    }
+
+    [Fact]
+    public async Task StationWatchersGetASnapshotThenCoalescedChanges()
+    {
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 14, 12, 0, 0, TimeSpan.Zero));
+        var engine = CreateEngine(time);
+        engine.Accept(Position);
+        engine.Accept(Status); // no position: not a station
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        await using var watch = engine.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        Assert.True(await watch.MoveNextAsync());
+        var station = Assert.Single(watch.Current.Changed);
+        Assert.Equal(
+            new StationState("N0CALL-9", time.GetUtcNow(), 49.0583, -72.0292, "/>"),
+            station with
+            {
+                Latitude = Math.Round(station.Latitude, 4),
+                Longitude = Math.Round(station.Longitude, 4),
+            }
+        );
+
+        // Two moves and a new station inside one interval arrive as one batch with the latest state only.
+        var next = watch.MoveNextAsync().AsTask();
+        engine.Accept("N0CALL-9>APRS:!4904.00N/07202.00W>");
+        engine.Accept("N0CALL-9>APRS:!4905.00N/07203.00W>");
+        engine.Accept("N0NEW>APRS:!4000.00N/10500.00W-");
+        await AdvanceBatchesUntil(time, () => next.IsCompleted);
+        Assert.True(await next);
+        var batch = watch.Current;
+        Assert.Empty(batch.Removed);
+        Assert.Equal(["N0CALL-9", "N0NEW"], batch.Changed.Select(s => s.Name).Order());
+        Assert.Equal(49.0833, batch.Changed.Single(s => s.Name == "N0CALL-9").Latitude, 4);
+        Assert.Equal("/-", batch.Changed.Single(s => s.Name == "N0NEW").Symbol);
+
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await watch.MoveNextAsync());
+    }
+
+    [Fact]
+    public async Task ObjectsAreKeyedByNameAndLeaveTheMapWhenKilled()
+    {
+        var time = new FakeTimeProvider();
+        var engine = CreateEngine(time);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        await using var watch = engine.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+
+        // An interval with no changes sends nothing.
+        var next = watch.MoveNextAsync().AsTask();
+        await Task.Delay(TimeSpan.FromMilliseconds(20), TimeProvider.System, Ct);
+        time.Advance(new EngineOptions().StationBatchInterval);
+        await Task.Delay(TimeSpan.FromMilliseconds(20), TimeProvider.System, Ct);
+        Assert.False(next.IsCompleted);
+
+        engine.Accept("N0CALL>APRS:;LEADER   *092345z4903.50N/07201.75W>Leading");
+        await AdvanceBatchesUntil(time, () => next.IsCompleted);
+        Assert.True(await next);
+        Assert.Equal("LEADER", Assert.Single(watch.Current.Changed).Name);
+
+        next = watch.MoveNextAsync().AsTask();
+        engine.Accept("N0CALL>APRS:;LEADER   _092345z4903.50N/07201.75W>Gone");
+        await AdvanceBatchesUntil(time, () => next.IsCompleted);
+        Assert.True(await next);
+        Assert.Empty(watch.Current.Changed);
+        Assert.Equal(["LEADER"], watch.Current.Removed);
+
+        // Items work the same way; killing something the map never had sends nothing.
+        next = watch.MoveNextAsync().AsTask();
+        engine.Accept("N0CALL>APRS:)AID#2!4903.50N/07201.75W+");
+        engine.Accept("N0CALL>APRS:;UNKNOWN  _092345z4903.50N/07201.75W>");
+        await AdvanceBatchesUntil(time, () => next.IsCompleted);
+        Assert.True(await next);
+        Assert.Equal("AID#2", Assert.Single(watch.Current.Changed).Name);
+        Assert.Empty(watch.Current.Removed);
+
+        next = watch.MoveNextAsync().AsTask();
+        engine.Accept("N0CALL>APRS:)AID#2_4903.50N/07201.75W+");
+        await AdvanceBatchesUntil(time, () => next.IsCompleted);
+        Assert.True(await next);
+        Assert.Equal(["AID#2"], watch.Current.Removed);
+
+        await cts.CancelAsync();
+    }
+
+    [Fact]
+    public async Task ALargeSnapshotArrivesInSeveralBatches()
+    {
+        var engine = CreateEngine(new FakeTimeProvider());
+        var count = Engine.SnapshotBatchSize + 5;
+        for (var i = 0; i < count; i++)
+        {
+            engine.Accept($"N{i}>APRS:!4903.50N/07201.75W>");
+        }
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        await using var watch = engine.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        Assert.True(await watch.MoveNextAsync());
+        Assert.Equal(Engine.SnapshotBatchSize, watch.Current.Changed.Count);
+        Assert.True(await watch.MoveNextAsync());
+        Assert.Equal(5, watch.Current.Changed.Count);
+
+        await cts.CancelAsync();
+    }
+
+    [Fact]
+    public async Task ALineThatIsNotLatin1IsDroppedWithoutStoppingTheEngine()
+    {
+        var logger = new ListLogger();
+        var engine = CreateEngine(new FakeTimeProvider(), logger: logger);
+
+        engine.Accept("N0CALL>APRS:>Snowman \u2603");
+        engine.Accept(Status);
+
+        Assert.Equal(1, (await engine.GetStatusAsync(Ct)).PacketsReceived);
+        var entry = Assert.Single(logger.Entries);
+        Assert.Equal(LogLevel.Debug, entry.Level);
+        Assert.IsType<ArgumentException>(entry.Exception);
     }
 
     [Fact]
@@ -204,6 +324,21 @@ public class EngineTests
         );
     }
 
+    /// <summary>Steps the fake clock by one station batch interval until the condition holds.</summary>
+    private static async Task AdvanceBatchesUntil(FakeTimeProvider time, Func<bool> condition)
+    {
+        for (var step = 0; step < 20 && !condition(); step++)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(20), TimeProvider.System, Ct);
+            time.Advance(new EngineOptions().StationBatchInterval);
+            for (var i = 0; i < 20 && !condition(); i++)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, Ct);
+            }
+        }
+        Assert.True(condition(), "Condition was not met in time.");
+    }
+
     /// <summary>Steps the fake clock one second at a time until the condition holds; returns the seconds taken.</summary>
     private static async Task<int> AdvanceUntil(FakeTimeProvider time, Func<bool> condition)
     {
@@ -237,6 +372,24 @@ public class EngineTests
             await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, Ct);
         }
         Assert.Fail("Condition was not met in time.");
+    }
+
+    private sealed class ListLogger : ILogger<Engine>
+    {
+        public List<(LogLevel Level, Exception? Exception)> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter
+        ) => Entries.Add((logLevel, exception));
     }
 
     /// <summary>Hands out scripted sources in order; once the script runs out, every attempt fails.</summary>

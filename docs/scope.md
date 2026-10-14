@@ -19,7 +19,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | ID | Feature | Owner | Needs | Status |
 | --- | --- | --- | --- | --- |
 | F0.1 | Solution scaffold, CI (build, test, format), Directory.Build.props matching APRS.NET's rigor | App | — | done |
-| F0.2 | `IEngineService` contracts, in-process and SignalR implementations, round-trip tests | App | — | building |
+| F0.2 | `IEngineService` contracts, in-process and SignalR implementations, round-trip tests | App | — | done |
 | F0.3 | Spikes: Mapsui in WASM, SignalR streaming in WASM, symbol atlas, tile cache ([architecture.md](architecture.md#spikes-before-phase-1-each-one-is-a-timeboxed-throwaway), write-ups in [spikes](spikes/)) | App | — | done |
 | F0.4 | Settings model and persistence (desktop: JSON in the user's config folder; gateway: server-side store); units chosen per quantity (altitude, distance, pressure, rain, temperature, wind) | App | — | scoped |
 | F0.5 | First-run wizard: callsign → location → server → optional passcode ([ux](ux/README.md#key-flows)) | App | — | scoped |

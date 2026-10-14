@@ -43,8 +43,15 @@ public class EngineJsonContextTests
             "car"
         );
 
+        var station = new StationState("N0CALL-9", packet.ReceivedAt, 49.0583, -72.0292, "/>");
+        var batch = new StationBatch([station], ["LEADER"]);
+
         Assert.Equal(status, RoundTrip(status));
         Assert.Equal(packet, RoundTrip(packet));
+        var copy = RoundTrip(batch);
+        Assert.NotNull(copy);
+        Assert.Equal(station, Assert.Single(copy.Changed));
+        Assert.Equal(["LEADER"], copy.Removed);
     }
 
     private static T? RoundTrip<T>(T value) =>

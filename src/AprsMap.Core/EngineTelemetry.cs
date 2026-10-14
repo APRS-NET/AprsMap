@@ -23,6 +23,12 @@ public static class EngineTelemetry
         description: "APRS packets received, tagged by packet type."
     );
 
+    internal static readonly Counter<long> LinesRejected = Meter.CreateCounter<long>(
+        "aprsmap.lines.rejected",
+        unit: "{line}",
+        description: "Received lines dropped because they could not be parsed at all."
+    );
+
     internal static readonly Counter<long> ConnectionFailures = Meter.CreateCounter<long>(
         "aprsmap.connection.failures",
         unit: "{failure}",

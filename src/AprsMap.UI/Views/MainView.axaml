@@ -39,6 +39,17 @@
           <Run Text="{Binding PacketCount}" />
           <Run Text="packets" />
         </TextBlock>
+        <TextBlock Foreground="{DynamicResource Brush.TextMuted}" VerticalAlignment="Center">
+          <Run Text="{Binding StationCount}" />
+          <Run Text="stations" />
+        </TextBlock>
+        <TextBlock
+          x:Name="ErrorLabel"
+          Text="{Binding ErrorText}"
+          IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
+          Foreground="{DynamicResource Brush.Warn}"
+          VerticalAlignment="Center"
+        />
       </StackPanel>
     </Border>
     <ListBox x:Name="PacketList" ItemsSource="{Binding Packets}" Background="{DynamicResource Brush.Surface}">

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-using System.Runtime.CompilerServices;
 using AprsMap.Contracts;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,7 +26,7 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(gatewayBaseUri);
         var connection = new HubConnectionBuilder()
             .WithUrl(new Uri(gatewayBaseUri, EngineHub.Path))
-            .WithAutomaticReconnect()
+            .WithAutomaticReconnect(new KeepTryingPolicy())
             // The browser app has no reflection-based JSON (WebAssembly publish turns it off).
             .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default))
             .Build();
@@ -45,17 +44,33 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         _connection.InvokeAsync<EngineStatus>(EngineHub.GetStatus, cancellationToken);
 
     /// <inheritdoc />
-    public async IAsyncEnumerable<PacketView> WatchPacketsAsync(
-        [EnumeratorCancellation] CancellationToken cancellationToken = default
-    )
-    {
-        var stream = _connection.StreamAsync<PacketView>(EngineHub.WatchPackets, cancellationToken);
-        await foreach (var packet in stream.ConfigureAwait(false))
-        {
-            yield return packet;
-        }
-    }
+    public IAsyncEnumerable<PacketView> WatchPacketsAsync(CancellationToken cancellationToken = default) =>
+        _connection.StreamAsync<PacketView>(EngineHub.WatchPackets, cancellationToken);
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<StationBatch> WatchStationsAsync(CancellationToken cancellationToken = default) =>
+        _connection.StreamAsync<StationBatch>(EngineHub.WatchStations, cancellationToken);
 
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
+
+    /// <summary>
+    /// Reconnects quickly at first, then every 30 seconds for as long as it takes. SignalR's default gives up after
+    /// four attempts, which would strand a browser while its gateway restarts or a Pi reboots.
+    /// </summary>
+    internal sealed class KeepTryingPolicy : IRetryPolicy
+    {
+        private static readonly TimeSpan[] FirstDelays =
+        [
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(5),
+            TimeSpan.FromSeconds(10),
+        ];
+
+        public TimeSpan? NextRetryDelay(RetryContext retryContext) =>
+            retryContext.PreviousRetryCount < FirstDelays.Length
+                ? FirstDelays[retryContext.PreviousRetryCount]
+                : TimeSpan.FromSeconds(30);
+    }
 }

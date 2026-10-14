@@ -11,7 +11,8 @@ namespace AprsMap.Core;
 
 /// <summary>
 /// The in-process engine. <see cref="RunAsync"/> keeps an APRS-IS connection open, parses every line with APRS.NET,
-/// remembers recent packets and fans them out to every <see cref="WatchPacketsAsync"/> caller.
+/// remembers recent packets and fans them out to every <see cref="WatchPacketsAsync"/> caller, and keeps the latest
+/// position of every station for <see cref="WatchStationsAsync"/>.
 /// </summary>
 public sealed partial class Engine : IEngineService
 {
@@ -22,6 +23,7 @@ public sealed partial class Engine : IEngineService
     private readonly Lock _gate = new();
     private readonly Queue<PacketView> _recent = new();
     private readonly List<Channel<PacketView>> _watchers = [];
+    private readonly StationStore _stations = new();
     private ConnectionState _state = ConnectionState.Disconnected;
     private string? _server;
     private long _packets;
@@ -84,6 +86,37 @@ public sealed partial class Engine : IEngineService
         }
     }
 
+    /// <summary>How many stations the first batches of <see cref="WatchStationsAsync"/> carry each.</summary>
+    internal const int SnapshotBatchSize = 1000;
+
+    /// <inheritdoc />
+    public async IAsyncEnumerable<StationBatch> WatchStationsAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        var watcher = _stations.Subscribe(out var snapshot);
+        try
+        {
+            foreach (var chunk in snapshot.Chunk(SnapshotBatchSize))
+            {
+                yield return new StationBatch(chunk, []);
+            }
+
+            using var timer = new PeriodicTimer(_options.StationBatchInterval, _time);
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                if (_stations.Drain(watcher) is { } batch)
+                {
+                    yield return batch;
+                }
+            }
+        }
+        finally
+        {
+            _stations.Unsubscribe(watcher);
+        }
+    }
+
     /// <summary>Connects, reads and reconnects until <paramref name="cancellationToken"/> is cancelled.</summary>
     // SHIM: G03 (resilient APRS-IS connection). Replace this loop when APRS.NET ships its connection supervisor.
     public async Task RunAsync(CancellationToken cancellationToken)
@@ -124,13 +157,27 @@ public sealed partial class Engine : IEngineService
     public void Accept(string line)
     {
         ArgumentNullException.ThrowIfNull(line);
-        var packet = AprsPacket.Parse(line);
+        AprsPacket packet;
+        try
+        {
+            packet = AprsPacket.Parse(line);
+        }
+        catch (ArgumentException ex)
+        {
+            // Text that wasn't read as Latin-1, from a source other than the APRS.NET client. Drop the line, not the
+            // connection.
+            EngineTelemetry.LinesRejected.Add(1);
+            LogLineRejected(ex);
+            return;
+        }
         if (!packet.HasHeader)
         {
             return; // server comments and noise
         }
 
-        var view = PacketSummarizer.Summarize(packet, _time.GetUtcNow());
+        var now = _time.GetUtcNow();
+        var view = PacketSummarizer.Summarize(packet, now);
+        _stations.Apply(packet, now);
         EngineTelemetry.PacketsReceived.Add(1, new KeyValuePair<string, object?>("aprs.packet.type", view.Type));
         lock (_gate)
         {
@@ -176,6 +223,9 @@ public sealed partial class Engine : IEngineService
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Connected to APRS-IS server {Server}")]
     private partial void LogConnected(string server);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped a line that could not be parsed")]
+    private partial void LogLineRejected(Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "APRS-IS connection failed; retrying in {Delay}")]
     private partial void LogConnectionFailed(Exception exception, TimeSpan delay);
