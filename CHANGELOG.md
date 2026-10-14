@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.2...v0.1.0-alpha.3) (2026-10-14)
+
+
+### Features
+
+* **engine:** stream the map's stations and survive gateway restarts ([b666b6d](https://github.com/APRS-NET/AprsMap/commit/b666b6dd6ea16e071c62b8e47a90d64ad1a6002a))
+* **engine:** stream the map's stations and survive gateway restarts ([823aabd](https://github.com/APRS-NET/AprsMap/commit/823aabd8b5451af49f107e79c3bdd9a892edc034))
+
 ## [0.1.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.1...v0.1.0-alpha.2) (2026-10-14)
 
 
