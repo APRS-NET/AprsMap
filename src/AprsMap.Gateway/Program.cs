@@ -14,7 +14,9 @@ builder
         tracing: t => t.AddAspNetCoreInstrumentation(),
         metrics: m => m.AddAspNetCoreInstrumentation()
     );
-builder.Services.AddSignalR();
+builder
+    .Services.AddSignalR()
+    .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default));
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();

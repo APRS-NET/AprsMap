@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using AprsMap.Contracts;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AprsMap.Client.Remote;
 
@@ -27,6 +28,8 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         var connection = new HubConnectionBuilder()
             .WithUrl(new Uri(gatewayBaseUri, EngineHub.Path))
             .WithAutomaticReconnect()
+            // The browser app has no reflection-based JSON (WebAssembly publish turns it off).
+            .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default))
             .Build();
         return new RemoteEngineService(connection);
     }
