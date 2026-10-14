@@ -69,15 +69,18 @@ method or an event on `IEngineService`.
 
 ## Service interface shape (draft)
 
+Built so far (F0.2): `GetStatusAsync`, `WatchPacketsAsync` and `WatchStationsAsync`. The rest arrives with the
+features that need it.
+
 ```csharp
 public interface IEngineService
 {
-    // State: snapshot plus a change stream, so a late-joining browser can catch up.
-    Task<StationSetSnapshot> GetStationsAsync(MapViewport viewport, CancellationToken ct);
-    IAsyncEnumerable<StationChange> WatchStationsAsync(MapViewport viewport, CancellationToken ct);
+    // State: the station stream starts with a snapshot, so a late-joining browser catches up without a race.
+    IAsyncEnumerable<StationBatch> WatchStationsAsync(CancellationToken ct);
     Task<StationDetail?> GetStationAsync(string callsign, CancellationToken ct);
     Task<IReadOnlyList<TrackPoint>> GetTrackAsync(string callsign, TimeSpan window, CancellationToken ct);
-    IAsyncEnumerable<RawPacketLine> WatchRawAsync(RawFilter filter, CancellationToken ct);
+    IAsyncEnumerable<PacketView> WatchPacketsAsync(CancellationToken ct);   // the raw packet view; filters later
+    Task<EngineStatus> GetStatusAsync(CancellationToken ct);
 
     // Connections
     IAsyncEnumerable<PortStatus> WatchPortsAsync(CancellationToken ct);
@@ -99,14 +102,20 @@ SignalR supports `IAsyncEnumerable<T>` server-to-client streaming, so the remote
 
 Stream shapes (from [spike 2](spikes/signalr-stream.md)):
 
-- **The map gets station changes, not packets.** `WatchStationsAsync` yields compact changes (callsign, position,
-  symbol, time) in batches about every 250 ms, keeping only the latest change per station in each batch. At the real
-  full feed that is about 5 KB/s against 28–36 KB/s for per-packet messages, and the latency it adds is invisible on a
-  map.
-- **Raw packets are opt-in.** `WatchRawAsync` (raw text plus summary) is only for the raw packet scroller.
-- **A late joiner gets a snapshot first.** Even 40,000 stations arrive in well under a second.
-- **Wire format: MessagePack between gateway and browser**, 20–40 % smaller than JSON. JSON stays available for
-  debugging, and every hub type stays in `EngineJsonContext` so it keeps working.
+- **The map gets station changes, not packets.** `WatchStationsAsync` yields `StationBatch`es: compact states (name,
+  position, symbol, last heard) that changed, plus names that left the map (killed objects and items), about every
+  250 ms with only the latest state per station. A slow viewer costs at most one copy of the map, never a backlog. At
+  the real full feed that is about 9 KB/s of JSON against 28–36 KB/s for per-packet messages, and the latency it adds
+  is invisible on a map.
+- **Raw packets are opt-in.** `WatchPacketsAsync` (raw text plus summary) is only for the raw packet view.
+- **A late joiner gets a snapshot first**, as the stream's first batches (1,000 stations each). Even 40,000 stations
+  arrive in well under a second.
+- **Wire format: JSON with source-generated metadata** (`EngineJsonContext`). The spike measured MessagePack 20–40 %
+  smaller, but SignalR's MessagePack protocol doesn't support trimming or native AOT (MessagePack-CSharp 2.x), so the
+  trimmed browser build refuses it, and the AOT Release build couldn't use it. Batching stations was the real saving;
+  revisit MessagePack if SignalR moves to a trim-safe version.
+- **Clients outlive the gateway.** The browser reconnects forever (quickly at first, then every 30 s), and the UI
+  resubscribes to each stream after a failure, showing the error meanwhile.
 
 Throughput is not a constraint: the browser kept up with 20× the full worldwide feed, and one gateway served 100
 viewers on a third of one core.
@@ -197,6 +206,6 @@ All four are done (2026-10-13/14). Their conclusions are folded into the section
 
 Smaller fixes the spikes turned up, for the Phase 0 and Phase 1 work that touches them:
 
-- `Engine.Accept` lets a parse exception escape; it should catch and count bad lines.
-- `MainViewModel` swallows hub errors, so a failure looks like "Starting…" forever.
+- ~~`Engine.Accept` lets a parse exception escape~~: it now drops and counts the line (F0.2).
+- ~~`MainViewModel` swallows hub errors~~: they now show in the status bar and are retried (F0.2).
 - The default `N0CALL` login is rejected by APRS-IS servers; the first-run wizard (F0.5) must collect a callsign.

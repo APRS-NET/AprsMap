@@ -31,4 +31,21 @@ public class MainViewTests
         Assert.Equal(1, list.ItemCount);
         window.Close();
     }
+
+    [AvaloniaFact]
+    public void ShowsAnEngineErrorOnlyWhileThereIsOne()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
+        var window = new Window { Content = new MainView { DataContext = vm } };
+        window.Show();
+        var error = window.GetLogicalDescendants().OfType<TextBlock>().Single(t => t.Name == "ErrorLabel");
+
+        Assert.False(error.IsVisible);
+        vm.ErrorText = "Gateway unreachable";
+        Assert.True(error.IsVisible);
+        Assert.Equal("Gateway unreachable", error.Text);
+        vm.ErrorText = null;
+        Assert.False(error.IsVisible);
+        window.Close();
+    }
 }

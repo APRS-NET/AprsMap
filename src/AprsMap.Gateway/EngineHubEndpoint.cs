@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-using System.Runtime.CompilerServices;
 using AprsMap.Contracts;
 using Microsoft.AspNetCore.SignalR;
 
@@ -12,11 +11,10 @@ internal sealed class EngineHubEndpoint(IEngineService engine) : Hub
     public Task<EngineStatus> GetStatus() => engine.GetStatusAsync(Context.ConnectionAborted);
 
     [HubMethodName(EngineHub.WatchPackets)]
-    public async IAsyncEnumerable<PacketView> WatchPackets([EnumeratorCancellation] CancellationToken cancellationToken)
-    {
-        await foreach (var packet in engine.WatchPacketsAsync(cancellationToken).ConfigureAwait(false))
-        {
-            yield return packet;
-        }
-    }
+    public IAsyncEnumerable<PacketView> WatchPackets(CancellationToken cancellationToken) =>
+        engine.WatchPacketsAsync(cancellationToken);
+
+    [HubMethodName(EngineHub.WatchStations)]
+    public IAsyncEnumerable<StationBatch> WatchStations(CancellationToken cancellationToken) =>
+        engine.WatchStationsAsync(cancellationToken);
 }

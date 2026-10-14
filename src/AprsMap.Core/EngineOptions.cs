@@ -25,6 +25,9 @@ public sealed class EngineOptions
     /// <summary>How many recent packets the engine keeps for clients that connect later.</summary>
     public int RecentPacketCapacity { get; set; } = 500;
 
+    /// <summary>How often the map's station stream sends what changed. Longer means fewer, larger messages.</summary>
+    public TimeSpan StationBatchInterval { get; set; } = TimeSpan.FromMilliseconds(250);
+
     /// <summary>The first wait before reconnecting after a failure; doubles up to <see cref="MaxRetryDelay"/>.</summary>
     public TimeSpan InitialRetryDelay { get; set; } = TimeSpan.FromSeconds(5);
 

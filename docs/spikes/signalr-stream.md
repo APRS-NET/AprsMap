@@ -100,7 +100,9 @@ Allocation stays under 6 MB/s. One gateway serving a club or a family is far bel
    `StationChange` stream and late-join snapshot. Keep the per-packet stream (with raw text) for the raw packet scroller
    only, where it's opt-in.
 3. **Use MessagePack between gateway and browser.** It's smaller and faster to decode, and it worked unchanged here.
-   Keep JSON available for debugging.
+   Keep JSON available for debugging. *Reversed in F0.2:* the app's trimmed browser build treats trim warnings as
+   errors, and SignalR's MessagePack protocol is marked as unsupported for trimming and native AOT. The spike's build
+   didn't check. The app stays on source-generated JSON ([architecture.md](../architecture.md)).
 4. **Viewport-limit the station stream and snapshot later, if needed.** The numbers say it isn't needed for
    throughput; it is for privacy and tidiness on a public gateway.
 5. **Make `Engine.Accept` survive bad input** (catch and count per line) before anything other than the APRS.NET client
