@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-10-14)
+
+
+### Features
+
+* **engine:** address lookup and passcode calculator for the setup wizard ([3d4a0a8](https://github.com/APRS-NET/AprsMap/commit/3d4a0a8a73492fd55c77e7aebfd73061317197df))
+* **engine:** address lookup and passcode calculator for the setup wizard ([b95a066](https://github.com/APRS-NET/AprsMap/commit/b95a066d40425d9b1cc665c3679b075ea63b62e8))
+
 ## [0.1.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.3...v0.1.0-alpha.4) (2026-10-14)
 
 
