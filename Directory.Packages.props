@@ -3,9 +3,9 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup Label="APRS.NET (pre-release until its 1.0; Dependabot proposes each new alpha)">
-    <PackageVersion Include="AprsNet.AprsIsTcpClient" Version="0.1.0-alpha.9" />
-    <PackageVersion Include="AprsNet.Packets" Version="0.1.0-alpha.9" />
-    <PackageVersion Include="AprsNet.Symbols" Version="0.1.0-alpha.9" />
+    <PackageVersion Include="AprsNet.AprsIsTcpClient" Version="0.1.0-alpha.12" />
+    <PackageVersion Include="AprsNet.Packets" Version="0.1.0-alpha.12" />
+    <PackageVersion Include="AprsNet.Symbols" Version="0.1.0-alpha.12" />
   </ItemGroup>
   <ItemGroup Label="Build">
     <PackageVersion Include="MinVer" Version="8.0.0" />
@@ -36,7 +36,7 @@
     <PackageVersion Include="coverlet.collector" Version="10.1.0" />
     <PackageVersion Include="GitHubActionsTestLogger" Version="3.0.5" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.13" />
-    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.10.0" />
+    <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageVersion Include="xunit.v3.mtp-off" Version="4.0.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />

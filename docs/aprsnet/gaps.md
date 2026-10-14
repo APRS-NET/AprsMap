@@ -6,7 +6,8 @@ API sketches are proposals that follow APRS.NET's existing conventions: parsing 
 are Latin-1, `TimeProvider` for time, async-first I/O, every public member tracked in `PublicAPI.Unshipped.txt`, and
 `AprsNet.Packets` stays I/O-free with BCL-only dependencies.
 
-Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13).
+Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.1.0-alpha.12` (2026-10-14); what has shipped since the
+baseline is noted under **Delivered** in each section.
 
 | ID | Title | Package | AprsMap phase | Issue |
 | --- | --- | --- | --- | --- |
@@ -15,11 +16,11 @@ Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13).
 | G05 | Duplicate packet detection | Packets | 1 | — |
 | G06 | Third-party (`}`) payload decoding | Packets | 1 | — |
 | G07 | Device identification from the aprs-deviceid list | new: AprsNet.DeviceId | 1 | — |
-| G08 | Geodesy and Maidenhead helpers | Packets (or new AprsNet.Geo) | 1 | — |
+| G08 | Geodesy and Maidenhead helpers (Maidenhead part delivered) | Packets (or new AprsNet.Geo) | 1 | — |
 | G09 | Telemetry definitions applied to reports | Packets | 1 | — |
 | G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs | Packets | 1 | — |
-| G01 | `Callsign.Parse` and a packet encoder | Packets | 2 | — |
-| G02 | Transmit through APRS-IS, and passcode generation | AprsIsTcpClient | 2 | — |
+| G01 | `Callsign.Parse` and a packet encoder (partly delivered) | Packets | 2 | — |
+| G02 | Transmit through APRS-IS, and passcode generation (passcode delivered) | AprsIsTcpClient | 2 | — |
 | G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | — |
 | G11 | Beacon scheduling algorithms | new: AprsNet.Beaconing | 2 | — |
 | G19 | Query and response handling | Packets + Messaging | 2 | — |
@@ -34,7 +35,7 @@ Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13).
 | G22 | AGWPE TCP transport | new: AprsNet.Agw | 3 | — |
 | G24 | Station track anomaly analysis | Packets (or new AprsNet.Analysis) | 1 | — |
 | G25 | Frequency specification parsing and validation | Packets | 3 | — |
-| G26 | APRS-IS server presets a UI can list | AprsIsTcpClient | 0 | — |
+| G26 | APRS-IS server presets a UI can list (delivered) | AprsIsTcpClient | 0 | — |
 
 ---
 
@@ -109,6 +110,10 @@ radio horizon `sqrt(2*h)` and the PHG range formula from APRS101 p.28.
 **Order.** The Maidenhead part (locator ↔ latitude/longitude, with validation) is needed first, by the F0.5 first-run
 wizard, and can ship ahead of the rest of G08.
 
+**Delivered** (`0.1.0-alpha.12`): the Maidenhead part, as `MaidenheadLocator` (`Parse`/`TryParse` with a
+`MaidenheadParseError` that names the wrong length or the bad character and its part, `FromPosition`, `Center`,
+`SouthWest`/`NorthEast`). Still open: the rest of G08.
+
 ## G09: Telemetry definitions applied to reports
 
 **Need.** AprsMap F1.11 and F4.1. The design note leaves EQNS application "a job for the caller", but every caller needs
@@ -146,6 +151,9 @@ and can follow the first release of the encoder.
 **Acceptance.** Every builder output parses back to an equal payload (property tests); APRS101 vectors encode
 byte-for-byte; validation errors are reported rather than producing invalid packets.
 
+**Delivered** (by `0.1.0-alpha.12`): `Callsign.Parse`/`TryParse`, and `AprsPacket.Create` with builders for position,
+status and message payloads. Still open: the other payload builders and Mic-E encoding.
+
 ## G02: Transmit through APRS-IS, and passcode generation
 
 **Need.** F2.x. `AprsIsClient` has no public send.
@@ -155,6 +163,8 @@ rules for client-originated packets; the standard passcode hash as `AprsIsPassco
 widely documented, and needed for setup UX).
 
 **Acceptance.** Unverified login cannot transmit; written lines are exactly the packet bytes plus CRLF.
+
+**Delivered** (`0.1.0-alpha.10`): `AprsIsPasscode.Compute(callsign)`. Still open: sending.
 
 ## G10: Messaging session engine (ack, retry, reply-ack, dupes)
 
@@ -329,3 +339,6 @@ from a host string back to its preset.
 **Spec refs.** <https://www.aprs2.net/> (regional rotate names; port 14580 for user-defined filters).
 
 **Acceptance.** The list matches the existing preset properties one to one; keys are stable; worldwide first.
+
+**Delivered** (`0.1.0-alpha.12`): `AprsIsServerPreset.All` (`Key`, `Name`, `Endpoint`) and `TryFind` by key, host string
+or endpoint.
