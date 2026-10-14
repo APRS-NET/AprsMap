@@ -16,4 +16,5 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(EngineStatus))]
 [JsonSerializable(typeof(PacketView))]
 [JsonSerializable(typeof(StationBatch))]
+[JsonSerializable(typeof(AppSettings))]
 public sealed partial class EngineJsonContext : JsonSerializerContext;

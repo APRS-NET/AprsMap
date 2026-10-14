@@ -22,4 +22,15 @@ public interface IEngineService
     /// every few hundred milliseconds, with only the latest state per station.
     /// </summary>
     IAsyncEnumerable<StationBatch> WatchStationsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>The user's settings. A gateway may return them read-only, with passcodes hidden.</summary>
+    Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates and stores <paramref name="settings"/>. Changing the active profile, or its login or filter,
+    /// disconnects from APRS-IS and reconnects with the new values.
+    /// </summary>
+    /// <exception cref="ArgumentException">The settings are not valid; the message says why.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not change settings (a gateway without operator sign-in).</exception>
+    Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default);
 }
