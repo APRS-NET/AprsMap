@@ -6,7 +6,7 @@ API sketches are proposals that follow APRS.NET's existing conventions: parsing 
 are Latin-1, `TimeProvider` for time, async-first I/O, every public member tracked in `PublicAPI.Unshipped.txt`, and
 `AprsNet.Packets` stays I/O-free with BCL-only dependencies.
 
-Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.1.0-alpha.12` (2026-10-14); what has shipped since the
+Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.1.0-alpha.15` (2026-10-14); what has shipped since the
 baseline is noted under **Delivered** in each section.
 
 | ID | Title | Package | AprsMap phase | Issue |
@@ -36,7 +36,7 @@ baseline is noted under **Delivered** in each section.
 | G24 | Station track anomaly analysis | Packets (or new AprsNet.Analysis) | 1 | — |
 | G25 | Frequency specification parsing and validation | Packets | 3 | — |
 | G26 | APRS-IS server presets a UI can list (delivered) | AprsIsTcpClient | 0 | — |
-| G27 | Validation errors with stable codes | AprsIsTcpClient, Packets | 0 | — |
+| G27 | Validation errors with stable codes (delivered) | AprsIsTcpClient, Packets | 0 | — |
 
 ---
 
@@ -165,6 +165,9 @@ validated when it is made (a source that can transmit, a destination that is a v
 beacons, G10 messaging) takes the packets it makes. Name it from APRS.NET's own conventions, not after Packet.NET's API
 ([architecture.md, alternatives considered](../architecture.md#alternatives-considered)). Mic-E puts the latitude in
 the destination, so for a Mic-E payload `Create` replaces the TOCALL; that lands with Mic-E encoding.
+
+**Delivered** (`0.1.0-alpha.13`): `PacketAddress` (`Source`, `Destination`, `Path`, `Create(payload)`,
+`Create(payload, path)`, `Parse`). `0.1.0-alpha.14` added builders for objects, items and Mic-E reports.
 
 **Acceptance (address).** `Create(payload)` equals `AprsPacket.Create` with the same parts; an invalid source, TOCALL
 or path entry is refused when the record is made, not on each packet; a path given to `Create` replaces the default for
@@ -376,4 +379,9 @@ renamed.
 
 **Acceptance.** Every user-input `ArgumentException` the listed members throw has a code; a test lists them and checks
 that each code is unique and documented; existing catch blocks for `ArgumentException` keep working.
+
+**Delivered** (`0.1.0-alpha.15`): `AprsValidationException : ArgumentException` with `Code`
+(`AprsValidationErrorCode`, 14 codes), `Value`, `Index` and `Character`. Thrown by `Callsign.Parse`, `PathEntry.Parse`,
+`PacketAddress.Parse`, `AprsIsClientOptions.Validate`, `SetFilterAsync`, `AprsIsPasscode.Compute` and the
+`AprsIsEndpoint` constructor, and by the new `AprsIsEndpoint.Parse(string)`.
 

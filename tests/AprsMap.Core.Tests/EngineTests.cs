@@ -447,8 +447,14 @@ public class EngineTests
 
         Assert.Equal(expected, await engine.ComputePasscodeAsync(" n0call-9 ", Ct));
         Assert.Equal(expected, await engine.ComputePasscodeAsync("N0CALL", Ct));
-        await Assert.ThrowsAsync<ArgumentException>(() => engine.ComputePasscodeAsync(" ", Ct));
-        await Assert.ThrowsAsync<ArgumentException>(() => engine.ComputePasscodeAsync("NOT A CALL", Ct));
+        var empty = await Assert.ThrowsAsync<AprsNet.Packets.AprsValidationException>(() =>
+            engine.ComputePasscodeAsync(" ", Ct)
+        );
+        var spaced = await Assert.ThrowsAsync<AprsNet.Packets.AprsValidationException>(() =>
+            engine.ComputePasscodeAsync("N0 CALL", Ct)
+        );
+        Assert.Equal(AprsNet.Packets.AprsValidationErrorCode.CallsignInvalidLength, empty.Code);
+        Assert.Equal(AprsNet.Packets.AprsValidationErrorCode.CallsignInvalidCharacter, spaced.Code);
         await Assert.ThrowsAsync<ArgumentNullException>(() => engine.ComputePasscodeAsync(null!, Ct));
     }
 
