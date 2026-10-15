@@ -6,9 +6,10 @@ API sketches are proposals that follow APRS.NET's existing conventions: parsing 
 are Latin-1, `TimeProvider` for time, async-first I/O, every public member tracked in `PublicAPI.Unshipped.txt`, and
 `AprsNet.Packets` stays I/O-free with BCL-only dependencies.
 
-Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.2.0-alpha.1` (2026-10-15); what has shipped since the baseline is noted
-under **Delivered** in each section. `0.2.0` also adds `AprsNet.Ax25`, `AprsNet.Kiss`, `AprsNet.Filters`,
-`AprsNet.Gateway` and `AprsNet.Extensions.DependencyInjection`, which aren't on NuGet yet (2026-10-15).
+Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.2.0-alpha.2` (2026-10-15); what has shipped since the baseline is noted
+under **Delivered** in each section. `AprsNet.Filters` and `AprsNet.DeviceId` are on NuGet from `0.2.0-alpha.2`;
+`AprsNet.Ax25`, `AprsNet.Kiss`, `AprsNet.Gateway` and `AprsNet.Extensions.DependencyInjection` are in source but not on
+NuGet yet (2026-10-15).
 
 Gaps an AprsMap milestone needs become APRS.NET issues, as sub-issues of a `capability` issue in APRS.NET's matching
 milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for AprsMap 0.3.0), labelled
@@ -17,13 +18,13 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | ID | Title | Package | AprsMap phase | Issue |
 | --- | --- | --- | --- | --- |
 | G03 | Resilient APRS-IS connection (reconnect, server rotation) (delivered) | AprsIsTcpClient | 1 | — |
-| G04 | Typed APRS-IS server filter builder | AprsIsTcpClient | 1 | [APRS.NET#117](https://github.com/APRS-NET/APRS.NET/issues/117) |
-| G05 | Duplicate packet detection | Packets | 1 | [APRS.NET#118](https://github.com/APRS-NET/APRS.NET/issues/118) |
+| G04 | Typed APRS-IS server filter builder (delivered) | Filters | 1 | [APRS.NET#117](https://github.com/APRS-NET/APRS.NET/issues/117) |
+| G05 | Duplicate packet detection (delivered) | Packets | 1 | [APRS.NET#118](https://github.com/APRS-NET/APRS.NET/issues/118) |
 | G06 | Third-party (`}`) payload decoding (delivered) | Packets | 1 | — |
-| G07 | Device identification from the aprs-deviceid list | new: AprsNet.DeviceId | 1 | [APRS.NET#119](https://github.com/APRS-NET/APRS.NET/issues/119) |
-| G08 | Geodesy and Maidenhead helpers (Maidenhead part delivered) | Packets (or new AprsNet.Geo) | 1 | [APRS.NET#120](https://github.com/APRS-NET/APRS.NET/issues/120) |
+| G07 | Device identification from the aprs-deviceid list (delivered) | AprsNet.DeviceId | 1 | [APRS.NET#119](https://github.com/APRS-NET/APRS.NET/issues/119) |
+| G08 | Geodesy and Maidenhead helpers (delivered) | Packets | 1 | [APRS.NET#120](https://github.com/APRS-NET/APRS.NET/issues/120) |
 | G09 | Telemetry definitions applied to reports | Packets | 1 | — |
-| G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs | Packets | 1 | [APRS.NET#121](https://github.com/APRS-NET/APRS.NET/issues/121) |
+| G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs (delivered) | Packets | 1 | [APRS.NET#121](https://github.com/APRS-NET/APRS.NET/issues/121) |
 | G01 | `Callsign.Parse` and a packet encoder (partly delivered) | Packets | 2 | — |
 | G02 | Transmit through APRS-IS, and passcode generation (delivered) | AprsIsTcpClient | 2 | — |
 | G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | — |
@@ -36,13 +37,13 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | G16 | IGate engine | new: AprsNet.IGate | 3 | — |
 | G17 | NMEA sentence parsing and `$` packets | Packets | 3 | — |
 | G18 | Raw weather station data and storm objects | Packets | 4 | — |
-| G21 | APRS-IS server side: client logins, passcode check, filter evaluation (in source, not on NuGet) | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |
+| G21 | APRS-IS server side: client logins, passcode check, filter evaluation (filters delivered; server in source, not on NuGet) | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |
 | G22 | AGWPE TCP transport | new: AprsNet.Agw | 3 | — |
 | G24 | Station track anomaly analysis | Packets (or new AprsNet.Analysis) | 1 | — |
 | G25 | Frequency specification parsing and validation | Packets | 3 | — |
 | G26 | APRS-IS server presets a UI can list (delivered) | AprsIsTcpClient | 0 | — |
 | G27 | Validation errors with stable codes (delivered) | AprsIsTcpClient, Packets | 0 | — |
-| G29 | Source merge: which source a packet came from, and duplicates reported with their source | Packets (or AprsNet.Gateway's source type, made public) | 1 | [APRS.NET#125](https://github.com/APRS-NET/APRS.NET/issues/125) |
+| G29 | Source merge: which source a packet came from, and duplicates reported with their source (delivered) | Packets | 1 | [APRS.NET#125](https://github.com/APRS-NET/APRS.NET/issues/125) |
 | G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127) |
 
 ---
@@ -69,8 +70,8 @@ reading with `ReadPacketsAsync` (`0.2.0-alpha.1`), and its `// SHIM: G03` loop i
 ## G04: Typed APRS-IS server filter builder
 
 **Need.** AprsMap F1.2 builds filters from the map viewport and tracked stations. `SetFilterAsync(string)` takes raw
-text. Until then AprsMap writes one filter itself, `r/lat/lon/km` or `m/km`, for profiles without a filter
-(`// SHIM: G04` in `AprsIsPacketSourceFactory.EffectiveFilter`).
+text. AprsMap writes one filter itself, `r/lat/lon/km` or `m/km`, for profiles without a filter
+(`AprsIsPacketSourceFactory.EffectiveFilter`).
 
 **Scope.** An immutable `AprsIsFilter` composed of typed parts: range `r/lat/lon/km`, my-range `m/km`, friend range
 `f/call/km`, area `a/latN/lonW/latS/lonE`, prefix `p/`, budlist `b/` (with wildcards), object `o/`, type `t/poimqstuw`,
@@ -82,6 +83,12 @@ round-tripping user-typed filters is a bonus.
 
 **Acceptance.** Golden strings for every part; culture-invariance test (for example `de-DE`); exclusions combine.
 
+**Delivered** (`0.2.0-alpha.2`, package `AprsNet.Filters`): `AprsFilterTerm` with a factory per term (`Range`,
+`MyRange`, `FriendRange`, `Area`, `Prefix`, `Buddies`, `Objects`, `Types`, `Symbols`, `Digipeaters`, `EntryStations`,
+`MessagesTo`, `Destinations`, `QConstructs`) and `Exclude()`, combined by `AprsFilter.Create(terms)`;
+`AprsFilter.CheckServerLimits()` reports a filter APRS-IS would refuse (`ServerTermLimit`, 9 range terms). AprsMap's
+stand-in filter now uses it.
+
 ## G05: Duplicate packet detection
 
 **Need.** AprsMap F1.3; also required by G15 and G16. The same packet arrives via several IGates, and via RF and IS.
@@ -92,6 +99,10 @@ destination carries data, so it is part of the identity.
 
 **Acceptance.** Same packet with different paths → duplicate; outside the window → not; memory bound holds under a flood
 test.
+
+**Delivered** (`0.2.0-alpha.2`): `PacketIdentity.Of(packet)` and `DuplicateFilter` (30 s window from the first copy,
+bounded `Capacity`, `TimeProvider`, thread-safe) with `TryAccept`, `IsDuplicate` and `Check(packet, source)`, which
+returns a `DuplicateCheck` naming the first copy's source and time.
 
 ## G06: Third-party (`}`) payload decoding
 
@@ -115,6 +126,10 @@ the list's version/commit in the package.
 
 **Acceptance.** Generator test against a pinned YAML; wildcard precedence; `MicEReport.Device` uses the same table.
 
+**Delivered** (`0.2.0-alpha.2`, package `AprsNet.DeviceId`): `AprsDevices.Identify(packet)` and `FromTocall(destination)`
+return an `AprsDevice` (vendor, model, class, operating system, features), with the list's `ListCommit` and `ListDate`.
+Breaking: `MicEReport.Device` is now an `AprsDevice` rather than a model name (AprsMap didn't use it).
+
 ## G08: Geodesy and Maidenhead helpers
 
 **Need.** Maidenhead locator entry in the first-run wizard (F0.5), distance and bearing (F1.6, F1.7), track smoothing
@@ -133,7 +148,9 @@ wizard, and can ship ahead of the rest of G08.
 
 **Delivered** (`0.1.0-alpha.12`): the Maidenhead part, as `MaidenheadLocator` (`Parse`/`TryParse` with a
 `MaidenheadParseError` that names the wrong length or the bad character and its part, `FromPosition`, `Center`,
-`SouthWest`/`NorthEast`). Still open: the rest of G08.
+`SouthWest`/`NorthEast`). The rest (`0.2.0-alpha.2`): `Geodesy` (`DistanceKm`, `InitialBearing`, `Destination`,
+`Interpolate`, `PointsAlong`, `CompassPoint`, `RadioHorizonMiles`), `AprsPosition.GetAmbiguityBounds()` returning
+`AprsBounds`, and `AprsUnits.Convert` for length, speed, temperature and pressure units.
 
 ## G09: Telemetry definitions applied to reports
 
@@ -158,6 +175,10 @@ the IGate heard it directly (no used hops), remaining WIDEn-N hops, and trace pa
 **Spec refs.** aprs-is.net q-construct documentation; APRS 1.1 new-n paradigm.
 
 **Acceptance.** A test per q-construct, from corpus lines.
+
+**Delivered** (`0.2.0-alpha.2`): `PathAnalysis.FromPacket`/`FromPath` with `QConstruct`, `EntryStation`,
+`IsGatedFromRadio`, `IsFromInternet`, `IsHeardDirectly`, `IsNoGate`, `Digipeaters` and `UsedHops` (in order),
+`RemainingHopCount` and the `AprsIsPath` after the q-construct.
 
 ## G01: `Callsign.Parse` and a packet encoder
 
@@ -339,8 +360,8 @@ rules), and send server keepalive comments.
 **Acceptance.** A filter test per part type against corpus packets; interop: `AprsIsClient` connects to the listener and
 receives a filtered stream.
 
-**Delivered in source** (`0.2.0-alpha.1`, not on NuGet yet): local evaluation of filter expressions
-(`AprsNet.Filters`), and a gateway (`AprsNet.Gateway`) that serves packets to APRS-IS clients with their own filters,
+**Delivered**: local evaluation of filter expressions (`AprsFilter`, package `AprsNet.Filters`, on NuGet from
+`0.2.0-alpha.2`). In source but not on NuGet yet: a gateway (`AprsNet.Gateway`) that serves packets to APRS-IS clients with their own filters,
 de-duplicates, replays recent history on login and tracks where stations were heard for `m/` and `f/`.
 
 ## G22: AGWPE TCP transport
@@ -431,6 +452,10 @@ isDuplicateOf)` would serve both AprsMap and `AprsNet.Gateway`.
 
 **Acceptance.** One fake APRS-IS and one fake KISS source: a packet on both comes out once as new and once as a
 duplicate naming the second source; outside the window both are new.
+
+**Delivered** (`0.2.0-alpha.2`): `PacketMerger` takes any number of named sources (`Add(source, packets)`,
+`RemoveAsync`) and yields `MergedPacket(Packet, Source, ReceivedAt, DuplicateOf)`, where `DuplicateOf` names the first
+copy's source and time.
 
 ## G30: gpsd client
 
