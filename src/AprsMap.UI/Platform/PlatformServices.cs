@@ -18,6 +18,18 @@ public sealed record PlatformServices
     /// </summary>
     public AppearanceSettings Appearance { get; init; } = new();
 
+    /// <summary>
+    /// The viewer's saved layout as stored (F1.0 behavior 8), read before the app starts so the main window opens where it
+    /// was; null for the default layout (none saved, or <c>--reset-layout</c>).
+    /// </summary>
+    public string? SavedLayout { get; init; }
+
+    /// <summary>
+    /// Whether floating panels stay inside the app instead of opening OS windows (F1.0 behavior 5): the browser, which
+    /// has no windows of its own.
+    /// </summary>
+    public bool ManagedWindows { get; init; }
+
     /// <summary>Whether the platform asks for reduced motion (the browser's <c>prefers-reduced-motion</c>).</summary>
     public bool SystemReducedMotion { get; init; }
 

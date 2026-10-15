@@ -731,4 +731,40 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Delete {profile}</value>
     <comment>Screen-reader name of the Delete button.</comment>
   </data>
+  <data name="Shell.Panel.map" xml:space="preserve">
+    <value>Map</value>
+    <comment>The map's tab title in the docking layout.</comment>
+  </data>
+  <data name="Shell.Panel.stations" xml:space="preserve">
+    <value>Stations</value>
+    <comment>Panel title: the list of stations heard.</comment>
+  </data>
+  <data name="Shell.Panel.details" xml:space="preserve">
+    <value>Details</value>
+    <comment>Panel title: details of the selected station.</comment>
+  </data>
+  <data name="Shell.Panel.packets" xml:space="preserve">
+    <value>Packets</value>
+    <comment>Panel title: the live list of received packets.</comment>
+  </data>
+  <data name="Shell.NotYet.map" xml:space="preserve">
+    <value>The map isn't built yet. Stations will appear here.</value>
+    <comment>Shown in the map's place until the map is built.</comment>
+  </data>
+  <data name="Shell.NotYet.stations" xml:space="preserve">
+    <value>The station list isn't built yet.</value>
+    <comment>Shown in the Stations panel until it is built.</comment>
+  </data>
+  <data name="Shell.NotYet.details" xml:space="preserve">
+    <value>Station details aren't built yet.</value>
+    <comment>Shown in the Details panel until it is built.</comment>
+  </data>
+  <data name="Shell.LayoutUnreadable" xml:space="preserve">
+    <value>Your saved panel layout couldn't be read, so the default layout is shown.</value>
+    <comment>Shown once after start-up; the unreadable file is kept aside.</comment>
+  </data>
+  <data name="Shell.Dismiss" xml:space="preserve">
+    <value>Dismiss</value>
+    <comment>Button that hides a one-time notice.</comment>
+  </data>
 </root>

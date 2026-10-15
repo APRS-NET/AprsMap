@@ -2,6 +2,7 @@
 using AprsMap.Contracts;
 using AprsMap.UI.Appearance;
 using AprsMap.UI.Platform;
+using AprsMap.UI.Shell;
 using AprsMap.UI.ViewModels;
 using AprsMap.UI.Views;
 using Avalonia;
@@ -21,6 +22,7 @@ public sealed class App : Application, IDisposable
     private readonly IEngineService? _engine;
     private readonly PlatformServices _platform = new();
     private AppearancePreferences? _preferences;
+    private LayoutPreferences? _layout;
 
     /// <summary>For the XAML designer and previewer only.</summary>
     public App() { }
@@ -42,10 +44,66 @@ public sealed class App : Application, IDisposable
     public const string TouchClass = "touch";
 
     /// <inheritdoc />
-    public void Dispose() => _preferences?.Dispose();
+    public void Dispose()
+    {
+        _preferences?.Dispose();
+        _layout?.Dispose();
+    }
 
     /// <summary>Writes preferences still waiting for their save delay; the desktop app calls it on exit.</summary>
-    public Task SavePreferencesAsync() => _preferences?.FlushAsync() ?? Task.CompletedTask;
+    public async Task SavePreferencesAsync()
+    {
+        if (_preferences is not null)
+        {
+            await _preferences.FlushAsync();
+        }
+        if (_layout is not null)
+        {
+            await _layout.FlushAsync();
+        }
+    }
+
+    /// <summary>
+    /// Restores the saved layout before anything shows, and saves it after each change and on exit (F1.0 behaviors 8–15).
+    /// </summary>
+    private void StartLayout(MainViewModel viewModel, MainWindowLayout? main)
+    {
+        var screens = main?.Screens() ?? [];
+        main?.Restore(screens);
+        if (_platform.Preferences is not { } store)
+        {
+            viewModel.RestoreLayout(_platform.SavedLayout, screens);
+            return;
+        }
+        _layout = new LayoutPreferences(store, TimeProvider.System);
+        if (viewModel.RestoreLayout(_platform.SavedLayout, screens) == LayoutRestore.Unreadable)
+        {
+            _ = _layout.SetAsideAsync();
+        }
+        // Written on the UI thread: open floating windows are asked where they are.
+        var closing = false;
+        string Write() => Avalonia.Threading.Dispatcher.UIThread.Invoke(() => viewModel.Shell.Save(main?.Placement()));
+        void Changed()
+        {
+            if (!closing)
+            {
+                _layout.Schedule(Write);
+            }
+        }
+        viewModel.Shell.Changed += (_, _) => Changed();
+        if (main is not null)
+        {
+            main.Changed += (_, _) => Changed();
+            main.Window.Closing += (_, _) =>
+            {
+                // The layout as the window closes; what happens while it closes (windows going away) doesn't count.
+                closing = true;
+                var text = viewModel.Shell.Save(main.Placement());
+                _layout.Schedule(() => text); // written by SavePreferencesAsync on exit
+            };
+            main.Window.Screens.Changed += (_, _) => viewModel.Shell.FitOpenWindows(main.Screens());
+        }
+    }
 
     /// <summary>The app's icon, for windows (title bar, task bar, dock).</summary>
     internal static WindowIcon AppIcon() => new(AssetLoader.Open(new Uri("avares://AprsMap.UI/Assets/icon.png")));
@@ -67,12 +125,15 @@ public sealed class App : Application, IDisposable
         }
         if (_engine is not null)
         {
+            // In the browser there are no OS windows: floating panels, drag previews and dock targets stay in the page.
+            Dock.Settings.DockSettings.UseManagedWindows = _platform.ManagedWindows;
             var viewModel = new MainViewModel(
                 _engine,
                 TimeProvider.System,
                 deviceLocation: _platform.DeviceLocation,
                 appearance: Appearance,
-                showPseudoLanguage: _platform.ShowPseudoLanguage
+                showPseudoLanguage: _platform.ShowPseudoLanguage,
+                managedWindows: _platform.ManagedWindows
             );
             Control view = new MainView { DataContext = viewModel };
             if (_platform.CoarsePointer)
@@ -82,7 +143,7 @@ public sealed class App : Application, IDisposable
             switch (ApplicationLifetime)
             {
                 case IClassicDesktopStyleApplicationLifetime desktop:
-                    desktop.MainWindow = new Window
+                    var window = new Window
                     {
                         Title = Brand.DisplayName,
                         Icon = AppIcon(),
@@ -90,9 +151,12 @@ public sealed class App : Application, IDisposable
                         Width = 1280,
                         Height = 800,
                     };
+                    desktop.MainWindow = window;
+                    StartLayout(viewModel, new MainWindowLayout(window, _platform.SavedLayout));
                     break;
                 case ISingleViewApplicationLifetime single:
                     single.MainView = view;
+                    StartLayout(viewModel, null);
                     break;
             }
             _ = viewModel.StartAsync();

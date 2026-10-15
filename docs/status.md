@@ -24,7 +24,10 @@ connection (F1.1) is done; the shell and docking (F1.0) is next, then the statio
      connection state and server, packet and station counts, the latest error, if any, and a gear for Settings. The
      connection reconnects by itself and shows why and when (a countdown); a refused login waits instead of retrying.
      Its tooltip says whether the login is verified and how often it reconnected, and clicking it offers Reconnect now;
-   - a live list of received packets, newest first, with the source callsign and a one-line summary.
+   - the shell: a placeholder for the map in the centre, with panels around it that dock, tab, split, auto-hide and
+     float (Stations on the left and Details on the right, both placeholders for now; Packets along the bottom, the
+     live list of received packets, newest first). The layout and the window's place are remembered; a floating
+     window left on a monitor that's gone comes back on screen. `--reset-layout` starts with the default layout;
 3. **Settings** (the gear, or Ctrl+, / Cmd+,): **Appearance** (theme, standard, high-contrast or colour-vision-safe
    colours, text size up to 200 %, icon size, corners, density, motion, language), applied live and remembered per
    viewer, with Reset and Undo; **Profiles** (add, edit, copy, delete with Undo, switch; read-only on a gateway without
@@ -42,7 +45,8 @@ The web app runs only when the **gateway** serves it: the gateway runs the engin
 - **First start:** the callsign, server and filter come from the environment the first time only, and are then stored
   in the `settings` volume. The compose file's sample filter is around Boulder, Colorado (`r/40.0/-105.0/50`). Change
   `Engine__Filter` before the first start, or remove the volume to start over.
-- **What browsers see:** the same status bar and packet list as the desktop app. Settings are read-only from a browser,
+- **What browsers see:** the same status bar and shell as the desktop app; floating panels stay inside the page, and
+  each browser remembers its own layout. Settings are read-only from a browser,
   unless `Gateway__AllowSettingsChanges=true` (see [deployment.md](deployment.md)). So without a callsign the page says
   the gateway isn't set up, rather than showing the wizard.
 - **Running `src/AprsMap.Browser` on its own** (`dotnet run`, or Run in an IDE) **doesn't work.** A development build

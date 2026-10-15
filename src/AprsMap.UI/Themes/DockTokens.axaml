@@ -1,0 +1,35 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- Maps Dock's semantic tokens onto ours, so docking chrome follows the theme, palette and density like every other
+     control. Merged after Tokens.axaml. -->
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <SolidColorBrush x:Key="DockApplicationAccentBrushLow" Color="{DynamicResource Color.Accent}" />
+  <SolidColorBrush x:Key="DockApplicationAccentBrushMed" Color="{DynamicResource Color.Accent}" />
+  <SolidColorBrush x:Key="DockApplicationAccentBrushHigh" Color="{DynamicResource Color.Accent}" />
+  <SolidColorBrush x:Key="DockApplicationAccentBrushIndicator" Color="{DynamicResource Color.Accent}" />
+  <SolidColorBrush x:Key="DockApplicationAccentForegroundBrush" Color="{DynamicResource Color.Surface}" />
+  <SolidColorBrush x:Key="DockSurfaceWorkbenchBrush" Color="{DynamicResource Color.Ground}" />
+  <SolidColorBrush x:Key="DockSurfaceSidebarBrush" Color="{DynamicResource Color.Surface}" />
+  <SolidColorBrush x:Key="DockSurfaceEditorBrush" Color="{DynamicResource Color.Surface}" />
+  <SolidColorBrush x:Key="DockSurfacePanelBrush" Color="{DynamicResource Color.Surface}" />
+  <SolidColorBrush x:Key="DockSurfaceHeaderBrush" Color="{DynamicResource Color.Ground}" />
+  <SolidColorBrush x:Key="DockSurfaceHeaderActiveBrush" Color="{DynamicResource Color.Surface}" />
+  <SolidColorBrush x:Key="DockBorderSubtleBrush" Color="{DynamicResource Color.Border}" />
+  <SolidColorBrush x:Key="DockBorderStrongBrush" Color="{DynamicResource Color.Border}" />
+  <SolidColorBrush x:Key="DockSeparatorBrush" Color="{DynamicResource Color.Border}" />
+  <SolidColorBrush x:Key="DockSplitterIdleBrush" Color="{DynamicResource Color.Border}" />
+  <SolidColorBrush x:Key="DockSplitterHoverBrush" Color="{DynamicResource Color.Accent}" />
+  <SolidColorBrush x:Key="DockSplitterDragBrush" Color="{DynamicResource Color.Accent}" />
+  <SolidColorBrush x:Key="DockTargetIndicatorBrush" Color="{DynamicResource Color.AccentSoft}" />
+  <SolidColorBrush x:Key="DockTabHoverBackgroundBrush" Color="{DynamicResource Color.AccentSoft}" />
+  <SolidColorBrush x:Key="DockTabActiveBackgroundBrush" Color="{DynamicResource Color.Surface}" />
+  <SolidColorBrush x:Key="DockTabActiveIndicatorBrush" Color="{DynamicResource Color.Accent}" />
+  <SolidColorBrush x:Key="DockTabForegroundBrush" Color="{DynamicResource Color.TextMuted}" />
+  <SolidColorBrush x:Key="DockTabSelectedForegroundBrush" Color="{DynamicResource Color.Text}" />
+  <SolidColorBrush x:Key="DockTabActiveForegroundBrush" Color="{DynamicResource Color.Text}" />
+  <SolidColorBrush x:Key="DockTabCloseHoverBackgroundBrush" Color="{DynamicResource Color.AccentSoft}" />
+  <SolidColorBrush x:Key="DockChromeButtonForegroundBrush" Color="{DynamicResource Color.Text}" />
+  <SolidColorBrush x:Key="DockChromeButtonHoverBackgroundBrush" Color="{DynamicResource Color.AccentSoft}" />
+  <SolidColorBrush x:Key="DockChromeButtonPressedBackgroundBrush" Color="{DynamicResource Color.AccentSoft}" />
+  <SolidColorBrush x:Key="DockChromeButtonDangerHoverBrush" Color="{DynamicResource Color.Warn}" />
+  <SolidColorBrush x:Key="DockSelectorOverlayBackdropBrush" Color="{DynamicResource Color.Scrim}" />
+</ResourceDictionary>

@@ -20,4 +20,16 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Browser" />
   </ItemGroup>
+
+  <!-- Trimming (F1.0 implementation notes). Every assembly reports its trim warnings one by one, and they fail the
+       build, except the three Dock assemblies named here: Dock's themes use reflection bindings, and its serializer uses
+       generic JSON calls, so for each of them the trimmer prints one summary warning (IL2104), which is allowed. A
+       browser smoke test covers what those code paths drive (splitter, tab move, float, layout save and restore), and
+       the exception goes once Dock switches to compiled bindings upstream. _ExtraTrimmerArgs is the SDK's way to pass
+       trimmer options; per-assembly TrimmerSingleWarn metadata isn't applied to package assemblies. -->
+  <PropertyGroup>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);IL2104</WarningsNotAsErrors>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --singlewarn Dock.Avalonia --singlewarn Dock.Avalonia.Themes.Fluent --singlewarn Dock.Serializer.SystemTextJson</_ExtraTrimmerArgs>
+  </PropertyGroup>
 </Project>

@@ -1,0 +1,173 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+using System.Globalization;
+using System.Text.Json.Nodes;
+using AprsMap.UI.Localization;
+using AprsMap.UI.Shell;
+using Avalonia;
+using Avalonia.Headless.XUnit;
+using Dock.Model.Controls;
+using Dock.Model.Core;
+
+namespace AprsMap.UI.Tests;
+
+/// <summary>The shell's layout: default, saved and restored (docs/features/F1.0-shell-and-docking.md).</summary>
+public sealed class ShellTests
+{
+    private static readonly ScreenArea Laptop = WindowPlacementTests.Laptop;
+
+    private static ShellViewModel NewShell() =>
+        new(new object(), new Localizer(CultureInfo.GetCultureInfo("en-US")), managedWindows: false);
+
+    [AvaloniaFact]
+    public void TheDefaultLayoutHasTheMapInTheMiddleAndPanelsAround()
+    {
+        var shell = NewShell();
+
+        Assert.Equal("Stations", Dock(shell, ShellFactory.LeftDock).Single().Title);
+        Assert.Equal("Details", Dock(shell, ShellFactory.RightDock).Single().Title);
+        Assert.Equal("Packets", Dock(shell, ShellFactory.BottomDock).Single().Title);
+        var map = Assert.IsType<MapDocument>(Find(shell.Layout, PanelKinds.Map));
+        Assert.Equal("Map", map.Title);
+        Assert.False(map.CanClose);
+        Assert.False(map.CanFloat);
+    }
+
+    [AvaloniaFact]
+    public void APanelCanBeMovedWithoutDragging()
+    {
+        var shell = NewShell();
+        var packets = Find(shell.Layout, PanelKinds.Packets);
+        var left = (IDock)Find(shell.Layout, ShellFactory.LeftDock);
+        var changes = 0;
+        shell.Changed += (_, _) => changes++;
+
+        shell.Factory.MoveDockable((IDock)packets.Owner!, left, packets, null);
+
+        Assert.Same(left, packets.Owner);
+        Assert.True(changes > 0);
+    }
+
+    [AvaloniaFact]
+    public void AChangedLayoutWithAFloatingPanelIsRestoredOnScreen()
+    {
+        var shell = NewShell();
+        var details = Find(shell.Layout, PanelKinds.Details);
+        shell.Factory.MoveDockable(
+            (IDock)details.Owner!,
+            (IDock)Find(shell.Layout, ShellFactory.BottomDock),
+            details,
+            null
+        );
+        shell.Factory.FloatDockable(Find(shell.Layout, PanelKinds.Stations));
+        var window = Assert.Single(shell.Layout.Windows!);
+        window.X = 3000; // on a monitor that won't be there next time
+        window.Y = 100;
+        window.Width = 500;
+        window.Height = 400;
+        var saved = shell.Save(new MainWindowPlacement(new PixelPoint(10, 20), new Size(1200, 700), false));
+
+        var restored = NewShell();
+        Assert.Equal(LayoutRestore.Restored, restored.Restore(saved, [Laptop]));
+
+        Assert.Contains(Dock(restored, ShellFactory.BottomDock), d => d.Id == PanelKinds.Details);
+        var floating = Assert.Single(restored.Layout.Windows!);
+        Assert.True(Laptop.WorkingArea.Contains(new PixelPoint((int)floating.X, (int)floating.Y)));
+        Assert.Equal("Stations", ShellViewModel.Dockables(floating.Layout!).OfType<PanelTool>().Single().Title);
+        Assert.Equal(
+            new MainWindowPlacement(new PixelPoint(10, 20), new Size(1200, 700), false),
+            LayoutFile.ReadMainWindow(saved)
+        );
+    }
+
+    [AvaloniaFact]
+    public void AClosedPanelStaysClosedAfterARestart()
+    {
+        var shell = NewShell();
+        shell.Factory.CloseDockable(Find(shell.Layout, PanelKinds.Stations));
+
+        var restored = NewShell();
+        restored.Restore(shell.Save(), []);
+
+        Assert.DoesNotContain(ShellViewModel.Dockables(restored.Layout), d => d.Id == PanelKinds.Stations);
+    }
+
+    [AvaloniaFact]
+    public void APanelThisVersionDoesntKnowIsDroppedAndANewOneAppearsInItsPlace()
+    {
+        var file = JsonNode.Parse(NewShell().Save())!.AsObject();
+        // Saved by a version without the Details panel, and with a panel this one doesn't have.
+        file["panels"] = new JsonArray("stations", "packets", "weather");
+        var text = file.ToJsonString()
+            .Replace("\"Kind\":\"details\"", "\"Kind\":\"weather\"", StringComparison.Ordinal);
+        Assert.Contains("weather", text, StringComparison.Ordinal);
+
+        var shell = NewShell();
+        Assert.Equal(LayoutRestore.Restored, shell.Restore(text, []));
+
+        Assert.DoesNotContain(ShellViewModel.Dockables(shell.Layout).OfType<PanelTool>(), p => p.Kind == "weather");
+        Assert.Contains(Dock(shell, ShellFactory.RightDock), d => d.Id == PanelKinds.Details);
+    }
+
+    [AvaloniaTheory]
+    [InlineData("{ not json")]
+    [InlineData("{\"format\":99,\"panels\":[],\"dock\":{}}")]
+    [InlineData("{\"format\":1,\"panels\":[]}")]
+    public void AnUnreadableLayoutGivesTheDefault(string text)
+    {
+        var shell = NewShell();
+
+        Assert.Equal(LayoutRestore.Unreadable, shell.Restore(text, []));
+
+        Assert.IsType<MapDocument>(Find(shell.Layout, PanelKinds.Map));
+    }
+
+    [AvaloniaFact]
+    public void ALayoutWithoutTheMapIsUnreadable()
+    {
+        var text = NewShell().Save().Replace("\"Id\":\"map\"", "\"Id\":\"gone\"", StringComparison.Ordinal);
+        text = text.Replace("MapDocument", "Document", StringComparison.Ordinal);
+
+        Assert.Equal(LayoutRestore.Unreadable, NewShell().Restore(text, []));
+    }
+
+    [AvaloniaFact]
+    public void AHandEditedFileCantMakeTheMapClosable()
+    {
+        var text = NewShell().Save();
+        var shell = NewShell();
+
+        shell.Restore(text.Replace("\"CanClose\":false", "\"CanClose\":true", StringComparison.Ordinal), []);
+
+        Assert.False(Find(shell.Layout, PanelKinds.Map).CanClose);
+    }
+
+    [AvaloniaFact]
+    public void ResetGoesBackToTheDefault()
+    {
+        var shell = NewShell();
+        shell.Factory.CloseDockable(Find(shell.Layout, PanelKinds.Packets));
+
+        shell.Reset();
+
+        Assert.Single(Dock(shell, ShellFactory.BottomDock), d => d.Id == PanelKinds.Packets);
+    }
+
+    [AvaloniaFact]
+    public void PanelTitlesFollowTheLanguage()
+    {
+        var text = new Localizer(CultureInfo.GetCultureInfo("en-US"));
+        var shell = new ShellViewModel(new object(), text, managedWindows: false);
+
+        text.SetLanguage(Localizer.PseudoLanguage);
+
+        Assert.Equal(PseudoLocalizer.Transform("Packets"), Find(shell.Layout, PanelKinds.Packets).Title);
+    }
+
+    [AvaloniaFact]
+    public void NoSavedLayoutMeansTheDefault() => Assert.Equal(LayoutRestore.Default, NewShell().Restore(null, []));
+
+    private static IDockable Find(IRootDock root, string id) => ShellViewModel.Dockables(root).First(d => d.Id == id);
+
+    private static IList<IDockable> Dock(ShellViewModel shell, string id) =>
+        ((IDock)Find(shell.Layout, id)).VisibleDockables!;
+}
