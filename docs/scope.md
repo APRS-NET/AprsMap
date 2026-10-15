@@ -70,9 +70,9 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.2 | Automatic filter: range filter around the map viewport, updated on pan and zoom, plus tracked and buddy stations. Until then, a profile without a filter gets 150 km around its location (`r/`), or `m/150` without one | Automatic Filters | App | G04 | scoped |
 | F1.3 | Station store: latest state per station, object and item ownership, kill handling, aging and expiry, duplicate drop | No Visible Stations | App | G05, G06 | scoped |
 | F1.4 | Map: OSM-style tiles, symbols with overlays, labels, selectable tile providers, transparency, map dimming, symbol size, wind barbs, auto-zoom-to-fit | Screen Elements, Transparency | App | — | scoped |
-| F1.5 | Tracks / trails for moving stations, with configurable history length | — (core feature list) | App | G08 | scoped |
-| F1.6 | Station info panel: last packet, path, comment, speed/course/altitude, distance and bearing from me, device | Station Info | App | G07, G08, G20 | scoped |
-| F1.7 | Station list: sortable and searchable; center on, track (keep centered) | — | App | G08 | scoped |
+| F1.5 | Tracks / trails ([spec](features/F1.5-tracks.md)) for moving stations, with configurable history length | — (core feature list) | App | G08 | spec'd |
+| F1.6 | Station info panel ([spec](features/F1.6-station-details.md)): last packet, path, comment, speed/course/altitude, distance and bearing from me, device | Station Info | App | G07, G08, G20 | spec'd |
+| F1.7 | Station list ([spec](features/F1.7-station-list.md)): sortable and searchable; center on, track (keep centered) | — | App | G08 | spec'd |
 | F1.8 | Raw packet scroller with filters, plus parse-issue display for debugging | Debug Logs | App | — | scoped |
 | F1.9 | View filters: RF only, message-capable, weather, objects, by symbol category, by age, by platform, by Mic-E status, by `!shriek!` and `#hashtag` tags | (View menu) | App | G20 | scoped |
 | F1.10 | Weather station display: current readings, units preference | Weather Stations | App | — | scoped |
