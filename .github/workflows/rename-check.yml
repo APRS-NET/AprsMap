@@ -1,0 +1,47 @@
+name: rename-check
+
+# The product is meant to be renamable with one script run (docs/features/F0.7-rebranding.md). This renames a copy of
+# the repository to a test name and builds and tests it, so a hard-coded name or a script that no longer copes shows up.
+# It is a full build and test, so it runs weekly and only when the rename machinery itself changes.
+
+on:
+  schedule:
+    - cron: "41 6 * * 3" # Wednesdays 06:41 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "tools/rename-product.py"
+      - "build/Branding.props"
+      - ".github/workflows/rename-check.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # MinVer needs tags
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          dotnet-version: 10.0.x
+      - name: Rename to a test name
+        run: python3 tools/rename-product.py AprsMap SkyTrack --apply
+      - name: Only the migration list still names the old product
+        run: |
+          left="$(grep -rIl -i aprsmap --exclude-dir=.git . | grep -v '^./build/Branding.props$' || true)"
+          if [ -n "$left" ]; then
+            echo "::error::The rename left the old name in: $left"
+            exit 1
+          fi
+      - run: dotnet build SkyTrack.slnx -c Release
+      - run: dotnet test SkyTrack.slnx -c Release --no-build
