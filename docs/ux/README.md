@@ -71,8 +71,8 @@ How it is built:
   top.
 - **Map rendering reads the same tokens**: symbol outline colours, track colours, label halo and range-circle styles,
   so the map follows the theme and palette.
-- **Appearance is per viewer, not per station.** It lives in the UI layer (`IUiPreferences`), not in the engine or
-  `IEngineService`. Desktop stores it with the user's settings; the browser stores it locally (and, when signed in, in
+- **Appearance is per viewer, not per station.** It lives in the UI layer (stored through `IPreferenceStore`,
+  [F0.6](../features/F0.6-appearance.md)), not in the engine or `IEngineService`. Desktop stores it with the user's settings; the browser stores it locally (and, when signed in, in
   the operator's gateway profile so it follows them between devices). Two people viewing one gateway can use different
   themes.
 - **Every screen is checked in all palettes and both modes** in the headless UI tests (contrast and clipping at 200 %
