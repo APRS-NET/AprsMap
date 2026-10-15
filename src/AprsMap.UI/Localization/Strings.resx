@@ -392,4 +392,25 @@
     <value>Not set up yet: this gateway's operator sets the first callsign.</value>
     <comment>Status bar note in the browser when the gateway has no station profile.</comment>
   </data>
+  <data name="Startup.NoGateway.Title" xml:space="preserve">
+    <value>Can't reach the {product} gateway</value>
+    <comment>Shown in the browser instead of the app. product: the app's name.</comment>
+  </data>
+  <data name="Startup.NoGateway.Detail" xml:space="preserve">
+    <value>The web app runs from its gateway, which runs the engine, and there is no gateway at {address}.
+Start the gateway (for example with docker compose up), then open the app from the gateway's address, such as http://localhost:8080.</value>
+    <comment>address: the web address that was tried. Keep 'docker compose up' and the example address as they are.</comment>
+  </data>
+  <data name="Startup.CantDraw.Title" xml:space="preserve">
+    <value>This build of the web app can't draw</value>
+    <comment>Shown when the browser app was built without its graphics libraries.</comment>
+  </data>
+  <data name="Startup.CantDraw.Detail" xml:space="preserve">
+    <value>Only a published build includes the WebAssembly graphics. Use the gateway (docker compose up), or publish the browser app.</value>
+    <comment>Keep 'docker compose up' as it is.</comment>
+  </data>
+  <data name="Startup.Retry" xml:space="preserve">
+    <value>Try again</value>
+    <comment>Button that reloads the page.</comment>
+  </data>
 </root>

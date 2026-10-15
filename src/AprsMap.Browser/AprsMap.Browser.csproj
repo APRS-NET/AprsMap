@@ -8,6 +8,8 @@
          workload. Only publishing does that (CI and the Dockerfile install the workload), so a plain local build works
          on any SDK; the output of a plain build does not render. -->
     <WasmBuildNative Condition="'$(_IsPublishing)' == 'true'">true</WasmBuildNative>
+    <!-- The JSImport source generator (StartupPage) emits unsafe marshalling code. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
