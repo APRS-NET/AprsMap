@@ -30,6 +30,9 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | Let browsers change settings and switch profiles | `Gateway__AllowSettingsChanges` | `false` |
 | Packets kept for new viewers | `Engine__RecentPacketCapacity` | `500` |
 | Address lookup server (Nominatim); empty turns lookup off | `Geocoding__Endpoint` | `https://nominatim.openstreetmap.org` |
+| Map tile cache folder | `Tiles__CacheFolder` | `/data/tiles` in the image |
+| Tile cache size per provider, in MB (least recently used tiles go first) | `Tiles__MaxCacheMegabytes` | `512` |
+| Tile providers, by key: `Name`, `UrlTemplate` (`{z}`, `{x}`, `{y}` or `{-y}`), `Attribution`, `AttributionUrl`, `MinZoom`, `MaxZoom`, `ImageType` | `Tiles__Providers__<key>__…` | OpenStreetMap as `osm` |
 | That server's usage policy, linked in the setup wizard | `Geocoding__UsagePolicyUrl` | the OSMF policy for the public server |
 | OpenTelemetry export | `OTEL_EXPORTER_OTLP_ENDPOINT` (+ standard `OTEL_*`) | off |
 
@@ -40,12 +43,18 @@ same switch gates address lookup and the passcode calculator in the setup wizard
 geocoding proxy. Lookups go through the gateway, at most one a second, with results cached in memory; a gateway with
 many users should point `Geocoding__Endpoint` at its own Nominatim, as the public server's usage policy asks.
 
+Browsers get map tiles from the gateway's `/tiles/{provider}/{z}/{x}/{y}`, never from the tile server directly: one
+cache serves every viewer, the gateway identifies the app to the tile server, and only configured providers and real
+tile coordinates are served. The cache follows the OpenStreetMap tile usage policy (no prefetching, caching and
+revalidation as the server says). A busy public map should use a tile provider whose terms allow its traffic.
+
 Endpoints:
 
 | Path | Purpose |
 | --- | --- |
 | `/` | The web app |
 | `/hubs/engine` | SignalR hub the web app uses |
+| `/tiles/providers`, `/tiles/{provider}/{z}/{x}/{y}` | Map tile providers and tiles for the web app, from the gateway's cache |
 | `/healthz` | Health check for orchestrators (the chiseled image has no shell, so probe it over HTTP) |
 | `/source` | Redirects to the source code, the AGPL-3.0 network-use offer |
 

@@ -9,6 +9,7 @@ using OpenTelemetry.Trace;
 var builder = WebApplication.CreateBuilder(args);
 builder
     .AddAprsMapEngine()
+    .AddAprsMapTiles()
     .AddAprsMapTelemetry(
         "gateway",
         tracing: t => t.AddAspNetCoreInstrumentation(),
@@ -29,6 +30,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes });
 
 app.MapHub<EngineHubEndpoint>(EngineHub.Path);
+app.MapTiles();
 app.MapHealthChecks("/healthz");
 
 // AGPL-3.0 section 13: users interacting over a network are offered the corresponding source.

@@ -17,6 +17,7 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(PacketView))]
 [JsonSerializable(typeof(StationBatch))]
 [JsonSerializable(typeof(StationDetail))]
+[JsonSerializable(typeof(IReadOnlyList<TileProviderInfo>))]
 [JsonSerializable(typeof(AppSettings))]
 [JsonSerializable(typeof(GeocodingInfo))]
 [JsonSerializable(typeof(EngineError))]

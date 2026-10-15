@@ -119,6 +119,12 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             json.WriteString("density", s.Density.ToString());
             json.WriteString("motion", s.Motion.ToString());
             json.WriteNumber("mapSymbolScale", s.MapSymbolScale);
+            json.WriteString("mapBrightness", s.MapBrightness.ToString());
+            json.WriteString("mapLabels", s.MapLabels.ToString());
+            if (s.MapProvider is { } provider)
+            {
+                json.WriteString("mapProvider", provider);
+            }
             if (s.Language is { } language)
             {
                 json.WriteString("language", language);
@@ -186,6 +192,18 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             if (Number(root, "mapSymbolScale") is { } mapSymbolScale)
             {
                 s = s with { MapSymbolScale = mapSymbolScale };
+            }
+            if (Enum<MapBrightness>(root, "mapBrightness") is { } brightness)
+            {
+                s = s with { MapBrightness = brightness };
+            }
+            if (Enum<MapLabels>(root, "mapLabels") is { } labels)
+            {
+                s = s with { MapLabels = labels };
+            }
+            if (root.TryGetProperty("mapProvider", out var provider) && provider.ValueKind == JsonValueKind.String)
+            {
+                s = s with { MapProvider = provider.GetString() };
             }
             if (root.TryGetProperty("language", out var language) && language.ValueKind == JsonValueKind.String)
             {

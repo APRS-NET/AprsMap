@@ -238,6 +238,51 @@
             </WrapPanel>
           </StackPanel>
 
+          <!-- Map (F1.4 behavior 21): the viewer's map preferences, and the station's aging where it may be changed. -->
+          <StackPanel x:Name="MapSection" IsVisible="{Binding IsMapSection}" Spacing="20">
+            <ItemsControl x:Name="MapOptions" ItemsSource="{Binding MapItems}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="18" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.DataTemplates>
+                <DataTemplate DataType="s:ChoiceSetting">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                    <ComboBox
+                      ItemsSource="{Binding Options}"
+                      SelectedItem="{Binding Selected}"
+                      AutomationProperties.Name="{Binding Label}"
+                      MinWidth="260"
+                    />
+                    <TextBlock
+                      Text="{Binding Help}"
+                      IsVisible="{Binding Help, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      FontSize="{DynamicResource Text.Small}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
+                </DataTemplate>
+                <DataTemplate DataType="s:ToggleSetting">
+                  <StackPanel Spacing="4">
+                    <CheckBox IsChecked="{Binding IsOn}" AutomationProperties.Name="{Binding Label}">
+                      <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                    </CheckBox>
+                    <TextBlock
+                      Text="{Binding Help}"
+                      IsVisible="{Binding Help, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      FontSize="{DynamicResource Text.Small}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.DataTemplates>
+            </ItemsControl>
+          </StackPanel>
+
           <!-- Data (F0.10): Reset the app, with a confirmation that says what goes. -->
           <StackPanel x:Name="DataSection" IsVisible="{Binding IsDataSection}" Spacing="12">
             <TextBlock Text="{l:T Settings.Data.Reset.Title}" FontWeight="SemiBold" />

@@ -21,6 +21,9 @@
     <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.9" />
     <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.0.9" />
     <PackageVersion Include="Dock.Serializer.SystemTextJson" Version="12.1.0.9" />
+    <PackageVersion Include="Mapsui" Version="5.1.0" />
+    <PackageVersion Include="Mapsui.Rendering.Skia" Version="5.1.0" />
+    <PackageVersion Include="Mapsui.Tiling" Version="5.1.0" />
     <PackageVersion Include="MessageFormat" Version="8.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.13" />

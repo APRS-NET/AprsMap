@@ -33,6 +33,7 @@ internal static class Program
             Appearance = await new AppearancePreferences(preferences, TimeProvider.System).LoadAsync(),
             SavedLayout = await new LayoutPreferences(preferences, TimeProvider.System).LoadAsync(),
             ManagedWindows = true,
+            Tiles = new GatewayTileSource(new HttpClient { BaseAddress = gateway }),
             SharedStation = true,
             Restart = BrowserPreferenceStore.ReloadPage,
             SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
@@ -95,5 +96,16 @@ internal static class Program
     }
 
     private static AppBuilder BuildAvaloniaApp(RemoteEngineService engine, PlatformServices platform) =>
-        AppBuilder.Configure(() => new App(engine, platform)).LogToTrace();
+        AppBuilder
+            .Configure(() => new App(engine, platform))
+            .With(new SkiaOptions { MaxGpuResourceSizeBytes = GpuBudget(StartupPage.ScreenPixels()) })
+            .LogToTrace();
+
+    /// <summary>
+    /// Skia's GPU resource budget, sized from the screen: with Avalonia's 28 MB default, map tiles no longer fit on a
+    /// large canvas and are uploaded again every frame (spike 1: 15 ms per frame on 2256 × 1352, 3 ms with 96 MB). About
+    /// 32 bytes per screen pixel, between 64 and 512 MB.
+    /// </summary>
+    internal static long GpuBudget(double screenPixels) =>
+        Math.Clamp((long)(screenPixels * 32), 64L * 1024 * 1024, 512L * 1024 * 1024);
 }

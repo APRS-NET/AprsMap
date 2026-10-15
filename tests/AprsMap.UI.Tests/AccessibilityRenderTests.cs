@@ -57,7 +57,11 @@ public sealed class AccessibilityRenderTests : IDisposable
 
         // The main view, with packets, an error and a profile.
         var engine = new FakeEngine();
-        var vm = new MainViewModel(engine, new FakeTimeProvider(), appearance: App.Appearance);
+        var vm = new MainViewModel(engine, new FakeTimeProvider(), appearance: App.Appearance)
+        {
+            Map = new AprsMap.UI.Map.MapViewModel(new MapTests.FakeTiles(), null, new FakeTimeProvider()),
+        };
+        await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
         vm.Show(engine.Settings);
         vm.Show(new EngineStatus(ConnectionState.Connected, "T2CAWEST", 123456, "1.0.0"));
         vm.Apply(new StationBatch([FakeEngine.Station("N0CALL-15")], []));

@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using AprsMap.Contracts;
 using AprsMap.UI.Appearance;
 using AprsMap.UI.Localization;
+using AprsMap.UI.Map;
 using AprsMap.UI.Platform;
 using AprsMap.UI.Settings;
 using AprsMap.UI.Shell;
@@ -105,6 +106,9 @@ public sealed partial class MainViewModel : ObservableObject
         ShowError(null);
         Show(await engine.GetSettingsAsync());
     }
+
+    /// <summary>The map's state (F1.4): tiles, Home and the remembered view; null shows the map's placeholder.</summary>
+    public MapViewModel? Map { get; init; }
 
     /// <summary>The main window's screen, for Gather windows; set on the desktop only (F1.0 behavior 14).</summary>
     public Func<ScreenArea?>? MainScreen { get; init; }
@@ -238,7 +242,17 @@ public sealed partial class MainViewModel : ObservableObject
             canResetStation: _settings is { ReadOnly: false },
             ResetAppAsync
         );
-        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage, profiles, data);
+        var mapItems = Map is null
+            ? null
+            : SettingsRegistry.Map(
+                _appearance,
+                _text,
+                Map.Providers,
+                _settings is { ReadOnly: false }
+                    ? (() => _settings?.EffectiveAging ?? StationAging.Default, SaveAging)
+                    : null
+            );
+        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage, profiles, data, mapItems);
         settings.Closed += OnSettingsClosed;
         Settings = settings;
         GeocodingInfo? geocoding = null;
@@ -254,6 +268,26 @@ public sealed partial class MainViewModel : ObservableObject
         if (_settings is { } current)
         {
             await profiles.ShowAsync(current);
+        }
+    }
+
+    /// <summary>Saves new station aging times (Settings › Map, F1.3 behavior 9); a refusal shows in the error line.</summary>
+    private async void SaveAging(StationAging aging)
+    {
+        if (_settings is not { } settings)
+        {
+            return;
+        }
+        var changed = settings with { Aging = aging };
+        try
+        {
+            await engine.SaveSettingsAsync(changed);
+            _settings = changed;
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            ShowError(ex);
         }
     }
 
@@ -366,6 +400,12 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
+        if (Map is not null)
+        {
+            await Map.LoadAsync(cancellationToken);
+            Map.UseProvider(_appearance.Current.MapProvider);
+            _appearance.Changed += (_, settings) => Map.UseProvider(settings.MapProvider);
+        }
         var packets = KeepAsync(WatchPacketsAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);
@@ -395,7 +435,18 @@ public sealed partial class MainViewModel : ObservableObject
             _stations.Remove(name);
         }
         StationCount = _stations.Count;
+        StationsChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Every station on the map, by name, as the station stream has them.</summary>
+    public IReadOnlyCollection<StationState> Stations => _stations.Values;
+
+    /// <summary>Raised after each batch from the station stream (about every 250 ms at most).</summary>
+    public event EventHandler? StationsChanged;
+
+    /// <summary>The station selected on the map or in a list, for the Details panel (F1.6); null for none.</summary>
+    [ObservableProperty]
+    public partial string? SelectedStation { get; set; }
 
     /// <summary>Shows freshly loaded settings without treating them as the user's choice.</summary>
     internal void Show(AppSettings settings)
@@ -417,6 +468,11 @@ public sealed partial class MainViewModel : ObservableObject
             _showingSettings = false;
         }
 
+        if (Map is not null)
+        {
+            // Home is the active profile's location (behavior 3).
+            Map.Home = settings.GetActiveProfile() is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
+        }
         var notSetUp = settings.Profiles.Count == 0;
         ShowGatewaySetupNote = notSetUp && settings.ReadOnly;
         CanOpenSetup = notSetUp && !settings.ReadOnly && _setupDismissed && Setup is null;

@@ -167,6 +167,21 @@ public sealed class AppearanceService
         yield return ("Text.Body", 14 * s.TextScale);
         yield return ("Text.Small", 12.5 * s.TextScale);
         yield return ("Text.Title", 17 * s.TextScale);
+        // Map symbols and their labels scale together with the map symbol size (F1.4 behavior 16).
+        yield return ("Map.SymbolSize", Math.Round(24 * s.MapSymbolScale));
+        yield return ("Map.LabelSize", 12 * s.MapSymbolScale);
+        // How much the tiles are darkened; negative leaves it to the theme (dimmed when dark).
+        yield return (
+            "Map.Dimming",
+            s.MapBrightness switch
+            {
+                MapBrightness.Normal => 0d,
+                MapBrightness.Dimmed => 0.35,
+                MapBrightness.Dark => 0.6,
+                _ => -1d,
+            }
+        );
+        yield return ("Map.ShowLabels", s.MapLabels == MapLabels.AllThatFit);
         // Docking chrome (tabs, panel headers, floating window titles) follows the text size like everything else.
         yield return ("DockFontSizeNormal", 12.5 * s.TextScale);
         yield return ("DockTabHeight", Math.Round(30 * s.TextScale));

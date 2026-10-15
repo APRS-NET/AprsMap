@@ -869,4 +869,87 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>None</value>
     <comment>Shown while dragging a panel where it can't go.</comment>
   </data>
+  <data name="Map.ZoomIn" xml:space="preserve">
+    <value>Zoom in (+)</value>
+    <comment>Map button; + is the key that does the same.</comment>
+  </data>
+  <data name="Map.ZoomOut" xml:space="preserve">
+    <value>Zoom out (−)</value>
+    <comment>Map button; − is the key that does the same.</comment>
+  </data>
+  <data name="Map.Home" xml:space="preserve">
+    <value>Go to my location (H)</value>
+    <comment>Map button: back to the active profile's location. H is the key that does the same.</comment>
+  </data>
+  <data name="Map.Fit" xml:space="preserve">
+    <value>Fit all stations (F)</value>
+    <comment>Map button: zooms to show every station. F is the key that does the same.</comment>
+  </data>
+  <data name="Map.Hover" xml:space="preserve">
+    <value>{name} · heard {minutes, plural, =0 {just now} one {# minute ago} other {# minutes ago}}</value>
+    <comment>Tooltip over a station on the map. name: its callsign (not translated). minutes: whole minutes since it was last heard.</comment>
+  </data>
+  <data name="Settings.Map" xml:space="preserve">
+    <value>Map</value>
+    <comment>Settings section.</comment>
+  </data>
+  <data name="Settings.Map.Provider" xml:space="preserve">
+    <value>Map tiles</value>
+    <comment>Which tile provider draws the map.</comment>
+  </data>
+  <data name="Settings.Map.Brightness" xml:space="preserve">
+    <value>Map brightness</value>
+  </data>
+  <data name="Settings.Map.Brightness.Help" xml:space="preserve">
+    <value>A darker map makes the stations stand out.</value>
+  </data>
+  <data name="Settings.Map.Brightness.Auto" xml:space="preserve">
+    <value>Follow the theme (dimmed when dark)</value>
+  </data>
+  <data name="Settings.Map.Brightness.Normal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="Settings.Map.Brightness.Dimmed" xml:space="preserve">
+    <value>Dimmed</value>
+  </data>
+  <data name="Settings.Map.Brightness.Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Settings.Map.Labels" xml:space="preserve">
+    <value>Station labels</value>
+  </data>
+  <data name="Settings.Map.Labels.AllThatFit" xml:space="preserve">
+    <value>All that fit</value>
+    <comment>Labels are shown where they don't overlap; the most recently heard station wins.</comment>
+  </data>
+  <data name="Settings.Map.Labels.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Settings.Map.SymbolSize" xml:space="preserve">
+    <value>Symbol size</value>
+  </data>
+  <data name="Settings.Map.SymbolSize.Help" xml:space="preserve">
+    <value>Station symbols and their labels on the map.</value>
+  </data>
+  <data name="Settings.Map.StaleAfter" xml:space="preserve">
+    <value>Fade stations not heard for</value>
+  </data>
+  <data name="Settings.Map.StaleAfter.Help" xml:space="preserve">
+    <value>Faded stations are drawn at half strength. For every viewer of this station.</value>
+  </data>
+  <data name="Settings.Map.RemoveAfter" xml:space="preserve">
+    <value>Remove stations not heard for</value>
+  </data>
+  <data name="Settings.Map.RemoveAfter.Help" xml:space="preserve">
+    <value>Removed stations leave the map and the lists until they are heard again. For every viewer of this station.</value>
+  </data>
+  <data name="Settings.Map.RemoveAfter.Never" xml:space="preserve">
+    <value>Never</value>
+  </data>
+  <data name="Settings.Map.Minutes" xml:space="preserve">
+    <value>{minutes, plural, one {# minute} other {# minutes}}</value>
+  </data>
+  <data name="Settings.Map.Hours" xml:space="preserve">
+    <value>{hours, plural, one {# hour} other {# hours}}</value>
+  </data>
 </root>

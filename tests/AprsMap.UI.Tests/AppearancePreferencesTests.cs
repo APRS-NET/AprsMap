@@ -30,6 +30,9 @@ public sealed class AppearancePreferencesTests : IDisposable
         Density = Density.Compact,
         Motion = MotionPreference.Reduced,
         MapSymbolScale = 1.5,
+        MapBrightness = MapBrightness.Dark,
+        MapLabels = MapLabels.None,
+        MapProvider = "topo",
         Language = "de",
     };
 

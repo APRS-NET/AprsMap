@@ -15,7 +15,14 @@ namespace AprsMap.UI.Views;
 /// </summary>
 public sealed partial class SettingsView : UserControl
 {
-    private static readonly string[] Sections = ["ProfilesSection", "AppearanceSection", "DataSection", "AboutSection"];
+    private static readonly string[] Sections =
+    [
+        "ProfilesSection",
+        "AppearanceSection",
+        "MapSection",
+        "DataSection",
+        "AboutSection",
+    ];
 
     /// <summary>Below this width the sections become tabs across the top.</summary>
     public const double NarrowWidth = 720;

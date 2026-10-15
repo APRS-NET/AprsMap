@@ -162,6 +162,158 @@ public static class SettingsRegistry
         ];
     }
 
+    /// <summary>
+    /// The Map section's options (docs/features/F1.4-map.md, behavior 21): the viewer's own tile provider, brightness,
+    /// labels and symbol size, and, where this viewer may change the station's settings, when stations fade and leave
+    /// (F1.3 behavior 9).
+    /// </summary>
+    /// <param name="appearance">Where the viewer's map preferences live.</param>
+    /// <param name="text">For the labels.</param>
+    /// <param name="providers">The tile providers offered.</param>
+    /// <param name="aging">The station's aging and how to save a change; null hides those options (a read-only gateway).</param>
+    public static IReadOnlyList<SettingItem> Map(
+        AppearanceService appearance,
+        Localizer text,
+        IReadOnlyList<Contracts.TileProviderInfo> providers,
+        (Func<Contracts.StationAging> Get, Action<Contracts.StationAging> Save)? aging
+    )
+    {
+        ArgumentNullException.ThrowIfNull(appearance);
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(providers);
+
+        void Update(Func<AppearanceSettings, AppearanceSettings> change) =>
+            appearance.Apply(change(appearance.Current));
+
+        var items = new List<SettingItem>();
+        if (providers.Count > 1)
+        {
+            items.Add(
+                new ChoiceSetting(
+                    "map.provider",
+                    "Settings.Map.Provider",
+                    null,
+                    text,
+                    () => [.. providers.Select(p => ((object?)p.Key, p.Name))],
+                    () => appearance.Current.MapProvider ?? providers[0].Key,
+                    value => Update(s => s with { MapProvider = (string?)value })
+                )
+            );
+        }
+        items.Add(
+            new ChoiceSetting(
+                "map.brightness",
+                "Settings.Map.Brightness",
+                "Settings.Map.Brightness.Help",
+                text,
+                () =>
+                    [
+                        (MapBrightness.Auto, text["Settings.Map.Brightness.Auto"]),
+                        (MapBrightness.Normal, text["Settings.Map.Brightness.Normal"]),
+                        (MapBrightness.Dimmed, text["Settings.Map.Brightness.Dimmed"]),
+                        (MapBrightness.Dark, text["Settings.Map.Brightness.Dark"]),
+                    ],
+                () => appearance.Current.MapBrightness,
+                value => Update(s => s with { MapBrightness = (MapBrightness)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
+                "map.labels",
+                "Settings.Map.Labels",
+                null,
+                text,
+                () =>
+                    [
+                        (MapLabels.AllThatFit, text["Settings.Map.Labels.AllThatFit"]),
+                        (MapLabels.None, text["Settings.Map.Labels.None"]),
+                    ],
+                () => appearance.Current.MapLabels,
+                value => Update(s => s with { MapLabels = (MapLabels)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
+                "map.symbol-size",
+                "Settings.Map.SymbolSize",
+                "Settings.Map.SymbolSize.Help",
+                text,
+                () =>
+                    [
+                        .. AppearanceSettings.MapSymbolScaleSteps.Select(step =>
+                            (
+                                (object?)step,
+                                text.Format(
+                                    "Settings.Appearance.Percent",
+                                    new Dictionary<string, object?> { ["percent"] = Math.Round(step * 100) }
+                                )
+                            )
+                        ),
+                    ],
+                () =>
+                    AppearanceSettings.MapSymbolScaleSteps.MinBy(step =>
+                        Math.Abs(step - appearance.Current.MapSymbolScale)
+                    ),
+                value => Update(s => s with { MapSymbolScale = (double)value! })
+            )
+        );
+        if (aging is var (get, save))
+        {
+            // Removal always after staleness, so each list offers only what fits the other's current value. The value is
+            // kept here as chosen, so both lists follow at once while the engine saves it.
+            var current = get();
+            ChoiceSetting? stale = null;
+            ChoiceSetting? remove = null;
+            void Set(Contracts.StationAging value)
+            {
+                current = value;
+                save(value);
+                stale?.Retranslate();
+                remove?.Retranslate();
+            }
+            stale = new ChoiceSetting(
+                "map.stale-after",
+                "Settings.Map.StaleAfter",
+                "Settings.Map.StaleAfter.Help",
+                text,
+                () =>
+                    [
+                        .. StaleSteps
+                            .Where(m => current.RemoveAfterMinutes is not { } after || m < after)
+                            .Select(m => ((object?)m, Minutes(text, m))),
+                    ],
+                () => current.StaleAfterMinutes,
+                value => Set(current with { StaleAfterMinutes = (int)value! })
+            );
+            remove = new ChoiceSetting(
+                "map.remove-after",
+                "Settings.Map.RemoveAfter",
+                "Settings.Map.RemoveAfter.Help",
+                text,
+                () =>
+                    [
+                        .. RemoveSteps
+                            .Where(m => m > current.StaleAfterMinutes)
+                            .Select(m => ((object?)m, Minutes(text, m))),
+                        (null, text["Settings.Map.RemoveAfter.Never"]),
+                    ],
+                () => current.RemoveAfterMinutes,
+                value => Set(current with { RemoveAfterMinutes = (int?)value })
+            );
+            items.Add(stale);
+            items.Add(remove);
+        }
+        return items;
+    }
+
+    private static readonly int[] StaleSteps = [10, 15, 30, 60, 120];
+    private static readonly int[] RemoveSteps = [30, 60, 120, 360, 1440];
+
+    private static string Minutes(Localizer text, int minutes) =>
+        minutes % 60 == 0
+            ? text.Format("Settings.Map.Hours", new Dictionary<string, object?> { ["hours"] = minutes / 60 })
+            : text.Format("Settings.Map.Minutes", new Dictionary<string, object?> { ["minutes"] = minutes });
+
     /// <summary>A language in its own name, capitalised as a menu item ("Deutsch", "English").</summary>
     internal static string NativeName(string tag)
     {

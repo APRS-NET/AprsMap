@@ -23,6 +23,7 @@ public sealed class App : Application, IDisposable
     private readonly PlatformServices _platform = new();
     private AppearancePreferences? _preferences;
     private LayoutPreferences? _layout;
+    private Map.MapViewModel? _map;
 
     /// <summary>For the XAML designer and previewer only.</summary>
     public App() { }
@@ -60,6 +61,10 @@ public sealed class App : Application, IDisposable
         if (_layout is not null)
         {
             await _layout.FlushAsync();
+        }
+        if (_map is not null)
+        {
+            await _map.FlushAsync();
         }
     }
 
@@ -169,11 +174,13 @@ public sealed class App : Application, IDisposable
             )
             {
                 ClearLocalData = () => ClearLocalDataAsync(created!),
+                Map = new Map.MapViewModel(_platform.Tiles, _platform.Preferences, TimeProvider.System),
                 MainScreen = MainScreen,
                 SharedStation = _platform.SharedStation,
                 Restart = _platform.Restart,
             };
             created = viewModel;
+            _map = viewModel.Map;
             Control view = new MainView { DataContext = viewModel };
             if (_platform.CoarsePointer)
             {

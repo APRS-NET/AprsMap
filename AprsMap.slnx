@@ -48,12 +48,14 @@
     <Project Path="src/AprsMap.Desktop/AprsMap.Desktop.csproj" />
     <Project Path="src/AprsMap.Gateway/AprsMap.Gateway.csproj" />
     <Project Path="src/AprsMap.Hosting/AprsMap.Hosting.csproj" />
+    <Project Path="src/AprsMap.Tiles/AprsMap.Tiles.csproj" />
     <Project Path="src/AprsMap.UI/AprsMap.UI.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />
     <Project Path="tests/AprsMap.Core.Tests/AprsMap.Core.Tests.csproj" />
     <Project Path="tests/AprsMap.Gateway.Tests/AprsMap.Gateway.Tests.csproj" />
+    <Project Path="tests/AprsMap.Tiles.Tests/AprsMap.Tiles.Tests.csproj" />
     <Project Path="tests/AprsMap.UI.Tests/AprsMap.UI.Tests.csproj" />
   </Folder>
 </Solution>

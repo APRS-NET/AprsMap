@@ -24,6 +24,10 @@ public sealed class PanelTemplate : IDataTemplate
         {
             PanelTool { Kind: PanelKinds.Packets } panel => new PacketsPanel { DataContext = panel.Context },
             PanelTool panel => Placeholder(panel.Kind),
+            MapDocument { Context: ViewModels.MainViewModel { Map: not null } context } => new Map.MapPanel
+            {
+                DataContext = context,
+            },
             MapDocument => Placeholder(PanelKinds.Map),
             _ => null,
         };
