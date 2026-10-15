@@ -73,8 +73,8 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.5 | Tracks / trails for moving stations, with configurable history length | — (core feature list) | App | G08 | scoped |
 | F1.6 | Station info panel: last packet, path, comment, speed/course/altitude, distance and bearing from me, device | Station Info | App | G07, G08, G20 | scoped |
 | F1.7 | Station list: sortable and searchable; center on, track (keep centered) | — | App | G08 | scoped |
-| F1.8 | Raw packet scroller ([spec](features/F1.8-packet-list.md)) with filters, plus parse-issue display for debugging | Debug Logs | App | G05, G06, G20 | spec'd |
-| F1.9 | View filters ([spec](features/F1.9-view-filters.md)): RF only, message-capable, weather, objects, by symbol category, by age, by platform, by Mic-E status, by `!shriek!` and `#hashtag` tags | (View menu) | App | G07, G20 | spec'd |
+| F1.8 | Raw packet scroller with filters, plus parse-issue display for debugging | Debug Logs | App | — | scoped |
+| F1.9 | View filters: RF only, message-capable, weather, objects, by symbol category, by age, by platform, by Mic-E status, by `!shriek!` and `#hashtag` tags | (View menu) | App | G20 | scoped |
 | F1.10 | Weather station display: current readings, units preference | Weather Stations | App | — | scoped |
 | F1.11 | Telemetry: latest values with PARM/UNIT/EQNS applied | Telemetry | App | G09 | scoped |
 | F1.12 | Area objects and signposts drawn as shapes | — | App | — | scoped |
