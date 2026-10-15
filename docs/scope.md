@@ -85,9 +85,9 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.17 | Dead-reckoned positions for moving stations, with a freshness indicator | (Screen menu) | App | G11 | scoped |
 | F1.18 | Set destination: distance and bearing to a chosen point | Station Info | App | G08 | scoped |
 | F1.19 | Data housekeeping: clear stations, tracks, messages, bulletins, telemetry, saved texts | (Clear menu) | App | — | scoped |
-| F1.20 | Packet and station anomaly flags (duplicate positions, impossible speed, sub-second repeats, invalid) ([spec](features/F1.20-anomalies.md)) | Scroller | App | G24 | spec'd |
-| F1.21 | RF path visualization: per-packet digipeater paths, digipeater-to-digipeater network links, local-RF-only mode ([spec](features/F1.21-rf-paths.md)) | (observed) | App | G20 | spec'd |
-| F1.22 | Statistics: heard platforms (device families) and symbols with counts and percentages ([spec](features/F1.22-statistics.md)) | (observed) | App | G07, G20 | spec'd |
+| F1.20 | Packet and station anomaly flags (duplicate positions, impossible speed, sub-second repeats, invalid) | Scroller | App | G24 | scoped |
+| F1.21 | RF path visualization: per-packet digipeater paths, digipeater-to-digipeater network links, local-RF-only mode | (observed) | App | G20 | scoped |
+| F1.22 | Statistics: heard platforms (device families) and symbols with counts and percentages | (observed) | App | G07 | scoped |
 
 ## Phase 2: Transmit via APRS-IS
 
