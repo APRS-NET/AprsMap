@@ -6,6 +6,8 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless.XUnit" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <!-- Only to list APRS.NET's validation codes, so each one is checked for a translatable string. -->
+    <PackageReference Include="AprsNet.Packets" />
     <!-- Avalonia.Headless.XUnit 12.1 is built against xUnit v3 3.x and fails test discovery under 4.x (missing
          TestIntrospectionHelper overload). Pin this project only until Avalonia supports v4; see dependabot.yml. -->
     <PackageReference Update="xunit.v3.mtp-off" VersionOverride="3.2.2" />

@@ -1,25 +1,39 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using System.Collections.ObjectModel;
 using AprsMap.Contracts;
+using AprsMap.UI.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AprsMap.UI.ViewModels;
 
 /// <summary>The main screen: connection status and the live packet list. Talks only to <see cref="IEngineService"/>.</summary>
-public sealed partial class MainViewModel(IEngineService engine, TimeProvider time) : ObservableObject
+public sealed partial class MainViewModel : ObservableObject
 {
     /// <summary>How many packets the list keeps.</summary>
     public const int MaxPackets = 200;
 
-    /// <summary>The connection text while the engine can't be reached (for the browser app, the gateway).</summary>
-    public const string EngineUnreachableText = "Engine unreachable · retrying";
-
     /// <summary>How long to wait before asking the engine again after a call or stream fails.</summary>
     public static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
 
+    private readonly IEngineService engine;
+    private readonly TimeProvider time;
+    private readonly Localizer _text;
     private readonly Dictionary<string, StationState> _stations = new(StringComparer.Ordinal);
     private AppSettings? _settings;
     private bool _showingSettings;
+    private EngineStatus? _status;
+    private bool _engineUnreachable;
+    private Exception? _error;
+
+    /// <summary>Creates the view model; its text follows <paramref name="text"/>'s language (the app's by default).</summary>
+    public MainViewModel(IEngineService engine, TimeProvider time, Localizer? text = null)
+    {
+        this.engine = engine;
+        this.time = time;
+        _text = text ?? Localizer.Instance;
+        _text.LanguageChanged += (_, _) => Retranslate();
+        Retranslate();
+    }
 
     /// <summary>The product name, from branding.</summary>
     public string Title { get; } = Brand.DisplayName;
@@ -28,13 +42,21 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
     public ObservableCollection<PacketView> Packets { get; } = [];
 
     [ObservableProperty]
-    public partial string ConnectionText { get; set; } = "Starting…";
+    public partial string ConnectionText { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial long PacketCount { get; set; }
 
     [ObservableProperty]
     public partial int StationCount { get; set; }
+
+    /// <summary>"12 packets", in the viewer's language.</summary>
+    [ObservableProperty]
+    public partial string PacketCountText { get; set; } = string.Empty;
+
+    /// <summary>"3 stations", in the viewer's language.</summary>
+    [ObservableProperty]
+    public partial string StationCountText { get; set; } = string.Empty;
 
     /// <summary>The station profiles, to switch between; empty before first-run setup.</summary>
     public ObservableCollection<StationProfile> Profiles { get; } = [];
@@ -50,6 +72,47 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
     /// <summary>The latest error talking to the engine (for example, the gateway is unreachable), or null.</summary>
     [ObservableProperty]
     public partial string? ErrorText { get; set; }
+
+    /// <summary>Shows <paramref name="error"/> in the viewer's language, or clears it.</summary>
+    internal void ShowError(Exception? error)
+    {
+        _error = error;
+        ErrorText = error is null ? null : _text.Describe(error);
+    }
+
+    partial void OnPacketCountChanged(long value) =>
+        PacketCountText = _text.Format("Main.PacketCount", new Dictionary<string, object?> { ["count"] = value });
+
+    partial void OnStationCountChanged(int value) =>
+        StationCountText = _text.Format("Main.StationCount", new Dictionary<string, object?> { ["count"] = value });
+
+    /// <summary>Rebuilds every text from its source, for the current language.</summary>
+    private void Retranslate()
+    {
+        OnPacketCountChanged(PacketCount);
+        OnStationCountChanged(StationCount);
+        ShowConnection();
+        if (_error is not null)
+        {
+            ShowError(_error);
+        }
+    }
+
+    private void ShowConnection() =>
+        ConnectionText =
+            _engineUnreachable ? _text["Status.EngineUnreachable"]
+            : _status is null ? _text["Status.Starting"]
+            : _status.Connection switch
+            {
+                ConnectionState.Connected => _text.Format(
+                    "Status.Connected",
+                    new Dictionary<string, object?> { ["server"] = _status.Server ?? string.Empty }
+                ),
+                ConnectionState.Connecting => _text["Status.Connecting"],
+                ConnectionState.Faulted => _text["Status.Faulted"],
+                ConnectionState.NotConfigured => _text["Status.NotConfigured"],
+                _ => _text["Status.Disconnected"],
+            };
 
     /// <summary>
     /// Starts watching packets and stations and polling status, until cancelled. A failure (the gateway restarted, say)
@@ -125,11 +188,11 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
         {
             await engine.SaveSettingsAsync(switched);
             _settings = switched;
-            ErrorText = null;
+            ShowError(null);
         }
         catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
         {
-            ErrorText = ex.Message;
+            ShowError(ex);
             Show(settings);
         }
     }
@@ -137,14 +200,9 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
     internal void Show(EngineStatus status)
     {
         PacketCount = status.PacketsReceived;
-        ConnectionText = status.Connection switch
-        {
-            ConnectionState.Connected => $"APRS-IS connected · {status.Server}",
-            ConnectionState.Connecting => "APRS-IS connecting…",
-            ConnectionState.Faulted => "APRS-IS connection failed · retrying",
-            ConnectionState.NotConfigured => "APRS-IS not set up · add a callsign",
-            _ => "APRS-IS disconnected",
-        };
+        _status = status;
+        _engineUnreachable = false;
+        ShowConnection();
     }
 
     /// <summary>Runs <paramref name="run"/> until cancelled, retrying after failures and after the stream ends.</summary>
@@ -164,7 +222,7 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
             catch (Exception ex)
             {
                 // Any failure talking to the engine is shown and retried, never left unobserved.
-                ErrorText = ex.Message;
+                ShowError(ex);
             }
 
             try
@@ -222,11 +280,12 @@ public sealed partial class MainViewModel(IEngineService engine, TimeProvider ti
             catch (Exception) when (!cancellationToken.IsCancellationRequested)
             {
                 // The last APRS-IS state shown is no longer known.
-                ConnectionText = EngineUnreachableText;
+                _engineUnreachable = true;
+                ShowConnection();
                 throw;
             }
             Show(status);
-            ErrorText = null;
+            ShowError(null);
             if (_settings is null || status.ProfileId != _settings.ActiveProfileId)
             {
                 // First poll, or the profile changed elsewhere (another window, another browser).

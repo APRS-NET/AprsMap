@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- English UI text, the fallback for every language (docs/features/F0.9-localization.md). Values use ICU
+     MessageFormat: {name} is a placeholder, {count, plural, one {…} other {…}} picks the plural form, # is the number.
+     Comments tell translators where the text appears and what each placeholder holds. See docs/translating.md. -->
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="Main.ProfilePicker.ToolTip" xml:space="preserve">
+    <value>Station profile</value>
+    <comment>Tooltip on the status bar's profile picker.</comment>
+  </data>
+  <data name="Main.PacketCount" xml:space="preserve">
+    <value>{count, plural, one {# packet} other {# packets}}</value>
+    <comment>Status bar: packets received since the engine started. count: a number.</comment>
+  </data>
+  <data name="Main.StationCount" xml:space="preserve">
+    <value>{count, plural, one {# station} other {# stations}}</value>
+    <comment>Status bar: stations on the map. count: a number.</comment>
+  </data>
+  <data name="Status.Starting" xml:space="preserve">
+    <value>Starting…</value>
+    <comment>Status bar, before the engine has answered.</comment>
+  </data>
+  <data name="Status.Connected" xml:space="preserve">
+    <value>APRS-IS connected · {server}</value>
+    <comment>Status bar. server: the APRS-IS server's name, as it reports it (not translated).</comment>
+  </data>
+  <data name="Status.Connecting" xml:space="preserve">
+    <value>APRS-IS connecting…</value>
+    <comment>Status bar.</comment>
+  </data>
+  <data name="Status.Faulted" xml:space="preserve">
+    <value>APRS-IS connection failed · retrying</value>
+    <comment>Status bar; the engine retries by itself.</comment>
+  </data>
+  <data name="Status.NotConfigured" xml:space="preserve">
+    <value>APRS-IS not set up · add a callsign</value>
+    <comment>Status bar before first-run setup.</comment>
+  </data>
+  <data name="Status.Disconnected" xml:space="preserve">
+    <value>APRS-IS disconnected</value>
+    <comment>Status bar.</comment>
+  </data>
+  <data name="Status.EngineUnreachable" xml:space="preserve">
+    <value>Engine unreachable · retrying</value>
+    <comment>Status bar when the app can't reach its engine (in the browser: the gateway).</comment>
+  </data>
+  <data name="Error.settings.incomplete" xml:space="preserve">
+    <value>The settings are incomplete.</value>
+  </data>
+  <data name="Error.settings.profile.id-duplicate" xml:space="preserve">
+    <value>Every profile needs its own id.</value>
+    <comment>A program error rather than a user one; keep it short.</comment>
+  </data>
+  <data name="Error.settings.profile.name-missing" xml:space="preserve">
+    <value>Every profile needs a name.</value>
+  </data>
+  <data name="Error.settings.profile.name-duplicate" xml:space="preserve">
+    <value>There is more than one profile named “{profile}”.</value>
+    <comment>profile: the profile's name as the user typed it.</comment>
+  </data>
+  <data name="Error.settings.profile.position-off-globe" xml:space="preserve">
+    <value>Profile “{profile}”: the location is off the globe.</value>
+    <comment>profile: the profile's name.</comment>
+  </data>
+  <data name="Error.settings.profile.position-incomplete" xml:space="preserve">
+    <value>Profile “{profile}”: a location needs both latitude and longitude.</value>
+    <comment>profile: the profile's name.</comment>
+  </data>
+  <data name="Error.settings.active-profile-missing" xml:space="preserve">
+    <value>The active profile must be one of the profiles.</value>
+  </data>
+  <data name="Error.settings.invalid" xml:space="preserve">
+    <value>One of the settings isn't accepted.</value>
+    <comment>Shown when the engine rejects a value for a reason this version can't name.</comment>
+  </data>
+  <data name="Error.gateway.settings-read-only" xml:space="preserve">
+    <value>This gateway's settings can't be changed from the browser: operator sign-in isn't available yet.</value>
+  </data>
+  <data name="Error.gateway.operator-only" xml:space="preserve">
+    <value>Only this gateway's operator can do that, and operator sign-in isn't available yet.</value>
+  </data>
+  <data name="Error.geocoding.disabled" xml:space="preserve">
+    <value>Address lookup is turned off.</value>
+  </data>
+  <data name="Error.geocoding.refused" xml:space="preserve">
+    <value>The address lookup server is refusing requests for now. Try again in a minute, or use another way.</value>
+  </data>
+  <data name="Error.geocoding.superseded" xml:space="preserve">
+    <value>A newer lookup replaced this one.</value>
+  </data>
+  <data name="Error.geocoding.unreachable" xml:space="preserve">
+    <value>Couldn't reach the address lookup server. Check the connection, or use another way.</value>
+  </data>
+  <data name="Error.geocoding.http-error" xml:space="preserve">
+    <value>The address lookup server returned an error ({status}). Try again later, or use another way.</value>
+    <comment>status: an HTTP status code such as 500.</comment>
+  </data>
+  <data name="Error.geocoding.unreadable" xml:space="preserve">
+    <value>The address lookup server sent a reply that couldn't be read.</value>
+  </data>
+  <data name="Error.aprs.callsign-invalid-length" xml:space="preserve">
+    <value>“{value}” is empty or too long for a callsign.</value>
+    <comment>value: what the user typed.</comment>
+  </data>
+  <data name="Error.aprs.callsign-invalid-character" xml:space="preserve">
+    <value>“{value}” isn't a callsign: character {position} (“{character}”) isn't allowed here.</value>
+    <comment>value: what the user typed; position: 1-based; character: the character.</comment>
+  </data>
+  <data name="Error.aprs.callsign-invalid-ssid" xml:space="preserve">
+    <value>“{value}” has an SSID (the part after the hyphen) that isn't allowed.</value>
+    <comment>value: what the user typed. SSID: the suffix after the hyphen.</comment>
+  </data>
+  <data name="Error.aprs.destination-invalid" xml:space="preserve">
+    <value>“{value}” isn't a valid destination (TOCALL).</value>
+    <comment>value: the destination callsign.</comment>
+  </data>
+  <data name="Error.aprs.filter-control-character" xml:space="preserve">
+    <value>The filter can't contain line breaks or control characters.</value>
+  </data>
+  <data name="Error.aprs.path-entry-invalid-character" xml:space="preserve">
+    <value>“{value}” isn't a valid path entry: character {position} isn't allowed.</value>
+    <comment>value: a digipeater path entry such as WIDE1-1; position: 1-based.</comment>
+  </data>
+  <data name="Error.aprs.path-entry-invalid-length" xml:space="preserve">
+    <value>“{value}” isn't a valid path entry: it's empty or longer than 9 characters.</value>
+    <comment>value: a digipeater path entry such as WIDE1-1.</comment>
+  </data>
+  <data name="Error.aprs.path-too-long" xml:space="preserve">
+    <value>The path has too many entries.</value>
+    <comment>The digipeater path, such as WIDE1-1,WIDE2-1.</comment>
+  </data>
+  <data name="Error.aprs.server-host-empty" xml:space="preserve">
+    <value>Enter a server name, such as rotate.aprs2.net.</value>
+  </data>
+  <data name="Error.aprs.server-host-invalid" xml:space="preserve">
+    <value>“{value}” isn't a server address: use host or host:port.</value>
+    <comment>value: what the user typed.</comment>
+  </data>
+  <data name="Error.aprs.server-port-invalid" xml:space="preserve">
+    <value>“{value}” has a port that isn't a whole number.</value>
+    <comment>value: what the user typed, host:port.</comment>
+  </data>
+  <data name="Error.aprs.server-port-out-of-range" xml:space="preserve">
+    <value>“{value}” has a port outside 1 to 65535.</value>
+    <comment>value: what the user typed, host:port.</comment>
+  </data>
+  <data name="Error.aprs.software-name-invalid" xml:space="preserve">
+    <value>The app's name can't be sent to APRS-IS. This is a bug; please report it.</value>
+  </data>
+  <data name="Error.aprs.software-version-invalid" xml:space="preserve">
+    <value>The app's version can't be sent to APRS-IS. This is a bug; please report it.</value>
+  </data>
+</root>
