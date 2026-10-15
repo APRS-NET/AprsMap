@@ -111,6 +111,8 @@ try {
     appStarted: () => {
       started = true;
       clearTimeout(slow);
+      // A marker for the browser smoke test (tools/ci/browser-smoke.py): the app is running.
+      document.documentElement.dataset.appStarted = 'true';
     },
   });
   const config = runtime.getConfig();
