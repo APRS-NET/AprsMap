@@ -101,11 +101,15 @@ How it is built:
   connection (green/amber/red, click for details and reconnect), search/command palette, quick toggles (⚡), and a
   notification inbox (🔔: messages, bulletins, alerts, DX).
 - **Rail**: top-level pages. On narrow screens it becomes a bottom tab bar.
-- **Right pane**: details for the current selection. It replaces the reference's pop-up station menu, and becomes a
-  bottom sheet on narrow screens.
-- **Bottom dock**: the live packet list and logs. Collapsible; it can be undocked into its own window on desktop.
-- **Extra map views** (the reference's "multitrack"): pin a station into a split view. On desktop, a split view can
-  also be torn off into its own window.
+- **Panels** ([F1.0](../features/F1.0-shell-and-docking.md)): everything around the map is a panel that can be docked
+  on any side, tabbed, split, auto-hidden or floated (its own window on desktop, inside the page on the web). The
+  layout is saved per viewer, and named layouts can be recalled ([F1.23](../features/F1.23-saved-layouts.md)). The
+  drawing above is the default layout.
+- **Right pane**: the Details panel for the current selection. It replaces the reference's pop-up station menu, and
+  becomes a bottom sheet on narrow screens.
+- **Bottom dock**: the Packets panel (and logs).
+- **Extra map views** (the reference's "multitrack"): map-view panels, each following a station; on desktop they can
+  float onto another monitor.
 
 ## Where the reference's menus went
 

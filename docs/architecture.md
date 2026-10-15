@@ -236,7 +236,7 @@ browser UIs read and change them through `IEngineService` like everything else.
 
 ## Spikes before Phase 1 (each one is a timeboxed throwaway)
 
-All four are done (2026-10-13/14). Their conclusions are folded into the sections above. Each write-up is in
+All five are done (2026-10-13/15). Their conclusions are folded into the sections above. Each write-up is in
 `docs/spikes/`, and the throwaway code is on its `spike/*` branch, never merged.
 
 1. **Mapsui 5.1 + Avalonia 12 in WebAssembly**: OSM tiles, 2,000 moving symbol features, pan and zoom performance.
@@ -247,6 +247,8 @@ All four are done (2026-10-13/14). Their conclusions are folded into the section
    [symbols.md](spikes/symbols.md).
 4. **Tile cache**: a desktop disk cache honoring the OSM tile usage policy (User-Agent, cache headers, no bulk preload
    from openstreetmap.org; preload only from providers that permit it). **Done:** [tile-cache.md](spikes/tile-cache.md).
+5. **Docking layout**: Dock 12.1 for dockable, tabbed and floating panels on desktop and web, saved layouts, and
+   windows kept on screens that exist. **Done:** [docking.md](spikes/docking.md); built as F1.0.
 
 Smaller fixes the spikes turned up, for the Phase 0 and Phase 1 work that touches them:
 
