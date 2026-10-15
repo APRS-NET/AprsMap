@@ -75,9 +75,9 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.7 | Station list: sortable and searchable; center on, track (keep centered) | — | App | G08 | scoped |
 | F1.8 | Raw packet scroller with filters, plus parse-issue display for debugging | Debug Logs | App | — | scoped |
 | F1.9 | View filters: RF only, message-capable, weather, objects, by symbol category, by age, by platform, by Mic-E status, by `!shriek!` and `#hashtag` tags | (View menu) | App | G20 | scoped |
-| F1.10 | Weather station display: current readings, units preference | Weather Stations | App | — | scoped |
-| F1.11 | Telemetry: latest values with PARM/UNIT/EQNS applied | Telemetry | App | G09 | scoped |
-| F1.12 | Area objects and signposts drawn as shapes | — | App | — | scoped |
+| F1.10 | Weather station display ([spec](features/F1.10-weather.md)): current readings, units preference | Weather Stations | App | G08 | spec'd |
+| F1.11 | Telemetry ([spec](features/F1.11-telemetry.md)): latest values with PARM/UNIT/EQNS applied | Telemetry | App | G09 | spec'd |
+| F1.12 | Area objects and signposts ([spec](features/F1.12-area-objects.md)) drawn as shapes | — | App | — | spec'd |
 | F1.13 | My location: fixed position (set by map click or coordinates), used for distance and the default filter | Set Location | App | G08 | scoped |
 | F1.14 | Gateway: hosts the engine, browser bundle, anonymous read-only viewing | — | App | — | scoped |
 | F1.15 | Quick toggles: APRS-IS, internet-access master switch (gates tiles too), GPS, beaconing, sound, tile fetching | (Enables menu) | App | — | scoped |
