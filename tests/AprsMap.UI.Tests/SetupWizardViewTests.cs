@@ -67,6 +67,7 @@ public class SetupWizardViewTests
         Assert.True(Find<StackPanel>(window, "CallsignStep").IsEffectivelyVisible);
         Assert.False(Find<StackPanel>(window, "LocationStep").IsEffectivelyVisible);
         Assert.Equal("Step 1 of 4", Find<TextBlock>(window, "StepLabel").Text);
+        Assert.False(Find<RadioButton>(window, "DeviceChoice").IsVisible); // no device location on this platform
         Assert.False(vm.CanOpenSetup);
         window.Close();
     }

@@ -392,4 +392,55 @@
     <value>Not set up yet: this gateway's operator sets the first callsign.</value>
     <comment>Status bar note in the browser when the gateway has no station profile.</comment>
   </data>
+  <data name="Startup.NoGateway.Title" xml:space="preserve">
+    <value>Can't reach the {product} gateway</value>
+    <comment>Shown in the browser instead of the app. product: the app's name.</comment>
+  </data>
+  <data name="Startup.NoGateway.Detail" xml:space="preserve">
+    <value>The web app runs from its gateway, which runs the engine, and there is no gateway at {address}.
+Start the gateway (for example with docker compose up), then open the app from the gateway's address, such as http://localhost:8080.</value>
+    <comment>address: the web address that was tried. Keep 'docker compose up' and the example address as they are.</comment>
+  </data>
+  <data name="Startup.CantDraw.Title" xml:space="preserve">
+    <value>This build of the web app can't draw</value>
+    <comment>Shown when the browser app was built without its graphics libraries.</comment>
+  </data>
+  <data name="Startup.CantDraw.Detail" xml:space="preserve">
+    <value>Only a published build includes the WebAssembly graphics. Use the gateway (docker compose up), or publish the browser app.</value>
+    <comment>Keep 'docker compose up' as it is.</comment>
+  </data>
+  <data name="Startup.Retry" xml:space="preserve">
+    <value>Try again</value>
+    <comment>Button that reloads the page.</comment>
+  </data>
+  <data name="Wizard.Location.Method.Device" xml:space="preserve">
+    <value>This device's location</value>
+    <comment>Choice. In the browser: where the viewer's device is.</comment>
+  </data>
+  <data name="Wizard.Location.Device.Use" xml:space="preserve">
+    <value>Find my location</value>
+    <comment>Button; the browser asks for permission first.</comment>
+  </data>
+  <data name="Wizard.Location.Device.Help" xml:space="preserve">
+    <value>Your browser asks before sharing it. It's where this device is, which may not be where the station is.</value>
+  </data>
+  <data name="Wizard.Location.ConfirmedDevice" xml:space="preserve">
+    <value>This device's location: {latitude}, {longitude} · {locator}. Check that it's where the station is.</value>
+    <comment>latitude, longitude: decimal degrees; locator: a Maidenhead locator.</comment>
+  </data>
+  <data name="Wizard.Location.Device.Denied" xml:space="preserve">
+    <value>Sharing the location was refused. Allow it in the browser, or use another way.</value>
+  </data>
+  <data name="Wizard.Location.Device.Unavailable" xml:space="preserve">
+    <value>This device couldn't work out its location. Use another way.</value>
+  </data>
+  <data name="Wizard.Location.Device.Timeout" xml:space="preserve">
+    <value>Finding the location took too long. Try again, or use another way.</value>
+  </data>
+  <data name="Wizard.Location.Device.Insecure" xml:space="preserve">
+    <value>Browsers share their location only with secure pages (https, or localhost). Use another way, or open the app over https.</value>
+  </data>
+  <data name="Wizard.Location.Device.Unsupported" xml:space="preserve">
+    <value>This browser can't share its location. Use another way.</value>
+  </data>
 </root>

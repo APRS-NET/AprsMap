@@ -167,6 +167,14 @@
                   GroupName="LocationMethod"
                   Content="{l:T Wizard.Location.Method.Coordinates}"
                   IsChecked="{Binding IsCoordinatesMethod}"
+                  Margin="0,0,16,0"
+                />
+                <RadioButton
+                  x:Name="DeviceChoice"
+                  GroupName="LocationMethod"
+                  Content="{l:T Wizard.Location.Method.Device}"
+                  IsChecked="{Binding IsDeviceMethod}"
+                  IsVisible="{Binding CanUseDeviceLocation}"
                 />
               </WrapPanel>
 
@@ -268,6 +276,19 @@
                   FontFamily="{DynamicResource Font.Mono}"
                 ></TextBox>
               </DockPanel>
+
+              <StackPanel IsVisible="{Binding IsDeviceMethod}" Spacing="8">
+                <TextBlock
+                  Text="{l:T Wizard.Location.Device.Help}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+                <Button
+                  x:Name="FindMeButton"
+                  Content="{l:T Wizard.Location.Device.Use}"
+                  Command="{Binding UseDeviceLocationCommand}"
+                />
+              </StackPanel>
 
               <TextBlock
                 x:Name="LocationErrorLabel"

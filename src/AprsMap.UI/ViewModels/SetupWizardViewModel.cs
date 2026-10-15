@@ -4,6 +4,7 @@ using System.Globalization;
 using AprsMap.Contracts;
 using AprsMap.UI.Input;
 using AprsMap.UI.Localization;
+using AprsMap.UI.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -36,6 +37,9 @@ public enum LocationMethod
 
     /// <summary>Typed coordinates.</summary>
     Coordinates,
+
+    /// <summary>This device's location (the browser's geolocation).</summary>
+    Device,
 }
 
 /// <summary>A server preset as the wizard lists it, with its region name in the viewer's language.</summary>
@@ -56,12 +60,14 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 
     private readonly IEngineService _engine;
     private readonly Localizer _text;
+    private readonly IDeviceLocation? _deviceLocation;
     private IReadOnlyList<ServerPreset> _presets = [];
 
     /// <summary>Creates the wizard; call <see cref="LoadAsync"/> before showing it.</summary>
-    public SetupWizardViewModel(IEngineService engine, Localizer? text = null)
+    public SetupWizardViewModel(IEngineService engine, Localizer? text = null, IDeviceLocation? deviceLocation = null)
     {
         _engine = engine;
+        _deviceLocation = deviceLocation;
         _text = text ?? Localizer.Instance;
         _text.LanguageChanged += (_, _) => Retranslate();
     }
@@ -157,6 +163,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// <summary>The way the user is giving the location.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLocatorMethod), nameof(IsAddressMethod), nameof(IsCoordinatesMethod))]
+    [NotifyPropertyChangedFor(nameof(IsDeviceMethod))]
     public partial LocationMethod Method { get; set; }
 
     /// <summary>Whether the Maidenhead field is showing; setting it picks that way.</summary>
@@ -179,6 +186,24 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         get => Method == LocationMethod.Coordinates;
         set => Pick(value, LocationMethod.Coordinates);
     }
+
+    /// <summary>Whether "this device's location" is showing; setting it picks that way.</summary>
+    public bool IsDeviceMethod
+    {
+        get => Method == LocationMethod.Device;
+        set => Pick(value, LocationMethod.Device);
+    }
+
+    /// <summary>Whether this platform can give the device's location (behavior 9.4); the choice is hidden otherwise.</summary>
+    public bool CanUseDeviceLocation => _deviceLocation is not null;
+
+    /// <summary>Whether the device is being asked for its location.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(UseDeviceLocationCommand))]
+    public partial bool IsLocating { get; set; }
+
+    // Whether the confirmed location came from this device, which the confirmation line points out.
+    private bool _locationFromDevice;
 
     private void Pick(bool chosen, LocationMethod method)
     {
@@ -446,6 +471,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         LocationText = null;
         _locationLocator = null;
         _confirmedInput = null;
+        _locationFromDevice = false;
         Step = SetupStep.Server;
     }
 
@@ -587,6 +613,44 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         }
     }
 
+    private bool CanUseDevice() => _deviceLocation is not null && !IsLocating;
+
+    /// <summary>
+    /// Asks the device where it is (behavior 9.4). The browser asks the user first. The result is the viewer's
+    /// location, which on a gateway may not be the station's, so the confirmation line says so.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanUseDevice))]
+    private async Task UseDeviceLocationAsync()
+    {
+        IsLocating = true;
+        LocationError = null;
+        try
+        {
+            var fix = await _deviceLocation!.GetAsync();
+            if (await ConfirmAsync(fix.Latitude, fix.Longitude, null))
+            {
+                _locationFromDevice = true;
+                ShowLocation();
+            }
+        }
+        catch (DeviceLocationException ex)
+        {
+            // Written out, so the localization guard sees every key.
+            LocationError = ex.Error switch
+            {
+                DeviceLocationError.Denied => _text["Wizard.Location.Device.Denied"],
+                DeviceLocationError.Timeout => _text["Wizard.Location.Device.Timeout"],
+                DeviceLocationError.Insecure => _text["Wizard.Location.Device.Insecure"],
+                DeviceLocationError.Unsupported => _text["Wizard.Location.Device.Unsupported"],
+                _ => _text["Wizard.Location.Device.Unavailable"],
+            };
+        }
+        finally
+        {
+            IsLocating = false;
+        }
+    }
+
     /// <summary>Confirms a location from any way, with its locator for the confirmation line.</summary>
     private async Task<bool> ConfirmAsync(double latitude, double longitude, string? locator)
     {
@@ -604,6 +668,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         Longitude = longitude;
         _locationLocator = locator;
         _confirmedInput = null;
+        _locationFromDevice = false;
         ShowLocation();
         return true;
     }
@@ -612,7 +677,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         LocationText =
             Latitude is { } lat && Longitude is { } lon
                 ? _text.Format(
-                    "Wizard.Location.Confirmed",
+                    _locationFromDevice ? "Wizard.Location.ConfirmedDevice" : "Wizard.Location.Confirmed",
                     new Dictionary<string, object?>
                     {
                         ["latitude"] = lat.ToString("0.0000", _text.Culture),

@@ -9,7 +9,12 @@
     html, body { margin: 0; height: 100%; background: #F4F5F7; color: #16191D; font-family: system-ui, sans-serif; }
     @media (prefers-color-scheme: dark) { html, body { background: #15181C; color: #E6E9ED; } }
     #out { position: fixed; inset: 0; }
-    .loading { display: flex; height: 100%; align-items: center; justify-content: center; }
+    .loading { display: flex; flex-direction: column; height: 100%; align-items: center; justify-content: center; }
+    .startup-hint { max-width: 32rem; margin: 1rem; text-align: center; opacity: 0.75; }
+    .startup-error { max-width: 36rem; margin: 15vh auto 0; padding: 0 1rem; line-height: 1.5; }
+    .startup-error h1 { font-size: 1.25rem; font-weight: 600; }
+    .startup-error p { white-space: pre-line; }
+    .startup-error button { font: inherit; padding: 0.4rem 1rem; }
   </style>
 </head>
 <body>

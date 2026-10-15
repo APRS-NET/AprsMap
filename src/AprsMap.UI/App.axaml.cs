@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
 using AprsMap.UI.Appearance;
+using AprsMap.UI.Platform;
 using AprsMap.UI.ViewModels;
 using AprsMap.UI.Views;
 using Avalonia;
@@ -17,14 +18,16 @@ namespace AprsMap.UI;
 public sealed class App : Application
 {
     private readonly IEngineService? _engine;
+    private readonly IDeviceLocation? _deviceLocation;
 
     /// <summary>For the XAML designer and previewer only.</summary>
     public App() { }
 
-    /// <summary>Creates the app on top of an engine service.</summary>
-    public App(IEngineService engine)
+    /// <summary>Creates the app on top of an engine service, with the platform's device location where there is one.</summary>
+    public App(IEngineService engine, IDeviceLocation? deviceLocation = null)
     {
         _engine = engine;
+        _deviceLocation = deviceLocation;
     }
 
     /// <summary>Live appearance settings (theme, text size, corners…).</summary>
@@ -39,7 +42,7 @@ public sealed class App : Application
         Appearance.Attach(this);
         if (_engine is not null)
         {
-            var viewModel = new MainViewModel(_engine, TimeProvider.System);
+            var viewModel = new MainViewModel(_engine, TimeProvider.System, deviceLocation: _deviceLocation);
             Control view = new MainView { DataContext = viewModel };
             switch (ApplicationLifetime)
             {

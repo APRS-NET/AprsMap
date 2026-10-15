@@ -56,8 +56,8 @@ Run the desktop app with `dotnet run --project src/AprsMap.Desktop`, or the gate
 
 The browser app builds with any .NET 10 SDK, but only a **publish** links SkiaSharp into WebAssembly, which needs the
 `wasm-tools` workload (`dotnet workload install wasm-tools`, with Microsoft's SDK). The Dockerfile does this, so the
-easiest way to try the web app is `docker compose up --build`. Running `src/AprsMap.Browser` on its own stays on "Loading…": it needs a gateway to
-serve it (see [docs/status.md](docs/status.md#web-app)).
+easiest way to try the web app is `docker compose up --build`. Running `src/AprsMap.Browser` on its own doesn't work (the page says so): it needs a
+gateway to serve it (see [docs/status.md](docs/status.md#web-app)).
 
 Code is formatted with [CSharpier](https://csharpier.com), and CI fails on unformatted files. Enable the pre-commit hook
 once per clone so staged files are formatted when you commit:

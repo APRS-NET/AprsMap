@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using AprsMap.Contracts;
 using AprsMap.UI.Localization;
+using AprsMap.UI.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AprsMap.UI.ViewModels;
@@ -18,6 +19,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly IEngineService engine;
     private readonly TimeProvider time;
     private readonly Localizer _text;
+    private readonly IDeviceLocation? _deviceLocation;
     private readonly Dictionary<string, StationState> _stations = new(StringComparer.Ordinal);
     private AppSettings? _settings;
     private bool _showingSettings;
@@ -28,10 +30,16 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _openingSetup;
 
     /// <summary>Creates the view model; its text follows <paramref name="text"/>'s language (the app's by default).</summary>
-    public MainViewModel(IEngineService engine, TimeProvider time, Localizer? text = null)
+    public MainViewModel(
+        IEngineService engine,
+        TimeProvider time,
+        Localizer? text = null,
+        IDeviceLocation? deviceLocation = null
+    )
     {
         this.engine = engine;
         this.time = time;
+        _deviceLocation = deviceLocation;
         _text = text ?? Localizer.Instance;
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
@@ -209,7 +217,7 @@ public sealed partial class MainViewModel : ObservableObject
         _openingSetup = true;
         try
         {
-            var wizard = new SetupWizardViewModel(engine, _text);
+            var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation);
             await wizard.LoadAsync();
             wizard.Closed += OnSetupClosed;
             Setup = wizard;
