@@ -1,0 +1,135 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The panel menu (F1.0 behavior 4): Dock's tool chrome menu with Move to left, right and bottom added, and without
+     "Dock as tabbed document" (a panel never takes the map's place). Defined under Dock's own key, so Dock's controls
+     use it. The Float, Dock, Auto hide and Close items are copied from Dock's Fluent theme
+     (https://github.com/wieslawsoltes/Dock, src/Dock.Avalonia.Themes.Fluent/Controls/ToolChromeControl.axaml, MIT
+     licence), version 12.1.0.9; check them when Dock is updated. Dock's licence, for the copied items:
+
+     The MIT License (MIT)
+
+     Copyright (c) Wiesław Šoltés
+
+     Permission is hereby granted, free of charge, to any person obtaining a copy
+     of this software and associated documentation files (the "Software"), to deal
+     in the Software without restriction, including without limitation the rights
+     to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     copies of the Software, and to permit persons to whom the Software is
+     furnished to do so, subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be included in all
+     copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+     SOFTWARE.
+-->
+<ResourceDictionary
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:core="using:Dock.Model.Core"
+  xmlns:controls="using:Dock.Model.Controls"
+  xmlns:converters="using:Dock.Avalonia.Converters"
+  xmlns:l="using:AprsMap.UI.Localization"
+  xmlns:shell="using:AprsMap.UI.Shell"
+  x:DataType="controls:IToolDock"
+  x:CompileBindings="True"
+>
+  <MenuFlyout x:Key="ToolChromeControlContextMenu">
+    <MenuItem
+      Header="{l:T Shell.MoveToLeft}"
+      Command="{Binding ((shell:ShellFactory)Factory).MoveToLeft, FallbackValue={x:Null}}"
+      CommandParameter="{Binding ActiveDockable}"
+      IsVisible="{Binding Id, Converter={x:Static shell:ShellConverters.IsNot}, ConverterParameter=left}"
+    />
+    <MenuItem
+      Header="{l:T Shell.MoveToRight}"
+      Command="{Binding ((shell:ShellFactory)Factory).MoveToRight, FallbackValue={x:Null}}"
+      CommandParameter="{Binding ActiveDockable}"
+      IsVisible="{Binding Id, Converter={x:Static shell:ShellConverters.IsNot}, ConverterParameter=right}"
+    />
+    <MenuItem
+      Header="{l:T Shell.MoveToBottom}"
+      Command="{Binding ((shell:ShellFactory)Factory).MoveToBottom, FallbackValue={x:Null}}"
+      CommandParameter="{Binding ActiveDockable}"
+      IsVisible="{Binding Id, Converter={x:Static shell:ShellConverters.IsNot}, ConverterParameter=bottom}"
+    />
+    <Separator />
+    <MenuItem
+      Header="{DynamicResource ToolChromeControlFloatString}"
+      Command="{Binding Owner.Factory.FloatDockable}"
+      CommandParameter="{Binding ActiveDockable}"
+    >
+      <MenuItem.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanFloatMultiConverter}">
+            <Binding Path="ActiveDockable" />
+            <Binding Path="ActiveDockable.CanFloat" />
+            <Binding Path="ActiveDockable.DockCapabilityOverrides.CanFloat" />
+            <Binding Path="(core:IDock).DockCapabilityPolicy.CanFloat" />
+          </MultiBinding>
+          <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
+            <Binding Path="(core:IDock).CanCloseLastDockable" FallbackValue="{x:True}" />
+            <Binding Path="(core:IDock).VisibleDockables.Count" FallbackValue="0" />
+          </MultiBinding>
+        </MultiBinding>
+      </MenuItem.IsVisible>
+    </MenuItem>
+    <MenuItem
+      Header="{DynamicResource ToolChromeControlDockString}"
+      Command="{Binding Owner.Factory.PinDockable}"
+      CommandParameter="{Binding ActiveDockable}"
+      IsEnabled="{Binding ActiveDockable.OriginalOwner, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+    >
+      <MenuItem.IsVisible>
+        <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanPinMultiConverter}">
+          <Binding Path="ActiveDockable" />
+          <Binding Path="ActiveDockable.CanPin" />
+          <Binding Path="ActiveDockable.DockCapabilityOverrides.CanPin" />
+          <Binding Path="(core:IDock).DockCapabilityPolicy.CanPin" />
+        </MultiBinding>
+      </MenuItem.IsVisible>
+    </MenuItem>
+    <MenuItem
+      Header="{DynamicResource ToolChromeControlAutoHideString}"
+      Command="{Binding Owner.Factory.PinDockable}"
+      CommandParameter="{Binding ActiveDockable}"
+      IsEnabled="{Binding ActiveDockable.OriginalOwner, Converter={x:Static ObjectConverters.IsNull}, FallbackValue=False}"
+    >
+      <MenuItem.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanPinMultiConverter}">
+            <Binding Path="ActiveDockable" />
+            <Binding Path="ActiveDockable.CanPin" />
+            <Binding Path="ActiveDockable.DockCapabilityOverrides.CanPin" />
+            <Binding Path="(core:IDock).DockCapabilityPolicy.CanPin" />
+          </MultiBinding>
+          <Binding Path="$parent[ToolChromeControl].IsFloating" Converter="{x:Static BoolConverters.Not}" />
+        </MultiBinding>
+      </MenuItem.IsVisible>
+    </MenuItem>
+    <MenuItem
+      Header="{DynamicResource ToolChromeControlCloseString}"
+      Command="{Binding Owner.Factory.CloseDockable}"
+      CommandParameter="{Binding ActiveDockable}"
+    >
+      <MenuItem.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <MultiBinding Converter="{x:Static converters:DockCapabilityConverters.CanCloseMultiConverter}">
+            <Binding Path="ActiveDockable" />
+            <Binding Path="ActiveDockable.CanClose" />
+            <Binding Path="ActiveDockable.DockCapabilityOverrides.CanClose" />
+            <Binding Path="(core:IDock).DockCapabilityPolicy.CanClose" />
+          </MultiBinding>
+          <MultiBinding Converter="{x:Static converters:CanRemoveDockableConverter.Instance}">
+            <Binding Path="(core:IDock).CanCloseLastDockable" FallbackValue="{x:True}" />
+            <Binding Path="(core:IDock).VisibleDockables.Count" FallbackValue="0" />
+          </MultiBinding>
+        </MultiBinding>
+      </MenuItem.IsVisible>
+    </MenuItem>
+  </MenuFlyout>
+</ResourceDictionary>

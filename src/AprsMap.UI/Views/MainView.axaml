@@ -15,6 +15,12 @@
   FontSize="{DynamicResource Text.Body}"
 >
   <UserControl.Styles>
+    <!-- The narrow layout's tabs use the text tokens, not Fluent's large tab headers, so they follow the text size. -->
+    <Style Selector="TabControl#NarrowShell > TabItem">
+      <Setter Property="FontSize" Value="{DynamicResource Text.Title}" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="12,6" />
+    </Style>
     <!-- A refused login needs the user: the status takes the warning colour, as errors do, on the surface colour the
          contrast checks cover (not the button's own fill). -->
     <Style Selector="Button#ConnectionButton">
@@ -52,6 +58,24 @@
               Width="{DynamicResource Icon.Size}"
               Height="{DynamicResource Icon.Size}"
             />
+          </Button>
+          <!-- The app menu (F1.0): closed panels, Reset layout, Gather windows. Built when it opens (code-behind). -->
+          <Button
+            x:Name="AppMenuButton"
+            DockPanel.Dock="Right"
+            ToolTip.Tip="{l:T Shell.Menu}"
+            AutomationProperties.Name="{l:T Shell.Menu}"
+            VerticalAlignment="Center"
+            Margin="0,0,8,0"
+          >
+            <PathIcon
+              Data="M 3,6 L 21,6 L 21,8 L 3,8 Z M 3,11 L 21,11 L 21,13 L 3,13 Z M 3,16 L 21,16 L 21,18 L 3,18 Z"
+              Width="{DynamicResource Icon.Size}"
+              Height="{DynamicResource Icon.Size}"
+            />
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedRight" />
+            </Button.Flyout>
           </Button>
           <!-- Said once when the saved layout couldn't be read (F1.0 behavior 10). -->
           <DockPanel
@@ -167,18 +191,22 @@
           </WrapPanel>
         </DockPanel>
       </Border>
-      <!-- The map and the panels around it (F1.0). Dock is only used here and in AprsMap.UI/Shell. -->
-      <DockControl
-        x:Name="ShellDock"
-        Layout="{Binding Shell.Layout}"
-        Factory="{Binding Shell.Factory}"
-        InitializeLayout="False"
-        InitializeFactory="False"
-      >
-        <DockControl.DataTemplates>
-          <views:PanelTemplate />
-        </DockControl.DataTemplates>
-      </DockControl>
+      <!-- The map and the panels around it (F1.0). Dock is only used here and in AprsMap.UI/Shell. In a narrow window
+           the panels are fixed tabs instead (behavior 7), built by code-behind; the docked layout is kept meanwhile. -->
+      <Panel>
+        <TabControl x:Name="NarrowShell" IsVisible="False" />
+        <DockControl
+          x:Name="ShellDock"
+          Layout="{Binding Shell.Layout}"
+          Factory="{Binding Shell.Factory}"
+          InitializeLayout="False"
+          InitializeFactory="False"
+        >
+          <DockControl.DataTemplates>
+            <views:PanelTemplate />
+          </DockControl.DataTemplates>
+        </DockControl>
+      </Panel>
     </DockPanel>
     <views:SettingsView
       x:Name="SettingsPage"

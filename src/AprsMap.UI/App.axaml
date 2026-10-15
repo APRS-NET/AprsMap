@@ -42,6 +42,7 @@
         <ResourceInclude Source="avares://AprsMap.UI/Themes/Palettes/Standard.axaml" />
         <ResourceInclude Source="avares://AprsMap.UI/Themes/Tokens.axaml" />
         <ResourceInclude Source="avares://AprsMap.UI/Themes/DockTokens.axaml" />
+        <ResourceInclude Source="avares://AprsMap.UI/Themes/DockMenus.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>

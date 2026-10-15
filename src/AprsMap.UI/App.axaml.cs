@@ -63,6 +63,13 @@ public sealed class App : Application, IDisposable
         }
     }
 
+    /// <summary>The desktop main window's screen, for Gather windows (F1.0 behavior 14); null elsewhere.</summary>
+    private ScreenArea? MainScreen() =>
+        ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: { } window }
+        && window.Screens.ScreenFromWindow(window) is { } screen
+            ? new ScreenArea(screen.Bounds, screen.WorkingArea, screen.Scaling)
+            : null;
+
     /// <summary>
     /// Reset the app's part on this device (F0.10): the default appearance and layout, then this viewer's stored
     /// preferences deleted, so nothing is written back.
@@ -129,6 +136,14 @@ public sealed class App : Application, IDisposable
     {
         Appearance.Apply(_platform.Appearance);
         Appearance.Attach(this);
+        DockStrings.Attach(Resources, Localization.Localizer.Instance);
+        // Ctrl+Tab switches between panels (F1.0 behavior 4); the map is the only document, so Dock's document
+        // selector gets no key of its own.
+        Dock.Settings.DockSettings.ToolSelectorKeyGesture = new Avalonia.Input.KeyGesture(
+            Avalonia.Input.Key.Tab,
+            Avalonia.Input.KeyModifiers.Control
+        );
+        Dock.Settings.DockSettings.DocumentSelectorKeyGesture = new Avalonia.Input.KeyGesture(Avalonia.Input.Key.None);
         if (_platform.SystemReducedMotion)
         {
             Appearance.SetSystemReducedMotion(true);
@@ -154,6 +169,7 @@ public sealed class App : Application, IDisposable
             )
             {
                 ClearLocalData = () => ClearLocalDataAsync(created!),
+                MainScreen = MainScreen,
                 SharedStation = _platform.SharedStation,
                 Restart = _platform.Restart,
             };

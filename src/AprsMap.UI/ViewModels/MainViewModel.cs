@@ -106,6 +106,34 @@ public sealed partial class MainViewModel : ObservableObject
         Show(await engine.GetSettingsAsync());
     }
 
+    /// <summary>The main window's screen, for Gather windows; set on the desktop only (F1.0 behavior 14).</summary>
+    public Func<ScreenArea?>? MainScreen { get; init; }
+
+    /// <summary>Whether the app menu offers Gather floating windows: the desktop, where panels float as windows.</summary>
+    public bool CanGatherWindows => MainScreen is not null;
+
+    /// <summary>The app menu's entries for closed panels: each kind with its title (F1.0 behavior 4).</summary>
+    public IReadOnlyList<(string Kind, string Title)> ClosedPanels =>
+        [.. Shell.ClosedPanels.Select(kind => (kind, _text[PanelKinds.TitleKey(kind)]))];
+
+    /// <summary>Shows a closed panel again (app menu).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    internal void ShowPanel(string kind) => Shell.Show(kind);
+
+    /// <summary>Puts the default layout back (app menu, F1.0 behavior 10).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    internal void ResetLayout() => Shell.Reset();
+
+    /// <summary>Moves every floating window onto the main window's screen (app menu, F1.0 behavior 14).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    internal void GatherWindows()
+    {
+        if (MainScreen?.Invoke() is { } screen)
+        {
+            Shell.Gather(screen);
+        }
+    }
+
     /// <summary>The map and the panels around it (docs/features/F1.0-shell-and-docking.md).</summary>
     public ShellViewModel Shell { get; }
 

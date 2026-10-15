@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+using CommunityToolkit.Mvvm.Input;
 using Dock.Avalonia.Controls;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -24,6 +25,27 @@ public sealed class ShellFactory(object context, bool managedWindows) : Factory
 
     /// <summary>The id of the dock that holds the map.</summary>
     public const string CentreDock = "centre";
+
+    /// <summary>Set by the shell: moves a panel to the dock with the given id, creating it if it was collapsed.</summary>
+    internal Action<IDockable, string>? Mover { get; set; }
+
+    /// <summary>Moves a panel to the left dock (the panel menu's Move to left, behavior 4).</summary>
+    public IRelayCommand<IDockable?> MoveToLeft => field ??= MoveCommand(LeftDock);
+
+    /// <summary>Moves a panel to the right dock.</summary>
+    public IRelayCommand<IDockable?> MoveToRight => field ??= MoveCommand(RightDock);
+
+    /// <summary>Moves a panel to the bottom dock.</summary>
+    public IRelayCommand<IDockable?> MoveToBottom => field ??= MoveCommand(BottomDock);
+
+    private RelayCommand<IDockable?> MoveCommand(string dockId) =>
+        new(panel =>
+        {
+            if (panel is PanelTool)
+            {
+                Mover?.Invoke(panel, dockId);
+            }
+        });
 
     /// <inheritdoc />
     public override IRootDock CreateLayout()
@@ -101,6 +123,7 @@ public sealed class ShellFactory(object context, bool managedWindows) : Factory
             CanClose = true,
             CanFloat = true,
             CanPin = true,
+            CanDockAsDocument = false, // a panel never takes the map's place
         };
 
     /// <summary>The map, which can't be closed, floated or pinned away.</summary>

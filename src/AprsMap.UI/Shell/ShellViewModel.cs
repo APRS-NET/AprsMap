@@ -49,6 +49,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Factory.WindowClosed += (_, _) => OnChanged();
         Factory.WindowMoveDragEnd += (_, _) => OnChanged();
         Factory.WindowOpened += (_, _) => OnChanged();
+        Factory.Mover = MoveTo;
         Layout = Factory.CreateLayout();
         Factory.InitLayout(Layout);
         _text.LanguageChanged += (_, _) => Retitle();
@@ -128,6 +129,62 @@ public sealed partial class ShellViewModel : ObservableObject
         }
     }
 
+    /// <summary>The panels that are closed, so the app menu can show them again (behavior 4).</summary>
+    public IReadOnlyList<string> ClosedPanels =>
+        [
+            .. PanelKinds
+                .All.Select(p => p.Kind)
+                .Where(kind => !Dockables(Layout).OfType<PanelTool>().Any(p => p.Kind == kind)),
+        ];
+
+    /// <summary>
+    /// Moves a panel to the dock with <paramref name="dockId"/> (left, right or bottom), from wherever it is: docked,
+    /// auto-hidden or floating. A dock that collapsed when it emptied is created again beside the map.
+    /// </summary>
+    public void MoveTo(IDockable panel, string dockId)
+    {
+        ArgumentNullException.ThrowIfNull(panel);
+        if (IsPinned(panel))
+        {
+            Factory.PinDockable(panel); // back from the edge first: it toggles
+        }
+        var target = SideDock(dockId);
+        if (panel.Owner is IDock from && !ReferenceEquals(from, target))
+        {
+            Factory.MoveDockable(from, target, panel, null);
+        }
+        target.ActiveDockable = panel;
+        Factory.InitLayout(Layout);
+        OnChanged();
+    }
+
+    /// <summary>Shows a closed panel again, in its default dock (behavior 4).</summary>
+    public void Show(string kind)
+    {
+        if (Dockables(Layout).OfType<PanelTool>().FirstOrDefault(p => p.Kind == kind) is { } open)
+        {
+            if (open.Owner is IDock owner)
+            {
+                owner.ActiveDockable = open;
+            }
+            return;
+        }
+        var dockId = PanelKinds.All.First(p => p.Kind == kind).Dock;
+        var target = SideDock(dockId);
+        var panel = ShellFactory.CreatePanel(kind);
+        Factory.AddDockable(target, panel);
+        target.ActiveDockable = panel;
+        Factory.InitLayout(Layout);
+        Retitle();
+        OnChanged();
+    }
+
+    /// <summary>
+    /// Moves every floating window onto <paramref name="screen"/>, the main window's screen (behavior 14). A window
+    /// already reachable there stays.
+    /// </summary>
+    public void Gather(ScreenArea screen) => FitOpenWindows([screen]);
+
     /// <summary>Tells the shell the user changed something Dock doesn't report, such as dragging a splitter.</summary>
     public void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
 
@@ -180,6 +237,40 @@ public sealed partial class ShellViewModel : ObservableObject
         }
     }
 
+    private bool IsPinned(IDockable panel) =>
+        new[]
+        {
+            Layout.LeftPinnedDockables,
+            Layout.RightPinnedDockables,
+            Layout.TopPinnedDockables,
+            Layout.BottomPinnedDockables,
+        }.Any(list => list?.Contains(panel) == true);
+
+    /// <summary>The left, right or bottom dock, created beside the map if it has collapsed.</summary>
+    private IDock SideDock(string dockId)
+    {
+        if (Dockables(Layout).OfType<IToolDock>().FirstOrDefault(d => d.Id == dockId) is { } existing)
+        {
+            return existing;
+        }
+        var (alignment, operation, proportion) = dockId switch
+        {
+            ShellFactory.LeftDock => (Alignment.Left, DockOperation.Left, 0.2),
+            ShellFactory.RightDock => (Alignment.Right, DockOperation.Right, 0.28),
+            _ => (Alignment.Bottom, DockOperation.Bottom, 0.3),
+        };
+        var dock = new Dock.Model.Mvvm.Controls.ToolDock
+        {
+            Id = dockId,
+            Alignment = alignment,
+            Proportion = proportion,
+            VisibleDockables = Factory.CreateList<IDockable>(),
+        };
+        var centre = Dockables(Layout).OfType<IDock>().First(d => d.Id == ShellFactory.CentreDock);
+        Factory.SplitToDock(centre, dock, operation);
+        return dock;
+    }
+
     /// <summary>Makes a loaded layout one this version can show; false when it can't (no map).</summary>
     private bool Normalize(LayoutFile file)
     {
@@ -195,6 +286,10 @@ public sealed partial class ShellViewModel : ObservableObject
         map.CanFloat = false;
         map.CanPin = false;
 
+        foreach (var panel in all.OfType<PanelTool>())
+        {
+            panel.CanDockAsDocument = false;
+        }
         var known = PanelKinds.All.Select(p => p.Kind).ToHashSet(StringComparer.Ordinal);
         // Removed without collapsing, so a default dock stays for new panels; docks left empty collapse at the end.
         foreach (var unknown in all.OfType<PanelTool>().Where(p => !known.Contains(p.Kind)).ToList())
