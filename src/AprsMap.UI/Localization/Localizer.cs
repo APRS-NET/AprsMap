@@ -209,7 +209,10 @@ public sealed partial class Localizer
     [GeneratedRegex(@"\G\{\s*(\w+)\s*(?:,\s*(\w+))?")]
     private static partial Regex ArgumentHead();
 
-    private static MessageFormatter CreateFormatter(CultureInfo culture) => new(true, culture);
+    // The invariant culture (a Linux machine or container with no locale set) has no plural rules, so "one" would never
+    // be chosen; its text is English, so English plural rules apply.
+    private static MessageFormatter CreateFormatter(CultureInfo culture) =>
+        new(true, culture.Name.Length == 0 ? English : culture);
 
     private static CultureInfo? Find(string language)
     {

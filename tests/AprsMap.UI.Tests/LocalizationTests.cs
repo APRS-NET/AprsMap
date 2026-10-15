@@ -20,6 +20,13 @@ public class LocalizationTests
         Assert.Equal(expected, English().Format("Main.PacketCount", Count(count)));
 
     [Fact]
+    public void WithNoLocaleSetPluralsFollowEnglish() =>
+        Assert.Equal(
+            "1 packet",
+            new Localizer(System.Globalization.CultureInfo.InvariantCulture).Format("Main.PacketCount", Count(1))
+        );
+
+    [Fact]
     public void ApostrophesAndPlaceholdersComeThrough()
     {
         var text = English();
