@@ -167,6 +167,17 @@ public sealed class AppearanceService
         yield return ("Text.Body", 14 * s.TextScale);
         yield return ("Text.Small", 12.5 * s.TextScale);
         yield return ("Text.Title", 17 * s.TextScale);
+        // Docking chrome (tabs, panel headers, floating window titles) follows the text size like everything else.
+        yield return ("DockFontSizeNormal", 12.5 * s.TextScale);
+        yield return ("DockTabHeight", Math.Round(30 * s.TextScale));
+        yield return ("DockHeaderHeight", Math.Round(24 * s.TextScale));
+        yield return ("DockTabItemMinHeight", Math.Round(24 * s.TextScale));
+        yield return ("DockToolTabItemMinHeight", Math.Round(24 * s.TextScale));
+        yield return ("DockChromeButtonWidth", Math.Round(18 * s.TextScale));
+        yield return ("DockChromeButtonHeight", Math.Round(16 * s.TextScale));
+        yield return ("DockIconSizeSmall", Math.Round(12 * s.TextScale));
+        yield return ("DockIconSizeNormal", Math.Round(14 * s.TextScale));
+        yield return ("DockCloseButtonSize", Math.Round(14 * s.TextScale));
         var icon = s.Icons switch
         {
             IconSize.Small => 16d,

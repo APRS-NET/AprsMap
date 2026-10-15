@@ -56,6 +56,11 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The product name, from branding.</summary>
     public string Title { get; } = Brand.DisplayName;
 
+    /// <summary>Spike: the docking shell.</summary>
+    public Shell.ShellViewModel Shell => _shell ??= new Shell.ShellViewModel(this, OperatingSystem.IsBrowser());
+
+    private Shell.ShellViewModel? _shell;
+
     /// <summary>Newest first.</summary>
     public ObservableCollection<PacketView> Packets { get; } = [];
 

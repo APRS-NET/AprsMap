@@ -8,6 +8,7 @@
   xmlns:c="using:AprsMap.Contracts"
   xmlns:l="using:AprsMap.UI.Localization"
   xmlns:views="using:AprsMap.UI.Views"
+  xmlns:shell="using:AprsMap.UI.Shell"
   x:Class="AprsMap.UI.Views.MainView"
   x:DataType="vm:MainViewModel"
   Background="{DynamicResource Brush.Ground}"
@@ -117,31 +118,56 @@
           </WrapPanel>
         </DockPanel>
       </Border>
-      <ListBox
-        x:Name="PacketList"
-        ItemsSource="{Binding Packets}"
-        Background="{DynamicResource Brush.Surface}"
-        Grid.IsSharedSizeScope="True"
-      >
-        <ListBox.ItemTemplate>
-          <DataTemplate x:DataType="c:PacketView">
-            <!-- The callsign column fits the longest callsign shown, the same in every row, at any text size. -->
-            <Grid>
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" SharedSizeGroup="Source" />
-                <ColumnDefinition Width="*" />
-              </Grid.ColumnDefinitions>
-              <TextBlock
-                Text="{Binding Source}"
-                FontFamily="{DynamicResource Font.Mono}"
-                FontWeight="SemiBold"
-                Margin="0,0,16,0"
-              />
-              <TextBlock Grid.Column="1" Text="{Binding Summary}" TextTrimming="CharacterEllipsis" />
-            </Grid>
+      <DockControl x:Name="Shell" Layout="{Binding Shell.Layout}" Factory="{Binding Shell.Factory}" InitializeLayout="False" InitializeFactory="False">
+        <DockControl.DataTemplates>
+          <DataTemplate DataType="shell:MapDocument">
+            <Border Background="{DynamicResource Brush.Ground}">
+              <TextBlock Text="{Binding Title}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}" />
+            </Border>
           </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
+          <DataTemplate DataType="shell:PanelTool">
+            <ContentControl Content="{Binding}">
+              <ContentControl.DataTemplates>
+                <DataTemplate DataType="shell:PanelTool">
+                  <Panel>
+                    <ListBox
+                      IsVisible="{Binding Kind, Converter={x:Static views:ShellConverters.IsPackets}}"
+                      ItemsSource="{Binding ((vm:MainViewModel)Context).Packets}"
+                      Background="{DynamicResource Brush.Surface}"
+                      Grid.IsSharedSizeScope="True"
+                    >
+                      <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="c:PacketView">
+                          <!-- The callsign column fits the longest callsign shown, the same in every row, at any text size. -->
+                          <Grid>
+                            <Grid.ColumnDefinitions>
+                              <ColumnDefinition Width="Auto" SharedSizeGroup="Source" />
+                              <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                              Text="{Binding Source}"
+                              FontFamily="{DynamicResource Font.Mono}"
+                              FontWeight="SemiBold"
+                              Margin="0,0,16,0"
+                            />
+                            <TextBlock Grid.Column="1" Text="{Binding Summary}" TextTrimming="CharacterEllipsis" />
+                          </Grid>
+                        </DataTemplate>
+                      </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock
+                      Text="{Binding Title}"
+                      IsVisible="{Binding Kind, Converter={x:Static views:ShellConverters.IsNotPackets}}"
+                      Margin="16"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                    />
+                  </Panel>
+                </DataTemplate>
+              </ContentControl.DataTemplates>
+            </ContentControl>
+          </DataTemplate>
+        </DockControl.DataTemplates>
+      </DockControl>
     </DockPanel>
     <views:SettingsView
       x:Name="SettingsPage"
