@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.2.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.10...v0.2.0-alpha.1) (2026-10-15)
+
+
+### Features
+
+* **core:** run the APRS-IS session on APRS.NET's AprsIsConnection ([074f9e3](https://github.com/APRS-NET/AprsMap/commit/074f9e3c70347cbaac544139f906358290a3fa04))
+* **core:** run the APRS-IS session on APRS.NET's AprsIsConnection ([38e92f4](https://github.com/APRS-NET/AprsMap/commit/38e92f4e99b78f5007bab7a57f7864b6d2f758b3))
+* **ui:** accessibility checks, touch targets and 200 % layout fixes ([fb1aae7](https://github.com/APRS-NET/AprsMap/commit/fb1aae7c48f8bea1975aa05885d81f3073521614))
+* **ui:** accessibility checks, touch targets and 200 % layout fixes ([f3c55bc](https://github.com/APRS-NET/AprsMap/commit/f3c55bc0feeb5baad7aca02ffff248253e1de759))
+* **ui:** appearance palettes and per-viewer preferences ([086bb62](https://github.com/APRS-NET/AprsMap/commit/086bb62e984168268801d54f73d1b156da373c69))
+* **ui:** appearance palettes and per-viewer preferences ([1818e3c](https://github.com/APRS-NET/AprsMap/commit/1818e3c547ed2a51b21c64126f9d0c26b6deeadf))
+* **ui:** manage station profiles in Settings ([641294e](https://github.com/APRS-NET/AprsMap/commit/641294e4144df7ea02e36a2da23657da09df4631))
+* **ui:** manage station profiles in Settings ([de2a838](https://github.com/APRS-NET/AprsMap/commit/de2a838a3c815b89ce1a3d18f7c9ac1650bcdc59))
+* **ui:** Settings screen with Appearance and About ([5884314](https://github.com/APRS-NET/AprsMap/commit/58843147d952e34f17499f2f2811a18e0f30c869))
+* **ui:** Settings screen with Appearance and About ([e86ba03](https://github.com/APRS-NET/AprsMap/commit/e86ba03a4f5f642f6ce058de25fbe9541d6395cc))
+
+
+### Bug Fixes
+
+* **desktop:** pass the pseudo-language setting's value, not the configuration ([aa3b209](https://github.com/APRS-NET/AprsMap/commit/aa3b209e38c65d67bef563c39d1f02a2a5feaf8a))
+* **hosting:** export APRS.NET's metrics and traces ([a25fd47](https://github.com/APRS-NET/AprsMap/commit/a25fd47f1d107bba5334b1f7375facd29edbaeb6))
+* **hosting:** export APRS.NET's metrics and traces ([052e44a](https://github.com/APRS-NET/AprsMap/commit/052e44a38f68af373f424df10cff33c3292e8dec))
+
+
+### Documentation
+
+* list APRS.NET 0.2.0's metrics in the README ([b355c2d](https://github.com/APRS-NET/AprsMap/commit/b355c2dad64510e6880cf3a42b1dd13ba99c8746))
+
 ## [0.1.0-alpha.10](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.9...v0.1.0-alpha.10) (2026-10-15)
 
 
