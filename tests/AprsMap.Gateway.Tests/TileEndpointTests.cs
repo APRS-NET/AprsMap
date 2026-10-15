@@ -39,22 +39,34 @@ public sealed class TileEndpointTests(GatewayFactory factory) : IClassFixture<Ga
     }
 
     [Fact]
-    public async Task TwoViewersShareOneFetchAndTheRefererGoesUpstream()
+    public async Task TwoViewersShareOneFetch()
     {
         using var first = factory.CreateClient();
         using var second = factory.CreateClient();
         var before = factory.TileServer.Requests;
-        using var a = new HttpRequestMessage(HttpMethod.Get, "/tiles/osm/9/100/200");
-        a.Headers.Referrer = new Uri("https://club.example/map/");
-        using var b = new HttpRequestMessage(HttpMethod.Get, "/tiles/osm/9/100/200");
 
-        var responses = await Task.WhenAll(first.SendAsync(a, Ct), second.SendAsync(b, Ct));
+        var responses = await Task.WhenAll(
+            first.GetAsync(new Uri("/tiles/osm/9/100/200", UriKind.Relative), Ct),
+            second.GetAsync(new Uri("/tiles/osm/9/100/200", UriKind.Relative), Ct)
+        );
 
         Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
         Assert.Equal("image/png", responses[0].Content.Headers.ContentType?.MediaType);
         Assert.Equal(before + 1, factory.TileServer.Requests);
-        Assert.Contains("https://club.example/map/", factory.TileServer.Referers);
         Assert.True(responses[0].Headers.CacheControl?.MaxAge > TimeSpan.Zero);
+    }
+
+    [Fact]
+    public async Task TheViewersRefererGoesUpstream()
+    {
+        using var client = factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/tiles/osm/9/102/200");
+        request.Headers.Referrer = new Uri("https://club.example/map/");
+
+        var response = await client.SendAsync(request, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("https://club.example/map/", factory.TileServer.Referers);
     }
 
     [Fact]
