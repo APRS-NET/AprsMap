@@ -127,6 +127,7 @@ public partial class LocalizationGuardTests
             ["position"] = 3,
             ["character"] = " ",
             ["status"] = "500",
+            ["part"] = "subsquare",
         };
 
         foreach (var key in EnglishStrings().Keys)

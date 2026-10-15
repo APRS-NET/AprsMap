@@ -136,6 +136,37 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<ServerPreset>> GetServerPresetsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<ServerPreset>>([
+            .. AprsIsServerPreset.All.Select(p => new ServerPreset(p.Key, p.Name, p.Endpoint.ToString())),
+        ]);
+
+    /// <inheritdoc />
+    public Task<LocatorInfo> ParseLocatorAsync(string locator, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(locator);
+        return MaidenheadLocator.TryParse(locator, out var parsed, out var error)
+            ? Task.FromResult(new LocatorInfo(parsed.Value, parsed.Center.Latitude, parsed.Center.Longitude))
+            : Task.FromException<LocatorInfo>(new EngineArgumentException(AprsErrors.From(error, locator)));
+    }
+
+    /// <inheritdoc />
+    public Task<string> GetLocatorAsync(
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (latitude is not (>= -90 and <= 90) || longitude is not (>= -180 and <= 180))
+        {
+            return Task.FromException<string>(
+                EngineErrors.Create(EngineErrorCodes.PositionOffGlobe, $"{latitude}, {longitude} is off the globe.")
+            );
+        }
+        return Task.FromResult(MaidenheadLocator.FromPosition(latitude, longitude, 6).Value);
+    }
+
+    /// <inheritdoc />
     public async IAsyncEnumerable<PacketView> WatchPacketsAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )

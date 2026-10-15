@@ -488,6 +488,57 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task ServerPresetsComeFromAprsNetWorldwideFirst()
+    {
+        var presets = await CreateEngine(new FakeTimeProvider()).GetServerPresetsAsync(Ct);
+
+        Assert.Equal(AprsIsServerPreset.All.Count, presets.Count);
+        Assert.Equal(new ServerPreset("rotate", "Worldwide", "rotate.aprs2.net:14580"), presets[0]);
+        Assert.All(presets, p => Assert.EndsWith(".aprs2.net:14580", p.Server, StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("DN70", "DN70", 40.5, -105.0)]
+    [InlineData(" dn70kb ", "DN70kb", 40.0625, -105.125)]
+    public async Task ALocatorGivesTheCentreOfItsSquare(string text, string locator, double lat, double lon)
+    {
+        var info = await CreateEngine(new FakeTimeProvider()).ParseLocatorAsync(text, Ct);
+
+        Assert.Equal(locator, info.Locator);
+        Assert.Equal(lat, info.Latitude, 6);
+        Assert.Equal(lon, info.Longitude, 6);
+    }
+
+    [Theory]
+    [InlineData("", EngineErrorCodes.LocatorEmpty, null, null)]
+    [InlineData("DN7", EngineErrorCodes.LocatorWrongLength, null, null)]
+    [InlineData("DN70ZZ", EngineErrorCodes.LocatorInvalidCharacter, "4", "subsquare")]
+    [InlineData("DNX0", EngineErrorCodes.LocatorInvalidCharacter, "2", "square")]
+    public async Task ABadLocatorSaysWhyAndWhere(string text, string code, string? index, string? part)
+    {
+        var ex = await Assert.ThrowsAsync<EngineArgumentException>(() =>
+            CreateEngine(new FakeTimeProvider()).ParseLocatorAsync(text, Ct)
+        );
+
+        Assert.Equal(code, ex.EngineError.Code);
+        Assert.Equal(text, ex.EngineError.Arg(EngineErrorArgs.Value));
+        Assert.Equal(index, ex.EngineError.Arg(EngineErrorArgs.Index));
+        Assert.Equal(part, ex.EngineError.Arg(EngineErrorArgs.Part));
+    }
+
+    [Fact]
+    public async Task APositionGetsItsSixCharacterLocator()
+    {
+        var engine = CreateEngine(new FakeTimeProvider());
+
+        Assert.Equal("DN70kb", await engine.GetLocatorAsync(40.0625, -105.125, Ct));
+        var ex = await Assert.ThrowsAsync<EngineArgumentException>(() => engine.GetLocatorAsync(91, 0, Ct));
+        Assert.Equal(EngineErrorCodes.PositionOffGlobe, ex.EngineError.Code);
+        await Assert.ThrowsAsync<EngineArgumentException>(() => engine.GetLocatorAsync(0, double.NaN, Ct));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => engine.ParseLocatorAsync(null!, Ct));
+    }
+
+    [Fact]
     public void GuardsAgainstNullArguments()
     {
         var engine = CreateEngine(new FakeTimeProvider());

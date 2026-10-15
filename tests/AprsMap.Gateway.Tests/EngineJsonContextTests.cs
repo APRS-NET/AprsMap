@@ -88,6 +88,11 @@ public class EngineJsonContextTests
         Assert.Equal(results, RoundTrip(results));
         Assert.Equal(info, RoundTrip(info));
         Assert.Equal(GeocodingInfo.Disabled, RoundTrip(GeocodingInfo.Disabled));
+
+        IReadOnlyList<ServerPreset> presets = [new("euro", "Europe and Africa", "euro.aprs2.net:14580")];
+        Assert.Equal(presets, RoundTrip(presets));
+        var locator = new LocatorInfo("FN31pr", 41.729, -72.708);
+        Assert.Equal(locator, RoundTrip(locator));
     }
 
     private static T? RoundTrip<T>(T value) =>

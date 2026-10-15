@@ -123,6 +123,41 @@ internal sealed class FakeEngine : IEngineService
             ? Task.FromException<int>(new ArgumentException("The callsign is empty.", nameof(callsign)))
             : Task.FromResult(callsign.Split('-')[0].Length * 1000);
 
+    public IReadOnlyList<ServerPreset> ServerPresets { get; set; } =
+    [
+        new("rotate", "Worldwide", "rotate.aprs2.net:14580"),
+        new("noam", "North America", "noam.aprs2.net:14580"),
+        new("euro", "Europe and Africa", "euro.aprs2.net:14580"),
+    ];
+
+    public Task<IReadOnlyList<ServerPreset>> GetServerPresetsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(ServerPresets);
+
+    /// <summary>Knows only DN70, DN70kb and FN31pr; anything else is refused as the real engine would.</summary>
+    public Task<LocatorInfo> ParseLocatorAsync(string locator, CancellationToken cancellationToken = default) =>
+        locator.Trim().ToUpperInvariant() switch
+        {
+            "DN70" => Task.FromResult(new LocatorInfo("DN70", 40.5, -105.0)),
+            "DN70KB" => Task.FromResult(new LocatorInfo("DN70kb", 40.0625, -105.125)),
+            "FN31PR" => Task.FromResult(new LocatorInfo("FN31pr", 41.7291667, -72.7083333)),
+            "" => Task.FromException<LocatorInfo>(
+                EngineErrors.Create(EngineErrorCodes.LocatorEmpty, "Enter a locator.")
+            ),
+            _ => Task.FromException<LocatorInfo>(
+                EngineErrors.Create(
+                    EngineErrorCodes.LocatorWrongLength,
+                    "A locator has 4, 6, 8 or 10 characters.",
+                    new Dictionary<string, string> { [EngineErrorArgs.Value] = locator }
+                )
+            ),
+        };
+
+    public Task<string> GetLocatorAsync(
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken = default
+    ) => Task.FromResult(latitude > 40 ? "DN70kb" : "DM79xx");
+
     public static AppSettings TwoProfiles() =>
         new(
             [
