@@ -12,15 +12,29 @@ public static class PacketSummarizer
 {
     /// <summary>
     /// Builds the view of a packet received at <paramref name="receivedAt"/>. A third-party packet is shown as the
-    /// packet inside it, marked <see cref="PacketMarkers.ThirdParty"/>, with the raw text as received.
+    /// packet inside it, marked <see cref="PacketMarkers.ThirdParty"/>, with the raw text as received. The direct and
+    /// digipeated markers come from the outer path: how the packet reached APRS-IS.
     /// </summary>
-    public static PacketView Summarize(AprsPacket packet, DateTimeOffset receivedAt)
+    /// <param name="packet">The packet as received.</param>
+    /// <param name="receivedAt">When it was received.</param>
+    /// <param name="duplicate">Whether it repeats a packet received within the duplicate window.</param>
+    public static PacketView Summarize(AprsPacket packet, DateTimeOffset receivedAt, bool duplicate = false)
     {
         ArgumentNullException.ThrowIfNull(packet);
 
         var raw = Encoding.Latin1.GetString(packet.Raw.Span);
         var issues = Issues(packet, 0);
-        var markers = PacketMarkers.None;
+        var route = PathAnalysis.FromPacket(packet);
+        var hops = route.IsFromInternet ? 0 : route.UsedHops.Count;
+        var markers = duplicate ? PacketMarkers.Duplicate : PacketMarkers.None;
+        if (route.IsHeardDirectly)
+        {
+            markers |= PacketMarkers.Direct;
+        }
+        else if (hops > 0)
+        {
+            markers |= PacketMarkers.Digipeated;
+        }
         if (packet.Payload is ThirdPartyPayload { Packet: { HasHeader: true } inner })
         {
             // The packet inside is the end of the line, so its offsets move by what comes before it.
@@ -41,7 +55,8 @@ public static class PacketSummarizer
             Destination: packet.Destination?.Value,
             Path: packet.Path is { } path ? string.Join(',', path.Select(p => p.ToString())) : null,
             Issues: issues,
-            Markers: markers
+            Markers: markers,
+            Hops: hops
         );
 
         switch (packet.Payload)

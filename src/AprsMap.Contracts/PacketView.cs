@@ -20,8 +20,9 @@ namespace AprsMap.Contracts;
 /// What APRS.NET couldn't decode or found off-spec (F1.8 behavior 3): codes <c>aprs.parse.*</c> with
 /// <see cref="EngineErrorArgs.Offset"/> and <see cref="EngineErrorArgs.Severity"/>; empty for a clean packet.
 /// </param>
-/// <param name="Markers">How the packet reached APRS-IS (F1.8 behavior 2), as far as the engine can tell yet.</param>
+/// <param name="Markers">How the packet reached APRS-IS (F1.8 behavior 2).</param>
 /// <param name="Symbol">The symbol as its two APRS characters (table, code), when the packet carries one.</param>
+/// <param name="Hops">How many digipeaters repeated it, for <see cref="PacketMarkers.Digipeated"/>; 0 otherwise.</param>
 public sealed record PacketView(
     DateTimeOffset ReceivedAt,
     string Source,
@@ -36,7 +37,8 @@ public sealed record PacketView(
     string? Path = null,
     IReadOnlyList<EngineError>? Issues = null,
     PacketMarkers Markers = PacketMarkers.None,
-    string? Symbol = null
+    string? Symbol = null,
+    int Hops = 0
 )
 {
     /// <summary>Whether APRS.NET reported any issue with the packet.</summary>
@@ -71,7 +73,7 @@ public enum PacketKind
     Telemetry,
 }
 
-/// <summary>How a packet reached APRS-IS (F1.8 behavior 2). Filled as APRS.NET's path analysis and duplicate detection ship.</summary>
+/// <summary>How a packet reached APRS-IS (F1.8 behavior 2), from APRS.NET's path analysis and duplicate detection.</summary>
 [Flags]
 public enum PacketMarkers
 {
@@ -80,6 +82,18 @@ public enum PacketMarkers
 
     /// <summary>Carried inside another station's packet (third-party); the view shows the packet inside.</summary>
     ThirdParty = 1,
+
+    /// <summary>Heard on RF straight from the sender by the IGate that sent it to APRS-IS, with no digipeater.</summary>
+    Direct = 2,
+
+    /// <summary>Repeated by digipeaters on RF before an IGate heard it; <see cref="PacketView.Hops"/> says how many.</summary>
+    Digipeated = 4,
+
+    /// <summary>
+    /// A copy of a packet already received within 30 s (same source, destination and information field, any path). It is
+    /// listed but doesn't update the station (F1.3 behavior 11).
+    /// </summary>
+    Duplicate = 8,
 }
 
 /// <summary>

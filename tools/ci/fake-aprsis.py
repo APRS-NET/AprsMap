@@ -61,7 +61,12 @@ def serve(connection, number, around, count):
             stream.write((line + "\r\n").encode())
         stream.flush()
         for i in range(100000):
-            stream.write(f"N0SRC-{i % 9 + 1}>APRS:>fake packet {i}\r\n".encode())
+            # Heard direct, digipeated or from the internet, for the packet list's markers; now and then the same
+            # packet again through a second IGate, as a duplicate.
+            path = ["WIDE1-1,qAR,N0GATE-1", "N0DIGI-1*,WIDE2-1,qAR,N0GATE-1", "TCPIP*,qAC,FAKE"][i % 3]
+            stream.write(f"N0SRC-{i % 9 + 1}>APRS,{path}:>fake packet {i}\r\n".encode())
+            if i % 5 == 1:
+                stream.write(f"N0SRC-{i % 9 + 1}>APRS,N0DIGI-2*,qAR,N0GATE-2:>fake packet {i}\r\n".encode())
             if i % 15 == 7:
                 # A malformed position now and then, for the packet list's parse issues.
                 stream.write(f"N0BAD-{i % 3 + 1}>APRS,TCPIP*:!9999.99N/99999.99W- malformed {i}\r\n".encode())

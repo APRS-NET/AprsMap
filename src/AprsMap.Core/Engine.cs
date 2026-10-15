@@ -30,6 +30,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly Queue<PacketView> _recent = new();
     private readonly List<(Channel<PacketView> Channel, PacketFilter? Filter)> _watchers = [];
     private readonly StationStore _stations;
+    private readonly DuplicateFilter _duplicates;
     private Link _link = new(ConnectionState.Disconnected);
     private int _reconnects;
     private IPacketSource? _source;
@@ -57,6 +58,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         _settingsStore = settingsStore;
         _geocoder = geocoder ?? NoGeocoder.Instance;
         _time = time;
+        _duplicates = new DuplicateFilter(timeProvider: time);
         _logger = logger;
     }
 
@@ -442,8 +444,12 @@ public sealed partial class Engine : IEngineService, IDisposable
         }
 
         var now = _time.GetUtcNow();
-        var view = PacketSummarizer.Summarize(packet, now);
-        _stations.Apply(packet, now);
+        var duplicate = !_duplicates.TryAccept(packet);
+        var view = PacketSummarizer.Summarize(packet, now, duplicate);
+        if (!duplicate)
+        {
+            _stations.Apply(packet, now); // F1.3 behavior 11: a duplicate is listed, not applied again
+        }
         EngineTelemetry.PacketsReceived.Add(1, new KeyValuePair<string, object?>("aprs.packet.type", view.Type));
         lock (_gate)
         {

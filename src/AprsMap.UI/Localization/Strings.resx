@@ -1117,6 +1117,15 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Packets.ThirdParty" xml:space="preserve">
     <value>Third-party: carried inside another station's packet</value>
   </data>
+  <data name="Packets.Direct" xml:space="preserve">
+    <value>Direct: an IGate heard it on RF with no digipeater</value>
+  </data>
+  <data name="Packets.Digipeated" xml:space="preserve">
+    <value>{count, plural, one {Digipeated: repeated by # digipeater} other {Digipeated: repeated by # digipeaters}}</value>
+  </data>
+  <data name="Packets.Duplicate" xml:space="preserve">
+    <value>Duplicate: a copy of a packet received in the last 30 seconds</value>
+  </data>
   <data name="Packets.Severity.Error" xml:space="preserve">
     <value>Error</value>
     <comment>A parse issue that stopped the packet, or part of it, from being read.</comment>
