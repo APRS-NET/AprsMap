@@ -36,6 +36,28 @@ public class MainViewTests
     }
 
     [AvaloniaFact]
+    public void ADuplicateRowIsMuted()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
+        vm.PacketList.Receive(FakeEngine.Packet("N0DUP") with { Markers = Contracts.PacketMarkers.Duplicate });
+        var window = new Window
+        {
+            Content = new MainView { DataContext = vm },
+            Width = 800,
+            Height = 600,
+        };
+
+        window.Show();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var source = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "N0DUP");
+        Assert.True(window.TryFindResource("Brush.TextMuted", window.ActualThemeVariant, out var muted));
+        Assert.Contains("duplicate", source.Classes);
+        Assert.Equal(muted, source.Foreground);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TheConnectionOffersReconnectNowAndShowsItsDetails()
     {
         var engine = new FakeEngine();
