@@ -10,16 +10,20 @@ Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.2.0-alpha.1` (2
 under **Delivered** in each section. `0.2.0` also adds `AprsNet.Ax25`, `AprsNet.Kiss`, `AprsNet.Filters`,
 `AprsNet.Gateway` and `AprsNet.Extensions.DependencyInjection`, which aren't on NuGet yet (2026-10-15).
 
+Gaps an AprsMap milestone needs become APRS.NET issues, as sub-issues of a `capability` issue in APRS.NET's matching
+milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for AprsMap 0.3.0), labelled
+`blocks: AprsMap`, and block the AprsMap feature issues that need them. Later gaps get an issue when their phase is planned.
+
 | ID | Title | Package | AprsMap phase | Issue |
 | --- | --- | --- | --- | --- |
 | G03 | Resilient APRS-IS connection (reconnect, server rotation) (delivered) | AprsIsTcpClient | 1 | — |
-| G04 | Typed APRS-IS server filter builder | AprsIsTcpClient | 1 | — |
-| G05 | Duplicate packet detection | Packets | 1 | — |
+| G04 | Typed APRS-IS server filter builder | AprsIsTcpClient | 1 | [APRS.NET#117](https://github.com/APRS-NET/APRS.NET/issues/117) |
+| G05 | Duplicate packet detection | Packets | 1 | [APRS.NET#118](https://github.com/APRS-NET/APRS.NET/issues/118) |
 | G06 | Third-party (`}`) payload decoding (delivered) | Packets | 1 | — |
-| G07 | Device identification from the aprs-deviceid list | new: AprsNet.DeviceId | 1 | — |
-| G08 | Geodesy and Maidenhead helpers (Maidenhead part delivered) | Packets (or new AprsNet.Geo) | 1 | — |
+| G07 | Device identification from the aprs-deviceid list | new: AprsNet.DeviceId | 1 | [APRS.NET#119](https://github.com/APRS-NET/APRS.NET/issues/119) |
+| G08 | Geodesy and Maidenhead helpers (Maidenhead part delivered) | Packets (or new AprsNet.Geo) | 1 | [APRS.NET#120](https://github.com/APRS-NET/APRS.NET/issues/120) |
 | G09 | Telemetry definitions applied to reports | Packets | 1 | — |
-| G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs | Packets | 1 | — |
+| G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs | Packets | 1 | [APRS.NET#121](https://github.com/APRS-NET/APRS.NET/issues/121) |
 | G01 | `Callsign.Parse` and a packet encoder (partly delivered) | Packets | 2 | — |
 | G02 | Transmit through APRS-IS, and passcode generation (delivered) | AprsIsTcpClient | 2 | — |
 | G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | — |

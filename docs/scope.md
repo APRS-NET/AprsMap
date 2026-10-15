@@ -8,6 +8,10 @@ APRSIS32 exactly. "Needs" lists the APRS.NET gaps ([aprsnet/gaps.md](aprsnet/gap
 
 Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) → `building` → `done`.
 
+Work is tracked on GitHub: each feature planned for a release is an issue labelled `feature` in that release's
+milestone (first: [0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1)), and PRs close it (`Closes #N`) or
+reference it (`Part of #N`). This table stays the full inventory; the milestone shows what's in flight.
+
 ## Non-goals
 
 - Windows CE / Windows Mobile, and pixel-level or wording-level UI cloning (see [clean-room.md](clean-room.md)).
