@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.Media.Immutable;
 using Avalonia.Platform;
 using Avalonia.Rendering.SceneGraph;
@@ -43,11 +44,13 @@ public sealed class MapView : Control, IDisposable
     private readonly Mapsui.Map _map = new();
     private readonly MapRenderer _renderer = new();
     private readonly StationLayer _stations = new();
-    private readonly Dictionary<string, (FormattedText Text, FormattedText Halo)> _labels = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, MapLabel> _labels = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, StationMark> _byName = new(StringComparer.Ordinal);
     private IReadOnlyList<StationMark> _marks = [];
     private Point? _pressedAt;
     private double _symbolDip = 24;
     private double _labelSize = 12;
+    private double _labelScale = 1;
 
     // Theme tokens, set as soon as the map joins the visual tree; nothing is drawn with them before.
     private SKColor _dot = SKColors.Transparent;
@@ -77,7 +80,7 @@ public sealed class MapView : Control, IDisposable
             v =>
             {
                 _labelSize = v is double d ? d : 12;
-                _labels.Clear();
+                ClearLabels();
             }
         );
         Watch(
@@ -85,7 +88,7 @@ public sealed class MapView : Control, IDisposable
             v =>
             {
                 _labelBrush = v is Color c ? new ImmutableSolidColorBrush(c) : null;
-                _labels.Clear();
+                ClearLabels();
             }
         );
         Watch(
@@ -93,7 +96,7 @@ public sealed class MapView : Control, IDisposable
             v =>
             {
                 _haloBrush = v is Color c ? new ImmutableSolidColorBrush(c) : null;
-                _labels.Clear();
+                ClearLabels();
             }
         );
         Watch(
@@ -113,6 +116,7 @@ public sealed class MapView : Control, IDisposable
         _tiles?.Dispose();
         _stations.Dispose();
         _map.Dispose();
+        ClearLabels();
     }
 
     /// <summary>Raised when a station is selected by click or tap, or the selection cleared on the background (behavior 18).</summary>
@@ -127,12 +131,31 @@ public sealed class MapView : Control, IDisposable
     /// <summary>Whether callsigns are drawn under the symbols, where they fit (behavior 17).</summary>
     public bool ShowLabels { get; set; } = true;
 
-    /// <summary>The stations drawn, as the station stream has them (behavior 14).</summary>
+    /// <summary>The stations drawn, as the station stream has them (behavior 14), replacing any drawn.</summary>
     public void SetStations(IEnumerable<StationState> stations)
     {
         ArgumentNullException.ThrowIfNull(stations);
-        _marks = [.. stations.Select(StationMark.From)];
-        if (Selected is { } name && !_marks.Any(m => m.Name == name))
+        _byName.Clear();
+        Apply(new StationBatch([.. stations], []));
+    }
+
+    /// <summary>
+    /// Applies one batch from the station stream: only the stations in it are projected again, so a busy map with a
+    /// few changes per batch costs little.
+    /// </summary>
+    public void Apply(StationBatch batch)
+    {
+        ArgumentNullException.ThrowIfNull(batch);
+        foreach (var station in batch.Changed)
+        {
+            _byName[station.Name] = StationMark.From(station);
+        }
+        foreach (var name in batch.Removed)
+        {
+            _byName.Remove(name);
+        }
+        _marks = [.. _byName.Values];
+        if (Selected is { } selected && !_byName.ContainsKey(selected))
         {
             Select(null);
         }
@@ -298,7 +321,9 @@ public sealed class MapView : Control, IDisposable
 
     /// <summary>
     /// The callsign under each symbol, in a halo, where it fits (behavior 17): the most recently heard station keeps its
-    /// label when two would overlap. The outlines are made once per name and size and reused every frame.
+    /// label when two would overlap. Each label is drawn once into a bitmap and the bitmap reused every frame: drawn as
+    /// text, the halo's nine passes cost more than everything else on the map together (2,000 stations in the browser:
+    /// 35 frames a second as text, 60 without labels).
     /// </summary>
     private void DrawLabels(DrawingContext context, IReadOnlyList<StationMark> marks, SKPoint[] screen)
     {
@@ -306,48 +331,55 @@ public sealed class MapView : Control, IDisposable
         {
             return;
         }
+        var scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
+        if (scale != _labelScale)
+        {
+            ClearLabels(); // drawn for the old pixel density
+            _labelScale = scale;
+        }
+        var order = new int[marks.Count];
+        var heard = new DateTimeOffset[marks.Count];
+        for (var i = 0; i < order.Length; i++)
+        {
+            order[i] = i;
+            heard[i] = marks[i].LastHeard;
+        }
+        Array.Sort(heard, order);
         var placed = new LabelGrid(Math.Max(32, _labelSize * 6));
         var visible = new Rect(Bounds.Size).Inflate(_symbolDip);
-        foreach (var i in Enumerable.Range(0, marks.Count).OrderByDescending(i => marks[i].LastHeard))
+        for (var n = order.Length - 1; n >= 0; n--) // most recently heard first
         {
+            var i = order[n];
             var at = screen[i];
             if (!visible.Contains(new Point(at.X, at.Y)))
             {
                 continue;
             }
-            var (text, halo) = Label(marks[i].Name);
-            var rect = new Rect(at.X - text.Width / 2, at.Y + _symbolDip / 2 + 1, text.Width, text.Height);
+            var label = Label(marks[i].Name);
+            var rect = new Rect(at.X - label.Width / 2, at.Y + _symbolDip / 2 + 1, label.Width, label.Height);
             if (!placed.TryAdd(rect.Inflate(1)))
             {
                 continue;
             }
-            // The halo: the text in the surface colour, a pixel out in each direction, under the text itself. A stale
-            // station's label fades with its symbol (behavior 19).
-            using (context.PushOpacity(marks[i].IsStale ? 0.5 : 1))
+            var image = label.Image(scale);
+            var bounds = rect.Inflate(MapLabel.Halo);
+            if (marks[i].IsStale)
             {
-                foreach (var (dx, dy) in HaloOffsets)
+                // A stale station's label fades with its symbol (behavior 19).
+                using (context.PushOpacity(0.5))
                 {
-                    context.DrawText(halo, new Point(rect.X + dx, rect.Y + dy));
+                    context.DrawImage(image, bounds);
                 }
-                context.DrawText(text, rect.TopLeft);
+            }
+            else
+            {
+                context.DrawImage(image, bounds);
             }
         }
     }
 
-    private static readonly (double, double)[] HaloOffsets =
-    [
-        (-1, -1),
-        (0, -1),
-        (1, -1),
-        (-1, 0),
-        (1, 0),
-        (-1, 1),
-        (0, 1),
-        (1, 1),
-    ];
-
-    /// <summary>A label laid out once per name, size and colours, in the text colour and in the halo colour.</summary>
-    private (FormattedText Text, FormattedText Halo) Label(string name)
+    /// <summary>A label laid out once per name, size and colours.</summary>
+    private MapLabel Label(string name)
     {
         if (!_labels.TryGetValue(name, out var label))
         {
@@ -365,14 +397,25 @@ public sealed class MapView : Control, IDisposable
                     _labelSize,
                     brush
                 );
-            label = (Make(_labelBrush), Make(_haloBrush));
-            if (_labels.Count > 10_000)
+            if (_labels.Count >= MaxLabels)
             {
-                _labels.Clear(); // bounded: names come and go
+                ClearLabels(); // bounded: names come and go
             }
+            label = new MapLabel(Make(_labelBrush), Make(_haloBrush));
             _labels[name] = label;
         }
         return label;
+    }
+
+    private const int MaxLabels = 5_000;
+
+    private void ClearLabels()
+    {
+        foreach (var label in _labels.Values)
+        {
+            label.Dispose();
+        }
+        _labels.Clear();
     }
 
     private static SKPoint ToScreen(Viewport viewport, StationMark mark) =>
@@ -583,6 +626,58 @@ public sealed class MapView : Control, IDisposable
             apply(value);
             owner.InvalidateVisual();
         }
+    }
+
+    /// <summary>
+    /// One station's label: its text in the text colour over a one-pixel halo in the surface colour, drawn into a bitmap
+    /// the first time it's placed.
+    /// </summary>
+    private sealed class MapLabel(FormattedText text, FormattedText halo) : IDisposable
+    {
+        /// <summary>How far the halo reaches past the text, in DIPs.</summary>
+        public const double Halo = 1;
+
+        private static readonly (double, double)[] Offsets =
+        [
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        ];
+
+        private RenderTargetBitmap? _image;
+
+        public double Width => text.Width;
+
+        public double Height => text.Height;
+
+        public RenderTargetBitmap Image(double scale)
+        {
+            if (_image is null)
+            {
+                var size = new Size(text.Width + 2 * Halo, text.Height + 2 * Halo);
+                _image = new RenderTargetBitmap(
+                    new PixelSize(
+                        Math.Max(1, (int)Math.Ceiling(size.Width * scale)),
+                        Math.Max(1, (int)Math.Ceiling(size.Height * scale))
+                    ),
+                    new Vector(96 * scale, 96 * scale)
+                );
+                using var context = _image.CreateDrawingContext();
+                foreach (var (dx, dy) in Offsets)
+                {
+                    context.DrawText(halo, new Point(Halo + dx, Halo + dy));
+                }
+                context.DrawText(text, new Point(Halo, Halo));
+            }
+            return _image;
+        }
+
+        public void Dispose() => _image?.Dispose();
     }
 
     /// <summary>Label rectangles placed so far, bucketed by cell so each check looks at a few neighbours only.</summary>

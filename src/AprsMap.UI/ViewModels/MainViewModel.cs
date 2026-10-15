@@ -435,14 +435,20 @@ public sealed partial class MainViewModel : ObservableObject
             _stations.Remove(name);
         }
         StationCount = _stations.Count;
-        StationsChanged?.Invoke(this, EventArgs.Empty);
+        StationsChanged?.Invoke(this, batch);
     }
 
     /// <summary>Every station on the map, by name, as the station stream has them.</summary>
     public IReadOnlyCollection<StationState> Stations => _stations.Values;
 
-    /// <summary>Raised after each batch from the station stream (about every 250 ms at most).</summary>
-    public event EventHandler? StationsChanged;
+    /// <summary>
+    /// Raised after each batch from the station stream (about every 250 ms at most), with the batch; after a fresh
+    /// snapshot (a resubscription) with <see cref="Snapshot"/> set.
+    /// </summary>
+    public event EventHandler<StationBatch>? StationsChanged;
+
+    /// <summary>Sent with <see cref="StationsChanged"/> when the stations were replaced as a whole.</summary>
+    public static StationBatch Snapshot { get; } = new([], []);
 
     /// <summary>The station selected on the map or in a list, for the Details panel (F1.6); null for none.</summary>
     [ObservableProperty]
@@ -624,6 +630,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (first)
             {
                 _stations.Clear();
+                StationsChanged?.Invoke(this, Snapshot);
                 first = false;
             }
             Apply(batch);

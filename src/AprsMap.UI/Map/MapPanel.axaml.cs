@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using System.ComponentModel;
+using AprsMap.Contracts;
 using AprsMap.UI.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -74,7 +75,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
         if (_main is not null)
         {
             _main.StationsChanged += OnStationsChanged;
-            OnStationsChanged(_main, EventArgs.Empty);
+            _map.SetStations(_main.Stations);
         }
         _state = _main?.Map;
         if (_state is not null)
@@ -170,11 +171,15 @@ public sealed partial class MapPanel : UserControl, IDisposable
 
     private void ShowHome() => HomeButton.IsVisible = _state?.HasHome == true;
 
-    private void OnStationsChanged(object? sender, EventArgs e)
+    private void OnStationsChanged(object? sender, StationBatch batch)
     {
-        if (_main is not null)
+        if (ReferenceEquals(batch, MainViewModel.Snapshot) && _main is not null)
         {
-            _map.SetStations(_main.Stations);
+            _map.SetStations(_main.Stations); // replaced as a whole
+        }
+        else
+        {
+            _map.Apply(batch);
         }
     }
 }
