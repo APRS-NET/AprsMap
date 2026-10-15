@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using AprsMap.Contracts;
@@ -66,6 +67,13 @@ public sealed partial class Engine : IEngineService, IDisposable
         }
     }
 
+    /// <summary>The APRS.NET packages' version, without build metadata.</summary>
+    internal static readonly string AprsNetVersion = (
+        typeof(AprsPacket).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+        ?? typeof(AprsPacket).Assembly.GetName().Version?.ToString()
+        ?? "?"
+    ).Split('+')[0];
+
     /// <inheritdoc />
     public Task<EngineStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
@@ -73,7 +81,15 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             var profile = _settings?.GetActiveProfile();
             return Task.FromResult(
-                new EngineStatus(_state, _server, _packets, Brand.Version, profile?.Id, profile?.Callsign)
+                new EngineStatus(
+                    _state,
+                    _server,
+                    _packets,
+                    Brand.Version,
+                    profile?.Id,
+                    profile?.Callsign,
+                    AprsNetVersion
+                )
             );
         }
     }

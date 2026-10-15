@@ -31,6 +31,9 @@ internal static class Program
             Preferences = preferences,
             Appearance = await new AppearancePreferences(preferences, TimeProvider.System).LoadAsync(),
             SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
+#if DEBUG
+            ShowPseudoLanguage = true,
+#endif
         };
         var text = Localizer.Instance;
         text.SetLanguage(platform.Appearance.Language);

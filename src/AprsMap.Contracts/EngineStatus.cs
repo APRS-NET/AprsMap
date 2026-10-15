@@ -27,11 +27,13 @@ public enum ConnectionState
 /// <param name="Version">The engine's build version.</param>
 /// <param name="ProfileId">The active <see cref="StationProfile.Id"/>, so a UI notices when another one switches it.</param>
 /// <param name="Callsign">The active profile's callsign, when there is one.</param>
+/// <param name="AprsNetVersion">The APRS.NET version the engine runs on, for About.</param>
 public sealed record EngineStatus(
     ConnectionState Connection,
     string? Server,
     long PacketsReceived,
     string Version,
     string? ProfileId = null,
-    string? Callsign = null
+    string? Callsign = null,
+    string? AprsNetVersion = null
 );

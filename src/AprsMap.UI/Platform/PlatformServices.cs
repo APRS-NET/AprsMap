@@ -20,4 +20,7 @@ public sealed record PlatformServices
 
     /// <summary>Whether the platform asks for reduced motion (the browser's <c>prefers-reduced-motion</c>).</summary>
     public bool SystemReducedMotion { get; init; }
+
+    /// <summary>Whether Settings offers the pseudo-language (F0.9 behavior 6): debug builds, or when configured.</summary>
+    public bool ShowPseudoLanguage { get; init; }
 }

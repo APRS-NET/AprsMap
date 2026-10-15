@@ -1,0 +1,226 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+using System.Collections.ObjectModel;
+using AprsMap.Contracts;
+using AprsMap.UI.Appearance;
+using AprsMap.UI.Localization;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+namespace AprsMap.UI.Settings;
+
+/// <summary>A section of the Settings page.</summary>
+/// <param name="Id">Stable identifier: <c>appearance</c>, <c>about</c>.</param>
+/// <param name="Title">The title, in the viewer's language.</param>
+public sealed record SettingsSection(string Id, string Title)
+{
+    /// <inheritdoc />
+    public override string ToString() => Title;
+}
+
+/// <summary>
+/// The Settings page (docs/features/F0.6-appearance.md, behaviors 1–5, 15): its sections, the options of the
+/// selected one, Reset with Undo, and About. Changes apply as they are made; the page has no Apply.
+/// </summary>
+public sealed partial class SettingsViewModel : ObservableObject, IDisposable
+{
+    /// <summary>How long Undo stays offered after a reset (behavior 5).</summary>
+    public static readonly TimeSpan UndoWindow = TimeSpan.FromSeconds(10);
+
+    private readonly AppearanceService _appearance;
+    private readonly Localizer _text;
+    private readonly TimeProvider _time;
+    private AppearanceSettings? _beforeReset;
+    private ITimer? _undoTimer;
+
+    /// <summary>Creates the page for <paramref name="appearance"/>.</summary>
+    public SettingsViewModel(
+        AppearanceService appearance,
+        TimeProvider time,
+        Localizer? text = null,
+        bool showPseudoLanguage = false
+    )
+    {
+        ArgumentNullException.ThrowIfNull(appearance);
+        _appearance = appearance;
+        _time = time;
+        _text = text ?? Localizer.Instance;
+        AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
+        About = new AboutViewModel(_text);
+        Sections = [];
+        Retranslate();
+        SelectedSection = Sections[0];
+        _appearance.Changed += OnAppearanceChanged;
+        _text.LanguageChanged += OnLanguageChanged;
+    }
+
+    /// <summary>Raised when the page should close (Back or Escape).</summary>
+    public event EventHandler? Closed;
+
+    /// <summary>The sections, in order: Appearance, About.</summary>
+    public ObservableCollection<SettingsSection> Sections { get; }
+
+    /// <summary>The section showing.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAppearanceSection), nameof(IsAboutSection))]
+    public partial SettingsSection? SelectedSection { get; set; }
+
+    /// <summary>Whether Appearance is showing.</summary>
+    public bool IsAppearanceSection => SelectedSection?.Id == "appearance";
+
+    /// <summary>Whether About is showing.</summary>
+    public bool IsAboutSection => SelectedSection?.Id == "about";
+
+    /// <summary>The Appearance section's options, from the registry.</summary>
+    public ObservableCollection<SettingItem> AppearanceItems { get; }
+
+    /// <summary>The About section.</summary>
+    public AboutViewModel About { get; }
+
+    /// <summary>The page title, in the viewer's language.</summary>
+    [ObservableProperty]
+    public partial string Title { get; set; } = string.Empty;
+
+    /// <summary>Whether Undo is offered after a reset.</summary>
+    [ObservableProperty]
+    public partial bool CanUndoReset { get; set; }
+
+    /// <summary>Restores the default appearance; Undo brings it back for <see cref="UndoWindow"/>.</summary>
+    [RelayCommand]
+    private void ResetAppearance()
+    {
+        _beforeReset = _appearance.Current;
+        _appearance.Apply(new AppearanceSettings());
+        CanUndoReset = true;
+        _undoTimer?.Dispose();
+        // The timer fires on a pool thread; the change goes back to the UI thread that made the reset.
+        var context = SynchronizationContext.Current;
+        _undoTimer = _time.CreateTimer(
+            _ =>
+            {
+                if (context is null)
+                {
+                    CanUndoReset = false;
+                }
+                else
+                {
+                    context.Post(_ => CanUndoReset = false, null);
+                }
+            },
+            null,
+            UndoWindow,
+            Timeout.InfiniteTimeSpan
+        );
+    }
+
+    /// <summary>Puts back the appearance from before the reset.</summary>
+    [RelayCommand]
+    private void UndoReset()
+    {
+        if (CanUndoReset && _beforeReset is { } before)
+        {
+            _appearance.Apply(before);
+        }
+        CanUndoReset = false;
+        _undoTimer?.Dispose();
+        _undoTimer = null;
+    }
+
+    /// <summary>Closes the page.</summary>
+    [RelayCommand]
+    private void Close() => Closed?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>Gives About the engine's details (versions, address lookup) when the page opens.</summary>
+    public void Show(EngineStatus? status, GeocodingInfo? geocoding) => About.Show(status, geocoding);
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _appearance.Changed -= OnAppearanceChanged;
+        _text.LanguageChanged -= OnLanguageChanged;
+        _undoTimer?.Dispose();
+    }
+
+    private void OnAppearanceChanged(object? sender, AppearanceSettings e)
+    {
+        foreach (var item in AppearanceItems)
+        {
+            item.Refresh();
+        }
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e) => Retranslate();
+
+    private void Retranslate()
+    {
+        Title = _text["Settings.Title"];
+        var selected = SelectedSection?.Id;
+        Sections.Clear();
+        Sections.Add(new SettingsSection("appearance", _text["Settings.Appearance"]));
+        Sections.Add(new SettingsSection("about", _text["Settings.About"]));
+        SelectedSection = Sections.FirstOrDefault(s => s.Id == selected) ?? (selected is null ? null : Sections[0]);
+        foreach (var item in AppearanceItems)
+        {
+            item.Retranslate();
+        }
+        About.Retranslate();
+    }
+}
+
+/// <summary>The About section (behavior 15).</summary>
+public sealed partial class AboutViewModel(Localizer text) : ObservableObject
+{
+    private EngineStatus? _status;
+    private GeocodingInfo? _geocoding;
+
+    /// <summary>The product name.</summary>
+    public static string ProductName => Brand.DisplayName;
+
+    /// <summary>Where the source code is: the AGPL network-use offer.</summary>
+    public static Uri? SourceUri => Uri.TryCreate(Brand.SourceUrl, UriKind.Absolute, out var uri) ? uri : null;
+
+    /// <summary>OpenStreetMap's copyright page, for the lookup credit.</summary>
+    public static Uri OpenStreetMapCopyrightUri { get; } = new("https://www.openstreetmap.org/copyright");
+
+    /// <summary>"Version 0.1.0-alpha.11".</summary>
+    [ObservableProperty]
+    public partial string VersionText { get; set; } = string.Empty;
+
+    /// <summary>The engine and APRS.NET versions, once the engine has answered.</summary>
+    [ObservableProperty]
+    public partial string? EngineText { get; set; }
+
+    /// <summary>The licences, in one line.</summary>
+    [ObservableProperty]
+    public partial string LicenceText { get; set; } = string.Empty;
+
+    /// <summary>Whether to credit OpenStreetMap and Nominatim (address lookup is on).</summary>
+    [ObservableProperty]
+    public partial bool ShowLookupCredit { get; set; }
+
+    internal void Show(EngineStatus? status, GeocodingInfo? geocoding)
+    {
+        _status = status;
+        _geocoding = geocoding;
+        Retranslate();
+    }
+
+    internal void Retranslate()
+    {
+        VersionText = text.Format(
+            "Settings.About.Version",
+            new Dictionary<string, object?> { ["version"] = Brand.Version }
+        );
+        LicenceText = text["Settings.About.Licence"];
+        EngineText = _status is null
+            ? null
+            : text.Format(
+                "Settings.About.Engine",
+                new Dictionary<string, object?>
+                {
+                    ["version"] = _status.Version,
+                    ["aprsnet"] = _status.AprsNetVersion ?? "?",
+                }
+            );
+        ShowLookupCredit = _geocoding?.Enabled == true;
+    }
+}

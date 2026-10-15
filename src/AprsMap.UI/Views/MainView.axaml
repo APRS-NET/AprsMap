@@ -23,78 +23,95 @@
         BorderThickness="{DynamicResource Thickness.BorderBottom}"
         Padding="16,10"
       >
-        <StackPanel Orientation="Horizontal" Spacing="16">
-          <TextBlock
-            Text="{Binding Title}"
-            FontSize="{DynamicResource Text.Title}"
-            FontWeight="SemiBold"
-            VerticalAlignment="Center"
-          />
-          <ComboBox
-            x:Name="ProfilePicker"
-            ItemsSource="{Binding Profiles}"
-            SelectedItem="{Binding SelectedProfile}"
-            IsEnabled="{Binding CanSwitchProfiles}"
-            IsVisible="{Binding !!Profiles.Count}"
-            VerticalAlignment="Center"
-            ToolTip.Tip="{l:T Main.ProfilePicker.ToolTip}"
-          >
-            <ComboBox.ItemTemplate>
-              <DataTemplate x:DataType="c:StationProfile">
-                <TextBlock>
-                  <Run Text="{Binding Name}" />
-                  <Run
-                    Text="{Binding Callsign}"
-                    Foreground="{DynamicResource Brush.TextMuted}"
-                    FontFamily="{DynamicResource Font.Mono}"
-                  />
-                </TextBlock>
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
-          <Border
-            CornerRadius="{DynamicResource Radius.Control}"
-            BorderBrush="{DynamicResource Brush.Border}"
-            BorderThickness="{DynamicResource Thickness.Border}"
-            Padding="10,4"
-          >
-            <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" />
-          </Border>
-          <TextBlock
-            x:Name="PacketCountLabel"
-            Text="{Binding PacketCountText}"
-            Foreground="{DynamicResource Brush.TextMuted}"
-            VerticalAlignment="Center"
-          />
-          <TextBlock
-            x:Name="StationCountLabel"
-            Text="{Binding StationCountText}"
-            Foreground="{DynamicResource Brush.TextMuted}"
-            VerticalAlignment="Center"
-          />
+        <DockPanel>
           <Button
-            x:Name="OpenSetupButton"
-            Content="{l:T Main.Setup.Open}"
-            Command="{Binding OpenSetupCommand}"
-            IsVisible="{Binding CanOpenSetup}"
-            Classes="accent"
+            x:Name="SettingsButton"
+            DockPanel.Dock="Right"
+            Command="{Binding OpenSettingsCommand}"
+            ToolTip.Tip="{l:T Main.Settings}"
+            AutomationProperties.Name="{l:T Main.Settings}"
             VerticalAlignment="Center"
-          />
-          <TextBlock
-            x:Name="GatewaySetupNote"
-            Text="{l:T Main.Setup.GatewayNote}"
-            IsVisible="{Binding ShowGatewaySetupNote}"
-            Foreground="{DynamicResource Brush.TextMuted}"
-            VerticalAlignment="Center"
-          />
-          <TextBlock
-            x:Name="ErrorLabel"
-            Text="{Binding ErrorText}"
-            IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
-            Foreground="{DynamicResource Brush.Warn}"
-            VerticalAlignment="Center"
-          />
-        </StackPanel>
+          >
+            <!-- An eight-tooth gear, drawn for this app. -->
+            <PathIcon
+              Data="F0 M 19.85,9.64 L 22.36,10.31 L 22.36,13.69 L 19.85,14.36 L 19.22,15.89 L 20.52,18.13 L 18.13,20.52 L 15.89,19.22 L 14.36,19.85 L 13.69,22.36 L 10.31,22.36 L 9.64,19.85 L 8.11,19.22 L 5.87,20.52 L 3.48,18.13 L 4.78,15.89 L 4.15,14.36 L 1.64,13.69 L 1.64,10.31 L 4.15,9.64 L 4.78,8.11 L 3.48,5.87 L 5.87,3.48 L 8.11,4.78 L 9.64,4.15 L 10.31,1.64 L 13.69,1.64 L 14.36,4.15 L 15.89,4.78 L 18.13,3.48 L 20.52,5.87 L 19.22,8.11 Z M 15.40,12 A 3.4,3.4 0 1 0 8.60,12 A 3.4,3.4 0 1 0 15.40,12 Z"
+              Width="{DynamicResource Icon.Size}"
+              Height="{DynamicResource Icon.Size}"
+            />
+          </Button>
+          <StackPanel Orientation="Horizontal" Spacing="16">
+            <TextBlock
+              Text="{Binding Title}"
+              FontSize="{DynamicResource Text.Title}"
+              FontWeight="SemiBold"
+              VerticalAlignment="Center"
+            />
+            <ComboBox
+              x:Name="ProfilePicker"
+              ItemsSource="{Binding Profiles}"
+              SelectedItem="{Binding SelectedProfile}"
+              IsEnabled="{Binding CanSwitchProfiles}"
+              IsVisible="{Binding !!Profiles.Count}"
+              VerticalAlignment="Center"
+              ToolTip.Tip="{l:T Main.ProfilePicker.ToolTip}"
+            >
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="c:StationProfile">
+                  <TextBlock>
+                    <Run Text="{Binding Name}" />
+                    <Run
+                      Text="{Binding Callsign}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      FontFamily="{DynamicResource Font.Mono}"
+                    />
+                  </TextBlock>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <Border
+              CornerRadius="{DynamicResource Radius.Control}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              Padding="10,4"
+            >
+              <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" />
+            </Border>
+            <TextBlock
+              x:Name="PacketCountLabel"
+              Text="{Binding PacketCountText}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              VerticalAlignment="Center"
+            />
+            <TextBlock
+              x:Name="StationCountLabel"
+              Text="{Binding StationCountText}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              VerticalAlignment="Center"
+            />
+            <Button
+              x:Name="OpenSetupButton"
+              Content="{l:T Main.Setup.Open}"
+              Command="{Binding OpenSetupCommand}"
+              IsVisible="{Binding CanOpenSetup}"
+              Classes="accent"
+              VerticalAlignment="Center"
+            />
+            <TextBlock
+              x:Name="GatewaySetupNote"
+              Text="{l:T Main.Setup.GatewayNote}"
+              IsVisible="{Binding ShowGatewaySetupNote}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              VerticalAlignment="Center"
+            />
+            <TextBlock
+              x:Name="ErrorLabel"
+              Text="{Binding ErrorText}"
+              IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.Warn}"
+              VerticalAlignment="Center"
+            />
+          </StackPanel>
+        </DockPanel>
       </Border>
       <ListBox x:Name="PacketList" ItemsSource="{Binding Packets}" Background="{DynamicResource Brush.Surface}">
         <ListBox.ItemTemplate>
@@ -107,6 +124,11 @@
         </ListBox.ItemTemplate>
       </ListBox>
     </DockPanel>
+    <views:SettingsView
+      x:Name="SettingsPage"
+      DataContext="{Binding Settings}"
+      IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+    />
     <views:SetupWizardView
       x:Name="SetupWizard"
       DataContext="{Binding Setup}"

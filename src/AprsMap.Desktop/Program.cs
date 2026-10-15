@@ -40,6 +40,7 @@ internal static class Program
                 .LoadAsync()
                 .GetAwaiter()
                 .GetResult(),
+            ShowPseudoLanguage = ShowPseudoLanguage(builder.Configuration["Ui:ShowPseudoLanguage"]),
         };
         // Ctrl+C or SIGTERM stops the host; close the window too rather than leave a UI with no engine behind it.
         s_host
@@ -64,6 +65,17 @@ internal static class Program
             s_host.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
             s_host.Dispose();
         }
+    }
+
+    /// <summary>The pseudo-language is for developers: debug builds, or <c>Ui:ShowPseudoLanguage</c> in configuration.</summary>
+    private static bool ShowPseudoLanguage(string? configured)
+    {
+#if DEBUG
+        _ = configured;
+        return true;
+#else
+        return string.Equals(configured, "true", StringComparison.OrdinalIgnoreCase);
+#endif
     }
 
     /// <summary>Also used by the XAML previewer, which runs without a host.</summary>

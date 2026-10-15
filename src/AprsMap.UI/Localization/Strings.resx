@@ -443,4 +443,159 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Wizard.Location.Device.Unsupported" xml:space="preserve">
     <value>This browser can't share its location. Use another way.</value>
   </data>
+  <data name="Main.Settings" xml:space="preserve">
+    <value>Settings</value>
+    <comment>Tooltip of the status bar's gear button.</comment>
+  </data>
+  <data name="Settings.Title" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Settings.Back" xml:space="preserve">
+    <value>Back</value>
+    <comment>Button that closes Settings.</comment>
+  </data>
+  <data name="Settings.Appearance" xml:space="preserve">
+    <value>Appearance</value>
+    <comment>Section.</comment>
+  </data>
+  <data name="Settings.About" xml:space="preserve">
+    <value>About</value>
+    <comment>Section.</comment>
+  </data>
+  <data name="Settings.Appearance.Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="Settings.Appearance.Theme.Help" xml:space="preserve">
+    <value>Auto follows your system's light or dark setting.</value>
+  </data>
+  <data name="Settings.Appearance.Theme.Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="Settings.Appearance.Theme.Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Settings.Appearance.Theme.Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Settings.Appearance.Palette" xml:space="preserve">
+    <value>Colours</value>
+  </data>
+  <data name="Settings.Appearance.Palette.Help" xml:space="preserve">
+    <value>High contrast makes text and borders stronger. Colour-vision-safe tells states apart without red and green.</value>
+  </data>
+  <data name="Settings.Appearance.Palette.Standard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="Settings.Appearance.Palette.HighContrast" xml:space="preserve">
+    <value>High contrast</value>
+  </data>
+  <data name="Settings.Appearance.Palette.ColourVisionSafe" xml:space="preserve">
+    <value>Colour-vision-safe</value>
+  </data>
+  <data name="Settings.Appearance.TextSize" xml:space="preserve">
+    <value>Text size</value>
+  </data>
+  <data name="Settings.Appearance.Percent" xml:space="preserve">
+    <value>{percent}%</value>
+    <comment>A percentage. percent: a number such as 115.</comment>
+  </data>
+  <data name="Settings.Appearance.IconSize" xml:space="preserve">
+    <value>Icon size</value>
+  </data>
+  <data name="Settings.Appearance.IconSize.Small" xml:space="preserve">
+    <value>Small</value>
+  </data>
+  <data name="Settings.Appearance.IconSize.Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="Settings.Appearance.IconSize.Large" xml:space="preserve">
+    <value>Large</value>
+  </data>
+  <data name="Settings.Appearance.IconsFollowText" xml:space="preserve">
+    <value>Scale icons with the text size</value>
+    <comment>Check box.</comment>
+  </data>
+  <data name="Settings.Appearance.Corners" xml:space="preserve">
+    <value>Corners</value>
+  </data>
+  <data name="Settings.Appearance.Corners.Rounded" xml:space="preserve">
+    <value>Rounded</value>
+  </data>
+  <data name="Settings.Appearance.Corners.Sharp" xml:space="preserve">
+    <value>Sharp</value>
+  </data>
+  <data name="Settings.Appearance.Density" xml:space="preserve">
+    <value>Density</value>
+  </data>
+  <data name="Settings.Appearance.Density.Help" xml:space="preserve">
+    <value>Compact fits more rows on the screen.</value>
+  </data>
+  <data name="Settings.Appearance.Density.Comfortable" xml:space="preserve">
+    <value>Comfortable</value>
+  </data>
+  <data name="Settings.Appearance.Density.Compact" xml:space="preserve">
+    <value>Compact</value>
+  </data>
+  <data name="Settings.Appearance.Motion" xml:space="preserve">
+    <value>Motion</value>
+  </data>
+  <data name="Settings.Appearance.Motion.Help" xml:space="preserve">
+    <value>Reduced turns animations off. In the browser, Follow system uses its reduce-motion setting.</value>
+  </data>
+  <data name="Settings.Appearance.Motion.FollowSystem" xml:space="preserve">
+    <value>Follow system</value>
+  </data>
+  <data name="Settings.Appearance.Motion.Reduced" xml:space="preserve">
+    <value>Reduced</value>
+  </data>
+  <data name="Settings.Appearance.Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Settings.Appearance.Language.Help" xml:space="preserve">
+    <value>Numbers and dates follow it too. Callsigns and packets are never translated.</value>
+  </data>
+  <data name="Settings.Appearance.Language.System" xml:space="preserve">
+    <value>System default</value>
+    <comment>The language the operating system or browser uses.</comment>
+  </data>
+  <data name="Settings.Appearance.Language.Pseudo" xml:space="preserve">
+    <value>Pseudo-language (for testing)</value>
+    <comment>Only shown to developers.</comment>
+  </data>
+  <data name="Settings.Appearance.Reset" xml:space="preserve">
+    <value>Reset appearance</value>
+    <comment>Button: back to the default appearance.</comment>
+  </data>
+  <data name="Settings.Appearance.ResetDone" xml:space="preserve">
+    <value>Appearance reset to the defaults.</value>
+  </data>
+  <data name="Settings.Appearance.Undo" xml:space="preserve">
+    <value>Undo</value>
+    <comment>Button, offered for 10 seconds after a reset.</comment>
+  </data>
+  <data name="Settings.About.Version" xml:space="preserve">
+    <value>Version {version}</value>
+    <comment>version: the app's version, such as 0.1.0-alpha.11.</comment>
+  </data>
+  <data name="Settings.About.Engine" xml:space="preserve">
+    <value>Engine {version} · APRS.NET {aprsnet}</value>
+    <comment>version, aprsnet: version numbers.</comment>
+  </data>
+  <data name="Settings.About.Licence" xml:space="preserve">
+    <value>The app is free software under the AGPL-3.0 licence; its engine and APRS.NET are under the MIT licence.</value>
+  </data>
+  <data name="Settings.About.Source" xml:space="preserve">
+    <value>Source code</value>
+    <comment>Link to the source code, which the AGPL licence offers.</comment>
+  </data>
+  <data name="Settings.About.Credits" xml:space="preserve">
+    <value>Credits</value>
+  </data>
+  <data name="Settings.About.IconCredit" xml:space="preserve">
+    <value>App icon: the APRS.NET icon.</value>
+  </data>
+  <data name="Settings.About.LookupCredit" xml:space="preserve">
+    <value>Address lookup: Nominatim · © OpenStreetMap contributors</value>
+    <comment>Keep the names Nominatim and OpenStreetMap.</comment>
+  </data>
 </root>

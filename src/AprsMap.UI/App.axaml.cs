@@ -64,7 +64,13 @@ public sealed class App : Application, IDisposable
         }
         if (_engine is not null)
         {
-            var viewModel = new MainViewModel(_engine, TimeProvider.System, deviceLocation: _platform.DeviceLocation);
+            var viewModel = new MainViewModel(
+                _engine,
+                TimeProvider.System,
+                deviceLocation: _platform.DeviceLocation,
+                appearance: Appearance,
+                showPseudoLanguage: _platform.ShowPseudoLanguage
+            );
             Control view = new MainView { DataContext = viewModel };
             switch (ApplicationLifetime)
             {
