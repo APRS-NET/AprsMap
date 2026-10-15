@@ -1,0 +1,41 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The default quiet palette (docs/ux/README.md#visual-style): muted neutrals, one blue accent, burnt orange reserved for transmitting. Text meets WCAG AA (4.5:1).
+     One of three palettes AppearanceService swaps in; each defines every Color.* token for Light and Dark, and the
+     border widths. Brushes and sizes live in ../Tokens.axaml. -->
+<ResourceDictionary
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  x:Class="AprsMap.UI.Themes.Palettes.StandardPalette"
+>
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="Color.Ground">#F4F5F7</Color>
+      <Color x:Key="Color.Surface">#FFFFFF</Color>
+      <Color x:Key="Color.Border">#DCE0E6</Color>
+      <Color x:Key="Color.Text">#16191D</Color>
+      <Color x:Key="Color.TextMuted">#5A6270</Color>
+      <Color x:Key="Color.Accent">#1F5FAE</Color>
+      <Color x:Key="Color.AccentSoft">#E6EEF8</Color>
+      <Color x:Key="Color.Transmit">#C2410C</Color>
+      <Color x:Key="Color.Ok">#1E7A4C</Color>
+      <Color x:Key="Color.Warn">#B45309</Color>
+      <Color x:Key="Color.Scrim">#6616191D</Color>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="Color.Ground">#15181C</Color>
+      <Color x:Key="Color.Surface">#1D2126</Color>
+      <Color x:Key="Color.Border">#323840</Color>
+      <Color x:Key="Color.Text">#E6E9ED</Color>
+      <Color x:Key="Color.TextMuted">#A3ABB6</Color>
+      <Color x:Key="Color.Accent">#7FA7DA</Color>
+      <Color x:Key="Color.AccentSoft">#24334A</Color>
+      <Color x:Key="Color.Transmit">#E08A5C</Color>
+      <Color x:Key="Color.Ok">#6FBF93</Color>
+      <Color x:Key="Color.Warn">#D9A15B</Color>
+      <Color x:Key="Color.Scrim">#99000000</Color>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <Thickness x:Key="Thickness.Border">1</Thickness>
+  <Thickness x:Key="Thickness.BorderBottom">0,0,0,1</Thickness>
+</ResourceDictionary>

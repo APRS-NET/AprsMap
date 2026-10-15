@@ -2,7 +2,9 @@
 using AprsMap.Client.Remote;
 using AprsMap.Contracts;
 using AprsMap.UI;
+using AprsMap.UI.Appearance;
 using AprsMap.UI.Localization;
+using AprsMap.UI.Platform;
 using Avalonia;
 using Avalonia.Browser;
 
@@ -21,7 +23,17 @@ internal static class Program
                 ? uri
                 : new Uri("http://localhost:8080/");
         var gateway = new Uri(pageUri.GetLeftPart(UriPartial.Authority));
+        // The viewer's appearance first, so even a startup error is in their chosen language (F0.6 behavior 19).
+        var preferences = new BrowserPreferenceStore();
+        var platform = new PlatformServices
+        {
+            DeviceLocation = new BrowserDeviceLocation(),
+            Preferences = preferences,
+            Appearance = await new AppearancePreferences(preferences, TimeProvider.System).LoadAsync(),
+            SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
+        };
         var text = Localizer.Instance;
+        text.SetLanguage(platform.Appearance.Language);
         var engine = RemoteEngineService.Create(gateway);
 
         using (var timeout = new CancellationTokenSource(ConnectTimeout))
@@ -53,7 +65,7 @@ internal static class Program
 
         try
         {
-            await BuildAvaloniaApp(engine).StartBrowserAppAsync("out");
+            await BuildAvaloniaApp(engine, platform).StartBrowserAppAsync("out");
             StartupPage.AppStarted();
         }
         catch (Exception ex)
@@ -73,6 +85,6 @@ internal static class Program
         }
     }
 
-    private static AppBuilder BuildAvaloniaApp(RemoteEngineService engine) =>
-        AppBuilder.Configure(() => new App(engine, new BrowserDeviceLocation())).LogToTrace();
+    private static AppBuilder BuildAvaloniaApp(RemoteEngineService engine, PlatformServices platform) =>
+        AppBuilder.Configure(() => new App(engine, platform)).LogToTrace();
 }

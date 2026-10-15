@@ -37,6 +37,26 @@ public enum CornerStyle
     Sharp,
 }
 
+/// <summary>How tightly lists and panels are laid out (F0.6 behavior 11).</summary>
+public enum Density
+{
+    /// <summary>The default spacing.</summary>
+    Comfortable,
+
+    /// <summary>Tighter rows and paddings; touch targets stay at least 44 px on touch screens.</summary>
+    Compact,
+}
+
+/// <summary>Whether transitions run (F0.6 behavior 12).</summary>
+public enum MotionPreference
+{
+    /// <summary>Follow the browser's <c>prefers-reduced-motion</c>; on desktop, normal motion.</summary>
+    FollowSystem,
+
+    /// <summary>No transitions.</summary>
+    Reduced,
+}
+
 /// <summary>Icon size in the UI chrome (map symbols have their own scale).</summary>
 public enum IconSize
 {
@@ -65,14 +85,38 @@ public sealed record AppearanceSettings
     /// <summary>Light, dark or automatic.</summary>
     public ThemeMode Theme { get; init; } = ThemeMode.Auto;
 
-    /// <summary>Colour palette.</summary>
-    public Palette Palette { get; init; } = Palette.Standard;
+    /// <summary>
+    /// Colour palette, or null until the user picks one: then the OS contrast preference decides (High contrast when
+    /// it asks for more contrast, Standard otherwise; F0.6 behavior 7).
+    /// </summary>
+    public Palette? Palette { get; init; }
 
-    /// <summary>Text scale, 0.85 to 2.0.</summary>
+    /// <summary>Text scale, 0.85 to 2.0; Settings offers <see cref="TextScaleSteps"/>.</summary>
     public double TextScale { get; init; } = 1.0;
+
+    /// <summary>The text sizes Settings offers (F0.6 behavior 8).</summary>
+    public static IReadOnlyList<double> TextScaleSteps { get; } = [0.85, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0];
 
     /// <summary>UI icon size.</summary>
     public IconSize Icons { get; init; } = IconSize.Medium;
+
+    /// <summary>Whether the icon size also scales with <see cref="TextScale"/> (behavior 9).</summary>
+    public bool IconsFollowText { get; init; } = true;
+
+    /// <summary>List and panel spacing.</summary>
+    public Density Density { get; init; } = Density.Comfortable;
+
+    /// <summary>Transitions on or off.</summary>
+    public MotionPreference Motion { get; init; } = MotionPreference.FollowSystem;
+
+    /// <summary>The smallest allowed map symbol scale.</summary>
+    public const double MinMapSymbolScale = 0.75;
+
+    /// <summary>The largest allowed map symbol scale.</summary>
+    public const double MaxMapSymbolScale = 2.0;
+
+    /// <summary>Map symbol scale, 0.75 to 2.0. Stored now; shown and applied once the map exists (F1.4).</summary>
+    public double MapSymbolScale { get; init; } = 1.0;
 
     /// <summary>Corner style.</summary>
     public CornerStyle Corners { get; init; } = CornerStyle.Rounded;

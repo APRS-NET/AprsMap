@@ -1,0 +1,41 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- High contrast (F0.6 behavior 7.2): every text colour meets WCAG AAA (7:1), borders are 2 px and meet 3:1. Still no saturated fills.
+     One of three palettes AppearanceService swaps in; each defines every Color.* token for Light and Dark, and the
+     border widths. Brushes and sizes live in ../Tokens.axaml. -->
+<ResourceDictionary
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  x:Class="AprsMap.UI.Themes.Palettes.HighContrastPalette"
+>
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="Color.Ground">#FFFFFF</Color>
+      <Color x:Key="Color.Surface">#FFFFFF</Color>
+      <Color x:Key="Color.Border">#4A5059</Color>
+      <Color x:Key="Color.Text">#000000</Color>
+      <Color x:Key="Color.TextMuted">#2B3038</Color>
+      <Color x:Key="Color.Accent">#0A3A8C</Color>
+      <Color x:Key="Color.AccentSoft">#DCE6F7</Color>
+      <Color x:Key="Color.Transmit">#8A2A04</Color>
+      <Color x:Key="Color.Ok">#0B4A2C</Color>
+      <Color x:Key="Color.Warn">#6B3300</Color>
+      <Color x:Key="Color.Scrim">#99000000</Color>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="Color.Ground">#000000</Color>
+      <Color x:Key="Color.Surface">#0B0C0E</Color>
+      <Color x:Key="Color.Border">#B8BEC7</Color>
+      <Color x:Key="Color.Text">#FFFFFF</Color>
+      <Color x:Key="Color.TextMuted">#DADDE2</Color>
+      <Color x:Key="Color.Accent">#A9C8FF</Color>
+      <Color x:Key="Color.AccentSoft">#16294A</Color>
+      <Color x:Key="Color.Transmit">#FFB38F</Color>
+      <Color x:Key="Color.Ok">#8EE3B4</Color>
+      <Color x:Key="Color.Warn">#FFD08A</Color>
+      <Color x:Key="Color.Scrim">#CC000000</Color>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <Thickness x:Key="Thickness.Border">2</Thickness>
+  <Thickness x:Key="Thickness.BorderBottom">0,0,0,2</Thickness>
+</ResourceDictionary>
