@@ -5,6 +5,10 @@ What you should expect to see when you run AprsMap today, and what isn't there y
 
 As of 2026-10-15 (`0.1.0-alpha.8`): **Phase 0, foundations.** There is no map yet.
 
+**Next:** Phase 0 is complete apart from the map picker in the wizard, which comes with the map (F1.4). Every Phase 1
+feature has a spec in [features/](features/), waiting for review; Phase 1 code starts once they're agreed. The map
+(F1.4) is first.
+
 ## What you'll see
 
 ### Desktop app
