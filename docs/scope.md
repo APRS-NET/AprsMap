@@ -66,6 +66,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
+| F1.0 | Shell and docking ([spec](features/F1.0-shell-and-docking.md)): map in the centre with dockable, tabbed, floatable panels; layout saved per viewer; floating windows kept on a screen that exists | — (maintainer request) | App | — | spec'd |
 | F1.1 | APRS-IS connection ([spec](features/F1.1-aprs-is-connection.md)): server pick, login (receive-only without a passcode), status, auto-reconnect | Passcode | App | G03 | spec'd |
 | F1.2 | Automatic filter ([spec](features/F1.2-automatic-filter.md)): range filter around the map viewport, updated on pan and zoom, plus tracked and buddy stations. Until then, a profile without a filter gets 150 km around its location (`r/`), or `m/150` without one | Automatic Filters | App | G04 | spec'd |
 | F1.3 | Station store ([spec](features/F1.3-station-store.md)): latest state per station, object and item ownership, kill handling, aging and expiry, duplicate drop | No Visible Stations | App | G05, G06 | spec'd |
@@ -88,6 +89,8 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.20 | Packet and station anomaly flags (duplicate positions, impossible speed, sub-second repeats, invalid) ([spec](features/F1.20-anomalies.md)) | Scroller | App | G24 | spec'd |
 | F1.21 | RF path visualization: per-packet digipeater paths, digipeater-to-digipeater network links, local-RF-only mode ([spec](features/F1.21-rf-paths.md)) | (observed) | App | G20 | spec'd |
 | F1.22 | Statistics: heard platforms (device families) and symbols with counts and percentages ([spec](features/F1.22-statistics.md)) | (observed) | App | G07, G20 | spec'd |
+| F1.23 | Saved layouts ([spec](features/F1.23-saved-layouts.md)): named layouts, and the layout last used with a monitor setup offered when monitors change | — (maintainer request) | App | — | spec'd |
+| F1.24 | Web pop-out panels: a panel in its own browser tab or window (a second app instance on the same gateway), with selection kept in sync; after F1.14's viewer limits account for it | — (maintainer request) | App | — | scoped |
 
 ## Phase 2: Transmit via APRS-IS
 
