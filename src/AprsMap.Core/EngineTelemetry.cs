@@ -32,6 +32,6 @@ public static class EngineTelemetry
     internal static readonly Counter<long> ConnectionFailures = Meter.CreateCounter<long>(
         "aprsmap.connection.failures",
         unit: "{failure}",
-        description: "Failed APRS-IS connection attempts."
+        description: "Failed APRS-IS connection attempts and dropped connections."
     );
 }

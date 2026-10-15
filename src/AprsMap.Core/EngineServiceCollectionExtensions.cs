@@ -25,7 +25,7 @@ public static class EngineServiceCollectionExtensions
             (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<GeocodingOptions>>().Value.Timeout
         );
         services.TryAddSingleton<IGeocoder, NominatimGeocoder>();
-        services.TryAddSingleton<IPacketLineSourceFactory, AprsIsLineSourceFactory>();
+        services.TryAddSingleton<IPacketSourceFactory, AprsIsPacketSourceFactory>();
         services.TryAddSingleton<ISettingsStore>(sp =>
             SettingsLocation.CreateStore(sp.GetRequiredService<IOptions<EngineOptions>>().Value)
         );

@@ -4,6 +4,7 @@ using AprsMap.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace AprsMap.Core.Tests;
 
@@ -52,7 +53,7 @@ public class HostingTests
         var factory = new BlockingSourceFactory();
         var services = new ServiceCollection()
             .AddLogging()
-            .AddSingleton<IPacketLineSourceFactory>(factory)
+            .AddSingleton<IPacketSourceFactory>(factory)
             .AddSingleton<ISettingsStore>(InMemorySettingsStore.WithProfile())
             .AddAprsMapEngine();
         await using var provider = services.BuildServiceProvider();
@@ -72,9 +73,13 @@ public class HostingTests
     public void UnknownBrandKeysReadAsEmpty() => Assert.Equal(string.Empty, Brand.Get("Brand.DoesNotExist"));
 
     [Fact]
-    public void LineSourceFactoryRejectsABadServer()
+    public void SourceFactoryRejectsABadServer()
     {
-        var factory = new AprsIsLineSourceFactory(NullLoggerFactory.Instance, TimeProvider.System);
+        var factory = new AprsIsPacketSourceFactory(
+            Options.Create(new EngineOptions()),
+            NullLoggerFactory.Instance,
+            TimeProvider.System
+        );
 
         var ex = Assert.Throws<AprsNet.Packets.AprsValidationException>(() =>
             factory.Create(InMemorySettingsStore.Profile("N0CALL") with { Server = "bad host:x" })
@@ -83,9 +88,13 @@ public class HostingTests
     }
 
     [Fact]
-    public async Task LineSourceFactoryBuildsAClientWithoutConnecting()
+    public async Task SourceFactoryBuildsAConnectionWithoutConnecting()
     {
-        var factory = new AprsIsLineSourceFactory(NullLoggerFactory.Instance, TimeProvider.System);
+        var factory = new AprsIsPacketSourceFactory(
+            Options.Create(new EngineOptions()),
+            NullLoggerFactory.Instance,
+            TimeProvider.System
+        );
 
         var source = factory.Create(
             InMemorySettingsStore.Profile("N0CALL") with
@@ -103,7 +112,7 @@ public class HostingTests
     [InlineData("APRS Atlas", "APRSAtlas")]
     [InlineData("   ", "unknown")]
     public void SoftwareTokenHasNoSpaces(string input, string expected) =>
-        Assert.Equal(expected, AprsIsLineSourceFactory.SoftwareToken(input));
+        Assert.Equal(expected, AprsIsPacketSourceFactory.SoftwareToken(input));
 
     [Fact]
     public void BrandValuesComeFromBrandingProps()
@@ -117,24 +126,27 @@ public class HostingTests
     }
 
     /// <summary>A source whose connect never completes, to observe the engine mid-connect.</summary>
-    private sealed class BlockingSourceFactory : IPacketLineSourceFactory, IPacketLineSource
+    private sealed class BlockingSourceFactory : IPacketSourceFactory, IPacketSource
     {
         public TaskCompletionSource Created { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public IPacketLineSource Create(StationProfile profile)
+        public IPacketSource Create(StationProfile profile)
         {
             Created.TrySetResult();
             return this;
         }
 
-        public async Task<string> ConnectAsync(CancellationToken cancellationToken)
+        public async Task<string> StartAsync(
+            Action<ConnectionState, string?> stateChanged,
+            CancellationToken cancellationToken
+        )
         {
             await Task.Delay(Timeout.InfiniteTimeSpan, TimeProvider.System, cancellationToken);
             return string.Empty;
         }
 
-        public IAsyncEnumerable<string> ReadLinesAsync(CancellationToken cancellationToken) =>
-            AsyncEnumerable.Empty<string>();
+        public IAsyncEnumerable<AprsNet.Packets.AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken) =>
+            AsyncEnumerable.Empty<AprsNet.Packets.AprsPacket>();
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
