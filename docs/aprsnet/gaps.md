@@ -11,8 +11,8 @@ under **Delivered** in each section. `0.2.0` also adds `AprsNet.Ax25`, `AprsNet.
 `AprsNet.Gateway` and `AprsNet.Extensions.DependencyInjection`, which aren't on NuGet yet (2026-10-15).
 
 Gaps an AprsMap milestone needs become APRS.NET issues, as sub-issues of a `capability` issue in APRS.NET's matching
-milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for AprsMap 0.3.0), and block the
-AprsMap feature issues that need them. Later gaps get an issue when their phase is planned.
+milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for AprsMap 0.3.0), labelled
+`blocks: AprsMap`, and block the AprsMap feature issues that need them. Later gaps get an issue when their phase is planned.
 
 | ID | Title | Package | AprsMap phase | Issue |
 | --- | --- | --- | --- | --- |
