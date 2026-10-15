@@ -33,6 +33,15 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.ComputePasscodeAsync"/>.</summary>
     public const string ComputePasscode = "ComputePasscode";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetServerPresetsAsync"/>.</summary>
+    public const string GetServerPresets = "GetServerPresets";
+
+    /// <summary>Hub method for <see cref="IEngineService.ParseLocatorAsync"/>.</summary>
+    public const string ParseLocator = "ParseLocator";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetLocatorAsync"/>.</summary>
+    public const string GetLocator = "GetLocator";
+
     /// <summary>English text of <see cref="EngineErrorCodes.OperatorOnly"/>: address lookup and the passcode calculator.</summary>
     public const string OperatorOnlyMessage =
         "Only this gateway's operator can do that, and operator sign-in isn't available yet.";

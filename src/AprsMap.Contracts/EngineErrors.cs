@@ -45,6 +45,21 @@ public static class EngineErrorCodes
     /// <summary>APRS.NET rejected a value for a reason this version doesn't map (<see cref="EngineErrorArgs.Value"/>).</summary>
     public const string Invalid = "settings.invalid";
 
+    /// <summary>A Maidenhead locator was left empty.</summary>
+    public const string LocatorEmpty = "maidenhead.empty";
+
+    /// <summary>A Maidenhead locator has valid characters but not 4, 6, 8 or 10 of them (<see cref="EngineErrorArgs.Value"/>).</summary>
+    public const string LocatorWrongLength = "maidenhead.wrong-length";
+
+    /// <summary>
+    /// A Maidenhead locator character is out of range for its position (<see cref="EngineErrorArgs.Value"/>,
+    /// <see cref="EngineErrorArgs.Index"/>, <see cref="EngineErrorArgs.Character"/>, <see cref="EngineErrorArgs.Part"/>).
+    /// </summary>
+    public const string LocatorInvalidCharacter = "maidenhead.invalid-character";
+
+    /// <summary>A position is off the globe.</summary>
+    public const string PositionOffGlobe = "position.off-globe";
+
     /// <summary>A gateway's settings can't be changed from the browser.</summary>
     public const string SettingsReadOnly = "gateway.settings-read-only";
 
@@ -99,6 +114,12 @@ public static class EngineErrorArgs
 
     /// <summary>An HTTP status code.</summary>
     public const string Status = "status";
+
+    /// <summary>
+    /// Which pair of a Maidenhead locator a character belongs to: <c>field</c>, <c>square</c>, <c>subsquare</c>,
+    /// <c>extended-square</c> or <c>extended-subsquare</c>.
+    /// </summary>
+    public const string Part = "part";
 }
 
 /// <summary>Which exception type carries an <see cref="EngineError"/>.</summary>

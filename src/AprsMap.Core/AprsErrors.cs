@@ -29,6 +29,29 @@ internal static class AprsErrors
         );
     }
 
+    /// <summary>
+    /// The error for a Maidenhead locator APRS.NET rejected: <c>maidenhead.empty</c>, <c>maidenhead.wrong-length</c>
+    /// or <c>maidenhead.invalid-character</c> with the character, its position and its pair (<c>square</c>…).
+    /// </summary>
+    public static EngineError From(MaidenheadParseError error, string value)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        var args = new Dictionary<string, string>(StringComparer.Ordinal) { [EngineErrorArgs.Value] = value };
+        if (error.Index >= 0)
+        {
+            args[EngineErrorArgs.Index] = error.Index.ToString(CultureInfo.InvariantCulture);
+        }
+        Add(args, EngineErrorArgs.Character, error.Character?.ToString());
+        Add(args, EngineErrorArgs.Part, error.Part is { } part ? Kebab(part.ToString()) : null);
+        var code = error.Kind switch
+        {
+            MaidenheadParseErrorKind.Empty => EngineErrorCodes.LocatorEmpty,
+            MaidenheadParseErrorKind.WrongLength => EngineErrorCodes.LocatorWrongLength,
+            _ => EngineErrorCodes.LocatorInvalidCharacter,
+        };
+        return new EngineError(code, error.Message, args);
+    }
+
     /// <summary><c>CallsignInvalidLength</c> → <c>callsign-invalid-length</c>.</summary>
     internal static string Kebab(string name)
     {

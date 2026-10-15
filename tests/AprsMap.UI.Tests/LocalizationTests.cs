@@ -51,6 +51,26 @@ public class LocalizationTests
         Assert.Equal("“N0 CALL” isn't a callsign: character 3 (“ ”) isn't allowed here.", English().Format(error));
     }
 
+    [Theory]
+    [InlineData("square", "Character 3 of “DNX0” (“X”) must be a digit.")]
+    [InlineData("field", "Character 3 of “DNX0” (“X”) must be a letter from A to R.")]
+    public void LocatorErrorsNameWhatBelongsThere(string part, string expected)
+    {
+        var error = new EngineError(
+            EngineErrorCodes.LocatorInvalidCharacter,
+            "English",
+            new Dictionary<string, string>
+            {
+                [EngineErrorArgs.Value] = "DNX0",
+                [EngineErrorArgs.Index] = "2",
+                [EngineErrorArgs.Character] = "X",
+                [EngineErrorArgs.Part] = part,
+            }
+        );
+
+        Assert.Equal(expected, English().Format(error));
+    }
+
     [Fact]
     public void AnErrorThisVersionCantWordShowsTheEnginesEnglish()
     {

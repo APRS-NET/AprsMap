@@ -154,4 +154,18 @@
   <data name="Error.aprs.software-version-invalid" xml:space="preserve">
     <value>The app's version can't be sent to APRS-IS. This is a bug; please report it.</value>
   </data>
+  <data name="Error.maidenhead.empty" xml:space="preserve">
+    <value>Enter a Maidenhead locator, such as FN31pr.</value>
+  </data>
+  <data name="Error.maidenhead.wrong-length" xml:space="preserve">
+    <value>“{value}” has the wrong length: a locator has 4, 6, 8 or 10 characters.</value>
+    <comment>value: what the user typed.</comment>
+  </data>
+  <data name="Error.maidenhead.invalid-character" xml:space="preserve">
+    <value>Character {position} of “{value}” (“{character}”) must be {part, select, field {a letter from A to R} square {a digit} subsquare {a letter from A to X} extended-square {a digit} other {a letter from A to X}}.</value>
+    <comment>value: what the user typed; position: 1-based; part: which pair of the locator (keep the keywords field, square… as they are; translate only the text in braces).</comment>
+  </data>
+  <data name="Error.position.off-globe" xml:space="preserve">
+    <value>That position is off the globe.</value>
+  </data>
 </root>

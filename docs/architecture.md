@@ -70,7 +70,8 @@ method or an event on `IEngineService`.
 ## Service interface shape (draft)
 
 Built so far: `GetStatusAsync`, `WatchPacketsAsync` and `WatchStationsAsync` (F0.2), `GetSettingsAsync` /
-`SaveSettingsAsync` (F0.4), and `GetGeocodingInfoAsync` / `GeocodeAsync` / `ComputePasscodeAsync` (F0.5). The rest
+`SaveSettingsAsync` (F0.4), and `GetGeocodingInfoAsync` / `GeocodeAsync` / `ComputePasscodeAsync` / `GetServerPresetsAsync` /
+`ParseLocatorAsync` / `GetLocatorAsync` (F0.5). The rest
 arrives with the features that need it.
 
 ```csharp
@@ -101,6 +102,9 @@ public interface IEngineService
     Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken ct);
     Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(string query, string? language, CancellationToken ct);
     Task<int> ComputePasscodeAsync(string callsign, CancellationToken ct);
+    Task<IReadOnlyList<ServerPreset>> GetServerPresetsAsync(CancellationToken ct);
+    Task<LocatorInfo> ParseLocatorAsync(string locator, CancellationToken ct);
+    Task<string> GetLocatorAsync(double latitude, double longitude, CancellationToken ct);
 }
 ```
 

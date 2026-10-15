@@ -87,6 +87,29 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     }
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<ServerPreset>> GetServerPresetsAsync(CancellationToken cancellationToken = default) =>
+        _connection.InvokeAsync<IReadOnlyList<ServerPreset>>(EngineHub.GetServerPresets, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<LocatorInfo> ParseLocatorAsync(string locator, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(locator);
+        return WithEngineErrors(() =>
+            _connection.InvokeAsync<LocatorInfo>(EngineHub.ParseLocator, locator, cancellationToken)
+        );
+    }
+
+    /// <inheritdoc />
+    public Task<string> GetLocatorAsync(
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<string>(EngineHub.GetLocator, latitude, longitude, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
 
     /// <summary>Raises the gateway's <see cref="EngineError"/> as the same exception the in-process engine throws.</summary>

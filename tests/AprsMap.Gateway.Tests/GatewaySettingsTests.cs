@@ -58,6 +58,23 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task AnyBrowserCanListServersAndReadLocators()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        Assert.Equal("rotate", (await remote.GetServerPresetsAsync(Ct))[0].Key);
+        Assert.Equal("FN31pr", (await remote.ParseLocatorAsync("fn31pr", Ct)).Locator);
+        Assert.Equal("FN31pr", await remote.GetLocatorAsync(41.7291667, -72.7083333, Ct));
+
+        var bad = await Assert.ThrowsAsync<EngineArgumentException>(() => remote.ParseLocatorAsync("DN70ZZ", Ct));
+        Assert.Equal(EngineErrorCodes.LocatorInvalidCharacter, bad.EngineError.Code);
+        Assert.Equal("subsquare", bad.EngineError.Arg(EngineErrorArgs.Part));
+        var off = await Assert.ThrowsAsync<EngineArgumentException>(() => remote.GetLocatorAsync(0, 200, Ct));
+        Assert.Equal(EngineErrorCodes.PositionOffGlobe, off.EngineError.Code);
+    }
+
+    [Fact]
     public void TheGeocodingSectionIsBound() =>
         Assert.Equal(
             "https://geo.example/",

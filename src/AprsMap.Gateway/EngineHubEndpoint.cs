@@ -84,6 +84,36 @@ internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayO
         }
     }
 
+    [HubMethodName(EngineHub.GetServerPresets)]
+    public Task<IReadOnlyList<ServerPreset>> GetServerPresets() =>
+        engine.GetServerPresetsAsync(Context.ConnectionAborted);
+
+    [HubMethodName(EngineHub.ParseLocator)]
+    public async Task<LocatorInfo> ParseLocator(string locator)
+    {
+        try
+        {
+            return await engine.ParseLocatorAsync(locator, Context.ConnectionAborted).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ToHubException(ex) is { } hub)
+        {
+            throw hub;
+        }
+    }
+
+    [HubMethodName(EngineHub.GetLocator)]
+    public async Task<string> GetLocator(double latitude, double longitude)
+    {
+        try
+        {
+            return await engine.GetLocatorAsync(latitude, longitude, Context.ConnectionAborted).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ToHubException(ex) is { } hub)
+        {
+            throw hub;
+        }
+    }
+
     /// <summary>Refuses the call with <paramref name="code"/> unless this gateway allows settings changes.</summary>
     private void Require(string code, string message)
     {

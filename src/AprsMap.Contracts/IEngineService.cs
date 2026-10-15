@@ -61,4 +61,17 @@ public interface IEngineService
     /// <exception cref="ArgumentException">The callsign can't have a passcode; the message says why.</exception>
     /// <exception cref="UnauthorizedAccessException">This caller may not use it (a gateway without operator sign-in).</exception>
     Task<int> ComputePasscodeAsync(string callsign, CancellationToken cancellationToken = default);
+
+    /// <summary>The APRS-IS servers to offer by region, worldwide first (from APRS.NET).</summary>
+    Task<IReadOnlyList<ServerPreset>> GetServerPresetsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads a Maidenhead locator of 4, 6, 8 or 10 characters, in any case, and returns the centre of its square.
+    /// </summary>
+    /// <exception cref="ArgumentException">It isn't a locator; the error's code says why and where.</exception>
+    Task<LocatorInfo> ParseLocatorAsync(string locator, CancellationToken cancellationToken = default);
+
+    /// <summary>The 6-character Maidenhead locator of a position, for showing next to coordinates.</summary>
+    /// <exception cref="ArgumentException">The position is off the globe.</exception>
+    Task<string> GetLocatorAsync(double latitude, double longitude, CancellationToken cancellationToken = default);
 }
