@@ -113,7 +113,7 @@ public sealed class MapView : Control, IDisposable
     /// </summary>
     public void Dispose()
     {
-        _tiles?.Dispose();
+        DisposeTiles();
         _stations.Dispose();
         _map.Dispose();
         ClearLabels();
@@ -226,15 +226,31 @@ public sealed class MapView : Control, IDisposable
     {
         ArgumentNullException.ThrowIfNull(tiles);
         ArgumentNullException.ThrowIfNull(provider);
-        if (_tiles is not null)
-        {
-            _map.Layers.Remove(_tiles);
-            _tiles.Dispose();
-        }
+        DisposeTiles();
         _tiles = new TileLayer(new ProviderTileSource(tiles, provider)) { Name = provider.Key };
         _map.Layers.Insert(0, _tiles);
         Provider = provider;
         QueueRefresh();
+    }
+
+    /// <summary>Takes the tile layer off the map and releases its cached tiles.</summary>
+    private void DisposeTiles()
+    {
+        if (_tiles is null)
+        {
+            return;
+        }
+        _map.Layers.Remove(_tiles);
+        try
+        {
+            _tiles.Dispose();
+        }
+        catch (InvalidOperationException)
+        {
+            // BruTile's memory cache walks its entries on Dispose without the lock its Add takes, and Mapsui can't
+            // cancel a fetch already running, so a tile landing now breaks the walk. What's left is plain memory.
+        }
+        _tiles = null;
     }
 
     /// <summary>Centres on a place at a resolution, as remembered (behavior 2).</summary>
