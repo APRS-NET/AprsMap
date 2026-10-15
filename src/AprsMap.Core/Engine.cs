@@ -12,7 +12,7 @@ using Microsoft.Extensions.Options;
 namespace AprsMap.Core;
 
 /// <summary>
-/// The in-process engine. <see cref="RunAsync"/> keeps an APRS-IS connection open, parses every line with APRS.NET,
+/// The in-process engine. <see cref="RunAsync"/> keeps an APRS-IS connection open, reads every packet with APRS.NET,
 /// remembers recent packets and fans them out to every <see cref="WatchPacketsAsync"/> caller, and keeps the latest
 /// position of every station for <see cref="WatchStationsAsync"/>. It logs in with the active station profile from
 /// <see cref="ISettingsStore"/>, waits while there is none, and reconnects when the profile changes.
@@ -20,7 +20,7 @@ namespace AprsMap.Core;
 public sealed partial class Engine : IEngineService, IDisposable
 {
     private readonly EngineOptions _options;
-    private readonly IPacketLineSourceFactory _sources;
+    private readonly IPacketSourceFactory _sources;
     private readonly ISettingsStore _settingsStore;
     private readonly IGeocoder _geocoder;
     private readonly SemaphoreSlim _settingsLock = new(1, 1);
@@ -41,7 +41,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     /// <summary>Creates the engine.</summary>
     public Engine(
         IOptions<EngineOptions> options,
-        IPacketLineSourceFactory sources,
+        IPacketSourceFactory sources,
         ISettingsStore settingsStore,
         TimeProvider time,
         ILogger<Engine> logger,
@@ -248,10 +248,10 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <summary>
-    /// Connects with the active profile, reads and reconnects until <paramref name="cancellationToken"/> is
-    /// cancelled. With no profile it waits for one; a profile change ends the session and reconnects at once.
+    /// Connects with the active profile and reads until <paramref name="cancellationToken"/> is cancelled. Once logged
+    /// in, the source reconnects by itself; this loop retries only a first login that failed, with the same backoff.
+    /// With no profile it waits for one; a profile change ends the session and reconnects at once.
     /// </summary>
-    // SHIM: G03 (resilient APRS-IS connection). Replace this loop when APRS.NET ships its connection supervisor.
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         var delay = _options.InitialRetryDelay;
@@ -272,7 +272,7 @@ public sealed partial class Engine : IEngineService, IDisposable
                 else
                 {
                     await RunOnceAsync(profile, attempt.Token).ConfigureAwait(false);
-                    delay = _options.InitialRetryDelay; // a connection that ended cleanly resets the backoff
+                    delay = _options.InitialRetryDelay; // a session that ended cleanly resets the backoff
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -326,6 +326,11 @@ public sealed partial class Engine : IEngineService, IDisposable
             LogLineRejected(ex);
             return;
         }
+        Accept(packet);
+    }
+
+    private void Accept(AprsPacket packet)
+    {
         if (!packet.HasHeader)
         {
             return; // server comments and noise
@@ -460,15 +465,24 @@ public sealed partial class Engine : IEngineService, IDisposable
         var source = _sources.Create(profile);
         await using (source.ConfigureAwait(false))
         {
-            var server = await source.ConnectAsync(cancellationToken).ConfigureAwait(false);
+            var server = await source.StartAsync(OnSourceStateChanged, cancellationToken).ConfigureAwait(false);
             activity?.SetTag("aprs-is.server", server);
-            SetState(ConnectionState.Connected, server);
             LogConnected(server);
-            await foreach (var line in source.ReadLinesAsync(cancellationToken).ConfigureAwait(false))
+            await foreach (var packet in source.ReadPacketsAsync(cancellationToken).ConfigureAwait(false))
             {
-                Accept(line);
+                Accept(packet);
             }
         }
+    }
+
+    // Disposing the source stops its callbacks, so a session never reports after the next one has started.
+    private void OnSourceStateChanged(ConnectionState state, string? server)
+    {
+        if (state == ConnectionState.Faulted)
+        {
+            EngineTelemetry.ConnectionFailures.Add(1);
+        }
+        SetState(state, server);
     }
 
     private void SetState(ConnectionState state, string? server)

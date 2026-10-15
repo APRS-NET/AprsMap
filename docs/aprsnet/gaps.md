@@ -57,14 +57,14 @@ the filter persists across reconnects, and disposal stops the loop promptly.
 **Delivered** (`0.1.0-alpha.17`): `AprsIsConnection`: reconnect on close, failure, idle timeout or packet silence, with
 backoff and ±20 % jitter (`ReconnectDelay`, `MaxReconnectDelay`); one `ReadLinesAsync` stream across reconnects; the
 filter resent on every login (`SetFilterAsync`); `SendAsync` waiting through a reconnect; `StateChanged` events. Rotation
-through an endpoint list isn't included, and AprsMap doesn't need it (F1.1 behavior 10). AprsMap's `// SHIM: G03` loop
-goes with F1.1.
+through an endpoint list isn't included, and AprsMap doesn't need it (F1.1 behavior 10). AprsMap's engine runs on it,
+reading with `ReadPacketsAsync` (`0.2.0-alpha.1`), and its `// SHIM: G03` loop is gone.
 
 ## G04: Typed APRS-IS server filter builder
 
 **Need.** AprsMap F1.2 builds filters from the map viewport and tracked stations. `SetFilterAsync(string)` takes raw
 text. Until then AprsMap writes one filter itself, `r/lat/lon/km` or `m/km`, for profiles without a filter
-(`// SHIM: G04` in `AprsIsLineSourceFactory.EffectiveFilter`).
+(`// SHIM: G04` in `AprsIsPacketSourceFactory.EffectiveFilter`).
 
 **Scope.** An immutable `AprsIsFilter` composed of typed parts: range `r/lat/lon/km`, my-range `m/km`, friend range
 `f/call/km`, area `a/latN/lonW/latS/lonE`, prefix `p/`, budlist `b/` (with wildcards), object `o/`, type `t/poimqstuw`,

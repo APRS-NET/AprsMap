@@ -236,7 +236,7 @@ public sealed class SettingsTests : IDisposable
             Longitude = longitude,
         };
 
-        Assert.Equal(expected, AprsIsLineSourceFactory.EffectiveFilter(profile));
-        Assert.Equal(expected, AprsIsLineSourceFactory.ClientOptions(profile, TimeProvider.System).Filter);
+        Assert.Equal(expected, AprsIsPacketSourceFactory.EffectiveFilter(profile));
+        Assert.Equal(expected, AprsIsPacketSourceFactory.ClientOptions(profile, TimeProvider.System).Filter);
     }
 }

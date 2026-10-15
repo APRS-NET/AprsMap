@@ -20,7 +20,7 @@ public class EngineTests
 
     private static Engine CreateEngine(
         FakeTimeProvider time,
-        IPacketLineSourceFactory? sources = null,
+        IPacketSourceFactory? sources = null,
         int capacity = 10,
         ILogger<Engine>? logger = null,
         ISettingsStore? settings = null
@@ -372,7 +372,7 @@ public class EngineTests
     }
 
     [Fact]
-    public async Task RunConnectsReadsLinesAndReportsTheServer()
+    public async Task RunConnectsReadsPacketsAndReportsTheServer()
     {
         var sources = new FakeSourceFactory();
         var session = sources.Enqueue("T2TEST");
@@ -395,7 +395,35 @@ public class EngineTests
     }
 
     [Fact]
-    public async Task RunBacksOffExponentiallyUpToTheCapThenReconnects()
+    public async Task ADroppedSessionIsReportedAndItsPacketsCarryOn()
+    {
+        var sources = new FakeSourceFactory();
+        var session = sources.Enqueue("T2FIRST");
+        var engine = CreateEngine(new FakeTimeProvider(), sources);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await session.Connected.Task.WaitAsync(Ct);
+        await session.Write(Position);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).PacketsReceived == 1);
+
+        session.Report(ConnectionState.Faulted);
+        Assert.Equal(ConnectionState.Faulted, (await engine.GetStatusAsync(Ct)).Connection);
+        session.Report(ConnectionState.Connecting);
+        session.Report(ConnectionState.Connected, "T2SECOND");
+        await session.Write(Status);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).PacketsReceived == 2);
+
+        var status = await engine.GetStatusAsync(Ct);
+        Assert.Equal(ConnectionState.Connected, status.Connection);
+        Assert.Equal("T2SECOND", status.Server);
+        Assert.Equal(1, sources.Attempts); // the source reconnected itself; the engine kept it
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task AFailedFirstLoginBacksOffExponentiallyUpToTheCapThenConnects()
     {
         var time = new FakeTimeProvider();
         var sources = new FakeSourceFactory();
@@ -663,7 +691,7 @@ public class EngineTests
     }
 
     /// <summary>Hands out scripted sources in order; once the script runs out, every attempt fails.</summary>
-    private sealed class FakeSourceFactory : IPacketLineSourceFactory
+    private sealed class FakeSourceFactory : IPacketSourceFactory
     {
         private readonly Queue<FakeSource?> _script = new();
         private int _attempts;
@@ -682,7 +710,7 @@ public class EngineTests
 
         public void EnqueueFailure() => _script.Enqueue(null);
 
-        public IPacketLineSource Create(StationProfile profile)
+        public IPacketSource Create(StationProfile profile)
         {
             Profiles.Enqueue(profile);
             Interlocked.Increment(ref _attempts);
@@ -690,9 +718,10 @@ public class EngineTests
         }
     }
 
-    private sealed class FakeSource(string? server) : IPacketLineSource
+    private sealed class FakeSource(string? server) : IPacketSource
     {
         private readonly Channel<string> _lines = Channel.CreateUnbounded<string>();
+        private Action<ConnectionState, string?>? _stateChanged;
 
         public TaskCompletionSource Connected { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -700,23 +729,32 @@ public class EngineTests
 
         public ValueTask Write(string line) => _lines.Writer.WriteAsync(line, Ct);
 
-        public Task<string> ConnectAsync(CancellationToken cancellationToken)
+        /// <summary>Reports a state as the source would after the first login: a drop, a retry, a new login.</summary>
+        public void Report(ConnectionState state, string? reportedServer = null) =>
+            _stateChanged!(state, reportedServer);
+
+        public Task<string> StartAsync(
+            Action<ConnectionState, string?> stateChanged,
+            CancellationToken cancellationToken
+        )
         {
             if (server is null)
             {
                 throw new IOException("connection refused");
             }
+            _stateChanged = stateChanged;
+            stateChanged(ConnectionState.Connected, server);
             Connected.TrySetResult();
             return Task.FromResult(server);
         }
 
-        public async IAsyncEnumerable<string> ReadLinesAsync(
+        public async IAsyncEnumerable<AprsNet.Packets.AprsPacket> ReadPacketsAsync(
             [EnumeratorCancellation] CancellationToken cancellationToken
         )
         {
             await foreach (var line in _lines.Reader.ReadAllAsync(cancellationToken))
             {
-                yield return line;
+                yield return AprsNet.Packets.AprsPacket.Parse(line);
             }
         }
 

@@ -1,33 +1,63 @@
 // SPDX-License-Identifier: MIT
 using AprsMap.Contracts;
 using AprsNet.AprsIsTcpClient;
+using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AprsMap.Core;
 
-/// <summary>Reads packet lines from APRS-IS with the APRS.NET client.</summary>
-internal sealed class AprsIsLineSource(AprsIsClient client) : IPacketLineSource
+/// <summary>An APRS-IS session kept up by APRS.NET's <see cref="AprsIsConnection"/>.</summary>
+internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketSource
 {
-    public async Task<string> ConnectAsync(CancellationToken cancellationToken)
+    public async Task<string> StartAsync(
+        Action<ConnectionState, string?> stateChanged,
+        CancellationToken cancellationToken
+    )
     {
-        var login = await client.ConnectAsync(cancellationToken).ConfigureAwait(false);
+        connection.StateChanged += (_, e) =>
+        {
+            switch (e.State)
+            {
+                case AprsIsConnectionState.Connecting:
+                    stateChanged(ConnectionState.Connecting, null);
+                    break;
+                case AprsIsConnectionState.Connected:
+                    stateChanged(ConnectionState.Connected, e.Login?.Server ?? string.Empty);
+                    break;
+                case AprsIsConnectionState.Reconnecting:
+                    stateChanged(ConnectionState.Faulted, null);
+                    break;
+                default:
+                    break; // NotStarted and Closed: the engine reports those itself
+            }
+        };
+        var login = await connection.StartAsync(cancellationToken).ConfigureAwait(false);
         return login.Server ?? string.Empty;
     }
 
-    public IAsyncEnumerable<string> ReadLinesAsync(CancellationToken cancellationToken) =>
-        client.ReadLinesAsync(cancellationToken);
+    public IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken) =>
+        connection.ReadPacketsAsync(cancellationToken);
 
-    public ValueTask DisposeAsync() => client.DisposeAsync();
+    public ValueTask DisposeAsync() => connection.DisposeAsync();
 }
 
-/// <summary>Creates APRS.NET clients from a <see cref="StationProfile"/>.</summary>
-internal sealed class AprsIsLineSourceFactory(ILoggerFactory loggerFactory, TimeProvider timeProvider)
-    : IPacketLineSourceFactory
+/// <summary>Creates APRS.NET connections from a <see cref="StationProfile"/>.</summary>
+internal sealed class AprsIsPacketSourceFactory(
+    IOptions<EngineOptions> options,
+    ILoggerFactory loggerFactory,
+    TimeProvider timeProvider
+) : IPacketSourceFactory
 {
-    public IPacketLineSource Create(StationProfile profile) =>
-        new AprsIsLineSource(
-            new AprsIsClient(ClientOptions(profile, timeProvider), loggerFactory.CreateLogger<AprsIsClient>())
+    public IPacketSource Create(StationProfile profile)
+    {
+        var clientOptions = ClientOptions(profile, timeProvider);
+        clientOptions.ReconnectDelay = options.Value.InitialRetryDelay;
+        clientOptions.MaxReconnectDelay = options.Value.MaxRetryDelay;
+        return new AprsIsPacketSource(
+            new AprsIsConnection(clientOptions, loggerFactory.CreateLogger<AprsIsConnection>())
         );
+    }
 
     /// <summary>
     /// The APRS.NET client options for <paramref name="profile"/>, validated by APRS.NET (which owns the login rules).
