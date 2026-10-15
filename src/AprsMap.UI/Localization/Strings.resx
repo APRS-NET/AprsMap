@@ -975,6 +975,87 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Map.MyLocation" xml:space="preserve">
     <value>{name} · my location</value>
   </data>
+  <data name="Compass.N" xml:space="preserve">
+    <value>N</value>
+    <comment>Compass point abbreviation: north.</comment>
+  </data>
+  <data name="Compass.NNE" xml:space="preserve">
+    <value>NNE</value>
+    <comment>Compass point abbreviation: north-north-east.</comment>
+  </data>
+  <data name="Compass.NE" xml:space="preserve">
+    <value>NE</value>
+    <comment>Compass point abbreviation: north-east.</comment>
+  </data>
+  <data name="Compass.ENE" xml:space="preserve">
+    <value>ENE</value>
+    <comment>Compass point abbreviation: east-north-east.</comment>
+  </data>
+  <data name="Compass.E" xml:space="preserve">
+    <value>E</value>
+    <comment>Compass point abbreviation: east.</comment>
+  </data>
+  <data name="Compass.ESE" xml:space="preserve">
+    <value>ESE</value>
+    <comment>Compass point abbreviation: east-south-east.</comment>
+  </data>
+  <data name="Compass.SE" xml:space="preserve">
+    <value>SE</value>
+    <comment>Compass point abbreviation: south-east.</comment>
+  </data>
+  <data name="Compass.SSE" xml:space="preserve">
+    <value>SSE</value>
+    <comment>Compass point abbreviation: south-south-east.</comment>
+  </data>
+  <data name="Compass.S" xml:space="preserve">
+    <value>S</value>
+    <comment>Compass point abbreviation: south.</comment>
+  </data>
+  <data name="Compass.SSW" xml:space="preserve">
+    <value>SSW</value>
+    <comment>Compass point abbreviation: south-south-west.</comment>
+  </data>
+  <data name="Compass.SW" xml:space="preserve">
+    <value>SW</value>
+    <comment>Compass point abbreviation: south-west.</comment>
+  </data>
+  <data name="Compass.WSW" xml:space="preserve">
+    <value>WSW</value>
+    <comment>Compass point abbreviation: west-south-west.</comment>
+  </data>
+  <data name="Compass.W" xml:space="preserve">
+    <value>W</value>
+    <comment>Compass point abbreviation: west.</comment>
+  </data>
+  <data name="Compass.WNW" xml:space="preserve">
+    <value>WNW</value>
+    <comment>Compass point abbreviation: west-north-west.</comment>
+  </data>
+  <data name="Compass.NW" xml:space="preserve">
+    <value>NW</value>
+    <comment>Compass point abbreviation: north-west.</comment>
+  </data>
+  <data name="Compass.NNW" xml:space="preserve">
+    <value>NNW</value>
+    <comment>Compass point abbreviation: north-north-west.</comment>
+  </data>
+  <data name="Range.Text" xml:space="preserve">
+    <value>{distance} {point} {bearing}°</value>
+    <comment>Distance and bearing from my location, for example "100 km NE 045°". distance: the distance with its unit. point: a compass point. bearing: whole degrees, three digits.</comment>
+  </data>
+  <data name="Range.Kilometres" xml:space="preserve">
+    <value>{value} km</value>
+  </data>
+  <data name="Range.Miles" xml:space="preserve">
+    <value>{value} mi</value>
+  </data>
+  <data name="Range.NauticalMiles" xml:space="preserve">
+    <value>{value} nmi</value>
+  </data>
+  <data name="Map.HoverRange" xml:space="preserve">
+    <value>{hover} · {range}</value>
+    <comment>Tooltip over a station when my location is known. hover: the usual tooltip. range: distance and bearing from my location.</comment>
+  </data>
   <data name="Map.Hover" xml:space="preserve">
     <value>{name} · heard {minutes, plural, =0 {just now} one {# minute ago} other {# minutes ago}}</value>
     <comment>Tooltip over a station on the map. name: its callsign (not translated). minutes: whole minutes since it was last heard.</comment>

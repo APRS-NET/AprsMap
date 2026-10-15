@@ -473,6 +473,7 @@ public sealed partial class MainViewModel : ObservableObject
             // Home is the active profile's location (behavior 3), drawn as a house with its callsign (F1.13).
             Map.Home = active is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
             Map.HomeName = active?.Callsign;
+            Map.DistanceUnit = settings.Units.Distance;
         }
         var notSetUp = settings.Profiles.Count == 0;
         ShowGatewaySetupNote = notSetUp && settings.ReadOnly;

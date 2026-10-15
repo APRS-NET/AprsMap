@@ -110,6 +110,32 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task StationsAreMeasuredFromTheActiveProfilesLocation()
+    {
+        var engine = CreateEngine(new FakeTimeProvider());
+        engine.Accept("N0FAR>APRS:!4038.17N/10410.17W-");
+        var settings = await engine.GetSettingsAsync(Ct);
+        Assert.Null((await engine.GetStationAsync("N0FAR", Ct))!.DistanceKm);
+
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Profiles =
+                [
+                    .. settings.Profiles.Select(p =>
+                        p.Id == settings.ActiveProfileId ? p with { Latitude = 40, Longitude = -105 } : p
+                    ),
+                ],
+            },
+            Ct
+        );
+
+        var station = (await engine.GetStationAsync("N0FAR", Ct))!;
+        Assert.Equal(100, station.DistanceKm!.Value, 0);
+        Assert.Equal(45, station.BearingDegrees);
+    }
+
+    [Fact]
     public async Task FilteredWatchersGetOnlyMatchingPacketsHeldAndLive()
     {
         var engine = CreateEngine(new FakeTimeProvider());

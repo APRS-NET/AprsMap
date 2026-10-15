@@ -59,6 +59,10 @@ public sealed partial class MapViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string? HomeName { get; set; }
 
+    /// <summary>The viewer's distance unit, for distances from my location (F1.13 behavior 4).</summary>
+    [ObservableProperty]
+    public partial DistanceUnit DistanceUnit { get; set; }
+
     /// <summary>Whether Home is offered.</summary>
     public bool HasHome => Home is not null;
 
