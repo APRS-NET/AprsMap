@@ -80,7 +80,13 @@ public partial class LocalizationGuardTests
         {
             used.UnionWith(XamlKey().Matches(File.ReadAllText(file)).Select(m => m.Groups[1].Value));
         }
-        foreach (var file in Directory.EnumerateFiles(Ui, "*.cs", SearchOption.AllDirectories))
+        // The browser app's startup messages come from the same strings.
+        var browser = Path.Combine(RepoRoot(), "src", "AprsMap.Browser");
+        foreach (
+            var file in Directory
+                .EnumerateFiles(Ui, "*.cs", SearchOption.AllDirectories)
+                .Concat(Directory.EnumerateFiles(browser, "*.cs", SearchOption.AllDirectories))
+        )
         {
             if (
                 !file.Contains(
