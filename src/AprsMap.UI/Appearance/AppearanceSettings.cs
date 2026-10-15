@@ -57,6 +57,32 @@ public enum MotionPreference
     Reduced,
 }
 
+/// <summary>How bright the map's tiles are (F1.4 behavior 13).</summary>
+public enum MapBrightness
+{
+    /// <summary>Normal in a light theme, dimmed in a dark one (F1.4 behavior 13).</summary>
+    Auto,
+
+    /// <summary>Tiles as the provider draws them.</summary>
+    Normal,
+
+    /// <summary>Tiles darkened a little, so stations stand out.</summary>
+    Dimmed,
+
+    /// <summary>Tiles darkened a lot.</summary>
+    Dark,
+}
+
+/// <summary>Which station labels the map draws (F1.4 behavior 17).</summary>
+public enum MapLabels
+{
+    /// <summary>Every callsign that fits without overlapping; the most recently heard wins.</summary>
+    AllThatFit,
+
+    /// <summary>Symbols only.</summary>
+    None,
+}
+
 /// <summary>Icon size in the UI chrome (map symbols have their own scale).</summary>
 public enum IconSize
 {
@@ -115,8 +141,20 @@ public sealed record AppearanceSettings
     /// <summary>The largest allowed map symbol scale.</summary>
     public const double MaxMapSymbolScale = 2.0;
 
-    /// <summary>Map symbol scale, 0.75 to 2.0. Stored now; shown and applied once the map exists (F1.4).</summary>
+    /// <summary>Map symbol scale, 0.75 to 2.0, for symbols and their labels together (F1.4 behavior 16).</summary>
     public double MapSymbolScale { get; init; } = 1.0;
+
+    /// <summary>The map symbol sizes Settings › Map offers.</summary>
+    public static IReadOnlyList<double> MapSymbolScaleSteps { get; } = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+
+    /// <summary>How bright the map's tiles are (F1.4 behavior 13).</summary>
+    public MapBrightness MapBrightness { get; init; } = MapBrightness.Auto;
+
+    /// <summary>Which station labels the map draws (F1.4 behavior 17).</summary>
+    public MapLabels MapLabels { get; init; } = MapLabels.AllThatFit;
+
+    /// <summary>The tile provider's key, or null for the first one the engine offers (F1.4 behavior 11).</summary>
+    public string? MapProvider { get; init; }
 
     /// <summary>Corner style.</summary>
     public CornerStyle Corners { get; init; } = CornerStyle.Rounded;

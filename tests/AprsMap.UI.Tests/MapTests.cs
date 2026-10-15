@@ -174,6 +174,66 @@ public sealed class MapTests
         Assert.False(view.Fit());
     }
 
+    [AvaloniaFact]
+    public async Task SettingsMapOffersTheViewersChoicesAndTheStationsAgingWhereAllowed()
+    {
+        var engine = new FakeEngine();
+        var appearance = new Appearance.AppearanceService();
+        var vm = new MainViewModel(engine, new FakeTimeProvider(), appearance: appearance)
+        {
+            Map = new MapViewModel(new FakeTiles(), null, new FakeTimeProvider()),
+        };
+        await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
+        vm.Show(engine.Settings);
+
+        await vm.OpenSettingsAsync();
+        var settings = vm.Settings!;
+        Assert.Contains(settings.Sections, s => s.Id == "map");
+        Assert.Equal(
+            ["map.brightness", "map.labels", "map.symbol-size", "map.stale-after", "map.remove-after"],
+            settings.MapItems.Select(i => i.Id)
+        );
+        var labels = (Settings.ChoiceSetting)settings.MapItems.Single(i => i.Id == "map.labels");
+        labels.Selected = labels.Options.Single(o => Equals(o.Value, Appearance.MapLabels.None));
+        Assert.Equal(Appearance.MapLabels.None, appearance.Current.MapLabels);
+
+        var stale = (Settings.ChoiceSetting)settings.MapItems.Single(i => i.Id == "map.stale-after");
+        Assert.DoesNotContain(stale.Options, o => o.Value is int m && m >= 120); // removal is at 2 hours
+        stale.Selected = stale.Options.Single(o => Equals(o.Value, 60));
+        await WaitUntil(() => engine.Saved.Count > 0);
+        Assert.Equal(new StationAging(60, 120), engine.Saved[^1].Aging);
+        var remove = (Settings.ChoiceSetting)settings.MapItems.Single(i => i.Id == "map.remove-after");
+        Assert.DoesNotContain(remove.Options, o => o.Value is int m && m <= 60);
+        Assert.Contains(remove.Options, o => o.Value is null); // never
+    }
+
+    [AvaloniaFact]
+    public async Task OnAReadOnlyGatewayTheAgingIsntOffered()
+    {
+        var engine = new FakeEngine { Settings = FakeEngine.TwoProfiles() with { ReadOnly = true } };
+        var vm = new MainViewModel(engine, new FakeTimeProvider())
+        {
+            Map = new MapViewModel(new FakeTiles(), null, new FakeTimeProvider()),
+        };
+        await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
+        vm.Show(engine.Settings);
+
+        await vm.OpenSettingsAsync();
+
+        Assert.DoesNotContain(vm.Settings!.MapItems, i => i.Id.StartsWith("map.stale", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task TheChosenProviderIsShownOrTheFirstWhenItIsntOffered()
+    {
+        using var map = new MapViewModel(new FakeTiles(), null, new FakeTimeProvider());
+        await map.LoadAsync(TestContext.Current.CancellationToken);
+
+        map.UseProvider("gone");
+
+        Assert.Equal("osm", map.Provider?.Key);
+    }
+
     private static async Task WaitUntil(Func<bool> condition)
     {
         for (var i = 0; i < 200 && !condition(); i++)

@@ -65,6 +65,10 @@ public sealed partial class MapViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial bool IsLoaded { get; private set; }
 
+    /// <summary>Shows the provider with <paramref name="key"/>, or the first one when it isn't offered (behavior 11).</summary>
+    public void UseProvider(string? key) =>
+        Provider = Providers.FirstOrDefault(p => p.Key == key) ?? (Providers.Count > 0 ? Providers[0] : null);
+
     /// <summary>Loads the providers and the remembered view. Never throws: without them the map still works.</summary>
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {

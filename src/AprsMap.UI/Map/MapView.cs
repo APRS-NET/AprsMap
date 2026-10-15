@@ -70,6 +70,8 @@ public sealed class MapView : Control, IDisposable
         _map.Navigator.ViewportChanged += (_, _) => ViewChanged?.Invoke(this, EventArgs.Empty);
         this.GetResourceObservable("Color.Ground").Subscribe(new GroundObserver(this));
         Watch("Map.SymbolSize", v => _symbolDip = v is double d ? d : 24);
+        Watch("Map.Dimming", v => Dimming = v is double d and >= 0 ? d : null);
+        Watch("Map.ShowLabels", v => ShowLabels = v is not false);
         Watch(
             "Map.LabelSize",
             v =>

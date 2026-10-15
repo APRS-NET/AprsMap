@@ -39,7 +39,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Localizer? text = null,
         bool showPseudoLanguage = false,
         ProfilesSectionViewModel? profiles = null,
-        DataSectionViewModel? data = null
+        DataSectionViewModel? data = null,
+        IReadOnlyList<SettingItem>? mapItems = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
@@ -49,6 +50,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _time = time;
         _text = text ?? Localizer.Instance;
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
+        MapItems = [.. mapItems ?? []];
         About = new AboutViewModel(_text);
         Sections = [];
         Retranslate();
@@ -69,7 +71,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsAppearanceSection),
         nameof(IsAboutSection),
         nameof(IsProfilesSection),
-        nameof(IsDataSection)
+        nameof(IsDataSection),
+        nameof(IsMapSection)
     )]
     public partial SettingsSection? SelectedSection { get; set; }
 
@@ -81,6 +84,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Whether Appearance is showing.</summary>
     public bool IsAppearanceSection => SelectedSection?.Id == "appearance";
+
+    /// <summary>Whether Map is showing.</summary>
+    public bool IsMapSection => SelectedSection?.Id == "map";
+
+    /// <summary>The Map section's options (F1.4 behavior 21); empty when there is no map.</summary>
+    public ObservableCollection<SettingItem> MapItems { get; }
 
     /// <summary>Whether Data is showing.</summary>
     public bool IsDataSection => SelectedSection?.Id == "data";
@@ -164,7 +173,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void OnAppearanceChanged(object? sender, AppearanceSettings e)
     {
-        foreach (var item in AppearanceItems)
+        foreach (var item in AppearanceItems.Concat(MapItems))
         {
             item.Refresh();
         }
@@ -182,13 +191,17 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             Sections.Add(new SettingsSection("profiles", _text["Settings.Profiles"]));
         }
         Sections.Add(new SettingsSection("appearance", _text["Settings.Appearance"]));
+        if (MapItems.Count > 0)
+        {
+            Sections.Add(new SettingsSection("map", _text["Settings.Map"]));
+        }
         if (Data is not null)
         {
             Sections.Add(new SettingsSection("data", _text["Settings.Data"]));
         }
         Sections.Add(new SettingsSection("about", _text["Settings.About"]));
         SelectedSection = Sections.FirstOrDefault(s => s.Id == selected) ?? (selected is null ? null : Sections[0]);
-        foreach (var item in AppearanceItems)
+        foreach (var item in AppearanceItems.Concat(MapItems))
         {
             item.Retranslate();
         }

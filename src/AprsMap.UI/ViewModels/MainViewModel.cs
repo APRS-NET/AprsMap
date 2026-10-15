@@ -242,7 +242,17 @@ public sealed partial class MainViewModel : ObservableObject
             canResetStation: _settings is { ReadOnly: false },
             ResetAppAsync
         );
-        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage, profiles, data);
+        var mapItems = Map is null
+            ? null
+            : SettingsRegistry.Map(
+                _appearance,
+                _text,
+                Map.Providers,
+                _settings is { ReadOnly: false }
+                    ? (() => _settings?.EffectiveAging ?? StationAging.Default, SaveAging)
+                    : null
+            );
+        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage, profiles, data, mapItems);
         settings.Closed += OnSettingsClosed;
         Settings = settings;
         GeocodingInfo? geocoding = null;
@@ -258,6 +268,26 @@ public sealed partial class MainViewModel : ObservableObject
         if (_settings is { } current)
         {
             await profiles.ShowAsync(current);
+        }
+    }
+
+    /// <summary>Saves new station aging times (Settings › Map, F1.3 behavior 9); a refusal shows in the error line.</summary>
+    private async void SaveAging(StationAging aging)
+    {
+        if (_settings is not { } settings)
+        {
+            return;
+        }
+        var changed = settings with { Aging = aging };
+        try
+        {
+            await engine.SaveSettingsAsync(changed);
+            _settings = changed;
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            ShowError(ex);
         }
     }
 
@@ -373,6 +403,8 @@ public sealed partial class MainViewModel : ObservableObject
         if (Map is not null)
         {
             await Map.LoadAsync(cancellationToken);
+            Map.UseProvider(_appearance.Current.MapProvider);
+            _appearance.Changed += (_, settings) => Map.UseProvider(settings.MapProvider);
         }
         var packets = KeepAsync(WatchPacketsAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
