@@ -67,7 +67,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
 | F1.1 | APRS-IS connection: server pick, login (receive-only without a passcode), status, auto-reconnect | Passcode | App | G03 | scoped |
-| F1.2 | Automatic filter ([spec](features/F1.2-automatic-filter.md)): range filter around the map viewport, updated on pan and zoom, plus tracked and buddy stations. Until then, a profile without a filter gets 150 km around its location (`r/`), or `m/150` without one | Automatic Filters | App | G04 | spec'd |
+| F1.2 | Automatic filter: range filter around the map viewport, updated on pan and zoom, plus tracked and buddy stations. Until then, a profile without a filter gets 150 km around its location (`r/`), or `m/150` without one | Automatic Filters | App | G04 | scoped |
 | F1.3 | Station store: latest state per station, object and item ownership, kill handling, aging and expiry, duplicate drop | No Visible Stations | App | G05, G06 | scoped |
 | F1.4 | Map: OSM-style tiles, symbols with overlays, labels, selectable tile providers, transparency, map dimming, symbol size, wind barbs, auto-zoom-to-fit | Screen Elements, Transparency | App | — | scoped |
 | F1.5 | Tracks / trails for moving stations, with configurable history length | — (core feature list) | App | G08 | scoped |
@@ -78,7 +78,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.10 | Weather station display: current readings, units preference | Weather Stations | App | — | scoped |
 | F1.11 | Telemetry: latest values with PARM/UNIT/EQNS applied | Telemetry | App | G09 | scoped |
 | F1.12 | Area objects and signposts drawn as shapes | — | App | — | scoped |
-| F1.13 | My location ([spec](features/F1.13-my-location.md)): fixed position (set by map click or coordinates), used for distance and the default filter | Set Location | App | G08 | spec'd |
+| F1.13 | My location: fixed position (set by map click or coordinates), used for distance and the default filter | Set Location | App | G08 | scoped |
 | F1.14 | Gateway: hosts the engine, browser bundle, anonymous read-only viewing | — | App | — | scoped |
 | F1.15 | Quick toggles: APRS-IS, internet-access master switch (gates tiles too), GPS, beaconing, sound, tile fetching | (Enables menu) | App | — | scoped |
 | F1.16 | Extra map views following one station each (split view; desktop tear-off windows), auto-added to the server filter | Station Info, Automatic Filters | App | G04 | scoped |
