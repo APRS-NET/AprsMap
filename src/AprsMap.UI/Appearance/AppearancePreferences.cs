@@ -87,6 +87,15 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
         }
     }
 
+    /// <summary>Drops a save that is waiting, for Reset the app (F0.10), which deletes the stored value instead.</summary>
+    public void Discard()
+    {
+        lock (_gate)
+        {
+            _pending = null;
+        }
+    }
+
     /// <inheritdoc />
     public void Dispose() => _timer?.Dispose();
 

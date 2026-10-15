@@ -38,12 +38,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         TimeProvider time,
         Localizer? text = null,
         bool showPseudoLanguage = false,
-        ProfilesSectionViewModel? profiles = null
+        ProfilesSectionViewModel? profiles = null,
+        DataSectionViewModel? data = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
         _appearance = appearance;
         Profiles = profiles;
+        Data = data;
         _time = time;
         _text = text ?? Localizer.Instance;
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
@@ -58,12 +60,17 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>Raised when the page should close (Back or Escape).</summary>
     public event EventHandler? Closed;
 
-    /// <summary>The sections, in order: Appearance, About.</summary>
+    /// <summary>The sections, in order: Profiles, Appearance, Data, About.</summary>
     public ObservableCollection<SettingsSection> Sections { get; }
 
     /// <summary>The section showing.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAppearanceSection), nameof(IsAboutSection), nameof(IsProfilesSection))]
+    [NotifyPropertyChangedFor(
+        nameof(IsAppearanceSection),
+        nameof(IsAboutSection),
+        nameof(IsProfilesSection),
+        nameof(IsDataSection)
+    )]
     public partial SettingsSection? SelectedSection { get; set; }
 
     /// <summary>Whether Profiles is showing.</summary>
@@ -74,6 +81,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Whether Appearance is showing.</summary>
     public bool IsAppearanceSection => SelectedSection?.Id == "appearance";
+
+    /// <summary>Whether Data is showing.</summary>
+    public bool IsDataSection => SelectedSection?.Id == "data";
+
+    /// <summary>The Data section (F0.10), when the app offers Reset the app.</summary>
+    public DataSectionViewModel? Data { get; }
 
     /// <summary>Whether About is showing.</summary>
     public bool IsAboutSection => SelectedSection?.Id == "about";
@@ -169,6 +182,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             Sections.Add(new SettingsSection("profiles", _text["Settings.Profiles"]));
         }
         Sections.Add(new SettingsSection("appearance", _text["Settings.Appearance"]));
+        if (Data is not null)
+        {
+            Sections.Add(new SettingsSection("data", _text["Settings.Data"]));
+        }
         Sections.Add(new SettingsSection("about", _text["Settings.About"]));
         SelectedSection = Sections.FirstOrDefault(s => s.Id == selected) ?? (selected is null ? null : Sections[0]);
         foreach (var item in AppearanceItems)
@@ -177,6 +194,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
         About.Retranslate();
         Profiles?.Retranslate();
+        Data?.Retranslate();
     }
 }
 

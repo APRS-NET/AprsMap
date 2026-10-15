@@ -137,6 +137,29 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <inheritdoc />
+    public async Task ResetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        await _settingsLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _settingsStore.DeleteAsync(cancellationToken).ConfigureAwait(false);
+            lock (_gate)
+            {
+                _settings = AppSettings.Empty; // not the configured defaults: the point is to see first-run setup
+                _recent.Clear();
+                _packets = 0;
+            }
+            _stations.Clear();
+            LogReset();
+            SignalRestart();
+        }
+        finally
+        {
+            _settingsLock.Release();
+        }
+    }
+
+    /// <inheritdoc />
     public Task ReconnectAsync(CancellationToken cancellationToken = default)
     {
         LogReconnectRequested();
@@ -626,6 +649,9 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped a line that could not be parsed")]
     private partial void LogLineRejected(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Settings reset: every profile and setting was deleted")]
+    private partial void LogReset();
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Reconnect requested; reconnecting now")]
     private partial void LogReconnectRequested();

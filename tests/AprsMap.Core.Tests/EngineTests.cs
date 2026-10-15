@@ -527,6 +527,33 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task ResetDeletesEverythingAndWaitsForSetupWithoutTheConfiguredDefaults()
+    {
+        var sources = new FakeSourceFactory();
+        var session = sources.Enqueue("T2TEST");
+        var store = InMemorySettingsStore.WithProfile();
+        var engine = CreateEngine(new FakeTimeProvider(), sources, settings: store);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await session.Connected.Task.WaitAsync(Ct);
+        await session.Write(Position);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).PacketsReceived == 1);
+
+        await engine.ResetSettingsAsync(Ct);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.NotConfigured);
+
+        Assert.Null(store.Stored);
+        Assert.True(session.Disposed);
+        Assert.Empty((await engine.GetSettingsAsync(Ct)).Profiles);
+        var status = await engine.GetStatusAsync(Ct);
+        Assert.Equal(0, status.PacketsReceived);
+        Assert.Null(status.ProfileId);
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
     public async Task AFilterChangeIsSentWithoutANewLogin()
     {
         var sources = new FakeSourceFactory();

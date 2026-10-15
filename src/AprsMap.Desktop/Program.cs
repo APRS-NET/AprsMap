@@ -30,10 +30,16 @@ internal static class Program
         );
         builder.AddAprsMapEngine().AddAprsMapTelemetry("desktop");
         s_host = builder.Build();
-        s_host.Start();
-        // The viewer's appearance, read before the first window so it opens in the right theme and language.
         var folder = SettingsLocation.Folder(s_host.Services.GetRequiredService<IOptions<EngineOptions>>().Value);
         var preferences = new FilePreferenceStore(folder);
+        // --reset-all starts over (F0.10): every profile, setting and preference deleted before the engine reads them.
+        if (args.Contains("--reset-all", StringComparer.OrdinalIgnoreCase))
+        {
+            new FileSettingsStore(folder).DeleteAsync(CancellationToken.None).GetAwaiter().GetResult();
+            preferences.ClearAsync().GetAwaiter().GetResult();
+        }
+        s_host.Start();
+        // The viewer's appearance, read before the first window so it opens in the right theme and language.
         // --reset-layout starts with the default layout (F1.0 behavior 10); the next save replaces the stored one.
         var resetLayout = args.Contains("--reset-layout", StringComparer.OrdinalIgnoreCase);
         s_platform = new PlatformServices

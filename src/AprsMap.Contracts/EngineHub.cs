@@ -27,6 +27,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.ReconnectAsync"/>.</summary>
     public const string Reconnect = "Reconnect";
 
+    /// <summary>Hub method for <see cref="IEngineService.ResetSettingsAsync"/>.</summary>
+    public const string ResetSettings = "ResetSettings";
+
     /// <summary>Hub method for <see cref="IEngineService.GetGeocodingInfoAsync"/>.</summary>
     public const string GetGeocodingInfo = "GetGeocodingInfo";
 

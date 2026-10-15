@@ -42,6 +42,14 @@ public interface IEngineService
     /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
     Task ReconnectAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Starts over (docs/features/F0.10-start-over.md): deletes every stored profile and setting, disconnects, and
+    /// forgets the packets and stations received, so the next step is first-run setup. Defaults from configuration are
+    /// not applied again until the engine restarts.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not change settings (a gateway without operator sign-in).</exception>
+    Task ResetSettingsAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Whether <see cref="GeocodeAsync"/> is available to this caller, and which server it sends queries to.</summary>
     Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken cancellationToken = default);
 

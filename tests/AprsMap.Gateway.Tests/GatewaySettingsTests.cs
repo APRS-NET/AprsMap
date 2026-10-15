@@ -58,6 +58,18 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task BrowsersCannotResetTheStation()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var ex = await Assert.ThrowsAsync<EngineAccessException>(() => remote.ResetSettingsAsync(Ct));
+
+        Assert.Equal(EngineErrorCodes.SettingsReadOnly, ex.EngineError.Code);
+        Assert.NotEmpty((await remote.GetSettingsAsync(Ct)).Profiles);
+    }
+
+    [Fact]
     public async Task BrowsersCannotReconnectTheStation()
     {
         await using var remote = factory.CreateRemote();

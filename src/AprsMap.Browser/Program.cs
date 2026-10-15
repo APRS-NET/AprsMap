@@ -33,6 +33,8 @@ internal static class Program
             Appearance = await new AppearancePreferences(preferences, TimeProvider.System).LoadAsync(),
             SavedLayout = await new LayoutPreferences(preferences, TimeProvider.System).LoadAsync(),
             ManagedWindows = true,
+            SharedStation = true,
+            Restart = BrowserPreferenceStore.ReloadPage,
             SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
             CoarsePointer = BrowserPreferenceStore.IsCoarsePointer(),
 #if DEBUG

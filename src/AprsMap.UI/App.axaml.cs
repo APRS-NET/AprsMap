@@ -64,6 +64,22 @@ public sealed class App : Application, IDisposable
     }
 
     /// <summary>
+    /// Reset the app's part on this device (F0.10): the default appearance and layout, then this viewer's stored
+    /// preferences deleted, so nothing is written back.
+    /// </summary>
+    private async Task ClearLocalDataAsync(MainViewModel viewModel)
+    {
+        Appearance.Apply(new AppearanceSettings());
+        viewModel.Shell.Reset();
+        _preferences?.Discard();
+        _layout?.Discard();
+        if (_platform.Preferences is { } store)
+        {
+            await store.ClearAsync();
+        }
+    }
+
+    /// <summary>
     /// Restores the saved layout before anything shows, and saves it after each change and on exit (F1.0 behaviors 8–15).
     /// </summary>
     private void StartLayout(MainViewModel viewModel, MainWindowLayout? main)
@@ -127,6 +143,7 @@ public sealed class App : Application, IDisposable
         {
             // In the browser there are no OS windows: floating panels, drag previews and dock targets stay in the page.
             Dock.Settings.DockSettings.UseManagedWindows = _platform.ManagedWindows;
+            MainViewModel? created = null;
             var viewModel = new MainViewModel(
                 _engine,
                 TimeProvider.System,
@@ -134,7 +151,13 @@ public sealed class App : Application, IDisposable
                 appearance: Appearance,
                 showPseudoLanguage: _platform.ShowPseudoLanguage,
                 managedWindows: _platform.ManagedWindows
-            );
+            )
+            {
+                ClearLocalData = () => ClearLocalDataAsync(created!),
+                SharedStation = _platform.SharedStation,
+                Restart = _platform.Restart,
+            };
+            created = viewModel;
             Control view = new MainView { DataContext = viewModel };
             if (_platform.CoarsePointer)
             {

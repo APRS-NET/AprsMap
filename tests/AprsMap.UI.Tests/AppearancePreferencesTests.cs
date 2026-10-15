@@ -160,6 +160,25 @@ public sealed class AppearancePreferencesTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task ClearingAFileStoreDeletesPreferencesButNotTheEnginesSettings()
+    {
+        var store = new FilePreferenceStore(_folder);
+        await store.SaveAsync("appearance", "{}", Ct);
+        await store.SaveAsync("layout", "{}", Ct);
+        await store.SetAsideAsync("layout", Ct);
+        await File.WriteAllTextAsync(Path.Combine(_folder, "settings.json"), "{}", Ct);
+        await File.WriteAllTextAsync(Path.Combine(_folder, "notes.txt"), "mine", Ct);
+
+        await store.ClearAsync(Ct);
+
+        Assert.Equal(
+            ["notes.txt", "settings.json"],
+            Directory.GetFiles(_folder).Select(Path.GetFileName).Order(StringComparer.Ordinal)
+        );
+        await new FilePreferenceStore(Path.Combine(_folder, "missing")).ClearAsync(Ct); // no folder: no error
+    }
+
     private sealed class MemoryStore : IPreferenceStore
     {
         private readonly Dictionary<string, string> _values = [];
@@ -177,6 +196,8 @@ public sealed class AppearancePreferencesTests : IDisposable
         }
 
         public Task SetAsideAsync(string key, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task ClearAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class BrokenStore : IPreferenceStore
@@ -188,5 +209,7 @@ public sealed class AppearancePreferencesTests : IDisposable
             Task.FromException(new InvalidOperationException("storage refused"));
 
         public Task SetAsideAsync(string key, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task ClearAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

@@ -30,6 +30,15 @@ public sealed record PlatformServices
     /// </summary>
     public bool ManagedWindows { get; init; }
 
+    /// <summary>
+    /// Whether the station's settings are a gateway's, shared with every viewer (the browser), so Reset the app (F0.10)
+    /// deletes them only when asked.
+    /// </summary>
+    public bool SharedStation { get; init; }
+
+    /// <summary>Starts the app afresh after Reset the app, where the platform can (the browser reloads the page).</summary>
+    public Action? Restart { get; init; }
+
     /// <summary>Whether the platform asks for reduced motion (the browser's <c>prefers-reduced-motion</c>).</summary>
     public bool SystemReducedMotion { get; init; }
 

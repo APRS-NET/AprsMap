@@ -238,6 +238,60 @@
             </WrapPanel>
           </StackPanel>
 
+          <!-- Data (F0.10): Reset the app, with a confirmation that says what goes. -->
+          <StackPanel x:Name="DataSection" IsVisible="{Binding IsDataSection}" Spacing="12">
+            <TextBlock Text="{l:T Settings.Data.Reset.Title}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Data.Description}" TextWrapping="Wrap" />
+            <Button
+              x:Name="ResetAppButton"
+              Content="{l:T Settings.Data.Reset}"
+              Command="{Binding Data.StartCommand}"
+              IsVisible="{Binding !Data.IsConfirming}"
+            />
+            <Border
+              x:Name="ResetConfirmation"
+              IsVisible="{Binding Data.IsConfirming}"
+              BorderBrush="{DynamicResource Brush.Warn}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Control}"
+              Padding="12"
+            >
+              <StackPanel Spacing="10">
+                <TextBlock
+                  Text="{l:T Settings.Data.Confirm}"
+                  Foreground="{DynamicResource Brush.Warn}"
+                  FontWeight="SemiBold"
+                  TextWrapping="Wrap"
+                />
+                <CheckBox
+                  x:Name="IncludeStationBox"
+                  IsVisible="{Binding Data.ShowStationChoice}"
+                  IsChecked="{Binding Data.IncludeStation}"
+                >
+                  <TextBlock Text="{l:T Settings.Data.IncludeStation}" TextWrapping="Wrap" />
+                </CheckBox>
+                <WrapPanel ItemSpacing="8" LineSpacing="8">
+                  <Button
+                    x:Name="ConfirmResetButton"
+                    Content="{l:T Settings.Data.Confirm.Delete}"
+                    Command="{Binding Data.ConfirmCommand}"
+                  />
+                  <Button
+                    x:Name="CancelResetButton"
+                    Content="{l:T Settings.Data.Confirm.Cancel}"
+                    Command="{Binding Data.CancelCommand}"
+                  />
+                </WrapPanel>
+                <TextBlock
+                  Text="{Binding Data.ErrorText}"
+                  IsVisible="{Binding Data.ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  Foreground="{DynamicResource Brush.Warn}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+
           <!-- About -->
           <StackPanel x:Name="AboutSection" IsVisible="{Binding IsAboutSection}" Spacing="8">
             <TextBlock
