@@ -67,7 +67,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
-| F1.0 | Shell and docking ([spec](features/F1.0-shell-and-docking.md)): map in the centre with dockable, tabbed, floatable panels; layout saved per viewer; floating windows kept on a screen that exists | — (maintainer request) | App | — | building |
+| F1.0 | Shell and docking ([spec](features/F1.0-shell-and-docking.md)): map in the centre with dockable, tabbed, floatable panels; layout saved per viewer; floating windows kept on a screen that exists | — (maintainer request) | App | — | done |
 | F1.1 | APRS-IS connection ([spec](features/F1.1-aprs-is-connection.md)): server pick, login (receive-only without a passcode), status, auto-reconnect | Passcode | App | G03 | done |
 | F1.2 | Automatic filter ([spec](features/F1.2-automatic-filter.md)): range filter around the map viewport, updated on pan and zoom, plus tracked and buddy stations. Until then, a profile without a filter gets 150 km around its location (`r/`), or `m/150` without one | Automatic Filters | App | G04 | spec'd |
 | F1.3 | Station store ([spec](features/F1.3-station-store.md)): latest state per station, object and item ownership, kill handling, aging and expiry, duplicate drop | No Visible Stations | App | G05, G06 | spec'd |

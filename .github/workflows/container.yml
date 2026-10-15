@@ -1,8 +1,8 @@
 name: container
 
 # Builds the gateway image (including the browser app, which needs the wasm-tools workload) without pushing it, so a
-# broken Dockerfile shows up on the pull request rather than at release time. It takes several minutes, so it runs only
-# when something the image is built from changes: the app's sources, the Dockerfile, or the shared build files.
+# broken Dockerfile shows up on the pull request rather than at release time, then runs the browser smoke test on it.
+# It takes several minutes, so it runs only when something the image or the test is built from changes.
 
 on:
   push:
@@ -17,6 +17,8 @@ on:
       - "Directory.*"
       - ".editorconfig"
       - "BannedSymbols*.txt"
+      - "tools/ci/browser-smoke.py"
+      - "tools/ci/fake-aprsis.py"
       - ".github/workflows/container.yml"
   pull_request:
     paths:
@@ -29,6 +31,8 @@ on:
       - "Directory.*"
       - ".editorconfig"
       - "BannedSymbols*.txt"
+      - "tools/ci/browser-smoke.py"
+      - "tools/ci/fake-aprsis.py"
       - ".github/workflows/container.yml"
 
 permissions:
@@ -53,5 +57,28 @@ jobs:
           context: .
           platforms: linux/amd64
           push: false
+          load: true
+          tags: aprsmap:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      # The browser smoke test (F1.0 acceptance test 6): the image's trimmed web app in headless Firefox, against a fake
+      # APRS-IS server, so nothing reaches the real network. It checks the docking paths trimming could break.
+      - name: Browser smoke test
+        run: |
+          pip install --quiet websockets==15.0.1
+          python3 tools/ci/fake-aprsis.py 14580 &
+          docker run -d --name aprsmap --network host \
+            -e Engine__Callsign=N0TEST -e Engine__Server=127.0.0.1:14580 aprsmap:ci
+          for _ in $(seq 60); do curl -fs http://127.0.0.1:8080/healthz && break; sleep 1; done
+          mkdir -p smoke
+          python3 tools/ci/browser-smoke.py http://127.0.0.1:8080/ smoke
+      - name: Gateway log
+        if: failure()
+        run: docker logs aprsmap
+      - name: Smoke test screenshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: browser-smoke
+          path: smoke/
+          if-no-files-found: ignore
