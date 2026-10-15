@@ -22,9 +22,17 @@ public sealed class TileServiceTests : IDisposable
 
     public void Dispose()
     {
-        if (Directory.Exists(_folder))
+        // A background refresh can still be writing for a moment, and Windows won't delete an open file.
+        for (var attempt = 1; Directory.Exists(_folder); attempt++)
         {
-            Directory.Delete(_folder, recursive: true);
+            try
+            {
+                Directory.Delete(_folder, recursive: true);
+            }
+            catch (IOException) when (attempt < 20)
+            {
+                Thread.Sleep(50);
+            }
         }
     }
 
@@ -101,6 +109,15 @@ public sealed class TileServiceTests : IDisposable
 
         Assert.Equal(TileOutcome.StaleRevalidating, stale!.Outcome);
         await WaitUntil(() => _server.Requests.Count == 2); // the revalidation, in the background
+
+        // Done once the refreshed tile is served from the cache.
+        TileOutcome? outcome = null;
+        for (var i = 0; i < 400 && outcome != TileOutcome.Hit; i++)
+        {
+            outcome = (await tiles.GetTileAsync("osm", 4, 2, 2, cancellationToken: Ct))?.Outcome;
+            await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, Ct);
+        }
+        Assert.Equal(TileOutcome.Hit, outcome);
     }
 
     [Theory]
