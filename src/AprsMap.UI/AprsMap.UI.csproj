@@ -29,6 +29,12 @@
     <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
     <PackageReference Include="Dock.Model.Mvvm" />
     <PackageReference Include="Dock.Serializer.SystemTextJson" />
+    <!-- The map (F1.4): Mapsui's core for tiles, projection and navigation, drawn by our own Avalonia control
+         (Mapsui.Avalonia doesn't support Avalonia 12; docs/spikes/map-wasm.md). -->
+    <PackageReference Include="Avalonia.Skia" />
+    <PackageReference Include="Mapsui" />
+    <PackageReference Include="Mapsui.Rendering.Skia" />
+    <PackageReference Include="Mapsui.Tiling" />
     <PackageReference Include="MessageFormat" />
   </ItemGroup>
   <ItemGroup>

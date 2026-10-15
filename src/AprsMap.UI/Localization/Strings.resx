@@ -869,4 +869,16 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>None</value>
     <comment>Shown while dragging a panel where it can't go.</comment>
   </data>
+  <data name="Map.ZoomIn" xml:space="preserve">
+    <value>Zoom in (+)</value>
+    <comment>Map button; + is the key that does the same.</comment>
+  </data>
+  <data name="Map.ZoomOut" xml:space="preserve">
+    <value>Zoom out (−)</value>
+    <comment>Map button; − is the key that does the same.</comment>
+  </data>
+  <data name="Map.Home" xml:space="preserve">
+    <value>Go to my location (H)</value>
+    <comment>Map button: back to the active profile's location. H is the key that does the same.</comment>
+  </data>
 </root>

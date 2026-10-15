@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using AprsMap.Contracts;
 using AprsMap.UI.Appearance;
 using AprsMap.UI.Localization;
+using AprsMap.UI.Map;
 using AprsMap.UI.Platform;
 using AprsMap.UI.Settings;
 using AprsMap.UI.Shell;
@@ -105,6 +106,9 @@ public sealed partial class MainViewModel : ObservableObject
         ShowError(null);
         Show(await engine.GetSettingsAsync());
     }
+
+    /// <summary>The map's state (F1.4): tiles, Home and the remembered view; null shows the map's placeholder.</summary>
+    public MapViewModel? Map { get; init; }
 
     /// <summary>The main window's screen, for Gather windows; set on the desktop only (F1.0 behavior 14).</summary>
     public Func<ScreenArea?>? MainScreen { get; init; }
@@ -366,6 +370,10 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
+        if (Map is not null)
+        {
+            await Map.LoadAsync(cancellationToken);
+        }
         var packets = KeepAsync(WatchPacketsAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);
@@ -417,6 +425,11 @@ public sealed partial class MainViewModel : ObservableObject
             _showingSettings = false;
         }
 
+        if (Map is not null)
+        {
+            // Home is the active profile's location (behavior 3).
+            Map.Home = settings.GetActiveProfile() is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
+        }
         var notSetUp = settings.Profiles.Count == 0;
         ShowGatewaySetupNote = notSetUp && settings.ReadOnly;
         CanOpenSetup = notSetUp && !settings.ReadOnly && _setupDismissed && Setup is null;

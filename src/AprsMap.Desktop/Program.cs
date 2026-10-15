@@ -45,6 +45,7 @@ internal static class Program
         s_platform = new PlatformServices
         {
             Preferences = preferences,
+            Tiles = new DesktopTileSource(s_host.Services.GetRequiredService<AprsMap.Tiles.ITileService>()),
             SavedLayout = resetLayout
                 ? null
                 : new LayoutPreferences(preferences, TimeProvider.System).LoadAsync().GetAwaiter().GetResult(),

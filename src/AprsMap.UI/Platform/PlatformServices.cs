@@ -18,6 +18,9 @@ public sealed record PlatformServices
     /// </summary>
     public AppearanceSettings Appearance { get; init; } = new();
 
+    /// <summary>Where map tiles come from (F1.4); without one the map shows its ground colour only.</summary>
+    public ITileSource? Tiles { get; init; }
+
     /// <summary>
     /// The viewer's saved layout as stored (F1.0 behavior 8), read before the app starts so the main window opens where it
     /// was; null for the default layout (none saved, or <c>--reset-layout</c>).

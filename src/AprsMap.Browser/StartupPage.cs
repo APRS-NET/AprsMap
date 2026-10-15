@@ -11,6 +11,10 @@ internal static partial class StartupPage
     internal static partial void ShowError(string title, string detail, string retry);
 
     /// <summary>Tells the page the app is running, so it stops its "still loading" timer.</summary>
+    /// <summary>The screen's size in device pixels (width × height × the device scale squared).</summary>
+    [JSImport("screenPixels", "main.js")]
+    internal static partial double ScreenPixels();
+
     [JSImport("appStarted", "main.js")]
     internal static partial void AppStarted();
 }
