@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   conventional-title:
+    # Editing only the description changes nothing to check.
+    if: github.event.action != 'edited' || github.event.changes.title != null
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
