@@ -100,12 +100,14 @@ the list's version/commit in the package.
 
 ## G08: Geodesy and Maidenhead helpers
 
-**Need.** Maidenhead locator entry in the first-run wizard (F0.5), distance and bearing (F1.6, F1.7), track smoothing (F1.5), coverage circles (F4.2), filters in km (G04).
+**Need.** Maidenhead locator entry in the first-run wizard (F0.5), distance and bearing (F1.6, F1.7), track smoothing
+(F1.5), weather units (F1.10), coverage circles (F4.2), filters in km (G04).
 
 **Scope.** Great-circle distance and initial bearing (haversine, plus Vincenty or a documented accuracy limit),
 destination point from a bearing and distance, Maidenhead to and from lat/lon (4/6/8/10 characters), the ambiguity
-bounding box for an `AprsPosition`, compass point names, and unit conversions (knots, mph, km/h; feet, metres). APRS
-radio horizon `sqrt(2*h)` and the PHG range formula from APRS101 p.28.
+bounding box for an `AprsPosition`, compass point names, and unit conversions (speed: knots, mph, km/h, m/s; length:
+feet, metres, miles; temperature: °F, °C; rain: inches, mm; pressure: mbar/hPa, inHg, mmHg). APRS radio horizon
+`sqrt(2*h)` and the PHG range formula from APRS101 p.28.
 
 **Acceptance.** Known reference distances; antimeridian and pole cases; Maidenhead round-trip.
 
