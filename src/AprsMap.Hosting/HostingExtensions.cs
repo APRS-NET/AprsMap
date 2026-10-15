@@ -14,6 +14,12 @@ namespace AprsMap.Hosting;
 /// <summary>Wiring every AprsMap host shares, so the desktop app and the gateway behave the same.</summary>
 public static class HostingExtensions
 {
+    /// <summary>
+    /// APRS.NET's meters and activity sources, by wildcard: today <c>AprsNet.AprsIsTcpClient</c> (lines received,
+    /// connection attempts, login results, dropped lines, idle timeouts), and any APRS.NET package added later.
+    /// </summary>
+    public const string AprsNetTelemetry = "AprsNet.*";
+
     /// <summary>The environment variable that switches OpenTelemetry export on (same convention as APRS.NET).</summary>
     public const string OtlpEndpointVariable = "OTEL_EXPORTER_OTLP_ENDPOINT";
 
@@ -54,12 +60,14 @@ public static class HostingExtensions
             .ConfigureResource(r => r.AddService(serviceName, serviceVersion: Brand.Version))
             .WithMetrics(m =>
             {
-                m.AddMeter(EngineTelemetry.Name).AddRuntimeInstrumentation().AddHttpClientInstrumentation();
+                m.AddMeter(EngineTelemetry.Name, AprsNetTelemetry)
+                    .AddRuntimeInstrumentation()
+                    .AddHttpClientInstrumentation();
                 metrics?.Invoke(m);
             })
             .WithTracing(t =>
             {
-                t.AddSource(EngineTelemetry.Name).AddHttpClientInstrumentation();
+                t.AddSource(EngineTelemetry.Name, AprsNetTelemetry).AddHttpClientInstrumentation();
                 tracing?.Invoke(t);
             })
             .WithLogging(
