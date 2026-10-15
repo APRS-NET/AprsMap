@@ -153,7 +153,7 @@ public sealed partial class NominatimGeocoder : IGeocoder
         ArgumentNullException.ThrowIfNull(query);
         if (_endpoint is null)
         {
-            throw new InvalidOperationException(DisabledMessage);
+            throw Fail(EngineErrorCodes.GeocodingDisabled, DisabledMessage);
         }
 
         var text = string.Join(' ', query.Split(Whitespace, StringSplitOptions.RemoveEmptyEntries));
@@ -174,7 +174,7 @@ public sealed partial class NominatimGeocoder : IGeocoder
                 {
                     if (waiter is not null && !ReferenceEquals(_waiter, waiter))
                     {
-                        throw new InvalidOperationException(SupersededMessage);
+                        throw Fail(EngineErrorCodes.GeocodingSuperseded, SupersededMessage);
                     }
                     if (_cache.TryGetValue(key, out var cached))
                     {
@@ -184,7 +184,7 @@ public sealed partial class NominatimGeocoder : IGeocoder
                     var now = _time.GetUtcNow();
                     if (now < _blockedUntil)
                     {
-                        throw new InvalidOperationException(BlockedMessage);
+                        throw Fail(EngineErrorCodes.GeocodingRefused, BlockedMessage);
                     }
 
                     wait = _nextAllowed - now;
@@ -208,7 +208,7 @@ public sealed partial class NominatimGeocoder : IGeocoder
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
-                    throw new InvalidOperationException(SupersededMessage);
+                    throw Fail(EngineErrorCodes.GeocodingSuperseded, SupersededMessage);
                 }
             }
         }
@@ -258,12 +258,12 @@ public sealed partial class NominatimGeocoder : IGeocoder
         catch (HttpRequestException ex)
         {
             LogUnreachable(ex);
-            throw new InvalidOperationException(UnreachableMessage, ex);
+            throw Fail(EngineErrorCodes.GeocodingUnreachable, UnreachableMessage, ex);
         }
         catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
             LogUnreachable(ex); // the client's timeout
-            throw new InvalidOperationException(UnreachableMessage, ex);
+            throw Fail(EngineErrorCodes.GeocodingUnreachable, UnreachableMessage, ex);
         }
 
         using (response)
@@ -275,13 +275,22 @@ public sealed partial class NominatimGeocoder : IGeocoder
                     _blockedUntil = _time.GetUtcNow() + BackOff;
                 }
                 LogRefused((int)response.StatusCode, BackOff);
-                throw new InvalidOperationException(BlockedMessage);
+                throw Fail(EngineErrorCodes.GeocodingRefused, BlockedMessage);
             }
             if (!response.IsSuccessStatusCode)
             {
                 LogHttpError((int)response.StatusCode);
-                throw new InvalidOperationException(
-                    $"The address lookup server returned an error ({(int)response.StatusCode}). Try again later, or use another way."
+                throw new EngineOperationException(
+                    new EngineError(
+                        EngineErrorCodes.GeocodingHttpError,
+                        $"The address lookup server returned an error ({(int)response.StatusCode}). Try again later, or use another way.",
+                        new Dictionary<string, string>
+                        {
+                            [EngineErrorArgs.Status] = ((int)response.StatusCode).ToString(
+                                System.Globalization.CultureInfo.InvariantCulture
+                            ),
+                        }
+                    )
                 );
             }
 
@@ -295,7 +304,7 @@ public sealed partial class NominatimGeocoder : IGeocoder
             catch (JsonException ex)
             {
                 LogUnreadable(ex);
-                throw new InvalidOperationException(UnreadableMessage, ex);
+                throw Fail(EngineErrorCodes.GeocodingUnreadable, UnreadableMessage, ex);
             }
 
             GeocodeResult[] results =
@@ -317,6 +326,9 @@ public sealed partial class NominatimGeocoder : IGeocoder
             return results;
         }
     }
+
+    internal static EngineOperationException Fail(string code, string message, Exception? inner = null) =>
+        new(new EngineError(code, message), inner);
 
     // Queries and results are never logged above Debug (behavior 22); these messages carry neither.
     [LoggerMessage(Level = LogLevel.Debug, Message = "Address lookup returned {Count} results")]
@@ -357,7 +369,7 @@ internal sealed class NoGeocoder : IGeocoder
         CancellationToken cancellationToken = default
     ) =>
         Task.FromException<IReadOnlyList<GeocodeResult>>(
-            new InvalidOperationException(NominatimGeocoder.DisabledMessage)
+            NominatimGeocoder.Fail(EngineErrorCodes.GeocodingDisabled, NominatimGeocoder.DisabledMessage)
         );
 }
 

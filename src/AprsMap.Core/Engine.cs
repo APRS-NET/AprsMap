@@ -129,9 +129,9 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             return Task.FromResult(AprsIsPasscode.Compute(callsign.Trim()));
         }
-        catch (ArgumentException ex)
+        catch (AprsValidationException ex)
         {
-            return Task.FromException<int>(ex);
+            return Task.FromException<int>(new EngineArgumentException(AprsErrors.From(ex), ex));
         }
     }
 

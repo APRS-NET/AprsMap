@@ -344,9 +344,10 @@ public class EngineTests
         var engine = CreateEngine(new FakeTimeProvider(), settings: store);
         var settings = await engine.GetSettingsAsync(Ct);
 
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        var ex = await Assert.ThrowsAsync<EngineArgumentException>(() =>
             engine.SaveSettingsAsync(settings with { ActiveProfileId = "nobody" }, Ct)
         );
+        Assert.Equal(EngineErrorCodes.ActiveProfileMissing, ex.EngineError.Code);
 
         Assert.Equal(0, store.Saves);
         Assert.Same(settings, await engine.GetSettingsAsync(Ct));
@@ -447,14 +448,14 @@ public class EngineTests
 
         Assert.Equal(expected, await engine.ComputePasscodeAsync(" n0call-9 ", Ct));
         Assert.Equal(expected, await engine.ComputePasscodeAsync("N0CALL", Ct));
-        var empty = await Assert.ThrowsAsync<AprsNet.Packets.AprsValidationException>(() =>
-            engine.ComputePasscodeAsync(" ", Ct)
-        );
-        var spaced = await Assert.ThrowsAsync<AprsNet.Packets.AprsValidationException>(() =>
+        var empty = await Assert.ThrowsAsync<EngineArgumentException>(() => engine.ComputePasscodeAsync(" ", Ct));
+        var spaced = await Assert.ThrowsAsync<EngineArgumentException>(() =>
             engine.ComputePasscodeAsync("N0 CALL", Ct)
         );
-        Assert.Equal(AprsNet.Packets.AprsValidationErrorCode.CallsignInvalidLength, empty.Code);
-        Assert.Equal(AprsNet.Packets.AprsValidationErrorCode.CallsignInvalidCharacter, spaced.Code);
+        Assert.Equal("aprs.callsign-invalid-length", empty.EngineError.Code);
+        Assert.Equal("aprs.callsign-invalid-character", spaced.EngineError.Code);
+        Assert.Equal("2", spaced.EngineError.Arg(EngineErrorArgs.Index));
+        Assert.IsType<AprsNet.Packets.AprsValidationException>(spaced.InnerException);
         await Assert.ThrowsAsync<ArgumentNullException>(() => engine.ComputePasscodeAsync(null!, Ct));
     }
 
@@ -464,7 +465,8 @@ public class EngineTests
         var engine = CreateEngine(new FakeTimeProvider());
 
         Assert.Equal(GeocodingInfo.Disabled, await engine.GetGeocodingInfoAsync(Ct));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => engine.GeocodeAsync("Boulder", null, Ct));
+        var ex = await Assert.ThrowsAsync<EngineOperationException>(() => engine.GeocodeAsync("Boulder", null, Ct));
+        Assert.Equal(EngineErrorCodes.GeocodingDisabled, ex.EngineError.Code);
     }
 
     [Fact]

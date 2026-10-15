@@ -32,16 +32,11 @@ internal sealed class AprsIsLineSourceFactory(ILoggerFactory loggerFactory, Time
     /// <summary>
     /// The APRS.NET client options for <paramref name="profile"/>, validated by APRS.NET (which owns the login rules).
     /// </summary>
-    /// <exception cref="InvalidOperationException">The server, callsign, passcode or filter is not usable.</exception>
+    /// <exception cref="AprsNet.Packets.AprsValidationException">The server, callsign or filter is not usable; it has a code.</exception>
+    /// <exception cref="ArgumentException">Another setting is not usable.</exception>
     internal static AprsIsClientOptions ClientOptions(StationProfile profile, TimeProvider timeProvider)
     {
-        if (!AprsIsEndpoint.TryParse(profile.Server, out var endpoint))
-        {
-            throw new InvalidOperationException(
-                $"'{profile.Server}' is not a valid APRS-IS server (host or host:port)."
-            );
-        }
-
+        var endpoint = AprsIsEndpoint.Parse(profile.Server);
         var clientOptions = new AprsIsClientOptions
         {
             Callsign = profile.Callsign,
@@ -52,14 +47,7 @@ internal sealed class AprsIsLineSourceFactory(ILoggerFactory loggerFactory, Time
             SoftwareVersion = SoftwareToken(Brand.Version.Split('+')[0]),
             TimeProvider = timeProvider,
         };
-        try
-        {
-            clientOptions.Validate();
-        }
-        catch (ArgumentException ex)
-        {
-            throw new InvalidOperationException(ex.Message, ex);
-        }
+        clientOptions.Validate();
         return clientOptions;
     }
 

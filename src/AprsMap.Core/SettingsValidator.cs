@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: MIT
 using AprsMap.Contracts;
+using AprsNet.Packets;
 
 namespace AprsMap.Core;
 
 /// <summary>Checks settings before the engine stores or uses them.</summary>
 internal static class SettingsValidator
 {
-    /// <summary>Throws <see cref="ArgumentException"/> with a user-readable reason when <paramref name="settings"/> is unusable.</summary>
+    /// <summary>
+    /// Throws <see cref="EngineArgumentException"/> when <paramref name="settings"/> is unusable, with a code the UI
+    /// translates (docs/features/F0.9-localization.md) and an English message.
+    /// </summary>
     public static void Validate(AppSettings settings, TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(settings);
         if (settings.Profiles is null || settings.Units is null)
         {
-            throw new ArgumentException("Settings are incomplete.", nameof(settings));
+            throw Fail(EngineErrorCodes.SettingsIncomplete, "Settings are incomplete.");
         }
 
         var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -21,31 +25,34 @@ internal static class SettingsValidator
         {
             if (string.IsNullOrWhiteSpace(profile.Id) || !ids.Add(profile.Id))
             {
-                throw new ArgumentException("Every profile needs its own id.", nameof(settings));
+                throw Fail(EngineErrorCodes.ProfileIdDuplicate, "Every profile needs its own id.");
             }
             if (string.IsNullOrWhiteSpace(profile.Name))
             {
-                throw new ArgumentException("Every profile needs a name.", nameof(settings));
+                throw Fail(EngineErrorCodes.ProfileNameMissing, "Every profile needs a name.");
             }
             if (!names.Add(profile.Name.Trim()))
             {
-                throw new ArgumentException(
+                throw Fail(
+                    EngineErrorCodes.ProfileNameDuplicate,
                     $"There is more than one profile named '{profile.Name}'.",
-                    nameof(settings)
+                    profile.Name
                 );
             }
             if (profile.Latitude is < -90 or > 90 || profile.Longitude is < -180 or > 180)
             {
-                throw new ArgumentException(
+                throw Fail(
+                    EngineErrorCodes.ProfilePositionOffGlobe,
                     $"Profile '{profile.Name}': the location is off the globe.",
-                    nameof(settings)
+                    profile.Name
                 );
             }
             if (profile.Latitude.HasValue != profile.Longitude.HasValue)
             {
-                throw new ArgumentException(
+                throw Fail(
+                    EngineErrorCodes.ProfilePositionIncomplete,
                     $"Profile '{profile.Name}': a location needs both latitude and longitude.",
-                    nameof(settings)
+                    profile.Name
                 );
             }
 
@@ -53,16 +60,36 @@ internal static class SettingsValidator
             {
                 AprsIsLineSourceFactory.ClientOptions(profile, time);
             }
-            catch (InvalidOperationException ex)
+            catch (AprsValidationException ex)
             {
-                throw new ArgumentException($"Profile '{profile.Name}': {ex.Message}", nameof(settings), ex);
+                throw new EngineArgumentException(AprsErrors.From(ex, profile.Name), ex);
+            }
+            catch (ArgumentException ex)
+            {
+                // A check APRS.NET doesn't code (yet): still refused, with its English text.
+                throw Fail(EngineErrorCodes.Invalid, $"Profile '{profile.Name}': {ex.Message}", profile.Name, ex);
             }
         }
 
         var active = settings.ActiveProfileId;
         if (settings.Profiles.Count == 0 ? active is not null : !ids.Contains(active ?? string.Empty))
         {
-            throw new ArgumentException("The active profile must be one of the profiles.", nameof(settings));
+            throw Fail(EngineErrorCodes.ActiveProfileMissing, "The active profile must be one of the profiles.");
         }
     }
+
+    private static EngineArgumentException Fail(
+        string code,
+        string message,
+        string? profile = null,
+        Exception? inner = null
+    ) =>
+        new(
+            new EngineError(
+                code,
+                message,
+                profile is null ? null : new Dictionary<string, string> { [EngineErrorArgs.Profile] = profile }
+            ),
+            inner
+        );
 }

@@ -1,0 +1,173 @@
+// SPDX-License-Identifier: MIT
+namespace AprsMap.Contracts;
+
+/// <summary>
+/// Something the engine reports to a user, as a code the UI translates rather than a sentence
+/// (docs/features/F0.9-localization.md, behaviors 11–15). On the web the engine runs on the gateway and can't know
+/// each viewer's language.
+/// </summary>
+/// <param name="Code">Stable identifier, one of <see cref="EngineErrorCodes"/> or <c>aprs.*</c> for APRS.NET's codes.</param>
+/// <param name="Message">English, for logs and for a UI that doesn't know <paramref name="Code"/>.</param>
+/// <param name="Args">Values for the translated text's placeholders, keyed by name (<see cref="EngineErrorArgs"/>).</param>
+public sealed record EngineError(string Code, string Message, IReadOnlyDictionary<string, string>? Args = null)
+{
+    /// <summary>The value of <paramref name="name"/>, or null when it isn't set.</summary>
+    public string? Arg(string name) => Args is not null && Args.TryGetValue(name, out var value) ? value : null;
+}
+
+/// <summary>The engine's error codes. Codes are never renamed; a UI shows the English message for codes it doesn't know.</summary>
+public static class EngineErrorCodes
+{
+    /// <summary>Prefix of the codes mapped from APRS.NET's <c>AprsValidationErrorCode</c>, in kebab case.</summary>
+    public const string AprsPrefix = "aprs.";
+
+    /// <summary>Settings were sent without profiles or units.</summary>
+    public const string SettingsIncomplete = "settings.incomplete";
+
+    /// <summary>Two profiles share an id, or one has none.</summary>
+    public const string ProfileIdDuplicate = "settings.profile.id-duplicate";
+
+    /// <summary>A profile has no name.</summary>
+    public const string ProfileNameMissing = "settings.profile.name-missing";
+
+    /// <summary>Two profiles have the same name (<see cref="EngineErrorArgs.Profile"/>).</summary>
+    public const string ProfileNameDuplicate = "settings.profile.name-duplicate";
+
+    /// <summary>A profile's location is off the globe.</summary>
+    public const string ProfilePositionOffGlobe = "settings.profile.position-off-globe";
+
+    /// <summary>A profile has a latitude without a longitude, or the other way round.</summary>
+    public const string ProfilePositionIncomplete = "settings.profile.position-incomplete";
+
+    /// <summary>The active profile isn't one of the profiles.</summary>
+    public const string ActiveProfileMissing = "settings.active-profile-missing";
+
+    /// <summary>APRS.NET rejected a value for a reason this version doesn't map (<see cref="EngineErrorArgs.Value"/>).</summary>
+    public const string Invalid = "settings.invalid";
+
+    /// <summary>A gateway's settings can't be changed from the browser.</summary>
+    public const string SettingsReadOnly = "gateway.settings-read-only";
+
+    /// <summary>Only the gateway's operator may do this (address lookup, the passcode calculator).</summary>
+    public const string OperatorOnly = "gateway.operator-only";
+
+    /// <summary>Address lookup is turned off.</summary>
+    public const string GeocodingDisabled = "geocoding.disabled";
+
+    /// <summary>The lookup server refused requests (HTTP 429 or 403); lookups pause for a minute.</summary>
+    public const string GeocodingRefused = "geocoding.refused";
+
+    /// <summary>A newer lookup replaced this one while it waited.</summary>
+    public const string GeocodingSuperseded = "geocoding.superseded";
+
+    /// <summary>The lookup server couldn't be reached.</summary>
+    public const string GeocodingUnreachable = "geocoding.unreachable";
+
+    /// <summary>The lookup server answered with an HTTP error (<see cref="EngineErrorArgs.Status"/>).</summary>
+    public const string GeocodingHttpError = "geocoding.http-error";
+
+    /// <summary>The lookup server's reply couldn't be read.</summary>
+    public const string GeocodingUnreadable = "geocoding.unreadable";
+
+    /// <summary>The kind of failure a code stands for, which decides the exception type that carries it.</summary>
+    public static EngineErrorKind KindOf(string code)
+    {
+        ArgumentNullException.ThrowIfNull(code);
+        return code.StartsWith("gateway.", StringComparison.Ordinal) ? EngineErrorKind.Access
+            : code.StartsWith("geocoding.", StringComparison.Ordinal) ? EngineErrorKind.Operation
+            : EngineErrorKind.Argument;
+    }
+}
+
+/// <summary>Names of <see cref="EngineError.Args"/> entries.</summary>
+public static class EngineErrorArgs
+{
+    /// <summary>The name of the profile the error is about.</summary>
+    public const string Profile = "profile";
+
+    /// <summary>The rejected value as typed (a callsign, server or filter).</summary>
+    public const string Value = "value";
+
+    /// <summary>The zero-based position of the offending character in <see cref="Value"/>.</summary>
+    public const string Index = "index";
+
+    /// <summary>The offending character.</summary>
+    public const string Character = "character";
+
+    /// <summary>Which field was rejected, as APRS.NET names it (for example <c>Callsign</c>).</summary>
+    public const string Field = "field";
+
+    /// <summary>An HTTP status code.</summary>
+    public const string Status = "status";
+}
+
+/// <summary>Which exception type carries an <see cref="EngineError"/>.</summary>
+public enum EngineErrorKind
+{
+    /// <summary>Invalid input: <see cref="EngineArgumentException"/>, an <see cref="ArgumentException"/>.</summary>
+    Argument,
+
+    /// <summary>A failed operation: <see cref="EngineOperationException"/>, an <see cref="InvalidOperationException"/>.</summary>
+    Operation,
+
+    /// <summary>Not allowed for this caller: <see cref="EngineAccessException"/>, an <see cref="UnauthorizedAccessException"/>.</summary>
+    Access,
+}
+
+/// <summary>An exception that carries an <see cref="EngineError"/>.</summary>
+public interface IHasEngineError
+{
+    /// <summary>What to tell the user.</summary>
+    EngineError EngineError { get; }
+}
+
+/// <summary>Invalid input, with the <see cref="EngineError"/> to show.</summary>
+public sealed class EngineArgumentException(EngineError error, Exception? innerException = null)
+    : ArgumentException(error?.Message, innerException),
+        IHasEngineError
+{
+    /// <inheritdoc />
+    public EngineError EngineError { get; } = error ?? throw new ArgumentNullException(nameof(error));
+}
+
+/// <summary>A failed operation, with the <see cref="EngineError"/> to show.</summary>
+public sealed class EngineOperationException(EngineError error, Exception? innerException = null)
+    : InvalidOperationException(error?.Message, innerException),
+        IHasEngineError
+{
+    /// <inheritdoc />
+    public EngineError EngineError { get; } = error ?? throw new ArgumentNullException(nameof(error));
+}
+
+/// <summary>Not allowed for this caller, with the <see cref="EngineError"/> to show.</summary>
+public sealed class EngineAccessException(EngineError error, Exception? innerException = null)
+    : UnauthorizedAccessException(error?.Message, innerException),
+        IHasEngineError
+{
+    /// <inheritdoc />
+    public EngineError EngineError { get; } = error ?? throw new ArgumentNullException(nameof(error));
+}
+
+/// <summary>Creates the exception for an <see cref="EngineError"/>, the same way in-process and over the hub.</summary>
+public static class EngineErrors
+{
+    /// <summary>The exception type <see cref="EngineErrorCodes.KindOf"/> picks for <paramref name="error"/>.</summary>
+    public static Exception ToException(EngineError error, Exception? innerException = null)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        return EngineErrorCodes.KindOf(error.Code) switch
+        {
+            EngineErrorKind.Access => new EngineAccessException(error, innerException),
+            EngineErrorKind.Operation => new EngineOperationException(error, innerException),
+            _ => new EngineArgumentException(error, innerException),
+        };
+    }
+
+    /// <summary>Shorthand for <see cref="ToException"/> with a new error.</summary>
+    public static Exception Create(
+        string code,
+        string message,
+        IReadOnlyDictionary<string, string>? args = null,
+        Exception? innerException = null
+    ) => ToException(new EngineError(code, message, args), innerException);
+}

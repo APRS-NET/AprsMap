@@ -133,52 +133,53 @@ public sealed class SettingsTests : IDisposable
         SettingsValidator.Validate(AppSettings.Empty, TimeProvider.System);
     }
 
-    public static TheoryData<string, AppSettings> InvalidSettings()
+    public static TheoryData<string, string?, AppSettings> InvalidSettings()
     {
         var good = TwoProfiles();
         var home = good.Profiles[0];
+        AppSettings HomeOnly(StationProfile profile) => good with { Profiles = [profile], ActiveProfileId = "home" };
         return new()
         {
-            { "own id", good with { Profiles = [home, home with { Name = "Other" }] } },
-            { "needs a name", good with { Profiles = [home with { Name = " " }], ActiveProfileId = "home" } },
             {
-                "more than one profile named",
+                EngineErrorCodes.ProfileIdDuplicate,
+                null,
+                good with
+                {
+                    Profiles = [home, home with { Name = "Other" }],
+                }
+            },
+            { EngineErrorCodes.ProfileNameMissing, null, HomeOnly(home with { Name = " " }) },
+            {
+                EngineErrorCodes.ProfileNameDuplicate,
+                "n0call",
                 good with
                 {
                     Profiles = [home, good.Profiles[1] with { Name = "n0call" }],
                 }
             },
-            { "off the globe", good with { Profiles = [home with { Latitude = 91 }], ActiveProfileId = "home" } },
-            {
-                "both latitude and longitude",
-                good with
-                {
-                    Profiles = [home with { Longitude = null }],
-                    ActiveProfileId = "home",
-                }
-            },
-            {
-                "not a valid APRS-IS server",
-                good with
-                {
-                    Profiles = [home with { Server = "bad host:x" }],
-                    ActiveProfileId = "home",
-                }
-            },
-            { "Profile 'N0CALL'", good with { Profiles = [home with { Callsign = "" }], ActiveProfileId = "home" } },
-            { "active profile", good with { ActiveProfileId = "nobody" } },
-            { "active profile", AppSettings.Empty with { ActiveProfileId = "home" } },
-            { "incomplete", good with { Units = null! } },
+            { EngineErrorCodes.ProfilePositionOffGlobe, "N0CALL", HomeOnly(home with { Latitude = 91 }) },
+            { EngineErrorCodes.ProfilePositionIncomplete, "N0CALL", HomeOnly(home with { Longitude = null }) },
+            { "aprs.server-port-invalid", "N0CALL", HomeOnly(home with { Server = "host:x" }) },
+            { "aprs.server-host-invalid", "N0CALL", HomeOnly(home with { Server = "bad host" }) },
+            { "aprs.callsign-invalid-length", "N0CALL", HomeOnly(home with { Callsign = "" }) },
+            { "aprs.filter-control-character", "N0CALL", HomeOnly(home with { Filter = "r/1/2/3\n#" }) },
+            { EngineErrorCodes.ActiveProfileMissing, null, good with { ActiveProfileId = "nobody" } },
+            { EngineErrorCodes.ActiveProfileMissing, null, AppSettings.Empty with { ActiveProfileId = "home" } },
+            { EngineErrorCodes.SettingsIncomplete, null, good with { Units = null! } },
         };
     }
 
     [Theory]
     [MemberData(nameof(InvalidSettings))]
-    public void InvalidSettingsAreRejectedWithAReason(string reason, AppSettings settings)
+    public void InvalidSettingsAreRejectedWithACode(string code, string? profile, AppSettings settings)
     {
-        var ex = Assert.Throws<ArgumentException>(() => SettingsValidator.Validate(settings, TimeProvider.System));
+        var ex = Assert.Throws<EngineArgumentException>(() =>
+            SettingsValidator.Validate(settings, TimeProvider.System)
+        );
 
-        Assert.Contains(reason, ex.Message, StringComparison.Ordinal);
+        Assert.Equal(code, ex.EngineError.Code);
+        Assert.Equal(profile, ex.EngineError.Arg(EngineErrorArgs.Profile));
+        Assert.False(string.IsNullOrWhiteSpace(ex.Message));
     }
 
     [Fact]

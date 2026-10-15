@@ -18,5 +18,6 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(StationBatch))]
 [JsonSerializable(typeof(AppSettings))]
 [JsonSerializable(typeof(GeocodingInfo))]
+[JsonSerializable(typeof(EngineError))]
 [JsonSerializable(typeof(IReadOnlyList<GeocodeResult>))]
 public sealed partial class EngineJsonContext : JsonSerializerContext;
