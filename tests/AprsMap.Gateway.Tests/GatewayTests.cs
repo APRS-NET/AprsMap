@@ -49,8 +49,11 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         await using var watch = remote.WatchPacketsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
-        Assert.True(await watch.MoveNextAsync());
-        Assert.Equal("N0CALL-9", watch.Current.Source);
+        // The fixture's engine is shared, so the replay can start with other tests' packets.
+        do
+        {
+            Assert.True(await watch.MoveNextAsync());
+        } while (watch.Current.Source != "N0CALL-9");
 
         engine.Accept("N0LIVE>APRS:>Live status");
         PacketView live;

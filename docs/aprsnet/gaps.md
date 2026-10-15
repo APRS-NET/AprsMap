@@ -6,15 +6,16 @@ API sketches are proposals that follow APRS.NET's existing conventions: parsing 
 are Latin-1, `TimeProvider` for time, async-first I/O, every public member tracked in `PublicAPI.Unshipped.txt`, and
 `AprsNet.Packets` stays I/O-free with BCL-only dependencies.
 
-Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.1.0-alpha.17` (2026-10-15, with #44); what has shipped since the
-baseline is noted under **Delivered** in each section.
+Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.2.0-alpha.1` (2026-10-15); what has shipped since the baseline is noted
+under **Delivered** in each section. `0.2.0` also adds `AprsNet.Ax25`, `AprsNet.Kiss`, `AprsNet.Filters`,
+`AprsNet.Gateway` and `AprsNet.Extensions.DependencyInjection`, which aren't on NuGet yet (2026-10-15).
 
 | ID | Title | Package | AprsMap phase | Issue |
 | --- | --- | --- | --- | --- |
 | G03 | Resilient APRS-IS connection (reconnect, server rotation) (delivered) | AprsIsTcpClient | 1 | — |
 | G04 | Typed APRS-IS server filter builder | AprsIsTcpClient | 1 | — |
 | G05 | Duplicate packet detection | Packets | 1 | — |
-| G06 | Third-party (`}`) payload decoding | Packets | 1 | — |
+| G06 | Third-party (`}`) payload decoding (delivered) | Packets | 1 | — |
 | G07 | Device identification from the aprs-deviceid list | new: AprsNet.DeviceId | 1 | — |
 | G08 | Geodesy and Maidenhead helpers (Maidenhead part delivered) | Packets (or new AprsNet.Geo) | 1 | — |
 | G09 | Telemetry definitions applied to reports | Packets | 1 | — |
@@ -24,14 +25,14 @@ baseline is noted under **Delivered** in each section.
 | G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | — |
 | G11 | Beacon scheduling algorithms | new: AprsNet.Beaconing | 2 | — |
 | G19 | Query and response handling | Packets + Messaging | 2 | — |
-| G12 | AX.25 UI frame codec | new: AprsNet.Ax25 | 3 | — |
-| G13 | KISS framing and transports (serial, TCP) | new: AprsNet.Kiss | 3 | — |
+| G12 | AX.25 UI frame codec (in source, not on NuGet) | new: AprsNet.Ax25 | 3 | — |
+| G13 | KISS framing and transports (serial, TCP) (in source, not on NuGet) | new: AprsNet.Kiss | 3 | — |
 | G14 | Text-mode and Kenwood TNC support | new: AprsNet.Tnc | 3 | — |
 | G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | — |
 | G16 | IGate engine | new: AprsNet.IGate | 3 | — |
 | G17 | NMEA sentence parsing and `$` packets | Packets | 3 | — |
 | G18 | Raw weather station data and storm objects | Packets | 4 | — |
-| G21 | APRS-IS server side: client logins, passcode check, filter evaluation | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |
+| G21 | APRS-IS server side: client logins, passcode check, filter evaluation (in source, not on NuGet) | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |
 | G22 | AGWPE TCP transport | new: AprsNet.Agw | 3 | — |
 | G24 | Station track anomaly analysis | Packets (or new AprsNet.Analysis) | 1 | — |
 | G25 | Frequency specification parsing and validation | Packets | 3 | — |
@@ -92,6 +93,10 @@ test.
 plans an inner `AprsPacket` parsed once without recursion.
 
 **Acceptance.** APRS101 ch. 17 vectors; nesting is limited to one level; the corpus round-trips.
+
+**Delivered** (`0.2.0-alpha.1`): `ThirdPartyPayload.Packet`, the carried packet parsed as a line of its own (header
+with the gateway's path, and information field), with nesting limited by `AprsPacket.MaxThirdPartyDepth` and the
+issue codes `InvalidThirdParty` and `ThirdPartyTooDeep`; `AprsEncoder.ThirdParty` builds one.
 
 ## G07: Device identification from the aprs-deviceid list
 
@@ -240,6 +245,8 @@ by rendering the TNC2 line").
 
 **Acceptance.** Round-trip frame ↔ TNC2 ↔ frame; H bits map to `*`; fuzzing does not throw.
 
+**Delivered in source** (`0.2.0-alpha.1`, package `AprsNet.Ax25` not on NuGet yet): decode and encode AX.25 UI frames.
+
 ## G13: KISS framing and transports (serial, TCP)
 
 **Need.** F3.1.
@@ -251,6 +258,9 @@ transport.
 
 **Acceptance.** Escaping edge cases; split frames across reads; loopback transport tests; Direwolf interop smoke test
 (manual).
+
+**Delivered in source** (`0.2.0-alpha.1`, package `AprsNet.Kiss` not on NuGet yet): KISS framing, KISS over any
+stream (serial and Bluetooth), and a TCP TNC connection that reconnects.
 
 ## G14: Text-mode and Kenwood TNC support
 
@@ -320,6 +330,10 @@ rules), and send server keepalive comments.
 
 **Acceptance.** A filter test per part type against corpus packets; interop: `AprsIsClient` connects to the listener and
 receives a filtered stream.
+
+**Delivered in source** (`0.2.0-alpha.1`, not on NuGet yet): local evaluation of filter expressions
+(`AprsNet.Filters`), and a gateway (`AprsNet.Gateway`) that serves packets to APRS-IS clients with their own filters,
+de-duplicates, replays recent history on login and tracks where stations were heard for `m/` and `f/`.
 
 ## G22: AGWPE TCP transport
 
