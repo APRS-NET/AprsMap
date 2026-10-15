@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.0-alpha.8](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.7...v0.1.0-alpha.8) (2026-10-15)
+
+
+### Features
+
+* **ui:** first-run setup wizard ([0e448ca](https://github.com/APRS-NET/AprsMap/commit/0e448caa9140034bfdccae74f091e450e6677659))
+* **ui:** first-run setup wizard ([4e1bea3](https://github.com/APRS-NET/AprsMap/commit/4e1bea319a165d8a304f1604f5c730569fb758b5))
+
+
+### Bug Fixes
+
+* **engine:** log in with a range filter when a profile has none ([4abceac](https://github.com/APRS-NET/AprsMap/commit/4abceac9ea30f583e1679dd94792073c0be3a42d))
+* **engine:** log in with a range filter when a profile has none ([61f8fd0](https://github.com/APRS-NET/AprsMap/commit/61f8fd0dda8db6285170606b8b4548fb4e5fd018))
+
 ## [0.1.0-alpha.7](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.6...v0.1.0-alpha.7) (2026-10-15)
 
 
