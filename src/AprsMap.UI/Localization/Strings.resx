@@ -798,4 +798,72 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Data.Confirm.Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="Shell.MoveToLeft" xml:space="preserve">
+    <value>Move to _left</value>
+    <comment>Panel menu. The underscore marks the access key.</comment>
+  </data>
+  <data name="Shell.MoveToRight" xml:space="preserve">
+    <value>Move to _right</value>
+    <comment>Panel menu. The underscore marks the access key.</comment>
+  </data>
+  <data name="Shell.MoveToBottom" xml:space="preserve">
+    <value>Move to _bottom</value>
+    <comment>Panel menu. The underscore marks the access key.</comment>
+  </data>
+  <data name="Shell.Menu" xml:space="preserve">
+    <value>Menu</value>
+    <comment>The app menu button's name and tooltip.</comment>
+  </data>
+  <data name="Shell.Menu.Show" xml:space="preserve">
+    <value>Show {panel}</value>
+    <comment>App menu: reopens a closed panel. panel: its title, such as Stations.</comment>
+  </data>
+  <data name="Shell.Menu.ResetLayout" xml:space="preserve">
+    <value>Reset layout</value>
+    <comment>App menu: puts the default panel layout back.</comment>
+  </data>
+  <data name="Shell.Menu.Gather" xml:space="preserve">
+    <value>Gather floating windows</value>
+    <comment>App menu (desktop): moves every floating panel window onto the main window's screen.</comment>
+  </data>
+  <data name="Dock.Float" xml:space="preserve">
+    <value>_Float</value>
+    <comment>Panel menu: the panel in a window of its own. The underscore marks the access key.</comment>
+  </data>
+  <data name="Dock.FloatAll" xml:space="preserve">
+    <value>Float all</value>
+    <comment>Panel tab menu: every panel of this group in a window.</comment>
+  </data>
+  <data name="Dock.Dock" xml:space="preserve">
+    <value>_Dock</value>
+    <comment>Panel menu: back from the window edge into its place.</comment>
+  </data>
+  <data name="Dock.AutoHide" xml:space="preserve">
+    <value>_Auto hide</value>
+    <comment>Panel menu: the panel folds away to the window edge and slides out when wanted.</comment>
+  </data>
+  <data name="Dock.DockAsDocument" xml:space="preserve">
+    <value>Dock as tabbed document</value>
+    <comment>Docking library menu item; not offered for panels, kept for completeness.</comment>
+  </data>
+  <data name="Dock.Close" xml:space="preserve">
+    <value>_Close</value>
+    <comment>Panel menu.</comment>
+  </data>
+  <data name="Dock.Show" xml:space="preserve">
+    <value>_Show</value>
+    <comment>Menu of an auto-hidden panel: slides it out.</comment>
+  </data>
+  <data name="Dock.Preview.Dock" xml:space="preserve">
+    <value>Dock</value>
+    <comment>Shown while dragging a panel over a place it can dock.</comment>
+  </data>
+  <data name="Dock.Preview.Float" xml:space="preserve">
+    <value>Float</value>
+    <comment>Shown while dragging a panel where it would float.</comment>
+  </data>
+  <data name="Dock.Preview.None" xml:space="preserve">
+    <value>None</value>
+    <comment>Shown while dragging a panel where it can't go.</comment>
+  </data>
 </root>

@@ -164,6 +164,80 @@ public sealed class ShellTests
     }
 
     [AvaloniaFact]
+    public void MoveToTakesAPanelToAnotherDockFromItsMenu()
+    {
+        var shell = NewShell();
+        var details = Find(shell.Layout, PanelKinds.Details);
+
+        shell.Factory.MoveToBottom.Execute(details);
+
+        Assert.Equal(ShellFactory.BottomDock, details.Owner!.Id);
+        Assert.Same(details, ((IDock)details.Owner).ActiveDockable);
+        Assert.DoesNotContain(
+            ShellViewModel.Dockables(shell.Layout).OfType<IToolDock>(),
+            d => d.Id == ShellFactory.RightDock && d.VisibleDockables!.Count > 0
+        );
+    }
+
+    [AvaloniaFact]
+    public void MovingIntoADockThatCollapsedCreatesItBesideTheMap()
+    {
+        var shell = NewShell();
+        var stations = Find(shell.Layout, PanelKinds.Stations);
+        shell.MoveTo(stations, ShellFactory.BottomDock); // the left dock empties and collapses
+        Assert.DoesNotContain(ShellViewModel.Dockables(shell.Layout), d => d.Id == ShellFactory.LeftDock);
+
+        shell.Factory.MoveToLeft.Execute(stations);
+
+        Assert.Equal(ShellFactory.LeftDock, stations.Owner!.Id);
+    }
+
+    [AvaloniaFact]
+    public void AFloatingPanelCanBeDockedAgainByMenu()
+    {
+        var shell = NewShell();
+        var packets = Find(shell.Layout, PanelKinds.Packets);
+        shell.Factory.FloatDockable(packets);
+        Assert.Single(shell.Layout.Windows!);
+
+        shell.MoveTo(packets, ShellFactory.RightDock);
+
+        Assert.Equal(ShellFactory.RightDock, packets.Owner!.Id);
+    }
+
+    [AvaloniaFact]
+    public void AnAutoHiddenPanelCanBeMoved()
+    {
+        var shell = NewShell();
+        var stations = Find(shell.Layout, PanelKinds.Stations);
+        shell.Factory.PinDockable(stations);
+
+        shell.MoveTo(stations, ShellFactory.RightDock);
+
+        Assert.Equal(ShellFactory.RightDock, stations.Owner!.Id);
+        Assert.DoesNotContain(stations, shell.Layout.LeftPinnedDockables ?? []);
+    }
+
+    [AvaloniaFact]
+    public void AClosedPanelCanBeShownAgainInItsDefaultPlace()
+    {
+        var shell = NewShell();
+        shell.Factory.CloseDockable(Find(shell.Layout, PanelKinds.Stations));
+        Assert.Equal([PanelKinds.Stations], shell.ClosedPanels);
+
+        shell.Show(PanelKinds.Stations);
+
+        Assert.Empty(shell.ClosedPanels);
+        var stations = Find(shell.Layout, PanelKinds.Stations);
+        Assert.Equal(ShellFactory.LeftDock, stations.Owner!.Id);
+        Assert.Equal("Stations", stations.Title);
+        Assert.NotNull(stations.Context);
+    }
+
+    [AvaloniaFact]
+    public void GatherBringsFloatingWindowsToTheMainScreen() => NewShell().Gather(WindowPlacementTests.Laptop); // no open host windows in a test: nothing to move, no error
+
+    [AvaloniaFact]
     public void NoSavedLayoutMeansTheDefault() => Assert.Equal(LayoutRestore.Default, NewShell().Restore(null, []));
 
     private static IDockable Find(IRootDock root, string id) => ShellViewModel.Dockables(root).First(d => d.Id == id);
