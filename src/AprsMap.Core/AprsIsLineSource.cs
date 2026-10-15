@@ -41,7 +41,7 @@ internal sealed class AprsIsLineSourceFactory(ILoggerFactory loggerFactory, Time
         {
             Callsign = profile.Callsign,
             Passcode = profile.Passcode,
-            Filter = profile.Filter,
+            Filter = EffectiveFilter(profile),
             Endpoint = endpoint,
             SoftwareName = SoftwareToken(Brand.DisplayName),
             SoftwareVersion = SoftwareToken(Brand.Version.Split('+')[0]),
@@ -49,6 +49,28 @@ internal sealed class AprsIsLineSourceFactory(ILoggerFactory loggerFactory, Time
         };
         clientOptions.Validate();
         return clientOptions;
+    }
+
+    /// <summary>The radius of the stand-in filter, in km.</summary>
+    internal const int DefaultRangeKm = 150;
+
+    /// <summary>
+    /// The filter sent at login: the profile's own, or a stand-in when it has none. On the user-defined filter port
+    /// (14580) a login without a filter receives only messages addressed to it, so a new profile would show nothing.
+    /// The stand-in is everything within <see cref="DefaultRangeKm"/> km of the station's location, or of its last
+    /// position on APRS-IS when no location is set (aprs-is.net server-side filter commands <c>r/</c> and <c>m/</c>).
+    /// </summary>
+    // SHIM: G04 (typed APRS-IS filter builder), and until F1.2 makes the filter follow the map.
+    internal static string EffectiveFilter(StationProfile profile)
+    {
+        if (!string.IsNullOrWhiteSpace(profile.Filter))
+        {
+            return profile.Filter;
+        }
+        var range = DefaultRangeKm.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return profile is { Latitude: { } lat, Longitude: { } lon }
+            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"r/{lat:0.####}/{lon:0.####}/{range}")
+            : $"m/{range}";
     }
 
     // APRS-IS login fields are space-separated tokens.
