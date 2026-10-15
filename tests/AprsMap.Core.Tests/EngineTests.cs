@@ -322,7 +322,7 @@ public class EngineTests
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
 
         var run = engine.RunAsync(cts.Token);
-        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Faulted);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Reconnecting);
         var settings = await engine.GetSettingsAsync(Ct);
         await engine.SaveSettingsAsync(
             settings with
@@ -397,9 +397,10 @@ public class EngineTests
     [Fact]
     public async Task ADroppedSessionIsReportedAndItsPacketsCarryOn()
     {
+        var time = new FakeTimeProvider();
         var sources = new FakeSourceFactory();
         var session = sources.Enqueue("T2FIRST");
-        var engine = CreateEngine(new FakeTimeProvider(), sources);
+        var engine = CreateEngine(time, sources);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
 
         var run = engine.RunAsync(cts.Token);
@@ -407,17 +408,143 @@ public class EngineTests
         await session.Write(Position);
         await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).PacketsReceived == 1);
 
-        session.Report(ConnectionState.Faulted);
-        Assert.Equal(ConnectionState.Faulted, (await engine.GetStatusAsync(Ct)).Connection);
-        session.Report(ConnectionState.Connecting);
-        session.Report(ConnectionState.Connected, "T2SECOND");
+        var closed = new EngineError(EngineErrorCodes.AprsIsServerClosed, "closed");
+        session.Report(
+            new PacketSourceEvent(ConnectionState.Reconnecting, RetryIn: TimeSpan.FromSeconds(5), Error: closed)
+        );
+        var dropped = await engine.GetStatusAsync(Ct);
+        Assert.Equal(ConnectionState.Reconnecting, dropped.Connection);
+        Assert.Equal(time.GetUtcNow() + TimeSpan.FromSeconds(5), dropped.RetryAt);
+        Assert.Equal(closed, dropped.ConnectionError);
+        session.Report(new PacketSourceEvent(ConnectionState.Connecting));
+        session.Report(new PacketSourceEvent(ConnectionState.Connected, new PacketSourceLogin("T2SECOND", true)));
         await session.Write(Status);
         await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).PacketsReceived == 2);
 
         var status = await engine.GetStatusAsync(Ct);
         Assert.Equal(ConnectionState.Connected, status.Connection);
         Assert.Equal("T2SECOND", status.Server);
+        Assert.True(status.Verified);
+        Assert.Equal(1, status.Reconnects);
+        Assert.Null(status.ConnectionError);
         Assert.Equal(1, sources.Attempts); // the source reconnected itself; the engine kept it
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task AFailedFirstLoginSaysWhyAndWhenItRetries()
+    {
+        var time = new FakeTimeProvider();
+        var sources = new FakeSourceFactory();
+        sources.EnqueueFailure();
+        var engine = CreateEngine(time, sources);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Reconnecting);
+
+        var status = await engine.GetStatusAsync(Ct);
+        Assert.Equal(EngineErrorCodes.AprsIsUnreachable, status.ConnectionError?.Code);
+        Assert.Equal(time.GetUtcNow() + TimeSpan.FromSeconds(5), status.RetryAt);
+        Assert.Equal("rotate.aprs2.net:14580", status.Server);
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task ARefusedLoginIsNotRetriedUntilReconnectIsAskedFor()
+    {
+        var time = new FakeTimeProvider();
+        var sources = new FakeSourceFactory();
+        sources.EnqueueRefusal();
+        var good = sources.Enqueue("T2GOOD");
+        var engine = CreateEngine(time, sources);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Refused);
+        var refused = await engine.GetStatusAsync(Ct);
+        Assert.Equal(EngineErrorCodes.AprsIsLoginRefused, refused.ConnectionError?.Code);
+        Assert.Equal("Login by user not allowed", refused.ConnectionError?.Arg(EngineErrorArgs.Reason));
+        await Task.Delay(TimeSpan.FromMilliseconds(20), TimeProvider.System, Ct);
+        time.Advance(TimeSpan.FromMinutes(10));
+        await Task.Delay(TimeSpan.FromMilliseconds(50), TimeProvider.System, Ct);
+        Assert.Equal(1, sources.Attempts);
+
+        await engine.ReconnectAsync(Ct);
+        await good.Connected.Task.WaitAsync(Ct);
+
+        Assert.Equal(2, sources.Attempts);
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task ARefusalAfterADropEndsTheSessionAndWaits()
+    {
+        var sources = new FakeSourceFactory();
+        var session = sources.Enqueue("T2FIRST");
+        var engine = CreateEngine(new FakeTimeProvider(), sources);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await session.Connected.Task.WaitAsync(Ct);
+        var error = new EngineError(
+            EngineErrorCodes.AprsIsLoginRefused,
+            "refused",
+            new Dictionary<string, string> { [EngineErrorArgs.Reason] = "Login by user not allowed" }
+        );
+        session.Report(new PacketSourceEvent(ConnectionState.Refused, Error: error));
+        await WaitUntil(() => Task.FromResult(session.Disposed));
+
+        var status = await engine.GetStatusAsync(Ct);
+        Assert.Equal(ConnectionState.Refused, status.Connection);
+        Assert.Equal(error, status.ConnectionError);
+        Assert.Equal(1, sources.Attempts);
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task ReconnectNowClosesTheSessionAndConnectsAgain()
+    {
+        var sources = new FakeSourceFactory();
+        var first = sources.Enqueue("T2FIRST");
+        var second = sources.Enqueue("T2SECOND");
+        var engine = CreateEngine(new FakeTimeProvider(), sources);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await first.Connected.Task.WaitAsync(Ct);
+        await engine.ReconnectAsync(Ct);
+        await second.Connected.Task.WaitAsync(Ct);
+
+        Assert.True(first.Disposed);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Server == "T2SECOND");
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task AFilterChangeIsSentWithoutANewLogin()
+    {
+        var sources = new FakeSourceFactory();
+        var session = sources.Enqueue("T2TEST");
+        var store = InMemorySettingsStore.WithProfile();
+        var engine = CreateEngine(new FakeTimeProvider(), sources, settings: store);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await session.Connected.Task.WaitAsync(Ct);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Connected);
+        var settings = await engine.GetSettingsAsync(Ct);
+        var filtered = settings.Profiles[0] with { Filter = "r/40/-105/50" };
+        await engine.SaveSettingsAsync(settings with { Profiles = [filtered] }, Ct);
+
+        Assert.Equal("r/40/-105/50", Assert.Single(session.Filters).Filter);
+        Assert.Equal(1, sources.Attempts);
+        Assert.False(session.Disposed);
         await cts.CancelAsync();
         await run;
     }
@@ -440,7 +567,8 @@ public class EngineTests
         for (var attempt = 1; attempt <= 4; attempt++)
         {
             await WaitUntil(async () =>
-                sources.Attempts == attempt && (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Faulted
+                sources.Attempts == attempt
+                && (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Reconnecting
             );
             delays.Add(await AdvanceUntil(time, () => sources.Attempts > attempt));
         }
@@ -460,7 +588,7 @@ public class EngineTests
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
 
         var run = engine.RunAsync(cts.Token);
-        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Faulted);
+        await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Reconnecting);
         await cts.CancelAsync();
         await run;
 
@@ -710,6 +838,8 @@ public class EngineTests
 
         public void EnqueueFailure() => _script.Enqueue(null);
 
+        public void EnqueueRefusal() => _script.Enqueue(new FakeSource(server: null, refuse: true));
+
         public IPacketSource Create(StationProfile profile)
         {
             Profiles.Enqueue(profile);
@@ -718,34 +848,39 @@ public class EngineTests
         }
     }
 
-    private sealed class FakeSource(string? server) : IPacketSource
+    private sealed class FakeSource(string? server, bool refuse = false, bool verified = false) : IPacketSource
     {
         private readonly Channel<string> _lines = Channel.CreateUnbounded<string>();
-        private Action<ConnectionState, string?>? _stateChanged;
+        private Action<PacketSourceEvent>? _stateChanged;
 
         public TaskCompletionSource Connected { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public bool Disposed { get; private set; }
 
+        /// <summary>The profiles sent with <see cref="SetFilterAsync"/>.</summary>
+        public System.Collections.Concurrent.ConcurrentQueue<StationProfile> Filters { get; } = new();
+
         public ValueTask Write(string line) => _lines.Writer.WriteAsync(line, Ct);
 
-        /// <summary>Reports a state as the source would after the first login: a drop, a retry, a new login.</summary>
-        public void Report(ConnectionState state, string? reportedServer = null) =>
-            _stateChanged!(state, reportedServer);
+        /// <summary>Reports an event as the source would after the first login: a drop, a retry, a new login.</summary>
+        public void Report(PacketSourceEvent e) => _stateChanged!(e);
 
-        public Task<string> StartAsync(
-            Action<ConnectionState, string?> stateChanged,
+        public Task<PacketSourceLogin> StartAsync(
+            Action<PacketSourceEvent> stateChanged,
             CancellationToken cancellationToken
         )
         {
+            if (refuse)
+            {
+                throw new LoginRejectedException("Login by user not allowed");
+            }
             if (server is null)
             {
                 throw new IOException("connection refused");
             }
             _stateChanged = stateChanged;
-            stateChanged(ConnectionState.Connected, server);
             Connected.TrySetResult();
-            return Task.FromResult(server);
+            return Task.FromResult(new PacketSourceLogin(server, verified));
         }
 
         public async IAsyncEnumerable<AprsNet.Packets.AprsPacket> ReadPacketsAsync(
@@ -756,6 +891,12 @@ public class EngineTests
             {
                 yield return AprsNet.Packets.AprsPacket.Parse(line);
             }
+        }
+
+        public ValueTask SetFilterAsync(StationProfile profile, CancellationToken cancellationToken)
+        {
+            Filters.Enqueue(profile);
+            return ValueTask.CompletedTask;
         }
 
         public ValueTask DisposeAsync()

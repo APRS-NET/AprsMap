@@ -58,6 +58,17 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task BrowsersCannotReconnectTheStation()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var ex = await Assert.ThrowsAsync<EngineAccessException>(() => remote.ReconnectAsync(Ct));
+
+        Assert.Equal(EngineErrorCodes.OperatorOnly, ex.EngineError.Code);
+    }
+
+    [Fact]
     public async Task AnyBrowserCanListServersAndReadLocators()
     {
         await using var remote = factory.CreateRemote();
@@ -107,6 +118,15 @@ public sealed class TrustedGatewaySettingsTests(TrustedGatewayFactory factory) :
 
         Assert.Equal("portable", (await remote.GetSettingsAsync(Ct)).ActiveProfileId);
         Assert.Equal("N0GATE-7", (await remote.GetStatusAsync(Ct)).Callsign);
+    }
+
+    [Fact]
+    public async Task OnATrustedNetworkBrowsersCanReconnect()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        await remote.ReconnectAsync(Ct);
     }
 
     [Fact]

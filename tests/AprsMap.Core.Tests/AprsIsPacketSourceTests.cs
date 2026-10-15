@@ -30,7 +30,7 @@ public class AprsIsPacketSourceTests
         var transport = ScriptedTransport.LoggedIn("T2TEST");
         var source = Source(TimeProvider.System, transport);
 
-        Assert.Equal("T2TEST", await source.StartAsync((_, _) => { }, Ct));
+        Assert.Equal(new PacketSourceLogin("T2TEST", false), await source.StartAsync(_ => { }, Ct));
 
         transport.Server("N0CALL-9>APRS:>hello");
         await using var packets = source.ReadPacketsAsync(Ct).GetAsyncEnumerator(Ct);
@@ -48,7 +48,7 @@ public class AprsIsPacketSourceTests
         transport.Server("# logresp N0CALL unverified");
         await using var source = Source(TimeProvider.System, transport);
 
-        Assert.Equal(string.Empty, await source.StartAsync((_, _) => { }, Ct));
+        Assert.Equal(string.Empty, (await source.StartAsync(_ => { }, Ct)).Server);
     }
 
     [Fact]
@@ -56,28 +56,76 @@ public class AprsIsPacketSourceTests
     {
         var time = new FakeTimeProvider();
         var first = ScriptedTransport.LoggedIn("T2FIRST");
-        var second = ScriptedTransport.LoggedIn("T2SECOND");
+        var second = ScriptedTransport.LoggedIn("T2SECOND", verified: true);
         await using var source = Source(time, first, second);
-        var states = new System.Collections.Concurrent.ConcurrentQueue<(ConnectionState, string?)>();
-        await source.StartAsync((state, server) => states.Enqueue((state, server)), Ct);
+        var events = new System.Collections.Concurrent.ConcurrentQueue<PacketSourceEvent>();
+        await source.StartAsync(events.Enqueue, Ct);
 
         first.Close();
-        for (var i = 0; i < 200 && !states.Contains((ConnectionState.Connected, "T2SECOND")); i++)
+        await AdvanceUntil(time, () => events.Any(e => e.Login?.Server == "T2SECOND"));
+
+        Assert.Equal(
+            [
+                ConnectionState.Connecting,
+                ConnectionState.Connected,
+                ConnectionState.Reconnecting,
+                ConnectionState.Connecting,
+                ConnectionState.Connected,
+            ],
+            events.Select(e => e.State)
+        );
+        var dropped = events.ElementAt(2);
+        Assert.Equal(EngineErrorCodes.AprsIsServerClosed, dropped.Error?.Code);
+        Assert.NotNull(dropped.RetryIn);
+        Assert.Equal(new PacketSourceLogin("T2SECOND", true), events.Last().Login);
+    }
+
+    [Fact]
+    public async Task ARefusedReconnectIsReportedAsRefused()
+    {
+        var time = new FakeTimeProvider();
+        var first = ScriptedTransport.LoggedIn("T2FIRST");
+        var second = new ScriptedTransport();
+        second.Server("# Login by user not allowed");
+        await using var source = Source(time, first, second);
+        var events = new System.Collections.Concurrent.ConcurrentQueue<PacketSourceEvent>();
+        await source.StartAsync(events.Enqueue, Ct);
+
+        first.Close();
+        await AdvanceUntil(time, () => events.Any(e => e.State == ConnectionState.Refused));
+
+        var refused = events.Single(e => e.State == ConnectionState.Refused);
+        Assert.Equal(EngineErrorCodes.AprsIsLoginRefused, refused.Error?.Code);
+        Assert.Equal("Login by user not allowed", refused.Error?.Arg(EngineErrorArgs.Reason));
+    }
+
+    [Theory]
+    [InlineData(null, true, EngineErrorCodes.AprsIsServerClosed)]
+    [InlineData("timeout", true, EngineErrorCodes.AprsIsIdle)]
+    [InlineData("io", true, EngineErrorCodes.AprsIsLinkFailed)]
+    [InlineData("io", false, EngineErrorCodes.AprsIsUnreachable)]
+    [InlineData("login", false, EngineErrorCodes.AprsIsUnreachable)]
+    public void EachEndOfAConnectionHasItsCode(string? error, bool wasConnected, string code)
+    {
+        Exception? exception = error switch
+        {
+            "timeout" => new TimeoutException("silent"),
+            "io" => new IOException("reset"),
+            "login" => new LoginException("No login response within 15s."),
+            _ => null,
+        };
+
+        Assert.Equal(code, AprsIsErrors.From(exception, wasConnected).Code);
+    }
+
+    private static async Task AdvanceUntil(FakeTimeProvider time, Func<bool> condition)
+    {
+        for (var i = 0; i < 200 && !condition(); i++)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, Ct);
             time.Advance(TimeSpan.FromMilliseconds(100));
         }
-
-        Assert.Equal(
-            [
-                (ConnectionState.Connecting, null),
-                (ConnectionState.Connected, "T2FIRST"),
-                (ConnectionState.Faulted, null),
-                (ConnectionState.Connecting, null),
-                (ConnectionState.Connected, "T2SECOND"),
-            ],
-            states
-        );
+        Assert.True(condition(), "Condition was not met in time.");
     }
 
     /// <summary>In-memory APRS-IS server: queued lines are what the server sends.</summary>
@@ -89,11 +137,11 @@ public class AprsIsPacketSourceTests
 
         public bool Disposed { get; private set; }
 
-        public static ScriptedTransport LoggedIn(string server)
+        public static ScriptedTransport LoggedIn(string server, bool verified = false)
         {
             var transport = new ScriptedTransport();
             transport.Server("# aprsc 2.1.19");
-            transport.Server($"# logresp N0CALL unverified, server {server}");
+            transport.Server($"# logresp N0CALL {(verified ? "verified" : "unverified")}, server {server}");
             return transport;
         }
 

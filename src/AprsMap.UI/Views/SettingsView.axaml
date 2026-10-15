@@ -253,6 +253,13 @@
               IsVisible="{Binding About.EngineText, Converter={x:Static ObjectConverters.IsNotNull}}"
               Foreground="{DynamicResource Brush.TextMuted}"
             />
+            <TextBlock
+              x:Name="AboutConnectionLabel"
+              TextWrapping="Wrap"
+              Text="{Binding About.ConnectionText}"
+              IsVisible="{Binding About.ConnectionText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+            />
             <TextBlock Text="{Binding About.LicenceText}" TextWrapping="Wrap" />
             <HyperlinkButton
               x:Name="SourceLink"

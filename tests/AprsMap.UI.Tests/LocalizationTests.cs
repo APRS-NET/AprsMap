@@ -30,7 +30,10 @@ public class LocalizationTests
         );
         Assert.Equal(
             "APRS-IS connected · T2TEST",
-            text.Format("Status.Connected", new Dictionary<string, object?> { ["server"] = "T2TEST" })
+            text.Format(
+                "Status.Connected",
+                new Dictionary<string, object?> { ["server"] = "T2TEST", ["verified"] = "no" }
+            )
         );
     }
 
@@ -154,13 +157,13 @@ public class LocalizationTests
     {
         var text = English();
         var seen = new List<string>();
-        var subscription = text.Observe("Status.Connecting").Subscribe(new Collect(seen));
+        var subscription = text.Observe("Status.Disconnected").Subscribe(new Collect(seen));
 
         text.SetLanguage(Localizer.PseudoLanguage);
         subscription.Dispose();
         text.SetLanguage(null);
 
-        Assert.Equal(["APRS-IS connecting…", "[ÅÞŔŠ-ÎŠ çöññéçţîñĝ… ·······]"], seen);
+        Assert.Equal(["APRS-IS disconnected", PseudoLocalizer.Transform("APRS-IS disconnected")], seen);
     }
 
     [Fact]
@@ -177,7 +180,7 @@ public class LocalizationTests
         Assert.Throws<ArgumentNullException>(() => text.Format((EngineError)null!));
         Assert.Throws<ArgumentNullException>(() => text.Describe(null!));
         Assert.Throws<ArgumentNullException>(() => PseudoLocalizer.Transform(null!));
-        Assert.Throws<ArgumentNullException>(() => text.Observe("Status.Connecting").Subscribe(null!));
+        Assert.Throws<ArgumentNullException>(() => text.Observe("Status.Disconnected").Subscribe(null!));
     }
 
     private sealed class Collect(List<string> seen) : IObserver<string>

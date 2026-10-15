@@ -79,14 +79,29 @@
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <Border
+            <!-- The connection status opens a menu with Reconnect now (F1.1 behavior 7); its tooltip has the details. -->
+            <Button
+              x:Name="ConnectionButton"
               CornerRadius="{DynamicResource Radius.Control}"
               BorderBrush="{DynamicResource Brush.Border}"
               BorderThickness="{DynamicResource Thickness.Border}"
               Padding="10,4"
+              VerticalAlignment="Center"
+              ToolTip.Tip="{Binding ConnectionDetails}"
+              AutomationProperties.Name="{l:T Status.Menu}"
+              AutomationProperties.HelpText="{Binding ConnectionText}"
             >
-              <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" />
-            </Border>
+              <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" TextWrapping="Wrap" />
+              <Button.Flyout>
+                <MenuFlyout>
+                  <MenuItem
+                    x:Name="ReconnectItem"
+                    Header="{l:T Status.Reconnect}"
+                    Command="{Binding ReconnectCommand}"
+                  />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
             <TextBlock
               x:Name="PacketCountLabel"
               Text="{Binding PacketCountText}"

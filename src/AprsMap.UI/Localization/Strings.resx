@@ -25,16 +25,36 @@
     <comment>Status bar, before the engine has answered.</comment>
   </data>
   <data name="Status.Connected" xml:space="preserve">
-    <value>APRS-IS connected · {server}</value>
-    <comment>Status bar. server: the APRS-IS server's name, as it reports it (not translated).</comment>
+    <value>APRS-IS connected · {server}{verified, select, yes { · verified} other {}}</value>
+    <comment>Status bar. server: the APRS-IS server's name, as it reports it (not translated). verified: yes when the server accepted the passcode.</comment>
   </data>
   <data name="Status.Connecting" xml:space="preserve">
-    <value>APRS-IS connecting…</value>
-    <comment>Status bar.</comment>
+    <value>APRS-IS connecting to {server}…</value>
+    <comment>Status bar. server: the server being tried, as host:port (not translated).</comment>
   </data>
-  <data name="Status.Faulted" xml:space="preserve">
-    <value>APRS-IS connection failed · retrying</value>
-    <comment>Status bar; the engine retries by itself.</comment>
+  <data name="Status.Reconnecting" xml:space="preserve">
+    <value>APRS-IS reconnecting in {seconds} s · {reason}</value>
+    <comment>Status bar, counting down each second. seconds: a whole number. reason: why the last connection ended, one of the Error.aprs-is texts.</comment>
+  </data>
+  <data name="Status.Reconnecting.Now" xml:space="preserve">
+    <value>APRS-IS reconnecting… · {reason}</value>
+    <comment>Status bar, once the countdown reaches zero. reason: as for Status.Reconnecting.</comment>
+  </data>
+  <data name="Status.Refused" xml:space="preserve">
+    <value>APRS-IS login refused · {reason}</value>
+    <comment>Status bar; the app doesn't retry by itself. reason: what the server said, in its own words (not translated).</comment>
+  </data>
+  <data name="Status.Details" xml:space="preserve">
+    <value>{verified, select, yes {Login verified} other {Login not verified: receive-only}} · {reconnects, plural, =0 {no reconnects} one {reconnected once} other {reconnected # times}}</value>
+    <comment>The connection's tooltip and a line in About. verified: yes when the server accepted the passcode. reconnects: how many times the connection came back since it first logged in.</comment>
+  </data>
+  <data name="Status.Reconnect" xml:space="preserve">
+    <value>Reconnect now</value>
+    <comment>Menu item on the connection status: closes the connection and connects again at once.</comment>
+  </data>
+  <data name="Status.Menu" xml:space="preserve">
+    <value>Connection</value>
+    <comment>Screen-reader name of the connection status button, read before its text.</comment>
   </data>
   <data name="Status.NotConfigured" xml:space="preserve">
     <value>APRS-IS not set up · add a callsign</value>
@@ -153,6 +173,24 @@
   </data>
   <data name="Error.aprs.software-version-invalid" xml:space="preserve">
     <value>The app's version can't be sent to APRS-IS. This is a bug; please report it.</value>
+  </data>
+  <data name="Error.aprs-is.unreachable" xml:space="preserve">
+    <value>Server unreachable</value>
+    <comment>Why the APRS-IS connection is retrying: the server couldn't be reached or didn't answer the login.</comment>
+  </data>
+  <data name="Error.aprs-is.login-refused" xml:space="preserve">
+    <value>Login refused: {reason}</value>
+    <comment>reason: what the server said, in its own words (not translated).</comment>
+  </data>
+  <data name="Error.aprs-is.server-closed" xml:space="preserve">
+    <value>Server closed the connection</value>
+  </data>
+  <data name="Error.aprs-is.link-failed" xml:space="preserve">
+    <value>Network link failed</value>
+  </data>
+  <data name="Error.aprs-is.idle" xml:space="preserve">
+    <value>Server went silent</value>
+    <comment>The server sent nothing, not even its regular keepalive, for too long.</comment>
   </data>
   <data name="Error.maidenhead.empty" xml:space="preserve">
     <value>Enter a Maidenhead locator, such as FN31pr.</value>

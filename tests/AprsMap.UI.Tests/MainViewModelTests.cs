@@ -10,8 +10,9 @@ public class MainViewModelTests
 {
     [Theory]
     [InlineData(ConnectionState.Connected, "APRS-IS connected · T2TEST")]
-    [InlineData(ConnectionState.Connecting, "APRS-IS connecting…")]
-    [InlineData(ConnectionState.Faulted, "APRS-IS connection failed · retrying")]
+    [InlineData(ConnectionState.Connecting, "APRS-IS connecting to T2TEST…")]
+    [InlineData(ConnectionState.Reconnecting, "APRS-IS reconnecting… · ")]
+    [InlineData(ConnectionState.Refused, "APRS-IS login refused · ")]
     [InlineData(ConnectionState.Disconnected, "APRS-IS disconnected")]
     [InlineData(ConnectionState.NotConfigured, "APRS-IS not set up · add a callsign")]
     public void ShowDescribesTheConnection(ConnectionState state, string expected)
@@ -22,6 +23,102 @@ public class MainViewModelTests
 
         Assert.Equal(expected, vm.ConnectionText);
         Assert.Equal(42, vm.PacketCount);
+    }
+
+    [Fact]
+    public void AConnectedLoginSaysWhetherItIsVerifiedAndHowOftenItReconnected()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
+
+        vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 0, "1.0.0", Verified: true, Reconnects: 2));
+
+        Assert.Equal("APRS-IS connected · T2TEST · verified", vm.ConnectionText);
+        Assert.Equal("Login verified · reconnected 2 times", vm.ConnectionDetails);
+
+        vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 0, "1.0.0"));
+
+        Assert.Equal("Login not verified: receive-only · no reconnects", vm.ConnectionDetails);
+    }
+
+    [Fact]
+    public void ARefusedLoginShowsTheServersReason()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
+        var error = new EngineError(
+            EngineErrorCodes.AprsIsLoginRefused,
+            "refused",
+            new Dictionary<string, string> { [EngineErrorArgs.Reason] = "Login by user not allowed" }
+        );
+
+        vm.Show(new EngineStatus(ConnectionState.Refused, null, 0, "1.0.0", ConnectionError: error));
+
+        Assert.Equal("APRS-IS login refused · Login by user not allowed", vm.ConnectionText);
+        Assert.Null(vm.ConnectionDetails);
+    }
+
+    [Fact]
+    public async Task AReconnectCountsDownEachSecondWithItsReason()
+    {
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero));
+        var engine = new FakeEngine();
+        engine.Status = engine.Status with
+        {
+            Connection = ConnectionState.Reconnecting,
+            RetryAt = time.GetUtcNow() + TimeSpan.FromSeconds(10),
+            ConnectionError = new EngineError(EngineErrorCodes.AprsIsServerClosed, "closed"),
+        };
+        var vm = new MainViewModel(engine, time);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        var run = vm.StartAsync(cts.Token);
+        await WaitUntil(() => vm.ConnectionText == "APRS-IS reconnecting in 10 s · Server closed the connection");
+        await Task.Delay(TimeSpan.FromMilliseconds(20), TimeProvider.System, cts.Token);
+        time.Advance(TimeSpan.FromSeconds(1));
+        await WaitUntil(() => vm.ConnectionText.Contains("in 9 s", StringComparison.Ordinal));
+        for (var i = 0; i < 10; i++)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(10), TimeProvider.System, cts.Token);
+            time.Advance(TimeSpan.FromSeconds(1));
+        }
+        await WaitUntil(() => vm.ConnectionText == "APRS-IS reconnecting… · Server closed the connection");
+
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task ReconnectNowIsOfferedOnlyWhereSettingsCanChange()
+    {
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        vm.Show(engine.Settings);
+        vm.Show(engine.Status);
+
+        Assert.True(vm.ReconnectCommand.CanExecute(null));
+        await vm.ReconnectCommand.ExecuteAsync(null);
+        Assert.Equal(1, engine.Reconnects);
+
+        vm.Show(engine.Settings with { ReadOnly = true });
+        Assert.False(vm.CanReconnect);
+        vm.Show(engine.Settings);
+        vm.Show(engine.Status with { Connection = ConnectionState.NotConfigured });
+        Assert.False(vm.CanReconnect);
+    }
+
+    [Fact]
+    public async Task AFailedReconnectShowsWhy()
+    {
+        var engine = new FakeEngine
+        {
+            ReconnectFailure = EngineErrors.Create(EngineErrorCodes.OperatorOnly, "operator only"),
+        };
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        vm.Show(engine.Settings);
+        vm.Show(engine.Status);
+
+        await vm.ReconnectCommand.ExecuteAsync(null);
+
+        Assert.NotNull(vm.ErrorText);
     }
 
     [Fact]
@@ -243,13 +340,13 @@ public class MainViewModelTests
         Assert.Equal("N0CALL", Assert.Single(vm.Packets).Source);
         Assert.Equal("APRS-IS connected · T2TEST", vm.ConnectionText);
 
-        engine.Status = engine.Status with { Connection = ConnectionState.Faulted };
+        engine.Status = engine.Status with { Connection = ConnectionState.Reconnecting };
         time.Advance(TimeSpan.FromSeconds(2));
-        for (var i = 0; i < 200 && !vm.ConnectionText.Contains("failed", StringComparison.Ordinal); i++)
+        for (var i = 0; i < 200 && !vm.ConnectionText.Contains("reconnecting", StringComparison.Ordinal); i++)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, cts.Token);
         }
-        Assert.Contains("failed", vm.ConnectionText, StringComparison.Ordinal);
+        Assert.Contains("reconnecting", vm.ConnectionText, StringComparison.Ordinal);
 
         await cts.CancelAsync();
         await run;

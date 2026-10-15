@@ -97,6 +97,21 @@ internal sealed class FakeEngine : IEngineService
 
     public List<(string Query, string? Language)> Lookups { get; } = [];
 
+    public int Reconnects { get; private set; }
+
+    /// <summary>When set, <see cref="ReconnectAsync"/> throws it.</summary>
+    public Exception? ReconnectFailure { get; set; }
+
+    public Task ReconnectAsync(CancellationToken cancellationToken = default)
+    {
+        if (ReconnectFailure is { } failure)
+        {
+            return Task.FromException(failure);
+        }
+        Reconnects++;
+        return Task.CompletedTask;
+    }
+
     public Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(Geocoding);
 
