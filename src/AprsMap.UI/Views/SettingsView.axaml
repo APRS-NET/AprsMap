@@ -1,0 +1,176 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The Settings page (docs/features/F0.6-appearance.md): a page over the main view, not a dialog. Sections down the
+     side, or as tabs across the top on a narrow window; the options come from the settings registry. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:s="using:AprsMap.UI.Settings"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Views.SettingsView"
+  x:DataType="s:SettingsViewModel"
+  Background="{DynamicResource Brush.Ground}"
+  Foreground="{DynamicResource Brush.Text}"
+  FontSize="{DynamicResource Text.Body}"
+>
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Escape" Command="{Binding CloseCommand}" />
+  </UserControl.KeyBindings>
+  <UserControl.Styles>
+    <!-- Narrow windows: the sections become tabs across the top (set by code-behind). -->
+    <Style Selector="ListBox#SectionList.narrow">
+      <Setter Property="DockPanel.Dock" Value="Top" />
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate>
+          <StackPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+      </Setter>
+    </Style>
+  </UserControl.Styles>
+  <DockPanel>
+    <Border
+      DockPanel.Dock="Top"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="{DynamicResource Thickness.BorderBottom}"
+      Padding="16,10"
+    >
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Button
+          x:Name="SettingsBackButton"
+          Command="{Binding CloseCommand}"
+          ToolTip.Tip="{l:T Settings.Back}"
+          AutomationProperties.Name="{l:T Settings.Back}"
+          VerticalAlignment="Center"
+        >
+          <PathIcon
+            Data="M 10,2 L 12,4 L 6,10 L 22,10 L 22,14 L 6,14 L 12,20 L 10,22 L 0,12 Z"
+            Width="{DynamicResource Icon.Size}"
+            Height="{DynamicResource Icon.Size}"
+          />
+        </Button>
+        <TextBlock
+          x:Name="TitleLabel"
+          Text="{Binding Title}"
+          FontSize="{DynamicResource Text.Title}"
+          FontWeight="SemiBold"
+          VerticalAlignment="Center"
+        />
+      </StackPanel>
+    </Border>
+
+    <DockPanel>
+      <ListBox
+        x:Name="SectionList"
+        DockPanel.Dock="Left"
+        ItemsSource="{Binding Sections}"
+        SelectedItem="{Binding SelectedSection}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        MinWidth="180"
+        AutomationProperties.Name="{Binding Title}"
+      />
+
+      <ScrollViewer x:Name="SectionScroll" Padding="24,16">
+        <Panel MaxWidth="720" HorizontalAlignment="Left">
+          <!-- Appearance -->
+          <StackPanel x:Name="AppearanceSection" IsVisible="{Binding IsAppearanceSection}" Spacing="20">
+            <ItemsControl x:Name="AppearanceOptions" ItemsSource="{Binding AppearanceItems}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="18" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.DataTemplates>
+                <DataTemplate DataType="s:ChoiceSetting">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                    <ComboBox
+                      ItemsSource="{Binding Options}"
+                      SelectedItem="{Binding Selected}"
+                      AutomationProperties.Name="{Binding Label}"
+                      MinWidth="260"
+                    />
+                    <TextBlock
+                      Text="{Binding Help}"
+                      IsVisible="{Binding Help, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      FontSize="{DynamicResource Text.Small}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
+                </DataTemplate>
+                <DataTemplate DataType="s:ToggleSetting">
+                  <StackPanel Spacing="4">
+                    <CheckBox IsChecked="{Binding IsOn}" AutomationProperties.Name="{Binding Label}">
+                      <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                    </CheckBox>
+                    <TextBlock
+                      Text="{Binding Help}"
+                      IsVisible="{Binding Help, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      FontSize="{DynamicResource Text.Small}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.DataTemplates>
+            </ItemsControl>
+            <WrapPanel>
+              <Button
+                x:Name="ResetButton"
+                Content="{l:T Settings.Appearance.Reset}"
+                Command="{Binding ResetAppearanceCommand}"
+                Margin="0,0,12,0"
+              />
+              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding CanUndoReset}">
+                <TextBlock
+                  x:Name="ResetDoneLabel"
+                  Text="{l:T Settings.Appearance.ResetDone}"
+                  VerticalAlignment="Center"
+                />
+                <Button
+                  x:Name="UndoButton"
+                  Content="{l:T Settings.Appearance.Undo}"
+                  Command="{Binding UndoResetCommand}"
+                />
+              </StackPanel>
+            </WrapPanel>
+          </StackPanel>
+
+          <!-- About -->
+          <StackPanel x:Name="AboutSection" IsVisible="{Binding IsAboutSection}" Spacing="8">
+            <TextBlock
+              Text="{x:Static s:AboutViewModel.ProductName}"
+              FontSize="{DynamicResource Text.Title}"
+              FontWeight="SemiBold"
+            />
+            <TextBlock x:Name="VersionLabel" Text="{Binding About.VersionText}" />
+            <TextBlock
+              x:Name="EngineLabel"
+              Text="{Binding About.EngineText}"
+              IsVisible="{Binding About.EngineText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+            />
+            <TextBlock Text="{Binding About.LicenceText}" TextWrapping="Wrap" />
+            <HyperlinkButton
+              x:Name="SourceLink"
+              Content="{l:T Settings.About.Source}"
+              NavigateUri="{x:Static s:AboutViewModel.SourceUri}"
+              Padding="0"
+            />
+            <TextBlock Text="{l:T Settings.About.Credits}" FontWeight="SemiBold" Margin="0,12,0,0" />
+            <TextBlock Text="{l:T Settings.About.IconCredit}" TextWrapping="Wrap" />
+            <HyperlinkButton
+              x:Name="LookupCredit"
+              Content="{l:T Settings.About.LookupCredit}"
+              NavigateUri="{x:Static s:AboutViewModel.OpenStreetMapCopyrightUri}"
+              IsVisible="{Binding About.ShowLookupCredit}"
+              Padding="0"
+            />
+          </StackPanel>
+        </Panel>
+      </ScrollViewer>
+    </DockPanel>
+  </DockPanel>
+</UserControl>

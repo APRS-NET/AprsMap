@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using System.Collections.ObjectModel;
 using AprsMap.Contracts;
+using AprsMap.UI.Appearance;
 using AprsMap.UI.Localization;
 using AprsMap.UI.Platform;
+using AprsMap.UI.Settings;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AprsMap.UI.ViewModels;
@@ -20,6 +22,8 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly TimeProvider time;
     private readonly Localizer _text;
     private readonly IDeviceLocation? _deviceLocation;
+    private readonly AppearanceService _appearance;
+    private readonly bool _showPseudoLanguage;
     private readonly Dictionary<string, StationState> _stations = new(StringComparer.Ordinal);
     private AppSettings? _settings;
     private bool _showingSettings;
@@ -34,12 +38,16 @@ public sealed partial class MainViewModel : ObservableObject
         IEngineService engine,
         TimeProvider time,
         Localizer? text = null,
-        IDeviceLocation? deviceLocation = null
+        IDeviceLocation? deviceLocation = null,
+        AppearanceService? appearance = null,
+        bool showPseudoLanguage = false
     )
     {
         this.engine = engine;
         this.time = time;
         _deviceLocation = deviceLocation;
+        _appearance = appearance ?? new AppearanceService();
+        _showPseudoLanguage = showPseudoLanguage;
         _text = text ?? Localizer.Instance;
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
@@ -86,6 +94,44 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Whether the wizard covers the main view.</summary>
     public bool IsSetupOpen => Setup is not null;
+
+    /// <summary>The Settings page while it is open, or null (docs/features/F0.6-appearance.md).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OpenSettingsCommand))]
+    public partial SettingsViewModel? Settings { get; set; }
+
+    private bool CanOpenSettings() => Settings is null && Setup is null;
+
+    /// <summary>Opens Settings (the gear button, Ctrl+, or Cmd+,): not while the setup wizard is open.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanOpenSettings))]
+    internal async Task OpenSettingsAsync()
+    {
+        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage);
+        settings.Closed += OnSettingsClosed;
+        Settings = settings;
+        GeocodingInfo? geocoding = null;
+        try
+        {
+            geocoding = await engine.GetGeocodingInfoAsync();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // About shows less without it; nothing else depends on it.
+        }
+        settings.Show(_status, geocoding);
+    }
+
+    private void OnSettingsClosed(object? sender, EventArgs e)
+    {
+        if (Settings is { } settings)
+        {
+            settings.Closed -= OnSettingsClosed;
+            settings.Dispose();
+        }
+        Settings = null;
+    }
+
+    partial void OnSetupChanged(SetupWizardViewModel? value) => OpenSettingsCommand.NotifyCanExecuteChanged();
 
     /// <summary>Whether the status bar offers to open the wizard again: no profile, and the user closed it (behavior 3).</summary>
     [ObservableProperty]

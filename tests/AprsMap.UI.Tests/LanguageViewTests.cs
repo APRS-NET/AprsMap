@@ -105,6 +105,54 @@ public sealed class LanguageViewTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task TheLanguageOptionSwitchesTheWholeAppLive()
+    {
+        var engine = new FakeEngine();
+        var appearance = new AprsMap.UI.Appearance.AppearanceService();
+        var vm = new MainViewModel(engine, new FakeTimeProvider(), appearance: appearance, showPseudoLanguage: true);
+        vm.Show(engine.Settings);
+        vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 2, "1.0.0"));
+        var window = new Window
+        {
+            Content = new MainView { DataContext = vm },
+            Width = 1100,
+            Height = 800,
+        };
+        window.Show();
+        await vm.OpenSettingsCommand.ExecuteAsync(null);
+        var language = Assert.IsType<AprsMap.UI.Settings.ChoiceSetting>(
+            vm.Settings!.AppearanceItems.Single(i => i.Id == "appearance.language")
+        );
+
+        language.Selected = language.Options.Single(o => Equals(o.Value, Localizer.PseudoLanguage));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(Localizer.PseudoLanguage, appearance.Current.Language);
+        Assert.True(Localizer.Instance.IsPseudo);
+        Assert.StartsWith("[", vm.ConnectionText, StringComparison.Ordinal);
+        foreach (var section in vm.Settings.Sections.ToList())
+        {
+            vm.Settings.SelectedSection = vm.Settings.Sections.Single(s => s.Id == section.Id);
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var texts = window
+                .GetLogicalDescendants()
+                .OfType<TextBlock>()
+                .Where(t => t.IsEffectivelyVisible && !string.IsNullOrEmpty(t.Text) && t.Text.Any(char.IsLetter))
+                .Where(t => t.Text != Brand.DisplayName && t.Text != "N0CALL" && t.Text != "Home") // data
+                .ToList();
+            Assert.NotEmpty(texts);
+            Assert.All(
+                texts,
+                t => Assert.True(t.Text!.StartsWith('[') || t.Text == "English", $"{section.Id}: {t.Text}")
+            );
+        }
+
+        language.Selected = language.Options[0]; // System default
+        Assert.False(Localizer.Instance.IsPseudo);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void SwitchingLanguageUpdatesTheOpenWindow()
     {
         var (window, _) = Show();
