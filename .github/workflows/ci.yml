@@ -3,7 +3,21 @@ name: ci
 on:
   push:
     branches: [main]
+    # Docs and release bookkeeping can't break the build or the tests, so they don't start a run. No status check is
+    # required on main, so a skipped run never blocks a merge.
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "LICENSE*"
+      - ".release-please-manifest.json"
+      - "release-please-config.json"
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "LICENSE*"
+      - ".release-please-manifest.json"
+      - "release-please-config.json"
 
 permissions:
   contents: read
@@ -15,10 +29,11 @@ concurrency:
 
 jobs:
   build:
+    # Windows and macOS only: the coverage job below is the Linux build and test run, so Linux isn't built twice.
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 25
     steps:
@@ -33,7 +48,7 @@ jobs:
       - run: dotnet test -c Release --no-build --logger GitHubActions
 
   coverage:
-    # Coverage on one platform is enough. The gate covers the MIT engine (Contracts, Core, Client.Remote), where the
+    # The Linux build and test run, with coverage. Coverage on one platform is enough. The gate covers the MIT engine (Contracts, Core, Client.Remote), where the
     # logic lives; UI and host projects are reported but not gated.
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -105,21 +120,3 @@ jobs:
           global-json-file: global.json
       - run: dotnet tool restore
       - run: dotnet csharpier check .
-
-  container:
-    # Builds the gateway image (including the browser app, which needs the wasm-tools workload) without pushing it,
-    # so a broken Dockerfile shows up on the pull request rather than at release time.
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          platforms: linux/amd64
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

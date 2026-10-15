@@ -1,12 +1,28 @@
 name: packages
 
-# Checks NuGet packages for known vulnerabilities and available updates. Runs on code changes and weekly, because new
-# advisories appear without any change here. On pull requests it keeps one comment with the report up to date.
+# Checks NuGet packages for known vulnerabilities and available updates. Runs when package references change and
+# weekly, because new advisories appear without any change here. On pull requests it keeps one comment with the report up to date.
 # Versions a project pins with VersionOverride are marked and listed with the reason from the comment above the pin.
 on:
   push:
     branches: [main]
+    paths:
+      - "Directory.Packages.props"
+      - "Directory.Build.props"
+      - "**/*.csproj"
+      - "global.json"
+      - "nuget.config"
+      - "tools/ci/PackageReport.cs"
+      - ".github/workflows/packages.yml"
   pull_request:
+    paths:
+      - "Directory.Packages.props"
+      - "Directory.Build.props"
+      - "**/*.csproj"
+      - "global.json"
+      - "nuget.config"
+      - "tools/ci/PackageReport.cs"
+      - ".github/workflows/packages.yml"
   schedule:
     - cron: "17 6 * * 1" # Mondays 06:17 UTC
   workflow_dispatch:
