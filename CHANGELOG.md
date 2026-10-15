@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.2.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.2.0-alpha.1...v0.2.0-alpha.2) (2026-10-15)
+
+
+### Features
+
+* **core:** a station store with objects, aging and a cap ([f71dba1](https://github.com/APRS-NET/AprsMap/commit/f71dba1cd74d9684d1bb6adffb246e281c8f21b6))
+* **core:** a station store with objects, aging and a cap ([fa460d0](https://github.com/APRS-NET/AprsMap/commit/fa460d077d440778f7d3ca707ea69d52759cb35c))
+* **core:** say why APRS-IS is down, stop retrying refused logins, reconnect on request ([7fc36d1](https://github.com/APRS-NET/AprsMap/commit/7fc36d17ba41c0f3f579348b3848c9aa4618ddc7))
+* **engine:** packet header, kind, parse issues and a filtered packet stream ([05e0956](https://github.com/APRS-NET/AprsMap/commit/05e0956413ad46c56b7cc9dc368826ad54e1f462))
+* **tiles:** a policy-following tile cache, in process and behind the gateway ([de20f29](https://github.com/APRS-NET/AprsMap/commit/de20f29778174b7ee1cbf769b60a794599da72c3))
+* **ui:** dockable panels around the map, with layouts that persist and stay on screen ([b44b23c](https://github.com/APRS-NET/AprsMap/commit/b44b23cae29a36b5c1ec244715b5733579b9157e))
+* **ui:** dockable panels around the map, with layouts that persist and stay on screen ([9a6e480](https://github.com/APRS-NET/AprsMap/commit/9a6e480e785992d8c8e6a1a143ec2fa0667b3bca))
+* **ui:** move, show and gather panels from menus; Ctrl+Tab; narrow-window tabs ([1e74570](https://github.com/APRS-NET/AprsMap/commit/1e74570d701dfcb7201d036097739a4fc027fba0))
+* **ui:** move, show and gather panels from menus; Ctrl+Tab; narrow-window tabs ([4b709c7](https://github.com/APRS-NET/AprsMap/commit/4b709c78b5c7b030e09048184e3fb9816af9857f))
+* **ui:** Settings › Map ([5c1e412](https://github.com/APRS-NET/AprsMap/commit/5c1e412fe6e860d19cc5391a33352becfdc69a78))
+* **ui:** Settings › Map ([22787fc](https://github.com/APRS-NET/AprsMap/commit/22787fcd990cec4a5245c4dd21c4ad962f66eae8))
+* **ui:** start over from Settings › Data, or with --reset-all ([4930c77](https://github.com/APRS-NET/AprsMap/commit/4930c77980bad62d3c62a88923742134040aade5))
+* **ui:** start over from Settings › Data, or with --reset-all ([db74d8b](https://github.com/APRS-NET/AprsMap/commit/db74d8b4ee859737e61547259319862ec354008e)), closes [#81](https://github.com/APRS-NET/AprsMap/issues/81)
+* **ui:** stations on the map, with symbols, labels and selection ([e1296c6](https://github.com/APRS-NET/AprsMap/commit/e1296c6b74a752bdea797e1bd29061af0343baf7))
+* **ui:** the map, with tiles through the app's cache ([0085aca](https://github.com/APRS-NET/AprsMap/commit/0085aca88c73d81fbef4d404de79ab3af464b965))
+* **ui:** the Packets panel with filters, pause, parse issues and save ([ced31c6](https://github.com/APRS-NET/AprsMap/commit/ced31c636171e36d5b795e3077c7b584bca93bbd))
+* **ui:** the Packets panel with filters, pause, parse issues and save ([5eabc68](https://github.com/APRS-NET/AprsMap/commit/5eabc68ec89760252de442c29d926eea7a6bdf64))
+
+
+### Bug Fixes
+
+* **map:** tolerate a tile landing while the tile layer is disposed ([87ce2c8](https://github.com/APRS-NET/AprsMap/commit/87ce2c8490e60244551db7ce937b3d910c322ba9))
+* **ui:** use English plural rules when no locale is set ([8cddedd](https://github.com/APRS-NET/AprsMap/commit/8cddedd3322bf723a73c21849b7144ae800da4fb))
+
+
+### Performance Improvements
+
+* **map:** hold 60 fps with 2,000 stations in the browser ([5af696e](https://github.com/APRS-NET/AprsMap/commit/5af696e492057b7ec6ca58cae27b409a165c45df))
+
 ## [0.2.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.10...v0.2.0-alpha.1) (2026-10-15)
 
 
