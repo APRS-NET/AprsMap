@@ -9,6 +9,17 @@
   <Application.Styles>
     <FluentTheme />
     <dock:DockFluentTheme />
+    <!-- Panel tabs wrap onto another row instead of running off the panel at large text sizes. -->
+    <Style Selector="ToolTabStrip">
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate>
+          <WrapPanel />
+        </ItemsPanelTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="ToolTabStrip /template/ ScrollViewer#PART_ScrollViewer">
+      <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+    </Style>
     <!-- On a touch screen, every target is at least 44 × 44 px whatever the density (F0.6 behavior 11, WCAG 2.5.5). The
          app sets the "touch" class on its root view when the platform's primary pointer is coarse. -->
     <Style Selector=".touch :is(Button)">

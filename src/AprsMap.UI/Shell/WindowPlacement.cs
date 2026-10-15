@@ -23,7 +23,11 @@ public static class WindowPlacement
     /// Fits a window's saved placement to the current screens. Position is in pixels (as Avalonia's
     /// <c>Window.Position</c>), size in device-independent pixels (as <c>Window.Width</c>/<c>Height</c>).
     /// </summary>
-    public static (PixelPoint Position, Size Size) Fit(PixelPoint position, Size size, IReadOnlyList<ScreenArea> screens)
+    public static (PixelPoint Position, Size Size) Fit(
+        PixelPoint position,
+        Size size,
+        IReadOnlyList<ScreenArea> screens
+    )
     {
         if (screens.Count == 0)
         {

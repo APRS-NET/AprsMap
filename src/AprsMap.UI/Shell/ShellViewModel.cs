@@ -9,6 +9,8 @@ public sealed partial class ShellViewModel : ObservableObject
 {
     public ShellViewModel(object context, bool managedWindows)
     {
+        // In the browser there are no OS windows: floating panels, drag previews and dock targets stay in the page.
+        Dock.Settings.DockSettings.UseManagedWindows = managedWindows;
         Factory = new ShellFactory(context, managedWindows);
         Layout = Factory.CreateLayout();
         Factory.InitLayout(Layout);

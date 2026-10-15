@@ -118,11 +118,22 @@
           </WrapPanel>
         </DockPanel>
       </Border>
-      <DockControl x:Name="Shell" Layout="{Binding Shell.Layout}" Factory="{Binding Shell.Factory}" InitializeLayout="False" InitializeFactory="False">
+      <DockControl
+        x:Name="Shell"
+        Layout="{Binding Shell.Layout}"
+        Factory="{Binding Shell.Factory}"
+        InitializeLayout="False"
+        InitializeFactory="False"
+      >
         <DockControl.DataTemplates>
           <DataTemplate DataType="shell:MapDocument">
             <Border Background="{DynamicResource Brush.Ground}">
-              <TextBlock Text="{Binding Title}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock
+                Text="{Binding Title}"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
             </Border>
           </DataTemplate>
           <DataTemplate DataType="shell:PanelTool">

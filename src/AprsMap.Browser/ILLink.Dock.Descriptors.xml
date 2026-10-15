@@ -1,0 +1,5 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- Spike: Dock's themes bind to its model's properties by name (splitters); keep the whole model. -->
+<linker>
+  <assembly fullname="Dock.Model.Mvvm" preserve="all" />
+</linker>

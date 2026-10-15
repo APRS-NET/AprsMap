@@ -20,6 +20,13 @@ public sealed partial class MainView : UserControl
     {
         base.OnAttachedToVisualTree(e);
         BindSettingsKey();
+        if (TopLevel.GetTopLevel(this) is { } top && DataContext is MainViewModel probeVm)
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(
+                () => AprsMap.UI.Shell.ShellProbe.Run(top, probeVm.Shell),
+                Avalonia.Threading.DispatcherPriority.Background
+            );
+        }
     }
 
     /// <inheritdoc />

@@ -20,4 +20,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Browser" />
   </ItemGroup>
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="ILLink.Dock.Descriptors.xml" />
+  </ItemGroup>
 </Project>
