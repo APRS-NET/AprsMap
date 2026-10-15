@@ -10,8 +10,9 @@ macOS, and a web app served by a Docker gateway, both running the same UI on the
 from [APRS.NET](https://github.com/APRS-NET/APRS.NET). The feature set is a clean-room reimplementation of the
 functionality of APRSIS32, redesigned with a modern UI (see [docs/clean-room.md](docs/clean-room.md)).
 
-Status: early scaffolding. The engine connects to APRS-IS and the UI lists live packets; the map, messaging and the
-rest of [docs/scope.md](docs/scope.md) are next.
+Status: Phase 0, foundations. The app connects to APRS-IS, has a first-run setup wizard and station profiles, and lists
+live packets; **there is no map yet**. See [docs/status.md](docs/status.md) for what to expect when you run it, and
+[docs/scope.md](docs/scope.md) for the plan.
 
 > [!WARNING]
 > **Alpha software.** Every release is an alpha pre-release (`0.x.y-alpha.N`) until at least v1.0.0. Behaviour and
@@ -55,7 +56,8 @@ Run the desktop app with `dotnet run --project src/AprsMap.Desktop`, or the gate
 
 The browser app builds with any .NET 10 SDK, but only a **publish** links SkiaSharp into WebAssembly, which needs the
 `wasm-tools` workload (`dotnet workload install wasm-tools`, with Microsoft's SDK). The Dockerfile does this, so the
-easiest way to try the web app is `docker compose up --build`.
+easiest way to try the web app is `docker compose up --build`. Running `src/AprsMap.Browser` on its own stays on "Loading…": it needs a gateway to
+serve it (see [docs/status.md](docs/status.md#web-app)).
 
 Code is formatted with [CSharpier](https://csharpier.com), and CI fails on unformatted files. Enable the pre-commit hook
 once per clone so staged files are formatted when you commit:
@@ -120,6 +122,7 @@ the tag through [MinVer](https://github.com/adamralph/minver). The series starts
 | [docs/aprsnet/gaps.md](docs/aprsnet/gaps.md) | Capabilities to be built in APRS.NET, one issue each |
 | [docs/features/](docs/features/) | Per-feature specs (the implementation's only behavioural input) |
 | [docs/branding.md](docs/branding.md) | How the product name is kept in one place and renamed |
+| [docs/status.md](docs/status.md) | What works today, what you'll see when you run it, and known issues |
 | [docs/deployment.md](docs/deployment.md) | Running the gateway container and the desktop archives |
 | [docs/versioning.md](docs/versioning.md) | Versions, commit types and the release flow |
 

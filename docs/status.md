@@ -1,0 +1,63 @@
+# Development status
+
+What you should expect to see when you run AprsMap today, and what isn't there yet. Per-feature status lives in
+[scope.md](scope.md); this page is the short version for someone trying the app.
+
+As of 2026-10-15 (`0.1.0-alpha.8`): **Phase 0, foundations.** There is no map yet.
+
+## What you'll see
+
+### Desktop app
+
+`dotnet run --project src/AprsMap.Desktop`, or a release archive.
+
+1. **First run:** the setup wizard covers the window. It asks for your callsign, an optional location (Maidenhead
+   locator, address or postal code, or coordinates), the APRS-IS server, and an optional passcode. The passcode
+   calculator is there, behind the "licensed, own callsign" tick. Settings are saved in your user folder
+   (`~/.aprsnet/aprsmap` on Linux, `%APPDATA%\aprsnet\aprsmap` on Windows, `~/Library/Application Support/aprsnet/aprsmap`
+   on macOS).
+2. **After that:** one window with:
+   - a status bar with the product name, the profile picker (to switch between profiles, which reconnects), the APRS-IS
+     connection state and server, packet and station counts, and the latest error, if any;
+   - a live list of received packets, newest first, with the source callsign and a one-line summary.
+
+   That is the whole UI for now.
+3. **Traffic:** a profile without a filter of its own receives everything within 150 km of its location (`r/` filter),
+   or 150 km around the callsign's last position on APRS-IS when it has no location (`m/` filter). A profile can also
+   carry its own APRS-IS filter. It is set in `settings.json`, since there is no Settings screen yet.
+
+### Web app
+
+The web app runs only when the **gateway** serves it: the gateway runs the engine, and browsers connect to it.
+
+- **To try it:** `APRS_CALLSIGN=YOURCALL-10 docker compose up --build`, then open <http://localhost:8080>.
+- **First start:** the callsign, server and filter come from the environment the first time only, and are then stored
+  in the `settings` volume. The compose file's sample filter is around Boulder, Colorado (`r/40.0/-105.0/50`). Change
+  `Engine__Filter` before the first start, or remove the volume to start over.
+- **What browsers see:** the same status bar and packet list as the desktop app. Settings are read-only from a browser,
+  unless `Gateway__AllowSettingsChanges=true` (see [deployment.md](deployment.md)). So without a callsign the page says
+  the gateway isn't set up, rather than showing the wizard.
+- **Running `src/AprsMap.Browser` on its own** (`dotnet run`, or Run in an IDE) **doesn't work and stays on
+  "Loading…".** There is no gateway at that address for it to connect to, and only a publish build includes the
+  WebAssembly graphics (SkiaSharp). Use the gateway as above.
+
+## Not there yet
+
+| What | Where it's planned |
+| --- | --- |
+| The map: tiles, station symbols, tracks | F1.4 and the rest of Phase 1. The approach is proven in the F0.3 spikes (Mapsui in the browser, symbol atlas, tile cache) but not built into the app |
+| Station details, messages, weather, telemetry, objects | Phase 1 |
+| A filter that follows the map | F1.2; until then the fixed 150 km filter above |
+| A Settings screen: appearance, language, adding and editing profiles | F0.6, F0.8 |
+| "This device's location" in the wizard, and a map picker | Rest of F0.5; the picker comes with the map (F1.4) |
+| Translations | F0.9 groundwork is done (English only); translations come from contributors |
+| Sending anything (beacons, messages) | Phase 2 |
+| RF: TNCs, KISS, digipeater, IGate | Phase 3 |
+
+## Known issues
+
+- **Browser startup without a gateway:** the web app stays on "Loading…" and shows no error when it can't reach its
+  gateway, for example when `AprsMap.Browser` is run on its own. Once it has started, a lost gateway is shown and
+  retried.
+- **Packet summaries are English:** the one-line summaries in the packet list come from the engine in English, whatever
+  the language. They become structured with F1 station details (F0.9, behavior 16).
