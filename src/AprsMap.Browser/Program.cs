@@ -5,6 +5,7 @@ using AprsMap.UI;
 using AprsMap.UI.Appearance;
 using AprsMap.UI.Localization;
 using AprsMap.UI.Platform;
+using AprsMap.UI.Shell;
 using Avalonia;
 using Avalonia.Browser;
 
@@ -30,6 +31,8 @@ internal static class Program
             DeviceLocation = new BrowserDeviceLocation(),
             Preferences = preferences,
             Appearance = await new AppearancePreferences(preferences, TimeProvider.System).LoadAsync(),
+            SavedLayout = await new LayoutPreferences(preferences, TimeProvider.System).LoadAsync(),
+            ManagedWindows = true,
             SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
             CoarsePointer = BrowserPreferenceStore.IsCoarsePointer(),
 #if DEBUG

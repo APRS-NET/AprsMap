@@ -13,7 +13,17 @@ public sealed partial class MainView : UserControl
     private TopLevel? _topLevel;
 
     /// <summary>Creates the view.</summary>
-    public MainView() => InitializeComponent();
+    public MainView()
+    {
+        InitializeComponent();
+        // Dock doesn't report splitter drags or floating-window resizes; a released pointer may have done either.
+        ShellDock.AddHandler(
+            PointerReleasedEvent,
+            (_, _) => (DataContext as MainViewModel)?.Shell.OnChanged(),
+            Avalonia.Interactivity.RoutingStrategies.Bubble,
+            handledEventsToo: true
+        );
+    }
 
     /// <inheritdoc />
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)

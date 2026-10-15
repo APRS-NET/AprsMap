@@ -1,0 +1,36 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The Packets panel (F1.8): the live packet list, newest first. Its DataContext is the main view model. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:c="using:AprsMap.Contracts"
+  x:Class="AprsMap.UI.Views.PacketsPanel"
+  x:DataType="vm:MainViewModel"
+>
+  <ListBox
+    x:Name="PacketList"
+    ItemsSource="{Binding Packets}"
+    Background="{DynamicResource Brush.Surface}"
+    Grid.IsSharedSizeScope="True"
+  >
+    <ListBox.ItemTemplate>
+      <DataTemplate x:DataType="c:PacketView">
+        <!-- The callsign column fits the longest callsign shown, the same in every row, at any text size. -->
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Source" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{Binding Source}"
+            FontFamily="{DynamicResource Font.Mono}"
+            FontWeight="SemiBold"
+            Margin="0,0,16,0"
+          />
+          <TextBlock Grid.Column="1" Text="{Binding Summary}" TextTrimming="CharacterEllipsis" />
+        </Grid>
+      </DataTemplate>
+    </ListBox.ItemTemplate>
+  </ListBox>
+</UserControl>

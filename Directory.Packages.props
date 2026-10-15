@@ -17,6 +17,10 @@
     <PackageVersion Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.4" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageVersion Include="Dock.Avalonia" Version="12.1.0.9" />
+    <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.9" />
+    <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.0.9" />
+    <PackageVersion Include="Dock.Serializer.SystemTextJson" Version="12.1.0.9" />
     <PackageVersion Include="MessageFormat" Version="8.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.13" />

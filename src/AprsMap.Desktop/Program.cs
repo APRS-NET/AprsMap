@@ -5,6 +5,7 @@ using AprsMap.Hosting;
 using AprsMap.UI;
 using AprsMap.UI.Appearance;
 using AprsMap.UI.Platform;
+using AprsMap.UI.Shell;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Threading;
@@ -33,9 +34,14 @@ internal static class Program
         // The viewer's appearance, read before the first window so it opens in the right theme and language.
         var folder = SettingsLocation.Folder(s_host.Services.GetRequiredService<IOptions<EngineOptions>>().Value);
         var preferences = new FilePreferenceStore(folder);
+        // --reset-layout starts with the default layout (F1.0 behavior 10); the next save replaces the stored one.
+        var resetLayout = args.Contains("--reset-layout", StringComparer.OrdinalIgnoreCase);
         s_platform = new PlatformServices
         {
             Preferences = preferences,
+            SavedLayout = resetLayout
+                ? null
+                : new LayoutPreferences(preferences, TimeProvider.System).LoadAsync().GetAwaiter().GetResult(),
             Appearance = new AppearancePreferences(preferences, TimeProvider.System)
                 .LoadAsync()
                 .GetAwaiter()
@@ -58,7 +64,8 @@ internal static class Program
         {
             if (Application.Current is App app)
             {
-                app.SavePreferencesAsync().GetAwaiter().GetResult();
+                // Off the UI thread: its dispatcher has stopped, so a save that resumed on it would never finish.
+                Task.Run(app.SavePreferencesAsync).GetAwaiter().GetResult();
                 app.Dispose();
             }
             // Graceful engine shutdown when the window closes; the UI thread has nothing left to do.

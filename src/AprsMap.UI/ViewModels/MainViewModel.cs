@@ -5,11 +5,15 @@ using AprsMap.UI.Appearance;
 using AprsMap.UI.Localization;
 using AprsMap.UI.Platform;
 using AprsMap.UI.Settings;
+using AprsMap.UI.Shell;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AprsMap.UI.ViewModels;
 
-/// <summary>The main screen: connection status and the live packet list. Talks only to <see cref="IEngineService"/>.</summary>
+/// <summary>
+/// The main screen: connection status, and the shell with the map and its panels. Talks only to
+/// <see cref="IEngineService"/>.
+/// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
     /// <summary>How many packets the list keeps.</summary>
@@ -40,7 +44,8 @@ public sealed partial class MainViewModel : ObservableObject
         Localizer? text = null,
         IDeviceLocation? deviceLocation = null,
         AppearanceService? appearance = null,
-        bool showPseudoLanguage = false
+        bool showPseudoLanguage = false,
+        bool managedWindows = false
     )
     {
         this.engine = engine;
@@ -49,12 +54,32 @@ public sealed partial class MainViewModel : ObservableObject
         _appearance = appearance ?? new AppearanceService();
         _showPseudoLanguage = showPseudoLanguage;
         _text = text ?? Localizer.Instance;
+        Shell = new ShellViewModel(this, _text, managedWindows);
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
     }
 
     /// <summary>The product name, from branding.</summary>
     public string Title { get; } = Brand.DisplayName;
+
+    /// <summary>The map and the panels around it (docs/features/F1.0-shell-and-docking.md).</summary>
+    public ShellViewModel Shell { get; }
+
+    /// <summary>Said once when the saved layout couldn't be read and the default is shown (F1.0 behavior 10); or null.</summary>
+    [ObservableProperty]
+    public partial string? LayoutNotice { get; set; }
+
+    /// <summary>Restores the saved layout, fitted to <paramref name="screens"/>, and says so if it couldn't be read.</summary>
+    public LayoutRestore RestoreLayout(string? saved, IReadOnlyList<ScreenArea> screens)
+    {
+        var result = Shell.Restore(saved, screens);
+        LayoutNotice = result == LayoutRestore.Unreadable ? _text["Shell.LayoutUnreadable"] : null;
+        return result;
+    }
+
+    /// <summary>Hides <see cref="LayoutNotice"/>.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    internal void DismissLayoutNotice() => LayoutNotice = null;
 
     /// <summary>Newest first.</summary>
     public ObservableCollection<PacketView> Packets { get; } = [];

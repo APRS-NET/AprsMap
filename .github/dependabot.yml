@@ -23,6 +23,9 @@ updates:
         patterns: ["AprsNet.*"]
       avalonia:
         patterns: ["Avalonia*"]
+      # Dock's packages are versioned in lockstep and must move together (F1.0 shell).
+      dock:
+        patterns: ["Dock.*"]
       microsoft-extensions:
         patterns: ["Microsoft.Extensions.*", "Microsoft.AspNetCore.*"]
       opentelemetry:

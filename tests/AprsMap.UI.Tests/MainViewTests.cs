@@ -4,6 +4,7 @@ using AprsMap.UI.Views;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.LogicalTree;
+using Avalonia.VisualTree;
 using Microsoft.Extensions.Time.Testing;
 
 namespace AprsMap.UI.Tests;
@@ -27,7 +28,9 @@ public class MainViewTests
 
         var label = window.GetLogicalDescendants().OfType<TextBlock>().Single(t => t.Name == "ConnectionLabel");
         Assert.Equal("APRS-IS connected · T2TEST", label.Text);
-        var list = window.GetLogicalDescendants().OfType<ListBox>().Single(l => l.Name == "PacketList");
+        // The Packets panel is built by the shell, after the window's first layout pass.
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        var list = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "PacketList");
         Assert.Equal(1, list.ItemCount);
         window.Close();
     }

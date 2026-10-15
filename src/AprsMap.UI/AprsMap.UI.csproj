@@ -24,6 +24,15 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <!-- Docking (F1.0). Only AprsMap.UI/Shell uses it, so it could be replaced by rewriting the shell alone. -->
+    <PackageReference Include="Dock.Avalonia" />
+    <PackageReference Include="Dock.Avalonia.Themes.Fluent" />
+    <PackageReference Include="Dock.Model.Mvvm" />
+    <PackageReference Include="Dock.Serializer.SystemTextJson" />
     <PackageReference Include="MessageFormat" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Trim suppressions for code Dock's source generator writes into this assembly (see the file). -->
+    <EmbeddedResource Include="ILLink.LinkAttributes.xml" LogicalName="ILLink.LinkAttributes.xml" />
   </ItemGroup>
 </Project>
