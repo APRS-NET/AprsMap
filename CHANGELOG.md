@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.0-alpha.6](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-10-15)
+
+
+### Features
+
+* **engine:** report errors as codes the UI can translate ([582c6c6](https://github.com/APRS-NET/AprsMap/commit/582c6c64b40105d26be9e5f6dfb2243ff722f664))
+* **engine:** report errors as codes the UI can translate ([96f62d9](https://github.com/APRS-NET/AprsMap/commit/96f62d90399ba897c27f5a54e8049ed2e4e935eb))
+* **ui:** move UI text to resources with a live language switch ([7090e00](https://github.com/APRS-NET/AprsMap/commit/7090e00d03f25a356e1fd554baccf74f8f437286))
+* **ui:** move UI text to resources with a live language switch ([6cdcd56](https://github.com/APRS-NET/AprsMap/commit/6cdcd563252abc62e0b9931e90a0c9de59745a02))
+
 ## [0.1.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.4...v0.1.0-alpha.5) (2026-10-14)
 
 
