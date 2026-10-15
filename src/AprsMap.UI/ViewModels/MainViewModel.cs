@@ -403,7 +403,18 @@ public sealed partial class MainViewModel : ObservableObject
             _stations.Remove(name);
         }
         StationCount = _stations.Count;
+        StationsChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Every station on the map, by name, as the station stream has them.</summary>
+    public IReadOnlyCollection<StationState> Stations => _stations.Values;
+
+    /// <summary>Raised after each batch from the station stream (about every 250 ms at most).</summary>
+    public event EventHandler? StationsChanged;
+
+    /// <summary>The station selected on the map or in a list, for the Details panel (F1.6); null for none.</summary>
+    [ObservableProperty]
+    public partial string? SelectedStation { get; set; }
 
     /// <summary>Shows freshly loaded settings without treating them as the user's choice.</summary>
     internal void Show(AppSettings settings)

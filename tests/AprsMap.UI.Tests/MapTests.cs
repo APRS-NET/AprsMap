@@ -123,6 +123,57 @@ public sealed class MapTests
         window.Close();
     }
 
+    [AvaloniaFact]
+    public async Task StationsAreDrawnSelectedByClickAndFitted()
+    {
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider())
+        {
+            Map = new MapViewModel(new FakeTiles(), null, new FakeTimeProvider()),
+        };
+        await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
+        using var panel = new MapPanel { DataContext = vm };
+        var window = new Window
+        {
+            Content = panel,
+            Width = 800,
+            Height = 600,
+        };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        vm.Apply(
+            new StationBatch(
+                [
+                    new StationState("N0AAA", DateTimeOffset.UnixEpoch, 40.0, -105.3, "/>"),
+                    new StationState("N0BBB", DateTimeOffset.UnixEpoch, 40.1, -105.1, "/-", IsStale: true),
+                ],
+                []
+            )
+        );
+
+        Assert.True(panel.View.Fit());
+        Dispatcher.UIThread.RunJobs();
+        var view = panel.View;
+        var at = view.ScreenPoint(40.0, -105.3);
+        Assert.Equal("N0AAA", view.HitTest(at)?.Name);
+        Assert.Null(view.HitTest(new Avalonia.Point(at.X + 200, at.Y + 200)));
+
+        view.Select("N0AAA");
+        Assert.Equal("N0AAA", vm.SelectedStation);
+        vm.Apply(new StationBatch([], ["N0AAA"]));
+        Assert.Null(view.Selected); // a station that leaves the map is no longer selected
+        Assert.Null(vm.SelectedStation);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void FittingNothingDoesNothing()
+    {
+        using var view = new MapView();
+
+        Assert.False(view.Fit());
+    }
+
     private static async Task WaitUntil(Func<bool> condition)
     {
         for (var i = 0; i < 200 && !condition(); i++)

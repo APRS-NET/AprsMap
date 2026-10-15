@@ -16,6 +16,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
 {
     private readonly MapView _map = new();
     private MapViewModel? _state;
+    private MainViewModel? _main;
     private bool _placed;
 
     /// <summary>Creates the panel.</summary>
@@ -26,6 +27,14 @@ public sealed partial class MapPanel : UserControl, IDisposable
         ZoomInButton.Click += (_, _) => _map.ZoomIn();
         ZoomOutButton.Click += (_, _) => _map.ZoomOut();
         HomeButton.Click += (_, _) => GoHome();
+        FitButton.Click += (_, _) => _map.Fit();
+        _map.SelectionChanged += (_, name) =>
+        {
+            if (_main is not null)
+            {
+                _main.SelectedStation = name;
+            }
+        };
         _map.ViewChanged += (_, _) =>
         {
             if (_placed && _map.View is var (lat, lon, resolution))
@@ -57,7 +66,17 @@ public sealed partial class MapPanel : UserControl, IDisposable
         {
             _state.PropertyChanged -= OnStateChanged;
         }
-        _state = (DataContext as MainViewModel)?.Map;
+        if (_main is not null)
+        {
+            _main.StationsChanged -= OnStationsChanged;
+        }
+        _main = DataContext as MainViewModel;
+        if (_main is not null)
+        {
+            _main.StationsChanged += OnStationsChanged;
+            OnStationsChanged(_main, EventArgs.Empty);
+        }
+        _state = _main?.Map;
         if (_state is not null)
         {
             _state.PropertyChanged += OnStateChanged;
@@ -99,9 +118,18 @@ public sealed partial class MapPanel : UserControl, IDisposable
 
     private void OnMapKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.H && e.KeyModifiers == KeyModifiers.None && _state?.HasHome == true)
+        if (e.KeyModifiers != KeyModifiers.None)
+        {
+            return;
+        }
+        if (e.Key == Key.H && _state?.HasHome == true)
         {
             GoHome(); // H returns home (behavior 3)
+            e.Handled = true;
+        }
+        else if (e.Key == Key.F)
+        {
+            _map.Fit(); // F fits every station (behavior 4)
             e.Handled = true;
         }
     }
@@ -141,4 +169,12 @@ public sealed partial class MapPanel : UserControl, IDisposable
     }
 
     private void ShowHome() => HomeButton.IsVisible = _state?.HasHome == true;
+
+    private void OnStationsChanged(object? sender, EventArgs e)
+    {
+        if (_main is not null)
+        {
+            _map.SetStations(_main.Stations);
+        }
+    }
 }

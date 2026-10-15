@@ -881,4 +881,12 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Go to my location (H)</value>
     <comment>Map button: back to the active profile's location. H is the key that does the same.</comment>
   </data>
+  <data name="Map.Fit" xml:space="preserve">
+    <value>Fit all stations (F)</value>
+    <comment>Map button: zooms to show every station. F is the key that does the same.</comment>
+  </data>
+  <data name="Map.Hover" xml:space="preserve">
+    <value>{name} · heard {minutes, plural, =0 {just now} one {# minute ago} other {# minutes ago}}</value>
+    <comment>Tooltip over a station on the map. name: its callsign (not translated). minutes: whole minutes since it was last heard.</comment>
+  </data>
 </root>
