@@ -6,12 +6,12 @@ API sketches are proposals that follow APRS.NET's existing conventions: parsing 
 are Latin-1, `TimeProvider` for time, async-first I/O, every public member tracked in `PublicAPI.Unshipped.txt`, and
 `AprsNet.Packets` stays I/O-free with BCL-only dependencies.
 
-Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.1.0-alpha.15` (2026-10-14); what has shipped since the
+Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.1.0-alpha.17` (2026-10-15, with #44); what has shipped since the
 baseline is noted under **Delivered** in each section.
 
 | ID | Title | Package | AprsMap phase | Issue |
 | --- | --- | --- | --- | --- |
-| G03 | Resilient APRS-IS connection (reconnect, server rotation) | AprsIsTcpClient | 1 | — |
+| G03 | Resilient APRS-IS connection (reconnect, server rotation) (delivered) | AprsIsTcpClient | 1 | — |
 | G04 | Typed APRS-IS server filter builder | AprsIsTcpClient | 1 | — |
 | G05 | Duplicate packet detection | Packets | 1 | — |
 | G06 | Third-party (`}`) payload decoding | Packets | 1 | — |
@@ -20,7 +20,7 @@ baseline is noted under **Delivered** in each section.
 | G09 | Telemetry definitions applied to reports | Packets | 1 | — |
 | G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs | Packets | 1 | — |
 | G01 | `Callsign.Parse` and a packet encoder (partly delivered) | Packets | 2 | — |
-| G02 | Transmit through APRS-IS, and passcode generation (passcode delivered) | AprsIsTcpClient | 2 | — |
+| G02 | Transmit through APRS-IS, and passcode generation (delivered) | AprsIsTcpClient | 2 | — |
 | G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | — |
 | G11 | Beacon scheduling algorithms | new: AprsNet.Beaconing | 2 | — |
 | G19 | Query and response handling | Packets + Messaging | 2 | — |
@@ -52,6 +52,12 @@ the current filter after reconnecting, and a connection state stream (`Connectin
 
 **Acceptance.** Fake transport tests with `FakeTimeProvider`: idle timeout triggers a reconnect, backoff is bounded,
 the filter persists across reconnects, and disposal stops the loop promptly.
+
+**Delivered** (`0.1.0-alpha.17`): `AprsIsConnection`: reconnect on close, failure, idle timeout or packet silence, with
+backoff and ±20 % jitter (`ReconnectDelay`, `MaxReconnectDelay`); one `ReadLinesAsync` stream across reconnects; the
+filter resent on every login (`SetFilterAsync`); `SendAsync` waiting through a reconnect; `StateChanged` events. Rotation
+through an endpoint list isn't included, and AprsMap doesn't need it (F1.1 behavior 10). AprsMap's `// SHIM: G03` loop
+goes with F1.1.
 
 ## G04: Typed APRS-IS server filter builder
 
@@ -186,7 +192,8 @@ widely documented, and needed for setup UX).
 
 **Acceptance.** Unverified login cannot transmit; written lines are exactly the packet bytes plus CRLF.
 
-**Delivered** (`0.1.0-alpha.10`): `AprsIsPasscode.Compute(callsign)`. Still open: sending.
+**Delivered**: `AprsIsPasscode.Compute(callsign)` (`0.1.0-alpha.10`), and sending on a verified login,
+`AprsIsClient.SendAsync` (`0.1.0-alpha.16`).
 
 ## G10: Messaging session engine (ack, retry, reply-ack, dupes)
 
