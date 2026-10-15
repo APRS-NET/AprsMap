@@ -15,6 +15,8 @@ namespace AprsMap.UI.Views;
 /// </summary>
 public sealed partial class SettingsView : UserControl
 {
+    private static readonly string[] Sections = ["ProfilesSection", "AppearanceSection", "AboutSection"];
+
     /// <summary>Below this width the sections become tabs across the top.</summary>
     public const double NarrowWidth = 720;
 
@@ -31,10 +33,45 @@ public sealed partial class SettingsView : UserControl
         {
             _viewModel.PropertyChanged -= OnViewModelChanged;
         }
+        if (_viewModel?.Profiles is { } oldProfiles)
+        {
+            oldProfiles.PropertyChanged -= OnProfilesChanged;
+        }
         _viewModel = DataContext as SettingsViewModel;
         if (_viewModel is not null)
         {
             _viewModel.PropertyChanged += OnViewModelChanged;
+            if (_viewModel.Profiles is { } profiles)
+            {
+                profiles.PropertyChanged += OnProfilesChanged;
+            }
+        }
+    }
+
+    /// <summary>After a delete, Undo takes focus (F0.8 behavior 14); when it goes away, focus goes to Add profile.</summary>
+    private void OnProfilesChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (
+            e.PropertyName != nameof(ProfilesSectionViewModel.CanUndoDelete)
+            || _viewModel?.Profiles is not { } profiles
+        )
+        {
+            return;
+        }
+        var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement();
+        if (profiles.CanUndoDelete)
+        {
+            Dispatcher.UIThread.Post(
+                () => this.FindControl<Button>("UndoDeleteButton")?.Focus(),
+                DispatcherPriority.Loaded
+            );
+        }
+        else if (focused is Button { Name: "UndoDeleteButton" } or null)
+        {
+            Dispatcher.UIThread.Post(
+                () => this.FindControl<Button>("AddProfileButton")?.Focus(),
+                DispatcherPriority.Loaded
+            );
         }
     }
 
@@ -82,10 +119,17 @@ public sealed partial class SettingsView : UserControl
             {
                 if (IsEffectivelyVisible && DataContext is not null)
                 {
-                    var first = this.FindControl<ItemsControl>("AppearanceOptions")
+                    // The first thing to act on in the section showing: an option, or a profile's button.
+                    var first = Sections
+                        .Select(name => this.FindControl<Control>(name))
+                        .FirstOrDefault(section => section?.IsVisible == true)
                         ?.GetLogicalDescendants()
-                        .OfType<ComboBox>()
-                        .FirstOrDefault();
+                        .OfType<Control>()
+                        .FirstOrDefault(c =>
+                            c is ComboBox or Button or CheckBox or HyperlinkButton
+                            && c.IsEffectivelyVisible
+                            && c.IsEffectivelyEnabled
+                        );
                     (first ?? (Control?)this.FindControl<Button>("SettingsBackButton"))?.Focus();
                 }
             },

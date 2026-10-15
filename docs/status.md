@@ -5,6 +5,10 @@ What you should expect to see when you run AprsMap today, and what isn't there y
 
 As of 2026-10-15 (`0.1.0-alpha.8`): **Phase 0, foundations.** There is no map yet.
 
+**Next:** Phase 0 is complete apart from the map picker in the wizard, which comes with the map (F1.4). Every Phase 1
+feature has a spec in [features/](features/), waiting for review; Phase 1 code starts once they're agreed. The map
+(F1.4) is first.
+
 ## What you'll see
 
 ### Desktop app
@@ -22,10 +26,11 @@ As of 2026-10-15 (`0.1.0-alpha.8`): **Phase 0, foundations.** There is no map ye
    - a live list of received packets, newest first, with the source callsign and a one-line summary.
 3. **Settings** (the gear, or Ctrl+, / Cmd+,): **Appearance** (theme, standard, high-contrast or colour-vision-safe
    colours, text size up to 200 %, icon size, corners, density, motion, language), applied live and remembered per
-   viewer, with Reset and Undo; and **About** (versions, licences, source link, credits).
+   viewer, with Reset and Undo; **Profiles** (add, edit, copy, delete with Undo, switch; read-only on a gateway without
+   operator sign-in); and **About** (versions, licences, source link, credits).
 4. **Traffic:** a profile without a filter of its own receives everything within 150 km of its location (`r/` filter),
    or 150 km around the callsign's last position on APRS-IS when it has no location (`m/` filter). A profile can also
-   carry its own APRS-IS filter. It is set in `settings.json`, since there is no Settings screen yet.
+   carry its own APRS-IS filter, set when adding or editing it in Settings.
 
 ### Web app
 
@@ -52,7 +57,6 @@ The web app runs only when the **gateway** serves it: the gateway runs the engin
 | The map: tiles, station symbols, tracks | F1.4 and the rest of Phase 1. The approach is proven in the F0.3 spikes (Mapsui in the browser, symbol atlas, tile cache) but not built into the app |
 | Station details, messages, weather, telemetry, objects | Phase 1 |
 | A filter that follows the map | F1.2; until then the fixed 150 km filter above |
-| Adding, renaming and deleting profiles in Settings | F0.8 |
 | A map picker in the wizard; "this device's location" on desktop | The picker comes with the map (F1.4); desktop location with F3.6 |
 | Translations | F0.9 groundwork is done (English only); translations come from contributors |
 | Sending anything (beacons, messages) | Phase 2 |

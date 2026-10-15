@@ -73,6 +73,15 @@ public sealed class AccessibilityRenderTests : IDisposable
             vm.Settings.SelectedSection = vm.Settings.Sections.Single(s => s.Id == section.Id);
             Check(window, "settings " + section.Id, failures);
         }
+        // Adding a profile: the wizard's extra fields.
+        await vm.OpenProfileEditorAsync(WizardMode.Add, null, engine.Settings);
+        var add = vm.Setup!;
+        add.Callsign = "AB1CD-9";
+        foreach (var step in new[] { SetupStep.Callsign, SetupStep.Server, SetupStep.Passcode })
+        {
+            add.Step = step;
+            Check(window, "add profile " + step, failures);
+        }
         vm.Settings.CloseCommand.Execute(null);
         window.Close();
 

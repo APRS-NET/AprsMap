@@ -598,4 +598,99 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Address lookup: Nominatim · © OpenStreetMap contributors</value>
     <comment>Keep the names Nominatim and OpenStreetMap.</comment>
   </data>
+  <data name="Wizard.Title.Add" xml:space="preserve">
+    <value>Add a profile</value>
+    <comment>Wizard heading when adding a profile from Settings.</comment>
+  </data>
+  <data name="Wizard.Title.Edit" xml:space="preserve">
+    <value>Edit {profile}</value>
+    <comment>Wizard heading when editing a profile. profile: its name.</comment>
+  </data>
+  <data name="Wizard.ProfileName" xml:space="preserve">
+    <value>Profile name</value>
+    <comment>Label. The name only shows in this app.</comment>
+  </data>
+  <data name="Wizard.Filter" xml:space="preserve">
+    <value>Filter (optional)</value>
+    <comment>Label of the APRS-IS server-side filter field.</comment>
+  </data>
+  <data name="Wizard.Filter.Help" xml:space="preserve">
+    <value>Empty means everything within 150 km of the profile's location. Otherwise it's sent to the server as typed.</value>
+  </data>
+  <data name="Wizard.Filter.Link" xml:space="preserve">
+    <value>Filter syntax</value>
+    <comment>Link to the APRS-IS filter documentation.</comment>
+  </data>
+  <data name="Wizard.SwitchToNew" xml:space="preserve">
+    <value>Switch to it now</value>
+    <comment>Check box on the last step when adding a profile.</comment>
+  </data>
+  <data name="Settings.Profiles" xml:space="preserve">
+    <value>Profiles</value>
+    <comment>Section.</comment>
+  </data>
+  <data name="Settings.Profiles.Active" xml:space="preserve">
+    <value>Active</value>
+    <comment>Marks the profile the app is using.</comment>
+  </data>
+  <data name="Settings.Profiles.Use" xml:space="preserve">
+    <value>Use</value>
+    <comment>Button: switch to this profile.</comment>
+  </data>
+  <data name="Settings.Profiles.Edit" xml:space="preserve">
+    <value>Edit</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="Settings.Profiles.Copy" xml:space="preserve">
+    <value>Copy</value>
+    <comment>Button: make a copy of the profile.</comment>
+  </data>
+  <data name="Settings.Profiles.Delete" xml:space="preserve">
+    <value>Delete</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="Settings.Profiles.Add" xml:space="preserve">
+    <value>Add profile</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="Settings.Profiles.Undo" xml:space="preserve">
+    <value>Undo</value>
+    <comment>Button, offered for 10 seconds after a delete.</comment>
+  </data>
+  <data name="Settings.Profiles.Deleted" xml:space="preserve">
+    <value>“{profile}” deleted.</value>
+    <comment>profile: the profile's name.</comment>
+  </data>
+  <data name="Settings.Profiles.OnlyProfile" xml:space="preserve">
+    <value>The only profile can't be deleted.</value>
+    <comment>Tooltip on Delete when there is one profile.</comment>
+  </data>
+  <data name="Settings.Profiles.ReadOnly" xml:space="preserve">
+    <value>This gateway's operator manages its profiles.</value>
+    <comment>Shown in the browser when the gateway's settings are read-only.</comment>
+  </data>
+  <data name="Settings.Profiles.CopyName" xml:space="preserve">
+    <value>{name} (copy)</value>
+    <comment>name: the original profile's name.</comment>
+  </data>
+  <data name="Settings.Profiles.CopyNameNumbered" xml:space="preserve">
+    <value>{name} (copy {n})</value>
+    <comment>name: the original's name; n: 2, 3…</comment>
+  </data>
+  <data name="Settings.Profiles.UseNamed" xml:space="preserve">
+    <value>Use {profile}</value>
+    <comment>Screen-reader name of the Use button. profile: its name.</comment>
+  </data>
+  <data name="Settings.Profiles.EditNamed" xml:space="preserve">
+    <value>Edit {profile}</value>
+    <comment>Screen-reader name of the Edit button.</comment>
+  </data>
+  <data name="Settings.Profiles.CopyNamed" xml:space="preserve">
+    <value>Copy {profile}</value>
+    <comment>Screen-reader name of the Copy button.</comment>
+  </data>
+  <data name="Settings.Profiles.DeleteNamed" xml:space="preserve">
+    <value>Delete {profile}</value>
+    <comment>Screen-reader name of the Delete button.</comment>
+  </data>
 </root>

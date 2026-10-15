@@ -46,6 +46,16 @@ public class SettingsKeyboardTests
 
         await Press(window, PhysicalKey.Comma, RawInputModifiers.Control);
         Assert.NotNull(vm.Settings);
+        Assert.Equal("profiles", vm.Settings.SelectedSection?.Id);
+
+        // Back to the section list, down to Appearance, and into its first option.
+        for (var i = 0; i < 10 && window.FocusManager?.GetFocusedElement() is not ListBoxItem; i++)
+        {
+            await Press(window, PhysicalKey.Tab, RawInputModifiers.Shift);
+        }
+        await Press(window, PhysicalKey.ArrowDown);
+        Assert.Equal("appearance", vm.Settings.SelectedSection?.Id);
+        await Press(window, PhysicalKey.Tab);
         Assert.IsType<ComboBox>(window.FocusManager?.GetFocusedElement()); // Theme
 
         await Press(window, PhysicalKey.ArrowDown); // Auto → Light

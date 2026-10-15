@@ -119,6 +119,22 @@
                 FontFamily="{DynamicResource Font.Mono}"
                 MaxLength="12"
               />
+              <StackPanel IsVisible="{Binding IsProfileMode}" Spacing="4">
+                <TextBlock Text="{l:T Wizard.ProfileName}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="ProfileNameBox"
+                  Text="{Binding ProfileName}"
+                  AutomationProperties.Name="{l:T Wizard.ProfileName}"
+                  MaxLength="40"
+                />
+                <TextBlock
+                  x:Name="NameErrorLabel"
+                  Text="{Binding NameError}"
+                  IsVisible="{Binding NameError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  Foreground="{DynamicResource Brush.Warn}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
               <TextBlock
                 x:Name="CallsignErrorLabel"
                 Text="{Binding CallsignError}"
@@ -358,6 +374,27 @@
                 FontFamily="{DynamicResource Font.Mono}"
                 Margin="28,0,0,0"
               />
+              <StackPanel IsVisible="{Binding IsProfileMode}" Spacing="4" Margin="0,8,0,0">
+                <TextBlock Text="{l:T Wizard.Filter}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="FilterBox"
+                  Text="{Binding Filter}"
+                  AutomationProperties.Name="{l:T Wizard.Filter}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                />
+                <TextBlock
+                  Text="{l:T Wizard.Filter.Help}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  FontSize="{DynamicResource Text.Small}"
+                  TextWrapping="Wrap"
+                />
+                <HyperlinkButton
+                  Content="{l:T Wizard.Filter.Link}"
+                  NavigateUri="{x:Static vm:SetupWizardViewModel.FilterHelpUri}"
+                  FontSize="{DynamicResource Text.Small}"
+                  Padding="0"
+                />
+              </StackPanel>
               <TextBlock
                 x:Name="ServerErrorLabel"
                 Text="{Binding ServerError}"
@@ -419,6 +456,14 @@
                   TextWrapping="Wrap"
                 />
               </StackPanel>
+              <CheckBox
+                x:Name="SwitchToNewBox"
+                IsChecked="{Binding SwitchToNew}"
+                IsVisible="{Binding IsAddMode}"
+                Margin="0,8,0,0"
+              >
+                <TextBlock Text="{l:T Wizard.SwitchToNew}" TextWrapping="Wrap" />
+              </CheckBox>
             </StackPanel>
           </Panel>
         </DockPanel>

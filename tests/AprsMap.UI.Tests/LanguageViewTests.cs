@@ -138,7 +138,9 @@ public sealed class LanguageViewTests : IDisposable
                 .GetLogicalDescendants()
                 .OfType<TextBlock>()
                 .Where(t => t.IsEffectivelyVisible && !string.IsNullOrEmpty(t.Text) && t.Text.Any(char.IsLetter))
-                .Where(t => t.Text != Brand.DisplayName && t.Text != "N0CALL" && t.Text != "Home") // data
+                .Where(t =>
+                    t.Text is not ("N0CALL" or "N0CALL-7" or "Home" or "Portable") && t.Text != Brand.DisplayName
+                ) // data
                 .ToList();
             Assert.NotEmpty(texts);
             Assert.All(

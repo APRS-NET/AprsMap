@@ -106,7 +106,8 @@ public sealed partial class MainViewModel : ObservableObject
     [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanOpenSettings))]
     internal async Task OpenSettingsAsync()
     {
-        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage);
+        var profiles = new ProfilesSectionViewModel(engine, time, _text, OpenProfileEditorAsync, Show);
+        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage, profiles);
         settings.Closed += OnSettingsClosed;
         Settings = settings;
         GeocodingInfo? geocoding = null;
@@ -119,6 +120,31 @@ public sealed partial class MainViewModel : ObservableObject
             // About shows less without it; nothing else depends on it.
         }
         settings.Show(_status, geocoding);
+        if (_settings is { } current)
+        {
+            await profiles.ShowAsync(current);
+        }
+    }
+
+    /// <summary>Opens the setup wizard over Settings to add or edit a profile (F0.8 behaviors 5–6).</summary>
+    internal async Task OpenProfileEditorAsync(WizardMode mode, StationProfile? profile, AppSettings settings)
+    {
+        if (Setup is not null)
+        {
+            return;
+        }
+        var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation, mode, settings, profile);
+        try
+        {
+            await wizard.LoadAsync();
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            ShowError(ex);
+            return;
+        }
+        wizard.Closed += OnSetupClosed;
+        Setup = wizard;
     }
 
     private void OnSettingsClosed(object? sender, EventArgs e)
@@ -132,6 +158,23 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     partial void OnSetupChanged(SetupWizardViewModel? value) => OpenSettingsCommand.NotifyCanExecuteChanged();
+
+    private async Task ReloadSettingsAsync()
+    {
+        try
+        {
+            var settings = await engine.GetSettingsAsync();
+            Show(settings);
+            if (Settings?.Profiles is { } profiles)
+            {
+                await profiles.ShowAsync(settings);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            ShowError(ex);
+        }
+    }
 
     /// <summary>Whether the status bar offers to open the wizard again: no profile, and the user closed it (behavior 3).</summary>
     [ObservableProperty]
@@ -281,11 +324,21 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void OnSetupClosed(object? sender, bool saved)
     {
+        var mode = Setup?.Mode ?? WizardMode.FirstRun;
         if (Setup is { } wizard)
         {
             wizard.Closed -= OnSetupClosed;
         }
         Setup = null;
+        if (mode != WizardMode.FirstRun)
+        {
+            // Added or edited from Settings: show the result there and in the status bar.
+            if (saved)
+            {
+                _ = ReloadSettingsAsync();
+            }
+            return;
+        }
         _setupDismissed = !saved;
         CanOpenSetup = !saved && _settings is { Profiles.Count: 0, ReadOnly: false };
         if (saved)

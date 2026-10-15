@@ -73,6 +73,106 @@
 
       <ScrollViewer x:Name="SectionScroll" Padding="24,16">
         <Panel MaxWidth="720" HorizontalAlignment="Left">
+          <!-- Profiles (F0.8) -->
+          <StackPanel x:Name="ProfilesSection" IsVisible="{Binding IsProfilesSection}" Spacing="12">
+            <TextBlock
+              x:Name="ProfilesReadOnlyNote"
+              Text="{l:T Settings.Profiles.ReadOnly}"
+              IsVisible="{Binding Profiles.IsReadOnly}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <ItemsControl x:Name="ProfileList" ItemsSource="{Binding Profiles.Rows}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="8" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="s:ProfileRow">
+                  <Border
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    Padding="12,8"
+                  >
+                    <StackPanel Spacing="6">
+                      <WrapPanel ItemSpacing="10">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock
+                          Text="{Binding ActiveText}"
+                          IsVisible="{Binding IsActive}"
+                          Foreground="{DynamicResource Brush.Accent}"
+                          FontWeight="SemiBold"
+                        />
+                      </WrapPanel>
+                      <WrapPanel ItemSpacing="10">
+                        <TextBlock Text="{Binding Callsign}" FontFamily="{DynamicResource Font.Mono}" />
+                        <TextBlock Text="{Binding ServerText}" Foreground="{DynamicResource Brush.TextMuted}" />
+                        <TextBlock
+                          Text="{Binding Locator}"
+                          IsVisible="{Binding Locator, Converter={x:Static ObjectConverters.IsNotNull}}"
+                          FontFamily="{DynamicResource Font.Mono}"
+                          Foreground="{DynamicResource Brush.TextMuted}"
+                        />
+                      </WrapPanel>
+                      <WrapPanel ItemSpacing="8" LineSpacing="6" IsVisible="{Binding CanChange}">
+                        <Button
+                          Content="{l:T Settings.Profiles.Use}"
+                          Command="{Binding UseCommand}"
+                          IsVisible="{Binding CanUse}"
+                          AutomationProperties.Name="{Binding UseName}"
+                        />
+                        <Button
+                          Content="{l:T Settings.Profiles.Edit}"
+                          Command="{Binding EditCommand}"
+                          AutomationProperties.Name="{Binding EditName}"
+                        />
+                        <Button
+                          Content="{l:T Settings.Profiles.Copy}"
+                          Command="{Binding CopyCommand}"
+                          AutomationProperties.Name="{Binding CopyName}"
+                        />
+                        <Button
+                          Content="{l:T Settings.Profiles.Delete}"
+                          Command="{Binding DeleteCommand}"
+                          IsEnabled="{Binding CanDelete}"
+                          AutomationProperties.Name="{Binding DeleteName}"
+                          ToolTip.Tip="{l:T Settings.Profiles.OnlyProfile}"
+                          ToolTip.ShowOnDisabled="True"
+                        />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <WrapPanel ItemSpacing="12" LineSpacing="6">
+              <Button
+                x:Name="AddProfileButton"
+                Content="{l:T Settings.Profiles.Add}"
+                Command="{Binding Profiles.AddCommand}"
+                IsVisible="{Binding !Profiles.IsReadOnly}"
+              />
+              <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Profiles.CanUndoDelete}">
+                <TextBlock x:Name="DeletedLabel" Text="{Binding Profiles.DeletedText}" VerticalAlignment="Center" />
+                <Button
+                  x:Name="UndoDeleteButton"
+                  Content="{l:T Settings.Profiles.Undo}"
+                  Command="{Binding Profiles.UndoDeleteCommand}"
+                />
+              </StackPanel>
+            </WrapPanel>
+            <TextBlock
+              x:Name="ProfilesErrorLabel"
+              Text="{Binding Profiles.Error}"
+              IsVisible="{Binding Profiles.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
+
           <!-- Appearance -->
           <StackPanel x:Name="AppearanceSection" IsVisible="{Binding IsAppearanceSection}" Spacing="20">
             <ItemsControl x:Name="AppearanceOptions" ItemsSource="{Binding AppearanceItems}">
