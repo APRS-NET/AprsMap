@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using System.ComponentModel;
+using AprsMap.Contracts;
 using AprsMap.UI.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -69,12 +70,15 @@ public sealed partial class MapPanel : UserControl, IDisposable
         if (_main is not null)
         {
             _main.StationsChanged -= OnStationsChanged;
+            _main.PropertyChanged -= OnMainChanged;
         }
         _main = DataContext as MainViewModel;
         if (_main is not null)
         {
             _main.StationsChanged += OnStationsChanged;
-            OnStationsChanged(_main, EventArgs.Empty);
+            _main.PropertyChanged += OnMainChanged;
+            _map.SetStations(_main.Stations);
+            _map.Select(_main.SelectedStation);
         }
         _state = _main?.Map;
         if (_state is not null)
@@ -168,13 +172,26 @@ public sealed partial class MapPanel : UserControl, IDisposable
         }
     }
 
+    /// <summary>A station selected elsewhere (the packet list, say) is selected on the map too.</summary>
+    private void OnMainChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.SelectedStation) && _main is not null)
+        {
+            _map.Select(_main.SelectedStation);
+        }
+    }
+
     private void ShowHome() => HomeButton.IsVisible = _state?.HasHome == true;
 
-    private void OnStationsChanged(object? sender, EventArgs e)
+    private void OnStationsChanged(object? sender, StationBatch batch)
     {
-        if (_main is not null)
+        if (ReferenceEquals(batch, MainViewModel.Snapshot) && _main is not null)
         {
-            _map.SetStations(_main.Stations);
+            _map.SetStations(_main.Stations); // replaced as a whole
+        }
+        else
+        {
+            _map.Apply(batch);
         }
     }
 }

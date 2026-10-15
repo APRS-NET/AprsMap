@@ -12,9 +12,14 @@ public interface IEngineService
 
     /// <summary>
     /// Streams packets as the engine receives them, starting with the most recent ones it still holds. For the raw
-    /// packet view; the map uses <see cref="WatchStationsAsync"/>, which is far smaller.
+    /// packet view; the map uses <see cref="WatchStationsAsync"/>, which is far smaller. Only packets that pass
+    /// <paramref name="filter"/> are sent, held ones included, so a browser doesn't receive what it hides (F1.8
+    /// behavior 7); to change the filter, start a new stream.
     /// </summary>
-    IAsyncEnumerable<PacketView> WatchPacketsAsync(CancellationToken cancellationToken = default);
+    IAsyncEnumerable<PacketView> WatchPacketsAsync(
+        PacketFilter? filter = null,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
     /// Streams the map's stations. The first batches hold every station the engine knows (a late joiner catches up

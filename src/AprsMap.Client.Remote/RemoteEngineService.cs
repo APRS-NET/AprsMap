@@ -45,8 +45,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         _connection.InvokeAsync<EngineStatus>(EngineHub.GetStatus, cancellationToken);
 
     /// <inheritdoc />
-    public IAsyncEnumerable<PacketView> WatchPacketsAsync(CancellationToken cancellationToken = default) =>
-        _connection.StreamAsync<PacketView>(EngineHub.WatchPackets, cancellationToken);
+    public IAsyncEnumerable<PacketView> WatchPacketsAsync(
+        PacketFilter? filter = null,
+        CancellationToken cancellationToken = default
+    ) => _connection.StreamAsync<PacketView>(EngineHub.WatchPackets, filter, cancellationToken);
 
     /// <inheritdoc />
     public IAsyncEnumerable<StationBatch> WatchStationsAsync(CancellationToken cancellationToken = default) =>

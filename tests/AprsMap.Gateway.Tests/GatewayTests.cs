@@ -48,7 +48,7 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
         Assert.True(status.PacketsReceived >= 1);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        await using var watch = remote.WatchPacketsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        await using var watch = remote.WatchPacketsAsync(null, cts.Token).GetAsyncEnumerator(cts.Token);
         // The fixture's engine is shared, so the replay can start with other tests' packets.
         do
         {
@@ -64,6 +64,29 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
         } while (live.Source != "N0LIVE");
         Assert.Equal("Status", live.Type);
         Assert.Equal(HubConnectionState.Connected, remote.State);
+        await cts.CancelAsync();
+    }
+
+    [Fact]
+    public async Task FilteredPacketStreamSendsOnlyMatchingPackets()
+    {
+        var engine = factory.Services.GetRequiredService<Engine>();
+        engine.Accept("N0FILT-1>APRS:>Hidden by the filter");
+        engine.Accept("N0FILT-2>APRS:!9999.99N/99999.99W-");
+        await using var remote = CreateRemote();
+        await remote.StartAsync(Ct);
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var filter = new PacketFilter(Text: "N0FILT", IssuesOnly: true);
+        await using var watch = remote.WatchPacketsAsync(filter, cts.Token).GetAsyncEnumerator(cts.Token);
+
+        Assert.True(await watch.MoveNextAsync());
+        Assert.Equal("N0FILT-2", watch.Current.Source);
+        Assert.Equal("aprs.parse.invalid-latitude", watch.Current.Issues![0].Code);
+        engine.Accept("N0FILT-3>APRS:>Hidden too");
+        engine.Accept("N0FILT-4>APRS:!9999.99N/99999.99W-");
+        Assert.True(await watch.MoveNextAsync());
+        Assert.Equal("N0FILT-4", watch.Current.Source);
         await cts.CancelAsync();
     }
 

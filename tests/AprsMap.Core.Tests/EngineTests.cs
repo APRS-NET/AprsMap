@@ -63,7 +63,7 @@ public class EngineTests
         engine.Accept(Position);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        await using var watch = engine.WatchPacketsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        await using var watch = engine.WatchPacketsAsync(null, cts.Token).GetAsyncEnumerator(cts.Token);
 
         Assert.True(await watch.MoveNextAsync());
         Assert.Equal("Position", watch.Current.Type);
@@ -78,6 +78,28 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task FilteredWatchersGetOnlyMatchingPacketsHeldAndLive()
+    {
+        var engine = CreateEngine(new FakeTimeProvider());
+        engine.Accept("N1CALL>APRS:>held, other station");
+        engine.Accept("N2CALL>APRS:>held, matching");
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        await using var watch = engine
+            .WatchPacketsAsync(new PacketFilter(Station: "n2call"), cts.Token)
+            .GetAsyncEnumerator(cts.Token);
+
+        Assert.True(await watch.MoveNextAsync());
+        Assert.Equal("N2CALL>APRS:>held, matching", watch.Current.Raw);
+
+        engine.Accept("N1CALL>APRS:>live, other station");
+        engine.Accept("N2CALL>APRS:>live, matching");
+        Assert.True(await watch.MoveNextAsync());
+        Assert.Equal("N2CALL>APRS:>live, matching", watch.Current.Raw);
+        await cts.CancelAsync();
+    }
+
+    [Fact]
     public async Task RecentHistoryIsCapped()
     {
         var engine = CreateEngine(new FakeTimeProvider(), capacity: 3);
@@ -88,7 +110,7 @@ public class EngineTests
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var replay = new List<PacketView>();
-        await foreach (var packet in engine.WatchPacketsAsync(cts.Token))
+        await foreach (var packet in engine.WatchPacketsAsync(null, cts.Token))
         {
             replay.Add(packet);
             if (replay.Count == 3)

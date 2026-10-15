@@ -8,6 +8,11 @@
          workload. Only publishing does that (CI and the Dockerfile install the workload), so a plain local build works
          on any SDK; the output of a plain build does not render. -->
     <WasmBuildNative Condition="'$(_IsPublishing)' == 'true'">true</WasmBuildNative>
+    <!-- Release publishes are compiled ahead of time (F1.4 decision 1): with 2,000 stations the interpreter draws about
+         8 frames a second while panning, and AOT about 28. It adds about five minutes to a publish, and
+         like the native build it needs the wasm-tools workload, so plain builds and CI skip it. -->
+    <RunAOTCompilation Condition="'$(Configuration)' == 'Release' And '$(_IsPublishing)' == 'true'"
+      >true</RunAOTCompilation>
     <!-- The JSImport source generator (StartupPage) emits unsafe marshalling code. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>

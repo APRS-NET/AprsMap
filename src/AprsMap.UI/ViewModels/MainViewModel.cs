@@ -4,6 +4,7 @@ using AprsMap.Contracts;
 using AprsMap.UI.Appearance;
 using AprsMap.UI.Localization;
 using AprsMap.UI.Map;
+using AprsMap.UI.Packets;
 using AprsMap.UI.Platform;
 using AprsMap.UI.Settings;
 using AprsMap.UI.Shell;
@@ -17,9 +18,6 @@ namespace AprsMap.UI.ViewModels;
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
-    /// <summary>How many packets the list keeps.</summary>
-    public const int MaxPackets = 200;
-
     /// <summary>How long to wait before asking the engine again after a call or stream fails.</summary>
     public static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
 
@@ -55,6 +53,7 @@ public sealed partial class MainViewModel : ObservableObject
         _appearance = appearance ?? new AppearanceService();
         _showPseudoLanguage = showPseudoLanguage;
         _text = text ?? Localizer.Instance;
+        PacketList = new PacketListViewModel(engine, time, _text);
         Shell = new ShellViewModel(this, _text, managedWindows);
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
@@ -102,7 +101,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         _setupDismissed = false;
         _settings = null;
-        Packets.Clear();
+        PacketList.Clear();
         ShowError(null);
         Show(await engine.GetSettingsAsync());
     }
@@ -157,8 +156,11 @@ public sealed partial class MainViewModel : ObservableObject
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     internal void DismissLayoutNotice() => LayoutNotice = null;
 
-    /// <summary>Newest first.</summary>
-    public ObservableCollection<PacketView> Packets { get; } = [];
+    /// <summary>The Packets panel (F1.8).</summary>
+    public PacketListViewModel PacketList { get; }
+
+    /// <summary>The packet list's rows, newest first.</summary>
+    public PacketRows Packets => PacketList.Rows;
 
     [ObservableProperty]
     public partial string ConnectionText { get; set; } = string.Empty;
@@ -406,21 +408,11 @@ public sealed partial class MainViewModel : ObservableObject
             Map.UseProvider(_appearance.Current.MapProvider);
             _appearance.Changed += (_, settings) => Map.UseProvider(settings.MapProvider);
         }
-        var packets = KeepAsync(WatchPacketsAsync, cancellationToken);
+        var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);
         var countdown = KeepAsync(CountDownAsync, cancellationToken);
         await Task.WhenAll(packets, stations, status, countdown);
-    }
-
-    /// <summary>Adds a packet to the top of the list.</summary>
-    internal void Add(PacketView packet)
-    {
-        Packets.Insert(0, packet);
-        while (Packets.Count > MaxPackets)
-        {
-            Packets.RemoveAt(Packets.Count - 1);
-        }
     }
 
     /// <summary>Applies one batch from the station stream.</summary>
@@ -435,14 +427,20 @@ public sealed partial class MainViewModel : ObservableObject
             _stations.Remove(name);
         }
         StationCount = _stations.Count;
-        StationsChanged?.Invoke(this, EventArgs.Empty);
+        StationsChanged?.Invoke(this, batch);
     }
 
     /// <summary>Every station on the map, by name, as the station stream has them.</summary>
     public IReadOnlyCollection<StationState> Stations => _stations.Values;
 
-    /// <summary>Raised after each batch from the station stream (about every 250 ms at most).</summary>
-    public event EventHandler? StationsChanged;
+    /// <summary>
+    /// Raised after each batch from the station stream (about every 250 ms at most), with the batch; after a fresh
+    /// snapshot (a resubscription) with <see cref="Snapshot"/> set.
+    /// </summary>
+    public event EventHandler<StationBatch>? StationsChanged;
+
+    /// <summary>Sent with <see cref="StationsChanged"/> when the stations were replaced as a whole.</summary>
+    public static StationBatch Snapshot { get; } = new([], []);
 
     /// <summary>The station selected on the map or in a list, for the Details panel (F1.6); null for none.</summary>
     [ObservableProperty]
@@ -599,22 +597,6 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    private async Task WatchPacketsAsync(CancellationToken cancellationToken)
-    {
-        // The engine replays its recent packets on every subscription, so a resubscription replaces the list. Keep
-        // the old one on screen until the replay starts.
-        var first = true;
-        await foreach (var packet in engine.WatchPacketsAsync(cancellationToken))
-        {
-            if (first)
-            {
-                Packets.Clear();
-                first = false;
-            }
-            Add(packet);
-        }
-    }
-
     private async Task WatchStationsAsync(CancellationToken cancellationToken)
     {
         // The first batches are a full snapshot, so a resubscription starts from scratch once it arrives.
@@ -624,6 +606,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (first)
             {
                 _stations.Clear();
+                StationsChanged?.Invoke(this, Snapshot);
                 first = false;
             }
             Apply(batch);

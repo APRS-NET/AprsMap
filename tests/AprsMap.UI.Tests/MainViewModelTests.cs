@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
 using AprsMap.UI.Localization;
+using AprsMap.UI.Packets;
 using AprsMap.UI.ViewModels;
 using Microsoft.Extensions.Time.Testing;
 
@@ -130,13 +131,15 @@ public class MainViewModelTests
     {
         var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
 
-        for (var i = 0; i < MainViewModel.MaxPackets + 5; i++)
+        for (var i = 0; i < PacketListViewModel.MaxRows + 5; i++)
         {
-            vm.Add(FakeEngine.Packet($"N{i}"));
+            vm.PacketList.Receive(FakeEngine.Packet($"N{i}"));
         }
+        vm.PacketList.Flush();
 
-        Assert.Equal(MainViewModel.MaxPackets, vm.Packets.Count);
-        Assert.Equal($"N{MainViewModel.MaxPackets + 4}", vm.Packets[0].Source);
+        Assert.Equal(PacketListViewModel.MaxRows, vm.Packets.Count);
+        Assert.Equal($"N{PacketListViewModel.MaxRows + 4}", vm.Packets[0].Source);
+        Assert.Equal("N5", vm.Packets[^1].Source);
     }
 
     [Fact]

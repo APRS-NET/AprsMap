@@ -65,7 +65,12 @@ public sealed class AccessibilityRenderTests : IDisposable
         vm.Show(engine.Settings);
         vm.Show(new EngineStatus(ConnectionState.Connected, "T2CAWEST", 123456, "1.0.0"));
         vm.Apply(new StationBatch([FakeEngine.Station("N0CALL-15")], []));
-        vm.Add(FakeEngine.Packet("N0CALL-15") with { Summary = "Car at 40.0150, -105.2705: heading home" });
+        vm.PacketList.Receive(
+            FakeEngine.Packet("N0CALL-15") with
+            {
+                Summary = "Car at 40.0150, -105.2705: heading home",
+            }
+        );
         vm.ShowError(EngineErrors.Create(EngineErrorCodes.OperatorOnly, "English"));
         var window = Show(vm);
         Check(window, "main view", failures);

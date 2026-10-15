@@ -69,7 +69,7 @@ internal sealed class SymbolAtlas : IDisposable
         {
             return null;
         }
-        using var picture = Picture(symbol);
+        using var picture = Picture(symbol, Style);
         if (picture is null)
         {
             return null;
@@ -91,7 +91,8 @@ internal sealed class SymbolAtlas : IDisposable
         return rect;
     }
 
-    private SKPicture? Picture(AprsSymbol symbol)
+    /// <summary>The symbol drawn as a picture, or null when it can't be drawn (behavior 14).</summary>
+    internal static SKPicture? Picture(AprsSymbol symbol, AprsSymbolStyle style)
     {
         try
         {
@@ -101,7 +102,7 @@ internal sealed class SymbolAtlas : IDisposable
                 providers.Clear();
                 providers.Add(Typefaces);
             }
-            return converter.FromSvg(AprsSymbolImages.GetSvg(symbol, Style));
+            return converter.FromSvg(AprsSymbolImages.GetSvg(symbol, style));
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or FormatException)
         {

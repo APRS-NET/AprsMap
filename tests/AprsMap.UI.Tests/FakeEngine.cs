@@ -51,15 +51,23 @@ internal sealed class FakeEngine : IEngineService
     public Task<EngineStatus> GetStatusAsync(CancellationToken cancellationToken = default) =>
         StatusFailure is { } failure ? Task.FromException<EngineStatus>(failure) : Task.FromResult(Status);
 
+    /// <summary>The filter of the latest packet stream.</summary>
+    public PacketFilter? PacketFilter { get; private set; }
+
     public async IAsyncEnumerable<PacketView> WatchPacketsAsync(
+        PacketFilter? filter = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
         var packets = _packets;
+        PacketFilter = filter;
         Interlocked.Increment(ref _packetSubscriptions);
         await foreach (var packet in packets.Reader.ReadAllAsync(cancellationToken))
         {
-            yield return packet;
+            if (filter?.Matches(packet) ?? true)
+            {
+                yield return packet;
+            }
         }
     }
 

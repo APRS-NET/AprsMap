@@ -15,6 +15,7 @@ namespace AprsMap.Contracts;
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
 [JsonSerializable(typeof(EngineStatus))]
 [JsonSerializable(typeof(PacketView))]
+[JsonSerializable(typeof(PacketFilter))]
 [JsonSerializable(typeof(StationBatch))]
 [JsonSerializable(typeof(StationDetail))]
 [JsonSerializable(typeof(IReadOnlyList<TileProviderInfo>))]
