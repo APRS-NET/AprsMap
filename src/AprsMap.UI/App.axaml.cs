@@ -8,6 +8,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform;
 
 namespace AprsMap.UI;
 
@@ -36,6 +37,9 @@ public sealed class App : Application
     /// <inheritdoc />
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
+    /// <summary>The app's icon, for windows (title bar, task bar, dock).</summary>
+    internal static WindowIcon AppIcon() => new(AssetLoader.Open(new Uri("avares://AprsMap.UI/Assets/icon.png")));
+
     /// <inheritdoc />
     public override void OnFrameworkInitializationCompleted()
     {
@@ -50,6 +54,7 @@ public sealed class App : Application
                     desktop.MainWindow = new Window
                     {
                         Title = Brand.DisplayName,
+                        Icon = AppIcon(),
                         Content = view,
                         Width = 1280,
                         Height = 800,

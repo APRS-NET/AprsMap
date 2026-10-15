@@ -11,7 +11,8 @@ a hunt through the code.
 | Namespaces, project and folder names | `AprsMap.*` prefix only | `tools/rename-product.py` |
 | Docs, README, CLAUDE.md | Free text | `tools/rename-product.py` |
 | User-visible strings | **Never literal.** Bound to `Brand.DisplayName` and friends | Follows `Branding.props` automatically |
-| Icons, window titles, installer names, web manifest | Generated from `Branding.props` | Follows automatically |
+| Window titles, installer names, web manifest | Generated from `Branding.props` | Follows automatically |
+| App icon (AGPL-3.0-only) | `build/branding/icon.svg`, rendered by `tools/make-icons.sh` into the window icon (`icon-256.png`), the Windows executable icon (`icon.ico`) and the browser's `favicon.svg`, `favicon.png` and `apple-touch-icon.png` | Not renamed: it is the APRS.NET icon, a map pin broadcasting radio waves. To change it, replace `icon.svg` and run the script; a test checks that the web copy matches |
 
 ## Rules
 

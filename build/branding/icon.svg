@@ -1,0 +1,14 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="t">
+  <title id="t">APRS.NET icon: a map pin broadcasting radio waves</title>
+  <rect width="256" height="256" rx="56" fill="#12303b"/>
+  <g fill="none" stroke="#5eead4" stroke-width="10" stroke-linecap="round">
+    <path d="M178.8 78.4 A62 62 0 0 1 178.8 149.6"/>
+    <path d="M196.8 65.8 A84 84 0 0 1 196.8 162.2"/>
+    <path d="M77.2 78.4 A62 62 0 0 0 77.2 149.6"/>
+    <path d="M59.2 65.8 A84 84 0 0 0 59.2 162.2"/>
+  </g>
+  <path d="M128 190 C128 190 88 144 88 114 A40 40 0 1 1 168 114 C168 144 128 190 128 190 Z" fill="#f5a524"/>
+  <circle cx="128" cy="114" r="15" fill="#12303b"/>
+  <circle cx="128" cy="114" r="6" fill="#5eead4"/>
+</svg>

@@ -3,6 +3,8 @@
     <OutputType>WinExe</OutputType>
     <AprsMapUsesAvalonia>true</AprsMapUsesAvalonia>
     <AssemblyName>$(ProductSlug)</AssemblyName>
+    <!-- The executable's icon on Windows; generated from build/branding/icon.svg by tools/make-icons.sh. -->
+    <ApplicationIcon>../../build/branding/icon.ico</ApplicationIcon>
     <Description>The standalone desktop app (Windows, Linux, macOS). Runs the engine in-process.</Description>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
