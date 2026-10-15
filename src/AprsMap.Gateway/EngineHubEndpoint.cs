@@ -49,6 +49,14 @@ internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayO
         }
     }
 
+    /// <summary>Starting over deletes the station's settings for every viewer: the same gate as changing them.</summary>
+    [HubMethodName(EngineHub.ResetSettings)]
+    public Task ResetSettings()
+    {
+        Require(EngineErrorCodes.SettingsReadOnly, EngineHub.SettingsReadOnlyMessage);
+        return engine.ResetSettingsAsync(Context.ConnectionAborted);
+    }
+
     /// <summary>Reconnecting affects every viewer, so it has the same gate as changing settings.</summary>
     [HubMethodName(EngineHub.Reconnect)]
     public Task Reconnect()

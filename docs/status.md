@@ -31,7 +31,8 @@ connection (F1.1) is done; the shell and docking (F1.0) is next, then the statio
 3. **Settings** (the gear, or Ctrl+, / Cmd+,): **Appearance** (theme, standard, high-contrast or colour-vision-safe
    colours, text size up to 200 %, icon size, corners, density, motion, language), applied live and remembered per
    viewer, with Reset and Undo; **Profiles** (add, edit, copy, delete with Undo, switch; read-only on a gateway without
-   operator sign-in); and **About** (versions, the connection's details, licences, source link, credits). Changing only
+   operator sign-in); **Data** (Reset the app: delete everything and run first-run setup again; `--reset-all` at
+   start-up); and **About** (versions, the connection's details, licences, source link, credits). Changing only
    a profile's filter, or its location when it has no filter, keeps the connection and sends the new filter.
 4. **Traffic:** a profile without a filter of its own receives everything within 150 km of its location (`r/` filter),
    or 150 km around the callsign's last position on APRS-IS when it has no location (`m/` filter). A profile can also

@@ -14,6 +14,9 @@ public interface ISettingsStore
 
     /// <summary>Stores <paramref name="settings"/>, replacing what was there.</summary>
     Task SaveAsync(AppSettings settings, CancellationToken cancellationToken);
+
+    /// <summary>Deletes everything stored, including copies set aside, so the next load is a first run (F0.10).</summary>
+    Task DeleteAsync(CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -59,6 +62,16 @@ public sealed class FileSettingsStore(string folder) : ISettingsStore
             return null;
         }
         return settings;
+    }
+
+    /// <inheritdoc />
+    public Task DeleteAsync(CancellationToken cancellationToken)
+    {
+        foreach (var path in new[] { FilePath, FilePath + ".invalid", FilePath + ".tmp" })
+        {
+            File.Delete(path); // no error when it doesn't exist
+        }
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />

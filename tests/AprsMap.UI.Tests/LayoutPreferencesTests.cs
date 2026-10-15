@@ -88,5 +88,11 @@ public sealed class LayoutPreferencesTests
             SetAside.Add(key);
             return Task.CompletedTask;
         }
+
+        public Task ClearAsync(CancellationToken cancellationToken = default)
+        {
+            _values.Clear();
+            return Task.CompletedTask;
+        }
     }
 }

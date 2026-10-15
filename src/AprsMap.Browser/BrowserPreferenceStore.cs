@@ -35,6 +35,14 @@ internal sealed partial class BrowserPreferenceStore : IPreferenceStore
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
+    /// <remarks>Every key that starts with the product slug, and nothing else the page's origin keeps.</remarks>
+    public Task ClearAsync(CancellationToken cancellationToken = default)
+    {
+        Clear(Brand.Slug + ".");
+        return Task.CompletedTask;
+    }
+
     /// <summary>Whether the browser asks for reduced motion (<c>prefers-reduced-motion: reduce</c>).</summary>
     internal static bool PrefersReducedMotion() => ReducedMotion();
 
@@ -46,6 +54,13 @@ internal sealed partial class BrowserPreferenceStore : IPreferenceStore
 
     [JSImport("prefRemove", "main.js")]
     private static partial void Remove(string key);
+
+    [JSImport("prefClear", "main.js")]
+    private static partial void Clear(string prefix);
+
+    /// <summary>Reloads the page: the app starts afresh after Reset the app (F0.10).</summary>
+    [JSImport("reloadPage", "main.js")]
+    internal static partial void ReloadPage();
 
     [JSImport("prefersReducedMotion", "main.js")]
     private static partial bool ReducedMotion();

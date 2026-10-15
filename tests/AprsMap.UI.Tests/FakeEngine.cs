@@ -97,6 +97,15 @@ internal sealed class FakeEngine : IEngineService
 
     public List<(string Query, string? Language)> Lookups { get; } = [];
 
+    public int Resets { get; private set; }
+
+    public Task ResetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        Resets++;
+        Settings = AppSettings.Empty;
+        return Task.CompletedTask;
+    }
+
     public int Reconnects { get; private set; }
 
     /// <summary>When set, <see cref="ReconnectAsync"/> throws it.</summary>

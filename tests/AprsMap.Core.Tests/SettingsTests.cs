@@ -56,6 +56,21 @@ public sealed class SettingsTests : IDisposable
         );
     }
 
+    [Fact]
+    public async Task DeletingRemovesTheFileAndItsSetAsideCopyButNothingElse()
+    {
+        var store = new FileSettingsStore(_root);
+        await store.SaveAsync(TwoProfiles(), Ct);
+        await File.WriteAllTextAsync(store.FilePath + ".invalid", "{", Ct);
+        await File.WriteAllTextAsync(Path.Combine(_root, "appearance.json"), "{}", Ct);
+
+        await store.DeleteAsync(Ct);
+        await store.DeleteAsync(Ct); // nothing left: no error
+
+        Assert.Null(await store.LoadAsync(Ct));
+        Assert.Equal(["appearance.json"], Directory.GetFiles(_root).Select(Path.GetFileName));
+    }
+
     [Theory]
     [InlineData("{ not json")]
     [InlineData("{}")]

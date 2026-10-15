@@ -80,6 +80,19 @@ function prefRemove(key) {
   }
 }
 
+function prefClear(prefix) {
+  try {
+    const storage = globalThis.localStorage;
+    for (const key of Object.keys(storage)) {
+      if (key.startsWith(prefix)) {
+        storage.removeItem(key);
+      }
+    }
+  } catch {
+    // Nothing to clear.
+  }
+}
+
 const prefersReducedMotion = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const coarsePointer = () => globalThis.matchMedia?.('(pointer: coarse)').matches ?? false;
 
@@ -91,6 +104,8 @@ try {
     prefGet,
     prefSet,
     prefRemove,
+    prefClear,
+    reloadPage: () => globalThis.location.reload(),
     prefersReducedMotion,
     coarsePointer,
     appStarted: () => {

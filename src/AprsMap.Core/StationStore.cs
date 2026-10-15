@@ -74,6 +74,22 @@ internal sealed class StationStore
         }
     }
 
+    /// <summary>Forgets every station, telling each watcher they're gone (F0.10).</summary>
+    public void Clear()
+    {
+        lock (_gate)
+        {
+            foreach (var name in _stations.Keys)
+            {
+                foreach (var watcher in _watchers)
+                {
+                    watcher.Remove(name);
+                }
+            }
+            _stations.Clear();
+        }
+    }
+
     /// <summary>Starts collecting changes for a new watcher and returns everything known so far.</summary>
     public StationWatcher Subscribe(out StationState[] snapshot)
     {

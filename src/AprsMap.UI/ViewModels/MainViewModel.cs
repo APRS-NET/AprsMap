@@ -62,6 +62,50 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The product name, from branding.</summary>
     public string Title { get; } = Brand.DisplayName;
 
+    /// <summary>
+    /// Deletes this viewer's own preferences (appearance, layout) and puts their defaults back, for Reset the app (F0.10).
+    /// The app supplies it; without it only the in-memory appearance and layout are reset.
+    /// </summary>
+    public Func<Task>? ClearLocalData { get; init; }
+
+    /// <summary>Whether the station's settings are a gateway's, shared with other viewers (the browser app).</summary>
+    public bool SharedStation { get; init; }
+
+    /// <summary>Starts the app afresh after Reset the app, where the platform can (the browser reloads the page).</summary>
+    public Action? Restart { get; init; }
+
+    /// <summary>
+    /// Reset the app (docs/features/F0.10-start-over.md): deletes the station's settings when
+    /// <paramref name="includeStation"/>, then this viewer's own preferences, and goes back to first-run setup.
+    /// </summary>
+    internal async Task ResetAppAsync(bool includeStation)
+    {
+        if (includeStation)
+        {
+            await engine.ResetSettingsAsync();
+        }
+        if (ClearLocalData is { } clear)
+        {
+            await clear();
+        }
+        else
+        {
+            _appearance.Apply(new AppearanceSettings());
+            Shell.Reset();
+        }
+        Settings?.CloseCommand.Execute(null);
+        if (Restart is { } restart)
+        {
+            restart();
+            return;
+        }
+        _setupDismissed = false;
+        _settings = null;
+        Packets.Clear();
+        ShowError(null);
+        Show(await engine.GetSettingsAsync());
+    }
+
     /// <summary>The map and the panels around it (docs/features/F1.0-shell-and-docking.md).</summary>
     public ShellViewModel Shell { get; }
 
@@ -160,7 +204,13 @@ public sealed partial class MainViewModel : ObservableObject
     internal async Task OpenSettingsAsync()
     {
         var profiles = new ProfilesSectionViewModel(engine, time, _text, OpenProfileEditorAsync, Show);
-        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage, profiles);
+        var data = new DataSectionViewModel(
+            _text,
+            SharedStation,
+            canResetStation: _settings is { ReadOnly: false },
+            ResetAppAsync
+        );
+        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage, profiles, data);
         settings.Closed += OnSettingsClosed;
         Settings = settings;
         GeocodingInfo? geocoding = null;

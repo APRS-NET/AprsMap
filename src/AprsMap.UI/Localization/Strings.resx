@@ -767,4 +767,35 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Dismiss</value>
     <comment>Button that hides a one-time notice.</comment>
   </data>
+  <data name="Settings.Data" xml:space="preserve">
+    <value>Data</value>
+    <comment>Settings section: data kept by the app, and Reset the app.</comment>
+  </data>
+  <data name="Settings.Data.Reset.Title" xml:space="preserve">
+    <value>Start over</value>
+    <comment>Heading in Settings › Data.</comment>
+  </data>
+  <data name="Settings.Data.Description.Desktop" xml:space="preserve">
+    <value>Deletes every station profile, your appearance and panel layout, and what has been received, then opens first-run setup. Use it to try setup again from scratch.</value>
+  </data>
+  <data name="Settings.Data.Description.Browser" xml:space="preserve">
+    <value>Deletes what this browser keeps for this app (appearance and panel layout) and reloads the page. The gateway's station profiles stay unless you choose to delete them too.</value>
+  </data>
+  <data name="Settings.Data.Reset" xml:space="preserve">
+    <value>Reset the app…</value>
+    <comment>Button; it asks for confirmation before deleting anything.</comment>
+  </data>
+  <data name="Settings.Data.Confirm" xml:space="preserve">
+    <value>This can't be undone. Delete it all?</value>
+  </data>
+  <data name="Settings.Data.IncludeStation" xml:space="preserve">
+    <value>Also delete the gateway's station profiles (for every viewer)</value>
+    <comment>Tick box, shown only in the browser where the gateway allows settings changes.</comment>
+  </data>
+  <data name="Settings.Data.Confirm.Delete" xml:space="preserve">
+    <value>Delete everything</value>
+  </data>
+  <data name="Settings.Data.Confirm.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
 </root>

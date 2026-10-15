@@ -20,6 +20,12 @@ internal sealed class InMemorySettingsStore(AppSettings? initial = null) : ISett
         return Task.CompletedTask;
     }
 
+    public Task DeleteAsync(CancellationToken cancellationToken)
+    {
+        Stored = null;
+        return Task.CompletedTask;
+    }
+
     public static StationProfile Profile(string callsign, string? id = null) =>
         new(id ?? callsign, callsign, callsign, -1, "rotate.aprs2.net:14580", null, null, null);
 
