@@ -26,6 +26,19 @@ public enum SetupStep
     Passcode,
 }
 
+/// <summary>What the wizard is for (docs/features/F0.8-profiles.md, behaviors 5–7).</summary>
+public enum WizardMode
+{
+    /// <summary>First run: the first profile, with units from the region (F0.5).</summary>
+    FirstRun,
+
+    /// <summary>Another profile, added from Settings.</summary>
+    Add,
+
+    /// <summary>A profile changed from Settings, keeping its id.</summary>
+    Edit,
+}
+
 /// <summary>Ways to give the station's location.</summary>
 public enum LocationMethod
 {
@@ -62,12 +75,39 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     private readonly Localizer _text;
     private readonly IDeviceLocation? _deviceLocation;
     private IReadOnlyList<ServerPreset> _presets = [];
+    private readonly AppSettings? _existing;
+    private readonly StationProfile? _editing;
+    private string? _initialState;
 
-    /// <summary>Creates the wizard; call <see cref="LoadAsync"/> before showing it.</summary>
-    public SetupWizardViewModel(IEngineService engine, Localizer? text = null, IDeviceLocation? deviceLocation = null)
+    /// <summary>
+    /// Creates the wizard; call <see cref="LoadAsync"/> before showing it. Add and edit need the current
+    /// <paramref name="existing"/> settings; edit also the profile to change.
+    /// </summary>
+    public SetupWizardViewModel(
+        IEngineService engine,
+        Localizer? text = null,
+        IDeviceLocation? deviceLocation = null,
+        WizardMode mode = WizardMode.FirstRun,
+        AppSettings? existing = null,
+        StationProfile? editing = null
+    )
     {
+        if (mode != WizardMode.FirstRun && existing is null)
+        {
+            throw new ArgumentNullException(
+                nameof(existing),
+                "Adding or editing a profile needs the current settings."
+            );
+        }
+        if (mode == WizardMode.Edit && editing is null)
+        {
+            throw new ArgumentNullException(nameof(editing), "Editing needs the profile to change.");
+        }
         _engine = engine;
         _deviceLocation = deviceLocation;
+        Mode = mode;
+        _existing = existing;
+        _editing = editing;
         _text = text ?? Localizer.Instance;
         _text.LanguageChanged += (_, _) => Retranslate();
     }
@@ -80,9 +120,57 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanCopy))]
     public partial Func<string, Task>? CopyToClipboard { get; set; }
 
-    /// <summary>"Set up AprsMap", with the product name from branding.</summary>
+    /// <summary>First run, add or edit.</summary>
+    public WizardMode Mode { get; }
+
+    /// <summary>Whether the profile name and filter are asked for (adding or editing from Settings).</summary>
+    public bool IsProfileMode => Mode != WizardMode.FirstRun;
+
+    /// <summary>Whether "Switch to it now" is offered (adding).</summary>
+    public bool IsAddMode => Mode == WizardMode.Add;
+
+    /// <summary>"Set up AprsMap", "Add a profile" or "Edit Home".</summary>
     public string Title =>
-        _text.Format("Wizard.Title", new Dictionary<string, object?> { ["product"] = Brand.DisplayName });
+        Mode switch
+        {
+            WizardMode.Add => _text["Wizard.Title.Add"],
+            WizardMode.Edit => _text.Format(
+                "Wizard.Title.Edit",
+                new Dictionary<string, object?> { ["profile"] = _editing!.Name }
+            ),
+            _ => _text.Format("Wizard.Title", new Dictionary<string, object?> { ["product"] = Brand.DisplayName }),
+        };
+
+    /// <summary>The profile's name; follows the callsign until the user types one (F0.8 behavior 5.1).</summary>
+    [ObservableProperty]
+    public partial string ProfileName { get; set; } = string.Empty;
+
+    /// <summary>Why the name can't be used, or null.</summary>
+    [ObservableProperty]
+    public partial string? NameError { get; set; }
+
+    private bool _nameChosen;
+    private bool _settingName;
+
+    partial void OnProfileNameChanged(string value)
+    {
+        NameError = null;
+        if (!_settingName)
+        {
+            _nameChosen = value.Trim().Length > 0;
+        }
+    }
+
+    /// <summary>The server-side filter, or empty for the stand-in around the location (F0.8 behavior 5.2).</summary>
+    [ObservableProperty]
+    public partial string Filter { get; set; } = string.Empty;
+
+    /// <summary>The APRS-IS filter syntax, linked from the filter's help.</summary>
+    public static Uri FilterHelpUri { get; } = new("https://www.aprs-is.net/javAPRSFilter.aspx");
+
+    /// <summary>Whether a new profile becomes the active one (F0.8 behavior 5.3).</summary>
+    [ObservableProperty]
+    public partial bool SwitchToNew { get; set; }
 
     /// <summary>The APRS SSID conventions, linked from the callsign step (behavior 7).</summary>
     public static Uri SsidHelpUri { get; } = new("http://www.aprs.org/aprs11/SSIDs.txt");
@@ -153,6 +241,12 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             return;
         }
         CallsignError = null;
+        if (!_nameChosen)
+        {
+            _settingName = true;
+            ProfileName = value;
+            _settingName = false;
+        }
     }
 
     /// <summary>The callsign without its SSID, as the passcode calculator shows it.</summary>
@@ -395,18 +489,70 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         LookupPolicyUri = Uri.TryCreate(geocoding.UsagePolicyUrl, UriKind.Absolute, out var policy) ? policy : null;
         Retranslate();
         SelectedServer = Servers.FirstOrDefault();
+        if (_editing is { } profile)
+        {
+            await FillFromAsync(profile);
+        }
         Step = SetupStep.Callsign;
+        _initialState = State();
     }
 
-    /// <summary>Whether anything has been entered, so closing should ask first.</summary>
+    /// <summary>Fills the steps in from a profile being edited (F0.8 behavior 6).</summary>
+    private async Task FillFromAsync(StationProfile profile)
+    {
+        Callsign = profile.Callsign;
+        _settingName = true;
+        ProfileName = profile.Name;
+        _settingName = false;
+        _nameChosen = true;
+        Filter = profile.Filter ?? string.Empty;
+        var preset = _presets.FirstOrDefault(p =>
+            string.Equals(p.Server, profile.Server, StringComparison.OrdinalIgnoreCase)
+        );
+        if (preset is not null)
+        {
+            SelectedServer = Servers.FirstOrDefault(s => s.Key == preset.Key);
+        }
+        else
+        {
+            UseOwnServer = true;
+            OwnServer = profile.Server;
+        }
+        ReceiveOnly = profile.Passcode < 0;
+        PasscodeText = profile.Passcode < 0 ? string.Empty : profile.Passcode.ToString(CultureInfo.InvariantCulture);
+        if (profile is { Latitude: { } lat, Longitude: { } lon })
+        {
+            await ConfirmAsync(lat, lon, null);
+        }
+    }
+
+    /// <summary>Everything the user can change, to tell whether an edit changed anything.</summary>
+    private string State() =>
+        string.Join(
+            '\u001F',
+            Callsign,
+            ProfileName,
+            Filter,
+            Latitude?.ToString(CultureInfo.InvariantCulture) ?? "",
+            Longitude?.ToString(CultureInfo.InvariantCulture) ?? "",
+            Server,
+            ReceiveOnly ? "" : PasscodeText,
+            LocatorText,
+            CoordinatesText,
+            AddressText
+        );
+
+    /// <summary>Whether anything has been entered (or, when editing, changed), so closing should ask first.</summary>
     public bool HasInput =>
-        Callsign.Length > 0
-        || HasLocation
-        || LocatorText.Length > 0
-        || CoordinatesText.Length > 0
-        || AddressText.Length > 0
-        || UseOwnServer
-        || !ReceiveOnly;
+        Mode == WizardMode.Edit
+            ? State() != _initialState
+            : Callsign.Length > 0
+                || HasLocation
+                || LocatorText.Length > 0
+                || CoordinatesText.Length > 0
+                || AddressText.Length > 0
+                || UseOwnServer
+                || !ReceiveOnly;
 
     // ── Navigation ──────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -760,19 +906,19 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         }
 
         var profile = new StationProfile(
-            Guid.NewGuid().ToString("N"),
-            Callsign,
+            _editing?.Id ?? Guid.NewGuid().ToString("N"),
+            IsProfileMode && ProfileName.Trim().Length > 0 ? ProfileName.Trim() : Callsign,
             Callsign,
             passcode,
             Server,
-            null,
+            IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null,
             Latitude,
             Longitude
         );
         IsBusy = true;
         try
         {
-            await _engine.SaveSettingsAsync(new AppSettings([profile], profile.Id, UnitsFor(_text.Culture)));
+            await _engine.SaveSettingsAsync(Settings(profile));
             Closed?.Invoke(this, true);
         }
         catch (ArgumentException ex)
@@ -789,6 +935,22 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         }
     }
 
+    /// <summary>The settings to save: the first profile, or the current ones with this profile added or replaced.</summary>
+    private AppSettings Settings(StationProfile profile) =>
+        Mode switch
+        {
+            WizardMode.Add => _existing! with
+            {
+                Profiles = [.. _existing.Profiles, profile],
+                ActiveProfileId = SwitchToNew ? profile.Id : _existing.ActiveProfileId,
+            },
+            WizardMode.Edit => _existing! with
+            {
+                Profiles = [.. _existing.Profiles.Select(p => p.Id == profile.Id ? profile : p)],
+            },
+            _ => new AppSettings([profile], profile.Id, UnitsFor(_text.Culture)),
+        };
+
     /// <summary>Returns to the step a rejection is about and shows it there (behavior 29).</summary>
     private void ShowRejection(ArgumentException exception)
     {
@@ -798,6 +960,11 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         {
             Step = SetupStep.Callsign;
             CallsignError = message;
+        }
+        else if (code == EngineErrorCodes.ProfileNameDuplicate && IsProfileMode)
+        {
+            Step = SetupStep.Callsign;
+            NameError = message;
         }
         else if (code.StartsWith("aprs.server-", StringComparison.Ordinal))
         {

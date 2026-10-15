@@ -37,11 +37,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         AppearanceService appearance,
         TimeProvider time,
         Localizer? text = null,
-        bool showPseudoLanguage = false
+        bool showPseudoLanguage = false,
+        ProfilesSectionViewModel? profiles = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
         _appearance = appearance;
+        Profiles = profiles;
         _time = time;
         _text = text ?? Localizer.Instance;
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
@@ -61,8 +63,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>The section showing.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAppearanceSection), nameof(IsAboutSection))]
+    [NotifyPropertyChangedFor(nameof(IsAppearanceSection), nameof(IsAboutSection), nameof(IsProfilesSection))]
     public partial SettingsSection? SelectedSection { get; set; }
+
+    /// <summary>Whether Profiles is showing.</summary>
+    public bool IsProfilesSection => SelectedSection?.Id == "profiles";
+
+    /// <summary>The Profiles section (F0.8), when the app manages profiles here.</summary>
+    public ProfilesSectionViewModel? Profiles { get; }
 
     /// <summary>Whether Appearance is showing.</summary>
     public bool IsAppearanceSection => SelectedSection?.Id == "appearance";
@@ -138,6 +146,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _appearance.Changed -= OnAppearanceChanged;
         _text.LanguageChanged -= OnLanguageChanged;
         _undoTimer?.Dispose();
+        Profiles?.Dispose();
     }
 
     private void OnAppearanceChanged(object? sender, AppearanceSettings e)
@@ -155,6 +164,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Title = _text["Settings.Title"];
         var selected = SelectedSection?.Id;
         Sections.Clear();
+        if (Profiles is not null)
+        {
+            Sections.Add(new SettingsSection("profiles", _text["Settings.Profiles"]));
+        }
         Sections.Add(new SettingsSection("appearance", _text["Settings.Appearance"]));
         Sections.Add(new SettingsSection("about", _text["Settings.About"]));
         SelectedSection = Sections.FirstOrDefault(s => s.Id == selected) ?? (selected is null ? null : Sections[0]);
@@ -163,6 +176,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             item.Retranslate();
         }
         About.Retranslate();
+        Profiles?.Retranslate();
     }
 }
 

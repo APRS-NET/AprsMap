@@ -53,8 +53,8 @@ public class SettingsViewTests
         Find<Button>(window, "SettingsButton").Command!.Execute(null);
         await Settle();
         Assert.True(Find<SettingsView>(window, "SettingsPage").IsVisible);
-        Assert.True(Find<StackPanel>(window, "AppearanceSection").IsEffectivelyVisible);
-        Assert.True(window.FocusManager?.GetFocusedElement() is ComboBox); // the first option
+        Assert.True(Find<StackPanel>(window, "ProfilesSection").IsEffectivelyVisible); // first in the list
+        Assert.True(window.FocusManager?.GetFocusedElement() is Button); // the first profile's first action
 
         Find<Button>(window, "SettingsBackButton").Command!.Execute(null);
         await Settle();
@@ -86,7 +86,7 @@ public class SettingsViewTests
         vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 1, "1.2.3", AprsNetVersion: "0.1.0-alpha.17"));
 
         await vm.OpenSettingsCommand.ExecuteAsync(null);
-        vm.Settings!.SelectedSection = vm.Settings.Sections[1];
+        vm.Settings!.SelectedSection = vm.Settings.Sections.Single(s => s.Id == "about");
         await Settle();
 
         Assert.True(Find<StackPanel>(window, "AboutSection").IsEffectivelyVisible);
@@ -107,6 +107,61 @@ public class SettingsViewTests
         window.Width = 1100;
         await Settle();
         Assert.DoesNotContain("narrow", Find<ListBox>(window, "SectionList").Classes);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task AProfileAddedFromSettingsShowsInTheListAndTheStatusBar()
+    {
+        var (window, vm) = Show();
+        await vm.OpenSettingsCommand.ExecuteAsync(null);
+        await Settle();
+        Assert.Equal(2, Find<ItemsControl>(window, "ProfileList").ItemCount);
+
+        Find<Button>(window, "AddProfileButton").Command!.Execute(null);
+        for (var i = 0; i < 50 && vm.Setup is null; i++)
+        {
+            await Task.Yield();
+        }
+        await Settle();
+        var wizard = vm.Setup!;
+        Assert.Equal(WizardMode.Add, wizard.Mode);
+        Assert.True(Find<SetupWizardView>(window, "SetupWizard").IsVisible); // over Settings
+        Assert.True(Find<SettingsView>(window, "SettingsPage").IsVisible);
+        Assert.True(Find<TextBox>(window, "ProfileNameBox").IsEffectivelyVisible);
+
+        wizard.Callsign = "AB1CD-7";
+        wizard.ProfileName = "Hiking";
+        for (var i = 0; i < 6 && !wizard.IsLastStep; i++)
+        {
+            await wizard.NextCommand.ExecuteAsync(null);
+        }
+        await wizard.FinishCommand.ExecuteAsync(null);
+        for (var i = 0; i < 50 && Find<ItemsControl>(window, "ProfileList").ItemCount < 3; i++)
+        {
+            await Settle();
+        }
+
+        Assert.Null(vm.Setup);
+        Assert.Equal(3, Find<ItemsControl>(window, "ProfileList").ItemCount);
+        Assert.Equal(["Home", "Portable", "Hiking"], vm.Profiles.Select(p => p.Name)); // the status bar picker
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task AfterADeleteUndoHasFocus()
+    {
+        var (window, vm) = Show();
+        await vm.OpenSettingsCommand.ExecuteAsync(null);
+        await Settle();
+
+        await vm.Settings!.Profiles!.Rows[1].DeleteCommand.ExecuteAsync(null);
+        await Settle();
+
+        Assert.Equal("UndoDeleteButton", (window.FocusManager?.GetFocusedElement() as Button)?.Name);
+        await vm.Settings.Profiles.UndoDeleteCommand.ExecuteAsync(null);
+        await Settle();
+        Assert.Equal("AddProfileButton", (window.FocusManager?.GetFocusedElement() as Button)?.Name);
         window.Close();
     }
 
