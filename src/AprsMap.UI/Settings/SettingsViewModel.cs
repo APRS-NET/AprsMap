@@ -197,6 +197,18 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     [ObservableProperty]
     public partial bool ShowLookupCredit { get; set; }
 
+    /// <summary><c>0.1.0-alpha.10.3+e86ba03a…</c> → <c>0.1.0-alpha.10.3 (e86ba03)</c>: the build's commit, short.</summary>
+    internal static string ShortVersion(string version)
+    {
+        var plus = version.IndexOf('+', StringComparison.Ordinal);
+        if (plus < 0)
+        {
+            return version;
+        }
+        var commit = version[(plus + 1)..];
+        return $"{version[..plus]} ({commit[..Math.Min(7, commit.Length)]})";
+    }
+
     internal void Show(EngineStatus? status, GeocodingInfo? geocoding)
     {
         _status = status;
@@ -208,7 +220,7 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     {
         VersionText = text.Format(
             "Settings.About.Version",
-            new Dictionary<string, object?> { ["version"] = Brand.Version }
+            new Dictionary<string, object?> { ["version"] = ShortVersion(Brand.Version) }
         );
         LicenceText = text["Settings.About.Licence"];
         EngineText = _status is null
@@ -217,7 +229,7 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
                 "Settings.About.Engine",
                 new Dictionary<string, object?>
                 {
-                    ["version"] = _status.Version,
+                    ["version"] = ShortVersion(_status.Version),
                     ["aprsnet"] = _status.AprsNetVersion ?? "?",
                 }
             );

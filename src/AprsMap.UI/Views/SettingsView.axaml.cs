@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+using System.ComponentModel;
+using AprsMap.UI.Settings;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
@@ -16,8 +18,38 @@ public sealed partial class SettingsView : UserControl
     /// <summary>Below this width the sections become tabs across the top.</summary>
     public const double NarrowWidth = 720;
 
+    private SettingsViewModel? _viewModel;
+
     /// <summary>Creates the view.</summary>
     public SettingsView() => AvaloniaXamlLoader.Load(this);
+
+    /// <inheritdoc />
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (_viewModel is not null)
+        {
+            _viewModel.PropertyChanged -= OnViewModelChanged;
+        }
+        _viewModel = DataContext as SettingsViewModel;
+        if (_viewModel is not null)
+        {
+            _viewModel.PropertyChanged += OnViewModelChanged;
+        }
+    }
+
+    /// <summary>When Undo goes away (used, or timed out) with focus on it, focus goes back to Reset, not nowhere.</summary>
+    private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (
+            e.PropertyName == nameof(SettingsViewModel.CanUndoReset)
+            && _viewModel?.CanUndoReset == false
+            && TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is Button { Name: "UndoButton" } or null
+        )
+        {
+            Dispatcher.UIThread.Post(() => this.FindControl<Button>("ResetButton")?.Focus(), DispatcherPriority.Loaded);
+        }
+    }
 
     /// <inheritdoc />
     protected override void OnSizeChanged(SizeChangedEventArgs e)

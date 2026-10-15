@@ -145,9 +145,10 @@
               FontSize="{DynamicResource Text.Title}"
               FontWeight="SemiBold"
             />
-            <TextBlock x:Name="VersionLabel" Text="{Binding About.VersionText}" />
+            <TextBlock x:Name="VersionLabel" Text="{Binding About.VersionText}" TextWrapping="Wrap" />
             <TextBlock
               x:Name="EngineLabel"
+              TextWrapping="Wrap"
               Text="{Binding About.EngineText}"
               IsVisible="{Binding About.EngineText, Converter={x:Static ObjectConverters.IsNotNull}}"
               Foreground="{DynamicResource Brush.TextMuted}"
@@ -163,11 +164,12 @@
             <TextBlock Text="{l:T Settings.About.IconCredit}" TextWrapping="Wrap" />
             <HyperlinkButton
               x:Name="LookupCredit"
-              Content="{l:T Settings.About.LookupCredit}"
               NavigateUri="{x:Static s:AboutViewModel.OpenStreetMapCopyrightUri}"
               IsVisible="{Binding About.ShowLookupCredit}"
               Padding="0"
-            />
+            >
+              <TextBlock Text="{l:T Settings.About.LookupCredit}" TextWrapping="Wrap" />
+            </HyperlinkButton>
           </StackPanel>
         </Panel>
       </ScrollViewer>

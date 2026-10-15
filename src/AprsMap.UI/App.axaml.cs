@@ -38,6 +38,9 @@ public sealed class App : Application, IDisposable
     /// <inheritdoc />
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
+    /// <summary>The style class that gives every target a 44 px floor on touch screens (App.axaml).</summary>
+    public const string TouchClass = "touch";
+
     /// <inheritdoc />
     public void Dispose() => _preferences?.Dispose();
 
@@ -72,6 +75,10 @@ public sealed class App : Application, IDisposable
                 showPseudoLanguage: _platform.ShowPseudoLanguage
             );
             Control view = new MainView { DataContext = viewModel };
+            if (_platform.CoarsePointer)
+            {
+                view.Classes.Add(TouchClass);
+            }
             switch (ApplicationLifetime)
             {
                 case IClassicDesktopStyleApplicationLifetime desktop:

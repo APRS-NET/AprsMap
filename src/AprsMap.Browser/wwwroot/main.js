@@ -81,6 +81,7 @@ function prefRemove(key) {
 }
 
 const prefersReducedMotion = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+const coarsePointer = () => globalThis.matchMedia?.('(pointer: coarse)').matches ?? false;
 
 try {
   const runtime = await dotnet.withDiagnosticTracing(false).create();
@@ -91,6 +92,7 @@ try {
     prefSet,
     prefRemove,
     prefersReducedMotion,
+    coarsePointer,
     appStarted: () => {
       started = true;
       clearTimeout(slow);

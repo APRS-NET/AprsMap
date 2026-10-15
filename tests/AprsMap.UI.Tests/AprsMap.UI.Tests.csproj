@@ -5,6 +5,9 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless.XUnit" />
+    <!-- Real rendering and fonts, so the clipping checks measure text as users see it (the headless stub font is
+         square: every glyph as wide as it is tall). -->
+    <PackageReference Include="Avalonia.Skia" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <!-- Only to list APRS.NET's validation codes, so each one is checked for a translatable string. -->
     <PackageReference Include="AprsNet.Packets" />

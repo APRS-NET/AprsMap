@@ -21,6 +21,12 @@ public sealed record PlatformServices
     /// <summary>Whether the platform asks for reduced motion (the browser's <c>prefers-reduced-motion</c>).</summary>
     public bool SystemReducedMotion { get; init; }
 
+    /// <summary>
+    /// Whether the primary pointer is coarse (a touch screen; the browser's <c>pointer: coarse</c>), so targets get a
+    /// 44 px floor (F0.6 behavior 11). The desktop doesn't report it yet.
+    /// </summary>
+    public bool CoarsePointer { get; init; }
+
     /// <summary>Whether Settings offers the pseudo-language (F0.9 behavior 6): debug builds, or when configured.</summary>
     public bool ShowPseudoLanguage { get; init; }
 }
