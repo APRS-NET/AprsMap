@@ -117,6 +117,18 @@ public partial class LocalizationGuardTests
         Assert.Empty(missing);
     }
 
+    [Fact]
+    public void NoStringNamesTheProduct()
+    {
+        // The product is renamable (docs/features/F0.7-rebranding.md): strings take it as {product}.
+        var named = EnglishStrings()
+            .Where(s => s.Value.Contains(Brand.DisplayName, StringComparison.OrdinalIgnoreCase))
+            .Select(s => s.Key)
+            .ToList();
+
+        Assert.Empty(named);
+    }
+
     [Theory]
     [InlineData("en-US")]
     [InlineData(Localizer.PseudoLanguage)]
