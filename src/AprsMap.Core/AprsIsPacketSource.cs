@@ -10,36 +10,50 @@ namespace AprsMap.Core;
 /// <summary>An APRS-IS session kept up by APRS.NET's <see cref="AprsIsConnection"/>.</summary>
 internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketSource
 {
-    public async Task<string> StartAsync(
-        Action<ConnectionState, string?> stateChanged,
+    public async Task<PacketSourceLogin> StartAsync(
+        Action<PacketSourceEvent> stateChanged,
         CancellationToken cancellationToken
     )
     {
+        // Whether the attempt that just failed had logged in: a drop then, an unreachable server otherwise.
+        var wasConnected = false;
         connection.StateChanged += (_, e) =>
         {
             switch (e.State)
             {
                 case AprsIsConnectionState.Connecting:
-                    stateChanged(ConnectionState.Connecting, null);
+                    stateChanged(new PacketSourceEvent(ConnectionState.Connecting));
                     break;
-                case AprsIsConnectionState.Connected:
-                    stateChanged(ConnectionState.Connected, e.Login?.Server ?? string.Empty);
+                case AprsIsConnectionState.Connected when e.Login is { } login:
+                    wasConnected = true;
+                    stateChanged(new PacketSourceEvent(ConnectionState.Connected, ToLogin(login)));
                     break;
                 case AprsIsConnectionState.Reconnecting:
-                    stateChanged(ConnectionState.Faulted, null);
+                    var error = AprsIsErrors.From(e.Error, wasConnected);
+                    wasConnected = false;
+                    stateChanged(
+                        e.Error is LoginRejectedException
+                            ? new PacketSourceEvent(ConnectionState.Refused, Error: error)
+                            : new PacketSourceEvent(ConnectionState.Reconnecting, RetryIn: e.RetryIn, Error: error)
+                    );
                     break;
                 default:
                     break; // NotStarted and Closed: the engine reports those itself
             }
         };
-        var login = await connection.StartAsync(cancellationToken).ConfigureAwait(false);
-        return login.Server ?? string.Empty;
+        return ToLogin(await connection.StartAsync(cancellationToken).ConfigureAwait(false));
     }
 
     public IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken) =>
         connection.ReadPacketsAsync(cancellationToken);
 
+    public ValueTask SetFilterAsync(StationProfile profile, CancellationToken cancellationToken) =>
+        connection.SetFilterAsync(AprsIsPacketSourceFactory.EffectiveFilter(profile), cancellationToken);
+
     public ValueTask DisposeAsync() => connection.DisposeAsync();
+
+    private static PacketSourceLogin ToLogin(LoginResult login) =>
+        new(login.Server ?? string.Empty, login.Status == LoginStatus.Verified);
 }
 
 /// <summary>Creates APRS.NET connections from a <see cref="StationProfile"/>.</summary>

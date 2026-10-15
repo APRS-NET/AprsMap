@@ -27,12 +27,20 @@ public interface IEngineService
     Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Validates and stores <paramref name="settings"/>. Changing the active profile, or its login or filter,
-    /// disconnects from APRS-IS and reconnects with the new values.
+    /// Validates and stores <paramref name="settings"/>. Changing the active profile, or its login or server,
+    /// disconnects from APRS-IS and reconnects with the new values; a change to only its filter (or, without a filter of
+    /// its own, its location) is sent on the live connection instead.
     /// </summary>
     /// <exception cref="ArgumentException">The settings are not valid; the message says why.</exception>
     /// <exception cref="UnauthorizedAccessException">This caller may not change settings (a gateway without operator sign-in).</exception>
     Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Closes the APRS-IS connection and starts a new one at once, with the backoff reset. Also the way to try again
+    /// after a refused login.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task ReconnectAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Whether <see cref="GeocodeAsync"/> is available to this caller, and which server it sends queries to.</summary>
     Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken cancellationToken = default);

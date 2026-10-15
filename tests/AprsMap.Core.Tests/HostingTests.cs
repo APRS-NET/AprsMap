@@ -136,14 +136,17 @@ public class HostingTests
             return this;
         }
 
-        public async Task<string> StartAsync(
-            Action<ConnectionState, string?> stateChanged,
+        public async Task<PacketSourceLogin> StartAsync(
+            Action<PacketSourceEvent> stateChanged,
             CancellationToken cancellationToken
         )
         {
             await Task.Delay(Timeout.InfiniteTimeSpan, TimeProvider.System, cancellationToken);
-            return string.Empty;
+            return new PacketSourceLogin(string.Empty, false);
         }
+
+        public ValueTask SetFilterAsync(StationProfile profile, CancellationToken cancellationToken) =>
+            ValueTask.CompletedTask;
 
         public IAsyncEnumerable<AprsNet.Packets.AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken) =>
             AsyncEnumerable.Empty<AprsNet.Packets.AprsPacket>();

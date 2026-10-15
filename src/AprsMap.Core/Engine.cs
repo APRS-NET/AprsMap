@@ -30,13 +30,15 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly Queue<PacketView> _recent = new();
     private readonly List<Channel<PacketView>> _watchers = [];
     private readonly StationStore _stations = new();
-    private ConnectionState _state = ConnectionState.Disconnected;
-    private string? _server;
+    private Link _link = new(ConnectionState.Disconnected);
+    private int _reconnects;
+    private IPacketSource? _source;
     private long _packets;
     private AppSettings? _settings;
 
-    // Cancelled (and replaced) when the active profile's login changes, to end the current session or wait.
-    private CancellationTokenSource _profileChanged = new();
+    // Cancelled (and replaced) when the active profile's login changes or a reconnect is asked for, to end the current
+    // session or wait.
+    private CancellationTokenSource _restart = new();
 
     /// <summary>Creates the engine.</summary>
     public Engine(
@@ -63,7 +65,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         _settingsLock.Dispose();
         lock (_gate)
         {
-            _profileChanged.Dispose();
+            _restart.Dispose();
         }
     }
 
@@ -82,13 +84,17 @@ public sealed partial class Engine : IEngineService, IDisposable
             var profile = _settings?.GetActiveProfile();
             return Task.FromResult(
                 new EngineStatus(
-                    _state,
-                    _server,
+                    _link.State,
+                    _link.Server,
                     _packets,
                     Brand.Version,
                     profile?.Id,
                     profile?.Callsign,
-                    AprsNetVersion
+                    AprsNetVersion,
+                    _link.Verified,
+                    _link.RetryAt,
+                    _reconnects,
+                    _link.Error
                 )
             );
         }
@@ -114,16 +120,28 @@ public sealed partial class Engine : IEngineService, IDisposable
             }
 
             var after = saved.GetActiveProfile();
-            if (after is null ? before is not null : after.ConnectsDifferentlyFrom(before))
+            if (after is null ? before is not null : after.NeedsNewLogin(before))
             {
                 LogProfileChanged(after?.Name ?? "(none)");
-                SignalProfileChanged();
+                SignalRestart();
+            }
+            else if (after is not null && after.NeedsNewFilter(before))
+            {
+                await SendFilterAsync(after, cancellationToken).ConfigureAwait(false);
             }
         }
         finally
         {
             _settingsLock.Release();
         }
+    }
+
+    /// <inheritdoc />
+    public Task ReconnectAsync(CancellationToken cancellationToken = default)
+    {
+        LogReconnectRequested();
+        SignalRestart();
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -249,51 +267,70 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     /// <summary>
     /// Connects with the active profile and reads until <paramref name="cancellationToken"/> is cancelled. Once logged
-    /// in, the source reconnects by itself; this loop retries only a first login that failed, with the same backoff.
-    /// With no profile it waits for one; a profile change ends the session and reconnects at once.
+    /// in, the source reconnects by itself; this loop retries only a first login that couldn't reach the server, with
+    /// the same backoff. A refused login isn't retried until the profile changes or <see cref="ReconnectAsync"/> asks.
+    /// With no profile it waits for one; a profile change or a reconnect request ends the session and connects at once.
     /// </summary>
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         var delay = _options.InitialRetryDelay;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var profileChanged = ProfileChangedToken;
-            using var attempt = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, profileChanged);
+            var restart = RestartToken;
+            using var attempt = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, restart);
+            TimeSpan? retryIn = null; // null: wait for a restart
             try
             {
                 var profile = (await LoadSettingsAsync(cancellationToken).ConfigureAwait(false)).GetActiveProfile();
                 if (profile is null)
                 {
-                    // Nothing to log in with: wait until settings supply a profile (ends with a cancellation).
-                    SetState(ConnectionState.NotConfigured, null);
+                    // Nothing to log in with: wait until settings supply a profile.
+                    SetLink(new Link(ConnectionState.NotConfigured));
                     LogNotConfigured();
-                    await Task.Delay(Timeout.InfiniteTimeSpan, _time, attempt.Token).ConfigureAwait(false);
+                }
+                else if (await RunOnceAsync(profile, attempt.Token).ConfigureAwait(false))
+                {
+                    LogLoginRefused(_link.Error?.Arg(EngineErrorArgs.Reason) ?? string.Empty);
                 }
                 else
                 {
-                    await RunOnceAsync(profile, attempt.Token).ConfigureAwait(false);
-                    delay = _options.InitialRetryDelay; // a session that ended cleanly resets the backoff
+                    // The session ended by itself (a source that doesn't reconnect): start again, backoff reset.
+                    delay = _options.InitialRetryDelay;
+                    retryIn = delay;
+                    SetRetry(
+                        profile,
+                        new EngineError(EngineErrorCodes.AprsIsServerClosed, "The server closed the connection."),
+                        delay
+                    );
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 break;
             }
-            catch (OperationCanceledException) when (profileChanged.IsCancellationRequested)
+            catch (OperationCanceledException) when (restart.IsCancellationRequested)
             {
                 delay = _options.InitialRetryDelay;
-                continue; // the profile changed: connect with the new one now
+                continue; // the profile changed or a reconnect was asked for: connect now
+            }
+            catch (LoginRejectedException ex)
+            {
+                // Retrying a refused login on a timer only adds load to the servers (F1.1 behavior 3).
+                EngineTelemetry.ConnectionFailures.Add(1);
+                SetLink(new Link(ConnectionState.Refused, Error: AprsIsErrors.From(ex, wasConnected: false)));
+                LogLoginRefused(ex.ServerMessage);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 EngineTelemetry.ConnectionFailures.Add(1);
-                SetState(ConnectionState.Faulted, null);
+                retryIn = delay;
+                SetRetry(_settings?.GetActiveProfile(), AprsIsErrors.From(ex, wasConnected: false), delay);
                 LogConnectionFailed(ex, delay);
             }
 
             try
             {
-                await Task.Delay(delay, _time, attempt.Token).ConfigureAwait(false);
+                await Task.Delay(retryIn ?? Timeout.InfiniteTimeSpan, _time, attempt.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -302,11 +339,11 @@ public sealed partial class Engine : IEngineService, IDisposable
             catch (OperationCanceledException)
             {
                 delay = _options.InitialRetryDelay;
-                continue; // the profile changed while waiting to retry
+                continue; // a restart while waiting
             }
             delay = TimeSpan.FromTicks(Math.Min(delay.Ticks * 2, _options.MaxRetryDelay.Ticks));
         }
-        SetState(ConnectionState.Disconnected, null);
+        SetLink(new Link(ConnectionState.Disconnected));
     }
 
     /// <summary>Handles one received line. Public for hosts that feed lines from elsewhere (and for tests).</summary>
@@ -355,27 +392,50 @@ public sealed partial class Engine : IEngineService, IDisposable
         }
     }
 
-    private CancellationToken ProfileChangedToken
+    private CancellationToken RestartToken
     {
         get
         {
             lock (_gate)
             {
-                return _profileChanged.Token;
+                return _restart.Token;
             }
         }
     }
 
-    private void SignalProfileChanged()
+    private void SignalRestart()
     {
-        CancellationTokenSource changed;
+        CancellationTokenSource restart;
         lock (_gate)
         {
-            changed = _profileChanged;
-            _profileChanged = new CancellationTokenSource();
+            restart = _restart;
+            _restart = new CancellationTokenSource();
         }
         // Not disposed: a session may still be linking to its token. It holds no timer, so the GC is enough.
-        changed.Cancel();
+        restart.Cancel();
+    }
+
+    /// <summary>Sends a changed filter on the live session; without one, the next login carries it anyway.</summary>
+    private async Task SendFilterAsync(StationProfile profile, CancellationToken cancellationToken)
+    {
+        IPacketSource? source;
+        lock (_gate)
+        {
+            source = _source;
+        }
+        if (source is null)
+        {
+            return;
+        }
+        try
+        {
+            await source.SetFilterAsync(profile, cancellationToken).ConfigureAwait(false);
+            LogFilterChanged(profile.Name);
+        }
+        catch (ObjectDisposedException)
+        {
+            // The session ended meanwhile; the next one logs in with the saved profile.
+        }
     }
 
     /// <summary>The settings, loaded on first use; on first run they are created from the configured defaults.</summary>
@@ -458,41 +518,96 @@ public sealed partial class Engine : IEngineService, IDisposable
         }
     }
 
-    private async Task RunOnceAsync(StationProfile profile, CancellationToken cancellationToken)
+    /// <summary>Runs one session until cancelled. Returns true when it ended because the server refused a new login.</summary>
+    private async Task<bool> RunOnceAsync(StationProfile profile, CancellationToken cancellationToken)
     {
         using var activity = EngineTelemetry.ActivitySource.StartActivity("aprs-is.session", ActivityKind.Client);
-        SetState(ConnectionState.Connecting, null);
+        using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var refused = false;
+        SetLink(new Link(ConnectionState.Connecting, profile.Server));
         var source = _sources.Create(profile);
         await using (source.ConfigureAwait(false))
         {
-            var server = await source.StartAsync(OnSourceStateChanged, cancellationToken).ConfigureAwait(false);
-            activity?.SetTag("aprs-is.server", server);
-            LogConnected(server);
-            await foreach (var packet in source.ReadPacketsAsync(cancellationToken).ConfigureAwait(false))
+            // Disposing the source stops its callbacks, so a session never reports after the next one has started.
+            void OnEvent(PacketSourceEvent e)
             {
-                Accept(packet);
+                switch (e.State)
+                {
+                    case ConnectionState.Connected:
+                        Interlocked.Increment(ref _reconnects);
+                        SetLink(new Link(ConnectionState.Connected, e.Login?.Server, e.Login?.Verified ?? false));
+                        break;
+                    case ConnectionState.Reconnecting:
+                        EngineTelemetry.ConnectionFailures.Add(1);
+                        SetRetry(profile, e.Error, e.RetryIn ?? TimeSpan.Zero);
+                        break;
+                    case ConnectionState.Refused:
+                        EngineTelemetry.ConnectionFailures.Add(1);
+                        refused = true;
+                        SetLink(new Link(ConnectionState.Refused, Error: e.Error));
+                        session.Cancel(); // end the session: the source would retry the refused login forever
+                        break;
+                    default:
+                        SetLink(new Link(e.State, profile.Server));
+                        break;
+                }
+            }
+
+            try
+            {
+                var login = await source.StartAsync(OnEvent, session.Token).ConfigureAwait(false);
+                activity?.SetTag("aprs-is.server", login.Server);
+                Interlocked.Exchange(ref _reconnects, 0);
+                lock (_gate)
+                {
+                    _source = source;
+                }
+                SetLink(new Link(ConnectionState.Connected, login.Server, login.Verified));
+                LogConnected(login.Server);
+                await foreach (var packet in source.ReadPacketsAsync(session.Token).ConfigureAwait(false))
+                {
+                    Accept(packet);
+                }
+            }
+            catch (OperationCanceledException) when (refused && !cancellationToken.IsCancellationRequested)
+            {
+                // Ended by the refusal.
+            }
+            finally
+            {
+                lock (_gate)
+                {
+                    if (_source == source)
+                    {
+                        _source = null;
+                    }
+                }
             }
         }
+        return refused;
     }
 
-    // Disposing the source stops its callbacks, so a session never reports after the next one has started.
-    private void OnSourceStateChanged(ConnectionState state, string? server)
-    {
-        if (state == ConnectionState.Faulted)
-        {
-            EngineTelemetry.ConnectionFailures.Add(1);
-        }
-        SetState(state, server);
-    }
+    private void SetRetry(StationProfile? profile, EngineError? error, TimeSpan wait) =>
+        SetLink(
+            new Link(ConnectionState.Reconnecting, profile?.Server, RetryAt: _time.GetUtcNow() + wait, Error: error)
+        );
 
-    private void SetState(ConnectionState state, string? server)
+    private void SetLink(Link link)
     {
         lock (_gate)
         {
-            _state = state;
-            _server = server;
+            _link = link;
         }
     }
+
+    /// <summary>The connection's part of <see cref="EngineStatus"/>, replaced as a whole so a poll never mixes two states.</summary>
+    private sealed record Link(
+        ConnectionState State,
+        string? Server = null,
+        bool Verified = false,
+        DateTimeOffset? RetryAt = null,
+        EngineError? Error = null
+    );
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Connected to APRS-IS server {Server}")]
     private partial void LogConnected(string server);
@@ -511,6 +626,21 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped a line that could not be parsed")]
     private partial void LogLineRejected(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reconnect requested; reconnecting now")]
+    private partial void LogReconnectRequested();
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Station profile {Profile} changed its filter; sent without a new login"
+    )]
+    private partial void LogFilterChanged(string profile);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "The APRS-IS server refused the login ({Reason}); not retrying until the profile changes or a reconnect is asked for"
+    )]
+    private partial void LogLoginRefused(string reason);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "APRS-IS connection failed; retrying in {Delay}")]
     private partial void LogConnectionFailed(Exception exception, TimeSpan delay);

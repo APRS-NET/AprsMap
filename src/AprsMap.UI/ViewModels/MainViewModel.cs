@@ -62,6 +62,34 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial string ConnectionText { get; set; } = string.Empty;
 
+    /// <summary>Whether the login is verified and how often it reconnected, for the connection's tooltip; or null.</summary>
+    [ObservableProperty]
+    public partial string? ConnectionDetails { get; set; }
+
+    /// <summary>Whether the connection needs the user (a refused login), so it shows in the warning colour.</summary>
+    [ObservableProperty]
+    public partial bool IsConnectionWarning { get; set; }
+
+    /// <summary>Whether Reconnect now is offered: there is a connection to restart, and this engine accepts it.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ReconnectCommand))]
+    public partial bool CanReconnect { get; set; }
+
+    /// <summary>Closes the APRS-IS connection and connects again at once (F1.1 behavior 7).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanReconnect))]
+    internal async Task ReconnectAsync()
+    {
+        try
+        {
+            await engine.ReconnectAsync();
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            ShowError(ex);
+        }
+    }
+
     [ObservableProperty]
     public partial long PacketCount { get; set; }
 
@@ -213,21 +241,20 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    private void ShowConnection() =>
+    private void ShowConnection()
+    {
         ConnectionText =
             _engineUnreachable ? _text["Status.EngineUnreachable"]
             : _status is null ? _text["Status.Starting"]
-            : _status.Connection switch
-            {
-                ConnectionState.Connected => _text.Format(
-                    "Status.Connected",
-                    new Dictionary<string, object?> { ["server"] = _status.Server ?? string.Empty }
-                ),
-                ConnectionState.Connecting => _text["Status.Connecting"],
-                ConnectionState.Faulted => _text["Status.Faulted"],
-                ConnectionState.NotConfigured => _text["Status.NotConfigured"],
-                _ => _text["Status.Disconnected"],
-            };
+            : ViewModels.ConnectionText.Summary(_text, _status, time.GetUtcNow());
+        ConnectionDetails =
+            _engineUnreachable || _status is null ? null : ViewModels.ConnectionText.Details(_text, _status);
+        IsConnectionWarning = !_engineUnreachable && _status?.Connection == ConnectionState.Refused;
+        CanReconnect =
+            !_engineUnreachable
+            && _status is { Connection: not (ConnectionState.NotConfigured or ConnectionState.Disconnected) }
+            && _settings is { ReadOnly: false };
+    }
 
     /// <summary>
     /// Starts watching packets and stations and polling status, until cancelled. A failure (the gateway restarted, say)
@@ -239,7 +266,8 @@ public sealed partial class MainViewModel : ObservableObject
         var packets = KeepAsync(WatchPacketsAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);
-        await Task.WhenAll(packets, stations, status);
+        var countdown = KeepAsync(CountDownAsync, cancellationToken);
+        await Task.WhenAll(packets, stations, status, countdown);
     }
 
     /// <summary>Adds a packet to the top of the list.</summary>
@@ -293,6 +321,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _ = OpenSetupAsync();
         }
+        ShowConnection(); // whether Reconnect now is offered depends on the settings being read-only
     }
 
     /// <summary>Opens the first-run wizard (behavior 1), or again from the status bar (behavior 3).</summary>
@@ -439,6 +468,19 @@ public sealed partial class MainViewModel : ObservableObject
                 first = false;
             }
             Apply(batch);
+        }
+    }
+
+    /// <summary>Refreshes the reconnect countdown every second; status polls are less frequent.</summary>
+    private async Task CountDownAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1), time);
+        while (await timer.WaitForNextTickAsync(cancellationToken))
+        {
+            if (ViewModels.ConnectionText.IsCountingDown(_status) && !_engineUnreachable)
+            {
+                ShowConnection();
+            }
         }
     }
 

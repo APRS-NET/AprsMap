@@ -3,11 +3,10 @@
 What you should expect to see when you run AprsMap today, and what isn't there yet. Per-feature status lives in
 [scope.md](scope.md); this page is the short version for someone trying the app.
 
-As of 2026-10-15 (`0.1.0-alpha.8`): **Phase 0, foundations.** There is no map yet.
+As of 2026-10-15 (`0.2.0-alpha.1`): **Phase 0, foundations, and the start of Phase 1.** There is no map yet.
 
-**Next:** Phase 0 is complete apart from the map picker in the wizard, which comes with the map (F1.4). Every Phase 1
-feature has a spec in [features/](features/), waiting for review; Phase 1 code starts once they're agreed. The map
-(F1.4) is first.
+**Next:** the [0.3.0-alpha.1 milestone](https://github.com/APRS-NET/AprsMap/milestone/1), the first map. The APRS-IS
+connection (F1.1) is done; the shell and docking (F1.0) is next, then the station store (F1.3) and the map (F1.4).
 
 ## What you'll see
 
@@ -22,12 +21,15 @@ feature has a spec in [features/](features/), waiting for review; Phase 1 code s
    on macOS).
 2. **After that:** one window with:
    - a status bar with the product name, the profile picker (to switch between profiles, which reconnects), the APRS-IS
-     connection state and server, packet and station counts, the latest error, if any, and a gear for Settings;
+     connection state and server, packet and station counts, the latest error, if any, and a gear for Settings. The
+     connection reconnects by itself and shows why and when (a countdown); a refused login waits instead of retrying.
+     Its tooltip says whether the login is verified and how often it reconnected, and clicking it offers Reconnect now;
    - a live list of received packets, newest first, with the source callsign and a one-line summary.
 3. **Settings** (the gear, or Ctrl+, / Cmd+,): **Appearance** (theme, standard, high-contrast or colour-vision-safe
    colours, text size up to 200 %, icon size, corners, density, motion, language), applied live and remembered per
    viewer, with Reset and Undo; **Profiles** (add, edit, copy, delete with Undo, switch; read-only on a gateway without
-   operator sign-in); and **About** (versions, licences, source link, credits).
+   operator sign-in); and **About** (versions, the connection's details, licences, source link, credits). Changing only
+   a profile's filter, or its location when it has no filter, keeps the connection and sends the new filter.
 4. **Traffic:** a profile without a filter of its own receives everything within 150 km of its location (`r/` filter),
    or 150 km around the callsign's last position on APRS-IS when it has no location (`m/` filter). A profile can also
    carry its own APRS-IS filter, set when adding or editing it in Settings.

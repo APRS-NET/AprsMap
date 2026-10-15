@@ -49,16 +49,21 @@ public sealed record StationProfile(
     double? Longitude
 )
 {
-    /// <summary>
-    /// Whether a change from <paramref name="other"/> to this profile needs a new APRS-IS login. Without a filter of
-    /// its own the engine filters around the location, so then a moved location counts too.
-    /// </summary>
-    public bool ConnectsDifferentlyFrom(StationProfile? other) =>
+    /// <summary>Whether a change from <paramref name="other"/> to this profile needs a new APRS-IS login.</summary>
+    public bool NeedsNewLogin(StationProfile? other) =>
         other is null
         || Id != other.Id
         || Callsign != other.Callsign
         || Passcode != other.Passcode
-        || Server != other.Server
+        || Server != other.Server;
+
+    /// <summary>
+    /// Whether a change from <paramref name="other"/> to this profile changes the APRS-IS filter, which the live
+    /// connection can take without a new login. Without a filter of its own the engine filters around the location, so
+    /// then a moved location counts too.
+    /// </summary>
+    public bool NeedsNewFilter(StationProfile? other) =>
+        other is null
         || Filter != other.Filter
         || (string.IsNullOrWhiteSpace(Filter) && (Latitude != other.Latitude || Longitude != other.Longitude));
 }

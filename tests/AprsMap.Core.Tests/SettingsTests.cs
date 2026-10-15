@@ -193,28 +193,37 @@ public sealed class SettingsTests : IDisposable
     }
 
     [Fact]
-    public void OnlyLoginAndFilterChangesNeedANewConnection()
+    public void OnlyLoginChangesNeedANewLogin()
     {
         var profile = TwoProfiles().Profiles[1];
 
-        Assert.False(profile.ConnectsDifferentlyFrom(profile with { Name = "Renamed", Latitude = 1, Longitude = 2 }));
-        Assert.True(profile.ConnectsDifferentlyFrom(null));
-        Assert.True(profile.ConnectsDifferentlyFrom(profile with { Id = "x" }));
-        Assert.True(profile.ConnectsDifferentlyFrom(profile with { Callsign = "N0CALL-8" }));
-        Assert.True(profile.ConnectsDifferentlyFrom(profile with { Passcode = -1 }));
-        Assert.True(profile.ConnectsDifferentlyFrom(profile with { Server = "noam.aprs2.net:14580" }));
-        Assert.True(profile.ConnectsDifferentlyFrom(profile with { Filter = null }));
+        Assert.False(profile.NeedsNewLogin(profile with { Name = "Renamed", Latitude = 1, Filter = null }));
+        Assert.True(profile.NeedsNewLogin(null));
+        Assert.True(profile.NeedsNewLogin(profile with { Id = "x" }));
+        Assert.True(profile.NeedsNewLogin(profile with { Callsign = "N0CALL-8" }));
+        Assert.True(profile.NeedsNewLogin(profile with { Passcode = -1 }));
+        Assert.True(profile.NeedsNewLogin(profile with { Server = "noam.aprs2.net:14580" }));
+    }
 
-        // Without a filter of its own, the login filters around the location, so moving it reconnects.
+    [Fact]
+    public void FilterChangesAndMovesWithoutAFilterNeedANewFilter()
+    {
+        var profile = TwoProfiles().Profiles[1];
+
+        Assert.False(profile.NeedsNewFilter(profile with { Name = "Renamed", Latitude = 1, Longitude = 2 }));
+        Assert.True(profile.NeedsNewFilter(null));
+        Assert.True(profile.NeedsNewFilter(profile with { Filter = null }));
+
+        // Without a filter of its own, the engine filters around the location, so moving it changes the filter.
         var unfiltered = profile with
         {
             Filter = null,
             Latitude = 40,
             Longitude = -105,
         };
-        Assert.True(unfiltered.ConnectsDifferentlyFrom(unfiltered with { Latitude = 41 }));
-        Assert.True(unfiltered.ConnectsDifferentlyFrom(unfiltered with { Longitude = null, Latitude = null }));
-        Assert.False(unfiltered.ConnectsDifferentlyFrom(unfiltered with { Name = "Renamed" }));
+        Assert.True(unfiltered.NeedsNewFilter(unfiltered with { Latitude = 41 }));
+        Assert.True(unfiltered.NeedsNewFilter(unfiltered with { Longitude = null, Latitude = null }));
+        Assert.False(unfiltered.NeedsNewFilter(unfiltered with { Name = "Renamed" }));
     }
 
     [Theory]

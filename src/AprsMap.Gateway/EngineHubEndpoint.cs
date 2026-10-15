@@ -49,6 +49,14 @@ internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayO
         }
     }
 
+    /// <summary>Reconnecting affects every viewer, so it has the same gate as changing settings.</summary>
+    [HubMethodName(EngineHub.Reconnect)]
+    public Task Reconnect()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ReconnectAsync(Context.ConnectionAborted);
+    }
+
     /// <summary>Address lookup is offered only where settings can be changed, so the gateway isn't an open proxy.</summary>
     [HubMethodName(EngineHub.GetGeocodingInfo)]
     public async Task<GeocodingInfo> GetGeocodingInfo() =>

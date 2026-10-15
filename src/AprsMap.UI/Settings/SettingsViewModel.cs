@@ -203,6 +203,10 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     [ObservableProperty]
     public partial string? EngineText { get; set; }
 
+    /// <summary>Whether the APRS-IS login is verified and how often it reconnected, while connected.</summary>
+    [ObservableProperty]
+    public partial string? ConnectionText { get; set; }
+
     /// <summary>The licences, in one line.</summary>
     [ObservableProperty]
     public partial string LicenceText { get; set; } = string.Empty;
@@ -247,6 +251,7 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
                     ["aprsnet"] = _status.AprsNetVersion ?? "?",
                 }
             );
+        ConnectionText = _status is null ? null : ViewModels.ConnectionText.Details(text, _status);
         ShowLookupCredit = _geocoding?.Enabled == true;
     }
 }

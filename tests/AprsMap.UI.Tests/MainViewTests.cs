@@ -33,6 +33,33 @@ public class MainViewTests
     }
 
     [AvaloniaFact]
+    public void TheConnectionOffersReconnectNowAndShowsItsDetails()
+    {
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        vm.Show(engine.Settings);
+        vm.Show(engine.Status with { Verified = true, Reconnects = 1 });
+        var window = new Window
+        {
+            Content = new MainView { DataContext = vm },
+            Width = 800,
+            Height = 600,
+        };
+        window.Show();
+        var button = window.GetLogicalDescendants().OfType<Button>().Single(b => b.Name == "ConnectionButton");
+
+        Assert.Equal("Login verified · reconnected once", ToolTip.GetTip(button));
+        var flyout = Assert.IsType<MenuFlyout>(button.Flyout);
+        flyout.ShowAt(button);
+        var item = Assert.IsType<MenuItem>(Assert.Single(flyout.Items));
+        Assert.Same(vm.ReconnectCommand, item.Command);
+        item.Command!.Execute(null);
+        Assert.Equal(1, engine.Reconnects);
+        flyout.Hide();
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void ShowsTheProfilePickerOnlyOnceThereAreProfiles()
     {
         var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());

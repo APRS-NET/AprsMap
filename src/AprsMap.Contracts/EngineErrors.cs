@@ -84,12 +84,28 @@ public static class EngineErrorCodes
     /// <summary>The lookup server's reply couldn't be read.</summary>
     public const string GeocodingUnreadable = "geocoding.unreadable";
 
+    /// <summary>The APRS-IS server couldn't be reached (DNS, refused, timed out, or no login answer).</summary>
+    public const string AprsIsUnreachable = "aprs-is.unreachable";
+
+    /// <summary>The APRS-IS server refused the login (<see cref="EngineErrorArgs.Reason"/>: what it said).</summary>
+    public const string AprsIsLoginRefused = "aprs-is.login-refused";
+
+    /// <summary>The APRS-IS server closed the connection.</summary>
+    public const string AprsIsServerClosed = "aprs-is.server-closed";
+
+    /// <summary>The network link to the APRS-IS server failed.</summary>
+    public const string AprsIsLinkFailed = "aprs-is.link-failed";
+
+    /// <summary>The APRS-IS server sent nothing, not even a keepalive, for too long.</summary>
+    public const string AprsIsIdle = "aprs-is.idle";
+
     /// <summary>The kind of failure a code stands for, which decides the exception type that carries it.</summary>
     public static EngineErrorKind KindOf(string code)
     {
         ArgumentNullException.ThrowIfNull(code);
         return code.StartsWith("gateway.", StringComparison.Ordinal) ? EngineErrorKind.Access
             : code.StartsWith("geocoding.", StringComparison.Ordinal) ? EngineErrorKind.Operation
+            : code.StartsWith("aprs-is.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : EngineErrorKind.Argument;
     }
 }
@@ -114,6 +130,9 @@ public static class EngineErrorArgs
 
     /// <summary>An HTTP status code.</summary>
     public const string Status = "status";
+
+    /// <summary>A server's own words, such as why it refused a login (not translated).</summary>
+    public const string Reason = "reason";
 
     /// <summary>
     /// Which pair of a Maidenhead locator a character belongs to: <c>field</c>, <c>square</c>, <c>subsquare</c>,
