@@ -466,10 +466,13 @@ public sealed partial class MainViewModel : ObservableObject
             _showingSettings = false;
         }
 
+        var active = settings.GetActiveProfile();
+        CanSetMyLocation = active is not null && !settings.ReadOnly;
         if (Map is not null)
         {
-            // Home is the active profile's location (behavior 3).
-            Map.Home = settings.GetActiveProfile() is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
+            // Home is the active profile's location (behavior 3), drawn as a house with its callsign (F1.13).
+            Map.Home = active is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
+            Map.HomeName = active?.Callsign;
         }
         var notSetUp = settings.Profiles.Count == 0;
         ShowGatewaySetupNote = notSetUp && settings.ReadOnly;

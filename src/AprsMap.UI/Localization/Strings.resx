@@ -963,6 +963,18 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Fit all stations (F)</value>
     <comment>Map button: zooms to show every station. F is the key that does the same.</comment>
   </data>
+  <data name="Map.SetMyLocation" xml:space="preserve">
+    <value>Set my location here</value>
+  </data>
+  <data name="Map.LocationSet" xml:space="preserve">
+    <value>My location is set here.</value>
+  </data>
+  <data name="Map.UndoLocation" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="Map.MyLocation" xml:space="preserve">
+    <value>{name} · my location</value>
+  </data>
   <data name="Map.Hover" xml:space="preserve">
     <value>{name} · heard {minutes, plural, =0 {just now} one {# minute ago} other {# minutes ago}}</value>
     <comment>Tooltip over a station on the map. name: its callsign (not translated). minutes: whole minutes since it was last heard.</comment>

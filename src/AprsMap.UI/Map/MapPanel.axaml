@@ -5,10 +5,39 @@
   xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:l="using:AprsMap.UI.Localization"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
   x:Class="AprsMap.UI.Map.MapPanel"
+  x:DataType="vm:MainViewModel"
 >
+  <UserControl.Resources>
+    <ContextMenu x:Key="MapMenu" x:Name="MapMenu">
+      <MenuItem x:Name="SetMyLocationItem" Header="{l:T Map.SetMyLocation}" />
+    </ContextMenu>
+  </UserControl.Resources>
   <Panel>
     <Border x:Name="MapHost" />
+    <!-- After Set my location here: what happened, and Undo for 10 s (F1.13 behavior 2). -->
+    <Border
+      x:Name="LocationNotice"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Bottom"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="{DynamicResource Thickness.Border}"
+      CornerRadius="{DynamicResource Radius.Control}"
+      Padding="10,4"
+      Margin="10"
+      IsVisible="{Binding CanUndoMyLocation}"
+    >
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="{Binding MyLocationNotice}" VerticalAlignment="Center" />
+        <Button
+          x:Name="UndoLocationButton"
+          Content="{l:T Map.UndoLocation}"
+          Command="{Binding UndoMyLocationCommand}"
+        />
+      </StackPanel>
+    </Border>
     <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Spacing="6">
       <Button
         x:Name="ZoomInButton"
