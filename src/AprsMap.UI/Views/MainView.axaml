@@ -20,7 +20,7 @@
         DockPanel.Dock="Top"
         Background="{DynamicResource Brush.Surface}"
         BorderBrush="{DynamicResource Brush.Border}"
-        BorderThickness="0,0,0,1"
+        BorderThickness="{DynamicResource Thickness.BorderBottom}"
         Padding="16,10"
       >
         <StackPanel Orientation="Horizontal" Spacing="16">
@@ -55,7 +55,7 @@
           <Border
             CornerRadius="{DynamicResource Radius.Control}"
             BorderBrush="{DynamicResource Brush.Border}"
-            BorderThickness="1"
+            BorderThickness="{DynamicResource Thickness.Border}"
             Padding="10,4"
           >
             <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" />

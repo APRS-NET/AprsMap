@@ -19,7 +19,7 @@
       x:Name="Panel"
       Background="{DynamicResource Brush.Surface}"
       BorderBrush="{DynamicResource Brush.Border}"
-      BorderThickness="1"
+      BorderThickness="{DynamicResource Thickness.Border}"
       CornerRadius="{DynamicResource Radius.Panel}"
       MaxWidth="640"
       Margin="16"

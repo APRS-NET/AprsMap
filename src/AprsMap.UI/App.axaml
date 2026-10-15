@@ -7,10 +7,17 @@
 >
   <Application.Styles>
     <FluentTheme />
+    <!-- List rows follow the density tokens. -->
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="{DynamicResource Space.ListItem}" />
+      <Setter Property="MinHeight" Value="{DynamicResource Size.ListItemMinHeight}" />
+    </Style>
   </Application.Styles>
   <Application.Resources>
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
+        <!-- First: the palette, which AppearanceService replaces (it must stay at index 0). -->
+        <ResourceInclude Source="avares://AprsMap.UI/Themes/Palettes/Standard.axaml" />
         <ResourceInclude Source="avares://AprsMap.UI/Themes/Tokens.axaml" />
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>

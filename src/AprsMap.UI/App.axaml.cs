@@ -16,19 +16,20 @@ namespace AprsMap.UI;
 /// The shared application. Each head (desktop, browser) supplies the <see cref="IEngineService"/>: in-process on the
 /// desktop, SignalR to the gateway in the browser. Nothing else differs.
 /// </summary>
-public sealed class App : Application
+public sealed class App : Application, IDisposable
 {
     private readonly IEngineService? _engine;
-    private readonly IDeviceLocation? _deviceLocation;
+    private readonly PlatformServices _platform = new();
+    private AppearancePreferences? _preferences;
 
     /// <summary>For the XAML designer and previewer only.</summary>
     public App() { }
 
-    /// <summary>Creates the app on top of an engine service, with the platform's device location where there is one.</summary>
-    public App(IEngineService engine, IDeviceLocation? deviceLocation = null)
+    /// <summary>Creates the app on top of an engine service, with what the platform supplies.</summary>
+    public App(IEngineService engine, PlatformServices? platform = null)
     {
         _engine = engine;
-        _deviceLocation = deviceLocation;
+        _platform = platform ?? new PlatformServices();
     }
 
     /// <summary>Live appearance settings (theme, text size, corners…).</summary>
@@ -37,16 +38,33 @@ public sealed class App : Application
     /// <inheritdoc />
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
+    /// <inheritdoc />
+    public void Dispose() => _preferences?.Dispose();
+
+    /// <summary>Writes preferences still waiting for their save delay; the desktop app calls it on exit.</summary>
+    public Task SavePreferencesAsync() => _preferences?.FlushAsync() ?? Task.CompletedTask;
+
     /// <summary>The app's icon, for windows (title bar, task bar, dock).</summary>
     internal static WindowIcon AppIcon() => new(AssetLoader.Open(new Uri("avares://AprsMap.UI/Assets/icon.png")));
 
     /// <inheritdoc />
     public override void OnFrameworkInitializationCompleted()
     {
+        Appearance.Apply(_platform.Appearance);
         Appearance.Attach(this);
+        if (_platform.SystemReducedMotion)
+        {
+            Appearance.SetSystemReducedMotion(true);
+        }
+        if (_platform.Preferences is { } store)
+        {
+            // Subscribed after the first apply, so starting up doesn't write the file it just read.
+            _preferences = new AppearancePreferences(store, TimeProvider.System);
+            Appearance.Changed += (_, settings) => _preferences.Schedule(settings);
+        }
         if (_engine is not null)
         {
-            var viewModel = new MainViewModel(_engine, TimeProvider.System, deviceLocation: _deviceLocation);
+            var viewModel = new MainViewModel(_engine, TimeProvider.System, deviceLocation: _platform.DeviceLocation);
             Control view = new MainView { DataContext = viewModel };
             switch (ApplicationLifetime)
             {

@@ -54,11 +54,43 @@ function getPosition() {
   });
 }
 
+// The viewer's own preferences (F0.6). Storage can be refused (private browsing, blocked site data): then nothing is
+// kept, and the app runs with its defaults.
+function prefGet(key) {
+  try {
+    return globalThis.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function prefSet(key, value) {
+  try {
+    globalThis.localStorage.setItem(key, value);
+  } catch {
+    // Nowhere to keep it.
+  }
+}
+
+function prefRemove(key) {
+  try {
+    globalThis.localStorage.removeItem(key);
+  } catch {
+    // Nothing to remove.
+  }
+}
+
+const prefersReducedMotion = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
 try {
   const runtime = await dotnet.withDiagnosticTracing(false).create();
   runtime.setModuleImports('main.js', {
     showStartupError: showError,
     getPosition,
+    prefGet,
+    prefSet,
+    prefRemove,
+    prefersReducedMotion,
     appStarted: () => {
       started = true;
       clearTimeout(slow);

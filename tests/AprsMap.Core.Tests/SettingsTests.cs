@@ -127,6 +127,16 @@ public sealed class SettingsTests : IDisposable
     }
 
     [Fact]
+    public void TheFolderIsTheOneTheSettingsFileIsIn()
+    {
+        Assert.Equal(_root, SettingsLocation.Folder(new EngineOptions { SettingsFolder = _root }));
+        Assert.Equal(
+            Path.GetDirectoryName(SettingsLocation.CreateStore(new EngineOptions()).FilePath),
+            SettingsLocation.Folder(new EngineOptions())
+        );
+    }
+
+    [Fact]
     public void ValidSettingsPass()
     {
         SettingsValidator.Validate(TwoProfiles(), TimeProvider.System);

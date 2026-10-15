@@ -141,17 +141,24 @@ public static class SettingsLocation
     /// The store for <paramref name="options"/>: <see cref="EngineOptions.SettingsFolder"/> when set, otherwise the
     /// user's folder, migrated from the folders of the product's previous names.
     /// </summary>
-    public static FileSettingsStore CreateStore(EngineOptions options)
+    public static FileSettingsStore CreateStore(EngineOptions options) => new(Folder(options));
+
+    /// <summary>
+    /// The settings folder for <paramref name="options"/>: <see cref="EngineOptions.SettingsFolder"/> when set,
+    /// otherwise the user's folder, migrated from the folders of the product's previous names. The desktop app keeps
+    /// the viewer's own preferences here too (F0.6).
+    /// </summary>
+    public static string Folder(EngineOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         if (!string.IsNullOrWhiteSpace(options.SettingsFolder))
         {
-            return new FileSettingsStore(options.SettingsFolder);
+            return options.SettingsFolder;
         }
 
         var folder = UserFolder(Brand.Slug);
         MigrateIfMissing(folder, Brand.PreviousSlugs.Select(UserFolder));
-        return new FileSettingsStore(folder);
+        return folder;
     }
 
     internal enum OSPlatform

@@ -1,0 +1,41 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- Colour-vision-safe (F0.6 behavior 7.3): Ok is blue, Warn orange and Transmit reddish purple, never red against green; from the Okabe and Ito palette, darkened or lightened to meet WCAG AA as text, and checked to stay apart under simulated protan, deutan and tritan vision (PaletteTests).
+     One of three palettes AppearanceService swaps in; each defines every Color.* token for Light and Dark, and the
+     border widths. Brushes and sizes live in ../Tokens.axaml. -->
+<ResourceDictionary
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  x:Class="AprsMap.UI.Themes.Palettes.ColourVisionSafePalette"
+>
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="Color.Ground">#F4F5F7</Color>
+      <Color x:Key="Color.Surface">#FFFFFF</Color>
+      <Color x:Key="Color.Border">#DCE0E6</Color>
+      <Color x:Key="Color.Text">#16191D</Color>
+      <Color x:Key="Color.TextMuted">#5A6270</Color>
+      <Color x:Key="Color.Accent">#005A8F</Color>
+      <Color x:Key="Color.AccentSoft">#E3EEF6</Color>
+      <Color x:Key="Color.Transmit">#9A3562</Color>
+      <Color x:Key="Color.Ok">#00558A</Color>
+      <Color x:Key="Color.Warn">#8F5A00</Color>
+      <Color x:Key="Color.Scrim">#6616191D</Color>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="Color.Ground">#15181C</Color>
+      <Color x:Key="Color.Surface">#1D2126</Color>
+      <Color x:Key="Color.Border">#323840</Color>
+      <Color x:Key="Color.Text">#E6E9ED</Color>
+      <Color x:Key="Color.TextMuted">#A3ABB6</Color>
+      <Color x:Key="Color.Accent">#56B4E9</Color>
+      <Color x:Key="Color.AccentSoft">#1E3447</Color>
+      <Color x:Key="Color.Transmit">#E27FB0</Color>
+      <Color x:Key="Color.Ok">#56B4E9</Color>
+      <Color x:Key="Color.Warn">#E6B547</Color>
+      <Color x:Key="Color.Scrim">#99000000</Color>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <Thickness x:Key="Thickness.Border">1</Thickness>
+  <Thickness x:Key="Thickness.BorderBottom">0,0,0,1</Thickness>
+</ResourceDictionary>
