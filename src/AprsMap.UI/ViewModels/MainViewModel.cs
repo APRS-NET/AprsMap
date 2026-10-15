@@ -24,6 +24,8 @@ public sealed partial class MainViewModel : ObservableObject
     private EngineStatus? _status;
     private bool _engineUnreachable;
     private Exception? _error;
+    private bool _setupDismissed;
+    private bool _openingSetup;
 
     /// <summary>Creates the view model; its text follows <paramref name="text"/>'s language (the app's by default).</summary>
     public MainViewModel(IEngineService engine, TimeProvider time, Localizer? text = null)
@@ -68,6 +70,22 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Whether there is more than one profile and this engine accepts the switch.</summary>
     [ObservableProperty]
     public partial bool CanSwitchProfiles { get; set; }
+
+    /// <summary>The first-run wizard while it is open, or null (docs/features/F0.5-first-run-wizard.md).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsSetupOpen))]
+    public partial SetupWizardViewModel? Setup { get; set; }
+
+    /// <summary>Whether the wizard covers the main view.</summary>
+    public bool IsSetupOpen => Setup is not null;
+
+    /// <summary>Whether the status bar offers to open the wizard again: no profile, and the user closed it (behavior 3).</summary>
+    [ObservableProperty]
+    public partial bool CanOpenSetup { get; set; }
+
+    /// <summary>Whether to say that the gateway's operator sets the first callsign (behavior 2).</summary>
+    [ObservableProperty]
+    public partial bool ShowGatewaySetupNote { get; set; }
 
     /// <summary>The latest error talking to the engine (for example, the gateway is unreachable), or null.</summary>
     [ObservableProperty]
@@ -169,6 +187,56 @@ public sealed partial class MainViewModel : ObservableObject
         finally
         {
             _showingSettings = false;
+        }
+
+        var notSetUp = settings.Profiles.Count == 0;
+        ShowGatewaySetupNote = notSetUp && settings.ReadOnly;
+        CanOpenSetup = notSetUp && !settings.ReadOnly && _setupDismissed && Setup is null;
+        if (notSetUp && !settings.ReadOnly && !_setupDismissed)
+        {
+            _ = OpenSetupAsync();
+        }
+    }
+
+    /// <summary>Opens the first-run wizard (behavior 1), or again from the status bar (behavior 3).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    internal async Task OpenSetupAsync()
+    {
+        if (Setup is not null || _openingSetup)
+        {
+            return;
+        }
+        _openingSetup = true;
+        try
+        {
+            var wizard = new SetupWizardViewModel(engine, _text);
+            await wizard.LoadAsync();
+            wizard.Closed += OnSetupClosed;
+            Setup = wizard;
+            CanOpenSetup = false;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            ShowError(ex);
+        }
+        finally
+        {
+            _openingSetup = false;
+        }
+    }
+
+    private void OnSetupClosed(object? sender, bool saved)
+    {
+        if (Setup is { } wizard)
+        {
+            wizard.Closed -= OnSetupClosed;
+        }
+        Setup = null;
+        _setupDismissed = !saved;
+        CanOpenSetup = !saved && _settings is { Profiles.Count: 0, ReadOnly: false };
+        if (saved)
+        {
+            _settings = null; // the next status poll loads the new profile
         }
     }
 
