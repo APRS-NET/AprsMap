@@ -26,8 +26,9 @@ URL, OUT = sys.argv[1], sys.argv[2]
 PORT = 9343
 KEY = "aprsmap.layout"
 HEADER_HEIGHTS = [67, 62, 72, 58, 78]
-# Avalonia's browser script asks for a permission Firefox doesn't know and doesn't catch the refusal; harmless.
-ALLOWED_ERRORS = ["'window-management'"]
+# Harmless messages from Avalonia's browser script: it asks for a permission Firefox doesn't know without catching the
+# refusal, and on a machine without a GPU (CI runners) it logs each WebGL mode it can't get before drawing in software.
+ALLOWED_ERRORS = ["'window-management'", "Failed to create render target for mode"]
 
 
 def drag(x1, y1, x2, y2, steps=12):
