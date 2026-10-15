@@ -81,10 +81,10 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.13 | My location: fixed position (set by map click or coordinates), used for distance and the default filter | Set Location | App | G08 | scoped |
 | F1.14 | Gateway: hosts the engine, browser bundle, anonymous read-only viewing | — | App | — | scoped |
 | F1.15 | Quick toggles: APRS-IS, internet-access master switch (gates tiles too), GPS, beaconing, sound, tile fetching | (Enables menu) | App | — | scoped |
-| F1.16 | Extra map views following one station each (split view; desktop tear-off windows), auto-added to the server filter ([spec](features/F1.16-extra-map-views.md)) | Station Info, Automatic Filters | App | G04 | spec'd |
-| F1.17 | Dead-reckoned positions for moving stations, with a freshness indicator ([spec](features/F1.17-dead-reckoning.md)) | (Screen menu) | App | G08, G11 | spec'd |
-| F1.18 | Set destination: distance and bearing to a chosen point ([spec](features/F1.18-destination.md)) | Station Info | App | G08 | spec'd |
-| F1.19 | Data housekeeping: clear stations, tracks, messages, bulletins, telemetry, saved texts ([spec](features/F1.19-housekeeping.md)) | (Clear menu) | App | — | spec'd |
+| F1.16 | Extra map views following one station each (split view; desktop tear-off windows), auto-added to the server filter | Station Info, Automatic Filters | App | G04 | scoped |
+| F1.17 | Dead-reckoned positions for moving stations, with a freshness indicator | (Screen menu) | App | G11 | scoped |
+| F1.18 | Set destination: distance and bearing to a chosen point | Station Info | App | G08 | scoped |
+| F1.19 | Data housekeeping: clear stations, tracks, messages, bulletins, telemetry, saved texts | (Clear menu) | App | — | scoped |
 | F1.20 | Packet and station anomaly flags (duplicate positions, impossible speed, sub-second repeats, invalid) | Scroller | App | G24 | scoped |
 | F1.21 | RF path visualization: per-packet digipeater paths, digipeater-to-digipeater network links, local-RF-only mode | (observed) | App | G20 | scoped |
 | F1.22 | Statistics: heard platforms (device families) and symbols with counts and percentages | (observed) | App | G07 | scoped |
