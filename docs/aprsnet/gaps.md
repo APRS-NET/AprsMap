@@ -42,6 +42,8 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | G25 | Frequency specification parsing and validation | Packets | 3 | — |
 | G26 | APRS-IS server presets a UI can list (delivered) | AprsIsTcpClient | 0 | — |
 | G27 | Validation errors with stable codes (delivered) | AprsIsTcpClient, Packets | 0 | — |
+| G29 | Source merge: which source a packet came from, and duplicates reported with their source | Packets (or AprsNet.Gateway's source type, made public) | 1 | — |
+| G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | — |
 
 ---
 
@@ -264,7 +266,9 @@ transport.
 (manual).
 
 **Delivered in source** (`0.2.0-alpha.1`, package `AprsNet.Kiss` not on NuGet yet): KISS framing, KISS over any
-stream (serial and Bluetooth), and a TCP TNC connection that reconnects.
+stream (serial and Bluetooth), and a TCP TNC connection that reconnects. Still open, needed by AprsMap 0.4.0 (F1.25):
+a serial connection that reopens the port after a USB unplug and replug (as `KissTcpConnection` reconnects), with the
+connection states F1.1 uses, and a list of the serial ports present.
 
 ## G14: Text-mode and Kenwood TNC support
 
@@ -412,4 +416,30 @@ that each code is unique and documented; existing catch blocks for `ArgumentExce
 (`AprsValidationErrorCode`, 14 codes), `Value`, `Index` and `Character`. Thrown by `Callsign.Parse`, `PathEntry.Parse`,
 `PacketAddress.Parse`, `AprsIsClientOptions.Validate`, `SetFilterAsync`, `AprsIsPasscode.Compute` and the
 `AprsIsEndpoint` constructor, and by the new `AprsIsEndpoint.Parse(string)`.
+
+## G29: Source merge with provenance
+
+**Need.** AprsMap F1.25: packets come from several sources (APRS-IS, KISS TNCs). Each packet records its source, and a
+packet heard again on another source within the duplicate window shows once with a **Seen on** list. APRS.NET plans a
+source abstraction inside `AprsNet.Gateway` (APRS.NET #106) that de-duplicates and counts per source; AprsMap needs the
+same, public and outside the gateway.
+
+**Scope.** A source id carried with each packet from any reader (`AprsIsConnection`, `KissTcpConnection`, the serial
+connection), and G05's `DuplicateFilter` returning, for a duplicate, the first packet's identity and the new source,
+rather than only dropping it. A small merge type that reads any number of sources and yields `(packet, source,
+isDuplicateOf)` would serve both AprsMap and `AprsNet.Gateway`.
+
+**Acceptance.** One fake APRS-IS and one fake KISS source: a packet on both comes out once as new and once as a
+duplicate naming the second source; outside the window both are new.
+
+## G30: gpsd client
+
+**Need.** AprsMap F1.25 behavior 12 (GPS sources, planned with beaconing, F2.2): a GPS shared by gpsd, locally or on
+another machine.
+
+**Scope.** Connect to gpsd over TCP (default port 2947), send `?WATCH={"enable":true,"json":true}`, and read TPV
+reports (time, position, speed, course, altitude, fix mode) into a position fix type shared with G17's NMEA parser;
+reconnect like the other connections. No device access in the library beyond the socket.
+
+**Acceptance.** Recorded gpsd JSON sessions; no fix, 2D and 3D fixes; reconnect after the daemon restarts.
 

@@ -95,6 +95,7 @@ reference it (`Part of #N`). This table stays the full inventory; the milestone 
 | F1.22 | Statistics: heard platforms (device families) and symbols with counts and percentages ([spec](features/F1.22-statistics.md)) | (observed) | App | G07, G20 | spec'd |
 | F1.23 | Saved layouts ([spec](features/F1.23-saved-layouts.md)): named layouts, and the layout last used with a monitor setup offered when monitors change | — (maintainer request) | App | — | spec'd |
 | F1.24 | Web pop-out panels: a panel in its own browser tab or window (a second app instance on the same gateway), with selection kept in sync; after F1.14's viewer limits account for it | — (maintainer request) | App | — | scoped |
+| F1.25 | Sources ([spec](features/F1.25-sources.md)): a master list of sources (APRS-IS now; KISS over TCP and serial, and GPS, later) that profiles pick from, at most one APRS-IS; each packet records its source, with Seen on for duplicates | — (maintainer request) | App | G05, G29 | spec'd |
 
 ## Phase 2: Transmit via APRS-IS
 
@@ -117,12 +118,12 @@ reference it (`Part of #N`). This table stays the full inventory; the milestone 
 
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
-| F3.1 | RF ports: KISS over serial, Bluetooth serial and TCP (Direwolf, soundmodem), several at once | Compatible Hardware/Software | App | G12, G13 | scoped |
+| F3.1 | RF ports: KISS over serial, Bluetooth serial and TCP (Direwolf, soundmodem), several at once, as [F1.25](features/F1.25-sources.md) sources. Receive first, planned for 0.4.0 when the test bed is ready (Direwolf on Windows, MFJ TNC-X, later NinoTNC) | Compatible Hardware/Software | App | G12, G13 | scoped |
 | F3.2 | Text-mode and Kenwood built-in TNCs, open and close command scripts | Open/Close Commands | App | G14 | scoped |
 | F3.3 | Per-port RF beacon paths, RF versus IS source attribution on the map, heard-direct indication | — | App | G20 | scoped |
 | F3.4 | IGate: RF→IS, IS→RF for messages to local stations, objects; configurable rules | (core feature list), Receive-Only IGates Break Messaging | App | G16 | scoped |
 | F3.5 | Digipeater: WIDEn-N, fill-in, own-call digipeat | Digipeating | App | G15 | scoped |
-| F3.6 | GPS: NMEA from serial or TCP (gpsd), the OS location API on desktop, browser geolocation sent to the gateway | Android GPS | App | G17 | scoped |
+| F3.6 | GPS: NMEA from serial or TCP, gpsd, the OS location API on desktop, browser geolocation sent to the gateway; as [F1.25](features/F1.25-sources.md) sources with **Position for** my station or a tracked position. Planned with beaconing (F2.2) | Android GPS | App | G17, G30 | scoped |
 | F3.7 | Frequency objects and radio tune format in comments | Frequencies, Radio Tune Format | App | G01 | scoped |
 | F3.8 | AGWPE over TCP as an RF port | Port Configuration | App | G22 | scoped |
 | F3.9 | CWOP weather feed port (unfiltered; filtered locally) | CWOP | App | G21 | scoped |
