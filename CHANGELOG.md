@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.7](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.6...v0.1.0-alpha.7) (2026-10-15)
+
+
+### Features
+
+* **engine:** server presets and Maidenhead locators for the setup wizard ([79d0789](https://github.com/APRS-NET/AprsMap/commit/79d0789f53ed5099739fb62caaf53c6ee47ba1a3))
+* **engine:** server presets and Maidenhead locators for the setup wizard ([14205e5](https://github.com/APRS-NET/AprsMap/commit/14205e5c89219e15f94ab7e84b0be07d6b132cfc))
+
 ## [0.1.0-alpha.6](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.5...v0.1.0-alpha.6) (2026-10-15)
 
 
