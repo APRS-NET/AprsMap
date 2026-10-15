@@ -52,6 +52,8 @@ public sealed class AppearanceService
             }
         }
 
+        Localization.Localizer.Instance.SetLanguage(Current.Language);
+
         Changed?.Invoke(this, Current);
     }
 

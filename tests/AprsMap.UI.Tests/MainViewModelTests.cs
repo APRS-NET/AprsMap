@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
+using AprsMap.UI.Localization;
 using AprsMap.UI.ViewModels;
 using Microsoft.Extensions.Time.Testing;
 
@@ -58,7 +59,7 @@ public class MainViewModelTests
 
         var run = vm.StartAsync(cts.Token);
         await WaitUntil(() => vm.ErrorText == "Gateway unreachable");
-        Assert.Equal(MainViewModel.EngineUnreachableText, vm.ConnectionText);
+        Assert.Equal(Localizer.Instance["Status.EngineUnreachable"], vm.ConnectionText);
 
         engine.StatusFailure = null;
         await AdvanceUntil(time, () => vm.ErrorText is null);
@@ -150,6 +151,46 @@ public class MainViewModelTests
         vm.SelectedProfile = vm.Profiles[1]; // already active: nothing to do
         Assert.Single(engine.Saved);
     }
+
+    [Fact]
+    public void CountsReadAsWords()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider(), new Localizer(CultureInfo("en-US")));
+
+        Assert.Equal("0 packets", vm.PacketCountText);
+        vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 1, "1.0.0"));
+        Assert.Equal("1 packet", vm.PacketCountText);
+        vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 12345, "1.0.0"));
+        Assert.Equal("12,345 packets", vm.PacketCountText);
+        vm.Apply(new StationBatch([FakeEngine.Station("N0CALL")], []));
+        Assert.Equal("1 station", vm.StationCountText);
+    }
+
+    [Fact]
+    public async Task EngineErrorsAreShownInTheViewersLanguageAndFollowAChange()
+    {
+        var text = new Localizer(CultureInfo("en-US"));
+        var engine = new FakeEngine
+        {
+            SaveFailure = EngineErrors.Create(EngineErrorCodes.OperatorOnly, "English from the gateway"),
+        };
+        var vm = new MainViewModel(engine, new FakeTimeProvider(), text);
+        vm.Show(engine.Settings);
+        vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 2, "1.0.0"));
+
+        await vm.SwitchProfileAsync(engine.Settings, vm.Profiles[1]);
+        Assert.Equal(text["Error.gateway.operator-only"], vm.ErrorText);
+        Assert.NotEqual("English from the gateway", vm.ErrorText);
+
+        text.SetLanguage(Localizer.PseudoLanguage);
+
+        Assert.StartsWith("[Öñļý", vm.ErrorText, StringComparison.Ordinal);
+        Assert.StartsWith("[ÅÞŔŠ-ÎŠ çöññéçţéð · T2TEST", vm.ConnectionText, StringComparison.Ordinal);
+        Assert.StartsWith("[2 þåçķéţš", vm.PacketCountText, StringComparison.Ordinal);
+    }
+
+    private static System.Globalization.CultureInfo CultureInfo(string name) =>
+        System.Globalization.CultureInfo.GetCultureInfo(name);
 
     [Fact]
     public async Task ARefusedSwitchShowsWhyAndKeepsTheActiveProfile()

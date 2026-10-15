@@ -76,4 +76,10 @@ public sealed record AppearanceSettings
 
     /// <summary>Corner style.</summary>
     public CornerStyle Corners { get; init; } = CornerStyle.Rounded;
+
+    /// <summary>
+    /// The UI language as an IETF tag (for example <c>de</c>), or null to follow the OS or browser. Per viewer, like the
+    /// rest of appearance: on a gateway each browser picks its own.
+    /// </summary>
+    public string? Language { get; init; }
 }
