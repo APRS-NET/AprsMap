@@ -56,7 +56,8 @@ the filter persists across reconnects, and disposal stops the loop promptly.
 ## G04: Typed APRS-IS server filter builder
 
 **Need.** AprsMap F1.2 builds filters from the map viewport and tracked stations. `SetFilterAsync(string)` takes raw
-text.
+text. Until then AprsMap writes one filter itself, `r/lat/lon/km` or `m/km`, for profiles without a filter
+(`// SHIM: G04` in `AprsIsLineSourceFactory.EffectiveFilter`).
 
 **Scope.** An immutable `AprsIsFilter` composed of typed parts: range `r/lat/lon/km`, my-range `m/km`, friend range
 `f/call/km`, area `a/latN/lonW/latS/lonE`, prefix `p/`, budlist `b/` (with wildcards), object `o/`, type `t/poimqstuw`,

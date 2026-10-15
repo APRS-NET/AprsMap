@@ -67,7 +67,7 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
 | F1.1 | APRS-IS connection: server pick, login (receive-only without a passcode), status, auto-reconnect | Passcode | App | G03 | scoped |
-| F1.2 | Automatic filter: range filter around the map viewport, updated on pan and zoom, plus tracked and buddy stations | Automatic Filters | App | G04 | scoped |
+| F1.2 | Automatic filter: range filter around the map viewport, updated on pan and zoom, plus tracked and buddy stations. Until then, a profile without a filter gets 150 km around its location (`r/`), or `m/150` without one | Automatic Filters | App | G04 | scoped |
 | F1.3 | Station store: latest state per station, object and item ownership, kill handling, aging and expiry, duplicate drop | No Visible Stations | App | G05, G06 | scoped |
 | F1.4 | Map: OSM-style tiles, symbols with overlays, labels, selectable tile providers, transparency, map dimming, symbol size, wind barbs, auto-zoom-to-fit | Screen Elements, Transparency | App | — | scoped |
 | F1.5 | Tracks / trails for moving stations, with configurable history length | — (core feature list) | App | G08 | scoped |

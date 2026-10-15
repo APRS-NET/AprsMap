@@ -194,5 +194,39 @@ public sealed class SettingsTests : IDisposable
         Assert.True(profile.ConnectsDifferentlyFrom(profile with { Passcode = -1 }));
         Assert.True(profile.ConnectsDifferentlyFrom(profile with { Server = "noam.aprs2.net:14580" }));
         Assert.True(profile.ConnectsDifferentlyFrom(profile with { Filter = null }));
+
+        // Without a filter of its own, the login filters around the location, so moving it reconnects.
+        var unfiltered = profile with
+        {
+            Filter = null,
+            Latitude = 40,
+            Longitude = -105,
+        };
+        Assert.True(unfiltered.ConnectsDifferentlyFrom(unfiltered with { Latitude = 41 }));
+        Assert.True(unfiltered.ConnectsDifferentlyFrom(unfiltered with { Longitude = null, Latitude = null }));
+        Assert.False(unfiltered.ConnectsDifferentlyFrom(unfiltered with { Name = "Renamed" }));
+    }
+
+    [Theory]
+    [InlineData(null, 38.9991481, -94.6818162, "r/38.9991/-94.6818/150")]
+    [InlineData("  ", -33.86, 151.2, "r/-33.86/151.2/150")]
+    [InlineData(null, null, null, "m/150")]
+    [InlineData("b/N0CALL*", 40.0, -105.0, "b/N0CALL*")]
+    public void AProfileWithoutAFilterGetsOneAroundItsLocation(
+        string? filter,
+        double? latitude,
+        double? longitude,
+        string expected
+    )
+    {
+        var profile = InMemorySettingsStore.Profile("N0CALL") with
+        {
+            Filter = filter,
+            Latitude = latitude,
+            Longitude = longitude,
+        };
+
+        Assert.Equal(expected, AprsIsLineSourceFactory.EffectiveFilter(profile));
+        Assert.Equal(expected, AprsIsLineSourceFactory.ClientOptions(profile, TimeProvider.System).Filter);
     }
 }
