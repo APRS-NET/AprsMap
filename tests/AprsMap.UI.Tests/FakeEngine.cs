@@ -97,6 +97,11 @@ internal sealed class FakeEngine : IEngineService
 
     public List<(string Query, string? Language)> Lookups { get; } = [];
 
+    public Dictionary<string, StationDetail> Details { get; } = [];
+
+    public Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Details.GetValueOrDefault(name));
+
     public int Resets { get; private set; }
 
     public Task ResetSettingsAsync(CancellationToken cancellationToken = default)

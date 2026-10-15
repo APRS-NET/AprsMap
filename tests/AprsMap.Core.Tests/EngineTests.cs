@@ -554,6 +554,31 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task TheSweepFadesAndRemovesStationsOnTheEnginesClock()
+    {
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero));
+        var store = InMemorySettingsStore.WithProfile();
+        var engine = CreateEngine(time, settings: store);
+        await engine.SaveSettingsAsync(
+            (await engine.GetSettingsAsync(Ct)) with
+            {
+                Aging = new StationAging(5, 10),
+            },
+            Ct
+        );
+        engine.Accept(Position);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await AdvanceMinutesUntil(time, () => engine.GetStationAsync("N0CALL-9", Ct).Result?.IsStale == true);
+        await AdvanceMinutesUntil(time, () => engine.GetStationAsync("N0CALL-9", Ct).Result is null);
+
+        Assert.Null(await engine.GetStationAsync("NOBODY", Ct));
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
     public async Task AFilterChangeIsSentWithoutANewLogin()
     {
         var sources = new FakeSourceFactory();
@@ -776,6 +801,21 @@ public class EngineTests
             for (var i = 0; i < 20 && !condition(); i++)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, Ct);
+            }
+        }
+        Assert.True(condition(), "Condition was not met in time.");
+    }
+
+    /// <summary>Steps the fake clock a minute at a time, for the sweep, until the condition holds.</summary>
+    private static async Task AdvanceMinutesUntil(FakeTimeProvider time, Func<bool> condition)
+    {
+        for (var minute = 0; minute < 30 && !condition(); minute++)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(20), TimeProvider.System, Ct);
+            time.Advance(TimeSpan.FromMinutes(1));
+            for (var i = 0; i < 20 && !condition(); i++)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(2), TimeProvider.System, Ct);
             }
         }
         Assert.True(condition(), "Condition was not met in time.");

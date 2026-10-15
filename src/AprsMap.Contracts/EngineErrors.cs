@@ -39,6 +39,9 @@ public static class EngineErrorCodes
     /// <summary>A profile has a latitude without a longitude, or the other way round.</summary>
     public const string ProfilePositionIncomplete = "settings.profile.position-incomplete";
 
+    /// <summary>The station aging times are out of range: stale after 1 minute or more, removal after the stale time.</summary>
+    public const string StationAgingInvalid = "settings.stations.aging-invalid";
+
     /// <summary>The active profile isn't one of the profiles.</summary>
     public const string ActiveProfileMissing = "settings.active-profile-missing";
 

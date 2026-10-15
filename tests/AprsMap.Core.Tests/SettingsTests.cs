@@ -191,6 +191,8 @@ public sealed class SettingsTests : IDisposable
             { EngineErrorCodes.ActiveProfileMissing, null, good with { ActiveProfileId = "nobody" } },
             { EngineErrorCodes.ActiveProfileMissing, null, AppSettings.Empty with { ActiveProfileId = "home" } },
             { EngineErrorCodes.SettingsIncomplete, null, good with { Units = null! } },
+            { EngineErrorCodes.StationAgingInvalid, null, good with { Aging = new StationAging(0, null) } },
+            { EngineErrorCodes.StationAgingInvalid, null, good with { Aging = new StationAging(30, 30) } },
         };
     }
 

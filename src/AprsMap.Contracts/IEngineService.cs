@@ -23,6 +23,12 @@ public interface IEngineService
     /// </summary>
     IAsyncEnumerable<StationBatch> WatchStationsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Everything known about one station, object or item (F1.3 behavior 14), for the details pane and the station list;
+    /// null when the store has no entry by that name.
+    /// </summary>
+    Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default);
+
     /// <summary>The user's settings. A gateway may return them read-only, with passcodes hidden.</summary>
     Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default);
 

@@ -18,6 +18,9 @@ public static class EngineHub
     /// <summary>Hub streaming method for <see cref="IEngineService.WatchStationsAsync"/>.</summary>
     public const string WatchStations = "WatchStations";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetStationAsync"/>.</summary>
+    public const string GetStation = "GetStation";
+
     /// <summary>Hub method for <see cref="IEngineService.GetSettingsAsync"/>.</summary>
     public const string GetSettings = "GetSettings";
 
