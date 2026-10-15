@@ -37,9 +37,12 @@ The web app runs only when the **gateway** serves it: the gateway runs the engin
 - **What browsers see:** the same status bar and packet list as the desktop app. Settings are read-only from a browser,
   unless `Gateway__AllowSettingsChanges=true` (see [deployment.md](deployment.md)). So without a callsign the page says
   the gateway isn't set up, rather than showing the wizard.
-- **Running `src/AprsMap.Browser` on its own** (`dotnet run`, or Run in an IDE) **doesn't work and stays on
-  "Loading…".** There is no gateway at that address for it to connect to, and only a publish build includes the
-  WebAssembly graphics (SkiaSharp). Use the gateway as above.
+- **Running `src/AprsMap.Browser` on its own** (`dotnet run`, or Run in an IDE) **doesn't work.** A development build
+  can't start in the browser (only a publish includes the WebAssembly native libraries, SkiaSharp among them), and
+  there is no gateway at that address anyway. The page says so within seconds and tells you to start the gateway. Use
+  the gateway as above.
+- **If the page says it can't reach the gateway:** the gateway isn't running, or the app was opened from another
+  address. The page shows the address it tried, and Try again reloads it.
 
 ## Not there yet
 
@@ -56,8 +59,5 @@ The web app runs only when the **gateway** serves it: the gateway runs the engin
 
 ## Known issues
 
-- **Browser startup without a gateway:** the web app stays on "Loading…" and shows no error when it can't reach its
-  gateway, for example when `AprsMap.Browser` is run on its own. Once it has started, a lost gateway is shown and
-  retried.
 - **Packet summaries are English:** the one-line summaries in the packet list come from the engine in English, whatever
   the language. They become structured with F1 station details (F0.9, behavior 16).
