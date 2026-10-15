@@ -54,6 +54,10 @@ public class MainViewModelTests
 
         Assert.Equal("APRS-IS login refused · Login by user not allowed", vm.ConnectionText);
         Assert.Null(vm.ConnectionDetails);
+        Assert.True(vm.IsConnectionWarning);
+
+        vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 0, "1.0.0"));
+        Assert.False(vm.IsConnectionWarning);
     }
 
     [Fact]

@@ -66,6 +66,10 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial string? ConnectionDetails { get; set; }
 
+    /// <summary>Whether the connection needs the user (a refused login), so it shows in the warning colour.</summary>
+    [ObservableProperty]
+    public partial bool IsConnectionWarning { get; set; }
+
     /// <summary>Whether Reconnect now is offered: there is a connection to restart, and this engine accepts it.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ReconnectCommand))]
@@ -245,6 +249,7 @@ public sealed partial class MainViewModel : ObservableObject
             : ViewModels.ConnectionText.Summary(_text, _status, time.GetUtcNow());
         ConnectionDetails =
             _engineUnreachable || _status is null ? null : ViewModels.ConnectionText.Details(_text, _status);
+        IsConnectionWarning = !_engineUnreachable && _status?.Connection == ConnectionState.Refused;
         CanReconnect =
             !_engineUnreachable
             && _status is { Connection: not (ConnectionState.NotConfigured or ConnectionState.Disconnected) }
