@@ -79,8 +79,8 @@ Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) �
 | F1.11 | Telemetry: latest values with PARM/UNIT/EQNS applied | Telemetry | App | G09 | scoped |
 | F1.12 | Area objects and signposts drawn as shapes | — | App | — | scoped |
 | F1.13 | My location: fixed position (set by map click or coordinates), used for distance and the default filter | Set Location | App | G08 | scoped |
-| F1.14 | Gateway: hosts the engine, browser bundle, anonymous read-only viewing | — | App | — | scoped |
-| F1.15 | Quick toggles: APRS-IS, internet-access master switch (gates tiles too), GPS, beaconing, sound, tile fetching | (Enables menu) | App | — | scoped |
+| F1.14 | Gateway ([spec](features/F1.14-gateway.md)): hosts the engine, browser bundle, anonymous read-only viewing | — | App | — | spec'd |
+| F1.15 | Quick toggles ([spec](features/F1.15-quick-toggles.md)): APRS-IS, internet-access master switch (gates tiles too), GPS, beaconing, sound, tile fetching | (Enables menu) | App | — | spec'd |
 | F1.16 | Extra map views following one station each (split view; desktop tear-off windows), auto-added to the server filter | Station Info, Automatic Filters | App | G04 | scoped |
 | F1.17 | Dead-reckoned positions for moving stations, with a freshness indicator | (Screen menu) | App | G11 | scoped |
 | F1.18 | Set destination: distance and bearing to a chosen point | Station Info | App | G08 | scoped |
