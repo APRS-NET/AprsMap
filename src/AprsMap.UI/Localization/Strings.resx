@@ -90,6 +90,9 @@
     <value>Profile “{profile}”: a location needs both latitude and longitude.</value>
     <comment>profile: the profile's name.</comment>
   </data>
+  <data name="Error.settings.stations.aging-invalid" xml:space="preserve">
+    <value>Stations go stale after a minute or more, and are removed only after they're stale.</value>
+  </data>
   <data name="Error.settings.active-profile-missing" xml:space="preserve">
     <value>The active profile must be one of the profiles.</value>
   </data>

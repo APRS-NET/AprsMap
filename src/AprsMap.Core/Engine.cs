@@ -29,7 +29,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly Lock _gate = new();
     private readonly Queue<PacketView> _recent = new();
     private readonly List<Channel<PacketView>> _watchers = [];
-    private readonly StationStore _stations = new();
+    private readonly StationStore _stations;
     private Link _link = new(ConnectionState.Disconnected);
     private int _reconnects;
     private IPacketSource? _source;
@@ -52,6 +52,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     {
         ArgumentNullException.ThrowIfNull(options);
         _options = options.Value;
+        _stations = new StationStore(_options.MaxStations);
         _sources = sources;
         _settingsStore = settingsStore;
         _geocoder = geocoder ?? NoGeocoder.Instance;
@@ -295,6 +296,45 @@ public sealed partial class Engine : IEngineService, IDisposable
     /// With no profile it waits for one; a profile change or a reconnect request ends the session and connects at once.
     /// </summary>
     public async Task RunAsync(CancellationToken cancellationToken)
+    {
+        var sweeping = SweepAsync(cancellationToken);
+        try
+        {
+            await RunConnectionAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            await sweeping.ConfigureAwait(false);
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return Task.FromResult(_stations.Get(name));
+    }
+
+    /// <summary>Marks stations stale and removes expired ones, once a <see cref="EngineOptions.SweepInterval"/> (F1.3 behavior 10).</summary>
+    private async Task SweepAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(_options.SweepInterval, _time);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                AppSettings? settings;
+                lock (_gate)
+                {
+                    settings = _settings;
+                }
+                _stations.Sweep(_time.GetUtcNow(), (settings ?? AppSettings.Empty).EffectiveAging);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+    }
+
+    private async Task RunConnectionAsync(CancellationToken cancellationToken)
     {
         var delay = _options.InitialRetryDelay;
         while (!cancellationToken.IsCancellationRequested)

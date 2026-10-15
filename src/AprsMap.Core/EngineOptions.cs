@@ -34,6 +34,12 @@ public sealed class EngineOptions
     /// <summary>How many recent packets the engine keeps for clients that connect later.</summary>
     public int RecentPacketCapacity { get; set; } = 500;
 
+    /// <summary>The most stations, objects and items kept; beyond it the least recently heard goes (F1.3 behavior 12).</summary>
+    public int MaxStations { get; set; } = StationStore.DefaultMaxEntries;
+
+    /// <summary>How often stale and expired stations are looked for (F1.3 behavior 10).</summary>
+    public TimeSpan SweepInterval { get; set; } = TimeSpan.FromMinutes(1);
+
     /// <summary>How often the map's station stream sends what changed. Longer means fewer, larger messages.</summary>
     public TimeSpan StationBatchInterval { get; set; } = TimeSpan.FromMilliseconds(250);
 

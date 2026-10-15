@@ -61,6 +61,13 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SaveSettings, settings, cancellationToken));
 
     /// <inheritdoc />
+    public Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return _connection.InvokeAsync<StationDetail?>(EngineHub.GetStation, name, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task ResetSettingsAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ResetSettings, cancellationToken));
 

@@ -71,6 +71,20 @@ internal static class SettingsValidator
             }
         }
 
+        if (
+            settings.Aging is { } aging
+            && (
+                aging.StaleAfterMinutes < 1
+                || aging.RemoveAfterMinutes is { } remove && remove <= aging.StaleAfterMinutes
+            )
+        )
+        {
+            throw Fail(
+                EngineErrorCodes.StationAgingInvalid,
+                "Stations go stale after a minute or more, and are removed only after they're stale."
+            );
+        }
+
         var active = settings.ActiveProfileId;
         if (settings.Profiles.Count == 0 ? active is not null : !ids.Contains(active ?? string.Empty))
         {

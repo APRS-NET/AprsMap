@@ -12,18 +12,35 @@ namespace AprsMap.Contracts;
 /// Set by an engine that won't accept changes from this caller (a gateway without operator sign-in). Passcodes are
 /// hidden (sent as -1) when it is set. Ignored on save.
 /// </param>
+/// <param name="Aging">When stations fade and leave (F1.3 behaviors 7–9); null means the defaults.</param>
 public sealed record AppSettings(
     IReadOnlyList<StationProfile> Profiles,
     string? ActiveProfileId,
     UnitSettings Units,
-    bool ReadOnly = false
+    bool ReadOnly = false,
+    StationAging? Aging = null
 )
 {
+    /// <summary>The aging in effect: <see cref="Aging"/>, or the defaults.</summary>
+    public StationAging EffectiveAging => Aging ?? StationAging.Default;
+
     /// <summary>No profiles yet: the state before first-run setup.</summary>
     public static AppSettings Empty { get; } = new([], null, UnitSettings.Metric);
 
     /// <summary>The active profile, or null when none is set.</summary>
     public StationProfile? GetActiveProfile() => Profiles.FirstOrDefault(p => p.Id == ActiveProfileId);
+}
+
+/// <summary>
+/// When stations, objects and items fade and leave the store (docs/features/F1.3-station-store.md, behaviors 7–9).
+/// The station's setting, not the viewer's: the engine applies it for everyone.
+/// </summary>
+/// <param name="StaleAfterMinutes">Not heard for this long: faded on the map, greyed in lists.</param>
+/// <param name="RemoveAfterMinutes">Not heard for this long: removed; null never removes.</param>
+public sealed record StationAging(int StaleAfterMinutes, int? RemoveAfterMinutes)
+{
+    /// <summary>Stale after 30 minutes, removed after 2 hours.</summary>
+    public static StationAging Default { get; } = new(30, 120);
 }
 
 /// <summary>
