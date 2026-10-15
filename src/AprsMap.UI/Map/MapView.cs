@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
+using AprsNet.Packets;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
@@ -47,6 +48,8 @@ public sealed class MapView : Control, IDisposable
     private readonly Dictionary<string, MapLabel> _labels = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StationMark> _byName = new(StringComparer.Ordinal);
     private IReadOnlyList<StationMark> _marks = [];
+    private IReadOnlyList<StationMark> _drawn = [];
+    private StationMark? _me;
     private Point? _pressedAt;
     private double _symbolDip = 24;
     private double _labelSize = 12;
@@ -155,11 +158,47 @@ public sealed class MapView : Control, IDisposable
             _byName.Remove(name);
         }
         _marks = [.. _byName.Values];
+        _drawn = _me is null ? _marks : [.. _marks, _me];
         if (Selected is { } selected && !_byName.ContainsKey(selected))
         {
             Select(null);
         }
         InvalidateVisual();
+    }
+
+    /// <summary>
+    /// Draws my location as a house labelled <paramref name="name"/> (F1.13 behavior 3), or nothing with null
+    /// coordinates. It never fades, its label is placed first, and it can't be selected: it isn't a heard station.
+    /// </summary>
+    public void ShowMe(double? latitude, double? longitude, string? name)
+    {
+        if (latitude is { } lat && longitude is { } lon)
+        {
+            var (x, y) = SphericalMercator.FromLonLat(lon, lat);
+            _me = new StationMark(name ?? string.Empty, x, y, House, false, DateTimeOffset.MaxValue);
+        }
+        else
+        {
+            _me = null;
+        }
+        _drawn = _me is null ? _marks : [.. _marks, _me];
+        InvalidateVisual();
+    }
+
+    /// <summary>My location as drawn, for tests; null when not shown.</summary>
+    internal StationMark? Me => _me;
+
+    /// <summary>The house drawn at my location, APRS <c>/-</c>.</summary>
+    private static readonly AprsSymbol House = AprsSymbol.TryCreate('/', '-', out var house) ? house : default;
+
+    /// <summary>The place under <paramref name="point"/>, in degrees.</summary>
+    internal (double Latitude, double Longitude) PlaceAt(Point point)
+    {
+        var viewport = _map.Navigator.Viewport;
+        var x = viewport.CenterX + (point.X - viewport.Width / 2) * viewport.Resolution;
+        var y = viewport.CenterY - (point.Y - viewport.Height / 2) * viewport.Resolution;
+        var (lon, lat) = SphericalMercator.ToLonLat(x, y);
+        return (Math.Clamp(lat, -85, 85), Math.Clamp(lon, -180, 180));
     }
 
     /// <summary>Selects a station by name (or clears with null), as a click would.</summary>
@@ -316,7 +355,7 @@ public sealed class MapView : Control, IDisposable
     public override void Render(DrawingContext context)
     {
         var viewport = _map.Navigator.Viewport;
-        var marks = _marks;
+        var marks = _drawn;
         var screen = new SKPoint[marks.Count];
         for (var i = 0; i < marks.Count; i++)
         {
@@ -481,6 +520,17 @@ public sealed class MapView : Control, IDisposable
         return best;
     }
 
+    private bool IsOverMe(Point point)
+    {
+        if (_me is null)
+        {
+            return false;
+        }
+        var at = ToScreen(_map.Navigator.Viewport, _me);
+        return Math.Abs(at.X - point.X) <= _symbolDip / 2 + HitSlop
+            && Math.Abs(at.Y - point.Y) <= _symbolDip / 2 + HitSlop;
+    }
+
     private void Watch(string key, Action<object?> apply) =>
         this.GetResourceObservable(key).Subscribe(new ResourceObserver(this, apply));
 
@@ -489,6 +539,10 @@ public sealed class MapView : Control, IDisposable
     {
         base.OnPointerPressed(e);
         Focus();
+        if (e.GetCurrentPoint(this).Properties.IsRightButtonPressed)
+        {
+            return; // the context menu opens on release (F1.13 behavior 2), without dragging the map
+        }
         if (e.ClickCount == 2)
         {
             var at = e.GetPosition(this);
@@ -537,7 +591,12 @@ public sealed class MapView : Control, IDisposable
     {
         var mark = HitTest(at);
         var tip = mark is null
-            ? null
+            ? IsOverMe(at)
+                ? Localization.Localizer.Instance.Format(
+                    "Map.MyLocation",
+                    new Dictionary<string, object?> { ["name"] = _me!.Name }
+                )
+                : null
             : Localization.Localizer.Instance.Format(
                 "Map.Hover",
                 new Dictionary<string, object?>

@@ -55,6 +55,10 @@ public sealed partial class MapViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(HasHome))]
     public partial (double Latitude, double Longitude)? Home { get; set; }
 
+    /// <summary>The callsign under the house drawn at <see cref="Home"/> (F1.13 behavior 3).</summary>
+    [ObservableProperty]
+    public partial string? HomeName { get; set; }
+
     /// <summary>Whether Home is offered.</summary>
     public bool HasHome => Home is not null;
 

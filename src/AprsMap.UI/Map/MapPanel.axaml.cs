@@ -19,6 +19,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
     private MapViewModel? _state;
     private MainViewModel? _main;
     private bool _placed;
+    private (double Latitude, double Longitude)? _menuAt;
 
     /// <summary>Creates the panel.</summary>
     public MapPanel()
@@ -51,6 +52,14 @@ public sealed partial class MapPanel : UserControl, IDisposable
             }
         };
         _map.KeyDown += OnMapKeyDown;
+        _map.ContextRequested += OnContextRequested;
+        SetMyLocationItem.Click += (_, _) =>
+        {
+            if (_menuAt is var (lat, lon) && _main is not null)
+            {
+                _ = _main.SetMyLocationAsync(lat, lon);
+            }
+        };
     }
 
     /// <summary>Releases the map's tiles.</summary>
@@ -146,6 +155,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
                 ShowProvider();
                 break;
             case nameof(MapViewModel.Home):
+            case nameof(MapViewModel.HomeName):
                 ShowHome();
                 break;
             case nameof(MapViewModel.IsLoaded):
@@ -181,7 +191,30 @@ public sealed partial class MapPanel : UserControl, IDisposable
         }
     }
 
-    private void ShowHome() => HomeButton.IsVisible = _state?.HasHome == true;
+    /// <summary>Home is offered, and the house drawn, at my location (behavior 3; F1.13 behavior 3).</summary>
+    private void ShowHome()
+    {
+        HomeButton.IsVisible = _state?.HasHome == true;
+        _map.ShowMe(_state?.Home?.Latitude, _state?.Home?.Longitude, _state?.HomeName);
+    }
+
+    /// <summary>
+    /// Right-click, long-press or the context-menu key offers Set my location here (F1.13 behavior 2) for the place
+    /// pointed at, or the map's centre from the keyboard; not on a read-only gateway.
+    /// </summary>
+    private void OnContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (_main is not { CanSetMyLocation: true })
+        {
+            return;
+        }
+        var at = e.TryGetPosition(_map, out var point)
+            ? point
+            : new Point(_map.Bounds.Width / 2, _map.Bounds.Height / 2);
+        _menuAt = _map.PlaceAt(at);
+        MapMenu.Open(_map);
+        e.Handled = true;
+    }
 
     private void OnStationsChanged(object? sender, StationBatch batch)
     {
