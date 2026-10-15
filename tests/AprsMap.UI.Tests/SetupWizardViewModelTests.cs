@@ -2,6 +2,7 @@
 using System.Globalization;
 using AprsMap.Contracts;
 using AprsMap.UI.Localization;
+using AprsMap.UI.Platform;
 using AprsMap.UI.ViewModels;
 
 namespace AprsMap.UI.Tests;
@@ -161,6 +162,83 @@ public class SetupWizardViewModelTests
         Assert.Equal(40.5, wizard.Latitude);
         await wizard.NextCommand.ExecuteAsync(null); // nothing typed in the new way: keeps DN70
         Assert.Equal(40.5, wizard.Latitude);
+    }
+
+    private sealed class FakeDeviceLocation(Func<DeviceFix> fix) : IDeviceLocation
+    {
+        public int Calls { get; private set; }
+
+        public Task<DeviceFix> GetAsync(CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            try
+            {
+                return Task.FromResult(fix());
+            }
+            catch (DeviceLocationException ex)
+            {
+                return Task.FromException<DeviceFix>(ex);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task WithoutADeviceLocationTheChoiceIsHidden()
+    {
+        var (wizard, _, _) = await Start();
+
+        Assert.False(wizard.CanUseDeviceLocation);
+        Assert.False(wizard.UseDeviceLocationCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task TheDevicesLocationIsUsedAndSaidToBeTheDevices()
+    {
+        var device = new FakeDeviceLocation(() => new DeviceFix(38.9991481, -94.6818162, 30));
+        var wizard = new SetupWizardViewModel(new FakeEngine { Settings = AppSettings.Empty }, English(), device);
+        await wizard.LoadAsync(TestContext.Current.CancellationToken);
+        Assert.True(wizard.CanUseDeviceLocation);
+
+        wizard.IsDeviceMethod = true;
+        await wizard.UseDeviceLocationCommand.ExecuteAsync(null);
+
+        Assert.Equal(LocationMethod.Device, wizard.Method);
+        Assert.Equal(1, device.Calls);
+        Assert.Equal(38.9991481, wizard.Latitude);
+        Assert.Equal(
+            "This device's location: 38.9991, -94.6818 · DM79xx. Check that it's where the station is.",
+            wizard.LocationText
+        );
+        Assert.False(wizard.IsLocating);
+
+        // Another way's location is no longer the device's.
+        wizard.IsLocatorMethod = true;
+        wizard.LocatorText = "DN70";
+        await wizard.UseLocatorCommand.ExecuteAsync(null);
+        Assert.StartsWith("Location: ", wizard.LocationText, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(DeviceLocationError.Denied)]
+    [InlineData(DeviceLocationError.Unavailable)]
+    [InlineData(DeviceLocationError.Timeout)]
+    [InlineData(DeviceLocationError.Insecure)]
+    [InlineData(DeviceLocationError.Unsupported)]
+    public async Task EachReasonTheDeviceCantSayIsExplained(DeviceLocationError error)
+    {
+        var device = new FakeDeviceLocation(() => throw new DeviceLocationException(error));
+        var text = English();
+        var wizard = new SetupWizardViewModel(new FakeEngine { Settings = AppSettings.Empty }, text, device);
+        await wizard.LoadAsync(TestContext.Current.CancellationToken);
+        wizard.IsDeviceMethod = true;
+
+        await wizard.UseDeviceLocationCommand.ExecuteAsync(null);
+
+        Assert.Equal(text["Wizard.Location.Device." + error], wizard.LocationError);
+        Assert.DoesNotContain("⟦", wizard.LocationError, StringComparison.Ordinal);
+        Assert.False(wizard.HasLocation);
+        Assert.False(wizard.IsLocating);
+        Assert.Equal(error.ToString(), new DeviceLocationException(error).Message);
     }
 
     [Fact]

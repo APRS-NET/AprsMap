@@ -142,6 +142,7 @@ public sealed partial class SetupWizardView : UserControl
                 {
                     LocationMethod.Address => "AddressBox",
                     LocationMethod.Coordinates => "CoordinatesBox",
+                    LocationMethod.Device => "FindMeButton",
                     _ => "LocatorBox",
                 },
                 SetupStep.Server => "RegionChoice",

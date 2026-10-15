@@ -74,5 +74,5 @@ internal static class Program
     }
 
     private static AppBuilder BuildAvaloniaApp(RemoteEngineService engine) =>
-        AppBuilder.Configure(() => new App(engine)).LogToTrace();
+        AppBuilder.Configure(() => new App(engine, new BrowserDeviceLocation())).LogToTrace();
 }

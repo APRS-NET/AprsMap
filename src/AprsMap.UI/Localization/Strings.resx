@@ -413,4 +413,34 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Try again</value>
     <comment>Button that reloads the page.</comment>
   </data>
+  <data name="Wizard.Location.Method.Device" xml:space="preserve">
+    <value>This device's location</value>
+    <comment>Choice. In the browser: where the viewer's device is.</comment>
+  </data>
+  <data name="Wizard.Location.Device.Use" xml:space="preserve">
+    <value>Find my location</value>
+    <comment>Button; the browser asks for permission first.</comment>
+  </data>
+  <data name="Wizard.Location.Device.Help" xml:space="preserve">
+    <value>Your browser asks before sharing it. It's where this device is, which may not be where the station is.</value>
+  </data>
+  <data name="Wizard.Location.ConfirmedDevice" xml:space="preserve">
+    <value>This device's location: {latitude}, {longitude} · {locator}. Check that it's where the station is.</value>
+    <comment>latitude, longitude: decimal degrees; locator: a Maidenhead locator.</comment>
+  </data>
+  <data name="Wizard.Location.Device.Denied" xml:space="preserve">
+    <value>Sharing the location was refused. Allow it in the browser, or use another way.</value>
+  </data>
+  <data name="Wizard.Location.Device.Unavailable" xml:space="preserve">
+    <value>This device couldn't work out its location. Use another way.</value>
+  </data>
+  <data name="Wizard.Location.Device.Timeout" xml:space="preserve">
+    <value>Finding the location took too long. Try again, or use another way.</value>
+  </data>
+  <data name="Wizard.Location.Device.Insecure" xml:space="preserve">
+    <value>Browsers share their location only with secure pages (https, or localhost). Use another way, or open the app over https.</value>
+  </data>
+  <data name="Wizard.Location.Device.Unsupported" xml:space="preserve">
+    <value>This browser can't share its location. Use another way.</value>
+  </data>
 </root>
