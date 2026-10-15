@@ -10,6 +10,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The window icon; generated from build/branding/icon.svg by tools/make-icons.sh (docs/branding.md). -->
+    <AvaloniaResource Include="../../build/branding/icon-256.png" Link="Assets/icon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The UI sees only the contract, never the engine, so the browser app (over SignalR) and the desktop app
          (in-process) get exactly the same views. -->
     <ProjectReference Include="../AprsMap.Contracts/AprsMap.Contracts.csproj" />
