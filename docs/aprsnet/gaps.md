@@ -42,8 +42,8 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | G25 | Frequency specification parsing and validation | Packets | 3 | — |
 | G26 | APRS-IS server presets a UI can list (delivered) | AprsIsTcpClient | 0 | — |
 | G27 | Validation errors with stable codes (delivered) | AprsIsTcpClient, Packets | 0 | — |
-| G29 | Source merge: which source a packet came from, and duplicates reported with their source | Packets (or AprsNet.Gateway's source type, made public) | 1 | — |
-| G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | — |
+| G29 | Source merge: which source a packet came from, and duplicates reported with their source | Packets (or AprsNet.Gateway's source type, made public) | 1 | [APRS.NET#125](https://github.com/APRS-NET/APRS.NET/issues/125) |
+| G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127) |
 
 ---
 
@@ -268,7 +268,7 @@ transport.
 **Delivered in source** (`0.2.0-alpha.1`, package `AprsNet.Kiss` not on NuGet yet): KISS framing, KISS over any
 stream (serial and Bluetooth), and a TCP TNC connection that reconnects. Still open, needed by AprsMap 0.4.0 (F1.25):
 a serial connection that reopens the port after a USB unplug and replug (as `KissTcpConnection` reconnects), with the
-connection states F1.1 uses, and a list of the serial ports present.
+connection states F1.1 uses, and a list of the serial ports present. ([APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126))
 
 ## G14: Text-mode and Kenwood TNC support
 
