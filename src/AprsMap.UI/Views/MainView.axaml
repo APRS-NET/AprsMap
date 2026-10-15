@@ -39,7 +39,18 @@
               Height="{DynamicResource Icon.Size}"
             />
           </Button>
-          <StackPanel Orientation="Horizontal" Spacing="16">
+          <!-- Its own line, wrapping: an error can be long, and the status items must stay in the window. -->
+          <TextBlock
+            x:Name="ErrorLabel"
+            DockPanel.Dock="Bottom"
+            Text="{Binding ErrorText}"
+            IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Foreground="{DynamicResource Brush.Warn}"
+            TextWrapping="Wrap"
+            Margin="0,6,0,0"
+          />
+          <!-- Wraps onto more lines at large text sizes or in a narrow window rather than running off it. -->
+          <WrapPanel ItemSpacing="16" LineSpacing="6">
             <TextBlock
               Text="{Binding Title}"
               FontSize="{DynamicResource Text.Title}"
@@ -103,21 +114,29 @@
               Foreground="{DynamicResource Brush.TextMuted}"
               VerticalAlignment="Center"
             />
-            <TextBlock
-              x:Name="ErrorLabel"
-              Text="{Binding ErrorText}"
-              IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
-              Foreground="{DynamicResource Brush.Warn}"
-              VerticalAlignment="Center"
-            />
-          </StackPanel>
+          </WrapPanel>
         </DockPanel>
       </Border>
-      <ListBox x:Name="PacketList" ItemsSource="{Binding Packets}" Background="{DynamicResource Brush.Surface}">
+      <ListBox
+        x:Name="PacketList"
+        ItemsSource="{Binding Packets}"
+        Background="{DynamicResource Brush.Surface}"
+        Grid.IsSharedSizeScope="True"
+      >
         <ListBox.ItemTemplate>
           <DataTemplate x:DataType="c:PacketView">
-            <Grid ColumnDefinitions="110,*">
-              <TextBlock Text="{Binding Source}" FontFamily="{DynamicResource Font.Mono}" FontWeight="SemiBold" />
+            <!-- The callsign column fits the longest callsign shown, the same in every row, at any text size. -->
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Source" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <TextBlock
+                Text="{Binding Source}"
+                FontFamily="{DynamicResource Font.Mono}"
+                FontWeight="SemiBold"
+                Margin="0,0,16,0"
+              />
               <TextBlock Grid.Column="1" Text="{Binding Summary}" TextTrimming="CharacterEllipsis" />
             </Grid>
           </DataTemplate>

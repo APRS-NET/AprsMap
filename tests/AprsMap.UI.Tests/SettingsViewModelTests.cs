@@ -133,7 +133,9 @@ public class SettingsViewModelTests
     public void AboutShowsTheVersionsAndCreditsLookupOnlyWhenItIsOn()
     {
         var (settings, _, _, _) = Create();
-        Assert.Equal("Version " + Brand.Version, settings.About.VersionText);
+        Assert.Equal("Version " + AboutViewModel.ShortVersion(Brand.Version), settings.About.VersionText);
+        Assert.Equal("0.1.0-alpha.10.3 (e86ba03)", AboutViewModel.ShortVersion("0.1.0-alpha.10.3+e86ba03a4f5f642f"));
+        Assert.Equal("1.2.3", AboutViewModel.ShortVersion("1.2.3"));
         Assert.Null(settings.About.EngineText);
         Assert.Contains("AGPL-3.0", settings.About.LicenceText, StringComparison.Ordinal);
         Assert.Equal(Brand.DisplayName, AboutViewModel.ProductName);

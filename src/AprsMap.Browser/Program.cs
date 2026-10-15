@@ -31,6 +31,7 @@ internal static class Program
             Preferences = preferences,
             Appearance = await new AppearancePreferences(preferences, TimeProvider.System).LoadAsync(),
             SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
+            CoarsePointer = BrowserPreferenceStore.IsCoarsePointer(),
 #if DEBUG
             ShowPseudoLanguage = true,
 #endif

@@ -49,4 +49,10 @@ internal sealed partial class BrowserPreferenceStore : IPreferenceStore
 
     [JSImport("prefersReducedMotion", "main.js")]
     private static partial bool ReducedMotion();
+
+    /// <summary>Whether the primary pointer is coarse: a touch screen (<c>pointer: coarse</c>).</summary>
+    internal static bool IsCoarsePointer() => CoarsePointer();
+
+    [JSImport("coarsePointer", "main.js")]
+    private static partial bool CoarsePointer();
 }
