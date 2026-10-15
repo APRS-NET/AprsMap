@@ -131,6 +131,9 @@ public sealed class MapView : Control, IDisposable
     /// <summary>The clock for "heard … ago" in the hover text.</summary>
     public TimeProvider Time { get; set; } = TimeProvider.System;
 
+    /// <summary>The unit the hover text gives distances from my location in (F1.13 behavior 4).</summary>
+    public DistanceUnit DistanceUnit { get; set; }
+
     /// <summary>Whether callsigns are drawn under the symbols, where they fit (behavior 17).</summary>
     public bool ShowLabels { get; set; } = true;
 
@@ -605,6 +608,23 @@ public sealed class MapView : Control, IDisposable
                     ["minutes"] = (long)Math.Max(0, (Time.GetUtcNow() - mark.LastHeard).TotalMinutes),
                 }
             );
+        if (
+            mark is not null
+            && Localization.RangeText.Format(
+                mark.DistanceKm,
+                mark.BearingDegrees,
+                DistanceUnit,
+                Localization.Localizer.Instance
+            )
+                is { } range
+        )
+        {
+            // How far, and which way, from my location (F1.13 behavior 4).
+            tip = Localization.Localizer.Instance.Format(
+                "Map.HoverRange",
+                new Dictionary<string, object?> { ["hover"] = tip, ["range"] = range }
+            );
+        }
         if (!Equals(ToolTip.GetTip(this), tip))
         {
             ToolTip.SetTip(this, tip);

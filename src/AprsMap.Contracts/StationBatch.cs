@@ -12,6 +12,8 @@ namespace AprsMap.Contracts;
 /// <param name="Symbol">The symbol as transmitted: table or overlay character, then code (for example <c>/&gt;</c>).</param>
 /// <param name="Kind">A station, an object or an item.</param>
 /// <param name="IsStale">Not heard for the stale time (F1.3 behavior 7): the map fades it.</param>
+/// <param name="DistanceKm">Great-circle distance from my location (F1.13 behavior 4); null without one.</param>
+/// <param name="BearingDegrees">Initial bearing from my location, 0–359 (F1.13 behavior 4); null without one.</param>
 public sealed record StationState(
     string Name,
     DateTimeOffset LastHeard,
@@ -19,7 +21,9 @@ public sealed record StationState(
     double Longitude,
     string Symbol,
     StationKind Kind = StationKind.Station,
-    bool IsStale = false
+    bool IsStale = false,
+    double? DistanceKm = null,
+    int? BearingDegrees = null
 );
 
 /// <summary>What an entry in the station store is (APRS101 chapter 11).</summary>
@@ -61,6 +65,8 @@ public enum StationKind
 /// <param name="Path">The path of the last packet, as received (for example <c>WIDE1-1,qAR,N0IGT</c>).</param>
 /// <param name="Owner">For an object or item: the station that sent its latest packet.</param>
 /// <param name="PreviousOwner">For an object or item: the owner before <paramref name="Owner"/>, if it changed hands.</param>
+/// <param name="DistanceKm">Great-circle distance from my location (F1.13 behavior 4); null when either is unknown.</param>
+/// <param name="BearingDegrees">Initial bearing from my location, 0–359; null when either position is unknown.</param>
 public sealed record StationDetail(
     string Name,
     StationKind Kind,
@@ -78,7 +84,9 @@ public sealed record StationDetail(
     double? AltitudeMetres,
     string? Path,
     string? Owner,
-    string? PreviousOwner
+    string? PreviousOwner,
+    double? DistanceKm = null,
+    int? BearingDegrees = null
 );
 
 /// <summary>

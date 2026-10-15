@@ -11,7 +11,7 @@ namespace AprsMap.Core;
 /// one copy of the map, never a backlog of packets. Entries fade and leave by age (<see cref="Sweep"/>) and the oldest
 /// go first beyond the cap, so memory stays bounded.
 /// </summary>
-// Duplicate packets (behavior 11) are dropped once APRS.NET's duplicate detection ships (G05).
+// Duplicate packets (behavior 11) never reach the store: the engine drops them first (G05).
 internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntries)
 {
     /// <summary>The most entries kept (behavior 12).</summary>
@@ -26,6 +26,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     // Least recently heard first, for the cap.
     private readonly LinkedList<Entry> _byLastHeard = new();
     private readonly List<StationWatcher> _watchers = [];
+    private AprsPosition? _home;
 
     public int Count
     {
@@ -134,7 +135,28 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     {
         lock (_gate)
         {
-            return _entries.TryGetValue(name, out var entry) ? entry.ToDetail() : null;
+            return _entries.TryGetValue(name, out var entry) ? entry.ToDetail(_home) : null;
+        }
+    }
+
+    /// <summary>
+    /// Measures distance and bearing from my location (F1.13 behavior 4), or not with nulls. A change sends every
+    /// station on the map again, with its new distance.
+    /// </summary>
+    public void SetHome(double? latitude, double? longitude)
+    {
+        AprsPosition? home = latitude is { } lat && longitude is { } lon ? new AprsPosition(lat, lon) : null;
+        lock (_gate)
+        {
+            if (home == _home)
+            {
+                return;
+            }
+            _home = home;
+            foreach (var entry in _entries.Values)
+            {
+                Publish(entry);
+            }
         }
     }
 
@@ -161,7 +183,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         var watcher = new StationWatcher();
         lock (_gate)
         {
-            snapshot = [.. _entries.Values.Where(e => e.HasPosition).Select(e => e.ToState())];
+            snapshot = [.. _entries.Values.Where(e => e.HasPosition).Select(e => e.ToState(_home))];
             _watchers.Add(watcher);
         }
         return watcher;
@@ -266,7 +288,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         {
             return;
         }
-        var state = entry.ToState();
+        var state = entry.ToState(_home);
         foreach (var watcher in _watchers)
         {
             watcher.Change(state);
@@ -310,11 +332,40 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
 
         public bool HasPosition => Latitude is not null && Longitude is not null;
 
-        public StationState ToState() =>
-            new(Name, LastHeard, Latitude!.Value, Longitude!.Value, Symbol ?? string.Empty, Kind, IsStale);
+        public StationState ToState(AprsPosition? home)
+        {
+            var (distance, bearing) = From(home);
+            return new(
+                Name,
+                LastHeard,
+                Latitude!.Value,
+                Longitude!.Value,
+                Symbol ?? string.Empty,
+                Kind,
+                IsStale,
+                distance,
+                bearing
+            );
+        }
 
-        public StationDetail ToDetail() =>
-            new(
+        /// <summary>Distance in km and whole-degree bearing from <paramref name="home"/>; nulls when either is unknown.</summary>
+        private (double?, int?) From(AprsPosition? home)
+        {
+            if (home is not { } from || !HasPosition)
+            {
+                return (null, null);
+            }
+            var to = new AprsPosition(Latitude!.Value, Longitude!.Value);
+            return (
+                Geodesy.DistanceKm(from, to),
+                (int)Math.Round(Geodesy.InitialBearing(from, to), MidpointRounding.AwayFromZero) % 360
+            );
+        }
+
+        public StationDetail ToDetail(AprsPosition? home)
+        {
+            var (distance, bearing) = From(home);
+            return new(
                 Name,
                 Kind,
                 LastHeard,
@@ -331,8 +382,11 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 AltitudeMetres,
                 Path,
                 Owner,
-                PreviousOwner
+                PreviousOwner,
+                distance,
+                bearing
             );
+        }
 
         public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"{Kind} {Name}");
     }

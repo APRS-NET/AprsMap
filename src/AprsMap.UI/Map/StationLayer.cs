@@ -13,7 +13,9 @@ internal sealed record StationMark(
     double Y,
     AprsSymbol? Symbol,
     bool IsStale,
-    DateTimeOffset LastHeard
+    DateTimeOffset LastHeard,
+    double? DistanceKm = null,
+    int? BearingDegrees = null
 )
 {
     /// <summary>The mark for a station from the station stream.</summary>
@@ -24,7 +26,16 @@ internal sealed record StationMark(
             station.Symbol is { Length: 2 } text && AprsSymbol.TryCreate(text[0], text[1], out var parsed)
                 ? parsed
                 : null;
-        return new StationMark(station.Name, x, y, symbol, station.IsStale, station.LastHeard);
+        return new StationMark(
+            station.Name,
+            x,
+            y,
+            symbol,
+            station.IsStale,
+            station.LastHeard,
+            station.DistanceKm,
+            station.BearingDegrees
+        );
     }
 }
 

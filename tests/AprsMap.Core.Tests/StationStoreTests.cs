@@ -14,6 +14,40 @@ public sealed class StationStoreTests
         store.Apply(AprsPacket.Parse(line), at);
 
     [Fact]
+    public void DistanceAndBearingAreMeasuredFromMyLocation()
+    {
+        var store = new StationStore();
+        // About 100 km north-east of 40° N, 105° W.
+        Apply(store, "N0FAR>APRS:!4038.17N/10410.17W-", T0);
+        Assert.Null(store.Get("N0FAR")!.DistanceKm); // no location yet
+
+        store.SetHome(40, -105);
+
+        var entry = store.Get("N0FAR")!;
+        Assert.Equal(100, entry.DistanceKm!.Value, 0);
+        Assert.Equal(45, entry.BearingDegrees);
+    }
+
+    [Fact]
+    public void MovingMyLocationSendsEveryStationAgainWithItsNewDistance()
+    {
+        var store = new StationStore();
+        Apply(store, "N0FAR>APRS:!4038.17N/10410.17W-", T0);
+        var watcher = store.Subscribe(out var snapshot);
+        Assert.Null(Assert.Single(snapshot).DistanceKm);
+
+        store.SetHome(40, -105);
+        var moved = Assert.Single(store.Drain(watcher)!.Changed);
+        Assert.Equal(45, moved.BearingDegrees);
+
+        store.SetHome(40, -105); // the same place: nothing to send
+        Assert.Null(store.Drain(watcher));
+
+        store.SetHome(null, null);
+        Assert.Null(Assert.Single(store.Drain(watcher)!.Changed).DistanceKm);
+    }
+
+    [Fact]
     public void APositionThenAStatusThenAPositionKeepOneEntryWithBoth()
     {
         var store = new StationStore();

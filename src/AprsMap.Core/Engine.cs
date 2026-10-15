@@ -121,6 +121,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             {
                 _settings = saved;
             }
+            MeasureFrom(saved);
 
             var after = saved.GetActiveProfile();
             if (after is null ? before is not null : after.NeedsNewLogin(before))
@@ -153,6 +154,7 @@ public sealed partial class Engine : IEngineService, IDisposable
                 _packets = 0;
             }
             _stations.Clear();
+            MeasureFrom(AppSettings.Empty);
             LogReset();
             SignalRestart();
         }
@@ -560,7 +562,15 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             _settings = settings;
         }
+        MeasureFrom(settings);
         return settings;
+    }
+
+    /// <summary>Distances and bearings are from the active profile's location (F1.13 behavior 4).</summary>
+    private void MeasureFrom(AppSettings settings)
+    {
+        var profile = settings.GetActiveProfile();
+        _stations.SetHome(profile?.Latitude, profile?.Longitude);
     }
 
     /// <summary>The first profile, from the configured defaults (appsettings.json or environment), if they name a callsign.</summary>
