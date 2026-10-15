@@ -28,9 +28,17 @@ public class GatewayFactory : WebApplicationFactory<Program>
     /// <summary>Stands in for Nominatim, so tests never send lookups to the public server.</summary>
     public FakeGeocoder Geocoder { get; } = new();
 
+    /// <summary>Stands in for the tile server, so tests never fetch from OpenStreetMap.</summary>
+    public FakeTileServer TileServer { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder) =>
         builder
-            .ConfigureTestServices(s => s.AddSingleton<IGeocoder>(Geocoder))
+            .ConfigureTestServices(s =>
+            {
+                s.AddSingleton<IGeocoder>(Geocoder);
+                s.AddHttpClient(Tiles.TileService.HttpClientName).ConfigurePrimaryHttpMessageHandler(() => TileServer);
+            })
+            .UseSetting("Tiles:CacheFolder", Path.Combine(SettingsFolder, "tiles"))
             .UseSetting("Geocoding:Endpoint", "https://geo.example/")
             .UseSetting("Engine:Enabled", "false")
             .UseSetting("Engine:SettingsFolder", SettingsFolder)
@@ -71,6 +79,33 @@ public class GatewayFactory : WebApplicationFactory<Program>
 public sealed class TrustedGatewayFactory : GatewayFactory
 {
     protected override bool AllowSettingsChanges => true;
+}
+
+/// <summary>A tile server that answers every request with the same small PNG, slowly, and records what it was sent.</summary>
+public sealed class FakeTileServer : HttpMessageHandler
+{
+    private int _requests;
+
+    public int Requests => Volatile.Read(ref _requests);
+
+    public System.Collections.Concurrent.ConcurrentQueue<string?> Referers { get; } = new();
+
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken
+    )
+    {
+        Interlocked.Increment(ref _requests);
+        Referers.Enqueue(request.Headers.Referrer?.ToString());
+        await Task.Delay(TimeSpan.FromMilliseconds(50), TimeProvider.System, cancellationToken);
+        var response = new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent([0x89, 0x50, 0x4E, 0x47]),
+        };
+        response.Headers.CacheControl = System.Net.Http.Headers.CacheControlHeaderValue.Parse("max-age=3600");
+        response.Headers.ETag = new System.Net.Http.Headers.EntityTagHeaderValue("\"t1\"");
+        return response;
+    }
 }
 
 /// <summary>Answers lookups from a script and records the queries.</summary>

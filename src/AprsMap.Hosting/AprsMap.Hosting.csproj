@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../AprsMap.Core/AprsMap.Core.csproj" />
+    <ProjectReference Include="../AprsMap.Tiles/AprsMap.Tiles.csproj" />
   </ItemGroup>
 
   <ItemGroup>

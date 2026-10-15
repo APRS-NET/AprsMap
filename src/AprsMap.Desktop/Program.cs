@@ -28,7 +28,7 @@ internal static class Program
         var builder = Host.CreateApplicationBuilder(
             new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory }
         );
-        builder.AddAprsMapEngine().AddAprsMapTelemetry("desktop");
+        builder.AddAprsMapEngine().AddAprsMapTiles().AddAprsMapTelemetry("desktop");
         s_host = builder.Build();
         var folder = SettingsLocation.Folder(s_host.Services.GetRequiredService<IOptions<EngineOptions>>().Value);
         var preferences = new FilePreferenceStore(folder);

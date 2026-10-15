@@ -73,7 +73,7 @@ jobs:
           dotnet tool restore
           dotnet reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:coverage/report \
             -reporttypes:"MarkdownSummaryGithub;JsonSummary;Badges" \
-            -assemblyfilters:"+AprsMap.Contracts;+AprsMap.Core;+AprsMap.Client.Remote"
+            -assemblyfilters:"+AprsMap.Contracts;+AprsMap.Core;+AprsMap.Client.Remote;+AprsMap.Tiles"
           cat coverage/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
       - name: Coverage gate
         env:

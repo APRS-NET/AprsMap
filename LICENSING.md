@@ -6,7 +6,7 @@ the engine the way they reuse APRS.NET.
 
 | Path | License |
 | --- | --- |
-| `src/AprsMap.Contracts`, `src/AprsMap.Core`, `src/AprsMap.Client.Remote` and their tests | MIT |
+| `src/AprsMap.Contracts`, `src/AprsMap.Core`, `src/AprsMap.Client.Remote`, `src/AprsMap.Tiles` and their tests | MIT |
 | `docs/` | MIT |
 | `tools/` | MIT (each file says so in its SPDX header) |
 | Everything else, including `src/AprsMap.UI`, `src/AprsMap.Desktop`, `src/AprsMap.Browser`, `src/AprsMap.Gateway` | AGPL-3.0-only |

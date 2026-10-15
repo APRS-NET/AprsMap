@@ -35,7 +35,7 @@ dotnet_naming_style.underscore_camel.capitalization = camel_case
 dotnet_diagnostic.IDE0073.severity = warning
 file_header_template = SPDX-License-Identifier: AGPL-3.0-only
 
-[{src,tests}/{AprsMap.Contracts,AprsMap.Core,AprsMap.Client.Remote}{,.Tests}/**.cs]
+[{src,tests}/{AprsMap.Contracts,AprsMap.Core,AprsMap.Client.Remote,AprsMap.Tiles}{,.Tests}/**.cs]
 file_header_template = SPDX-License-Identifier: MIT
 
 # Copied from APRS.NET, so it keeps that repository's MIT licence.

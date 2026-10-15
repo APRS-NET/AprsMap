@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
 using AprsMap.Core;
+using AprsMap.Tiles;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -30,6 +31,18 @@ public static class HostingExtensions
         builder.Services.AddAprsMapEngine();
         builder.Services.Configure<EngineOptions>(builder.Configuration.GetSection(EngineOptions.SectionName));
         builder.Services.Configure<GeocodingOptions>(builder.Configuration.GetSection(GeocodingOptions.SectionName));
+        return builder;
+    }
+
+    /// <summary>
+    /// Adds the map's tile service (docs/features/F1.4-map.md), bound to the <c>Tiles</c> configuration section: in
+    /// process on the desktop, behind <c>/tiles</c> on the gateway.
+    /// </summary>
+    public static IHostApplicationBuilder AddAprsMapTiles(this IHostApplicationBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        builder.Services.AddAprsMapTiles();
+        builder.Services.Configure<TilesOptions>(builder.Configuration.GetSection(TilesOptions.SectionName));
         return builder;
     }
 

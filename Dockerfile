@@ -22,6 +22,7 @@ COPY .editorconfig BannedSymbols*.txt ./
 COPY build/ build/
 COPY src/AprsMap.Contracts/*.csproj src/AprsMap.Contracts/
 COPY src/AprsMap.Core/*.csproj src/AprsMap.Core/
+COPY src/AprsMap.Tiles/*.csproj src/AprsMap.Tiles/
 COPY src/AprsMap.Client.Remote/*.csproj src/AprsMap.Client.Remote/
 COPY src/AprsMap.UI/*.csproj src/AprsMap.UI/
 COPY src/AprsMap.Browser/*.csproj src/AprsMap.Browser/
@@ -44,10 +45,12 @@ RUN set -eu; \
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble-chiseled AS runtime
 WORKDIR /app
 COPY --from=build /out/gateway/ ./
-# Settings (station profiles) live in /data; mount a volume there to keep them. Owned by the image's 'app' user.
+# Settings (station profiles) and the map's tile cache live in /data; mount a volume there to keep them. Owned by the
+# image's 'app' user.
 COPY --from=build --chown=$APP_UID:$APP_UID /out/data /data
 ENV ASPNETCORE_HTTP_PORTS=8080 \
-    Engine__SettingsFolder=/data
+    Engine__SettingsFolder=/data \
+    Tiles__CacheFolder=/data/tiles
 VOLUME /data
 EXPOSE 8080
 LABEL org.opencontainers.image.title="AprsMap gateway" \
