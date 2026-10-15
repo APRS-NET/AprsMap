@@ -1,0 +1,505 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The first-run wizard (docs/features/F0.5-first-run-wizard.md). It covers the main view: a scrim behind one panel.
+     Each step is a block shown by the view model's Is…Step; the passcode calculator and the "close without saving?"
+     question are panels over the step. Text comes from the localizer; colours, sizes and corners from theme tokens. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:c="using:AprsMap.Contracts"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Views.SetupWizardView"
+  x:DataType="vm:SetupWizardViewModel"
+>
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Escape" Command="{Binding CloseCommand}" />
+  </UserControl.KeyBindings>
+  <Border Background="{DynamicResource Brush.Scrim}">
+    <Border
+      x:Name="Panel"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="1"
+      CornerRadius="{DynamicResource Radius.Panel}"
+      MaxWidth="640"
+      Margin="16"
+      VerticalAlignment="Center"
+      HorizontalAlignment="Stretch"
+    >
+      <Grid>
+        <DockPanel Margin="24,20">
+          <!-- Header -->
+          <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+            <Button
+              x:Name="CloseButton"
+              DockPanel.Dock="Right"
+              Command="{Binding CloseCommand}"
+              ToolTip.Tip="{l:T Wizard.Close}"
+              AutomationProperties.Name="{l:T Wizard.Close}"
+              VerticalAlignment="Top"
+            >
+              <!-- Drawn, not a character: the browser build's fonts have no ✕ glyph. -->
+              <PathIcon
+                Data="M 2,0 L 6,4 L 10,0 L 12,2 L 8,6 L 12,10 L 10,12 L 6,8 L 2,12 L 0,10 L 4,6 L 0,2 Z"
+                Width="{DynamicResource Icon.Size}"
+                Height="{DynamicResource Icon.Size}"
+              />
+            </Button>
+            <StackPanel Spacing="2">
+              <TextBlock
+                x:Name="StepLabel"
+                Text="{Binding StepText}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                FontSize="{DynamicResource Text.Small}"
+              />
+              <TextBlock
+                x:Name="TitleLabel"
+                Text="{Binding Title}"
+                FontSize="{DynamicResource Text.Title}"
+                FontWeight="SemiBold"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+          </DockPanel>
+
+          <!-- Footer -->
+          <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,20,0,0">
+            <TextBlock
+              x:Name="FinishErrorLabel"
+              Text="{Binding FinishError}"
+              IsVisible="{Binding FinishError, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+            <DockPanel>
+              <Button
+                x:Name="BackButton"
+                Content="{l:T Wizard.Back}"
+                Command="{Binding BackCommand}"
+                IsVisible="{Binding !IsFirstStep}"
+              />
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <Button
+                  x:Name="SkipButton"
+                  Content="{l:T Wizard.Location.Skip}"
+                  Command="{Binding SkipLocationCommand}"
+                  IsVisible="{Binding IsLocationStep}"
+                />
+                <Button
+                  x:Name="NextButton"
+                  Content="{l:T Wizard.Next}"
+                  Command="{Binding NextCommand}"
+                  IsVisible="{Binding !IsLastStep}"
+                  IsDefault="{Binding !IsLastStep}"
+                  Classes="accent"
+                />
+                <Button
+                  x:Name="FinishButton"
+                  Content="{l:T Wizard.Finish}"
+                  Command="{Binding FinishCommand}"
+                  IsVisible="{Binding IsLastStep}"
+                  IsDefault="{Binding IsLastStep}"
+                  Classes="accent"
+                />
+              </StackPanel>
+            </DockPanel>
+          </StackPanel>
+
+          <!-- Steps -->
+          <Panel>
+            <!-- 1. Callsign -->
+            <StackPanel x:Name="CallsignStep" IsVisible="{Binding IsCallsignStep}" Spacing="8">
+              <TextBlock Text="{l:T Wizard.Callsign.Title}" FontWeight="SemiBold" />
+              <TextBlock Text="{l:T Wizard.Callsign.Label}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBox
+                x:Name="CallsignBox"
+                Text="{Binding Callsign}"
+                PlaceholderText="{l:T Wizard.Callsign.Watermark}"
+                AutomationProperties.Name="{l:T Wizard.Callsign.Label}"
+                FontFamily="{DynamicResource Font.Mono}"
+                MaxLength="12"
+              />
+              <TextBlock
+                x:Name="CallsignErrorLabel"
+                Text="{Binding CallsignError}"
+                IsVisible="{Binding CallsignError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+              <TextBlock
+                Text="{l:T Wizard.Callsign.Help}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <HyperlinkButton
+                Content="{l:T Wizard.Callsign.SsidLink}"
+                NavigateUri="{x:Static vm:SetupWizardViewModel.SsidHelpUri}"
+                Padding="0"
+              />
+            </StackPanel>
+
+            <!-- 2. Location -->
+            <StackPanel x:Name="LocationStep" IsVisible="{Binding IsLocationStep}" Spacing="8">
+              <TextBlock Text="{l:T Wizard.Location.Title}" FontWeight="SemiBold" />
+              <TextBlock
+                Text="{l:T Wizard.Location.Help}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <WrapPanel>
+                <RadioButton
+                  x:Name="LocatorChoice"
+                  GroupName="LocationMethod"
+                  Content="{l:T Wizard.Location.Method.Locator}"
+                  IsChecked="{Binding IsLocatorMethod}"
+                  Margin="0,0,16,0"
+                />
+                <RadioButton
+                  x:Name="AddressChoice"
+                  GroupName="LocationMethod"
+                  Content="{l:T Wizard.Location.Method.Address}"
+                  IsChecked="{Binding IsAddressMethod}"
+                  IsVisible="{Binding CanLookUpAddresses}"
+                  Margin="0,0,16,0"
+                />
+                <RadioButton
+                  x:Name="CoordinatesChoice"
+                  GroupName="LocationMethod"
+                  Content="{l:T Wizard.Location.Method.Coordinates}"
+                  IsChecked="{Binding IsCoordinatesMethod}"
+                />
+              </WrapPanel>
+
+              <DockPanel IsVisible="{Binding IsLocatorMethod}">
+                <Button
+                  DockPanel.Dock="Right"
+                  Content="{l:T Wizard.Location.Use}"
+                  Command="{Binding UseLocatorCommand}"
+                  Margin="8,0,0,0"
+                />
+                <TextBox
+                  x:Name="LocatorBox"
+                  Text="{Binding LocatorText}"
+                  PlaceholderText="{l:T Wizard.Location.Locator.Watermark}"
+                  AutomationProperties.Name="{l:T Wizard.Location.Method.Locator}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                  MaxLength="12"
+                ></TextBox>
+              </DockPanel>
+
+              <StackPanel IsVisible="{Binding IsAddressMethod}" Spacing="8">
+                <DockPanel>
+                  <Button
+                    x:Name="LookUpButton"
+                    DockPanel.Dock="Right"
+                    Content="{l:T Wizard.Location.Address.LookUp}"
+                    Command="{Binding LookUpCommand}"
+                    Margin="8,0,0,0"
+                  />
+                  <TextBox
+                    x:Name="AddressBox"
+                    Text="{Binding AddressText}"
+                    PlaceholderText="{l:T Wizard.Location.Address.Watermark}"
+                    AutomationProperties.Name="{l:T Wizard.Location.Method.Address}"
+                  >
+                    <TextBox.KeyBindings>
+                      <KeyBinding Gesture="Enter" Command="{Binding LookUpCommand}" />
+                    </TextBox.KeyBindings>
+                  </TextBox>
+                </DockPanel>
+                <WrapPanel>
+                  <TextBlock
+                    x:Name="LookupNoticeLabel"
+                    Text="{Binding LookupNotice}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    FontSize="{DynamicResource Text.Small}"
+                    TextWrapping="Wrap"
+                    VerticalAlignment="Center"
+                    Margin="0,0,8,0"
+                  />
+                  <HyperlinkButton
+                    Content="{l:T Wizard.Location.Address.Policy}"
+                    NavigateUri="{Binding LookupPolicyUri}"
+                    IsVisible="{Binding LookupPolicyUri, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    FontSize="{DynamicResource Text.Small}"
+                    Padding="0"
+                  />
+                </WrapPanel>
+                <ListBox
+                  x:Name="AddressResultList"
+                  ItemsSource="{Binding AddressResults}"
+                  SelectedItem="{Binding SelectedAddress}"
+                  IsVisible="{Binding !!AddressResults.Count}"
+                  MaxHeight="200"
+                >
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="c:GeocodeResult">
+                      <TextBlock Text="{Binding DisplayName}" TextWrapping="Wrap" />
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock
+                  x:Name="NoMatchLabel"
+                  Text="{l:T Wizard.Location.Address.NoMatch}"
+                  IsVisible="{Binding NoAddressMatch}"
+                  TextWrapping="Wrap"
+                />
+                <HyperlinkButton
+                  Content="{l:T Wizard.Location.Address.Attribution}"
+                  NavigateUri="{x:Static vm:SetupWizardViewModel.OpenStreetMapCopyrightUri}"
+                  IsVisible="{Binding !!AddressResults.Count}"
+                  FontSize="{DynamicResource Text.Small}"
+                  Padding="0"
+                />
+              </StackPanel>
+
+              <DockPanel IsVisible="{Binding IsCoordinatesMethod}">
+                <Button
+                  DockPanel.Dock="Right"
+                  Content="{l:T Wizard.Location.Use}"
+                  Command="{Binding UseCoordinatesCommand}"
+                  Margin="8,0,0,0"
+                />
+                <TextBox
+                  x:Name="CoordinatesBox"
+                  Text="{Binding CoordinatesText}"
+                  PlaceholderText="{l:T Wizard.Location.Coordinates.Watermark}"
+                  AutomationProperties.Name="{l:T Wizard.Location.Method.Coordinates}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                ></TextBox>
+              </DockPanel>
+
+              <TextBlock
+                x:Name="LocationErrorLabel"
+                Text="{Binding LocationError}"
+                IsVisible="{Binding LocationError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+              <Border
+                IsVisible="{Binding HasLocation}"
+                Background="{DynamicResource Brush.AccentSoft}"
+                CornerRadius="{DynamicResource Radius.Control}"
+                Padding="10,6"
+              >
+                <TextBlock x:Name="LocationLabel" Text="{Binding LocationText}" TextWrapping="Wrap" />
+              </Border>
+            </StackPanel>
+
+            <!-- 3. Server -->
+            <StackPanel x:Name="ServerStep" IsVisible="{Binding IsServerStep}" Spacing="8">
+              <TextBlock Text="{l:T Wizard.Server.Title}" FontWeight="SemiBold" />
+              <TextBlock
+                Text="{l:T Wizard.Server.Help}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <RadioButton
+                x:Name="RegionChoice"
+                GroupName="Server"
+                Content="{l:T Wizard.Server.Region}"
+                IsChecked="{Binding UseRegionServer}"
+              />
+              <ComboBox
+                x:Name="ServerPicker"
+                ItemsSource="{Binding Servers}"
+                SelectedItem="{Binding SelectedServer}"
+                IsEnabled="{Binding UseRegionServer}"
+                AutomationProperties.Name="{l:T Wizard.Server.Region}"
+                Margin="28,0,0,0"
+                MinWidth="240"
+              >
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ServerChoice">
+                    <TextBlock>
+                      <Run Text="{Binding Name}" />
+                      <Run
+                        Text="{Binding Server}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                      />
+                    </TextBlock>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <RadioButton
+                x:Name="OwnServerChoice"
+                GroupName="Server"
+                Content="{l:T Wizard.Server.Own}"
+                IsChecked="{Binding UseOwnServer}"
+              />
+              <TextBox
+                x:Name="OwnServerBox"
+                Text="{Binding OwnServer}"
+                IsEnabled="{Binding UseOwnServer}"
+                PlaceholderText="{l:T Wizard.Server.Own.Watermark}"
+                AutomationProperties.Name="{l:T Wizard.Server.Own}"
+                FontFamily="{DynamicResource Font.Mono}"
+                Margin="28,0,0,0"
+              />
+              <TextBlock
+                x:Name="ServerErrorLabel"
+                Text="{Binding ServerError}"
+                IsVisible="{Binding ServerError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+
+            <!-- 4. Passcode -->
+            <StackPanel x:Name="PasscodeStep" IsVisible="{Binding IsPasscodeStep}" Spacing="8">
+              <TextBlock Text="{l:T Wizard.Passcode.Title}" FontWeight="SemiBold" />
+              <RadioButton
+                x:Name="ReceiveOnlyChoice"
+                GroupName="Passcode"
+                Content="{l:T Wizard.Passcode.ReceiveOnly}"
+                IsChecked="{Binding ReceiveOnly}"
+              />
+              <TextBlock
+                Text="{l:T Wizard.Passcode.ReceiveOnly.Help}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+                Margin="28,0,0,0"
+              />
+              <RadioButton
+                x:Name="HasPasscodeChoice"
+                GroupName="Passcode"
+                Content="{l:T Wizard.Passcode.Have}"
+                IsChecked="{Binding HasPasscode}"
+              />
+              <StackPanel IsVisible="{Binding HasPasscode}" Spacing="6" Margin="28,0,0,0">
+                <TextBox
+                  x:Name="PasscodeBox"
+                  Text="{Binding PasscodeText}"
+                  PlaceholderText="{l:T Wizard.Passcode.Watermark}"
+                  AutomationProperties.Name="{l:T Wizard.Passcode.Title}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                  MaxLength="5"
+                  HorizontalAlignment="Left"
+                  MinWidth="140"
+                />
+                <TextBlock
+                  x:Name="PasscodeErrorLabel"
+                  Text="{Binding PasscodeError}"
+                  IsVisible="{Binding PasscodeError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  Foreground="{DynamicResource Brush.Warn}"
+                  TextWrapping="Wrap"
+                />
+                <HyperlinkButton
+                  x:Name="OpenCalculatorButton"
+                  Content="{l:T Wizard.Passcode.Calculate}"
+                  Command="{Binding OpenCalculatorCommand}"
+                  Padding="0"
+                />
+                <TextBlock
+                  Text="{l:T Wizard.Passcode.SendNote}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  FontSize="{DynamicResource Text.Small}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
+            </StackPanel>
+          </Panel>
+        </DockPanel>
+
+        <!-- Passcode calculator, over the step -->
+        <Border
+          x:Name="Calculator"
+          IsVisible="{Binding IsCalculatorOpen}"
+          Background="{DynamicResource Brush.Surface}"
+          CornerRadius="{DynamicResource Radius.Panel}"
+          Padding="24,20"
+        >
+          <StackPanel Spacing="10">
+            <TextBlock
+              Text="{l:T Wizard.Calculator.Title}"
+              FontSize="{DynamicResource Text.Title}"
+              FontWeight="SemiBold"
+            />
+            <TextBlock
+              x:Name="CalculatorCallsignLabel"
+              FontFamily="{DynamicResource Font.Mono}"
+              Text="{Binding BaseCallsign}"
+            />
+            <CheckBox x:Name="LicensedBox" IsChecked="{Binding IsLicensed}">
+              <TextBlock Text="{l:T Wizard.Calculator.Licensed}" TextWrapping="Wrap" />
+            </CheckBox>
+            <Button
+              x:Name="CalculateButton"
+              Content="{l:T Wizard.Calculator.Calculate}"
+              Command="{Binding CalculateCommand}"
+              Classes="accent"
+            />
+            <StackPanel
+              IsVisible="{Binding CalculatedPasscode, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Spacing="4"
+            >
+              <TextBlock Text="{l:T Wizard.Calculator.Result}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <StackPanel Orientation="Horizontal" Spacing="12">
+                <SelectableTextBlock
+                  x:Name="CalculatedLabel"
+                  Text="{Binding CalculatedPasscode}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                  FontSize="{DynamicResource Text.Title}"
+                  FontWeight="SemiBold"
+                  VerticalAlignment="Center"
+                />
+                <Button
+                  x:Name="CopyButton"
+                  Content="{l:T Wizard.Calculator.Copy}"
+                  Command="{Binding CopyCommand}"
+                  IsVisible="{Binding CanCopy}"
+                />
+              </StackPanel>
+            </StackPanel>
+            <TextBlock
+              x:Name="CalculatorErrorLabel"
+              Text="{Binding CalculatorError}"
+              IsVisible="{Binding CalculatorError, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Text="{l:T Wizard.Calculator.Note}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              FontSize="{DynamicResource Text.Small}"
+              TextWrapping="Wrap"
+            />
+            <Button
+              x:Name="CloseCalculatorButton"
+              Content="{l:T Wizard.Calculator.Close}"
+              Command="{Binding CloseCalculatorCommand}"
+              HorizontalAlignment="Right"
+            />
+          </StackPanel>
+        </Border>
+
+        <!-- "Close without saving?" -->
+        <Border
+          x:Name="ConfirmClose"
+          IsVisible="{Binding IsConfirmingClose}"
+          Background="{DynamicResource Brush.Surface}"
+          CornerRadius="{DynamicResource Radius.Panel}"
+          Padding="24,20"
+        >
+          <StackPanel Spacing="16" VerticalAlignment="Center">
+            <TextBlock Text="{l:T Wizard.ConfirmClose}" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button
+                x:Name="KeepEditingButton"
+                Content="{l:T Wizard.ConfirmClose.Keep}"
+                Command="{Binding KeepEditingCommand}"
+                Classes="accent"
+              />
+              <Button
+                x:Name="DiscardButton"
+                Content="{l:T Wizard.ConfirmClose.Discard}"
+                Command="{Binding CloseCommand}"
+              />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
+  </Border>
+</UserControl>

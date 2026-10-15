@@ -67,6 +67,44 @@ public sealed class LanguageViewTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task InThePseudoLanguageTheWizardIsTranslatedAndFits()
+    {
+        Localizer.Instance.SetLanguage(Localizer.PseudoLanguage);
+        var engine = new FakeEngine { Settings = AppSettings.Empty };
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        var window = new Window
+        {
+            Content = new MainView { DataContext = vm },
+            Width = 640,
+            Height = 900,
+        };
+        window.Show();
+        vm.Show(engine.Settings);
+        for (var i = 0; i < 50 && vm.Setup is null; i++)
+        {
+            await Task.Yield();
+        }
+        var wizard = vm.Setup!;
+        wizard.Callsign = "AB1CD";
+
+        foreach (var step in Enum.GetValues<SetupStep>())
+        {
+            wizard.Step = step;
+            wizard.IsCalculatorOpen = step == SetupStep.Passcode;
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var texts = window
+                .GetLogicalDescendants()
+                .OfType<TextBlock>()
+                .Where(t => t.IsEffectivelyVisible && !string.IsNullOrEmpty(t.Text) && t.Text.Any(char.IsLetter))
+                .Where(t => t.Text != "AB1CD" && t.Text != Brand.DisplayName) // data, not UI text
+                .ToList();
+            Assert.NotEmpty(texts);
+            Assert.All(texts, t => Assert.True(t.Text!.StartsWith('[') && t.Text.EndsWith(']'), $"{step}: {t.Text}"));
+        }
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void SwitchingLanguageUpdatesTheOpenWindow()
     {
         var (window, _) = Show();

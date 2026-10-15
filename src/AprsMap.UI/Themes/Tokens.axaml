@@ -15,6 +15,7 @@
       <Color x:Key="Color.Transmit">#C2410C</Color>
       <Color x:Key="Color.Ok">#1E7A4C</Color>
       <Color x:Key="Color.Warn">#B45309</Color>
+      <Color x:Key="Color.Scrim">#6616191D</Color>
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
       <Color x:Key="Color.Ground">#15181C</Color>
@@ -27,6 +28,7 @@
       <Color x:Key="Color.Transmit">#E08A5C</Color>
       <Color x:Key="Color.Ok">#6FBF93</Color>
       <Color x:Key="Color.Warn">#D9A15B</Color>
+      <Color x:Key="Color.Scrim">#99000000</Color>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>
 
@@ -40,6 +42,8 @@
   <SolidColorBrush x:Key="Brush.Transmit" Color="{DynamicResource Color.Transmit}" />
   <SolidColorBrush x:Key="Brush.Ok" Color="{DynamicResource Color.Ok}" />
   <SolidColorBrush x:Key="Brush.Warn" Color="{DynamicResource Color.Warn}" />
+  <!-- Dims what is behind a dialog. Plain translucent, never blurred. -->
+  <SolidColorBrush x:Key="Brush.Scrim" Color="{DynamicResource Color.Scrim}" />
 
   <!-- Size and shape tokens. AppearanceService overwrites these at runtime for text size, icon size and corners. -->
   <x:Double x:Key="Text.Body">14</x:Double>

@@ -168,4 +168,228 @@
   <data name="Error.position.off-globe" xml:space="preserve">
     <value>That position is off the globe.</value>
   </data>
+  <data name="Wizard.Title" xml:space="preserve">
+    <value>Set up {product}</value>
+    <comment>Wizard heading. product: the app's name.</comment>
+  </data>
+  <data name="Wizard.StepOf" xml:space="preserve">
+    <value>Step {step} of {steps}</value>
+    <comment>step, steps: numbers.</comment>
+  </data>
+  <data name="Wizard.Back" xml:space="preserve">
+    <value>Back</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="Wizard.Next" xml:space="preserve">
+    <value>Next</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="Wizard.Finish" xml:space="preserve">
+    <value>Finish</value>
+    <comment>Button on the last step; saves and closes.</comment>
+  </data>
+  <data name="Wizard.Close" xml:space="preserve">
+    <value>Close</value>
+    <comment>Tooltip of the wizard's close button.</comment>
+  </data>
+  <data name="Wizard.ConfirmClose" xml:space="preserve">
+    <value>Close without saving? What you've entered will be lost.</value>
+    <comment>Asked when closing the wizard after typing something.</comment>
+  </data>
+  <data name="Wizard.ConfirmClose.Discard" xml:space="preserve">
+    <value>Close without saving</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="Wizard.ConfirmClose.Keep" xml:space="preserve">
+    <value>Keep going</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="Wizard.Callsign.Title" xml:space="preserve">
+    <value>Your callsign</value>
+  </data>
+  <data name="Wizard.Callsign.Label" xml:space="preserve">
+    <value>Callsign, with an optional SSID</value>
+    <comment>Label of the callsign field.</comment>
+  </data>
+  <data name="Wizard.Callsign.Watermark" xml:space="preserve">
+    <value>for example AB1CD-9</value>
+    <comment>Placeholder in the callsign field; keep the example callsign as it is.</comment>
+  </data>
+  <data name="Wizard.Callsign.Help" xml:space="preserve">
+    <value>The SSID after the hyphen tells your stations apart: -9 is common for a car, -7 for a handheld.</value>
+  </data>
+  <data name="Wizard.Callsign.SsidLink" xml:space="preserve">
+    <value>SSID conventions</value>
+    <comment>Link to the APRS SSID recommendations.</comment>
+  </data>
+  <data name="Wizard.Callsign.Placeholder" xml:space="preserve">
+    <value>Use your own callsign; APRS-IS servers reject this one.</value>
+    <comment>Shown when the user types N0CALL or NOCALL.</comment>
+  </data>
+  <data name="Wizard.Location.Title" xml:space="preserve">
+    <value>Where is your station?</value>
+  </data>
+  <data name="Wizard.Location.Help" xml:space="preserve">
+    <value>Optional. It lets the app show distance and bearing from you. You can set it later.</value>
+  </data>
+  <data name="Wizard.Location.Method.Locator" xml:space="preserve">
+    <value>Maidenhead locator</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="Wizard.Location.Method.Address" xml:space="preserve">
+    <value>Address or postal code</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="Wizard.Location.Method.Coordinates" xml:space="preserve">
+    <value>Coordinates</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="Wizard.Location.Locator.Watermark" xml:space="preserve">
+    <value>for example FN31pr</value>
+    <comment>Placeholder; keep the example locator.</comment>
+  </data>
+  <data name="Wizard.Location.Coordinates.Watermark" xml:space="preserve">
+    <value>for example 40.0150, -105.2705 or 40 00.90 N 105 16.23 W</value>
+    <comment>Placeholder; keep the numbers and N/W letters.</comment>
+  </data>
+  <data name="Wizard.Location.Coordinates.Unreadable" xml:space="preserve">
+    <value>Enter latitude, then longitude: for example 40.0150, -105.2705 or 40 00.90 N 105 16.23 W. Use a point for decimals.</value>
+  </data>
+  <data name="Wizard.Location.Coordinates.OutOfRange" xml:space="preserve">
+    <value>Latitude must be from -90 to 90 and longitude from -180 to 180, with minutes and seconds under 60.</value>
+  </data>
+  <data name="Wizard.Location.Use" xml:space="preserve">
+    <value>Use this</value>
+    <comment>Button that confirms a locator or coordinates.</comment>
+  </data>
+  <data name="Wizard.Location.Address.Watermark" xml:space="preserve">
+    <value>street and town, or postal code and country</value>
+    <comment>Placeholder.</comment>
+  </data>
+  <data name="Wizard.Location.Address.LookUp" xml:space="preserve">
+    <value>Look up</value>
+    <comment>Button; sends the text to the lookup server.</comment>
+  </data>
+  <data name="Wizard.Location.Address.Notice" xml:space="preserve">
+    <value>What you type here is sent to {host} to find it.</value>
+    <comment>host: the lookup server's name, for example nominatim.openstreetmap.org.</comment>
+  </data>
+  <data name="Wizard.Location.Address.Policy" xml:space="preserve">
+    <value>Usage policy</value>
+    <comment>Link to the lookup server's usage policy.</comment>
+  </data>
+  <data name="Wizard.Location.Address.NoMatch" xml:space="preserve">
+    <value>No match. Try a postal code with its country, or another way.</value>
+  </data>
+  <data name="Wizard.Location.Address.Attribution" xml:space="preserve">
+    <value>Search by Nominatim · © OpenStreetMap contributors</value>
+    <comment>Required attribution; keep the names Nominatim and OpenStreetMap.</comment>
+  </data>
+  <data name="Wizard.Location.Confirmed" xml:space="preserve">
+    <value>Location: {latitude}, {longitude} · {locator}</value>
+    <comment>latitude, longitude: decimal degrees; locator: a Maidenhead locator such as DN70kb.</comment>
+  </data>
+  <data name="Wizard.Location.Skip" xml:space="preserve">
+    <value>Skip for now</value>
+    <comment>Button: go on without a location.</comment>
+  </data>
+  <data name="Wizard.Server.Title" xml:space="preserve">
+    <value>APRS-IS server</value>
+  </data>
+  <data name="Wizard.Server.Help" xml:space="preserve">
+    <value>Most people keep the worldwide choice; a regional server can be closer.</value>
+  </data>
+  <data name="Wizard.Server.Region" xml:space="preserve">
+    <value>By region</value>
+    <comment>Choice: pick one of the regional servers.</comment>
+  </data>
+  <data name="Wizard.Server.Region.rotate" xml:space="preserve">
+    <value>Worldwide</value>
+    <comment>Region of the aprs2.net worldwide rotate.</comment>
+  </data>
+  <data name="Wizard.Server.Region.noam" xml:space="preserve">
+    <value>North America</value>
+  </data>
+  <data name="Wizard.Server.Region.soam" xml:space="preserve">
+    <value>South America</value>
+  </data>
+  <data name="Wizard.Server.Region.euro" xml:space="preserve">
+    <value>Europe and Africa</value>
+  </data>
+  <data name="Wizard.Server.Region.asia" xml:space="preserve">
+    <value>Asia</value>
+  </data>
+  <data name="Wizard.Server.Region.aunz" xml:space="preserve">
+    <value>Oceania</value>
+  </data>
+  <data name="Wizard.Server.Own" xml:space="preserve">
+    <value>Another server</value>
+    <comment>Choice: type a server.</comment>
+  </data>
+  <data name="Wizard.Server.Own.Watermark" xml:space="preserve">
+    <value>host or host:port</value>
+    <comment>Placeholder; keep 'host:port' recognisable.</comment>
+  </data>
+  <data name="Wizard.Passcode.Title" xml:space="preserve">
+    <value>Passcode</value>
+  </data>
+  <data name="Wizard.Passcode.ReceiveOnly" xml:space="preserve">
+    <value>Receive only (no passcode)</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="Wizard.Passcode.ReceiveOnly.Help" xml:space="preserve">
+    <value>You see everything, but can't send to APRS-IS.</value>
+  </data>
+  <data name="Wizard.Passcode.Have" xml:space="preserve">
+    <value>I have a passcode</value>
+    <comment>Choice.</comment>
+  </data>
+  <data name="Wizard.Passcode.Watermark" xml:space="preserve">
+    <value>0 to 32767</value>
+    <comment>Placeholder in the passcode field.</comment>
+  </data>
+  <data name="Wizard.Passcode.Invalid" xml:space="preserve">
+    <value>A passcode is a whole number from 0 to 32767.</value>
+  </data>
+  <data name="Wizard.Passcode.Calculate" xml:space="preserve">
+    <value>Don't have one? Calculate it</value>
+    <comment>Link that opens the passcode calculator.</comment>
+  </data>
+  <data name="Wizard.Passcode.SendNote" xml:space="preserve">
+    <value>A passcode alone sends nothing: sending is set up separately.</value>
+  </data>
+  <data name="Wizard.Calculator.Title" xml:space="preserve">
+    <value>Passcode calculator</value>
+  </data>
+  <data name="Wizard.Calculator.Licensed" xml:space="preserve">
+    <value>I'm a licensed amateur radio operator and this is my own callsign.</value>
+    <comment>Tick box; required before calculating.</comment>
+  </data>
+  <data name="Wizard.Calculator.Calculate" xml:space="preserve">
+    <value>Calculate</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="Wizard.Calculator.Result" xml:space="preserve">
+    <value>Passcode</value>
+    <comment>Label above the calculated number.</comment>
+  </data>
+  <data name="Wizard.Calculator.Copy" xml:space="preserve">
+    <value>Copy</value>
+    <comment>Button: copies the passcode.</comment>
+  </data>
+  <data name="Wizard.Calculator.Note" xml:space="preserve">
+    <value>A passcode isn't a secret or a password: it tells APRS-IS servers that you're licensed. The same number works in other APRS-IS software. Type or paste it into the passcode field.</value>
+  </data>
+  <data name="Wizard.Calculator.Close" xml:space="preserve">
+    <value>Close</value>
+    <comment>Button.</comment>
+  </data>
+  <data name="Main.Setup.Open" xml:space="preserve">
+    <value>Set up</value>
+    <comment>Status bar button that opens the setup wizard again.</comment>
+  </data>
+  <data name="Main.Setup.GatewayNote" xml:space="preserve">
+    <value>Not set up yet: this gateway's operator sets the first callsign.</value>
+    <comment>Status bar note in the browser when the gateway has no station profile.</comment>
+  </data>
 </root>

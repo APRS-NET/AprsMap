@@ -7,87 +7,110 @@
   xmlns:vm="using:AprsMap.UI.ViewModels"
   xmlns:c="using:AprsMap.Contracts"
   xmlns:l="using:AprsMap.UI.Localization"
+  xmlns:views="using:AprsMap.UI.Views"
   x:Class="AprsMap.UI.Views.MainView"
   x:DataType="vm:MainViewModel"
   Background="{DynamicResource Brush.Ground}"
   Foreground="{DynamicResource Brush.Text}"
   FontSize="{DynamicResource Text.Body}"
 >
-  <DockPanel>
-    <Border
-      DockPanel.Dock="Top"
-      Background="{DynamicResource Brush.Surface}"
-      BorderBrush="{DynamicResource Brush.Border}"
-      BorderThickness="0,0,0,1"
-      Padding="16,10"
-    >
-      <StackPanel Orientation="Horizontal" Spacing="16">
-        <TextBlock
-          Text="{Binding Title}"
-          FontSize="{DynamicResource Text.Title}"
-          FontWeight="SemiBold"
-          VerticalAlignment="Center"
-        />
-        <ComboBox
-          x:Name="ProfilePicker"
-          ItemsSource="{Binding Profiles}"
-          SelectedItem="{Binding SelectedProfile}"
-          IsEnabled="{Binding CanSwitchProfiles}"
-          IsVisible="{Binding !!Profiles.Count}"
-          VerticalAlignment="Center"
-          ToolTip.Tip="{l:T Main.ProfilePicker.ToolTip}"
-        >
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="c:StationProfile">
-              <TextBlock>
-                <Run Text="{Binding Name}" />
-                <Run
-                  Text="{Binding Callsign}"
-                  Foreground="{DynamicResource Brush.TextMuted}"
-                  FontFamily="{DynamicResource Font.Mono}"
-                />
-              </TextBlock>
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
-        <Border
-          CornerRadius="{DynamicResource Radius.Control}"
-          BorderBrush="{DynamicResource Brush.Border}"
-          BorderThickness="1"
-          Padding="10,4"
-        >
-          <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" />
-        </Border>
-        <TextBlock
-          x:Name="PacketCountLabel"
-          Text="{Binding PacketCountText}"
-          Foreground="{DynamicResource Brush.TextMuted}"
-          VerticalAlignment="Center"
-        />
-        <TextBlock
-          x:Name="StationCountLabel"
-          Text="{Binding StationCountText}"
-          Foreground="{DynamicResource Brush.TextMuted}"
-          VerticalAlignment="Center"
-        />
-        <TextBlock
-          x:Name="ErrorLabel"
-          Text="{Binding ErrorText}"
-          IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
-          Foreground="{DynamicResource Brush.Warn}"
-          VerticalAlignment="Center"
-        />
-      </StackPanel>
-    </Border>
-    <ListBox x:Name="PacketList" ItemsSource="{Binding Packets}" Background="{DynamicResource Brush.Surface}">
-      <ListBox.ItemTemplate>
-        <DataTemplate x:DataType="c:PacketView">
-          <Grid ColumnDefinitions="110,*">
-            <TextBlock Text="{Binding Source}" FontFamily="{DynamicResource Font.Mono}" FontWeight="SemiBold" />
-            <TextBlock Grid.Column="1" Text="{Binding Summary}" TextTrimming="CharacterEllipsis" />
-          </Grid>
-        </DataTemplate>
-      </ListBox.ItemTemplate>
-    </ListBox>
-  </DockPanel>
+  <Panel>
+    <DockPanel>
+      <Border
+        DockPanel.Dock="Top"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="0,0,0,1"
+        Padding="16,10"
+      >
+        <StackPanel Orientation="Horizontal" Spacing="16">
+          <TextBlock
+            Text="{Binding Title}"
+            FontSize="{DynamicResource Text.Title}"
+            FontWeight="SemiBold"
+            VerticalAlignment="Center"
+          />
+          <ComboBox
+            x:Name="ProfilePicker"
+            ItemsSource="{Binding Profiles}"
+            SelectedItem="{Binding SelectedProfile}"
+            IsEnabled="{Binding CanSwitchProfiles}"
+            IsVisible="{Binding !!Profiles.Count}"
+            VerticalAlignment="Center"
+            ToolTip.Tip="{l:T Main.ProfilePicker.ToolTip}"
+          >
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="c:StationProfile">
+                <TextBlock>
+                  <Run Text="{Binding Name}" />
+                  <Run
+                    Text="{Binding Callsign}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                  />
+                </TextBlock>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Border
+            CornerRadius="{DynamicResource Radius.Control}"
+            BorderBrush="{DynamicResource Brush.Border}"
+            BorderThickness="1"
+            Padding="10,4"
+          >
+            <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" />
+          </Border>
+          <TextBlock
+            x:Name="PacketCountLabel"
+            Text="{Binding PacketCountText}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            VerticalAlignment="Center"
+          />
+          <TextBlock
+            x:Name="StationCountLabel"
+            Text="{Binding StationCountText}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            VerticalAlignment="Center"
+          />
+          <Button
+            x:Name="OpenSetupButton"
+            Content="{l:T Main.Setup.Open}"
+            Command="{Binding OpenSetupCommand}"
+            IsVisible="{Binding CanOpenSetup}"
+            Classes="accent"
+            VerticalAlignment="Center"
+          />
+          <TextBlock
+            x:Name="GatewaySetupNote"
+            Text="{l:T Main.Setup.GatewayNote}"
+            IsVisible="{Binding ShowGatewaySetupNote}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            VerticalAlignment="Center"
+          />
+          <TextBlock
+            x:Name="ErrorLabel"
+            Text="{Binding ErrorText}"
+            IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Foreground="{DynamicResource Brush.Warn}"
+            VerticalAlignment="Center"
+          />
+        </StackPanel>
+      </Border>
+      <ListBox x:Name="PacketList" ItemsSource="{Binding Packets}" Background="{DynamicResource Brush.Surface}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="c:PacketView">
+            <Grid ColumnDefinitions="110,*">
+              <TextBlock Text="{Binding Source}" FontFamily="{DynamicResource Font.Mono}" FontWeight="SemiBold" />
+              <TextBlock Grid.Column="1" Text="{Binding Summary}" TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+    <views:SetupWizardView
+      x:Name="SetupWizard"
+      DataContext="{Binding Setup}"
+      IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+    />
+  </Panel>
 </UserControl>

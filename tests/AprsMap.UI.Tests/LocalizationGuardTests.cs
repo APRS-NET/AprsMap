@@ -118,20 +118,18 @@ public partial class LocalizationGuardTests
     {
         var text = new Localizer(CultureInfo.GetCultureInfo("en-US"));
         text.SetLanguage(language);
-        var args = new Dictionary<string, object?>
+        foreach (var (key, pattern) in EnglishStrings())
         {
-            ["count"] = 2,
-            ["server"] = "T2TEST",
-            ["profile"] = "Home",
-            ["value"] = "N0 CALL",
-            ["position"] = 3,
-            ["character"] = " ",
-            ["status"] = "500",
-            ["part"] = "subsquare",
-        };
-
-        foreach (var key in EnglishStrings().Keys)
-        {
+            // Every placeholder gets a value: a number for plurals, text for the rest (select falls to "other").
+            var args = Placeholder()
+                .Matches(pattern)
+                .Select(m => m.Groups[1].Value)
+                .Distinct(StringComparer.Ordinal)
+                .ToDictionary(
+                    name => name,
+                    name => pattern.Contains("{" + name + ", plural", StringComparison.Ordinal) ? 2 : (object?)"x",
+                    StringComparer.Ordinal
+                );
             var value = text.Format(key, args);
             Assert.DoesNotContain("⟦", value, StringComparison.Ordinal);
             Assert.DoesNotContain("{", value, StringComparison.Ordinal);
