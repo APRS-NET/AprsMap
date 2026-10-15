@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.10](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.9...v0.1.0-alpha.10) (2026-10-15)
+
+
+### Features
+
+* use the APRS.NET icon for the desktop and web apps ([f4f0a88](https://github.com/APRS-NET/AprsMap/commit/f4f0a88f2f4fa6ae01b4c1c967c6c5a23bc09256))
+
 ## [0.1.0-alpha.9](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.8...v0.1.0-alpha.9) (2026-10-15)
 
 
