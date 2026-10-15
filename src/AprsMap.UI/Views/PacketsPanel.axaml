@@ -1,36 +1,218 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
-<!-- The Packets panel (F1.8): the live packet list, newest first. Its DataContext is the main view model. -->
+<!-- The Packets panel (F1.8): filters, pause and save above the live packet list, newest first. Its DataContext is the
+     main view model; everything inside works on its packet list. -->
 <UserControl
   xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:AprsMap.UI.ViewModels"
-  xmlns:c="using:AprsMap.Contracts"
+  xmlns:p="using:AprsMap.UI.Packets"
+  xmlns:l="using:AprsMap.UI.Localization"
   x:Class="AprsMap.UI.Views.PacketsPanel"
   x:DataType="vm:MainViewModel"
 >
-  <ListBox
-    x:Name="PacketList"
-    ItemsSource="{Binding Packets}"
-    Background="{DynamicResource Brush.Surface}"
-    Grid.IsSharedSizeScope="True"
-  >
-    <ListBox.ItemTemplate>
-      <DataTemplate x:DataType="c:PacketView">
-        <!-- The callsign column fits the longest callsign shown, the same in every row, at any text size. -->
-        <Grid>
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" SharedSizeGroup="Source" />
-            <ColumnDefinition Width="*" />
-          </Grid.ColumnDefinitions>
-          <TextBlock
-            Text="{Binding Source}"
-            FontFamily="{DynamicResource Font.Mono}"
-            FontWeight="SemiBold"
-            Margin="0,0,16,0"
-          />
-          <TextBlock Grid.Column="1" Text="{Binding Summary}" TextTrimming="CharacterEllipsis" />
-        </Grid>
-      </DataTemplate>
-    </ListBox.ItemTemplate>
-  </ListBox>
+  <DockPanel DataContext="{Binding PacketList}" x:DataType="p:PacketListViewModel">
+    <!-- Wraps onto more lines when the panel is narrow or the text is large. -->
+    <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" Margin="8,6">
+      <TextBox
+        x:Name="SearchBox"
+        Text="{Binding FilterText}"
+        PlaceholderText="{l:T Packets.Search}"
+        AutomationProperties.Name="{l:T Packets.Search}"
+        MinWidth="180"
+      />
+      <TextBox
+        x:Name="StationBox"
+        Text="{Binding Station}"
+        PlaceholderText="{l:T Packets.Station}"
+        AutomationProperties.Name="{l:T Packets.Station}"
+        FontFamily="{DynamicResource Font.Mono}"
+        MinWidth="120"
+      />
+      <ComboBox
+        x:Name="KindBox"
+        ItemsSource="{Binding Kinds}"
+        SelectedItem="{Binding SelectedKind}"
+        AutomationProperties.Name="{l:T Packets.Type}"
+        ToolTip.Tip="{l:T Packets.Type}"
+      >
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="p:PacketListViewModel+KindOption">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
+      <ToggleButton x:Name="IssuesOnlyButton" IsChecked="{Binding IssuesOnly}" Content="{l:T Packets.IssuesOnly}" />
+      <ToggleButton x:Name="ShowRawButton" IsChecked="{Binding ShowRaw}" Content="{l:T Packets.ShowRaw}" />
+      <Button
+        x:Name="ClearFiltersButton"
+        Command="{Binding ClearFiltersCommand}"
+        Content="{l:T Packets.ClearFilters}"
+        IsVisible="{Binding IsFiltered}"
+      />
+      <Button
+        x:Name="PauseButton"
+        Command="{Binding TogglePauseCommand}"
+        Content="{Binding PauseText}"
+        Classes.accent="{Binding IsPaused}"
+      />
+      <Button x:Name="SaveButton" Content="{l:T Packets.Save}" />
+    </WrapPanel>
+    <TextBlock
+      DockPanel.Dock="Top"
+      Text="{Binding Notice}"
+      IsVisible="{Binding Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
+      Foreground="{DynamicResource Brush.Warn}"
+      TextWrapping="Wrap"
+      Margin="8,0,8,6"
+    />
+    <Panel>
+      <ListBox
+        x:Name="PacketList"
+        ItemsSource="{Binding Rows}"
+        SelectionMode="Multiple"
+        Background="{DynamicResource Brush.Surface}"
+        Grid.IsSharedSizeScope="True"
+      >
+        <ListBox.ContextMenu>
+          <ContextMenu>
+            <MenuItem x:Name="CopyItem" Header="{l:T Packets.Copy}" InputGesture="Ctrl+C" />
+            <MenuItem x:Name="OnlyStationItem" Header="{l:T Packets.OnlyStation}" />
+          </ContextMenu>
+        </ListBox.ContextMenu>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="p:PacketRow">
+            <!-- The time and callsign columns fit their longest text, the same in every row, at any text size. -->
+            <Grid RowDefinitions="Auto,Auto,Auto">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Time" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Markers" />
+                <ColumnDefinition Width="Auto" SharedSizeGroup="Source" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <ToggleButton
+                IsChecked="{Binding IsExpanded}"
+                ToolTip.Tip="{l:T Packets.Expand}"
+                AutomationProperties.Name="{l:T Packets.Expand}"
+                VerticalAlignment="Center"
+                Background="{x:Null}"
+                BorderThickness="0"
+                Padding="2"
+                Margin="0,0,6,0"
+              >
+                <PathIcon
+                  Data="M 8.6,4.6 L 10,3.2 L 18.8,12 L 10,20.8 L 8.6,19.4 L 16,12 Z"
+                  Width="{DynamicResource Icon.Size}"
+                  Height="{DynamicResource Icon.Size}"
+                />
+              </ToggleButton>
+              <TextBlock
+                Grid.Column="1"
+                Text="{Binding Time}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                FontFamily="{DynamicResource Font.Mono}"
+                VerticalAlignment="Center"
+                Margin="0,0,10,0"
+              />
+              <Image
+                Grid.Column="2"
+                Source="{Binding Symbol, Converter={x:Static p:SymbolIcons.Instance}}"
+                AutomationProperties.Name="{Binding SymbolName}"
+                ToolTip.Tip="{Binding SymbolName}"
+                Width="{DynamicResource Icon.Size}"
+                Height="{DynamicResource Icon.Size}"
+                VerticalAlignment="Center"
+                Margin="0,0,8,0"
+              />
+              <!-- Markers: a shape each, with a name for screen readers, never colour alone (F1.8 behaviors 2, 3, 5). -->
+              <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <PathIcon
+                  IsVisible="{Binding HasIssues}"
+                  Data="M 12,2 L 23,21 L 1,21 Z M 11,8 L 13,8 L 13,15 L 11,15 Z M 11,17 L 13,17 L 13,19 L 11,19 Z"
+                  Foreground="{DynamicResource Brush.Warn}"
+                  Width="{DynamicResource Icon.Size}"
+                  Height="{DynamicResource Icon.Size}"
+                  ToolTip.Tip="{l:T Packets.HasIssues}"
+                  AutomationProperties.Name="{l:T Packets.HasIssues}"
+                  Focusable="False"
+                />
+                <PathIcon
+                  IsVisible="{Binding IsThirdParty}"
+                  Data="M 2,2 L 22,2 L 22,22 L 2,22 Z M 4,4 L 4,20 L 20,20 L 20,4 Z M 8,8 L 16,8 L 16,16 L 8,16 Z"
+                  Foreground="{DynamicResource Brush.Accent}"
+                  Width="{DynamicResource Icon.Size}"
+                  Height="{DynamicResource Icon.Size}"
+                  ToolTip.Tip="{l:T Packets.ThirdParty}"
+                  AutomationProperties.Name="{l:T Packets.ThirdParty}"
+                />
+              </StackPanel>
+              <TextBlock
+                Grid.Column="4"
+                Text="{Binding Source}"
+                FontFamily="{DynamicResource Font.Mono}"
+                FontWeight="SemiBold"
+                VerticalAlignment="Center"
+                Margin="4,0,16,0"
+              />
+              <TextBlock
+                Grid.Column="5"
+                Text="{Binding Summary}"
+                TextTrimming="CharacterEllipsis"
+                VerticalAlignment="Center"
+              />
+              <!-- The raw text, with the part at fault marked. -->
+              <p:RawText
+                Grid.Row="1"
+                Grid.Column="1"
+                Grid.ColumnSpan="5"
+                FontFamily="{DynamicResource Font.Mono}"
+                TextWrapping="Wrap"
+                Margin="0,4,0,0"
+              >
+                <p:RawText.IsVisible>
+                  <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                    <Binding Path="IsExpanded" />
+                    <Binding Path="$parent[ListBox].((p:PacketListViewModel)DataContext).ShowRaw" />
+                  </MultiBinding>
+                </p:RawText.IsVisible>
+              </p:RawText>
+              <ItemsControl
+                Grid.Row="2"
+                Grid.Column="1"
+                Grid.ColumnSpan="5"
+                ItemsSource="{Binding Issues}"
+                IsVisible="{Binding IsExpanded}"
+                Margin="0,4,0,0"
+              >
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="p:PacketIssueRow">
+                    <DockPanel>
+                      <TextBlock
+                        DockPanel.Dock="Left"
+                        Text="{Binding Severity}"
+                        FontWeight="SemiBold"
+                        Foreground="{DynamicResource Brush.Warn}"
+                        Margin="0,0,8,0"
+                      />
+                      <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                    </DockPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <TextBlock
+        Text="{Binding EmptyText}"
+        IsVisible="{Binding IsEmpty}"
+        Foreground="{DynamicResource Brush.TextMuted}"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        TextWrapping="Wrap"
+        Margin="16"
+      />
+    </Panel>
+  </DockPanel>
 </UserControl>

@@ -16,7 +16,7 @@ public class MainViewTests
     {
         var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
         vm.Show(new Contracts.EngineStatus(Contracts.ConnectionState.Connected, "T2TEST", 1, "1.0.0"));
-        vm.Add(FakeEngine.Packet("N0CALL-9"));
+        vm.PacketList.Receive(FakeEngine.Packet("N0CALL-9"));
         var window = new Window
         {
             Content = new MainView { DataContext = vm },

@@ -4,6 +4,7 @@ using AprsMap.Contracts;
 using AprsMap.UI.Appearance;
 using AprsMap.UI.Localization;
 using AprsMap.UI.Map;
+using AprsMap.UI.Packets;
 using AprsMap.UI.Platform;
 using AprsMap.UI.Settings;
 using AprsMap.UI.Shell;
@@ -17,9 +18,6 @@ namespace AprsMap.UI.ViewModels;
 /// </summary>
 public sealed partial class MainViewModel : ObservableObject
 {
-    /// <summary>How many packets the list keeps.</summary>
-    public const int MaxPackets = 200;
-
     /// <summary>How long to wait before asking the engine again after a call or stream fails.</summary>
     public static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(2);
 
@@ -55,6 +53,7 @@ public sealed partial class MainViewModel : ObservableObject
         _appearance = appearance ?? new AppearanceService();
         _showPseudoLanguage = showPseudoLanguage;
         _text = text ?? Localizer.Instance;
+        PacketList = new PacketListViewModel(engine, time, _text);
         Shell = new ShellViewModel(this, _text, managedWindows);
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
@@ -102,7 +101,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         _setupDismissed = false;
         _settings = null;
-        Packets.Clear();
+        PacketList.Clear();
         ShowError(null);
         Show(await engine.GetSettingsAsync());
     }
@@ -157,8 +156,11 @@ public sealed partial class MainViewModel : ObservableObject
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     internal void DismissLayoutNotice() => LayoutNotice = null;
 
-    /// <summary>Newest first.</summary>
-    public ObservableCollection<PacketView> Packets { get; } = [];
+    /// <summary>The Packets panel (F1.8).</summary>
+    public PacketListViewModel PacketList { get; }
+
+    /// <summary>The packet list's rows, newest first.</summary>
+    public PacketRows Packets => PacketList.Rows;
 
     [ObservableProperty]
     public partial string ConnectionText { get; set; } = string.Empty;
@@ -406,21 +408,11 @@ public sealed partial class MainViewModel : ObservableObject
             Map.UseProvider(_appearance.Current.MapProvider);
             _appearance.Changed += (_, settings) => Map.UseProvider(settings.MapProvider);
         }
-        var packets = KeepAsync(WatchPacketsAsync, cancellationToken);
+        var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);
         var countdown = KeepAsync(CountDownAsync, cancellationToken);
         await Task.WhenAll(packets, stations, status, countdown);
-    }
-
-    /// <summary>Adds a packet to the top of the list.</summary>
-    internal void Add(PacketView packet)
-    {
-        Packets.Insert(0, packet);
-        while (Packets.Count > MaxPackets)
-        {
-            Packets.RemoveAt(Packets.Count - 1);
-        }
     }
 
     /// <summary>Applies one batch from the station stream.</summary>
@@ -602,22 +594,6 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 return;
             }
-        }
-    }
-
-    private async Task WatchPacketsAsync(CancellationToken cancellationToken)
-    {
-        // The engine replays its recent packets on every subscription, so a resubscription replaces the list. Keep
-        // the old one on screen until the replay starts.
-        var first = true;
-        await foreach (var packet in engine.WatchPacketsAsync(null, cancellationToken))
-        {
-            if (first)
-            {
-                Packets.Clear();
-                first = false;
-            }
-            Add(packet);
         }
     }
 

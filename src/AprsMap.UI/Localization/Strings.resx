@@ -1030,4 +1030,102 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Map.Hours" xml:space="preserve">
     <value>{hours, plural, one {# hour} other {# hours}}</value>
   </data>
+  <data name="Packets.Kind.All" xml:space="preserve">
+    <value>All types</value>
+  </data>
+  <data name="Packets.Kind.Position" xml:space="preserve">
+    <value>Positions</value>
+  </data>
+  <data name="Packets.Kind.MicE" xml:space="preserve">
+    <value>Mic-E</value>
+  </data>
+  <data name="Packets.Kind.ObjectOrItem" xml:space="preserve">
+    <value>Objects and items</value>
+  </data>
+  <data name="Packets.Kind.Message" xml:space="preserve">
+    <value>Messages</value>
+  </data>
+  <data name="Packets.Kind.Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Packets.Kind.Weather" xml:space="preserve">
+    <value>Weather</value>
+  </data>
+  <data name="Packets.Kind.Telemetry" xml:space="preserve">
+    <value>Telemetry</value>
+  </data>
+  <data name="Packets.Kind.Other" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="Packets.Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="Packets.Paused" xml:space="preserve">
+    <value>Paused · {count} new</value>
+    <comment>count: packets received since the list was paused. Pressing the button resumes.</comment>
+  </data>
+  <data name="Packets.None" xml:space="preserve">
+    <value>No packets yet.</value>
+  </data>
+  <data name="Packets.NoneMatching" xml:space="preserve">
+    <value>No packets match the filters.</value>
+  </data>
+  <data name="Packets.Search" xml:space="preserve">
+    <value>Search packets</value>
+    <comment>Placeholder and accessible name of the text filter: matches callsigns, path or raw text.</comment>
+  </data>
+  <data name="Packets.Station" xml:space="preserve">
+    <value>Station</value>
+    <comment>Placeholder and accessible name of the one-station filter.</comment>
+  </data>
+  <data name="Packets.Type" xml:space="preserve">
+    <value>Packet type</value>
+  </data>
+  <data name="Packets.IssuesOnly" xml:space="preserve">
+    <value>Issues only</value>
+    <comment>Shows only packets that couldn't be fully decoded.</comment>
+  </data>
+  <data name="Packets.ShowRaw" xml:space="preserve">
+    <value>Raw text</value>
+    <comment>Toggles the raw packet text under every row.</comment>
+  </data>
+  <data name="Packets.ClearFilters" xml:space="preserve">
+    <value>Clear filters</value>
+  </data>
+  <data name="Packets.Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Packets.OnlyStation" xml:space="preserve">
+    <value>Only this station</value>
+  </data>
+  <data name="Packets.Save" xml:space="preserve">
+    <value>Save…</value>
+  </data>
+  <data name="Packets.SaveTitle" xml:space="preserve">
+    <value>Save packets</value>
+  </data>
+  <data name="Packets.SaveFailed" xml:space="preserve">
+    <value>The packets couldn't be saved: {reason}</value>
+    <comment>reason: the system's message.</comment>
+  </data>
+  <data name="Packets.Expand" xml:space="preserve">
+    <value>Show details</value>
+  </data>
+  <data name="Packets.HasIssues" xml:space="preserve">
+    <value>This packet couldn't be fully decoded</value>
+  </data>
+  <data name="Packets.ThirdParty" xml:space="preserve">
+    <value>Third-party: carried inside another station's packet</value>
+  </data>
+  <data name="Packets.Severity.Error" xml:space="preserve">
+    <value>Error</value>
+    <comment>A parse issue that stopped the packet, or part of it, from being read.</comment>
+  </data>
+  <data name="Packets.Severity.Warning" xml:space="preserve">
+    <value>Warning</value>
+    <comment>A parse issue the packet was read despite.</comment>
+  </data>
+  <data name="Packets.Raw" xml:space="preserve">
+    <value>Raw</value>
+  </data>
 </root>

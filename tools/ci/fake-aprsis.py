@@ -62,6 +62,9 @@ def serve(connection, number, around, count):
         stream.flush()
         for i in range(100000):
             stream.write(f"N0SRC-{i % 9 + 1}>APRS:>fake packet {i}\r\n".encode())
+            if i % 15 == 7:
+                # A malformed position now and then, for the packet list's parse issues.
+                stream.write(f"N0BAD-{i % 3 + 1}>APRS,TCPIP*:!9999.99N/99999.99W- malformed {i}\r\n".encode())
             # Each moving station reports every 10 s, staggered, as real trackers do (about 70 packets a second
             # for 2,000 stations, under a full APRS-IS feed's rate).
             for n, station in enumerate(fleet):

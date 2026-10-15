@@ -28,7 +28,7 @@ public sealed class StartOverTests
             },
         };
         vm.Show(engine.Settings);
-        vm.Add(FakeEngine.Packet("N0CALL"));
+        vm.PacketList.Receive(FakeEngine.Packet("N0CALL"));
         await vm.OpenSettingsAsync();
         var data = Assert.IsType<DataSectionViewModel>(vm.Settings!.Data);
         Assert.False(data.ShowStationChoice);
