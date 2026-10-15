@@ -14,8 +14,8 @@ internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayO
     public Task<EngineStatus> GetStatus() => engine.GetStatusAsync(Context.ConnectionAborted);
 
     [HubMethodName(EngineHub.WatchPackets)]
-    public IAsyncEnumerable<PacketView> WatchPackets(CancellationToken cancellationToken) =>
-        engine.WatchPacketsAsync(cancellationToken);
+    public IAsyncEnumerable<PacketView> WatchPackets(PacketFilter? filter, CancellationToken cancellationToken) =>
+        engine.WatchPacketsAsync(filter, cancellationToken);
 
     [HubMethodName(EngineHub.WatchStations)]
     public IAsyncEnumerable<StationBatch> WatchStations(CancellationToken cancellationToken) =>

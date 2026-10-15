@@ -125,6 +125,84 @@
   <data name="Error.geocoding.unreadable" xml:space="preserve">
     <value>The address lookup server sent a reply that couldn't be read.</value>
   </data>
+  <data name="Error.aprs.parse.missing-header" xml:space="preserve">
+    <value>There's no “SOURCE&gt;DESTINATION” header before the first colon.</value>
+  </data>
+  <data name="Error.aprs.parse.empty-source" xml:space="preserve">
+    <value>The header has no source callsign.</value>
+  </data>
+  <data name="Error.aprs.parse.empty-destination" xml:space="preserve">
+    <value>The header has no destination.</value>
+  </data>
+  <data name="Error.aprs.parse.empty-path-entry" xml:space="preserve">
+    <value>The path has an empty entry.</value>
+  </data>
+  <data name="Error.aprs.parse.too-many-path-entries" xml:space="preserve">
+    <value>The path has more entries than any real packet needs.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-callsign" xml:space="preserve">
+    <value>A callsign in the header has a space or a character that isn't allowed.</value>
+  </data>
+  <data name="Error.aprs.parse.empty-information" xml:space="preserve">
+    <value>There's nothing after the header.</value>
+  </data>
+  <data name="Error.aprs.parse.information-too-long" xml:space="preserve">
+    <value>The packet is longer than APRS allows; only its start was read.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-timestamp" xml:space="preserve">
+    <value>The timestamp isn't valid.</value>
+  </data>
+  <data name="Error.aprs.parse.position-too-short" xml:space="preserve">
+    <value>The packet ends before the position does.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-latitude" xml:space="preserve">
+    <value>The latitude isn't valid.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-longitude" xml:space="preserve">
+    <value>The longitude isn't valid.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-symbol-table" xml:space="preserve">
+    <value>The symbol table isn't valid.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-symbol-code" xml:space="preserve">
+    <value>The symbol code isn't a printable character.</value>
+  </data>
+  <data name="Error.aprs.parse.lowercase-hemisphere" xml:space="preserve">
+    <value>The position uses a lower-case N, S, E or W; it was read anyway.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-addressee" xml:space="preserve">
+    <value>The message has no valid addressee.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-telemetry-definition" xml:space="preserve">
+    <value>Some values in the telemetry definition couldn't be read.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-object" xml:space="preserve">
+    <value>The object's name, live or killed mark, or timestamp isn't valid.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-item" xml:space="preserve">
+    <value>The item's name, or its live or killed mark, isn't valid.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-mic-e-destination" xml:space="preserve">
+    <value>The Mic-E destination doesn't encode a latitude.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-telemetry" xml:space="preserve">
+    <value>The telemetry report's sequence or values aren't valid.</value>
+  </data>
+  <data name="Error.aprs.parse.unpadded-addressee" xml:space="preserve">
+    <value>The message addressee isn't padded to nine characters; the message was read anyway.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-user-defined" xml:space="preserve">
+    <value>The user-defined packet is too short.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-third-party" xml:space="preserve">
+    <value>The third-party packet doesn't carry a packet with a header.</value>
+  </data>
+  <data name="Error.aprs.parse.third-party-too-deep" xml:space="preserve">
+    <value>Third-party packets are nested too deeply to read.</value>
+  </data>
+  <data name="Error.aprs.parse.unpadded-object-name" xml:space="preserve">
+    <value>The object name isn't padded to nine characters; the object was read anyway.</value>
+  </data>
   <data name="Error.aprs.callsign-invalid-length" xml:space="preserve">
     <value>“{value}” is empty or too long for a callsign.</value>
     <comment>value: what the user typed.</comment>

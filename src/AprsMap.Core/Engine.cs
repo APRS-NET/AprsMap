@@ -28,7 +28,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly ILogger<Engine> _logger;
     private readonly Lock _gate = new();
     private readonly Queue<PacketView> _recent = new();
-    private readonly List<Channel<PacketView>> _watchers = [];
+    private readonly List<(Channel<PacketView> Channel, PacketFilter? Filter)> _watchers = [];
     private readonly StationStore _stations;
     private Link _link = new(ConnectionState.Disconnected);
     private int _reconnects;
@@ -226,9 +226,11 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     /// <inheritdoc />
     public async IAsyncEnumerable<PacketView> WatchPacketsAsync(
+        PacketFilter? filter = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
+        filter = filter is { IsEmpty: false } ? filter : null;
         // Bounded so one slow client can't hold unbounded memory; it loses its oldest packets instead.
         var channel = Channel.CreateBounded<PacketView>(
             new BoundedChannelOptions(_options.RecentPacketCapacity) { FullMode = BoundedChannelFullMode.DropOldest }
@@ -237,9 +239,12 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             foreach (var packet in _recent)
             {
-                channel.Writer.TryWrite(packet);
+                if (filter?.Matches(packet) ?? true)
+                {
+                    channel.Writer.TryWrite(packet);
+                }
             }
-            _watchers.Add(channel);
+            _watchers.Add((channel, filter));
         }
 
         try
@@ -253,7 +258,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             lock (_gate)
             {
-                _watchers.Remove(channel);
+                _watchers.Remove((channel, filter));
             }
         }
     }
@@ -448,9 +453,12 @@ public sealed partial class Engine : IEngineService, IDisposable
             {
                 _recent.Dequeue();
             }
-            foreach (var watcher in _watchers)
+            foreach (var (watcher, filter) in _watchers)
             {
-                watcher.Writer.TryWrite(view);
+                if (filter?.Matches(view) ?? true)
+                {
+                    watcher.Writer.TryWrite(view);
+                }
             }
         }
     }

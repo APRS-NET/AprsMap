@@ -21,6 +21,12 @@ public static class EngineErrorCodes
     /// <summary>Prefix of the codes mapped from APRS.NET's <c>AprsValidationErrorCode</c>, in kebab case.</summary>
     public const string AprsPrefix = "aprs.";
 
+    /// <summary>
+    /// Prefix of a packet's parse issues (F1.8 behavior 3): APRS.NET's <c>ParseIssueCode</c> in kebab case, for
+    /// example <c>aprs.parse.invalid-latitude</c>.
+    /// </summary>
+    public const string AprsParsePrefix = "aprs.parse.";
+
     /// <summary>Settings were sent without profiles or units.</summary>
     public const string SettingsIncomplete = "settings.incomplete";
 
@@ -142,6 +148,21 @@ public static class EngineErrorArgs
     /// <c>extended-square</c> or <c>extended-subsquare</c>.
     /// </summary>
     public const string Part = "part";
+
+    /// <summary>The zero-based position in a packet's raw text where a parse issue was found.</summary>
+    public const string Offset = "offset";
+
+    /// <summary>
+    /// How serious a parse issue is: <see cref="SeverityWarning"/> (still decoded) or <see cref="SeverityError"/>
+    /// (not decoded).
+    /// </summary>
+    public const string Severity = "severity";
+
+    /// <summary>The <see cref="Severity"/> of an issue the packet was decoded despite.</summary>
+    public const string SeverityWarning = "warning";
+
+    /// <summary>The <see cref="Severity"/> of an issue that stopped the packet, or part of it, from being decoded.</summary>
+    public const string SeverityError = "error";
 }
 
 /// <summary>Which exception type carries an <see cref="EngineError"/>.</summary>

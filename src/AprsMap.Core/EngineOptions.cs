@@ -31,8 +31,11 @@ public sealed class EngineOptions
     /// <summary>First-run default: the server-side filter sent at login.</summary>
     public string? Filter { get; set; }
 
-    /// <summary>How many recent packets the engine keeps for clients that connect later.</summary>
-    public int RecentPacketCapacity { get; set; } = 500;
+    /// <summary>
+    /// How many recent packets the engine keeps for clients that connect later, and for filtering after the fact
+    /// (F1.8 behavior 9): a few minutes of a full APRS-IS feed, or hours of a filtered one.
+    /// </summary>
+    public int RecentPacketCapacity { get; set; } = 5_000;
 
     /// <summary>The most stations, objects and items kept; beyond it the least recently heard goes (F1.3 behavior 12).</summary>
     public int MaxStations { get; set; } = StationStore.DefaultMaxEntries;

@@ -610,7 +610,7 @@ public sealed partial class MainViewModel : ObservableObject
         // The engine replays its recent packets on every subscription, so a resubscription replaces the list. Keep
         // the old one on screen until the replay starts.
         var first = true;
-        await foreach (var packet in engine.WatchPacketsAsync(cancellationToken))
+        await foreach (var packet in engine.WatchPacketsAsync(null, cancellationToken))
         {
             if (first)
             {

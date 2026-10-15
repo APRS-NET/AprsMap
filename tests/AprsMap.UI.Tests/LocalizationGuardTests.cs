@@ -109,9 +109,13 @@ public partial class LocalizationGuardTests
     {
         var codes = typeof(EngineErrorCodes)
             .GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Where(f => f.IsLiteral && f.Name != nameof(EngineErrorCodes.AprsPrefix))
+            .Where(f =>
+                f.IsLiteral
+                && f.Name is not (nameof(EngineErrorCodes.AprsPrefix) or nameof(EngineErrorCodes.AprsParsePrefix))
+            )
             .Select(f => (string)f.GetRawConstantValue()!)
-            .Concat(Enum.GetNames<AprsValidationErrorCode>().Select(n => EngineErrorCodes.AprsPrefix + Kebab(n)));
+            .Concat(Enum.GetNames<AprsValidationErrorCode>().Select(n => EngineErrorCodes.AprsPrefix + Kebab(n)))
+            .Concat(Enum.GetNames<ParseIssueCode>().Select(n => EngineErrorCodes.AprsParsePrefix + Kebab(n)));
 
         var missing = codes.Where(code => !Localizer.Exists("Error." + code)).ToList();
         Assert.Empty(missing);

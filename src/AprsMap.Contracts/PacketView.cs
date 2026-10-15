@@ -13,6 +13,15 @@ namespace AprsMap.Contracts;
 /// <param name="Latitude">Latitude in degrees, when the packet carries a position.</param>
 /// <param name="Longitude">Longitude in degrees, when the packet carries a position.</param>
 /// <param name="SymbolName">The symbol's name, when the packet carries a symbol.</param>
+/// <param name="Kind">The packet's kind, for the type filter (F1.8 behavior 7).</param>
+/// <param name="Destination">The header's destination (usually the sending device), when there is a header.</param>
+/// <param name="Path">The header's path as sent, entries separated by commas; empty when there is none.</param>
+/// <param name="Issues">
+/// What APRS.NET couldn't decode or found off-spec (F1.8 behavior 3): codes <c>aprs.parse.*</c> with
+/// <see cref="EngineErrorArgs.Offset"/> and <see cref="EngineErrorArgs.Severity"/>; empty for a clean packet.
+/// </param>
+/// <param name="Markers">How the packet reached APRS-IS (F1.8 behavior 2), as far as the engine can tell yet.</param>
+/// <param name="Symbol">The symbol as its two APRS characters (table, code), when the packet carries one.</param>
 public sealed record PacketView(
     DateTimeOffset ReceivedAt,
     string Source,
@@ -21,5 +30,107 @@ public sealed record PacketView(
     string Raw,
     double? Latitude = null,
     double? Longitude = null,
-    string? SymbolName = null
-);
+    string? SymbolName = null,
+    PacketKind Kind = PacketKind.Other,
+    string? Destination = null,
+    string? Path = null,
+    IReadOnlyList<EngineError>? Issues = null,
+    PacketMarkers Markers = PacketMarkers.None,
+    string? Symbol = null
+)
+{
+    /// <summary>Whether APRS.NET reported any issue with the packet.</summary>
+    public bool HasIssues => Issues is { Count: > 0 };
+}
+
+/// <summary>The kinds of packet the packet list filters by (F1.8 behavior 7).</summary>
+public enum PacketKind
+{
+    /// <summary>Anything not listed below: capabilities, user-defined, unknown.</summary>
+    Other,
+
+    /// <summary>A position report, with or without a timestamp.</summary>
+    Position,
+
+    /// <summary>A Mic-E report.</summary>
+    MicE,
+
+    /// <summary>An object or an item.</summary>
+    ObjectOrItem,
+
+    /// <summary>A message, acknowledgement, rejection or bulletin.</summary>
+    Message,
+
+    /// <summary>A status report.</summary>
+    Status,
+
+    /// <summary>A weather report without a position.</summary>
+    Weather,
+
+    /// <summary>Telemetry, or a telemetry definition.</summary>
+    Telemetry,
+}
+
+/// <summary>How a packet reached APRS-IS (F1.8 behavior 2). Filled as APRS.NET's path analysis and duplicate detection ship.</summary>
+[Flags]
+public enum PacketMarkers
+{
+    /// <summary>Nothing known.</summary>
+    None = 0,
+
+    /// <summary>Carried inside another station's packet (third-party); the view shows the packet inside.</summary>
+    ThirdParty = 1,
+}
+
+/// <summary>
+/// What the packet list shows (F1.8 behavior 7). Every part that is set must match; a filter with nothing set matches
+/// every packet.
+/// </summary>
+/// <param name="Text">Matches the source, destination, path or raw text, ignoring case.</param>
+/// <param name="Station">Only this station's packets, ignoring case.</param>
+/// <param name="Kinds">Only these kinds; null or empty for all.</param>
+/// <param name="IssuesOnly">Only packets with parse issues.</param>
+public sealed record PacketFilter(
+    string? Text = null,
+    string? Station = null,
+    IReadOnlyList<PacketKind>? Kinds = null,
+    bool IssuesOnly = false
+)
+{
+    /// <summary>Whether the filter lets every packet through.</summary>
+    public bool IsEmpty =>
+        string.IsNullOrWhiteSpace(Text)
+        && string.IsNullOrWhiteSpace(Station)
+        && Kinds is not { Count: > 0 }
+        && !IssuesOnly;
+
+    /// <summary>Whether <paramref name="packet"/> passes the filter.</summary>
+    public bool Matches(PacketView packet)
+    {
+        ArgumentNullException.ThrowIfNull(packet);
+        if (IssuesOnly && !packet.HasIssues)
+        {
+            return false;
+        }
+        if (Kinds is { Count: > 0 } kinds && !kinds.Contains(packet.Kind))
+        {
+            return false;
+        }
+        if (
+            !string.IsNullOrWhiteSpace(Station)
+            && !string.Equals(packet.Source, Station.Trim(), StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            return false;
+        }
+        if (string.IsNullOrWhiteSpace(Text))
+        {
+            return true;
+        }
+        var text = Text.Trim();
+        return packet.Source.Contains(text, StringComparison.OrdinalIgnoreCase)
+            || (packet.Destination?.Contains(text, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (packet.Path?.Contains(text, StringComparison.OrdinalIgnoreCase) ?? false)
+            || packet.Raw.Contains(text, StringComparison.OrdinalIgnoreCase);
+    }
+}
