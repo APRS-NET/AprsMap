@@ -86,7 +86,7 @@ logs, metrics and traces over OTLP from the desktop app or the gateway. Exported
 | Name | From | Metrics |
 | --- | --- | --- |
 | `AprsMap.Core` | The engine | `aprsmap.packets.received` (by packet type), `aprsmap.lines.rejected`, `aprsmap.connection.failures`; an `aprs-is.session` trace per connection |
-| `AprsNet.*` | APRS.NET, today `AprsNet.AprsIsTcpClient` | `aprsnet.aprsis.lines.received` (packets and server comments), `…connection.attempts`, `…login.results`, `…packets.dropped`, `…connection.idle_timeouts` |
+| `AprsNet.*` | APRS.NET, today `AprsNet.AprsIsTcpClient` | `aprsnet.aprsis.lines.received` (packets and server comments), `…packets.received` (by type and outcome), `…packets.parse_failures` (by reason), `…connection.attempts`, `…connection.reconnects`, `…connection.active`, `…login.results`, `…packets.dropped`, `…connection.idle_timeouts` |
 | runtime, HTTP client (and ASP.NET Core on the gateway) | OpenTelemetry instrumentation | The standard .NET ones |
 
 To watch them while developing (for example in Rider), either:

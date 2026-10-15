@@ -31,6 +31,9 @@ release as a pre-release, and the container image is tagged with the exact versi
 release-please skips a commit when every file it touches is under `tests/`, `tools/`, `docs/` or `.github/`
 (`exclude-paths` in `release-please-config.json`).
 
+A `Release-As:` footer is read only from a commit release-please counts, so it can't go on an empty commit or one that
+only touches those folders. AprsMap's minor version follows APRS.NET's: `0.2.0-alpha.1` came with APRS.NET 0.2.0.
+
 ## The first release
 
 With no earlier release tag, release-please would propose 1.0.0. Make the first release `0.1.0-alpha.1` by adding this
