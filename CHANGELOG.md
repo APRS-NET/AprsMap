@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.0-alpha.9](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.8...v0.1.0-alpha.9) (2026-10-15)
+
+
+### Features
+
+* **ui:** this device's location in the setup wizard ([cc4dc0d](https://github.com/APRS-NET/AprsMap/commit/cc4dc0d6b9bbe8ebe86531341c451eef34adc8cf))
+* **ui:** this device's location in the setup wizard ([c39c119](https://github.com/APRS-NET/AprsMap/commit/c39c119dec67729038c6c2d6dcfdc8988a4b6bfa))
+
+
+### Bug Fixes
+
+* **browser:** explain a failed start instead of staying on "Loading…" ([ab5dbb4](https://github.com/APRS-NET/AprsMap/commit/ab5dbb48c0f32e05085fd96e63a16b48dfc2b447))
+
 ## [0.1.0-alpha.8](https://github.com/APRS-NET/AprsMap/compare/v0.1.0-alpha.7...v0.1.0-alpha.8) (2026-10-15)
 
 
