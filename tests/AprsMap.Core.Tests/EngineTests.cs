@@ -190,7 +190,7 @@ public class EngineTests
         engine.Accept(Status); // no position: not a station
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        await using var watch = engine.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        await using var watch = engine.WatchStationsAsync(cancellationToken: cts.Token).GetAsyncEnumerator(cts.Token);
         Assert.True(await watch.MoveNextAsync());
         var station = Assert.Single(watch.Current.Changed);
         Assert.Equal(
@@ -201,6 +201,12 @@ public class EngineTests
                 Longitude = Math.Round(station.Longitude, 4),
             }
         );
+
+        // Then the tracks (F1.5), as resets.
+        Assert.True(await watch.MoveNextAsync());
+        var track = Assert.Single(watch.Current.Tracks!);
+        Assert.Equal("N0CALL-9", track.Name);
+        Assert.True(track.Reset);
 
         // Two moves and a new station inside one interval arrive as one batch with the latest state only.
         var next = watch.MoveNextAsync().AsTask();
@@ -214,6 +220,7 @@ public class EngineTests
         Assert.Equal(["N0CALL-9", "N0NEW"], batch.Changed.Select(s => s.Name).Order());
         Assert.Equal(49.0833, batch.Changed.Single(s => s.Name == "N0CALL-9").Latitude, 4);
         Assert.Equal("/-", batch.Changed.Single(s => s.Name == "N0NEW").Symbol);
+        Assert.Equal(2, batch.Tracks!.Single(t => t.Name == "N0CALL-9").Added.Count);
 
         await cts.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await watch.MoveNextAsync());
@@ -225,7 +232,7 @@ public class EngineTests
         var time = new FakeTimeProvider();
         var engine = CreateEngine(time);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        await using var watch = engine.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        await using var watch = engine.WatchStationsAsync(cancellationToken: cts.Token).GetAsyncEnumerator(cts.Token);
 
         // An interval with no changes sends nothing.
         var next = watch.MoveNextAsync().AsTask();
@@ -275,7 +282,7 @@ public class EngineTests
         }
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        await using var watch = engine.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        await using var watch = engine.WatchStationsAsync(cancellationToken: cts.Token).GetAsyncEnumerator(cts.Token);
         Assert.True(await watch.MoveNextAsync());
         Assert.Equal(Engine.SnapshotBatchSize, watch.Current.Changed.Count);
         Assert.True(await watch.MoveNextAsync());
@@ -1158,7 +1165,7 @@ public class EngineTests
     }
 
     /// <summary>Hands out scripted sources in order; once the script runs out, every attempt fails.</summary>
-    private sealed class FakeSourceFactory : IPacketSourceFactory
+    internal sealed class FakeSourceFactory : IPacketSourceFactory
     {
         private readonly Queue<FakeSource?> _script = new();
         private int _attempts;
@@ -1205,7 +1212,7 @@ public class EngineTests
         }
     }
 
-    private sealed class FakeSource(string? server, bool refuse = false, bool verified = false) : IPacketSource
+    internal sealed class FakeSource(string? server, bool refuse = false, bool verified = false) : IPacketSource
     {
         private readonly Channel<string> _lines = Channel.CreateUnbounded<string>();
         private Action<PacketSourceEvent>? _stateChanged;

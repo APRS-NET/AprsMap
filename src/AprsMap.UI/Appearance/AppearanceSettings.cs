@@ -83,6 +83,55 @@ public enum MapLabels
     None,
 }
 
+/// <summary>Which tracks the map draws (docs/features/F1.5-tracks.md, behavior 8).</summary>
+public enum MapTracks
+{
+    /// <summary>Every station's track.</summary>
+    All,
+
+    /// <summary>Only the selected and the followed station's.</summary>
+    SelectedAndFollowed,
+
+    /// <summary>No tracks.</summary>
+    None,
+}
+
+/// <summary>Which packet paths the map draws (docs/features/F1.21-rf-paths.md, behavior 6).</summary>
+public enum MapPaths
+{
+    /// <summary>The route of the selected station's, packet's or track point's packet.</summary>
+    SelectedStation,
+
+    /// <summary>No paths.</summary>
+    Off,
+
+    /// <summary>The RF network over the last hour: every link, thicker for more packets (behavior 5).</summary>
+    Network,
+}
+
+/// <summary>What a weather station's map label adds under its callsign (docs/features/F1.10-weather.md, behavior 4).</summary>
+public enum MapWeatherLabels
+{
+    /// <summary>The temperature.</summary>
+    Temperature,
+
+    /// <summary>The temperature, and the wind's direction and speed.</summary>
+    TemperatureAndWind,
+
+    /// <summary>Nothing.</summary>
+    Off,
+}
+
+/// <summary>Whether weather stations get a wind barb (docs/features/F1.10-weather.md, behavior 5).</summary>
+public enum MapWind
+{
+    /// <summary>No barbs.</summary>
+    Off,
+
+    /// <summary>A barb from where the wind blows, with flags for its speed.</summary>
+    Barbs,
+}
+
 /// <summary>Icon size in the UI chrome (map symbols have their own scale).</summary>
 public enum IconSize
 {
@@ -155,6 +204,21 @@ public sealed record AppearanceSettings
 
     /// <summary>Which station labels the map draws (F1.4 behavior 17).</summary>
     public MapLabels MapLabels { get; init; } = MapLabels.AllThatFit;
+
+    /// <summary>Which tracks the map draws (F1.5 behavior 8).</summary>
+    public MapTracks MapTracks { get; init; } = MapTracks.All;
+
+    /// <summary>Which packet paths the map draws (F1.21 behavior 6).</summary>
+    public MapPaths MapPaths { get; init; } = MapPaths.SelectedStation;
+
+    /// <summary>Whether area objects are drawn as their shapes (F1.12 behavior 7).</summary>
+    public bool ShowAreas { get; init; } = true;
+
+    /// <summary>What weather stations' labels add (F1.10 behavior 4).</summary>
+    public MapWeatherLabels MapWeatherLabels { get; init; } = MapWeatherLabels.Temperature;
+
+    /// <summary>Whether weather stations get wind barbs (F1.10 behavior 5; decision 1: off by default).</summary>
+    public MapWind MapWind { get; init; } = MapWind.Off;
 
     /// <summary>The tile provider's key, or null for the first one the engine offers (F1.4 behavior 11).</summary>
     public string? MapProvider { get; init; }

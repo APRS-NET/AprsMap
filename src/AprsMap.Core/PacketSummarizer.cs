@@ -115,7 +115,7 @@ public static class PacketSummarizer
         };
 
     /// <summary>The packet's parse issues as engine errors, for the UI to translate (F1.8 behavior 3).</summary>
-    private static EngineError[] Issues(AprsPacket packet, int shift) =>
+    internal static EngineError[] Issues(AprsPacket packet, int shift = 0) =>
         [
             .. packet.Issues.Select(issue => new EngineError(
                 EngineErrorCodes.AprsParsePrefix + AprsErrors.Kebab(issue.Code.ToString()),

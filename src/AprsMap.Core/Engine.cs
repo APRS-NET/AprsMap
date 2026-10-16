@@ -52,6 +52,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private int _reconnects;
     private IPacketSource? _source;
     private long _packets;
+    private int _packetHistory;
     private AppSettings? _settings;
 
     // Cancelled (and replaced) when the active profile's login changes or a reconnect is asked for, to end the current
@@ -117,7 +118,10 @@ public sealed partial class Engine : IEngineService, IDisposable
                     _link.Error,
                     Filter: _filter,
                     FilterAreas: _filterAreas,
-                    Sources: SourceStatuses()
+                    Sources: SourceStatuses(),
+                    PacketHistory: _packetHistory,
+                    Stations: _stations.Count,
+                    Toggles: (_settings ?? AppSettings.Empty).EffectiveToggles
                 )
             );
         }
@@ -135,7 +139,8 @@ public sealed partial class Engine : IEngineService, IDisposable
         await _settingsLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var before = Station.Of(await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false));
+            var old = await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false);
+            var before = Station.Of(old);
             await _settingsStore.SaveAsync(saved, cancellationToken).ConfigureAwait(false);
             lock (_gate)
             {
@@ -145,7 +150,12 @@ public sealed partial class Engine : IEngineService, IDisposable
             SignalSettingsChanged();
 
             var after = Station.Of(saved);
-            if (after is null ? before is not null : after.NeedsNewLogin(before))
+            if (old.EffectiveToggles.ConnectsAprsIs != saved.EffectiveToggles.ConnectsAprsIs)
+            {
+                LogToggled(saved.EffectiveToggles.ConnectsAprsIs ? "on" : "off");
+                SignalRestart(); // APRS-IS turned on or off (F1.15 behavior 1)
+            }
+            else if (after is null ? before is not null : after.NeedsNewLogin(before))
             {
                 LogProfileChanged(after?.Name ?? "(none)");
                 SignalRestart();
@@ -205,7 +215,17 @@ public sealed partial class Engine : IEngineService, IDisposable
         string query,
         string? language,
         CancellationToken cancellationToken = default
-    ) => _geocoder.GeocodeAsync(query, language, cancellationToken);
+    ) =>
+        InternetOn
+            ? _geocoder.GeocodeAsync(query, language, cancellationToken)
+            : Task.FromException<IReadOnlyList<GeocodeResult>>(
+                EngineErrors.ToException(
+                    new EngineError(
+                        EngineErrorCodes.GeocodingOffline,
+                        "The Internet switch is off, so nothing is looked up."
+                    )
+                )
+            );
 
     /// <inheritdoc />
     public Task<int> ComputePasscodeAsync(string callsign, CancellationToken cancellationToken = default)
@@ -294,17 +314,39 @@ public sealed partial class Engine : IEngineService, IDisposable
     /// <summary>How many stations the first batches of <see cref="WatchStationsAsync"/> carry each.</summary>
     internal const int SnapshotBatchSize = 1000;
 
+    /// <summary>About how many track points each of the snapshot's track batches carries.</summary>
+    internal const int SnapshotTrackPoints = 20_000;
+
     /// <inheritdoc />
     public async IAsyncEnumerable<StationBatch> WatchStationsAsync(
+        StationFilter? filter = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
-        var watcher = _stations.Subscribe(out var snapshot);
+        var watcher = _stations.Subscribe(filter, out var snapshot, out var tracks);
         try
         {
             foreach (var chunk in snapshot.Chunk(SnapshotBatchSize))
             {
                 yield return new StationBatch(chunk, []);
+            }
+            // Then the tracks, a batch per SnapshotTrackPoints points or so, after the stations they belong to.
+            var points = 0;
+            var some = new List<TrackUpdate>();
+            foreach (var track in tracks)
+            {
+                some.Add(track);
+                points += track.Added.Count;
+                if (points >= SnapshotTrackPoints)
+                {
+                    yield return new StationBatch([], [], [.. some]);
+                    some.Clear();
+                    points = 0;
+                }
+            }
+            if (some.Count > 0)
+            {
+                yield return new StationBatch([], [], [.. some]);
             }
 
             using var timer = new PeriodicTimer(_options.StationBatchInterval, _time);
@@ -537,10 +579,131 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <inheritdoc />
+    public async Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+        var toggles = settings.EffectiveToggles;
+        toggles = toggle switch
+        {
+            Toggle.Internet => toggles with { Internet = enabled },
+            Toggle.AprsIs => toggles with { AprsIs = enabled },
+            Toggle.Tiles => toggles with { Tiles = enabled },
+            _ => throw new ArgumentOutOfRangeException(nameof(toggle), toggle, "Not a toggle."),
+        };
+        await SaveSettingsAsync(settings with { Toggles = toggles }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Whether map tiles may be downloaded now (F1.15): the Internet and Map tiles toggles are on.</summary>
+    public bool DownloadsTiles
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return (_settings ?? AppSettings.Empty).EffectiveToggles.DownloadsTiles;
+            }
+        }
+    }
+
+    /// <summary>Whether the Internet switch is on (F1.15), for address lookup.</summary>
+    private bool InternetOn
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return (_settings ?? AppSettings.Empty).EffectiveToggles.Internet;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_stations.Facets());
+
+    /// <inheritdoc />
+    public Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default)
+    {
+        var (stations, stale, tracks, telemetry) = _stations.Counts();
+        int packets;
+        lock (_gate)
+        {
+            packets = _recent.Count;
+        }
+        return Task.FromResult(new ClearCounts(stations, stale, tracks, packets, telemetry));
+    }
+
+    /// <inheritdoc />
+    public Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default)
+    {
+        var cleared = scope switch
+        {
+            ClearScope.Stations => _stations.Clear(),
+            ClearScope.StaleStations => _stations.ClearStale(),
+            ClearScope.Tracks => _stations.ClearTracks(),
+            ClearScope.Packets => ClearPackets(),
+            ClearScope.Telemetry => _stations.ClearTelemetry(),
+            _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "Not something Clear knows."),
+        };
+        LogCleared(scope, cleared);
+        return Task.FromResult(cleared);
+
+        int ClearPackets()
+        {
+            lock (_gate)
+            {
+                var count = _recent.Count;
+                _recent.Clear();
+                _listed.Clear();
+                _listedOrder.Clear();
+                _packetHistory++;
+                return count;
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_stations.Links());
+
+    /// <inheritdoc />
+    public Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return Task.FromResult(_stations.Telemetry(name));
+    }
+
+    /// <inheritdoc />
+    public Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return Task.FromResult(_stations.Route(query));
+    }
+
+    /// <inheritdoc />
+    public Task ClearTrackAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        _stations.ClearTrack(name);
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
     public Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
         return Task.FromResult(_stations.Query(query));
+    }
+
+    /// <summary>One pass of the sweep: stale, removed and aged-out track points (F1.3 behavior 10, F1.5 behavior 1).</summary>
+    internal void SweepNow(DateTimeOffset now)
+    {
+        AppSettings? settings;
+        lock (_gate)
+        {
+            settings = _settings;
+        }
+        _stations.Sweep(now, (settings ?? AppSettings.Empty).EffectiveAging);
     }
 
     /// <summary>Marks stations stale and removes expired ones, once a <see cref="EngineOptions.SweepInterval"/> (F1.3 behavior 10).</summary>
@@ -551,12 +714,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
             {
-                AppSettings? settings;
-                lock (_gate)
-                {
-                    settings = _settings;
-                }
-                _stations.Sweep(_time.GetUtcNow(), (settings ?? AppSettings.Empty).EffectiveAging);
+                SweepNow(_time.GetUtcNow());
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
@@ -572,8 +730,14 @@ public sealed partial class Engine : IEngineService, IDisposable
             TimeSpan? retryIn = null; // null: wait for a restart
             try
             {
-                var profile = Station.Of(await LoadSettingsAsync(cancellationToken).ConfigureAwait(false));
-                if (profile is null)
+                var loaded = await LoadSettingsAsync(cancellationToken).ConfigureAwait(false);
+                var profile = Station.Of(loaded);
+                if (!loaded.EffectiveToggles.ConnectsAprsIs)
+                {
+                    // Turned off (F1.15): stay disconnected until a toggle or settings change restarts this.
+                    SetLink(new Link(ConnectionState.Disconnected));
+                }
+                else if (profile is null)
                 {
                     // Nothing to log in with: wait until settings supply a profile with an APRS-IS source.
                     SetLink(new Link(ConnectionState.NotConfigured));
@@ -1112,6 +1276,12 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Settings reset: every profile and setting was deleted")]
     private partial void LogReset();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "APRS-IS turned {State} by the quick toggles")]
+    private partial void LogToggled(string state);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Cleared {Count} ({Scope})")]
+    private partial void LogCleared(ClearScope scope, int count);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Reconnect requested; reconnecting now")]
     private partial void LogReconnectRequested();

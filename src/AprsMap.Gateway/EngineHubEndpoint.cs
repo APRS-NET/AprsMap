@@ -30,8 +30,39 @@ internal sealed class EngineHubEndpoint(
         engine.WatchPacketsAsync(filter, cancellationToken);
 
     [HubMethodName(EngineHub.WatchStations)]
-    public IAsyncEnumerable<StationBatch> WatchStations(CancellationToken cancellationToken) =>
-        engine.WatchStationsAsync(cancellationToken);
+    public IAsyncEnumerable<StationBatch> WatchStations(StationFilter? filter, CancellationToken cancellationToken) =>
+        engine.WatchStationsAsync(filter, cancellationToken);
+
+    /// <summary>A toggle changes the station for every viewer, so it has the settings gate (F1.15 behavior 6).</summary>
+    [HubMethodName(EngineHub.SetToggle)]
+    public Task SetToggle(Toggle toggle, bool enabled)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.SetToggleAsync(toggle, enabled, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.GetViewFacets)]
+    public Task<ViewFacets> GetViewFacets() => engine.GetViewFacetsAsync(Context.ConnectionAborted);
+
+    [HubMethodName(EngineHub.GetClearCounts)]
+    public Task<ClearCounts> GetClearCounts() => engine.GetClearCountsAsync(Context.ConnectionAborted);
+
+    /// <summary>Clearing empties the store for every viewer, so it has the same gate as changing settings (F1.19 behavior 5).</summary>
+    [HubMethodName(EngineHub.Clear)]
+    public Task<int> Clear(ClearScope scope)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ClearAsync(scope, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.GetNetworkLinks)]
+    public Task<IReadOnlyList<NetworkLink>> GetNetworkLinks() => engine.GetNetworkLinksAsync(Context.ConnectionAborted);
+
+    [HubMethodName(EngineHub.GetTelemetry)]
+    public Task<TelemetryView?> GetTelemetry(string name) => engine.GetTelemetryAsync(name, Context.ConnectionAborted);
+
+    [HubMethodName(EngineHub.GetRoute)]
+    public Task<PacketRoute?> GetRoute(RouteQuery query) => engine.GetRouteAsync(query, Context.ConnectionAborted);
 
     [HubMethodName(EngineHub.GetStation)]
     public Task<StationDetail?> GetStation(string name) => engine.GetStationAsync(name, Context.ConnectionAborted);
@@ -98,6 +129,14 @@ internal sealed class EngineHubEndpoint(
     {
         Require(EngineErrorCodes.SettingsReadOnly, EngineHub.SettingsReadOnlyMessage);
         return engine.ResetSettingsAsync(Context.ConnectionAborted);
+    }
+
+    /// <summary>The track is every viewer's, so clearing it has the same gate as changing settings (F1.5 behavior 10).</summary>
+    [HubMethodName(EngineHub.ClearTrack)]
+    public Task ClearTrack(string name)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ClearTrackAsync(name, Context.ConnectionAborted);
     }
 
     /// <summary>Reconnecting affects every viewer, so it has the same gate as changing settings.</summary>

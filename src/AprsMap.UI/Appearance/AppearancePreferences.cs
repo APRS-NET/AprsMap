@@ -121,6 +121,11 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             json.WriteNumber("mapSymbolScale", s.MapSymbolScale);
             json.WriteString("mapBrightness", s.MapBrightness.ToString());
             json.WriteString("mapLabels", s.MapLabels.ToString());
+            json.WriteString("mapTracks", s.MapTracks.ToString());
+            json.WriteString("mapPaths", s.MapPaths.ToString());
+            json.WriteBoolean("showAreas", s.ShowAreas);
+            json.WriteString("mapWeatherLabels", s.MapWeatherLabels.ToString());
+            json.WriteString("mapWind", s.MapWind.ToString());
             json.WriteBoolean("showFilterCircles", s.ShowFilterCircles);
             if (s.MapProvider is { } provider)
             {
@@ -201,6 +206,29 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             if (Enum<MapLabels>(root, "mapLabels") is { } labels)
             {
                 s = s with { MapLabels = labels };
+            }
+            if (Enum<MapTracks>(root, "mapTracks") is { } tracks)
+            {
+                s = s with { MapTracks = tracks };
+            }
+            if (
+                root.TryGetProperty("showAreas", out var areas)
+                && areas.ValueKind is JsonValueKind.True or JsonValueKind.False
+            )
+            {
+                s = s with { ShowAreas = areas.GetBoolean() };
+            }
+            if (Enum<MapPaths>(root, "mapPaths") is { } paths)
+            {
+                s = s with { MapPaths = paths };
+            }
+            if (Enum<MapWeatherLabels>(root, "mapWeatherLabels") is { } weatherLabels)
+            {
+                s = s with { MapWeatherLabels = weatherLabels };
+            }
+            if (Enum<MapWind>(root, "mapWind") is { } wind)
+            {
+                s = s with { MapWind = wind };
             }
             if (
                 root.TryGetProperty("showFilterCircles", out var circles)

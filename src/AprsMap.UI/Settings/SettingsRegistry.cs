@@ -234,6 +234,65 @@ public static class SettingsRegistry
         );
         items.Add(
             new ChoiceSetting(
+                "map.tracks",
+                "Settings.Map.Tracks",
+                null,
+                text,
+                () =>
+                    [
+                        (MapTracks.All, text["Settings.Map.Tracks.All"]),
+                        (MapTracks.SelectedAndFollowed, text["Settings.Map.Tracks.SelectedAndFollowed"]),
+                        (MapTracks.None, text["Settings.Map.Tracks.None"]),
+                    ],
+                () => appearance.Current.MapTracks,
+                value => Update(s => s with { MapTracks = (MapTracks)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
+                "map.paths",
+                "Settings.Map.Paths",
+                "Settings.Map.Paths.Help",
+                text,
+                () =>
+                    [
+                        (MapPaths.SelectedStation, text["Settings.Map.Paths.SelectedStation"]),
+                        (MapPaths.Network, text["Settings.Map.Paths.Network"]),
+                        (MapPaths.Off, text["Settings.Map.Paths.Off"]),
+                    ],
+                () => appearance.Current.MapPaths,
+                value => Update(s => s with { MapPaths = (MapPaths)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
+                "map.weather-labels",
+                "Settings.Map.WeatherLabels",
+                null,
+                text,
+                () =>
+                    [
+                        (MapWeatherLabels.Temperature, text["Settings.Map.WeatherLabels.Temperature"]),
+                        (MapWeatherLabels.TemperatureAndWind, text["Settings.Map.WeatherLabels.TemperatureAndWind"]),
+                        (MapWeatherLabels.Off, text["Settings.Map.WeatherLabels.Off"]),
+                    ],
+                () => appearance.Current.MapWeatherLabels,
+                value => Update(s => s with { MapWeatherLabels = (MapWeatherLabels)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
+                "map.wind",
+                "Settings.Map.Wind",
+                "Settings.Map.Wind.Help",
+                text,
+                () => [(MapWind.Off, text["Settings.Map.Wind.Off"]), (MapWind.Barbs, text["Settings.Map.Wind.Barbs"])],
+                () => appearance.Current.MapWind,
+                value => Update(s => s with { MapWind = (MapWind)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
                 "map.symbol-size",
                 "Settings.Map.SymbolSize",
                 "Settings.Map.SymbolSize.Help",
@@ -255,6 +314,16 @@ public static class SettingsRegistry
                         Math.Abs(step - appearance.Current.MapSymbolScale)
                     ),
                 value => Update(s => s with { MapSymbolScale = (double)value! })
+            )
+        );
+        items.Add(
+            new ToggleSetting(
+                "map.areas",
+                "Settings.Map.Areas",
+                "Settings.Map.Areas.Help",
+                text,
+                () => appearance.Current.ShowAreas,
+                value => Update(s => s with { ShowAreas = value })
             )
         );
         items.Add(
@@ -312,12 +381,134 @@ public static class SettingsRegistry
             );
             items.Add(stale);
             items.Add(remove);
+            // F1.5 behavior 1: the station's track limits, for every viewer.
+            items.Add(
+                new ChoiceSetting(
+                    "map.track-points",
+                    "Settings.Map.TrackPoints",
+                    "Settings.Map.TrackPoints.Help",
+                    text,
+                    () =>
+                        [
+                            .. TrackPointSteps
+                                .Union([current.TrackPoints])
+                                .Order()
+                                .Select(n =>
+                                    (
+                                        (object?)n,
+                                        text.Format(
+                                            "Settings.Map.Positions",
+                                            new Dictionary<string, object?> { ["count"] = n }
+                                        )
+                                    )
+                                ),
+                        ],
+                    () => current.TrackPoints,
+                    value => Set(current with { TrackPoints = (int)value! })
+                )
+            );
+            items.Add(
+                new ChoiceSetting(
+                    "map.track-age",
+                    "Settings.Map.TrackAge",
+                    "Settings.Map.TrackPoints.Help",
+                    text,
+                    () =>
+                        [
+                            .. TrackAgeSteps
+                                .Union([current.TrackMinutes])
+                                .Order()
+                                .Select(m => ((object?)m, Minutes(text, m))),
+                        ],
+                    () => current.TrackMinutes,
+                    value => Set(current with { TrackMinutes = (int)value! })
+                )
+            );
         }
         return items;
     }
 
+    /// <summary>
+    /// Settings › Units (docs/features/F1.10-weather.md, behavior 6): a unit for each quantity, the station's setting
+    /// (<see cref="Contracts.AppSettings.Units"/>), saved through the engine.
+    /// </summary>
+    public static IReadOnlyList<SettingItem> Units(
+        Localizer text,
+        Func<Contracts.UnitSettings> get,
+        Action<Contracts.UnitSettings> save
+    )
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(get);
+        ArgumentNullException.ThrowIfNull(save);
+        ChoiceSetting Choice<T>(
+            string id,
+            string label,
+            T[] values,
+            Func<Contracts.UnitSettings, T> read,
+            Func<Contracts.UnitSettings, T, Contracts.UnitSettings> write
+        )
+            where T : struct, Enum =>
+            new(
+                id,
+                label,
+                null,
+                text,
+                () => [.. values.Select(v => ((object?)v, text[$"Settings.Units.{typeof(T).Name}.{v}"]))],
+                () => read(get()),
+                value => save(write(get(), (T)value!))
+            );
+        return
+        [
+            Choice(
+                "units.distance",
+                "Settings.Units.Distance",
+                Enum.GetValues<Contracts.DistanceUnit>(),
+                u => u.Distance,
+                (u, v) => u with { Distance = v }
+            ),
+            Choice(
+                "units.altitude",
+                "Settings.Units.Altitude",
+                Enum.GetValues<Contracts.AltitudeUnit>(),
+                u => u.Altitude,
+                (u, v) => u with { Altitude = v }
+            ),
+            Choice(
+                "units.temperature",
+                "Settings.Units.Temperature",
+                Enum.GetValues<Contracts.TemperatureUnit>(),
+                u => u.Temperature,
+                (u, v) => u with { Temperature = v }
+            ),
+            Choice(
+                "units.wind",
+                "Settings.Units.Wind",
+                Enum.GetValues<Contracts.SpeedUnit>(),
+                u => u.Wind,
+                (u, v) => u with { Wind = v }
+            ),
+            Choice(
+                "units.rain",
+                "Settings.Units.Rain",
+                Enum.GetValues<Contracts.RainUnit>(),
+                u => u.Rain,
+                (u, v) => u with { Rain = v }
+            ),
+            Choice(
+                "units.pressure",
+                "Settings.Units.Pressure",
+                Enum.GetValues<Contracts.PressureUnit>(),
+                u => u.Pressure,
+                (u, v) => u with { Pressure = v }
+            ),
+        ];
+    }
+
     private static readonly int[] StaleSteps = [10, 15, 30, 60, 120];
     private static readonly int[] RemoveSteps = [30, 60, 120, 360, 1440];
+    private static readonly int[] TrackPointSteps = [100, 250, 500, 1000, 2000, 5000];
+    private static readonly int[] TrackAgeSteps = [30, 60, 120, 360, 1440];
 
     private static string Minutes(Localizer text, int minutes) =>
         minutes % 60 == 0

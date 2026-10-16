@@ -41,7 +41,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         ProfilesSectionViewModel? profiles = null,
         DataSectionViewModel? data = null,
         IReadOnlyList<SettingItem>? mapItems = null,
-        SourcesSectionViewModel? sources = null
+        SourcesSectionViewModel? sources = null,
+        IReadOnlyList<SettingItem>? unitItems = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
@@ -53,6 +54,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         _text = text ?? Localizer.Instance;
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
         MapItems = [.. mapItems ?? []];
+        UnitItems = [.. unitItems ?? []];
         About = new AboutViewModel(_text);
         Sections = [];
         Retranslate();
@@ -75,7 +77,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsProfilesSection),
         nameof(IsSourcesSection),
         nameof(IsDataSection),
-        nameof(IsMapSection)
+        nameof(IsMapSection),
+        nameof(IsUnitsSection)
     )]
     public partial SettingsSection? SelectedSection { get; set; }
 
@@ -97,8 +100,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>Whether Map is showing.</summary>
     public bool IsMapSection => SelectedSection?.Id == "map";
 
+    /// <summary>Whether Units is showing.</summary>
+    public bool IsUnitsSection => SelectedSection?.Id == "units";
+
     /// <summary>The Map section's options (F1.4 behavior 21); empty when there is no map.</summary>
     public ObservableCollection<SettingItem> MapItems { get; }
+
+    /// <summary>Settings › Units (F1.10 behavior 6): the station's unit per quantity; empty where it can't be changed.</summary>
+    public IReadOnlyList<SettingItem> UnitItems { get; }
 
     /// <summary>Whether Data is showing.</summary>
     public bool IsDataSection => SelectedSection?.Id == "data";
@@ -194,6 +203,18 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void OnLanguageChanged(object? sender, EventArgs e) => Retranslate();
 
+    /// <summary>Data's counts are fetched each time it's shown: the store changes all the time (F1.19 behavior 1).</summary>
+    partial void OnSelectedSectionChanged(SettingsSection? value)
+    {
+        if (value?.Id == "data" && Data?.Clear is { } clear)
+        {
+            _ = clear.RefreshAsync();
+        }
+    }
+
+    /// <summary>Shows Settings › Data (the main menu's Clear data).</summary>
+    internal void ShowData() => SelectedSection = Sections.FirstOrDefault(s => s.Id == "data") ?? SelectedSection;
+
     private void Retranslate()
     {
         Title = _text["Settings.Title"];
@@ -212,13 +233,17 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("map", _text["Settings.Map"]));
         }
+        if (UnitItems.Count > 0)
+        {
+            Sections.Add(new SettingsSection("units", _text["Settings.Units"]));
+        }
         if (Data is not null)
         {
             Sections.Add(new SettingsSection("data", _text["Settings.Data"]));
         }
         Sections.Add(new SettingsSection("about", _text["Settings.About"]));
         SelectedSection = Sections.FirstOrDefault(s => s.Id == selected) ?? (selected is null ? null : Sections[0]);
-        foreach (var item in AppearanceItems.Concat(MapItems))
+        foreach (var item in AppearanceItems.Concat(MapItems).Concat(UnitItems))
         {
             item.Retranslate();
         }

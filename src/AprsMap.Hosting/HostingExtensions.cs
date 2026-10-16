@@ -43,7 +43,17 @@ public static class HostingExtensions
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.AddAprsMapTiles();
         builder.Services.Configure<TilesOptions>(builder.Configuration.GetSection(TilesOptions.SectionName));
+        // Downloads follow the station's Internet and Map tiles toggles (F1.15).
+        builder.Services.AddSingleton<ITileDownloads>(provider => new EngineTileDownloads(
+            provider.GetRequiredService<Engine>()
+        ));
         return builder;
+    }
+
+    /// <summary>Tile downloads as the engine's toggles allow (F1.15).</summary>
+    private sealed class EngineTileDownloads(Engine engine) : ITileDownloads
+    {
+        public bool Allowed => engine.DownloadsTiles;
     }
 
     /// <summary>

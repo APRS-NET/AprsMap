@@ -93,8 +93,18 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     ) => _connection.StreamAsync<PacketView>(EngineHub.WatchPackets, filter, cancellationToken);
 
     /// <inheritdoc />
-    public IAsyncEnumerable<StationBatch> WatchStationsAsync(CancellationToken cancellationToken = default) =>
-        _connection.StreamAsync<StationBatch>(EngineHub.WatchStations, cancellationToken);
+    public IAsyncEnumerable<StationBatch> WatchStationsAsync(
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    ) => _connection.StreamAsync<StationBatch>(EngineHub.WatchStations, filter, cancellationToken);
+
+    /// <inheritdoc />
+    public Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SetToggle, toggle, enabled, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<ViewFacets>(EngineHub.GetViewFacets, cancellationToken));
 
     /// <inheritdoc />
     public Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default) =>
@@ -132,6 +142,34 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     /// <inheritdoc />
     public Task ResetSettingsAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ResetSettings, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<ClearCounts>(EngineHub.GetClearCounts, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<int>(EngineHub.Clear, scope, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<NetworkLink>>(EngineHub.GetNetworkLinks, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<TelemetryView?>(EngineHub.GetTelemetry, name, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<PacketRoute?>(EngineHub.GetRoute, query, cancellationToken));
+
+    /// <inheritdoc />
+    public Task ClearTrackAsync(string name, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ClearTrack, name, cancellationToken));
 
     /// <inheritdoc />
     public Task ReconnectAsync(CancellationToken cancellationToken = default) =>

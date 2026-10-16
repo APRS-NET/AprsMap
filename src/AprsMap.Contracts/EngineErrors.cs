@@ -105,6 +105,9 @@ public static class EngineErrorCodes
     /// <summary>A newer lookup replaced this one while it waited.</summary>
     public const string GeocodingSuperseded = "geocoding.superseded";
 
+    /// <summary>The station's Internet switch is off (F1.15), so nothing is looked up.</summary>
+    public const string GeocodingOffline = "geocoding.offline";
+
     /// <summary>The lookup server couldn't be reached.</summary>
     public const string GeocodingUnreachable = "geocoding.unreachable";
 

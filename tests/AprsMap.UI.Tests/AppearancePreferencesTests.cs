@@ -33,6 +33,7 @@ public sealed class AppearancePreferencesTests : IDisposable
         MapBrightness = MapBrightness.Dark,
         MapLabels = MapLabels.None,
         ShowFilterCircles = true,
+        MapTracks = MapTracks.None,
         MapProvider = "topo",
         Language = "de",
     };

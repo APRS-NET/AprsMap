@@ -53,6 +53,9 @@ public enum LocationMethod
 
     /// <summary>This device's location (the browser's geolocation).</summary>
     Device,
+
+    /// <summary>A point picked on the map, under a fixed crosshair (behavior 9.5).</summary>
+    Map,
 }
 
 /// <summary>A server preset as the wizard lists it, with its region name in the viewer's language.</summary>
@@ -339,8 +342,25 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// <summary>The way the user is giving the location.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsLocatorMethod), nameof(IsAddressMethod), nameof(IsCoordinatesMethod))]
-    [NotifyPropertyChangedFor(nameof(IsDeviceMethod))]
+    [NotifyPropertyChangedFor(nameof(IsDeviceMethod), nameof(IsMapMethod))]
     public partial LocationMethod Method { get; set; }
+
+    /// <summary>Whether the map picker is showing; setting it picks that way (behavior 9.5).</summary>
+    public bool IsMapMethod
+    {
+        get => Method == LocationMethod.Map;
+        set => Pick(value, LocationMethod.Map);
+    }
+
+    /// <summary>The map the picker shows, with its tiles; null hides the choice (no map on this platform yet).</summary>
+    public Map.MapViewModel? Map { get; init; }
+
+    /// <summary>Whether the map picker is offered.</summary>
+    public bool CanPickOnMap => Map is not null;
+
+    /// <summary>Confirms the point under the map's crosshair (behavior 9.5).</summary>
+    internal Task<bool> UseMapPointAsync(double latitude, double longitude) =>
+        ConfirmAsync(Math.Round(latitude, 5), Math.Round(longitude, 5), null);
 
     /// <summary>Whether the Maidenhead field is showing; setting it picks that way.</summary>
     public bool IsLocatorMethod

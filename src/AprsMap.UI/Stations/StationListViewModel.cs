@@ -204,13 +204,17 @@ public sealed partial class StationListViewModel : ObservableObject
         }
     }
 
+    /// <summary>The View filter in effect (F1.9 behavior 6: the list shows what the map shows).</summary>
+    internal Func<StationFilter?> Filter { get; set; } = () => null;
+
     private StationQuery Query(int offset, int count) =>
         new(
             string.IsNullOrWhiteSpace(Search) ? null : Search.Trim(),
             SelectedKinds.Value,
             SelectedSort.Value,
             offset,
-            count
+            count,
+            Filter()
         );
 
     /// <summary>Updates rows already listed in place and adds the others at the end.</summary>
@@ -360,6 +364,10 @@ public sealed partial class StationListRow(StationRow row) : ObservableObject
     [ObservableProperty]
     public partial bool IsStale { get; private set; } = row.IsStale;
 
+    /// <summary>Its packets had problems in the last hour: a marker on the row (F1.20 behavior 6).</summary>
+    [ObservableProperty]
+    public partial bool HasProblems { get; private set; } = row.HasProblems;
+
     /// <summary>"4 min".</summary>
     [ObservableProperty]
     public partial string HeardText { get; private set; } = string.Empty;
@@ -376,6 +384,7 @@ public sealed partial class StationListRow(StationRow row) : ObservableObject
     {
         Row = row;
         IsStale = row.IsStale;
+        HasProblems = row.HasProblems;
         Comment = StationDetailsViewModel.Visible(row.Comment);
     }
 
