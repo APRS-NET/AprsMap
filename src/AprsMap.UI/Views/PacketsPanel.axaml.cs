@@ -31,7 +31,8 @@ public sealed partial class PacketsPanel : UserControl
         OnlyStationItem.Click += (_, _) => OnlyStation();
         if (SaveButton.Flyout is MenuFlyout formats)
         {
-            formats.Opening += (_, _) => FillSaveMenu(formats);
+            FillSaveMenu(formats); // filled from the start, so the menu never opens empty
+            formats.Opening += (_, _) => FillSaveMenu(formats); // and again, in the viewer's language now
         }
     }
 

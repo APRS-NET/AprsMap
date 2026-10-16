@@ -93,6 +93,35 @@ public sealed class ShellViewTests
     }
 
     [AvaloniaFact]
+    public void SaveOpensAMenuOfFileFormats()
+    {
+        var (window, _) = Show();
+        var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "SaveButton");
+        var menu = Assert.IsType<MenuFlyout>(button.Flyout);
+
+        var centre = button
+            .TranslatePoint(new Avalonia.Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!
+            .Value;
+        window.MouseDown(centre, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(centre, Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(menu.IsOpen);
+        Assert.Equal(
+            [
+                "Text log (.txt)",
+                "CSV for spreadsheets (.csv)",
+                "JSON (.json)",
+                "JSON, indented (.json)",
+                "YAML (.yaml)",
+            ],
+            menu.Items.OfType<MenuItem>().Select(i => i.Header?.ToString())
+        );
+        menu.Hide();
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void ANarrowWindowShowsFixedTabsAndWideningRestoresTheLayout()
     {
         var (window, vm) = Show(width: 600);
