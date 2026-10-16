@@ -83,6 +83,10 @@ def beacon_infrastructure(stream, around):
     stream.write(f"N0NET>APRS,TCPIP*,qAC,FAKE:)I25 3N!{lat}\\{lon}m{{55}}\r\n".encode())
     lat, lon = latlon(around[0] + 0.12, around[1] - 0.05)
     stream.write(f"N0TLM>APRS,TCPIP*,qAC,FAKE:!{lat}/{lon}r telemetry\r\n".encode())
+    # Its definitions (APRS101 ch. 13), as messages to itself: names, units, scaling and the bits' sense (F1.11).
+    for text in ["PARM.Battery,Temp,Light,Spare,Spare,Door,Fan,Heat", "UNIT.V,deg.C,%,,,open,on,on",
+                 "EQNS.0,0.06,0,0,0.5,-20,0,0.39,0,0,1,0,0,1,0", "BITS.11111111,Fake weather box"]:
+        stream.write(f"N0TLM>APRS,TCPIP*,qAC,FAKE::N0TLM    :{text}\r\n".encode())
     for call, dlat, dlon, symbol in INFRASTRUCTURE:
         line = f"{call}>APRS,TCPIP*,qAC,FAKE:{aprs_position(around[0] + dlat, around[1] + dlon, symbol, ' fake')}"
         stream.write((line + "\r\n").encode())

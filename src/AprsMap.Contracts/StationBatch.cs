@@ -316,17 +316,47 @@ public sealed record TrackPoint(double Latitude, double Longitude, DateTimeOffse
 public sealed record TrackUpdate(string Name, IReadOnlyList<TrackPoint> Added, int Dropped = 0, bool Reset = false);
 
 /// <summary>
-/// A station's held telemetry reports, oldest first (docs/features/F1.11-telemetry.md, behaviors 1, 3). Values are raw
-/// until APRS.NET applies the station's definitions (G09).
+/// A station's held telemetry reports, oldest first, with its definitions applied (docs/features/F1.11-telemetry.md,
+/// behaviors 1–3). Definitions that arrive later apply to the reports already held.
 /// </summary>
 /// <param name="Samples">The reports held: up to 100, none older than 24 hours.</param>
-public sealed record TelemetryView(IReadOnlyList<TelemetrySample> Samples);
+/// <param name="Definitions">
+/// What the station's <c>PARM.</c>, <c>UNIT.</c>, <c>EQNS.</c> and <c>BITS.</c> messages said; null when it hasn't sent
+/// any, and the values are raw.
+/// </param>
+public sealed record TelemetryView(IReadOnlyList<TelemetrySample> Samples, TelemetryDefinitions? Definitions = null);
 
-/// <summary>One telemetry report.</summary>
+/// <summary>A station's telemetry definitions, channel by channel (F1.11 behavior 2).</summary>
+/// <param name="Analog">The five analog channels in order.</param>
+/// <param name="Digital">The eight digital channels in order.</param>
+/// <param name="ProjectName">The project name from <c>BITS.</c>, when it gave one.</param>
+public sealed record TelemetryDefinitions(
+    IReadOnlyList<TelemetryAnalogChannel> Analog,
+    IReadOnlyList<TelemetryDigitalChannel> Digital,
+    string? ProjectName = null
+);
+
+/// <summary>An analog channel as defined.</summary>
+/// <param name="Name">Its name from <c>PARM.</c>, or null.</param>
+/// <param name="Unit">Its unit from <c>UNIT.</c>, or null.</param>
+/// <param name="IsScaled">Whether an <c>EQNS.</c> equation turns its raw value into the one shown.</param>
+public sealed record TelemetryAnalogChannel(string? Name, string? Unit, bool IsScaled);
+
+/// <summary>A digital channel as defined.</summary>
+/// <param name="Name">Its name from <c>PARM.</c>, or null.</param>
+/// <param name="Label">Its label from <c>UNIT.</c>, such as "on" or "open", or null.</param>
+public sealed record TelemetryDigitalChannel(string? Name, string? Label);
+
+/// <summary>One telemetry report, with the station's definitions applied.</summary>
 /// <param name="At">When the engine received it.</param>
 /// <param name="Sequence">Its sequence as sent (a number, or <c>MIC</c>), when it has one.</param>
-/// <param name="Analog">The five analog channels as sent; null where a channel was left out.</param>
-/// <param name="Digital">The eight bits as sent.</param>
+/// <param name="Analog">
+/// The five analog channels, each through its equation when the station defined one, otherwise as sent; null where
+/// a channel was left out.
+/// </param>
+/// <param name="Digital">
+/// The eight digital channels, on or off by the station's <c>BITS.</c> sense; without one, as sent (1 is on).
+/// </param>
 public sealed record TelemetrySample(
     DateTimeOffset At,
     string? Sequence,
