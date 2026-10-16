@@ -58,6 +58,12 @@ public static class EngineHub
     public const string OperatorOnlyMessage =
         "Only this gateway's operator can do that, and operator sign-in isn't available yet.";
 
+    /// <summary>English text of <see cref="EngineErrorCodes.GatewayBusy"/>.</summary>
+    public const string BusyMessage = "This gateway has as many viewers as it allows. Try again in a little while.";
+
+    /// <summary>English text of <see cref="EngineErrorCodes.GatewayRateLimited"/>.</summary>
+    public const string RateLimitedMessage = "Too many requests to the gateway at once; slowing down.";
+
     /// <summary>English text of <see cref="EngineErrorCodes.SettingsReadOnly"/>.</summary>
     public const string SettingsReadOnlyMessage =
         "This gateway's settings can't be changed from the browser: operator sign-in isn't available yet.";

@@ -2,6 +2,7 @@
 using AprsMap.Contracts;
 using AprsMap.Gateway;
 using AprsMap.Hosting;
+using Microsoft.AspNetCore.SignalR;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
@@ -12,10 +13,16 @@ builder
     .AddAprsMapTelemetry(
         "gateway",
         tracing: t => t.AddAspNetCoreInstrumentation(),
-        metrics: m => m.AddAspNetCoreInstrumentation()
+        metrics: m => m.AddAspNetCoreInstrumentation().AddMeter(Viewers.MeterName)
     );
+builder.Services.AddSingleton<Viewers>();
+builder.Services.AddSingleton<ViewerFilter>();
 builder
-    .Services.AddSignalR()
+    .Services.AddSignalR(o =>
+    {
+        o.AddFilter<ViewerFilter>();
+        o.MaximumReceiveMessageSize = 64 * 1024; // settings are the largest call (F1.14 behavior 5)
+    })
     .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default));
 builder.Services.AddOptions<GatewayOptions>().BindConfiguration(GatewayOptions.SectionName);
 var gateway = GatewayHttp.Options(builder.Configuration);
@@ -24,6 +31,7 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 app.UseGatewayFront(gateway);
+app.UseViewerGate();
 
 // The browser app (AprsMap.Browser's publish output) is copied into wwwroot by the Dockerfile.
 app.UseBrowserApp();

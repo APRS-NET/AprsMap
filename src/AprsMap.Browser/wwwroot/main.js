@@ -18,7 +18,8 @@ const slow = setTimeout(() => {
   }
 }, 45000);
 
-function showError(title, detail, retry) {
+// retryAfter: seconds after which the page reloads by itself (a full gateway, F1.14 behavior 3); 0 waits for a click.
+function showError(title, detail, retry, retryAfter) {
   started = true;
   clearTimeout(slow);
   const box = document.createElement('div');
@@ -34,6 +35,9 @@ function showError(title, detail, retry) {
   box.append(heading, text, button);
   out.replaceChildren(box);
   button.focus();
+  if (retryAfter > 0) {
+    setTimeout(() => globalThis.location.reload(), retryAfter * 1000);
+  }
 }
 
 // The browser's location for the setup wizard ("This device's location"). Resolves with "lat,lon,accuracy"; rejects

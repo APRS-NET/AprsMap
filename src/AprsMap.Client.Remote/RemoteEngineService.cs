@@ -49,11 +49,22 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     public HubConnectionState State => _connection.State;
 
     /// <summary>Connects to the gateway. Call once before using the service.</summary>
-    public Task StartAsync(CancellationToken cancellationToken = default) => _connection.StartAsync(cancellationToken);
+    /// <remarks>A gateway at its viewer limit refuses with <see cref="EngineErrorCodes.GatewayBusy"/> (F1.14 behavior 3).</remarks>
+    public async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _connection.StartAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
+        {
+            throw EngineErrors.Create(EngineErrorCodes.GatewayBusy, EngineHub.BusyMessage, innerException: ex);
+        }
+    }
 
     /// <inheritdoc />
     public Task<EngineStatus> GetStatusAsync(CancellationToken cancellationToken = default) =>
-        _connection.InvokeAsync<EngineStatus>(EngineHub.GetStatus, cancellationToken);
+        WithEngineErrors(() => _connection.InvokeAsync<EngineStatus>(EngineHub.GetStatus, cancellationToken));
 
     /// <inheritdoc />
     public IAsyncEnumerable<PacketView> WatchPacketsAsync(
@@ -67,7 +78,7 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
 
     /// <inheritdoc />
     public Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default) =>
-        _connection.InvokeAsync<AppSettings>(EngineHub.GetSettings, cancellationToken);
+        WithEngineErrors(() => _connection.InvokeAsync<AppSettings>(EngineHub.GetSettings, cancellationToken));
 
     /// <inheritdoc />
     public Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default) =>
@@ -77,14 +88,18 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     public Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(name);
-        return _connection.InvokeAsync<StationDetail?>(EngineHub.GetStation, name, cancellationToken);
+        return WithEngineErrors(() =>
+            _connection.InvokeAsync<StationDetail?>(EngineHub.GetStation, name, cancellationToken)
+        );
     }
 
     /// <inheritdoc />
     public Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
-        return _connection.InvokeAsync<StationPage>(EngineHub.QueryStations, query, cancellationToken);
+        return WithEngineErrors(() =>
+            _connection.InvokeAsync<StationPage>(EngineHub.QueryStations, query, cancellationToken)
+        );
     }
 
     /// <inheritdoc />
@@ -97,7 +112,7 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
 
     /// <inheritdoc />
     public Task<GeocodingInfo> GetGeocodingInfoAsync(CancellationToken cancellationToken = default) =>
-        _connection.InvokeAsync<GeocodingInfo>(EngineHub.GetGeocodingInfo, cancellationToken);
+        WithEngineErrors(() => _connection.InvokeAsync<GeocodingInfo>(EngineHub.GetGeocodingInfo, cancellationToken));
 
     /// <inheritdoc />
     public Task<IReadOnlyList<GeocodeResult>> GeocodeAsync(
@@ -123,7 +138,9 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
 
     /// <inheritdoc />
     public Task<IReadOnlyList<ServerPreset>> GetServerPresetsAsync(CancellationToken cancellationToken = default) =>
-        _connection.InvokeAsync<IReadOnlyList<ServerPreset>>(EngineHub.GetServerPresets, cancellationToken);
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<ServerPreset>>(EngineHub.GetServerPresets, cancellationToken)
+        );
 
     /// <inheritdoc />
     public Task<LocatorInfo> ParseLocatorAsync(string locator, CancellationToken cancellationToken = default)

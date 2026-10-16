@@ -47,6 +47,7 @@ public enum ConnectionState
 /// Why the connection is <see cref="ConnectionState.Reconnecting"/> or <see cref="ConnectionState.Refused"/>: one of the
 /// <c>aprs-is.*</c> codes in <see cref="EngineErrorCodes"/>.
 /// </param>
+/// <param name="Viewers">How many browsers are connected to the gateway (F1.14 behavior 11); null on desktop.</param>
 public sealed record EngineStatus(
     ConnectionState Connection,
     string? Server,
@@ -58,5 +59,6 @@ public sealed record EngineStatus(
     bool Verified = false,
     DateTimeOffset? RetryAt = null,
     int Reconnects = 0,
-    EngineError? ConnectionError = null
+    EngineError? ConnectionError = null,
+    int? Viewers = null
 );

@@ -75,6 +75,12 @@ public static class EngineErrorCodes
     /// <summary>Only the gateway's operator may do this (address lookup, the passcode calculator).</summary>
     public const string OperatorOnly = "gateway.operator-only";
 
+    /// <summary>The gateway has as many viewers as it allows, in all or from this address (F1.14 behavior 3).</summary>
+    public const string GatewayBusy = "gateway.busy";
+
+    /// <summary>This viewer made too many calls in a short time (F1.14 behavior 4).</summary>
+    public const string GatewayRateLimited = "gateway.rate-limited";
+
     /// <summary>Address lookup is turned off.</summary>
     public const string GeocodingDisabled = "geocoding.disabled";
 

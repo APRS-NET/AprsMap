@@ -31,6 +31,8 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | Serve under a path, for a proxy that maps one to the gateway | `Gateway__PathBase` | none (the root) |
 | Proxies trusted for `X-Forwarded-For`/`-Proto`: addresses or networks | `Gateway__KnownProxies__0`, `__1`… | none (forwarded headers ignored) |
 | Who may show the app in a frame (CSP `frame-ancestors`) | `Gateway__FrameAncestors` | `'self'` |
+| Most browsers connected at once, in all / from one address | `Gateway__MaxViewers` / `Gateway__MaxViewersPerAddress` | `100` / `5` |
+| Hub calls per second per browser, and the burst above it | `Gateway__CallsPerSecond` / `Gateway__CallBurst` | `20` / `40` |
 | Packets kept for new viewers | `Engine__RecentPacketCapacity` | `5000` |
 | Address lookup server (Nominatim); empty turns lookup off | `Geocoding__Endpoint` | `https://nominatim.openstreetmap.org` |
 | Map tile cache folder | `Tiles__CacheFolder` | `/data/tiles` in the image |
