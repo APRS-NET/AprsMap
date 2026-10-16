@@ -234,6 +234,7 @@ public sealed class MapTests
                 "map.weather-labels",
                 "map.wind",
                 "map.symbol-size",
+                "map.areas",
                 "map.filter-circles",
                 "map.stale-after",
                 "map.remove-after",

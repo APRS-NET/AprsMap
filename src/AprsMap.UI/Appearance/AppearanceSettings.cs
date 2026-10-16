@@ -208,6 +208,9 @@ public sealed record AppearanceSettings
     /// <summary>Which packet paths the map draws (F1.21 behavior 6).</summary>
     public MapPaths MapPaths { get; init; } = MapPaths.SelectedStation;
 
+    /// <summary>Whether area objects are drawn as their shapes (F1.12 behavior 7).</summary>
+    public bool ShowAreas { get; init; } = true;
+
     /// <summary>What weather stations' labels add (F1.10 behavior 4).</summary>
     public MapWeatherLabels MapWeatherLabels { get; init; } = MapWeatherLabels.Temperature;
 

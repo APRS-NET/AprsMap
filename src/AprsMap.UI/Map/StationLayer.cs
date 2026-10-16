@@ -16,7 +16,9 @@ internal sealed record StationMark(
     DateTimeOffset LastHeard,
     double? DistanceKm = null,
     int? BearingDegrees = null,
-    WeatherSummary? Weather = null
+    WeatherSummary? Weather = null,
+    AreaInfo? Area = null,
+    string? Signpost = null
 )
 {
     /// <summary>The mark for a station from the station stream.</summary>
@@ -36,7 +38,9 @@ internal sealed record StationMark(
             station.LastHeard,
             station.DistanceKm,
             station.BearingDegrees,
-            station.Weather
+            station.Weather,
+            station.Area,
+            station.Signpost
         );
     }
 }

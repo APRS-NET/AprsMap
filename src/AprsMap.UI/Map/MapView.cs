@@ -51,6 +51,7 @@ public sealed class MapView : Control, IDisposable
     private SKColor _followedColour = SKColors.Transparent;
     private SKColor _casingColour = SKColors.Transparent;
     private SKColor _textColour = SKColors.Transparent;
+    private readonly SKColor[] _areaColours = new SKColor[8];
     private readonly Dictionary<string, MapLabel> _labels = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StationMark> _byName = new(StringComparer.Ordinal);
     private IReadOnlyList<StationMark> _marks = [];
@@ -135,6 +136,19 @@ public sealed class MapView : Control, IDisposable
             v => WeatherLabels = v is MapWeatherLabels labels ? labels : MapWeatherLabels.Temperature
         );
         Watch("Map.Wind", v => Wind = v is MapWind wind ? wind : MapWind.Off);
+        Watch("Map.ShowAreas", v => ShowAreas = v is not false);
+        for (var i = 0; i < _areaColours.Length; i++)
+        {
+            var token = i;
+            Watch(
+                $"Color.Area{token + 1}",
+                v =>
+                {
+                    _areaColours[token] = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                    InvalidateVisual();
+                }
+            );
+        }
         Watch(
             "Color.Text",
             v =>
@@ -299,6 +313,60 @@ public sealed class MapView : Control, IDisposable
             }
         }
         return barbs;
+    }
+
+    /// <summary>Whether area objects are drawn as their shapes (F1.12 behavior 7).</summary>
+    public bool ShowAreas
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = true;
+
+    /// <summary>This frame's area shapes; null with them off.</summary>
+    internal AreaFrame? BuildAreas(Viewport viewport, IReadOnlyList<StationMark> marks) =>
+        ShowAreas
+            ? AreaFrame.Build(
+                marks,
+                (x, y) => ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default)),
+                viewport.Resolution,
+                [.. _areaColours]
+            )
+            : null;
+
+    /// <summary>
+    /// Each signpost's text on a small sign over its symbol (F1.12 behavior 6), in the theme's text and surface colours.
+    /// </summary>
+    private void DrawSignposts(DrawingContext context, IReadOnlyList<StationMark> marks, SKPoint[] screen)
+    {
+        if (_labelBrush is null || _haloBrush is null)
+        {
+            return;
+        }
+        var visible = new Rect(Bounds.Size);
+        var pen = new Pen(_labelBrush, 1);
+        for (var i = 0; i < marks.Count; i++)
+        {
+            if (marks[i].Signpost is not { Length: > 0 } sign || !visible.Contains(new Point(screen[i].X, screen[i].Y)))
+            {
+                continue;
+            }
+            var text = new FormattedText(
+                sign,
+                System.Globalization.CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(GetValue(TextElement.FontFamilyProperty), FontStyle.Normal, FontWeight.Bold),
+                _labelSize,
+                _labelBrush
+            );
+            var width = Math.Max(text.Width + 6, _symbolDip * 0.8);
+            var box = new Rect(screen[i].X - width / 2, screen[i].Y - text.Height / 2 - 2, width, text.Height + 4);
+            context.DrawRectangle(_haloBrush, pen, box, 3, 3);
+            context.DrawText(text, new Point(box.X + (width - text.Width) / 2, box.Y + 2));
+        }
     }
 
     /// <summary>Which packet paths are drawn (F1.21 behavior 6).</summary>
@@ -598,6 +666,7 @@ public sealed class MapView : Control, IDisposable
         );
         var route = BuildRoute(viewport);
         var barbs = BuildBarbs(marks, screen);
+        var areas = BuildAreas(viewport, marks);
         context.Custom(
             new DrawOperation(
                 new Rect(Bounds.Size),
@@ -609,9 +678,11 @@ public sealed class MapView : Control, IDisposable
                 EffectiveDimming,
                 tracks,
                 route,
-                barbs
+                barbs,
+                areas
             )
         );
+        DrawSignposts(context, marks, screen);
         if (route?.DirectLabel is var (at, km))
         {
             DrawRouteLabel(context, new Point(at.X, at.Y), km);
@@ -1184,7 +1255,8 @@ public sealed class MapView : Control, IDisposable
         double dimming,
         TrackLayer.TrackFrame tracks,
         RouteFrame? route,
-        WindBarbs? barbs
+        WindBarbs? barbs,
+        AreaFrame? areas
     ) : ICustomDrawOperation
     {
         public Rect Bounds => bounds;
@@ -1194,6 +1266,7 @@ public sealed class MapView : Control, IDisposable
             tracks.Dispose();
             route?.Dispose();
             barbs?.Dispose();
+            areas?.Dispose();
         }
 
         public bool Equals(ICustomDrawOperation? other) => false;
@@ -1231,6 +1304,7 @@ public sealed class MapView : Control, IDisposable
             }
             canvas.Restore();
             // Tracks over the tiles and under the symbols (F1.5 behavior 5).
+            areas?.Draw(canvas); // area shapes under tracks and symbols (F1.12 behavior 4)
             tracks.Draw(canvas);
             route?.Draw(canvas); // the selected packet's route over the tracks (F1.21 behavior 2)
             // Stations over the tiles (and over the dimming, so they keep their contrast).

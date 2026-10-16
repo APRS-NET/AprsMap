@@ -21,6 +21,14 @@
       <Color x:Key="Color.OkSoft">#E0EEF7</Color>
       <Color x:Key="Color.Warn">#8F5A00</Color>
       <Color x:Key="Color.Track">#A33F78</Color>
+      <Color x:Key="Color.Area1">#222222</Color>
+      <Color x:Key="Color.Area2">#0072B2</Color>
+      <Color x:Key="Color.Area3">#00785A</Color>
+      <Color x:Key="Color.Area4">#2F7FAE</Color>
+      <Color x:Key="Color.Area5">#B34E00</Color>
+      <Color x:Key="Color.Area6">#A33F78</Color>
+      <Color x:Key="Color.Area7">#8A6A00</Color>
+      <Color x:Key="Color.Area8">#666666</Color>
       <Color x:Key="Color.Scrim">#6616191D</Color>
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
@@ -36,6 +44,14 @@
       <Color x:Key="Color.OkSoft">#18344A</Color>
       <Color x:Key="Color.Warn">#E6B547</Color>
       <Color x:Key="Color.Track">#E39BC4</Color>
+      <Color x:Key="Color.Area1">#E0E0E0</Color>
+      <Color x:Key="Color.Area2">#56B4E9</Color>
+      <Color x:Key="Color.Area3">#3DD6A6</Color>
+      <Color x:Key="Color.Area4">#8FD3F5</Color>
+      <Color x:Key="Color.Area5">#F08A4B</Color>
+      <Color x:Key="Color.Area6">#E39BC4</Color>
+      <Color x:Key="Color.Area7">#F0C04A</Color>
+      <Color x:Key="Color.Area8">#B0B0B0</Color>
       <Color x:Key="Color.Scrim">#99000000</Color>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>

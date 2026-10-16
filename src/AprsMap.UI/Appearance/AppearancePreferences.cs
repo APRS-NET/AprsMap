@@ -123,6 +123,7 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             json.WriteString("mapLabels", s.MapLabels.ToString());
             json.WriteString("mapTracks", s.MapTracks.ToString());
             json.WriteString("mapPaths", s.MapPaths.ToString());
+            json.WriteBoolean("showAreas", s.ShowAreas);
             json.WriteString("mapWeatherLabels", s.MapWeatherLabels.ToString());
             json.WriteString("mapWind", s.MapWind.ToString());
             json.WriteBoolean("showFilterCircles", s.ShowFilterCircles);
@@ -209,6 +210,13 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             if (Enum<MapTracks>(root, "mapTracks") is { } tracks)
             {
                 s = s with { MapTracks = tracks };
+            }
+            if (
+                root.TryGetProperty("showAreas", out var areas)
+                && areas.ValueKind is JsonValueKind.True or JsonValueKind.False
+            )
+            {
+                s = s with { ShowAreas = areas.GetBoolean() };
             }
             if (Enum<MapPaths>(root, "mapPaths") is { } paths)
             {

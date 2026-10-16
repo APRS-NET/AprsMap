@@ -61,9 +61,26 @@ INFRASTRUCTURE = [("N0GATE-1", 0.1, 0.1, "/&"), ("N0GATE-2", -0.2, -0.1, "/&"), 
 PATHS = ["WIDE1-1,qAR,N0GATE-1", "N0DIGI-1*,WIDE2-1,qAR,N0GATE-1", "TCPIP*,qAC,FAKE", "N0DIGI-2*,WIDE2-1,qAR,N0GATE-2"]
 
 
+def latlon(lat, lon):
+    ns = "N" if lat >= 0 else "S"
+    ew = "E" if lon >= 0 else "W"
+    lat, lon = abs(lat), abs(lon)
+    return f"{int(lat):02d}{(lat - int(lat)) * 60:05.2f}{ns}", f"{int(lon):03d}{(lon - int(lon)) * 60:05.2f}{ew}"
+
+
+# Area objects and a signpost (APRS101 ch. 11; F1.12): a filled ellipse, a box outline, a line with a 10-mile corridor,
+# and a speed-limit sign.
+AREAS = [("SEARCH", 0.05, -0.3, "l710/310"), ("CLOSED", -0.25, 0.05, "l430/415"), ("COURSE", 0.2, 0.15, "l615/320{10}")]
+
+
 def beacon_infrastructure(stream, around):
     if around is None:
         return
+    for name, dlat, dlon, ext in AREAS:
+        lat, lon = latlon(around[0] + dlat, around[1] + dlon)
+        stream.write(f"N0NET>APRS,TCPIP*,qAC,FAKE:;{name:<9}*092345z{lat}\\{lon}{ext}\r\n".encode())
+    lat, lon = latlon(around[0] - 0.05, around[1] + 0.2)
+    stream.write(f"N0NET>APRS,TCPIP*,qAC,FAKE:)I25 3N!{lat}\\{lon}m{{55}}\r\n".encode())
     for call, dlat, dlon, symbol in INFRASTRUCTURE:
         line = f"{call}>APRS,TCPIP*,qAC,FAKE:{aprs_position(around[0] + dlat, around[1] + dlon, symbol, ' fake')}"
         stream.write((line + "\r\n").encode())

@@ -317,6 +317,16 @@ public static class SettingsRegistry
         );
         items.Add(
             new ToggleSetting(
+                "map.areas",
+                "Settings.Map.Areas",
+                "Settings.Map.Areas.Help",
+                text,
+                () => appearance.Current.ShowAreas,
+                value => Update(s => s with { ShowAreas = value })
+            )
+        );
+        items.Add(
+            new ToggleSetting(
                 "map.filter-circles",
                 "Settings.Map.FilterCircles",
                 "Settings.Map.FilterCircles.Help",

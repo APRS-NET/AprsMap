@@ -15,6 +15,8 @@ namespace AprsMap.Contracts;
 /// <param name="DistanceKm">Great-circle distance from my location (F1.13 behavior 4); null without one.</param>
 /// <param name="BearingDegrees">Initial bearing from my location, 0–359 (F1.13 behavior 4); null without one.</param>
 /// <param name="Weather">For a station that reports weather: what its map label and wind barb show (F1.10).</param>
+/// <param name="Area">For an area object: the shape it draws (F1.12).</param>
+/// <param name="Signpost">For a signpost: the 1–3 characters it shows (F1.12).</param>
 public sealed record StationState(
     string Name,
     DateTimeOffset LastHeard,
@@ -25,8 +27,51 @@ public sealed record StationState(
     bool IsStale = false,
     double? DistanceKm = null,
     int? BearingDegrees = null,
-    WeatherSummary? Weather = null
+    WeatherSummary? Weather = null,
+    AreaInfo? Area = null,
+    string? Signpost = null
 );
+
+/// <summary>
+/// The shape an area object draws (docs/features/F1.12-area-objects.md, behaviors 1–3; APRS101 ch. 11 with APRS 1.1's
+/// corrected sizes), anchored at the object's position.
+/// </summary>
+/// <param name="Kind">The shape.</param>
+/// <param name="Filled">Drawn with a translucent fill rather than an outline.</param>
+/// <param name="Color">APRS's colour, 0–15.</param>
+/// <param name="LatitudeDegrees">The latitude extent in degrees.</param>
+/// <param name="LongitudeDegrees">The longitude extent in degrees.</param>
+/// <param name="CorridorKm">For a line: the corridor's width in km, when sent.</param>
+public sealed record AreaInfo(
+    AreaKind Kind,
+    bool Filled,
+    int Color,
+    double LatitudeDegrees,
+    double LongitudeDegrees,
+    double? CorridorKm = null
+);
+
+/// <summary>The shapes an area object draws, with where each is anchored.</summary>
+public enum AreaKind
+{
+    /// <summary>A circle centred on the position, the extents its radii.</summary>
+    Circle,
+
+    /// <summary>A line from the position down and to the right.</summary>
+    LineRight,
+
+    /// <summary>A line from the position down and to the left.</summary>
+    LineLeft,
+
+    /// <summary>An ellipse centred on the position, the extents its radii.</summary>
+    Ellipse,
+
+    /// <summary>A triangle with its apex at the position, its base the latitude extent below and the longitude extent each side.</summary>
+    Triangle,
+
+    /// <summary>A box from the position (its top-left corner) down and to the right.</summary>
+    Box,
+}
 
 /// <summary>A weather station's latest temperature and wind, for the map (docs/features/F1.10-weather.md, behaviors 4, 5).</summary>
 /// <param name="TemperatureC">Temperature in °C.</param>

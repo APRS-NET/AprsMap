@@ -549,6 +549,8 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 AddTrackPoint(entry, new TrackPoint(entry.Latitude.Value, entry.Longitude.Value, receivedAt));
             }
         }
+        entry.Area = positioned.Area is { } area ? AreaOf(area) : entry.Area;
+        entry.Signpost = positioned.Signpost ?? entry.Signpost;
         if (positioned.Weather is { } weather)
         {
             SetWeather(entry, weather, receivedAt);
@@ -566,6 +568,24 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         entry.SpeedKmh = positioned.SpeedKnots is { } knots ? knots * KmhPerKnot : entry.SpeedKmh;
         entry.AltitudeMetres = positioned.AltitudeFeet is { } feet ? feet * MetresPerFoot : entry.AltitudeMetres;
     }
+
+    /// <summary>An area object's shape for the map (F1.12 behavior 1).</summary>
+    private static AreaInfo AreaOf(AreaShape area) =>
+        new(
+            area.Kind switch
+            {
+                AreaShapeKind.Circle => AreaKind.Circle,
+                AreaShapeKind.Line => area.Type == 6 ? AreaKind.LineLeft : AreaKind.LineRight,
+                AreaShapeKind.Ellipse => AreaKind.Ellipse,
+                AreaShapeKind.Triangle => AreaKind.Triangle,
+                _ => AreaKind.Box,
+            },
+            area.IsFilled,
+            area.Color,
+            area.LatitudeOffsetDegrees,
+            area.LongitudeOffsetDegrees,
+            area.CorridorMiles is { } miles ? AprsUnits.Convert(miles, LengthUnit.Miles, LengthUnit.Kilometers) : null
+        );
 
     /// <summary>
     /// Keeps each reading the report carries, with its own time, converted to the engine's units (F1.10 behaviors 1,
@@ -713,6 +733,12 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         /// <summary>Other sources the latest report was heard on.</summary>
         public SortedSet<string> SeenOn { get; } = new(StringComparer.Ordinal);
 
+        /// <summary>The shape it draws, for an area object (F1.12).</summary>
+        public AreaInfo? Area { get; set; }
+
+        /// <summary>What it shows, for a signpost (F1.12).</summary>
+        public string? Signpost { get; set; }
+
         /// <summary>Its latest weather readings (F1.10), once it has sent any.</summary>
         public StationWeather? Weather { get; set; }
 
@@ -743,7 +769,9 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                         w.WindDirection is { } d ? (int)d.Value : null,
                         w.WindSpeed?.Value
                     )
-                    : null
+                    : null,
+                Area,
+                Signpost
             );
         }
 
