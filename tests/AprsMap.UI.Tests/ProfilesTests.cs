@@ -262,6 +262,7 @@ public class ProfilesTests
                         Callsign = "AB1CD", // the wizard refuses the N0CALL placeholder
                         Passcode = 12345,
                         Filter = "r/40/-105/50",
+                        RangeKm = 50,
                     },
                     WithLocation().Profiles[1],
                 ],
@@ -274,9 +275,12 @@ public class ProfilesTests
         Assert.Equal(("rotate", false), (wizard.SelectedServer?.Key, wizard.UseOwnServer));
         Assert.Equal((false, "12345"), (wizard.ReceiveOnly, wizard.PasscodeText));
         Assert.Equal(40.0625, wizard.Latitude);
+        Assert.Equal(50, wizard.SelectedRange?.Km);
         Assert.False(wizard.HasInput); // nothing changed yet
 
         wizard.ProfileName = "Base";
+        wizard.SelectedRange = wizard.Ranges.Single(r => r.Km == 0);
+        Assert.Equal("None", wizard.SelectedRange?.Name);
         Assert.True(wizard.HasInput);
         await ToLastStep(wizard);
         await wizard.FinishCommand.ExecuteAsync(null);
@@ -288,6 +292,7 @@ public class ProfilesTests
             (saved.Profiles[0].Id, saved.Profiles[0].Passcode, saved.Profiles[0].Filter)
         );
         Assert.Equal("home", saved.ActiveProfileId);
+        Assert.Equal(0, saved.Profiles[0].RangeKm);
     }
 
     [Fact]

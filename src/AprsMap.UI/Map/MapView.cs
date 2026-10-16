@@ -60,6 +60,8 @@ public sealed class MapView : Control, IDisposable
     private IBrush? _labelBrush;
     private IBrush? _haloBrush;
     private IPen? _ringPen;
+    private IPen? _filterPen;
+    private IReadOnlyList<FilterArea> _filterAreas = [];
     private TileLayer? _tiles;
     private Point? _dragFrom;
     private SKColor _ground = SKColors.Transparent;
@@ -104,8 +106,15 @@ public sealed class MapView : Control, IDisposable
         );
         Watch(
             "Color.Accent",
-            v => _ringPen = v is Color c ? new ImmutablePen(new ImmutableSolidColorBrush(c), 2) : null
+            v =>
+            {
+                _ringPen = v is Color c ? new ImmutablePen(new ImmutableSolidColorBrush(c), 2) : null;
+                _filterPen = v is Color f
+                    ? new ImmutablePen(new ImmutableSolidColorBrush(f), 1.5, new ImmutableDashStyle([4, 4], 0))
+                    : null;
+            }
         );
+        Watch("Map.ShowFilterCircles", v => ShowFilterCircles = v is true);
         Watch("Color.TextMuted", v => _dot = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent);
         ActualThemeVariantChanged += (_, _) => InvalidateVisual();
     }
@@ -136,6 +145,27 @@ public sealed class MapView : Control, IDisposable
 
     /// <summary>The unit the hover text gives distances from my location in (F1.13 behavior 4).</summary>
     public DistanceUnit DistanceUnit { get; set; }
+
+    /// <summary>Whether the filter's range parts are drawn as dashed circles (F1.2 behavior 6).</summary>
+    public bool ShowFilterCircles
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>The filter's range parts drawn, for tests.</summary>
+    internal IReadOnlyList<FilterArea> FilterAreas => _filterAreas;
+
+    /// <summary>The APRS-IS filter's range parts, for <see cref="ShowFilterCircles"/>.</summary>
+    public void SetFilterAreas(IReadOnlyList<FilterArea>? areas)
+    {
+        _filterAreas = areas ?? [];
+        InvalidateVisual();
+    }
 
     /// <summary>Whether callsigns are drawn under the symbols, where they fit (behavior 17).</summary>
     public bool ShowLabels { get; set; } = true;
@@ -367,7 +397,9 @@ public sealed class MapView : Control, IDisposable
         {
             screen[i] = ToScreen(viewport, marks[i]);
         }
+        // The map and symbols first: the tiles would cover anything drawn before them.
         context.Custom(new DrawOperation(new Rect(Bounds.Size), this, marks, screen, (float)_symbolDip, _dot));
+        DrawFilterAreas(context, viewport);
         DrawLabels(context, marks, screen);
         if (Selected is { } name && _ringPen is not null && FindIndex(marks, name) is { } selected)
         {
@@ -377,6 +409,26 @@ public sealed class MapView : Control, IDisposable
         if (_map.UpdateAnimations())
         {
             Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
+        }
+    }
+
+    /// <summary>
+    /// Each range part of the filter as a dashed circle in the accent colour (F1.2 behavior 6): a circle on the ground
+    /// is a circle on a Web Mercator map, scaled by 1 / cos(latitude) at its centre.
+    /// </summary>
+    private void DrawFilterAreas(DrawingContext context, Viewport viewport)
+    {
+        if (!ShowFilterCircles || _filterPen is null)
+        {
+            return;
+        }
+        foreach (var area in _filterAreas)
+        {
+            var (x, y) = SphericalMercator.FromLonLat(area.Longitude, area.Latitude);
+            var at = ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default));
+            var metres = area.RadiusKm * 1000 / Math.Cos(area.Latitude * Math.PI / 180);
+            var radius = metres / viewport.Resolution;
+            context.DrawEllipse(null, _filterPen, new Point(at.X, at.Y), radius, radius);
         }
     }
 

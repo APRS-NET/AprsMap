@@ -49,6 +49,7 @@ public enum ConnectionState
 /// </param>
 /// <param name="Viewers">How many browsers are connected to the gateway (F1.14 behavior 11); null on desktop.</param>
 /// <param name="Filter">The APRS-IS filter in use (F1.2 behavior 7); null before the first login.</param>
+/// <param name="FilterAreas">The filter's range parts as circles, for the map (F1.2 behavior 6).</param>
 public sealed record EngineStatus(
     ConnectionState Connection,
     string? Server,
@@ -62,5 +63,12 @@ public sealed record EngineStatus(
     int Reconnects = 0,
     EngineError? ConnectionError = null,
     int? Viewers = null,
-    string? Filter = null
+    string? Filter = null,
+    IReadOnlyList<FilterArea>? FilterAreas = null
 );
+
+/// <summary>One range part of the APRS-IS filter, drawn on the map as a circle (F1.2 behavior 6).</summary>
+/// <param name="Latitude">The centre.</param>
+/// <param name="Longitude">The centre.</param>
+/// <param name="RadiusKm">The radius in km.</param>
+public sealed record FilterArea(double Latitude, double Longitude, double RadiusKm);

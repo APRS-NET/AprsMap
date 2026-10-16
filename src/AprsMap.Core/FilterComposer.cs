@@ -26,16 +26,30 @@ internal static class FilterComposer
     /// <see cref="MaxViewKm"/>. With no part at all and a range, the filter is my range around my last position on
     /// APRS-IS (<c>m/</c>, behavior 2).
     /// </summary>
-    public static string Compose(StationProfile profile, IReadOnlyList<MapViewReport> views)
+    public static string Compose(StationProfile profile, IReadOnlyList<MapViewReport> views) =>
+        ComposeParts(profile, views, _ => null).Text;
+
+    /// <summary>
+    /// The filter text and its range parts as circles (behavior 6); a followed station's circle is centred on its last
+    /// position, from <paramref name="positionOf"/>, when known.
+    /// </summary>
+    public static (string Text, IReadOnlyList<FilterArea> Areas) ComposeParts(
+        StationProfile profile,
+        IReadOnlyList<MapViewReport> views,
+        Func<string, (double Latitude, double Longitude)?> positionOf
+    )
     {
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(views);
+        ArgumentNullException.ThrowIfNull(positionOf);
         var range = Math.Max(0, profile.RangeKm);
         AprsPosition? home = profile is { Latitude: { } lat, Longitude: { } lon } ? new AprsPosition(lat, lon) : null;
         var terms = new List<AprsFilterTerm>();
+        var areas = new List<FilterArea>();
         if (range > 0 && home is { } me)
         {
             terms.Add(AprsFilterTerm.Range(me, range));
+            areas.Add(new FilterArea(me.Latitude, me.Longitude, range));
         }
 
         var mapParts = 0;
@@ -55,7 +69,9 @@ internal static class FilterComposer
             {
                 continue; // inside my range already
             }
-            terms.Add(AprsFilterTerm.Range(centre, Math.Max(1, radius)));
+            radius = Math.Max(1, radius);
+            terms.Add(AprsFilterTerm.Range(centre, radius));
+            areas.Add(new FilterArea(vlat, vlon, radius));
             mapParts++;
         }
 
@@ -63,6 +79,10 @@ internal static class FilterComposer
         foreach (var name in views.Select(v => v.Following?.ToUpperInvariant()).OfType<string>().Distinct())
         {
             terms.Add(AprsFilterTerm.FriendRange(name, friend));
+            if (positionOf(name) is var (flat, flon))
+            {
+                areas.Add(new FilterArea(flat, flon, friend));
+            }
         }
 
         var own = string.IsNullOrWhiteSpace(profile.Filter) ? null : profile.Filter.Trim();
@@ -71,9 +91,12 @@ internal static class FilterComposer
             terms.Add(AprsFilterTerm.MyRange(range)); // around my last position on APRS-IS
         }
         var text = string.Join(' ', terms.Select(t => t.ToString()));
-        return own is null ? text
+        return (
+            own is null ? text
             : string.IsNullOrEmpty(text) ? own
-            : $"{text} {own}";
+            : $"{text} {own}",
+            areas
+        );
     }
 
     /// <summary>

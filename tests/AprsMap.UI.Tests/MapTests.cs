@@ -3,6 +3,7 @@ using AprsMap.Contracts;
 using AprsMap.UI.Map;
 using AprsMap.UI.Platform;
 using AprsMap.UI.ViewModels;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -124,6 +125,41 @@ public sealed class MapTests
     }
 
     [AvaloniaFact]
+    public async Task FilterCirclesFollowTheSettingAndTheStatus()
+    {
+        var app = Assert.IsType<App>(Application.Current);
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider(), appearance: app.Appearance)
+        {
+            Map = new MapViewModel(null, null, new FakeTimeProvider()),
+        };
+        await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
+        using var panel = new MapPanel { DataContext = vm };
+        var window = new Window
+        {
+            Content = panel,
+            Width = 800,
+            Height = 600,
+        };
+        window.Show();
+        try
+        {
+            Assert.False(panel.View.ShowFilterCircles);
+            app.Appearance.Apply(app.Appearance.Current with { ShowFilterCircles = true });
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(panel.View.ShowFilterCircles);
+
+            vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 1, "1.0", FilterAreas: [new(40, -105, 150)]));
+            Dispatcher.UIThread.RunJobs();
+            Assert.Single(panel.View.FilterAreas);
+        }
+        finally
+        {
+            app.Appearance.Apply(app.Appearance.Current with { ShowFilterCircles = false });
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public async Task StationsAreDrawnSelectedByClickAndFitted()
     {
         var engine = new FakeEngine();
@@ -190,7 +226,14 @@ public sealed class MapTests
         var settings = vm.Settings!;
         Assert.Contains(settings.Sections, s => s.Id == "map");
         Assert.Equal(
-            ["map.brightness", "map.labels", "map.symbol-size", "map.stale-after", "map.remove-after"],
+            [
+                "map.brightness",
+                "map.labels",
+                "map.symbol-size",
+                "map.filter-circles",
+                "map.stale-after",
+                "map.remove-after",
+            ],
             settings.MapItems.Select(i => i.Id)
         );
         var labels = (Settings.ChoiceSetting)settings.MapItems.Single(i => i.Id == "map.labels");

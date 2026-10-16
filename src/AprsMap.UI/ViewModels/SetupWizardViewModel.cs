@@ -165,6 +165,38 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty]
     public partial string Filter { get; set; } = string.Empty;
 
+    /// <summary>The ranges offered around the station, in km (F1.2 behavior 1); 0 is none.</summary>
+    public static IReadOnlyList<int> RangeSteps { get; } = [0, 25, 50, 100, 150, 250, 500];
+
+    /// <summary>The range choices, named in the viewer's language.</summary>
+    public IReadOnlyList<RangeChoice> Ranges =>
+        [
+            .. RangeSteps.Select(km => new RangeChoice(
+                km,
+                km == 0
+                    ? _text["Wizard.Range.None"]
+                    : _text.Format("Wizard.Range.Km", new Dictionary<string, object?> { ["km"] = km })
+            )),
+        ];
+
+    /// <summary>How far around the station APRS-IS sends packets (F1.2 behavior 1).</summary>
+    [ObservableProperty]
+    public partial int RangeKm { get; set; } = StationProfile.DefaultRangeKm;
+
+    /// <summary>The selected range choice, for the list.</summary>
+    public RangeChoice? SelectedRange
+    {
+        get => Ranges.FirstOrDefault(r => r.Km == RangeKm);
+        set
+        {
+            if (value is not null && value.Km != RangeKm)
+            {
+                RangeKm = value.Km;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     /// <summary>The APRS-IS filter syntax, linked from the filter's help.</summary>
     public static Uri FilterHelpUri { get; } = new("https://www.aprs-is.net/javAPRSFilter.aspx");
 
@@ -506,6 +538,8 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         _settingName = false;
         _nameChosen = true;
         Filter = profile.Filter ?? string.Empty;
+        RangeKm = profile.RangeKm;
+        OnPropertyChanged(nameof(SelectedRange));
         var preset = _presets.FirstOrDefault(p =>
             string.Equals(p.Server, profile.Server, StringComparison.OrdinalIgnoreCase)
         );
@@ -533,6 +567,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Callsign,
             ProfileName,
             Filter,
+            RangeKm.ToString(CultureInfo.InvariantCulture),
             Latitude?.ToString(CultureInfo.InvariantCulture) ?? "",
             Longitude?.ToString(CultureInfo.InvariantCulture) ?? "",
             Server,
@@ -913,7 +948,8 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Server,
             IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null,
             Latitude,
-            Longitude
+            Longitude,
+            IsProfileMode ? RangeKm : StationProfile.DefaultRangeKm
         );
         IsBusy = true;
         try
@@ -1026,4 +1062,13 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         SelectedServer = Servers.FirstOrDefault(s => s.Key == selected) ?? Servers.FirstOrDefault();
         ShowLocation();
     }
+}
+
+/// <summary>One range the profile editor offers.</summary>
+/// <param name="Km">The range in km; 0 for none.</param>
+/// <param name="Name">Its name, such as "150 km".</param>
+public sealed record RangeChoice(int Km, string Name)
+{
+    /// <inheritdoc />
+    public override string ToString() => Name;
 }

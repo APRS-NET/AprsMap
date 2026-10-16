@@ -62,6 +62,13 @@ public sealed partial class MainViewModel : ObservableObject
             () => _settings?.Units ?? UnitSettings.Metric
         );
         Details.CloseRequested += (_, _) => SelectedStation = null;
+        Details.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(Details.IsFollowing))
+            {
+                _ = ReportMapViewAsync(); // following counts at once (F1.2 behavior 3)
+            }
+        };
         StationList = new Stations.StationListViewModel(
             engine,
             time,
@@ -502,6 +509,51 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>How long after the map stops moving its view is reported for the filter (F1.2 behavior 4).</summary>
+    public static readonly TimeSpan MapReportDelay = TimeSpan.FromSeconds(2);
+
+    private (double Latitude, double Longitude, double RadiusKm)? _mapView;
+    private int _mapMoves;
+
+    /// <summary>The APRS-IS filter's range parts, for the map's filter circles (F1.2 behavior 6).</summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<FilterArea>? FilterAreas { get; private set; }
+
+    /// <summary>The map moved: its view is reported <see cref="MapReportDelay"/> after it stops (F1.2 behavior 4).</summary>
+    internal void MapMoved(double latitude, double longitude, double radiusKm)
+    {
+        _mapView = (latitude, longitude, radiusKm);
+        _ = ReportAfterAsync(++_mapMoves);
+    }
+
+    private async Task ReportAfterAsync(int move)
+    {
+        await Task.Delay(MapReportDelay, time);
+        if (move == _mapMoves)
+        {
+            await ReportMapViewAsync(); // still: no move since
+        }
+    }
+
+    /// <summary>Tells the engine what the map shows and follows; it decides whether the filter changes.</summary>
+    private async Task ReportMapViewAsync()
+    {
+        var following = Details.IsFollowing ? Details.Name : null;
+        if (_mapView is null && following is null)
+        {
+            return;
+        }
+        var view = new MapViewReport(_mapView?.Latitude, _mapView?.Longitude, _mapView?.RadiusKm ?? 0, following);
+        try
+        {
+            await engine.SetMapViewAsync(view);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException or IOException)
+        {
+            // The gateway is away; the next move reports again.
+        }
+    }
+
     /// <summary>The Stations panel (F1.7).</summary>
     public Stations.StationListViewModel StationList { get; }
 
@@ -645,6 +697,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     internal void Show(EngineStatus status)
     {
+        FilterAreas = status.FilterAreas;
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();
         PacketCount = status.PacketsReceived;

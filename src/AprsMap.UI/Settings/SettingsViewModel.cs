@@ -160,7 +160,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private void Close() => Closed?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Gives About the engine's details (versions, address lookup) when the page opens.</summary>
-    public void Show(EngineStatus? status, GeocodingInfo? geocoding) => About.Show(status, geocoding);
+    public void Show(EngineStatus? status, GeocodingInfo? geocoding)
+    {
+        About.Show(status, geocoding);
+        Profiles?.ShowFilter(status?.Filter);
+    }
 
     /// <inheritdoc />
     public void Dispose()

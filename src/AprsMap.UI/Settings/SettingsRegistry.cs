@@ -257,6 +257,16 @@ public static class SettingsRegistry
                 value => Update(s => s with { MapSymbolScale = (double)value! })
             )
         );
+        items.Add(
+            new ToggleSetting(
+                "map.filter-circles",
+                "Settings.Map.FilterCircles",
+                "Settings.Map.FilterCircles.Help",
+                text,
+                () => appearance.Current.ShowFilterCircles,
+                value => Update(s => s with { ShowFilterCircles = value })
+            )
+        );
         if (aging is var (get, save))
         {
             // Removal always after staleness, so each list offers only what fits the other's current value. The value is

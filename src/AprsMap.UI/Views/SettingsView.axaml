@@ -155,6 +155,14 @@
                 Command="{Binding Profiles.AddCommand}"
                 IsVisible="{Binding !Profiles.IsReadOnly}"
               />
+              <SelectableTextBlock
+                x:Name="ActiveFilterLabel"
+                Text="{Binding Profiles.FilterText}"
+                IsVisible="{Binding Profiles.FilterText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                FontFamily="{DynamicResource Font.Mono}"
+                TextWrapping="Wrap"
+              />
               <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding Profiles.CanUndoDelete}">
                 <TextBlock x:Name="DeletedLabel" Text="{Binding Profiles.DeletedText}" VerticalAlignment="Center" />
                 <Button

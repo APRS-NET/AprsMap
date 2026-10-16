@@ -81,6 +81,32 @@
   <data name="Error.gateway.outdated" xml:space="preserve">
     <value>A new version of the app is available. Reload the page to use it.</value>
   </data>
+  <data name="Settings.Profiles.Filter" xml:space="preserve">
+    <value>The active profile's filter now: {filter}</value>
+    <comment>Under the profile list. filter: the APRS-IS filter as sent (not translated).</comment>
+  </data>
+  <data name="Status.Filter" xml:space="preserve">
+    <value>Filter: {filter}</value>
+    <comment>In the connection's tooltip: the APRS-IS filter in use, as sent (not translated).</comment>
+  </data>
+  <data name="Settings.Map.FilterCircles" xml:space="preserve">
+    <value>Show the filter's ranges on the map</value>
+  </data>
+  <data name="Settings.Map.FilterCircles.Help" xml:space="preserve">
+    <value>Dashed circles show where APRS-IS sends stations from: around your location, the map and any station you follow.</value>
+  </data>
+  <data name="Wizard.Range" xml:space="preserve">
+    <value>Range around the station</value>
+  </data>
+  <data name="Wizard.Range.Help" xml:space="preserve">
+    <value>APRS-IS sends stations within this distance of the station's location, plus wherever the map shows. None suits an IGate, or a filter of your own.</value>
+  </data>
+  <data name="Wizard.Range.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Wizard.Range.Km" xml:space="preserve">
+    <value>{km} km</value>
+  </data>
   <data name="Status.EngineUnreachable" xml:space="preserve">
     <value>Engine unreachable · retrying</value>
     <comment>Status bar when the app can't reach its engine (in the browser: the gateway).</comment>

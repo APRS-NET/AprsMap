@@ -35,6 +35,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     // The map views reported for the filter (F1.2), by viewer, most recently moved last.
     private readonly List<(string Viewer, MapViewReport View)> _views = [];
     private string? _filter;
+    private IReadOnlyList<FilterArea> _filterAreas = [];
     private DateTimeOffset _filterSentAt = DateTimeOffset.MinValue;
     private bool _filterScheduled;
     private Link _link = new(ConnectionState.Disconnected);
@@ -104,7 +105,8 @@ public sealed partial class Engine : IEngineService, IDisposable
                     _link.RetryAt,
                     _reconnects,
                     _link.Error,
-                    Filter: _filter
+                    Filter: _filter,
+                    FilterAreas: _filterAreas
                 )
             );
         }
@@ -552,14 +554,21 @@ public sealed partial class Engine : IEngineService, IDisposable
     internal string? PreviewFilter() => _settings?.GetActiveProfile() is { } profile ? ComposeFilter(profile) : null;
 
     /// <summary>The filter for <paramref name="profile"/> with the map views reported, most recently moved first.</summary>
-    private string ComposeFilter(StationProfile profile)
+    private string ComposeFilter(StationProfile profile) => ComposeParts(profile).Text;
+
+    /// <summary>The filter and its circles; a followed station's circle is centred where it was last heard.</summary>
+    private (string Text, IReadOnlyList<FilterArea> Areas) ComposeParts(StationProfile profile)
     {
         MapViewReport[] views;
         lock (_gate)
         {
             views = [.. _views.Select(v => v.View).Reverse()];
         }
-        return FilterComposer.Compose(profile, views);
+        return FilterComposer.ComposeParts(
+            profile,
+            views,
+            name => _stations.Get(name) is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null
+        );
     }
 
     /// <summary>
@@ -617,12 +626,17 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     private async Task SendFilterAsync(StationProfile profile, CancellationToken cancellationToken)
     {
-        var filter = ComposeFilter(profile);
+        var (filter, areas) = ComposeParts(profile);
         IPacketSource? source;
         lock (_gate)
         {
             source = _source;
-            if (source is null || filter == _filter)
+            if (source is null)
+            {
+                return;
+            }
+            _filterAreas = areas; // a followed station moves its circle even when the text stays
+            if (filter == _filter)
             {
                 return;
             }
@@ -735,10 +749,11 @@ public sealed partial class Engine : IEngineService, IDisposable
         using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var refused = false;
         SetLink(new Link(ConnectionState.Connecting, profile.Server));
-        var filter = ComposeFilter(profile);
+        var (filter, areas) = ComposeParts(profile);
         lock (_gate)
         {
             _filter = filter;
+            _filterAreas = areas;
             _filterSentAt = _time.GetUtcNow();
         }
         var source = _sources.Create(profile, filter);

@@ -139,6 +139,15 @@ public sealed partial class ProfilesSectionViewModel : ObservableObject, IDispos
     /// <summary>Whether Undo is offered after a delete.</summary>
     public bool CanUndoDelete => DeletedText is not null;
 
+    /// <summary>"The active profile's filter now: r/40/-105/150", for anyone checking it (F1.2 behavior 7).</summary>
+    [ObservableProperty]
+    public partial string? FilterText { get; private set; }
+
+    internal void ShowFilter(string? filter) =>
+        FilterText = string.IsNullOrEmpty(filter)
+            ? null
+            : _text.Format("Settings.Profiles.Filter", new Dictionary<string, object?> { ["filter"] = filter });
+
     /// <summary>Shows <paramref name="settings"/>; asks the engine for the region names and locators it needs.</summary>
     public async Task ShowAsync(AppSettings settings)
     {
