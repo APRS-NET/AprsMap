@@ -228,6 +228,51 @@
         </StackPanel>
         <!-- Telemetry (F1.11): the latest values and a chart per channel, named and scaled by the station's definitions
              (G09), or raw when it has sent none. -->
+        <!-- This station (F3.1 behavior 8): what its own receivers heard in the last hour, each station a link. -->
+        <StackPanel x:Name="MeSection" Spacing="2" IsVisible="{Binding IsMe}">
+          <TextBlock Text="{l:T Details.Me.Title}" FontWeight="SemiBold" Margin="0,4,0,2" />
+          <TextBlock
+            Text="{Binding HeardHereText}"
+            TextWrapping="Wrap"
+            Foreground="{DynamicResource Brush.TextMuted}"
+          />
+          <TextBlock Text="{l:T Details.Me.Directly}" Margin="0,4,0,0" />
+          <ItemsControl ItemsSource="{Binding HeardDirectly}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:HeardRow">
+                <Grid ColumnDefinitions="*,Auto">
+                  <HyperlinkButton
+                    Content="{Binding Name}"
+                    Command="{Binding Open}"
+                    Padding="0"
+                    Foreground="{DynamicResource Brush.Text}"
+                  />
+                  <TextBlock Grid.Column="1" Text="{Binding Distance}" Foreground="{DynamicResource Brush.TextMuted}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock
+            Text="{l:T Details.Me.ThroughDigipeaters}"
+            Margin="0,4,0,0"
+            IsVisible="{Binding HasHeardThroughDigipeaters}"
+          />
+          <ItemsControl ItemsSource="{Binding HeardThroughDigipeaters}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:HeardRow">
+                <Grid ColumnDefinitions="*,Auto">
+                  <HyperlinkButton
+                    Content="{Binding Name}"
+                    Command="{Binding Open}"
+                    Padding="0"
+                    Foreground="{DynamicResource Brush.Text}"
+                  />
+                  <TextBlock Grid.Column="1" Text="{Binding Distance}" Foreground="{DynamicResource Brush.TextMuted}" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
         <StackPanel x:Name="TelemetrySection" Spacing="2" IsVisible="{Binding HasTelemetry}">
           <TextBlock Text="{l:T Details.Label.Telemetry}" FontWeight="SemiBold" Margin="0,4,0,2" />
           <TextBlock

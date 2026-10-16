@@ -2593,4 +2593,20 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>{source} on or off</value>
     <comment>The switch on a source's pill: its name for screen readers and its tooltip.</comment>
   </data>
+  <data name="Details.Kind.Me" xml:space="preserve">
+    <value>This station: your profile</value>
+    <comment>The details' kind line for the active profile's own station.</comment>
+  </data>
+  <data name="Details.Me.Title" xml:space="preserve">
+    <value>Heard by this station</value>
+  </data>
+  <data name="Details.Me.Heard" xml:space="preserve">
+    <value>{direct, plural, =0 {No stations heard directly} one {# station heard directly} other {# stations heard directly}} and {digipeated, plural, =0 {none through digipeaters} one {# through digipeaters} other {# through digipeaters}} in the last hour, on this station's own radio.</value>
+  </data>
+  <data name="Details.Me.Directly" xml:space="preserve">
+    <value>Directly</value>
+  </data>
+  <data name="Details.Me.ThroughDigipeaters" xml:space="preserve">
+    <value>Through digipeaters</value>
+  </data>
 </root>
