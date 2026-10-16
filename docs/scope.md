@@ -159,7 +159,8 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 2. The Phase 1 specs, reviewed before coding (written; each spec's decisions are settled when its milestone starts).
 3. 0.3.0-alpha.1, the first map (done), then 0.4.0-alpha.1: KISS receive (F3.1) and the rest of the map features
    above marked 0.4.0. The F1 features left after that, then Phase 2.
-4. In parallel, APRS.NET picks up the gaps each milestone is blocked by: for 0.4.0, G09
-   ([APRS.NET#153](https://github.com/APRS-NET/APRS.NET/issues/153)), G13's serial connection
-   ([APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126)) and G24
-   ([APRS.NET#154](https://github.com/APRS-NET/APRS.NET/issues/154)). Phase 1 needs no transmit work in APRS.NET.
+4. In parallel, APRS.NET picks up the gaps each milestone is blocked by. For 0.4.0 all three are published as of
+   APRS.NET `0.3.0-alpha.3`: G09 ([APRS.NET#153](https://github.com/APRS-NET/APRS.NET/issues/153), `TelemetryProfile`),
+   G24 ([APRS.NET#154](https://github.com/APRS-NET/APRS.NET/issues/154), `TrackAnalysis`) and G13's serial connection
+   ([APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), `AprsNet.Kiss.Serial`, open until tested on
+   hardware). Phase 1 needs no transmit work in APRS.NET.
