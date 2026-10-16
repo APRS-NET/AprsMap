@@ -31,8 +31,10 @@ public sealed partial class PacketsPanel : UserControl
         OnlyStationItem.Click += (_, _) => OnlyStation();
         if (SaveButton.Flyout is MenuFlyout formats)
         {
-            FillSaveMenu(formats); // filled from the start, so the menu never opens empty
-            formats.Opening += (_, _) => FillSaveMenu(formats); // and again, in the viewer's language now
+            // Kept filled, never filled as it opens: on the desktop the menu is a window of its own, created as it
+            // opens, and one refilled then closed at once. It follows the language instead.
+            FillSaveMenu(formats);
+            Localizer.Instance.LanguageChanged += (_, _) => FillSaveMenu(formats);
         }
     }
 
@@ -113,7 +115,7 @@ public sealed partial class PacketsPanel : UserControl
         }
     }
 
-    /// <summary>The Save menu: a format a line, named in the viewer's language as it opens.</summary>
+    /// <summary>The Save menu: a format a line, named in the viewer's language.</summary>
     private void FillSaveMenu(MenuFlyout menu)
     {
         menu.Items.Clear();
