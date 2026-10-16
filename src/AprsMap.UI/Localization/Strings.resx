@@ -2356,4 +2356,8 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>{title}, {range}: {number}. {detail}</value>
     <comment>A tile read by a screen reader.</comment>
   </data>
+  <data name="Toggles.Switch.AprsIs" xml:space="preserve">
+    <value>APRS-IS on or off</value>
+    <comment>A switch beside the connection pill and in the dashboard; its name for screen readers and its tooltip.</comment>
+  </data>
 </root>

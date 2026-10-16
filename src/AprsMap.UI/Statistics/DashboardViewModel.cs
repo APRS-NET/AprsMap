@@ -26,6 +26,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly Localizer _text;
     private readonly Func<EngineStatus?> _status;
     private readonly SourceNames _sources;
+    private readonly SourceSwitch _aprsIs;
     private readonly Action<string> _select;
     private readonly Action _showProblems;
     private CancellationTokenSource? _running;
@@ -37,6 +38,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         Localizer text,
         Func<EngineStatus?> status,
         SourceNames sources,
+        SourceSwitch aprsIs,
         Action<string> select,
         Action showProblems
     )
@@ -46,6 +48,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         _text = text;
         _status = status;
         _sources = sources;
+        _aprsIs = aprsIs;
         _select = select;
         _showProblems = showProblems;
         Ranges = [.. Enum.GetValues<DashboardRange>().Select(r => new RangeOption(r, this))];
@@ -298,7 +301,14 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         Replace(
             Connections,
             (status?.Sources ?? []).Select(source =>
-                SourceRow.Of(_text, source, Last(lastBySource, source.Id), dashboard.At, Clock)
+                SourceRow.Of(
+                    _text,
+                    source,
+                    Last(lastBySource, source.Id),
+                    dashboard.At,
+                    Clock,
+                    source.Kind == SourceKind.AprsIs ? _aprsIs : null
+                )
             )
         );
         ReconnectsText = status is null
@@ -495,15 +505,22 @@ public sealed record CountRow(string Name, string Value, double Fraction, IRelay
     public bool CanOpen => Open is not null;
 }
 
-/// <summary>One source's connection: its name, state and the time since its last packet, quiet in words too.</summary>
-public sealed record SourceRow(string Name, string State, string? Last, bool IsQuiet)
+/// <summary>
+/// One source's connection: its name, state and the time since its last packet, quiet in words too, and its on/off
+/// switch where it has one (APRS-IS; KISS sources gain theirs with F3.1).
+/// </summary>
+public sealed record SourceRow(string Name, string State, string? Last, bool IsQuiet, SourceSwitch? Switch = null)
 {
+    /// <summary>Whether the row has an on/off switch.</summary>
+    public bool HasSwitch => Switch is not null;
+
     internal static SourceRow Of(
         Localizer text,
         SourceStatus source,
         DateTimeOffset? last,
         DateTimeOffset now,
-        Func<DateTimeOffset, string> clock
+        Func<DateTimeOffset, string> clock,
+        SourceSwitch? onOff = null
     )
     {
         var state = text[
@@ -531,6 +548,6 @@ public sealed record SourceRow(string Name, string State, string? Last, bool IsQ
                 )
             : quiet ? text["Dashboard.Source.NoPackets"]
             : null;
-        return new SourceRow(source.Name, state, lastText, quiet);
+        return new SourceRow(source.Name, state, lastText, quiet, onOff);
     }
 }

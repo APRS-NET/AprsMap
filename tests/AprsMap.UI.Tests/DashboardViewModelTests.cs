@@ -55,6 +55,8 @@ public sealed class DashboardViewModelTests
 
         public int ProblemsShown { get; private set; }
 
+        public SourceSwitch Switch { get; } = new(_ => Task.CompletedTask);
+
         public DashboardViewModel Create() =>
             new(
                 Engine,
@@ -62,6 +64,7 @@ public sealed class DashboardViewModelTests
                 new Localizer(CultureInfo.GetCultureInfo("en-US")),
                 () => Status,
                 new SourceNames(() => null),
+                Switch,
                 Selected.Add,
                 () => ProblemsShown++
             );
@@ -144,6 +147,7 @@ public sealed class DashboardViewModelTests
 
         var row = Assert.Single(vm.Connections);
         Assert.Equal("noam.aprs2.net", row.Name);
+        Assert.Same(harness.Switch, row.Switch); // APRS-IS has the pill's switch
         Assert.Equal("Connected", row.State);
         Assert.True(row.IsQuiet);
         Assert.StartsWith("Quiet: no packet since", row.Last, StringComparison.Ordinal);

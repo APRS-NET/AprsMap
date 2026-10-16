@@ -186,8 +186,15 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>The toggles <see cref="SetToggleAsync"/> set, in order.</summary>
     public List<(Toggle Toggle, bool Enabled)> Toggled { get; } = [];
 
+    /// <summary>When set, <see cref="SetToggleAsync"/> throws it (a gateway viewer without sign-in).</summary>
+    public Exception? ToggleFailure { get; set; }
+
     public Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default)
     {
+        if (ToggleFailure is { } failure)
+        {
+            return Task.FromException(failure);
+        }
         Toggled.Add((toggle, enabled));
         var toggles = Settings.EffectiveToggles;
         Settings = Settings with

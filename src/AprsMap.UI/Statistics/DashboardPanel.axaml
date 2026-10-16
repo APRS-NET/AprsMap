@@ -82,11 +82,26 @@
     </DataTemplate>
     <DataTemplate DataType="d:SourceRow">
       <StackPanel Margin="0,2">
-        <TextBlock>
-          <Run Text="{Binding Name}" FontWeight="SemiBold" />
-          <Run Text=" · " />
-          <Run Text="{Binding State}" />
-        </TextBlock>
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+            <Run Text="{Binding Name}" FontWeight="SemiBold" />
+            <Run Text=" · " />
+            <Run Text="{Binding State}" />
+          </TextBlock>
+          <!-- The source on or off (F1.15), the same switch as the connection pill's. -->
+          <ToggleSwitch
+            Grid.Column="1"
+            Classes="compact"
+            IsVisible="{Binding HasSwitch}"
+            IsChecked="{Binding Switch.IsOn}"
+            IsEnabled="{Binding Switch.CanChange}"
+            OnContent="{x:Null}"
+            OffContent="{x:Null}"
+            Margin="8,0,0,0"
+            ToolTip.Tip="{l:T Toggles.Switch.AprsIs}"
+            AutomationProperties.Name="{l:T Toggles.Switch.AprsIs}"
+          />
+        </Grid>
         <TextBlock
           Text="{Binding Last}"
           Classes="detail"

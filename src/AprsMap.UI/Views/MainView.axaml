@@ -164,6 +164,20 @@
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
+            <!-- APRS-IS on or off in one click (F1.15): the same toggle as the menu's, beside the pill it controls. -->
+            <ToggleSwitch
+              x:Name="AprsIsSwitch"
+              Classes="compact"
+              DataContext="{Binding AprsIsSwitch}"
+              x:DataType="vm:SourceSwitch"
+              IsChecked="{Binding IsOn}"
+              IsEnabled="{Binding CanChange}"
+              OnContent="{x:Null}"
+              OffContent="{x:Null}"
+              VerticalAlignment="Center"
+              ToolTip.Tip="{l:T Toggles.Switch.AprsIs}"
+              AutomationProperties.Name="{l:T Toggles.Switch.AprsIs}"
+            />
             <!-- The connection status opens a menu with Reconnect now (F1.1 behavior 7); its tooltip has the details. -->
             <Button
               x:Name="ConnectionButton"

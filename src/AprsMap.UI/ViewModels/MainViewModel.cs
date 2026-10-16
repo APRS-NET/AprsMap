@@ -58,12 +58,14 @@ public sealed partial class MainViewModel : ObservableObject
         _text = text ?? Localizer.Instance;
         SourceNames = new SourceNames(() => _settings);
         PacketList = new PacketListViewModel(engine, time, _text, SourceNames);
+        AprsIsSwitch = new SourceSwitch(SwitchAprsIsAsync);
         Dashboard = new Statistics.DashboardViewModel(
             engine,
             time,
             _text,
             () => _status,
             SourceNames,
+            AprsIsSwitch,
             name => SelectedStation = name,
             () =>
             {
@@ -822,6 +824,28 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Said to screen readers when a toggle changes (behavior 5).</summary>
     [ObservableProperty]
     public partial string? ToggleAnnouncement { get; private set; }
+
+    /// <summary>
+    /// The APRS-IS on/off switch on the connection pill and the dashboard's Connection tile: the same toggle as the
+    /// connection menu's (F1.15), shared so every switch moves together.
+    /// </summary>
+    public SourceSwitch AprsIsSwitch { get; }
+
+    /// <summary>A switch was flipped to <paramref name="on"/>; whatever the engine says, the switch shows after.</summary>
+    private async Task SwitchAprsIsAsync(bool on)
+    {
+        if (on != AprsIsOn)
+        {
+            await ToggleAsync(Toggle.AprsIs);
+        }
+        AprsIsSwitch.Show(AprsIsOn, CanToggleDependents); // springs back if the engine refused
+    }
+
+    partial void OnAprsIsOnChanged(bool value) => AprsIsSwitch.Show(value, CanToggleDependents);
+
+    partial void OnInternetOnChanged(bool value) => AprsIsSwitch.Show(AprsIsOn, CanToggleDependents);
+
+    partial void OnCanToggleChanged(bool value) => AprsIsSwitch.Show(AprsIsOn, CanToggleDependents);
 
     /// <summary>Turns <paramref name="toggle"/> the other way (F1.15).</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand]
