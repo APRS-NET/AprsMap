@@ -292,35 +292,71 @@
                   <ItemsControl ItemsSource="{Binding Rows}" Margin="0,4,0,0">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate DataType="d:StatRow">
-                        <!-- The whole row applies its View filter (behavior 12); read as one sentence. -->
-                        <Button
-                          Command="{Binding Apply}"
-                          HorizontalAlignment="Stretch"
-                          HorizontalContentAlignment="Stretch"
-                          Background="{x:Null}"
-                          BorderThickness="0"
-                          Padding="2"
-                          AutomationProperties.Name="{Binding Spoken}"
-                        >
-                          <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                            <TextBlock TextTrimming="CharacterEllipsis">
-                              <Run Text="{Binding Name}" />
-                              <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
-                            </TextBlock>
-                            <TextBlock Grid.Column="1" Margin="8,0,0,0" Foreground="{DynamicResource Brush.TextMuted}">
-                              <Run Text="{Binding CountText}" />
-                              <Run Text=" · " />
-                              <Run Text="{Binding ShareText}" />
-                            </TextBlock>
-                            <ProgressBar
-                              Grid.Row="1"
-                              Grid.ColumnSpan="2"
-                              Classes="share"
-                              Value="{Binding Fraction}"
-                              AutomationProperties.AccessibilityView="Raw"
-                            />
-                          </Grid>
-                        </Button>
+                        <Panel>
+                          <!-- The whole row applies its View filter (behavior 12); read as one sentence. -->
+                          <Button
+                            Command="{Binding Apply}"
+                            IsVisible="{Binding CanApply}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Background="{x:Null}"
+                            BorderThickness="0"
+                            Padding="2"
+                            AutomationProperties.Name="{Binding Spoken}"
+                          >
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                              <TextBlock TextTrimming="CharacterEllipsis">
+                                <Run Text="{Binding Name}" />
+                                <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
+                              </TextBlock>
+                              <TextBlock
+                                Grid.Column="1"
+                                Margin="8,0,0,0"
+                                Foreground="{DynamicResource Brush.TextMuted}"
+                              >
+                                <Run Text="{Binding CountText}" />
+                                <Run Text=" · " />
+                                <Run Text="{Binding ShareText}" />
+                              </TextBlock>
+                              <ProgressBar
+                                Grid.Row="1"
+                                Grid.ColumnSpan="2"
+                                Classes="share"
+                                Value="{Binding Fraction}"
+                                AutomationProperties.AccessibilityView="Raw"
+                              />
+                            </Grid>
+                          </Button>
+                          <!-- A row no View filter fits (an unknown device): the same line, not a button. -->
+                          <Border
+                            IsVisible="{Binding !CanApply}"
+                            Padding="2"
+                            AutomationProperties.Name="{Binding Spoken}"
+                          >
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                              <TextBlock TextTrimming="CharacterEllipsis">
+                                <Run Text="{Binding Name}" />
+                                <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
+                              </TextBlock>
+                              <TextBlock
+                                Grid.Column="1"
+                                Margin="8,0,0,0"
+                                Foreground="{DynamicResource Brush.TextMuted}"
+                              >
+                                <Run Text="{Binding CountText}" />
+                                <Run Text=" · " />
+                                <Run Text="{Binding ShareText}" />
+                              </TextBlock>
+                              <ProgressBar
+                                Grid.Row="1"
+                                Grid.ColumnSpan="2"
+                                Classes="share"
+                                Value="{Binding Fraction}"
+                                AutomationProperties.AccessibilityView="Raw"
+                              />
+                            </Grid>
+                          </Border>
+                        </Panel>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
