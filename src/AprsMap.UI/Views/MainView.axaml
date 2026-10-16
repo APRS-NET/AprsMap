@@ -27,6 +27,21 @@
     </Style>
     <!-- A refused login needs the user: the status takes the warning colour, as errors do, on the surface colour the
          contrast checks cover (not the button's own fill). -->
+    <!-- The other sources' pills look the same (F3.1 behavior 5). -->
+    <Style Selector="Border.source-pill">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+    </Style>
+    <Style Selector="Border.source-pill.ok">
+      <Setter Property="Background" Value="{DynamicResource Brush.OkSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ok}" />
+    </Style>
+    <Style Selector="Border.source-pill.warn">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Warn}" />
+    </Style>
+    <Style Selector="Border.source-pill.warn TextBlock.source-label">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
     <Style Selector="Button#ConnectionButton">
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
     </Style>
@@ -268,7 +283,8 @@
               Height="0"
               Opacity="0"
             />
-            <!-- One pill per source besides APRS-IS, with its own state (F1.25 behavior 11). -->
+            <!-- One pill per source besides APRS-IS (F1.25 behavior 11), made like the APRS-IS one: coloured by its state,
+                 its switch inside on the left (F3.1 behavior 6), and a menu with Reconnect now (behavior 5). -->
             <ItemsControl x:Name="SourcePills" ItemsSource="{Binding SourcePills}" VerticalAlignment="Center">
               <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -276,14 +292,44 @@
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="x:String">
+                <DataTemplate x:DataType="vm:SourcePill">
                   <Border
-                    BorderBrush="{DynamicResource Brush.Border}"
-                    BorderThickness="{DynamicResource Thickness.Border}"
+                    Classes="source-pill"
+                    Classes.ok="{Binding IsConnected}"
+                    Classes.warn="{Binding IsWarning}"
                     CornerRadius="{DynamicResource Radius.Control}"
-                    Padding="10,4"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    VerticalAlignment="Center"
                   >
-                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal">
+                      <ToggleSwitch
+                        Classes="source-switch"
+                        IsChecked="{Binding Switch.IsOn}"
+                        IsEnabled="{Binding Switch.CanChange}"
+                        OnContent="{x:Null}"
+                        OffContent="{x:Null}"
+                        MinWidth="0"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"
+                        ToolTip.Tip="{Binding SwitchName}"
+                        AutomationProperties.Name="{Binding SwitchName}"
+                      />
+                      <Button
+                        Background="{Binding $parent[Border].Background}"
+                        BorderThickness="0"
+                        CornerRadius="{DynamicResource Radius.Control}"
+                        Padding="6,4,10,4"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="{Binding Text}"
+                      >
+                        <TextBlock Classes="source-label" Text="{Binding Text}" TextWrapping="Wrap" />
+                        <Button.Flyout>
+                          <MenuFlyout>
+                            <MenuItem Header="{l:T Status.Reconnect}" Command="{Binding ReconnectCommand}" />
+                          </MenuFlyout>
+                        </Button.Flyout>
+                      </Button>
+                    </StackPanel>
                   </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

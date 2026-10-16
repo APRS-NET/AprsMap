@@ -2297,4 +2297,12 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Packets.DigipeatedHere" xml:space="preserve">
     <value>{count, plural, one {Digipeated: repeated by # digipeater, heard by this station} other {Digipeated: repeated by # digipeaters, heard by this station}}</value>
   </data>
+  <data name="Status.Source.Off" xml:space="preserve">
+    <value>{source} off</value>
+    <comment>A source's pill while it's switched off.</comment>
+  </data>
+  <data name="Toggles.Switch.Source" xml:space="preserve">
+    <value>{source} on or off</value>
+    <comment>The switch on a source's pill: its name for screen readers and its tooltip.</comment>
+  </data>
 </root>

@@ -111,6 +111,20 @@ public interface IEngineService
     Task ReconnectAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Switches a source other than APRS-IS on or off, for the station (docs/features/F3.1-kiss-sources.md, behavior
+    /// 6). The choice is saved with the toggles; an unknown id does nothing.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task SetSourceEnabledAsync(string sourceId, bool enabled, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Drops a source's connection, or its wait to reconnect, and connects again now (docs/features/F3.1-kiss-sources.md,
+    /// behavior 5). Does nothing for a source that isn't open.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task ReconnectSourceAsync(string sourceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Starts over (docs/features/F0.10-start-over.md): deletes every stored profile and setting, disconnects, and
     /// forgets the packets and stations received, so the next step is first-run setup. Defaults from configuration are
     /// not applied again until the engine restarts.

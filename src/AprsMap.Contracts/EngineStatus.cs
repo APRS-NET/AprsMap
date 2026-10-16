@@ -87,13 +87,17 @@ public sealed record EngineStatus(
 /// <param name="State">Its connection state, as F1.1 defines it.</param>
 /// <param name="Server">What it is connected to (the APRS-IS server's name), when connected.</param>
 /// <param name="Error">Why it is reconnecting or stopped.</param>
+/// <param name="Enabled">Whether it's switched on (F3.1 behavior 6); a source switched off is listed, disconnected.</param>
+/// <param name="RetryAt">When the next attempt is, while it is reconnecting.</param>
 public sealed record SourceStatus(
     string Id,
     string Name,
     SourceKind Kind,
     ConnectionState State,
     string? Server = null,
-    EngineError? Error = null
+    EngineError? Error = null,
+    bool Enabled = true,
+    DateTimeOffset? RetryAt = null
 );
 
 /// <summary>One range part of the APRS-IS filter, drawn on the map as a circle (F1.2 behavior 6).</summary>

@@ -183,6 +183,32 @@ internal sealed class FakeEngine : IEngineService
 
     public int Reconnects { get; private set; }
 
+    /// <summary>The sources <see cref="SetSourceEnabledAsync"/> switched, in order.</summary>
+    public List<(string Id, bool Enabled)> SourcesSwitched { get; } = [];
+
+    /// <summary>The sources <see cref="ReconnectSourceAsync"/> was asked to reconnect, in order.</summary>
+    public List<string> SourcesReconnected { get; } = [];
+
+    /// <summary>When set, <see cref="SetSourceEnabledAsync"/> throws it (a gateway viewer without sign-in).</summary>
+    public Exception? SourceSwitchFailure { get; set; }
+
+    public Task SetSourceEnabledAsync(string sourceId, bool enabled, CancellationToken cancellationToken = default)
+    {
+        if (SourceSwitchFailure is { } failure)
+        {
+            return Task.FromException(failure);
+        }
+        SourcesSwitched.Add((sourceId, enabled));
+        Settings = Settings with { Toggles = Settings.EffectiveToggles.WithSource(sourceId, enabled) };
+        return Task.CompletedTask;
+    }
+
+    public Task ReconnectSourceAsync(string sourceId, CancellationToken cancellationToken = default)
+    {
+        SourcesReconnected.Add(sourceId);
+        return Task.CompletedTask;
+    }
+
     /// <summary>The toggles <see cref="SetToggleAsync"/> set, in order.</summary>
     public List<(Toggle Toggle, bool Enabled)> Toggled { get; } = [];
 

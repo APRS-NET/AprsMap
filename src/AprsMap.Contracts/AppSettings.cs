@@ -56,10 +56,31 @@ public sealed record AppSettings(
 /// <param name="Internet">The master switch: off stops APRS-IS, tile downloads and address lookup (decision 1).</param>
 /// <param name="AprsIs">Connect to APRS-IS.</param>
 /// <param name="Tiles">Download map tiles; cached ones still show.</param>
-public sealed record StationToggles(bool Internet = true, bool AprsIs = true, bool Tiles = true)
+/// <param name="SourcesOff">
+/// The ids of the other sources switched off (KISS TNCs, docs/features/F3.1-kiss-sources.md behavior 6); null or
+/// empty when all are on. The Internet switch doesn't turn them off: a TNC is local equipment.
+/// </param>
+public sealed record StationToggles(
+    bool Internet = true,
+    bool AprsIs = true,
+    bool Tiles = true,
+    IReadOnlyList<string>? SourcesOff = null
+)
 {
     /// <summary>Everything on.</summary>
     public static StationToggles AllOn { get; } = new();
+
+    /// <summary>Whether the source with <paramref name="id"/> is switched on.</summary>
+    public bool IsSourceOn(string id) => SourcesOff is null || !SourcesOff.Contains(id);
+
+    /// <summary>These toggles with the source <paramref name="id"/> switched <paramref name="on"/> or off.</summary>
+    public StationToggles WithSource(string id, bool on) =>
+        this with
+        {
+            SourcesOff = on
+                ? [.. (SourcesOff ?? []).Where(s => s != id)]
+                : [.. (SourcesOff ?? []).Where(s => s != id), id],
+        };
 
     /// <summary>Whether APRS-IS may connect: it and the Internet are on.</summary>
     public bool ConnectsAprsIs => Internet && AprsIs;
