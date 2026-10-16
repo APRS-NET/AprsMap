@@ -398,7 +398,11 @@ public sealed class MapView : Control, IDisposable
             screen[i] = ToScreen(viewport, marks[i]);
         }
         // The map and symbols first: the tiles would cover anything drawn before them.
-        context.Custom(new DrawOperation(new Rect(Bounds.Size), this, marks, screen, (float)_symbolDip, _dot));
+        // Everything the render thread needs is read here, on the UI thread: styled properties such as the theme
+        // variant can't be read from the render thread (on desktop that throws every frame and blanks the window).
+        context.Custom(
+            new DrawOperation(new Rect(Bounds.Size), this, marks, screen, (float)_symbolDip, _dot, EffectiveDimming)
+        );
         DrawFilterAreas(context, viewport);
         DrawLabels(context, marks, screen);
         if (Selected is { } name && _ringPen is not null && FindIndex(marks, name) is { } selected)
@@ -875,7 +879,8 @@ public sealed class MapView : Control, IDisposable
         IReadOnlyList<StationMark> marks,
         SKPoint[] screen,
         float symbolDip,
-        SKColor dot
+        SKColor dot,
+        double dimming
     ) : ICustomDrawOperation
     {
         public Rect Bounds => bounds;
@@ -910,7 +915,7 @@ public sealed class MapView : Control, IDisposable
                 null,
                 default
             );
-            if (owner.EffectiveDimming is > 0 and var dimming)
+            if (dimming > 0)
             {
                 using var dim = new SKPaint { Color = owner._ground.WithAlpha((byte)(dimming * 255)) };
                 canvas.DrawRect(0, 0, (float)bounds.Width, (float)bounds.Height, dim);
