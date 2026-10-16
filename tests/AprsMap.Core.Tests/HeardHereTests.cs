@@ -81,4 +81,50 @@ public sealed class HeardHereTests
         Assert.Contains(("N0CAR-9", "N0DIGI-1"), links);
         Assert.Contains(("N0DIGI-1", "N0ME"), links);
     }
+
+    [Fact]
+    public void ThisStationHasDetailsBeforeItsHeardWithWhatItsRadioHeard()
+    {
+        var store = Store();
+        store.Apply(AprsPacket.Parse(Direct), T0, "tnc", heardHere: true);
+        store.Apply(
+            AprsPacket.Parse(Digipeated.Replace("N0CAR-9", "N0BIKE-7", StringComparison.Ordinal)),
+            T0,
+            "tnc",
+            heardHere: true
+        );
+        store.Apply(AprsPacket.Parse("N0HOUSE>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-"), T0); // APRS-IS only
+
+        var me = store.Get("n0me")!; // the callsign as typed
+
+        Assert.Equal(("N0ME", 0L), (me.Name, me.Packets));
+        Assert.Equal((49.1, -72.03), (me.Latitude, me.Longitude));
+        Assert.Equal("FN39xc", me.Locator);
+        Assert.Equal(["N0CAR-9"], me.Me!.HeardDirectly.Select(h => h.Name));
+        Assert.Equal(4.63, me.Me.HeardDirectly[0].DistanceKm!.Value, 2);
+        Assert.Equal(["N0BIKE-7"], me.Me.HeardThroughDigipeaters.Select(h => h.Name));
+        Assert.Null(store.Get("N0CAR-9")!.Me); // only this station's details say what it heard
+    }
+
+    [Fact]
+    public void ThisStationsLinksUseTheProfilesLocationUntilItsHeardItself()
+    {
+        var store = Store();
+        store.Apply(AprsPacket.Parse(Direct), T0, "tnc", heardHere: true);
+
+        var link = Assert.Single(store.Links());
+
+        Assert.Equal(("N0CAR-9", "N0ME"), (link.From, link.To));
+        Assert.Equal((49.1, -72.03), (link.ToLatitude, link.ToLongitude));
+    }
+
+    [Fact]
+    public void StationsHeardOverAnHourAgoArentListed()
+    {
+        var store = Store();
+        store.Apply(AprsPacket.Parse(Direct), T0, "tnc", heardHere: true);
+        store.Apply(AprsPacket.Parse("N0LATE>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-"), T0.AddMinutes(61));
+
+        Assert.Empty(store.Get("N0ME")!.Me!.HeardDirectly);
+    }
 }

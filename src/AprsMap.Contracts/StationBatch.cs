@@ -162,6 +162,7 @@ public enum StationKind
 /// <param name="SeenOn">Other sources its latest report was heard on.</param>
 /// <param name="Weather">Its latest weather readings (F1.10), when it has sent any.</param>
 /// <param name="Problems">What's wrong with its packets over the last hour (F1.20), when anything is.</param>
+/// <param name="Me">For this station (the active profile's callsign): what its own receivers heard (F3.1 behavior 8).</param>
 public sealed record StationDetail(
     string Name,
     StationKind Kind,
@@ -189,8 +190,23 @@ public sealed record StationDetail(
     string? FirstHeardVia = null,
     IReadOnlyList<string>? SeenOn = null,
     StationWeather? Weather = null,
-    IReadOnlyList<StationProblem>? Problems = null
+    IReadOnlyList<StationProblem>? Problems = null,
+    ThisStation? Me = null
 );
+
+/// <summary>
+/// What this station's own receivers heard over the last hour (docs/features/F3.1-kiss-sources.md, behavior 8), on the
+/// details of this station, the active profile's callsign.
+/// </summary>
+/// <param name="HeardDirectly">Stations heard with no digipeater, nearest first.</param>
+/// <param name="HeardThroughDigipeaters">Stations heard through digipeaters, nearest first.</param>
+public sealed record ThisStation(
+    IReadOnlyList<HeardStation> HeardDirectly,
+    IReadOnlyList<HeardStation> HeardThroughDigipeaters
+);
+
+/// <summary>A station this station heard, how far away it is, and when.</summary>
+public sealed record HeardStation(string Name, double? DistanceKm, DateTimeOffset LastHeard);
 
 /// <summary>
 /// One kind of problem with a station's packets over the last hour (docs/features/F1.20-anomalies.md, behavior 5).

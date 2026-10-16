@@ -223,8 +223,59 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     {
         lock (_gate)
         {
-            return _entries.TryGetValue(name, out var entry) ? entry.ToDetail(_home) : null;
+            var detail = _entries.TryGetValue(name, out var entry) ? entry.ToDetail(_home) : null;
+            if (_homeName is { } me && string.Equals(name, me, StringComparison.OrdinalIgnoreCase))
+            {
+                // This station: its details even before it's heard, with what its own receivers heard.
+                detail ??= MyDetail(me);
+                detail = detail with { Me = WhatIHeard() };
+            }
+            return detail;
         }
+    }
+
+    /// <summary>This station when it hasn't been heard itself: its callsign and the profile's location.</summary>
+    private StationDetail MyDetail(string me) =>
+        new(
+            me,
+            StationKind.Station,
+            DateTimeOffset.MinValue,
+            0,
+            false,
+            _home?.Latitude,
+            _home?.Longitude,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            Locator: _home is { } home ? MaidenheadLocator.FromPosition(home.Latitude, home.Longitude, 6).Value : null
+        );
+
+    /// <summary>The stations this station's own receivers heard in the last hour (F3.1 behavior 8), nearest first.</summary>
+    private ThisStation WhatIHeard()
+    {
+        var since = _now - LinkWindow;
+        List<HeardStation> Heard(ArrivalKind kind) =>
+            [
+                .. _entries
+                    .Values.Where(e => e.HeardHere && e.Arrival == kind && e.LastHeard >= since)
+                    .Select(e => new HeardStation(
+                        e.Name,
+                        _home is { } home && e.HasPosition
+                            ? Geodesy.DistanceKm(home, new AprsPosition(e.Latitude!.Value, e.Longitude!.Value))
+                            : null,
+                        e.LastHeard
+                    ))
+                    .OrderBy(h => h.DistanceKm ?? double.MaxValue)
+                    .ThenBy(h => h.Name, StringComparer.Ordinal),
+            ];
+        return new ThisStation(Heard(ArrivalKind.Direct), Heard(ArrivalKind.Digipeated));
     }
 
     /// <summary>
@@ -1073,27 +1124,19 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             var links = new List<NetworkLink>(_links.Count);
             foreach (var ((from, to), count) in _links)
             {
-                if (
-                    _entries.TryGetValue(from, out var a)
-                    && a.HasPosition
-                    && _entries.TryGetValue(to, out var b)
-                    && b.HasPosition
-                )
+                if (PositionOf(from) is { } a && PositionOf(to) is { } b)
                 {
-                    links.Add(
-                        new NetworkLink(
-                            from,
-                            a.Latitude!.Value,
-                            a.Longitude!.Value,
-                            to,
-                            b.Latitude!.Value,
-                            b.Longitude!.Value,
-                            count
-                        )
-                    );
+                    links.Add(new NetworkLink(from, a.Latitude, a.Longitude, to, b.Latitude, b.Longitude, count));
                 }
             }
             return links;
+
+            // A station's position; this station's is the profile's location until it's heard itself (F3.1 behavior 8).
+            AprsPosition? PositionOf(string name) =>
+                _entries.TryGetValue(name, out var entry) && entry.HasPosition
+                    ? new AprsPosition(entry.Latitude!.Value, entry.Longitude!.Value)
+                : name == _homeName ? _home
+                : null;
         }
     }
 

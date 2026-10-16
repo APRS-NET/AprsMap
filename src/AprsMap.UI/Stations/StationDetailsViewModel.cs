@@ -49,6 +49,62 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     /// <summary>Raised by Centre: the map centres on the station (behavior 4).</summary>
     public event EventHandler<(double Latitude, double Longitude)>? CentreRequested;
 
+    /// <summary>A station in this station's heard lists was picked: select it (F3.1 behavior 8).</summary>
+    public event EventHandler<string>? SelectRequested;
+
+    /// <summary>Whether this is this station, the active profile's callsign (F3.1 behavior 8).</summary>
+    [ObservableProperty]
+    public partial bool IsMe { get; private set; }
+
+    /// <summary>"Heard by this station in the last hour: 6 directly, 3 through digipeaters"; null when not this station.</summary>
+    [ObservableProperty]
+    public partial string? HeardHereText { get; private set; }
+
+    /// <summary>The stations this station heard directly in the last hour, nearest first, each selectable.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<HeardRow> HeardDirectly { get; } = [];
+
+    /// <summary>The stations this station heard through digipeaters in the last hour, each selectable.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<HeardRow> HeardThroughDigipeaters { get; } = [];
+
+    /// <summary>Whether the heard-through-digipeaters list has anything.</summary>
+    [ObservableProperty]
+    public partial bool HasHeardThroughDigipeaters { get; private set; }
+
+    private void WriteMe(ThisStation? me, UnitSettings units)
+    {
+        HeardDirectly.Clear();
+        HeardThroughDigipeaters.Clear();
+        IsMe = me is not null;
+        HasHeardThroughDigipeaters = me is { HeardThroughDigipeaters.Count: > 0 };
+        if (me is null)
+        {
+            HeardHereText = null;
+            return;
+        }
+        HeardHereText = _text.Format(
+            "Details.Me.Heard",
+            new Dictionary<string, object?>
+            {
+                ["direct"] = me.HeardDirectly.Count,
+                ["digipeated"] = me.HeardThroughDigipeaters.Count,
+            }
+        );
+        HeardRow Row(HeardStation h) =>
+            new(
+                h.Name,
+                h.DistanceKm is { } km ? Localization.RangeText.Distance(km, units.Distance, _text) : null,
+                new CommunityToolkit.Mvvm.Input.RelayCommand(() => SelectRequested?.Invoke(this, h.Name))
+            );
+        foreach (var heard in me.HeardDirectly)
+        {
+            HeardDirectly.Add(Row(heard));
+        }
+        foreach (var heard in me.HeardThroughDigipeaters)
+        {
+            HeardThroughDigipeaters.Add(Row(heard));
+        }
+    }
+
     /// <summary>Raised by Close or Escape: the selection is cleared (behavior 1).</summary>
     public event EventHandler? CloseRequested;
 
@@ -501,6 +557,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             Comment = Status = ArrivalText = Path = DeviceText = LastPacket = HeardViaText = null;
             WriteWeather(null, units: UnitSettings.Metric, lastHeard: default);
             WriteProblems(null);
+            WriteMe(null, UnitSettings.Metric);
             return;
         }
         var culture = _text.Culture;
@@ -517,14 +574,21 @@ public sealed partial class StationDetailsViewModel : ObservableObject
                     ["previous"] = d.PreviousOwner,
                 }
             ),
+            _ when d.Me is not null => _text["Details.Kind.Me"],
             _ => _text["Details.Kind.Station"],
         };
+        var heardItself = d.Packets > 0 || d.LastHeard != DateTimeOffset.MinValue;
         var minutes = (long)Math.Max(0, (_time.GetUtcNow() - d.LastHeard).TotalMinutes);
-        HeardText = _text.Format(
-            "Details.Heard",
-            new Dictionary<string, object?> { ["minutes"] = minutes, ["packets"] = d.Packets }
-        );
-        HeardTime = TimeZoneInfo.ConvertTime(d.LastHeard, _time.LocalTimeZone).ToString("F", culture);
+        HeardText = heardItself
+            ? _text.Format(
+                "Details.Heard",
+                new Dictionary<string, object?> { ["minutes"] = minutes, ["packets"] = d.Packets }
+            )
+            : null; // this station, not heard on its own yet: only its location and what it heard
+        HeardTime = heardItself
+            ? TimeZoneInfo.ConvertTime(d.LastHeard, _time.LocalTimeZone).ToString("F", culture)
+            : null;
+        WriteMe(d.Me, units);
         PositionText = d is { Latitude: { } lat, Longitude: { } lon }
             ? _text.Format(
                 "Details.Position",
@@ -776,3 +840,9 @@ public sealed record DetailLine(string Label, string Value);
 /// <param name="Values">Its values, oldest first, for the chart.</param>
 /// <param name="ChartName">The chart's accessible name, with every value, for screen readers.</param>
 public sealed record TelemetryChannel(string Name, string Latest, IReadOnlyList<double?> Values, string ChartName);
+
+/// <summary>A station this station heard: its name, its distance, and selecting it.</summary>
+/// <param name="Name">Its callsign.</param>
+/// <param name="Distance">How far away, in the viewer's units; null when its position isn't known.</param>
+/// <param name="Open">Selects it.</param>
+public sealed record HeardRow(string Name, string? Distance, CommunityToolkit.Mvvm.Input.IRelayCommand Open);
