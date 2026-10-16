@@ -132,6 +132,18 @@ public static class EngineErrorCodes
     /// <summary>The APRS-IS server sent nothing, not even a keepalive, for too long.</summary>
     public const string AprsIsIdle = "aprs-is.idle";
 
+    /// <summary>A KISS TNC couldn't be reached (refused, timed out, no such host).</summary>
+    public const string KissUnreachable = "kiss.unreachable";
+
+    /// <summary>A KISS TNC closed the connection.</summary>
+    public const string KissClosed = "kiss.closed";
+
+    /// <summary>The link to a KISS TNC failed, or it went silent and was given up as gone.</summary>
+    public const string KissLinkFailed = "kiss.link-failed";
+
+    /// <summary>A KISS source's host, port or TNC port isn't usable.</summary>
+    public const string KissSourceInvalid = "settings.source.kiss-invalid";
+
     /// <summary>The kind of failure a code stands for, which decides the exception type that carries it.</summary>
     public static EngineErrorKind KindOf(string code)
     {

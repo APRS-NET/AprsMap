@@ -280,33 +280,79 @@
             >
               <StackPanel Spacing="8">
                 <TextBlock Text="{Binding Sources.EditTitle}" FontWeight="SemiBold" />
-                <ItemsControl ItemsSource="{Binding Sources.Kinds}">
+                <ItemsControl ItemsSource="{Binding Sources.Kinds}" IsEnabled="{Binding Sources.CanPickKind}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="s:SourceKindChoice">
                       <RadioButton
                         GroupName="SourceKind"
                         Content="{Binding Name}"
                         IsEnabled="{Binding IsAvailable}"
-                        IsChecked="{Binding IsAvailable, Mode=OneWay}"
+                        IsChecked="{Binding IsSelected}"
                       />
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <TextBlock Text="{l:T Settings.Sources.Server}" Foreground="{DynamicResource Brush.TextMuted}" />
-                <TextBox
-                  x:Name="SourceServerBox"
-                  Text="{Binding Sources.EditServer}"
-                  PlaceholderText="{l:T Settings.Sources.ServerExample}"
-                  AutomationProperties.Name="{l:T Settings.Sources.Server}"
-                  FontFamily="{DynamicResource Font.Mono}"
-                />
-                <TextBlock Text="{l:T Settings.Sources.Filter}" Foreground="{DynamicResource Brush.TextMuted}" />
-                <TextBox
-                  x:Name="SourceFilterBox"
-                  Text="{Binding Sources.EditFilter}"
-                  AutomationProperties.Name="{l:T Settings.Sources.Filter}"
-                  FontFamily="{DynamicResource Font.Mono}"
-                />
+                <!-- APRS-IS: the server and the filter text. -->
+                <StackPanel Spacing="8" IsVisible="{Binding Sources.IsAprsIs}">
+                  <TextBlock Text="{l:T Settings.Sources.Server}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="SourceServerBox"
+                    Text="{Binding Sources.EditServer}"
+                    PlaceholderText="{l:T Settings.Sources.ServerExample}"
+                    AutomationProperties.Name="{l:T Settings.Sources.Server}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                  />
+                  <TextBlock Text="{l:T Settings.Sources.Filter}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="SourceFilterBox"
+                    Text="{Binding Sources.EditFilter}"
+                    AutomationProperties.Name="{l:T Settings.Sources.Filter}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                  />
+                </StackPanel>
+                <!-- KISS over TCP (F3.1 behavior 1): the TNC's host and port, its radio port, and the profiles using it. -->
+                <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKiss}">
+                  <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="SourceHostBox"
+                    Text="{Binding Sources.EditHost}"
+                    PlaceholderText="{l:T Settings.Sources.HostExample}"
+                    AutomationProperties.Name="{l:T Settings.Sources.Host}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                  />
+                  <WrapPanel ItemSpacing="12">
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{l:T Settings.Sources.Port}" Foreground="{DynamicResource Brush.TextMuted}" />
+                      <TextBox
+                        x:Name="SourcePortBox"
+                        Text="{Binding Sources.EditPort}"
+                        PlaceholderText="8001"
+                        AutomationProperties.Name="{l:T Settings.Sources.Port}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        MinWidth="96"
+                      />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{l:T Settings.Sources.TncPort}" Foreground="{DynamicResource Brush.TextMuted}" />
+                      <TextBox
+                        x:Name="SourceTncPortBox"
+                        Text="{Binding Sources.EditTncPort}"
+                        PlaceholderText="0"
+                        AutomationProperties.Name="{l:T Settings.Sources.TncPort}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        MinWidth="96"
+                      />
+                    </StackPanel>
+                  </WrapPanel>
+                  <TextBlock Text="{l:T Settings.Sources.UseWith}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <ItemsControl ItemsSource="{Binding Sources.EditProfiles}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="s:ProfileChoice">
+                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
                 <TextBlock Text="{l:T Settings.Sources.Name}" Foreground="{DynamicResource Brush.TextMuted}" />
                 <TextBox
                   x:Name="SourceNameBox"

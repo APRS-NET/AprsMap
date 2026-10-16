@@ -10,14 +10,40 @@ namespace AprsMap.Contracts;
 /// <param name="Kind">What it is.</param>
 /// <param name="Server">For APRS-IS: the server as <c>host</c> or <c>host:port</c>.</param>
 /// <param name="Filter">For APRS-IS: filter text added to the automatic filter (F1.2), or null.</param>
+/// <param name="Host">For KISS over TCP: the TNC's host name or address (docs/features/F3.1-kiss-sources.md).</param>
+/// <param name="Port">For KISS over TCP: the TNC's port; null for <see cref="DefaultKissPort"/>.</param>
+/// <param name="TncPort">For KISS: the TNC's radio port, 0 to 15, for multi-port TNCs; null for 0.</param>
 public sealed record SourceSettings(
     string Id,
     string Name,
     SourceKind Kind,
     string? Server = null,
-    string? Filter = null
+    string? Filter = null,
+    string? Host = null,
+    int? Port = null,
+    int? TncPort = null
 )
 {
+    /// <summary>Direwolf's and soundmodem's KISS over TCP port (F3.1 decision 4).</summary>
+    public const int DefaultKissPort = 8001;
+
+    /// <summary>A new KISS over TCP source for <paramref name="host"/>, named after it.</summary>
+    public static SourceSettings KissTcpFor(string host, int? port = null, int? tncPort = null) =>
+        new(
+            Guid.NewGuid().ToString("N"),
+            host.Trim(),
+            SourceKind.KissTcp,
+            Host: host.Trim(),
+            Port: port,
+            TncPort: tncPort
+        );
+
+    /// <summary>"10.10.20.144:8001": where a KISS over TCP source connects; null for other kinds.</summary>
+    public string? KissEndpoint =>
+        Kind == SourceKind.KissTcp && Host is { } host
+            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{host}:{Port ?? DefaultKissPort}")
+            : null;
+
     /// <summary>A new APRS-IS source for <paramref name="server"/>, named after it.</summary>
     public static SourceSettings AprsIsFor(string server, string? filter = null) =>
         new(Guid.NewGuid().ToString("N"), NameFor(server), SourceKind.AprsIs, server, filter);

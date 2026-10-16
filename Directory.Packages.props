@@ -6,6 +6,7 @@
     <PackageVersion Include="AprsNet.AprsIsTcpClient" Version="0.3.0-alpha.3" />
     <PackageVersion Include="AprsNet.DeviceId" Version="0.3.0-alpha.3" />
     <PackageVersion Include="AprsNet.Filters" Version="0.3.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Kiss" Version="0.3.0-alpha.3" />
     <PackageVersion Include="AprsNet.Packets" Version="0.3.0-alpha.3" />
     <PackageVersion Include="AprsNet.Symbols" Version="0.3.0-alpha.3" />
   </ItemGroup>

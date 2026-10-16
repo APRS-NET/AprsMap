@@ -17,6 +17,7 @@
     <PackageReference Include="AprsNet.AprsIsTcpClient" />
     <PackageReference Include="AprsNet.DeviceId" />
     <PackageReference Include="AprsNet.Filters" />
+    <PackageReference Include="AprsNet.Kiss" />
     <PackageReference Include="AprsNet.Packets" />
     <PackageReference Include="AprsNet.Symbols" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
