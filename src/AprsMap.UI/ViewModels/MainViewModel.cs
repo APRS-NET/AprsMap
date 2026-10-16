@@ -68,6 +68,7 @@ public sealed partial class MainViewModel : ObservableObject
             name => _settings is { ReadOnly: false } && _tracks.TryGetValue(name, out var track) && track.Count > 1
         );
         Details.CloseRequested += (_, _) => SelectedStation = null;
+        Details.SelectRequested += (_, name) => SelectedStation = name;
         Details.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(Details.IsFollowing))

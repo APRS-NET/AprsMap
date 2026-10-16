@@ -1033,7 +1033,8 @@ public sealed class MapView : Control, IDisposable
         var at = e.GetPosition(this);
         if (_pressedAt is { } pressed && Math.Abs(at.X - pressed.X) + Math.Abs(at.Y - pressed.Y) < ClickDistance)
         {
-            var hit = HitTest(at)?.Name;
+            // A station, or this station's house: it selects too, for its details and its RF links (F3.1 behavior 8).
+            var hit = HitTest(at)?.Name ?? (IsOverMe(at) && _me is { Name.Length: > 0 } me ? me.Name : null);
             if (
                 hit is null
                 && Selected is { } selected
