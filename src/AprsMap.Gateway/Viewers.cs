@@ -173,7 +173,8 @@ internal static class ViewerGate
 /// connection, refilled at <see cref="GatewayOptions.CallsPerSecond"/> up to <see cref="GatewayOptions.CallBurst"/>.
 /// A call over it fails with <see cref="EngineErrorCodes.GatewayRateLimited"/>; the browser backs off and retries.
 /// </summary>
-internal sealed class ViewerFilter(Viewers viewers, IOptionsMonitor<GatewayOptions> options) : IHubFilter
+internal sealed class ViewerFilter(Viewers viewers, IOptionsMonitor<GatewayOptions> options, Core.Engine engine)
+    : IHubFilter
 {
     private const string LimiterKey = "aprsmap.limiter";
 
@@ -206,6 +207,7 @@ internal sealed class ViewerFilter(Viewers viewers, IOptionsMonitor<GatewayOptio
     )
     {
         viewers.Leave(context.Context.ConnectionId);
+        engine.SetMapView(context.Context.ConnectionId, null); // its map no longer counts for the filter
         if (context.Context.Items.TryGetValue(LimiterKey, out var limiter) && limiter is IDisposable disposable)
         {
             disposable.Dispose();

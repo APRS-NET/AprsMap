@@ -48,6 +48,7 @@ public enum ConnectionState
 /// <c>aprs-is.*</c> codes in <see cref="EngineErrorCodes"/>.
 /// </param>
 /// <param name="Viewers">How many browsers are connected to the gateway (F1.14 behavior 11); null on desktop.</param>
+/// <param name="Filter">The APRS-IS filter in use (F1.2 behavior 7); null before the first login.</param>
 public sealed record EngineStatus(
     ConnectionState Connection,
     string? Server,
@@ -60,5 +61,6 @@ public sealed record EngineStatus(
     DateTimeOffset? RetryAt = null,
     int Reconnects = 0,
     EngineError? ConnectionError = null,
-    int? Viewers = null
+    int? Viewers = null,
+    string? Filter = null
 );

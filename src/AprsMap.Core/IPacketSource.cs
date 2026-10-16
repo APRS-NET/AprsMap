@@ -25,8 +25,8 @@ public interface IPacketSource : IAsyncDisposable
     /// <summary>Reads parsed packets from every connection in turn, until the source is disposed.</summary>
     IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken);
 
-    /// <summary>Sends <paramref name="profile"/>'s filter now and on every later login, without logging in again.</summary>
-    ValueTask SetFilterAsync(StationProfile profile, CancellationToken cancellationToken);
+    /// <summary>Sends <paramref name="filter"/> now and on every later login, without logging in again.</summary>
+    ValueTask SetFilterAsync(string filter, CancellationToken cancellationToken);
 }
 
 /// <summary>A server's answer to a login.</summary>
@@ -49,6 +49,6 @@ public sealed record PacketSourceEvent(
 /// <summary>Creates a <see cref="IPacketSource"/> for each profile the engine logs in with.</summary>
 public interface IPacketSourceFactory
 {
-    /// <summary>Creates a source that logs in with <paramref name="profile"/>.</summary>
-    IPacketSource Create(StationProfile profile);
+    /// <summary>Creates a source that logs in with <paramref name="profile"/> and <paramref name="filter"/>.</summary>
+    IPacketSource Create(StationProfile profile, string filter);
 }

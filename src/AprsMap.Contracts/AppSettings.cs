@@ -55,6 +55,9 @@ public sealed record StationAging(int StaleAfterMinutes, int? RemoveAfterMinutes
 /// <param name="Filter">The server-side filter sent at login, or null for none.</param>
 /// <param name="Latitude">The station's latitude in degrees, when set.</param>
 /// <param name="Longitude">The station's longitude in degrees, when set.</param>
+/// <param name="RangeKm">
+/// How far around the station APRS-IS sends packets, in km (F1.2 behavior 1); 0 sends no range part, as an IGate wants.
+/// </param>
 public sealed record StationProfile(
     string Id,
     string Name,
@@ -63,9 +66,13 @@ public sealed record StationProfile(
     string Server,
     string? Filter,
     double? Latitude,
-    double? Longitude
+    double? Longitude,
+    int RangeKm = StationProfile.DefaultRangeKm
 )
 {
+    /// <summary>The range a new profile gets: 150 km.</summary>
+    public const int DefaultRangeKm = 150;
+
     /// <summary>Whether a change from <paramref name="other"/> to this profile needs a new APRS-IS login.</summary>
     public bool NeedsNewLogin(StationProfile? other) =>
         other is null
@@ -76,13 +83,14 @@ public sealed record StationProfile(
 
     /// <summary>
     /// Whether a change from <paramref name="other"/> to this profile changes the APRS-IS filter, which the live
-    /// connection can take without a new login. Without a filter of its own the engine filters around the location, so
-    /// then a moved location counts too.
+    /// connection can take without a new login: its own filter text, its range or its location (F1.2).
     /// </summary>
     public bool NeedsNewFilter(StationProfile? other) =>
         other is null
         || Filter != other.Filter
-        || (string.IsNullOrWhiteSpace(Filter) && (Latitude != other.Latitude || Longitude != other.Longitude));
+        || RangeKm != other.RangeKm
+        || Latitude != other.Latitude
+        || Longitude != other.Longitude;
 }
 
 /// <summary>Display units, chosen per quantity.</summary>

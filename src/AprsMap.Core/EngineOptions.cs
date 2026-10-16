@@ -46,6 +46,9 @@ public sealed class EngineOptions
     /// <summary>How often the map's station stream sends what changed. Longer means fewer, larger messages.</summary>
     public TimeSpan StationBatchInterval { get; set; } = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>The shortest time between two filter changes sent to APRS-IS (F1.2 behavior 5); later ones are merged.</summary>
+    public TimeSpan FilterInterval { get; set; } = TimeSpan.FromSeconds(5);
+
     /// <summary>The first wait before reconnecting after a failure; doubles up to <see cref="MaxRetryDelay"/>.</summary>
     public TimeSpan InitialRetryDelay { get; set; } = TimeSpan.FromSeconds(5);
 

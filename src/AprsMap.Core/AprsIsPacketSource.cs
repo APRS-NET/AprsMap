@@ -48,8 +48,8 @@ internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketS
     public IAsyncEnumerable<AprsPacket> ReadPacketsAsync(CancellationToken cancellationToken) =>
         connection.ReadPacketsAsync(cancellationToken);
 
-    public ValueTask SetFilterAsync(StationProfile profile, CancellationToken cancellationToken) =>
-        connection.SetFilterAsync(AprsIsPacketSourceFactory.EffectiveFilter(profile), cancellationToken);
+    public ValueTask SetFilterAsync(string filter, CancellationToken cancellationToken) =>
+        connection.SetFilterAsync(filter, cancellationToken);
 
     public ValueTask DisposeAsync() => connection.DisposeAsync();
 
@@ -64,9 +64,9 @@ internal sealed class AprsIsPacketSourceFactory(
     TimeProvider timeProvider
 ) : IPacketSourceFactory
 {
-    public IPacketSource Create(StationProfile profile)
+    public IPacketSource Create(StationProfile profile, string filter)
     {
-        var clientOptions = ClientOptions(profile, timeProvider);
+        var clientOptions = ClientOptions(profile, filter, timeProvider);
         clientOptions.ReconnectDelay = options.Value.InitialRetryDelay;
         clientOptions.MaxReconnectDelay = options.Value.MaxRetryDelay;
         return new AprsIsPacketSource(
@@ -79,14 +79,14 @@ internal sealed class AprsIsPacketSourceFactory(
     /// </summary>
     /// <exception cref="AprsNet.Packets.AprsValidationException">The server, callsign or filter is not usable; it has a code.</exception>
     /// <exception cref="ArgumentException">Another setting is not usable.</exception>
-    internal static AprsIsClientOptions ClientOptions(StationProfile profile, TimeProvider timeProvider)
+    internal static AprsIsClientOptions ClientOptions(StationProfile profile, string filter, TimeProvider timeProvider)
     {
         var endpoint = AprsIsEndpoint.Parse(profile.Server);
         var clientOptions = new AprsIsClientOptions
         {
             Callsign = profile.Callsign,
             Passcode = profile.Passcode,
-            Filter = EffectiveFilter(profile),
+            Filter = filter,
             Endpoint = endpoint,
             SoftwareName = SoftwareToken(Brand.DisplayName),
             SoftwareVersion = SoftwareToken(Brand.Version.Split('+')[0]),
@@ -94,28 +94,6 @@ internal sealed class AprsIsPacketSourceFactory(
         };
         clientOptions.Validate();
         return clientOptions;
-    }
-
-    /// <summary>The radius of the stand-in filter, in km.</summary>
-    internal const int DefaultRangeKm = 150;
-
-    /// <summary>
-    /// The filter sent at login: the profile's own, or a stand-in when it has none. On the user-defined filter port
-    /// (14580) a login without a filter receives only messages addressed to it, so a new profile would show nothing.
-    /// The stand-in is everything within <see cref="DefaultRangeKm"/> km of the station's location, or of its last
-    /// position on APRS-IS when no location is set (aprs-is.net server-side filter commands <c>r/</c> and <c>m/</c>).
-    /// </summary>
-    // Until F1.2 makes the filter follow the map.
-    internal static string EffectiveFilter(StationProfile profile)
-    {
-        if (!string.IsNullOrWhiteSpace(profile.Filter))
-        {
-            return profile.Filter;
-        }
-        var term = profile is { Latitude: { } lat, Longitude: { } lon }
-            ? AprsFilterTerm.Range(new AprsPosition(lat, lon), DefaultRangeKm)
-            : AprsFilterTerm.MyRange(DefaultRangeKm);
-        return term.ToString();
     }
 
     // APRS-IS login fields are space-separated tokens.

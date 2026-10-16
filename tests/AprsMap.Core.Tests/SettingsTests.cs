@@ -223,31 +223,24 @@ public sealed class SettingsTests : IDisposable
     }
 
     [Fact]
-    public void FilterChangesAndMovesWithoutAFilterNeedANewFilter()
+    public void ItsFilterTextRangeAndLocationNeedANewFilter()
     {
-        var profile = TwoProfiles().Profiles[1];
+        var profile = TwoProfiles().Profiles[1] with { Latitude = 40, Longitude = -105 };
 
-        Assert.False(profile.NeedsNewFilter(profile with { Name = "Renamed", Latitude = 1, Longitude = 2 }));
         Assert.True(profile.NeedsNewFilter(null));
         Assert.True(profile.NeedsNewFilter(profile with { Filter = null }));
-
-        // Without a filter of its own, the engine filters around the location, so moving it changes the filter.
-        var unfiltered = profile with
-        {
-            Filter = null,
-            Latitude = 40,
-            Longitude = -105,
-        };
-        Assert.True(unfiltered.NeedsNewFilter(unfiltered with { Latitude = 41 }));
-        Assert.True(unfiltered.NeedsNewFilter(unfiltered with { Longitude = null, Latitude = null }));
-        Assert.False(unfiltered.NeedsNewFilter(unfiltered with { Name = "Renamed" }));
+        Assert.True(profile.NeedsNewFilter(profile with { RangeKm = 50 }));
+        // The location centres my range part (F1.2), with or without the profile's own text.
+        Assert.True(profile.NeedsNewFilter(profile with { Latitude = 41 }));
+        Assert.True(profile.NeedsNewFilter(profile with { Longitude = null, Latitude = null }));
+        Assert.False(profile.NeedsNewFilter(profile with { Name = "Renamed" }));
     }
 
     [Theory]
     [InlineData(null, 38.9991481, -94.6818162, "r/38.9991/-94.6818/150")]
     [InlineData("  ", -33.86, 151.2, "r/-33.86/151.2/150")]
     [InlineData(null, null, null, "m/150")]
-    [InlineData("b/N0CALL*", 40.0, -105.0, "b/N0CALL*")]
+    [InlineData("b/N0CALL*", 40.0, -105.0, "r/40/-105/150 b/N0CALL*")] // the profile's own text is added
     public void AProfileWithoutAFilterGetsOneAroundItsLocation(
         string? filter,
         double? latitude,
@@ -262,7 +255,6 @@ public sealed class SettingsTests : IDisposable
             Longitude = longitude,
         };
 
-        Assert.Equal(expected, AprsIsPacketSourceFactory.EffectiveFilter(profile));
-        Assert.Equal(expected, AprsIsPacketSourceFactory.ClientOptions(profile, TimeProvider.System).Filter);
+        Assert.Equal(expected, FilterComposer.Compose(profile, []));
     }
 }

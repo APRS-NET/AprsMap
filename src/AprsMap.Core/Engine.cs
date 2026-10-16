@@ -31,6 +31,12 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly List<(Channel<PacketView> Channel, PacketFilter? Filter)> _watchers = [];
     private readonly StationStore _stations;
     private readonly DuplicateFilter _duplicates;
+
+    // The map views reported for the filter (F1.2), by viewer, most recently moved last.
+    private readonly List<(string Viewer, MapViewReport View)> _views = [];
+    private string? _filter;
+    private DateTimeOffset _filterSentAt = DateTimeOffset.MinValue;
+    private bool _filterScheduled;
     private Link _link = new(ConnectionState.Disconnected);
     private int _reconnects;
     private IPacketSource? _source;
@@ -97,7 +103,8 @@ public sealed partial class Engine : IEngineService, IDisposable
                     _link.Verified,
                     _link.RetryAt,
                     _reconnects,
-                    _link.Error
+                    _link.Error,
+                    Filter: _filter
                 )
             );
         }
@@ -502,25 +509,134 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <summary>Sends a changed filter on the live session; without one, the next login carries it anyway.</summary>
+    /// <inheritdoc />
+    public Task SetMapViewAsync(MapViewReport view, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        SetMapView(LocalViewer, view);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>The viewer an in-process app reports its map as.</summary>
+    internal const string LocalViewer = "local";
+
+    /// <summary>
+    /// Records what <paramref name="viewer"/>'s map shows (null when it left), and sends a new filter when that changes
+    /// it (F1.2 behaviors 3–5). A view that barely moved is ignored, so a pan doesn't resend; the gateway reports each
+    /// browser by its connection.
+    /// </summary>
+    public void SetMapView(string viewer, MapViewReport? view)
+    {
+        ArgumentNullException.ThrowIfNull(viewer);
+        lock (_gate)
+        {
+            var at = _views.FindIndex(v => v.Viewer == viewer);
+            var last = at < 0 ? null : _views[at].View;
+            if (view is not null && !FilterComposer.Differs(last, view))
+            {
+                return;
+            }
+            if (at >= 0)
+            {
+                _views.RemoveAt(at);
+            }
+            if (view is not null)
+            {
+                _views.Add((viewer, view));
+            }
+        }
+        RefreshFilter();
+    }
+
+    /// <summary>The filter the active profile would be sent with now, for tests.</summary>
+    internal string? PreviewFilter() => _settings?.GetActiveProfile() is { } profile ? ComposeFilter(profile) : null;
+
+    /// <summary>The filter for <paramref name="profile"/> with the map views reported, most recently moved first.</summary>
+    private string ComposeFilter(StationProfile profile)
+    {
+        MapViewReport[] views;
+        lock (_gate)
+        {
+            views = [.. _views.Select(v => v.View).Reverse()];
+        }
+        return FilterComposer.Compose(profile, views);
+    }
+
+    /// <summary>
+    /// Sends the filter again if it changed: at once, or when <see cref="EngineOptions.FilterInterval"/> has passed
+    /// since the last send, merging any change made meanwhile (F1.2 behavior 5). Never a new login.
+    /// </summary>
+    private void RefreshFilter()
+    {
+        var profile = _settings?.GetActiveProfile();
+        if (profile is null)
+        {
+            return;
+        }
+        TimeSpan wait;
+        lock (_gate)
+        {
+            if (_source is null || _filterScheduled)
+            {
+                return; // not logged in (the login takes the current views), or a send is already waiting
+            }
+            wait = _filterSentAt + _options.FilterInterval - _time.GetUtcNow();
+            if (wait > TimeSpan.Zero)
+            {
+                _filterScheduled = true;
+            }
+        }
+        if (wait > TimeSpan.Zero)
+        {
+            _ = SendFilterLaterAsync(wait);
+        }
+        else
+        {
+            _ = SendFilterAsync(profile, CancellationToken.None);
+        }
+    }
+
+    private async Task SendFilterLaterAsync(TimeSpan wait)
+    {
+        try
+        {
+            await Task.Delay(wait, _time).ConfigureAwait(false);
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _filterScheduled = false;
+            }
+        }
+        if (_settings?.GetActiveProfile() is { } profile)
+        {
+            await SendFilterAsync(profile, CancellationToken.None).ConfigureAwait(false);
+        }
+    }
+
     private async Task SendFilterAsync(StationProfile profile, CancellationToken cancellationToken)
     {
+        var filter = ComposeFilter(profile);
         IPacketSource? source;
         lock (_gate)
         {
             source = _source;
-        }
-        if (source is null)
-        {
-            return;
+            if (source is null || filter == _filter)
+            {
+                return;
+            }
+            _filter = filter;
+            _filterSentAt = _time.GetUtcNow();
         }
         try
         {
-            await source.SetFilterAsync(profile, cancellationToken).ConfigureAwait(false);
-            LogFilterChanged(profile.Name);
+            await source.SetFilterAsync(filter, cancellationToken).ConfigureAwait(false);
+            LogFilterChanged(profile.Name, filter);
         }
         catch (ObjectDisposedException)
         {
-            // The session ended meanwhile; the next one logs in with the saved profile.
+            // The session ended meanwhile; the next one logs in with the current filter.
         }
     }
 
@@ -619,7 +735,13 @@ public sealed partial class Engine : IEngineService, IDisposable
         using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var refused = false;
         SetLink(new Link(ConnectionState.Connecting, profile.Server));
-        var source = _sources.Create(profile);
+        var filter = ComposeFilter(profile);
+        lock (_gate)
+        {
+            _filter = filter;
+            _filterSentAt = _time.GetUtcNow();
+        }
+        var source = _sources.Create(profile, filter);
         await using (source.ConfigureAwait(false))
         {
             // Disposing the source stops its callbacks, so a session never reports after the next one has started.
@@ -729,9 +851,9 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Station profile {Profile} changed its filter; sent without a new login"
+        Message = "Station profile {Profile}'s filter is now {Filter}; sent without a new login"
     )]
-    private partial void LogFilterChanged(string profile);
+    private partial void LogFilterChanged(string profile, string filter);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

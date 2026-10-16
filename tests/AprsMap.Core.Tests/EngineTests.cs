@@ -659,6 +659,47 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task MapViewsChangeTheFilterAtMostOnceInTheIntervalWithoutANewLogin()
+    {
+        var sources = new FakeSourceFactory();
+        var session = sources.Enqueue("T2TEST");
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 16, 12, 0, 0, TimeSpan.Zero));
+        var store = InMemorySettingsStore.WithProfile();
+        var engine = CreateEngine(time, sources, settings: store);
+        var settings = await engine.GetSettingsAsync(Ct);
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Profiles = [settings.Profiles[0] with { Filter = null, Latitude = 40, Longitude = -105 }],
+            },
+            Ct
+        );
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await session.Connected.Task.WaitAsync(Ct);
+        Assert.Equal("r/40/-105/150", Assert.Single(sources.LoginFilters));
+        Assert.Equal("r/40/-105/150", (await engine.GetStatusAsync(Ct)).Filter);
+
+        time.Advance(TimeSpan.FromSeconds(10));
+        await engine.SetMapViewAsync(new MapViewReport(39.1, -94.58, 80), Ct);
+        await WaitUntil(() => Task.FromResult(session.Filters.Count == 1));
+        Assert.Equal("r/40/-105/150 r/39.1/-94.58/80", session.Filters.Single());
+
+        // Two more changes inside the interval are merged into one send when it ends.
+        await engine.SetMapViewAsync(new MapViewReport(35, -90, 80), Ct);
+        await engine.SetMapViewAsync(new MapViewReport(35, -90, 80, "W1AW-9"), Ct);
+        Assert.Single(session.Filters);
+        time.Advance(TimeSpan.FromSeconds(5));
+        await WaitUntil(() => Task.FromResult(session.Filters.Count == 2));
+        Assert.Equal("r/40/-105/150 r/35/-90/80 f/W1AW-9/150", session.Filters.Last());
+        Assert.Equal(1, sources.Attempts); // never a new login
+
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
     public async Task AFilterChangeIsSentWithoutANewLogin()
     {
         var sources = new FakeSourceFactory();
@@ -674,7 +715,7 @@ public class EngineTests
         var filtered = settings.Profiles[0] with { Filter = "r/40/-105/50" };
         await engine.SaveSettingsAsync(settings with { Profiles = [filtered] }, Ct);
 
-        Assert.Equal("r/40/-105/50", Assert.Single(session.Filters).Filter);
+        Assert.EndsWith("r/40/-105/50", Assert.Single(session.Filters), StringComparison.Ordinal);
         Assert.Equal(1, sources.Attempts);
         Assert.False(session.Disposed);
         await cts.CancelAsync();
@@ -987,9 +1028,13 @@ public class EngineTests
 
         public void EnqueueRefusal() => _script.Enqueue(new FakeSource(server: null, refuse: true));
 
-        public IPacketSource Create(StationProfile profile)
+        /// <summary>The filter each login was made with.</summary>
+        public System.Collections.Concurrent.ConcurrentQueue<string> LoginFilters { get; } = new();
+
+        public IPacketSource Create(StationProfile profile, string filter)
         {
             Profiles.Enqueue(profile);
+            LoginFilters.Enqueue(filter);
             Interlocked.Increment(ref _attempts);
             return _script.TryDequeue(out var next) && next is not null ? next : new FakeSource(server: null);
         }
@@ -1004,8 +1049,8 @@ public class EngineTests
 
         public bool Disposed { get; private set; }
 
-        /// <summary>The profiles sent with <see cref="SetFilterAsync"/>.</summary>
-        public System.Collections.Concurrent.ConcurrentQueue<StationProfile> Filters { get; } = new();
+        /// <summary>The filters sent with <see cref="SetFilterAsync"/>.</summary>
+        public System.Collections.Concurrent.ConcurrentQueue<string> Filters { get; } = new();
 
         public ValueTask Write(string line) => _lines.Writer.WriteAsync(line, Ct);
 
@@ -1040,9 +1085,9 @@ public class EngineTests
             }
         }
 
-        public ValueTask SetFilterAsync(StationProfile profile, CancellationToken cancellationToken)
+        public ValueTask SetFilterAsync(string filter, CancellationToken cancellationToken)
         {
-            Filters.Enqueue(profile);
+            Filters.Enqueue(filter);
             return ValueTask.CompletedTask;
         }
 

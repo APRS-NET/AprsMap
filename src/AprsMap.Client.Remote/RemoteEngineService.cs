@@ -114,6 +114,13 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     }
 
     /// <inheritdoc />
+    public Task SetMapViewAsync(MapViewReport view, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        return WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SetMapView, view, cancellationToken));
+    }
+
+    /// <inheritdoc />
     public Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);

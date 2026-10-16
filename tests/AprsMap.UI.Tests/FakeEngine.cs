@@ -135,6 +135,15 @@ internal sealed class FakeEngine : IEngineService
             $"{name}>APY500,N2DIGI*,WIDE2-1,qAR,N1GATE:!4000.90N/10516.23W>088/036/A=005280Heading home"
         );
 
+    /// <summary>The map views reported, in order.</summary>
+    public List<MapViewReport> MapViews { get; } = [];
+
+    public Task SetMapViewAsync(MapViewReport view, CancellationToken cancellationToken = default)
+    {
+        MapViews.Add(view);
+        return Task.CompletedTask;
+    }
+
     /// <summary>What <see cref="QueryStationsAsync"/> returns; the last query is kept in <see cref="LastQuery"/>.</summary>
     public StationPage StationPage { get; set; } = new([], 0);
 
