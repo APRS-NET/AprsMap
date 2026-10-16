@@ -8,7 +8,8 @@ around you on a live map, and lists them and their packets. It doesn't send anyt
 
 **Next:** the [0.4.0-alpha.1 milestone](https://github.com/APRS-NET/AprsMap/milestone/2): receiving on RF through KISS
 TNCs (Direwolf over TCP, USB serial TNCs), and the map features this release leaves out: tracks, RF paths, view filters,
-weather, telemetry, area objects, anomaly flags, housekeeping and quick toggles.
+weather, telemetry, area objects, anomaly flags, housekeeping and quick toggles, and a dashboard of live numbers and
+sparklines beside the map.
 
 ## What you'll see
 
@@ -80,7 +81,8 @@ the same window as the desktop app, live.
 | RF: KISS TNCs over TCP and USB serial, as sources beside APRS-IS | F3.1, [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/2) |
 | Tracks, RF paths, view filters, weather, telemetry, area objects, anomaly flags, clearing data, quick toggles | Phase 1, [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/2) |
 | A map picker in the wizard | F0.5, [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/2) |
-| Extra map views, dead reckoning, destination, statistics, saved layouts, web pop-out panels | Phase 1, later |
+| A dashboard tab beside the map: live tiles, sparklines and statistics tables | F1.22, [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/2) |
+| Extra map views, dead reckoning, destination, saved layouts, web pop-out panels | Phase 1, later |
 | Sending anything (beacons, messages, objects) and operator sign-in on the gateway | Phase 2 |
 | GPS, IGate, digipeater | Phase 3 |
 | Translations | F0.9 groundwork is done (English only); translations come from contributors |
