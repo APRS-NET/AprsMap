@@ -191,6 +191,14 @@
                   Content="{l:T Wizard.Location.Method.Device}"
                   IsChecked="{Binding IsDeviceMethod}"
                   IsVisible="{Binding CanUseDeviceLocation}"
+                  Margin="0,0,16,0"
+                />
+                <RadioButton
+                  x:Name="MapChoice"
+                  GroupName="LocationMethod"
+                  Content="{l:T Wizard.Location.Method.Map}"
+                  IsChecked="{Binding IsMapMethod}"
+                  IsVisible="{Binding CanPickOnMap}"
                 />
               </WrapPanel>
 
@@ -292,6 +300,36 @@
                   FontFamily="{DynamicResource Font.Mono}"
                 ></TextBox>
               </DockPanel>
+
+              <!-- Pick on the map (behavior 9.5): pan and zoom under a fixed crosshair, then use its point. -->
+              <StackPanel x:Name="MapPicker" IsVisible="{Binding IsMapMethod}" Spacing="8">
+                <TextBlock
+                  Text="{l:T Wizard.Location.Map.Help}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+                <Panel Height="280">
+                  <Border
+                    x:Name="PickerHost"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    ClipToBounds="True"
+                  />
+                  <!-- The crosshair stays in the middle; the map moves under it. -->
+                  <PathIcon
+                    x:Name="Crosshair"
+                    IsHitTestVisible="False"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Foreground="{DynamicResource Brush.Accent}"
+                    Data="M 11,2 L 13,2 L 13,9 L 11,9 Z M 11,15 L 13,15 L 13,22 L 11,22 Z M 2,11 L 9,11 L 9,13 L 2,13 Z M 15,11 L 22,11 L 22,13 L 15,13 Z"
+                    Width="{DynamicResource Icon.Size}"
+                    Height="{DynamicResource Icon.Size}"
+                  />
+                </Panel>
+                <Button x:Name="UseMapPointButton" Content="{l:T Wizard.Location.Map.Use}" />
+              </StackPanel>
 
               <StackPanel IsVisible="{Binding IsDeviceMethod}" Spacing="8">
                 <TextBlock

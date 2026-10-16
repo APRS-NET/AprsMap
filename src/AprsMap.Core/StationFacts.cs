@@ -44,6 +44,48 @@ internal static class StationFacts
     private static string? Known(string? name) =>
         string.IsNullOrWhiteSpace(name) || name.Equals("Unknown", StringComparison.OrdinalIgnoreCase) ? null : name;
 
+    /// <summary>
+    /// How a packet with <paramref name="path"/> travelled (F1.21 behavior 2): its arrival, and the stations it went
+    /// through in order, the digipeaters that named themselves and then the IGate that heard it on RF.
+    /// </summary>
+    public static (ArrivalKind Kind, IReadOnlyList<(string Name, bool IsGateway)> Hops) Route(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return (ArrivalKind.Unknown, []);
+        }
+        PathAnalysis route;
+        try
+        {
+            route = PathAnalysis.FromPath([.. path.Split(',').Select(PathEntry.Parse)]);
+        }
+        catch (ArgumentException)
+        {
+            return (ArrivalKind.Unknown, []); // a path that isn't one: nothing to draw
+        }
+        catch (FormatException)
+        {
+            return (ArrivalKind.Unknown, []);
+        }
+        var kind = KindOf(route);
+        var hops = new List<(string, bool)>();
+        if (kind == ArrivalKind.Digipeated)
+        {
+            hops.AddRange(route.Digipeaters.Select(d => (d.Value, false)));
+        }
+        if (kind is ArrivalKind.Direct or ArrivalKind.Digipeated && route.EntryStation is { } gateway)
+        {
+            hops.Add((gateway.Value, true));
+        }
+        return (kind, hops);
+    }
+
+    private static ArrivalKind KindOf(PathAnalysis route) =>
+        route.IsFromInternet ? ArrivalKind.Internet
+        : route.IsHeardDirectly ? ArrivalKind.Direct
+        : route.UsedHops.Count > 0 ? ArrivalKind.Digipeated
+        : ArrivalKind.Unknown;
+
     /// <summary>How the packet travelled, from its path; null when it has no readable header.</summary>
     public static StationArrival? Arrival(AprsPacket packet)
     {
@@ -52,11 +94,7 @@ internal static class StationFacts
             return null;
         }
         var route = PathAnalysis.FromPacket(packet);
-        var kind =
-            route.IsFromInternet ? ArrivalKind.Internet
-            : route.IsHeardDirectly ? ArrivalKind.Direct
-            : route.UsedHops.Count > 0 ? ArrivalKind.Digipeated
-            : ArrivalKind.Unknown;
+        var kind = KindOf(route);
         return new StationArrival(
             kind,
             kind == ArrivalKind.Digipeated ? [.. route.Digipeaters.Select(d => d.Value)] : [],

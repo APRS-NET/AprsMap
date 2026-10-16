@@ -63,6 +63,10 @@ public sealed partial class MapViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial DistanceUnit DistanceUnit { get; set; }
 
+    /// <summary>The station's units, for weather on the map (F1.10 behavior 6).</summary>
+    [ObservableProperty]
+    public partial UnitSettings Units { get; set; } = UnitSettings.Metric;
+
     /// <summary>Whether Home is offered.</summary>
     public bool HasHome => Home is not null;
 

@@ -57,6 +57,28 @@ public class PaletteTests
     }
 
     [Theory]
+    [MemberData(nameof(Combinations))]
+    public void TracksStandOutFromTheGround(Palette palette, string variant)
+    {
+        var colours = Load(palette, variant);
+
+        Assert.True(Contrast(colours["Track"], colours["Ground"]) >= 3.0); // a graphic, F1.5 behavior 6
+        Assert.True(Contrast(colours["Track"], colours["Surface"]) >= 3.0);
+    }
+
+    [Theory]
+    [MemberData(nameof(Combinations))]
+    public void AreaColoursStandOutFromTheGround(Palette palette, string variant)
+    {
+        var colours = Load(palette, variant);
+
+        for (var i = 1; i <= 8; i++)
+        {
+            Assert.True(Contrast(colours[$"Area{i}"], colours["Ground"]) >= 3.0, $"Area{i}"); // F1.12 behavior 3
+        }
+    }
+
+    [Theory]
     [InlineData("Light")]
     [InlineData("Dark")]
     public void HighContrastBordersAreVisible(string variant)

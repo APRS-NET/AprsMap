@@ -23,9 +23,13 @@ public sealed record AppSettings(
     UnitSettings Units,
     bool ReadOnly = false,
     StationAging? Aging = null,
-    IReadOnlyList<SourceSettings>? Sources = null
+    IReadOnlyList<SourceSettings>? Sources = null,
+    StationToggles? Toggles = null
 )
 {
+    /// <summary>The toggles in effect: <see cref="Toggles"/>, or everything on.</summary>
+    public StationToggles EffectiveToggles => Toggles ?? StationToggles.AllOn;
+
     /// <summary>The sources, or none.</summary>
     public IReadOnlyList<SourceSettings> SourceList => Sources ?? [];
 
@@ -46,14 +50,62 @@ public sealed record AppSettings(
 }
 
 /// <summary>
+/// The station's quick toggles (docs/features/F1.15-quick-toggles.md): what it may do now, saved with its settings so a
+/// restart keeps a quiet station quiet (decision 2).
+/// </summary>
+/// <param name="Internet">The master switch: off stops APRS-IS, tile downloads and address lookup (decision 1).</param>
+/// <param name="AprsIs">Connect to APRS-IS.</param>
+/// <param name="Tiles">Download map tiles; cached ones still show.</param>
+public sealed record StationToggles(bool Internet = true, bool AprsIs = true, bool Tiles = true)
+{
+    /// <summary>Everything on.</summary>
+    public static StationToggles AllOn { get; } = new();
+
+    /// <summary>Whether APRS-IS may connect: it and the Internet are on.</summary>
+    public bool ConnectsAprsIs => Internet && AprsIs;
+
+    /// <summary>Whether tiles may be downloaded: they and the Internet are on.</summary>
+    public bool DownloadsTiles => Internet && Tiles;
+}
+
+/// <summary>A quick toggle (docs/features/F1.15-quick-toggles.md, behavior 1).</summary>
+public enum Toggle
+{
+    /// <summary>The Internet master switch.</summary>
+    Internet,
+
+    /// <summary>APRS-IS.</summary>
+    AprsIs,
+
+    /// <summary>Map tile downloads.</summary>
+    Tiles,
+}
+
+/// <summary>
 /// When stations, objects and items fade and leave the store (docs/features/F1.3-station-store.md, behaviors 7–9).
 /// The station's setting, not the viewer's: the engine applies it for everyone.
 /// </summary>
 /// <param name="StaleAfterMinutes">Not heard for this long: faded on the map, greyed in lists.</param>
 /// <param name="RemoveAfterMinutes">Not heard for this long: removed; null never removes.</param>
-public sealed record StationAging(int StaleAfterMinutes, int? RemoveAfterMinutes)
+/// <param name="TrackPoints">The most positions a track keeps (docs/features/F1.5-tracks.md, behavior 1).</param>
+/// <param name="TrackMinutes">How long a track keeps a position.</param>
+public sealed record StationAging(
+    int StaleAfterMinutes,
+    int? RemoveAfterMinutes,
+    int TrackPoints = StationAging.DefaultTrackPoints,
+    int TrackMinutes = StationAging.DefaultTrackMinutes
+)
 {
-    /// <summary>Stale after 30 minutes, removed after 2 hours.</summary>
+    /// <summary>A track's default length (decision 1).</summary>
+    public const int DefaultTrackPoints = 500;
+
+    /// <summary>A track's default age, matching the default removal time (decision 1).</summary>
+    public const int DefaultTrackMinutes = 120;
+
+    /// <summary>The most positions a track may be set to keep.</summary>
+    public const int MaxTrackPoints = 5_000;
+
+    /// <summary>Stale after 30 minutes, removed after 2 hours, tracks of 500 points and 2 hours.</summary>
     public static StationAging Default { get; } = new(30, 120);
 }
 

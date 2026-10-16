@@ -24,15 +24,63 @@ public interface IEngineService
     /// <summary>
     /// Streams the map's stations. The first batches hold every station the engine knows (a late joiner catches up
     /// without a separate snapshot call); after that, each batch holds what changed since the previous one, at most
-    /// every few hundred milliseconds, with only the latest state per station.
+    /// every few hundred milliseconds, with only the latest state per station. Only stations that pass
+    /// <paramref name="filter"/> are sent (F1.9): one that stops matching is removed, and one that starts matching
+    /// arrives with its track. To change the filter, start a new stream.
     /// </summary>
-    IAsyncEnumerable<StationBatch> WatchStationsAsync(CancellationToken cancellationToken = default);
+    IAsyncEnumerable<StationBatch> WatchStationsAsync(
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>The values heard so far with their counts, for the View filter's lists (F1.9 behavior 2).</summary>
+    Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Everything known about one station, object or item (F1.3 behavior 14), for the details pane and the station list;
     /// null when the store has no entry by that name.
     /// </summary>
     Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Turns a quick toggle on or off (docs/features/F1.15-quick-toggles.md) and saves it with the settings: APRS-IS
+    /// disconnects or connects at once, and tile downloads and address lookups stop or start.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default);
+
+    /// <summary>How much each kind of Clear would clear now (docs/features/F1.19-housekeeping.md, behavior 1).</summary>
+    Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Clears what <paramref name="scope"/> names (docs/features/F1.19-housekeeping.md) and returns how many it cleared;
+    /// the removals stream to every viewer. Settings, profiles and preferences are never touched.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The RF network over the last hour (docs/features/F1.21-rf-paths.md, behavior 4): every link between two stations
+    /// whose positions are known, with how many packets crossed it.
+    /// </summary>
+    Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>A station's held telemetry reports (F1.11); null when it has sent none.</summary>
+    Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// How a packet travelled (docs/features/F1.21-rf-paths.md, behavior 2): the station's last packet, a track point's,
+    /// or one from the packet list, with the position of each digipeater and IGate the engine knows. Null when the
+    /// engine has no such station or track point.
+    /// </summary>
+    Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Empties a station's track except its latest point (docs/features/F1.5-tracks.md, behavior 10); the change streams
+    /// to every viewer. Nothing happens when there's no such track.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task ClearTrackAsync(string name, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Reports what this app's map shows, for the APRS-IS filter (F1.2): call it when the map stops moving or starts or

@@ -117,12 +117,15 @@ internal static class SettingsValidator
             && (
                 aging.StaleAfterMinutes < 1
                 || aging.RemoveAfterMinutes is { } remove && remove <= aging.StaleAfterMinutes
+                || aging.TrackPoints is < 2 or > StationAging.MaxTrackPoints
+                || aging.TrackMinutes < 1
             )
         )
         {
             throw Fail(
                 EngineErrorCodes.StationAgingInvalid,
-                "Stations go stale after a minute or more, and are removed only after they're stale."
+                "Stations go stale after a minute or more, and are removed only after they're stale; tracks keep 2 to "
+                    + $"{StationAging.MaxTrackPoints} positions for a minute or more."
             );
         }
 

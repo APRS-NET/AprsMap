@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using System.ComponentModel;
 using AprsMap.Contracts;
+using AprsMap.UI.Stations;
 using AprsMap.UI.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 
 namespace AprsMap.UI.Map;
 
@@ -58,6 +60,12 @@ public sealed partial class MapPanel : UserControl, IDisposable
         _map.KeyDown += OnMapKeyDown;
         _map.ContextRequested += OnContextRequested;
         _map.PannedByHand += (_, _) => StopFollowing();
+        FilterButton.Flyout!.Opened += (_, _) => _ = _main?.ViewFilter.RefreshFacetsAsync(); // what's been heard, now
+        _map.TrackPointPicked += (_, point) => _main?.SelectTrackPoint(point.Name, point.Time);
+        // The RF network (F1.21 behavior 5): loaded when chosen, and every half minute while it shows.
+        _map.PathsChanged += (_, _) => _ = LoadLinksAsync();
+        _linkTimer.Tick += (_, _) => _ = LoadLinksAsync();
+        _linkTimer.Start();
         StopFollowingButton.Click += (_, _) => StopFollowing();
         SetMyLocationItem.Click += (_, _) =>
         {
@@ -69,7 +77,11 @@ public sealed partial class MapPanel : UserControl, IDisposable
     }
 
     /// <summary>Releases the map's tiles.</summary>
-    public void Dispose() => _map.Dispose();
+    public void Dispose()
+    {
+        _linkTimer.Stop();
+        _map.Dispose();
+    }
 
     /// <summary>The map surface, for tests.</summary>
     internal MapView View => _map;
@@ -87,6 +99,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.StationsChanged -= OnStationsChanged;
             _main.PropertyChanged -= OnMainChanged;
             _main.Details.CentreRequested -= OnCentreRequested;
+            _main.Details.PropertyChanged -= OnDetailsChanged;
             _main.CentreOnStationRequested -= OnCentreOnStation;
         }
         _main = DataContext as MainViewModel;
@@ -95,9 +108,13 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.StationsChanged += OnStationsChanged;
             _main.PropertyChanged += OnMainChanged;
             _main.Details.CentreRequested += OnCentreRequested;
+            _main.Details.PropertyChanged += OnDetailsChanged;
             _main.CentreOnStationRequested += OnCentreOnStation;
             _map.SetStations(_main.Stations);
+            _map.SetTracks(_main.Tracks);
+            _map.Route = _main.Route;
             _map.SetFilterAreas(_main.FilterAreas);
+            ShowFollowed();
             _map.Select(_main.SelectedStation);
         }
         _state = _main?.Map;
@@ -107,6 +124,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             ShowProvider();
             ShowHome();
             _map.DistanceUnit = _state.DistanceUnit;
+            _map.Units = _state.Units;
             Place();
         }
     }
@@ -184,6 +202,9 @@ public sealed partial class MapPanel : UserControl, IDisposable
             case nameof(MapViewModel.DistanceUnit):
                 _map.DistanceUnit = _state!.DistanceUnit;
                 break;
+            case nameof(MapViewModel.Units):
+                _map.Units = _state!.Units;
+                break;
             case nameof(MapViewModel.IsLoaded):
                 ShowProvider();
                 Place();
@@ -234,6 +255,30 @@ public sealed partial class MapPanel : UserControl, IDisposable
         }
     }
 
+    private readonly DispatcherTimer _linkTimer = new() { Interval = TimeSpan.FromSeconds(30) };
+
+    private async Task LoadLinksAsync()
+    {
+        if (_map.Paths != Appearance.MapPaths.Network || _main is null)
+        {
+            _map.Links = [];
+            return;
+        }
+        _map.Links = await _main.LoadNetworkLinksAsync();
+    }
+
+    /// <summary>The followed station's track is drawn in its own style (F1.5 behavior 6).</summary>
+    private void OnDetailsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(StationDetailsViewModel.FollowingText))
+        {
+            ShowFollowed();
+        }
+    }
+
+    private void ShowFollowed() =>
+        _map.Followed = _main?.Details is { IsFollowing: true } details ? details.Name : null;
+
     private void StopFollowing()
     {
         if (_main is not null)
@@ -265,6 +310,10 @@ public sealed partial class MapPanel : UserControl, IDisposable
         if (e.PropertyName == nameof(MainViewModel.SelectedStation) && _main is not null)
         {
             _map.Select(_main.SelectedStation);
+        }
+        else if (e.PropertyName == nameof(MainViewModel.Route) && _main is not null)
+        {
+            _map.Route = _main.Route;
         }
         else if (e.PropertyName == nameof(MainViewModel.FilterAreas) && _main is not null)
         {
@@ -311,6 +360,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
         if (ReferenceEquals(batch, MainViewModel.Snapshot) && _main is not null)
         {
             _map.SetStations(_main.Stations); // replaced as a whole
+            _map.SetTracks(_main.Tracks);
         }
         else
         {

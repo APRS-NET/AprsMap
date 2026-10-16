@@ -71,10 +71,21 @@ internal sealed class FakeEngine : IEngineService
         }
     }
 
+    /// <summary>The filters <see cref="WatchStationsAsync"/> was asked with, in order.</summary>
+    public List<StationFilter?> StationFilters { get; } = [];
+
+    /// <summary>What <see cref="GetViewFacetsAsync"/> answers.</summary>
+    public ViewFacets Facets { get; set; } = new([], [], [], []);
+
+    public Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Facets);
+
     public async IAsyncEnumerable<StationBatch> WatchStationsAsync(
+        StationFilter? filter = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
+        StationFilters.Add(filter);
         var stations = _stations;
         Interlocked.Increment(ref _stationSubscriptions);
         await foreach (var batch in stations.Reader.ReadAllAsync(cancellationToken))
@@ -171,6 +182,80 @@ internal sealed class FakeEngine : IEngineService
     }
 
     public int Reconnects { get; private set; }
+
+    /// <summary>The toggles <see cref="SetToggleAsync"/> set, in order.</summary>
+    public List<(Toggle Toggle, bool Enabled)> Toggled { get; } = [];
+
+    public Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default)
+    {
+        Toggled.Add((toggle, enabled));
+        var toggles = Settings.EffectiveToggles;
+        Settings = Settings with
+        {
+            Toggles = toggle switch
+            {
+                Toggle.Internet => toggles with { Internet = enabled },
+                Toggle.AprsIs => toggles with { AprsIs = enabled },
+                _ => toggles with { Tiles = enabled },
+            },
+        };
+        return Task.CompletedTask;
+    }
+
+    /// <summary>What <see cref="GetClearCountsAsync"/> answers.</summary>
+    public ClearCounts ClearCounts { get; set; } = new(0, 0, 0, 0);
+
+    /// <summary>The scopes <see cref="ClearAsync"/> cleared, in order.</summary>
+    public List<ClearScope> Cleared { get; } = [];
+
+    /// <summary>When set, <see cref="ClearAsync"/> throws it.</summary>
+    public Exception? ClearFailure { get; set; }
+
+    public Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(ClearCounts);
+
+    public Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default)
+    {
+        if (ClearFailure is { } failure)
+        {
+            return Task.FromException<int>(failure);
+        }
+        Cleared.Add(scope);
+        return Task.FromResult(1);
+    }
+
+    /// <summary>What <see cref="GetNetworkLinksAsync"/> answers.</summary>
+    public List<NetworkLink> Links { get; } = [];
+
+    public Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<NetworkLink>>([.. Links]);
+
+    /// <summary>What <see cref="GetTelemetryAsync"/> answers, by station; none by default.</summary>
+    public Dictionary<string, TelemetryView> Telemetry { get; } = [];
+
+    public Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Telemetry.GetValueOrDefault(name));
+
+    /// <summary>What <see cref="GetRouteAsync"/> answers, by station; none by default.</summary>
+    public Dictionary<string, PacketRoute> Routes { get; } = [];
+
+    /// <summary>The queries <see cref="GetRouteAsync"/> was asked, in order.</summary>
+    public List<RouteQuery> RouteQueries { get; } = [];
+
+    public Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default)
+    {
+        RouteQueries.Add(query);
+        return Task.FromResult(Routes.GetValueOrDefault(query.Name));
+    }
+
+    /// <summary>The stations whose track <see cref="ClearTrackAsync"/> cleared, in order.</summary>
+    public List<string> ClearedTracks { get; } = [];
+
+    public Task ClearTrackAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ClearedTracks.Add(name);
+        return Task.CompletedTask;
+    }
 
     /// <summary>When set, <see cref="ReconnectAsync"/> throws it.</summary>
     public Exception? ReconnectFailure { get; set; }

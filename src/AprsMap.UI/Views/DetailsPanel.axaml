@@ -84,6 +84,12 @@
           <Button x:Name="CentreButton" Content="{l:T Details.Centre}" Command="{Binding CentreCommand}" />
           <ToggleButton x:Name="FollowButton" Content="{l:T Details.Follow}" IsChecked="{Binding IsFollowing}" />
           <Button x:Name="CopyPositionButton" Content="{l:T Details.CopyPosition}" />
+          <Button
+            x:Name="ClearTrackButton"
+            Content="{l:T Details.ClearTrack}"
+            Command="{Binding ClearTrackCommand}"
+            IsVisible="{Binding CanClearTrack}"
+          />
         </WrapPanel>
         <Grid IsVisible="{Binding PositionText, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid.ColumnDefinitions>
@@ -179,6 +185,111 @@
             Margin="0,0,12,0"
           />
           <SelectableTextBlock x:Name="ArrivalValue" Grid.Column="1" Text="{Binding ArrivalText}" TextWrapping="Wrap" />
+        </Grid>
+        <!-- Problems with its packets in the last hour (F1.20 behavior 5), in the warning colour with their names. -->
+        <StackPanel x:Name="ProblemsSection" Spacing="2" IsVisible="{Binding HasProblems}">
+          <TextBlock
+            Text="{l:T Details.Label.Problems}"
+            FontWeight="SemiBold"
+            Foreground="{DynamicResource Brush.Warn}"
+            Margin="0,4,0,2"
+          />
+          <ItemsControl ItemsSource="{Binding Problems}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:DetailLine">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,12,0" />
+                  <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+        <StackPanel x:Name="WeatherSection" Spacing="2" IsVisible="{Binding HasWeather}">
+          <TextBlock Text="{l:T Details.Label.Weather}" FontWeight="SemiBold" Margin="0,4,0,2" />
+          <ItemsControl ItemsSource="{Binding Weather}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:DetailLine">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,12,0" />
+                  <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+        <!-- Telemetry (F1.11): the latest values and a chart per channel; raw until definitions apply (G09). -->
+        <StackPanel x:Name="TelemetrySection" Spacing="2" IsVisible="{Binding HasTelemetry}">
+          <TextBlock Text="{l:T Details.Label.Telemetry}" FontWeight="SemiBold" Margin="0,4,0,2" />
+          <TextBlock
+            Text="{Binding TelemetryText}"
+            TextWrapping="Wrap"
+            Foreground="{DynamicResource Brush.TextMuted}"
+          />
+          <ItemsControl ItemsSource="{Binding Telemetry}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:TelemetryChannel">
+                <Grid Margin="0,2">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,12,0" />
+                  <SelectableTextBlock Grid.Column="1" Text="{Binding Latest}" MinWidth="56" Margin="0,0,8,0" />
+                  <s:Sparkline
+                    Grid.Column="2"
+                    Values="{Binding Values}"
+                    Stroke="{DynamicResource Brush.Accent}"
+                    Height="18"
+                    AutomationProperties.Name="{Binding ChartName}"
+                  />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Grid IsVisible="{Binding TelemetryBits, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+              Text="{l:T Details.Telemetry.Bits}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              Margin="0,0,12,0"
+            />
+            <SelectableTextBlock
+              Grid.Column="1"
+              Text="{Binding TelemetryBits}"
+              FontFamily="{DynamicResource Font.Mono}"
+            />
+          </Grid>
+          <TextBlock
+            Text="{l:T Details.Telemetry.Raw}"
+            TextWrapping="Wrap"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            FontSize="{DynamicResource Text.Small}"
+          />
+        </StackPanel>
+        <Grid IsVisible="{Binding RouteText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Route}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock x:Name="RouteValue" Grid.Column="1" Text="{Binding RouteText}" TextWrapping="Wrap" />
         </Grid>
         <Grid IsVisible="{Binding HeardViaText, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid.ColumnDefinitions>

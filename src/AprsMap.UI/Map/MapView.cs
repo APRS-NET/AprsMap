@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
+using AprsMap.UI.Appearance;
 using AprsNet.Packets;
 using Avalonia;
 using Avalonia.Controls;
@@ -45,6 +46,12 @@ public sealed class MapView : Control, IDisposable
     private readonly Mapsui.Map _map = new();
     private readonly MapRenderer _renderer = new();
     private readonly StationLayer _stations = new();
+    private readonly TrackLayer _tracks = new();
+    private SKColor _trackColour = SKColors.Transparent;
+    private SKColor _followedColour = SKColors.Transparent;
+    private SKColor _casingColour = SKColors.Transparent;
+    private SKColor _textColour = SKColors.Transparent;
+    private readonly SKColor[] _areaColours = new SKColor[8];
     private readonly Dictionary<string, MapLabel> _labels = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StationMark> _byName = new(StringComparer.Ordinal);
     private IReadOnlyList<StationMark> _marks = [];
@@ -115,12 +122,57 @@ public sealed class MapView : Control, IDisposable
             v =>
             {
                 _ringPen = v is Color c ? new ImmutablePen(new ImmutableSolidColorBrush(c), 2) : null;
+                _followedColour = v is Color a ? new SKColor(a.R, a.G, a.B, a.A) : SKColors.Transparent;
                 _filterPen = v is Color f
                     ? new ImmutablePen(new ImmutableSolidColorBrush(f), 1.5, new ImmutableDashStyle([4, 4], 0))
                     : null;
             }
         );
         Watch("Map.ShowFilterCircles", v => ShowFilterCircles = v is true);
+        Watch("Map.Tracks", v => Tracks = v is MapTracks tracks ? tracks : MapTracks.All);
+        Watch("Map.Paths", v => Paths = v is MapPaths paths ? paths : MapPaths.SelectedStation);
+        Watch(
+            "Map.WeatherLabels",
+            v => WeatherLabels = v is MapWeatherLabels labels ? labels : MapWeatherLabels.Temperature
+        );
+        Watch("Map.Wind", v => Wind = v is MapWind wind ? wind : MapWind.Off);
+        Watch("Map.ShowAreas", v => ShowAreas = v is not false);
+        for (var i = 0; i < _areaColours.Length; i++)
+        {
+            var token = i;
+            Watch(
+                $"Color.Area{token + 1}",
+                v =>
+                {
+                    _areaColours[token] = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                    InvalidateVisual();
+                }
+            );
+        }
+        Watch(
+            "Color.Text",
+            v =>
+            {
+                _textColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                InvalidateVisual();
+            }
+        );
+        Watch(
+            "Color.Track",
+            v =>
+            {
+                _trackColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                InvalidateVisual();
+            }
+        );
+        Watch(
+            "Color.Surface",
+            v =>
+            {
+                _casingColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                InvalidateVisual();
+            }
+        );
         Watch("Color.TextMuted", v => _dot = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent);
         ActualThemeVariantChanged += (_, _) => InvalidateVisual();
     }
@@ -173,6 +225,232 @@ public sealed class MapView : Control, IDisposable
         InvalidateVisual();
     }
 
+    /// <summary>Which tracks are drawn (F1.5 behavior 8).</summary>
+    public MapTracks Tracks
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = MapTracks.All;
+
+    /// <summary>The station the map follows, whose track is drawn thicker in the accent colour (F1.5 behavior 6).</summary>
+    public string? Followed
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>The station's units, for weather labels (F1.10 behavior 6).</summary>
+    public UnitSettings Units
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = UnitSettings.Metric;
+
+    /// <summary>What weather stations' labels add under the callsign (F1.10 behavior 4).</summary>
+    public MapWeatherLabels WeatherLabels
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = MapWeatherLabels.Temperature;
+
+    /// <summary>Whether weather stations get wind barbs (F1.10 behavior 5).</summary>
+    public MapWind Wind
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>The label text for <paramref name="mark"/>: its name, and a weather line under it (F1.10 behavior 4).</summary>
+    internal string LabelText(StationMark mark) =>
+        WeatherLabels != MapWeatherLabels.Off
+        && Localization.WeatherText.MapLine(
+            mark.Weather,
+            WeatherLabels == MapWeatherLabels.TemperatureAndWind,
+            Units,
+            Localization.Localizer.Instance
+        )
+            is { } line
+            ? mark.Name + "\n" + line
+            : mark.Name;
+
+    /// <summary>This frame's wind barbs for the stations on screen; null with barbs off.</summary>
+    internal WindBarbs? BuildBarbs(IReadOnlyList<StationMark> marks, SKPoint[] screen)
+    {
+        if (Wind != MapWind.Barbs)
+        {
+            return null;
+        }
+        var barbs = new WindBarbs();
+        var visible = new Rect(Bounds.Size).Inflate(_symbolDip * 2);
+        for (var i = 0; i < marks.Count; i++)
+        {
+            if (
+                marks[i].Weather is { WindDirection: { } from, WindSpeedMs: { } speed }
+                && visible.Contains(new Point(screen[i].X, screen[i].Y))
+            )
+            {
+                barbs.Add(screen[i], from, speed, (float)(_symbolDip / 2));
+            }
+        }
+        return barbs;
+    }
+
+    /// <summary>Whether area objects are drawn as their shapes (F1.12 behavior 7).</summary>
+    public bool ShowAreas
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = true;
+
+    /// <summary>This frame's area shapes; null with them off.</summary>
+    internal AreaFrame? BuildAreas(Viewport viewport, IReadOnlyList<StationMark> marks) =>
+        ShowAreas
+            ? AreaFrame.Build(
+                marks,
+                (x, y) => ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default)),
+                viewport.Resolution,
+                [.. _areaColours]
+            )
+            : null;
+
+    /// <summary>
+    /// Each signpost's text on a small sign over its symbol (F1.12 behavior 6), in the theme's text and surface colours.
+    /// </summary>
+    private void DrawSignposts(DrawingContext context, IReadOnlyList<StationMark> marks, SKPoint[] screen)
+    {
+        if (_labelBrush is null || _haloBrush is null)
+        {
+            return;
+        }
+        var visible = new Rect(Bounds.Size);
+        var pen = new Pen(_labelBrush, 1);
+        for (var i = 0; i < marks.Count; i++)
+        {
+            if (marks[i].Signpost is not { Length: > 0 } sign || !visible.Contains(new Point(screen[i].X, screen[i].Y)))
+            {
+                continue;
+            }
+            var text = new FormattedText(
+                sign,
+                System.Globalization.CultureInfo.InvariantCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(GetValue(TextElement.FontFamilyProperty), FontStyle.Normal, FontWeight.Bold),
+                _labelSize,
+                _labelBrush
+            );
+            var width = Math.Max(text.Width + 6, _symbolDip * 0.8);
+            var box = new Rect(screen[i].X - width / 2, screen[i].Y - text.Height / 2 - 2, width, text.Height + 4);
+            context.DrawRectangle(_haloBrush, pen, box, 3, 3);
+            context.DrawText(text, new Point(box.X + (width - text.Width) / 2, box.Y + 2));
+        }
+    }
+
+    /// <summary>Which packet paths are drawn (F1.21 behavior 6).</summary>
+    public MapPaths Paths
+    {
+        get;
+        set
+        {
+            var changed = field != value;
+            field = value;
+            InvalidateVisual();
+            if (changed)
+            {
+                PathsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    } = MapPaths.SelectedStation;
+
+    /// <summary>Raised when <see cref="Paths"/> changes: the network's links are loaded when it's chosen.</summary>
+    public event EventHandler? PathsChanged;
+
+    /// <summary>The route of the selected packet, drawn with <see cref="Paths"/> on (F1.21 behavior 2).</summary>
+    public PacketRoute? Route
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>Raised when a point of the selected station's track is clicked, with the station and the point's time.</summary>
+    public event EventHandler<(string Name, DateTimeOffset Time)>? TrackPointPicked;
+
+    /// <summary>The RF network's links, drawn with <see cref="Paths"/> set to Network (F1.21 behavior 5).</summary>
+    public IReadOnlyList<NetworkLink> Links
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = [];
+
+    /// <summary>This frame's network links; null unless Paths shows the network.</summary>
+    internal LinkFrame? BuildLinks(Viewport viewport) =>
+        Paths == MapPaths.Network && Links.Count > 0
+            ? LinkFrame.Build(
+                Links,
+                (x, y) => ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default)),
+                _trackColour,
+                _casingColour
+            )
+            : null;
+
+    /// <summary>This frame's route drawing; null with nothing to draw.</summary>
+    internal RouteFrame? BuildRoute(Viewport viewport) =>
+        Paths != MapPaths.SelectedStation
+            ? null
+            : RouteFrame.Build(
+                Route,
+                (x, y) => ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default)),
+                (float)(_symbolDip / 2),
+                _followedColour,
+                _casingColour
+            );
+
+    /// <summary>The tracks held, for tests.</summary>
+    internal TrackLayer TrackLayer => _tracks;
+
+    /// <summary>Every station's track, replacing those held (a panel shown again, or a resubscription).</summary>
+    public void SetTracks(IEnumerable<KeyValuePair<string, IReadOnlyList<TrackPoint>>> tracks)
+    {
+        ArgumentNullException.ThrowIfNull(tracks);
+        _tracks.Clear();
+        foreach (var (name, points) in tracks)
+        {
+            _tracks.Apply(new TrackUpdate(name, points, Reset: true));
+        }
+        InvalidateVisual();
+    }
+
     /// <summary>Whether callsigns are drawn under the symbols, where they fit (behavior 17).</summary>
     public bool ShowLabels { get; set; } = true;
 
@@ -198,6 +476,11 @@ public sealed class MapView : Control, IDisposable
         foreach (var name in batch.Removed)
         {
             _byName.Remove(name);
+            _tracks.Remove(name);
+        }
+        foreach (var update in batch.Tracks ?? [])
+        {
+            _tracks.Apply(update);
         }
         _marks = [.. _byName.Values];
         _drawn = _me is null ? _marks : [.. _marks, _me];
@@ -406,9 +689,36 @@ public sealed class MapView : Control, IDisposable
         // The map and symbols first: the tiles would cover anything drawn before them.
         // Everything the render thread needs is read here, on the UI thread: styled properties such as the theme
         // variant can't be read from the render thread (on desktop that throws every frame and blanks the window).
-        context.Custom(
-            new DrawOperation(new Rect(Bounds.Size), this, marks, screen, (float)_symbolDip, _dot, EffectiveDimming)
+        var tracks = _tracks.Build(
+            viewport,
+            TrackStyleFor,
+            new TrackColours(_trackColour, _followedColour, _casingColour)
         );
+        var route = BuildRoute(viewport);
+        var barbs = BuildBarbs(marks, screen);
+        var areas = BuildAreas(viewport, marks);
+        var links = BuildLinks(viewport);
+        context.Custom(
+            new DrawOperation(
+                new Rect(Bounds.Size),
+                this,
+                marks,
+                screen,
+                (float)_symbolDip,
+                _dot,
+                EffectiveDimming,
+                tracks,
+                route,
+                barbs,
+                areas,
+                links
+            )
+        );
+        DrawSignposts(context, marks, screen);
+        if (route?.DirectLabel is var (at, km))
+        {
+            DrawRouteLabel(context, new Point(at.X, at.Y), km);
+        }
         DrawFilterAreas(context, viewport);
         DrawLabels(context, marks, screen);
         if (Selected is { } name && _ringPen is not null && FindIndex(marks, name) is { } selected)
@@ -420,6 +730,41 @@ public sealed class MapView : Control, IDisposable
         {
             Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
         }
+    }
+
+    /// <summary>The distance of a direct route, on the dotted line, in a box like a label's halo (F1.21 behavior 2).</summary>
+    private void DrawRouteLabel(DrawingContext context, Point at, double km)
+    {
+        if (_labelBrush is null || _haloBrush is null)
+        {
+            return;
+        }
+        var text = new FormattedText(
+            Localization.RangeText.Distance(km, DistanceUnit, Localization.Localizer.Instance),
+            Localization.Localizer.Instance.Culture,
+            FlowDirection.LeftToRight,
+            Typeface.Default,
+            _labelSize,
+            _labelBrush
+        );
+        var box = new Rect(at.X - (text.Width / 2) - 3, at.Y - (text.Height / 2) - 1, text.Width + 6, text.Height + 2);
+        context.DrawRectangle(_haloBrush, null, box, 3, 3);
+        context.DrawText(text, new Point(box.X + 3, box.Y + 1));
+    }
+
+    /// <summary>How a station's track is drawn now, or null for not at all (F1.5 behaviors 6–8).</summary>
+    internal (TrackStyle, bool)? TrackStyleFor(string name)
+    {
+        var style =
+            name == Followed ? TrackStyle.Followed
+            : name == Selected ? TrackStyle.Selected
+            : Tracks == MapTracks.All ? TrackStyle.Other
+            : (TrackStyle?)null;
+        if (Tracks == MapTracks.None || style is not { } drawn)
+        {
+            return null;
+        }
+        return (drawn, _byName.TryGetValue(name, out var mark) && mark.IsStale);
     }
 
     /// <summary>
@@ -478,7 +823,7 @@ public sealed class MapView : Control, IDisposable
             {
                 continue;
             }
-            var label = Label(marks[i].Name);
+            var label = Label(LabelText(marks[i]));
             var rect = new Rect(at.X - label.Width / 2, at.Y + _symbolDip / 2 + 1, label.Width, label.Height);
             if (!placed.TryAdd(rect.Inflate(1)))
             {
@@ -519,7 +864,10 @@ public sealed class MapView : Control, IDisposable
                     typeface,
                     _labelSize,
                     brush
-                );
+                )
+                {
+                    TextAlignment = TextAlignment.Center, // a weather line centres under the callsign
+                };
             if (_labels.Count >= MaxLabels)
             {
                 ClearLabels(); // bounded: names come and go
@@ -652,7 +1000,20 @@ public sealed class MapView : Control, IDisposable
         var at = e.GetPosition(this);
         if (_pressedAt is { } pressed && Math.Abs(at.X - pressed.X) + Math.Abs(at.Y - pressed.Y) < ClickDistance)
         {
-            Select(HitTest(at)?.Name); // a click on a station selects it; on the background, clears (behavior 18)
+            var hit = HitTest(at)?.Name;
+            if (
+                hit is null
+                && Selected is { } selected
+                && _tracks.PointAt(selected, _map.Navigator.Viewport, new SKPoint((float)at.X, (float)at.Y), 6)
+                    is { } time
+            )
+            {
+                TrackPointPicked?.Invoke(this, (selected, time)); // the packet behind a point of the selected track
+            }
+            else
+            {
+                Select(hit); // a click on a station selects it; on the background, clears (behavior 18)
+            }
         }
         _pressedAt = null;
         QueueRefresh();
@@ -923,12 +1284,24 @@ public sealed class MapView : Control, IDisposable
         SKPoint[] screen,
         float symbolDip,
         SKColor dot,
-        double dimming
+        double dimming,
+        TrackLayer.TrackFrame tracks,
+        RouteFrame? route,
+        WindBarbs? barbs,
+        AreaFrame? areas,
+        LinkFrame? links
     ) : ICustomDrawOperation
     {
         public Rect Bounds => bounds;
 
-        public void Dispose() { }
+        public void Dispose()
+        {
+            tracks.Dispose();
+            route?.Dispose();
+            barbs?.Dispose();
+            areas?.Dispose();
+            links?.Dispose();
+        }
 
         public bool Equals(ICustomDrawOperation? other) => false;
 
@@ -964,8 +1337,14 @@ public sealed class MapView : Control, IDisposable
                 canvas.DrawRect(0, 0, (float)bounds.Width, (float)bounds.Height, dim);
             }
             canvas.Restore();
+            // Tracks over the tiles and under the symbols (F1.5 behavior 5).
+            areas?.Draw(canvas); // area shapes under tracks and symbols (F1.12 behavior 4)
+            links?.Draw(canvas); // the RF network (F1.21 behavior 5)
+            tracks.Draw(canvas);
+            route?.Draw(canvas); // the selected packet's route over the tracks (F1.21 behavior 2)
             // Stations over the tiles (and over the dimming, so they keep their contrast).
             owner._stations.Draw(canvas, marks, screen, symbolDip, Math.Max(1f, canvas.TotalMatrix.ScaleX), dot);
+            barbs?.Draw(canvas, owner._textColour, owner._casingColour); // wind over the symbols (F1.10 behavior 5)
         }
     }
 }

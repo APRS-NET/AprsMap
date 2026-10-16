@@ -29,6 +29,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly AppearanceService _appearance;
     private readonly bool _showPseudoLanguage;
     private readonly Dictionary<string, StationState> _stations = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<TrackPoint>> _tracks = new(StringComparer.Ordinal);
     private AppSettings? _settings;
     private bool _showingSettings;
     private EngineStatus? _status;
@@ -61,7 +62,8 @@ public sealed partial class MainViewModel : ObservableObject
             time,
             _text,
             () => _settings?.Units ?? UnitSettings.Metric,
-            SourceNames
+            SourceNames,
+            name => _settings is { ReadOnly: false } && _tracks.TryGetValue(name, out var track) && track.Count > 1
         );
         Details.CloseRequested += (_, _) => SelectedStation = null;
         Details.PropertyChanged += (_, e) =>
@@ -77,6 +79,9 @@ public sealed partial class MainViewModel : ObservableObject
             _text,
             () => _settings?.Units ?? UnitSettings.Metric
         );
+        ViewFilter = new Stations.ViewFilterViewModel(engine, _text);
+        ViewFilter.Changed += (_, _) => OnViewFilterChanged();
+        StationList.Filter = () => ViewFilter.Current;
         Shell = new ShellViewModel(this, _text, managedWindows);
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
@@ -251,7 +256,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The Settings page while it is open, or null (docs/features/F0.6-appearance.md).</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(OpenSettingsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenSettingsCommand), nameof(OpenClearDataCommand))]
     public partial SettingsViewModel? Settings { get; set; }
 
     private bool CanOpenSettings() => Settings is null && Setup is null;
@@ -266,7 +271,10 @@ public sealed partial class MainViewModel : ObservableObject
             SharedStation,
             canResetStation: _settings is { ReadOnly: false },
             ResetAppAsync
-        );
+        )
+        {
+            Clear = _settings is { ReadOnly: false } ? new ClearDataViewModel(engine, _text) : null,
+        };
         var mapItems = Map is null
             ? null
             : SettingsRegistry.Map(
@@ -278,6 +286,9 @@ public sealed partial class MainViewModel : ObservableObject
                     : null
             );
         var sources = new SourcesSectionViewModel(engine, _text, Show);
+        var unitItems = _settings is { ReadOnly: false }
+            ? SettingsRegistry.Units(_text, () => _settings?.Units ?? UnitSettings.Metric, SaveUnits)
+            : null;
         var settings = new SettingsViewModel(
             _appearance,
             time,
@@ -286,7 +297,8 @@ public sealed partial class MainViewModel : ObservableObject
             profiles,
             data,
             mapItems,
-            sources
+            sources,
+            unitItems
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
@@ -308,6 +320,26 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Saves new station aging times (Settings › Map, F1.3 behavior 9); a refusal shows in the error line.</summary>
+    /// <summary>Saves the station's units (F1.10 behavior 6) and shows them at once.</summary>
+    private async void SaveUnits(UnitSettings units)
+    {
+        if (_settings is not { } settings)
+        {
+            return;
+        }
+        var changed = settings with { Units = units };
+        try
+        {
+            await engine.SaveSettingsAsync(changed);
+            Show(changed);
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            ShowError(ex);
+        }
+    }
+
     private async void SaveAging(StationAging aging)
     {
         if (_settings is not { } settings)
@@ -334,7 +366,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             return;
         }
-        var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation, mode, settings, profile);
+        var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation, mode, settings, profile) { Map = Map };
         try
         {
             await wizard.LoadAsync();
@@ -358,7 +390,22 @@ public sealed partial class MainViewModel : ObservableObject
         Settings = null;
     }
 
-    partial void OnSetupChanged(SetupWizardViewModel? value) => OpenSettingsCommand.NotifyCanExecuteChanged();
+    partial void OnSetupChanged(SetupWizardViewModel? value)
+    {
+        OpenSettingsCommand.NotifyCanExecuteChanged();
+        OpenClearDataCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>The main menu's Clear data: Settings › Data, where Clear is (docs/features/F1.19-housekeeping.md).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanOpenSettings))]
+    internal async Task OpenClearDataAsync()
+    {
+        await OpenSettingsAsync();
+        Settings?.ShowData();
+    }
+
+    /// <summary>Whether this viewer may clear the station's data, for the main menu.</summary>
+    public bool CanClearData => _settings is { ReadOnly: false };
 
     private async Task ReloadSettingsAsync()
     {
@@ -479,6 +526,7 @@ public sealed partial class MainViewModel : ObservableObject
             Map.UseProvider(_appearance.Current.MapProvider);
             _appearance.Changed += (_, settings) => Map.UseProvider(settings.MapProvider);
         }
+        await ViewFilter.LoadAsync(Preferences);
         await StationList.LoadAsync();
         var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
@@ -497,8 +545,29 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var name in batch.Removed)
         {
             _stations.Remove(name);
+            _tracks.Remove(name);
+        }
+        foreach (var update in batch.Tracks ?? [])
+        {
+            if (!_tracks.TryGetValue(update.Name, out var points))
+            {
+                _tracks[update.Name] = points = [];
+            }
+            UI.Map.TrackUpdates.Apply(points, update, p => p);
+            if (points.Count == 0)
+            {
+                _tracks.Remove(update.Name);
+            }
         }
         StationCount = _stations.Count;
+        ViewFilter.ShowCounts(_stations.Count, _status?.Stations ?? _stations.Count);
+        if (
+            _routeQuery is { Path: null, TrackPoint: null } following
+            && batch.Changed.Any(s => s.Name == following.Name)
+        )
+        {
+            _ = ShowRouteAsync(following); // the station's last packet changed
+        }
         StationsChanged?.Invoke(this, batch);
         Details.Changed(batch);
         StationList.Changed();
@@ -506,6 +575,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Every station on the map, by name, as the station stream has them.</summary>
     public IReadOnlyCollection<StationState> Stations => _stations.Values;
+
+    /// <summary>Every station's track (F1.5), oldest point first, as the station stream has them.</summary>
+    public IEnumerable<KeyValuePair<string, IReadOnlyList<TrackPoint>>> Tracks =>
+        _tracks.Select(t => KeyValuePair.Create(t.Key, (IReadOnlyList<TrackPoint>)t.Value));
 
     /// <summary>
     /// Raised after each batch from the station stream (about every 250 ms at most), with the batch; after a fresh
@@ -526,9 +599,77 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSelectedStationChanged(string? value)
     {
         _ = Details.ShowAsync(value);
+        _ = ShowRouteAsync(value is null ? null : new RouteQuery(value));
         if (value is not null)
         {
             LastSelectedStation = value;
+        }
+    }
+
+    /// <summary>
+    /// The route drawn for the selection (docs/features/F1.21-rf-paths.md, behavior 2): the selected station's last
+    /// packet, a packet picked in the list, or a track point's; null for none.
+    /// </summary>
+    [ObservableProperty]
+    public partial PacketRoute? Route { get; private set; }
+
+    private RouteQuery? _routeQuery;
+    private int _routeLoads;
+
+    /// <summary>The RF network's links over the last hour (F1.21 behavior 4); empty when the engine can't be reached.</summary>
+    internal async Task<IReadOnlyList<NetworkLink>> LoadNetworkLinksAsync()
+    {
+        try
+        {
+            return await engine.GetNetworkLinksAsync();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>A packet picked in the packet list: its station is selected and that packet's route shown.</summary>
+    public void SelectPacket(PacketView packet)
+    {
+        ArgumentNullException.ThrowIfNull(packet);
+        if (packet.Source.Length == 0)
+        {
+            return;
+        }
+        SelectedStation = packet.Source;
+        _ = ShowRouteAsync(
+            new RouteQuery(packet.Source, packet.Path ?? string.Empty, packet.Latitude, packet.Longitude)
+        );
+    }
+
+    /// <summary>A point of the selected station's track picked on the map: that packet's route (F1.5 behavior 6).</summary>
+    public void SelectTrackPoint(string name, DateTimeOffset time)
+    {
+        SelectedStation = name;
+        _ = ShowRouteAsync(new RouteQuery(name, TrackPoint: time));
+    }
+
+    private async Task ShowRouteAsync(RouteQuery? query)
+    {
+        _routeQuery = query;
+        var load = ++_routeLoads;
+        PacketRoute? route = null;
+        if (query is not null)
+        {
+            try
+            {
+                route = await engine.GetRouteAsync(query);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
+            {
+                route = null; // the engine went away; the next selection asks again
+            }
+        }
+        if (load == _routeLoads)
+        {
+            Route = route;
+            Details.ShowRoute(route);
         }
     }
 
@@ -614,6 +755,97 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>The Internet master switch (F1.15).</summary>
+    [ObservableProperty]
+    public partial bool InternetOn { get; private set; } = true;
+
+    /// <summary>APRS-IS (F1.15).</summary>
+    [ObservableProperty]
+    public partial bool AprsIsOn { get; private set; } = true;
+
+    /// <summary>Map tile downloads (F1.15).</summary>
+    [ObservableProperty]
+    public partial bool TilesOn { get; private set; } = true;
+
+    /// <summary>Whether this viewer may change the toggles (F1.15 behavior 6).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanToggleDependents))]
+    public partial bool CanToggle { get; private set; }
+
+    /// <summary>Whether APRS-IS and Map tiles can be changed: Internet is on (behavior 2).</summary>
+    public bool CanToggleDependents => CanToggle && InternetOn;
+
+    /// <summary>"Internet off", "APRS-IS off": a marker in the status bar per toggle that is off (behavior 4).</summary>
+    public ObservableCollection<string> ToggleMarkers { get; } = [];
+
+    /// <summary>Said to screen readers when a toggle changes (behavior 5).</summary>
+    [ObservableProperty]
+    public partial string? ToggleAnnouncement { get; private set; }
+
+    /// <summary>Turns <paramref name="toggle"/> the other way (F1.15).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task ToggleAsync(Toggle toggle)
+    {
+        var on = toggle switch
+        {
+            Toggle.Internet => !InternetOn,
+            Toggle.AprsIs => !AprsIsOn,
+            _ => !TilesOn,
+        };
+        try
+        {
+            await engine.SetToggleAsync(toggle, on);
+            var toggles = (_status?.Toggles ?? StationToggles.AllOn) switch
+            {
+                var t when toggle == Toggle.Internet => t with { Internet = on },
+                var t when toggle == Toggle.AprsIs => t with { AprsIs = on },
+                var t => t with { Tiles = on },
+            };
+            ShowToggles(toggles);
+            ToggleAnnouncement = _text.Format(
+                "Toggles.Announce",
+                new Dictionary<string, object?> { ["name"] = _text[$"Toggles.{toggle}"], ["on"] = on ? "yes" : "no" }
+            );
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private void ShowToggles(StationToggles toggles)
+    {
+        InternetOn = toggles.Internet;
+        AprsIsOn = toggles.AprsIs;
+        TilesOn = toggles.Tiles;
+        OnPropertyChanged(nameof(CanToggleDependents));
+        var markers = new List<string>();
+        if (!toggles.Internet)
+        {
+            markers.Add(_text["Toggles.Marker.Internet"]);
+        }
+        if (!toggles.AprsIs)
+        {
+            markers.Add(_text["Toggles.Marker.AprsIs"]);
+        }
+        if (!toggles.Tiles)
+        {
+            markers.Add(_text["Toggles.Marker.Tiles"]);
+        }
+        if (!markers.SequenceEqual(ToggleMarkers))
+        {
+            ToggleMarkers.Clear();
+            foreach (var marker in markers)
+            {
+                ToggleMarkers.Add(marker);
+            }
+        }
+    }
+
+    /// <summary>The View filter (F1.9), for the map and the station list.</summary>
+    public Stations.ViewFilterViewModel ViewFilter { get; }
+
     /// <summary>The Stations panel (F1.7).</summary>
     public Stations.StationListViewModel StationList { get; }
 
@@ -642,7 +874,13 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Shows freshly loaded settings without treating them as the user's choice.</summary>
     internal void Show(AppSettings settings)
     {
+        var couldClear = CanClearData;
         _settings = settings;
+        CanToggle = !settings.ReadOnly;
+        if (CanClearData != couldClear)
+        {
+            OnPropertyChanged(nameof(CanClearData));
+        }
         _showingSettings = true;
         try
         {
@@ -676,6 +914,7 @@ public sealed partial class MainViewModel : ObservableObject
             Map.Home = active is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
             Map.HomeName = active?.Callsign;
             Map.DistanceUnit = settings.Units.Distance;
+            Map.Units = settings.Units;
         }
         var notSetUp = settings.Profiles.Count == 0;
         ShowGatewaySetupNote = notSetUp && settings.ReadOnly;
@@ -698,7 +937,7 @@ public sealed partial class MainViewModel : ObservableObject
         _openingSetup = true;
         try
         {
-            var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation);
+            var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation) { Map = Map };
             await wizard.LoadAsync();
             wizard.Closed += OnSetupClosed;
             Setup = wizard;
@@ -771,7 +1010,12 @@ public sealed partial class MainViewModel : ObservableObject
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();
         PacketCount = status.PacketsReceived;
+        if (_status is { } before && status.PacketHistory != before.PacketHistory)
+        {
+            PacketList.Clear(); // someone cleared the packet history (F1.19 behavior 3)
+        }
         _status = status;
+        ShowToggles(status.Toggles ?? StationToggles.AllOn);
         _engineUnreachable = false;
         ShowConnection();
     }
@@ -817,15 +1061,48 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    private CancellationTokenSource? _stationsRestart;
+
+    /// <summary>The View filter changed (F1.9): the station stream starts again with it, and the list asks again.</summary>
+    private void OnViewFilterChanged()
+    {
+        _stationsRestart?.Cancel();
+        _ = StationList.RefreshAsync();
+        ViewFilter.ShowCounts(_stations.Count, _status?.Stations ?? _stations.Count);
+    }
+
     private async Task WatchStationsAsync(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            using var restart = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _stationsRestart = restart;
+            try
+            {
+                await WatchStationsOnceAsync(restart.Token);
+                return;
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // The View filter changed: a new stream with a new snapshot.
+            }
+            finally
+            {
+                _stationsRestart = null;
+            }
+        }
+    }
+
+    private async Task WatchStationsOnceAsync(CancellationToken cancellationToken)
     {
         // The first batches are a full snapshot, so a resubscription starts from scratch once it arrives.
         var first = true;
-        await foreach (var batch in engine.WatchStationsAsync(cancellationToken))
+        await foreach (var batch in engine.WatchStationsAsync(ViewFilter.Current, cancellationToken))
         {
             if (first)
             {
                 _stations.Clear();
+                _tracks.Clear();
                 StationsChanged?.Invoke(this, Snapshot);
                 first = false;
             }

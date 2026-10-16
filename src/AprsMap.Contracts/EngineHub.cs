@@ -46,6 +46,30 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.SaveSettingsAsync"/>.</summary>
     public const string SaveSettings = "SaveSettings";
 
+    /// <summary>Hub method for <see cref="IEngineService.SetToggleAsync"/>.</summary>
+    public const string SetToggle = "SetToggle";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetViewFacetsAsync"/>.</summary>
+    public const string GetViewFacets = "GetViewFacets";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetClearCountsAsync"/>.</summary>
+    public const string GetClearCounts = "GetClearCounts";
+
+    /// <summary>Hub method for <see cref="IEngineService.ClearAsync"/>.</summary>
+    public const string Clear = "Clear";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetNetworkLinksAsync"/>.</summary>
+    public const string GetNetworkLinks = "GetNetworkLinks";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetTelemetryAsync"/>.</summary>
+    public const string GetTelemetry = "GetTelemetry";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetRouteAsync"/>.</summary>
+    public const string GetRoute = "GetRoute";
+
+    /// <summary>Hub method for <see cref="IEngineService.ClearTrackAsync"/>.</summary>
+    public const string ClearTrack = "ClearTrack";
+
     /// <summary>Hub method for <see cref="IEngineService.ReconnectAsync"/>.</summary>
     public const string Reconnect = "Reconnect";
 

@@ -137,7 +137,7 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
         await remote.StartAsync(Ct);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        await using var watch = remote.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        await using var watch = remote.WatchStationsAsync(cancellationToken: cts.Token).GetAsyncEnumerator(cts.Token);
         Assert.True(await watch.MoveNextAsync());
         var station = Assert.Single(watch.Current.Changed, s => s.Name == name);
         Assert.Equal("/>", station.Symbol);

@@ -6,9 +6,17 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:l="using:AprsMap.UI.Localization"
   xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:st="using:AprsMap.UI.Stations"
   x:Class="AprsMap.UI.Map.MapPanel"
   x:DataType="vm:MainViewModel"
 >
+  <UserControl.Styles>
+    <!-- A filter in effect shows on its button too (F1.9 behavior 4). -->
+    <Style Selector="Button#FilterButton.on">
+      <Setter Property="Background" Value="{DynamicResource Brush.AccentSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+    </Style>
+  </UserControl.Styles>
   <UserControl.Resources>
     <ContextMenu x:Key="MapMenu" x:Name="MapMenu">
       <MenuItem x:Name="SetMyLocationItem" Header="{l:T Map.SetMyLocation}" />
@@ -128,7 +136,206 @@
           Height="{DynamicResource Icon.Size}"
         />
       </Button>
+      <Button
+        x:Name="FilterButton"
+        ToolTip.Tip="{l:T Filter.Button}"
+        AutomationProperties.Name="{l:T Filter.Button}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        Classes.on="{Binding ViewFilter.IsFiltered}"
+      >
+        <!-- A funnel, drawn for this app: the View filter (F1.9 behavior 4). -->
+        <PathIcon
+          Data="M 3,4 L 21,4 L 14,12.5 L 14,19 L 10,21 L 10,12.5 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+        <Button.Flyout>
+          <Flyout Placement="LeftEdgeAlignedTop">
+            <ScrollViewer MaxHeight="560" Width="300">
+              <StackPanel x:Name="FilterPanel" Spacing="14" Margin="4">
+                <TextBlock Text="{l:T Filter.Title}" FontWeight="SemiBold" />
+                <TextBlock
+                  Text="{l:T Filter.Help}"
+                  TextWrapping="Wrap"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                />
+                <ToggleSwitch
+                  x:Name="FilterOnSwitch"
+                  IsChecked="{Binding ViewFilter.IsOn}"
+                  OnContent="{l:T Filter.On}"
+                  OffContent="{l:T Filter.ShowAll}"
+                  AutomationProperties.Name="{l:T Filter.On}"
+                />
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Filter.Label.Kinds}" FontWeight="SemiBold" />
+                  <ComboBox
+                    x:Name="FilterKinds"
+                    ItemsSource="{Binding ViewFilter.KindOptions}"
+                    SelectedItem="{Binding ViewFilter.Kind}"
+                    AutomationProperties.Name="{l:T Filter.Label.Kinds}"
+                    MinWidth="240"
+                  >
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="st:FilterOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Filter.Label.Heard}" FontWeight="SemiBold" />
+                  <ComboBox
+                    x:Name="FilterHeard"
+                    ItemsSource="{Binding ViewFilter.HeardOptions}"
+                    SelectedItem="{Binding ViewFilter.Heard}"
+                    AutomationProperties.Name="{l:T Filter.Label.Heard}"
+                    MinWidth="240"
+                  >
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="st:FilterOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Filter.Label.Reception}" FontWeight="SemiBold" />
+                  <ComboBox
+                    x:Name="FilterReception"
+                    ItemsSource="{Binding ViewFilter.ReceptionOptions}"
+                    SelectedItem="{Binding ViewFilter.ReceptionChoice}"
+                    AutomationProperties.Name="{l:T Filter.Label.Reception}"
+                    MinWidth="240"
+                  >
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="st:FilterOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.Capability}" FontWeight="SemiBold" />
+                  <CheckBox x:Name="FilterMessages" IsChecked="{Binding ViewFilter.MessageCapable}">
+                    <TextBlock Text="{l:T Filter.MessageCapable}" TextWrapping="Wrap" />
+                  </CheckBox>
+                  <CheckBox x:Name="FilterWeather" IsChecked="{Binding ViewFilter.WithWeather}">
+                    <TextBlock Text="{l:T Filter.WithWeather}" TextWrapping="Wrap" />
+                  </CheckBox>
+                  <CheckBox x:Name="FilterTrack" IsChecked="{Binding ViewFilter.WithTrack}">
+                    <TextBlock Text="{l:T Filter.WithTrack}" TextWrapping="Wrap" />
+                  </CheckBox>
+                  <CheckBox x:Name="FilterTelemetry" IsChecked="{Binding ViewFilter.WithTelemetry}">
+                    <TextBlock Text="{l:T Filter.WithTelemetry}" TextWrapping="Wrap" />
+                  </CheckBox>
+                  <CheckBox x:Name="FilterProblems" IsChecked="{Binding ViewFilter.HasProblems}">
+                    <TextBlock Text="{l:T Filter.HasProblems}" TextWrapping="Wrap" />
+                  </CheckBox>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.Categories}" FontWeight="SemiBold" />
+                  <TextBlock
+                    Text="{l:T Filter.None}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    IsVisible="{Binding !ViewFilter.Categories.Count}"
+                  />
+                  <ItemsControl x:Name="FilterCategories" ItemsSource="{Binding ViewFilter.Categories}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.Devices}" FontWeight="SemiBold" />
+                  <TextBlock
+                    Text="{l:T Filter.None}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    IsVisible="{Binding !ViewFilter.DeviceClasses.Count}"
+                  />
+                  <ItemsControl x:Name="FilterDevices" ItemsSource="{Binding ViewFilter.DeviceClasses}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.MicE}" FontWeight="SemiBold" />
+                  <TextBlock
+                    Text="{l:T Filter.None}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    IsVisible="{Binding !ViewFilter.MicEStatuses.Count}"
+                  />
+                  <ItemsControl x:Name="FilterMicE" ItemsSource="{Binding ViewFilter.MicEStatuses}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.Tags}" FontWeight="SemiBold" />
+                  <TextBlock
+                    Text="{l:T Filter.None}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    IsVisible="{Binding !ViewFilter.Tags.Count}"
+                  />
+                  <ItemsControl x:Name="FilterTags" ItemsSource="{Binding ViewFilter.Tags}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <TextBlock
+                  Text="{l:T Filter.Emergencies}"
+                  TextWrapping="Wrap"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                />
+                <Button
+                  x:Name="FilterResetButton"
+                  Content="{l:T Filter.Reset}"
+                  Command="{Binding ViewFilter.ResetCommand}"
+                />
+              </StackPanel>
+            </ScrollViewer>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
     </StackPanel>
+    <!-- While a View filter hides stations (F1.9 behavior 4): what's shown, and a way back to everything. -->
+    <Border
+      x:Name="FilterChip"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Top"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Accent}"
+      BorderThickness="{DynamicResource Thickness.Border}"
+      CornerRadius="{DynamicResource Radius.Control}"
+      Padding="10,2,4,2"
+      Margin="10"
+      IsVisible="{Binding ViewFilter.IsFiltered}"
+    >
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="{Binding ViewFilter.ChipText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+        <Button x:Name="ShowAllButton" Content="{l:T Filter.ShowAll}" Command="{Binding ViewFilter.ShowAllCommand}" />
+      </StackPanel>
+    </Border>
     <Border
       x:Name="AttributionBar"
       HorizontalAlignment="Right"

@@ -87,7 +87,7 @@ public sealed partial class PacketsPanel : UserControl
     {
         if (Main is { } main && e.AddedItems.OfType<PacketRow>().LastOrDefault() is { Source.Length: > 0 } row)
         {
-            main.SelectedStation = row.Source;
+            main.SelectPacket(row.Packet);
         }
     }
 

@@ -87,12 +87,19 @@
                 VerticalAlignment="Center"
                 Margin="0,0,8,0"
               />
-              <TextBlock
-                Grid.Column="1"
-                Text="{Binding Name}"
-                FontFamily="{DynamicResource Font.Mono}"
-                FontWeight="SemiBold"
-              />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource Font.Mono}" FontWeight="SemiBold" />
+                <!-- Problems in the last hour (F1.20 behavior 6): a shape and a name, never colour alone. -->
+                <PathIcon
+                  IsVisible="{Binding HasProblems}"
+                  Foreground="{DynamicResource Brush.Warn}"
+                  Data="F0 M 12,2 L 23,21 L 1,21 Z M 11,9 L 13,9 L 13,15 L 11,15 Z M 11,17 L 13,17 L 13,19 L 11,19 Z"
+                  Width="{DynamicResource Icon.Size}"
+                  Height="{DynamicResource Icon.Size}"
+                  ToolTip.Tip="{l:T Stations.HasProblems}"
+                  AutomationProperties.Name="{l:T Stations.HasProblems}"
+                />
+              </StackPanel>
               <TextBlock
                 Grid.Column="2"
                 Text="{Binding HeardText}"
