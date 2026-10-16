@@ -61,4 +61,41 @@ public sealed class TelemetryDisplayTests
         vm.SelectedStation = null;
         Assert.False(vm.Details.HasTelemetry);
     }
+
+    [Fact]
+    public async Task TheDetailsListProblemsWithTheirCountAndLatestExample()
+    {
+        var engine = new FakeEngine();
+        engine.Details["N0BAD"] = new StationDetail(
+            "N0BAD",
+            StationKind.Station,
+            T0,
+            2,
+            false,
+            null,
+            null,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            Problems: [new StationProblem(StationProblem.Invalid, 3, new EngineError("aprs.parse.x", "Bad latitude."))]
+        );
+        var vm = new MainViewModel(engine, new FakeTimeProvider(T0));
+
+        vm.SelectedStation = "N0BAD";
+        for (var i = 0; i < 200 && !vm.Details.HasProblems; i++)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, TestContext.Current.CancellationToken);
+        }
+
+        var line = Assert.Single(vm.Details.Problems);
+        Assert.Equal("Invalid packets", line.Label);
+        Assert.Equal("3 times in the last hour. Latest: Bad latitude.", line.Value);
+    }
 }

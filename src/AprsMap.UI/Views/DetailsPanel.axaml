@@ -186,6 +186,29 @@
           />
           <SelectableTextBlock x:Name="ArrivalValue" Grid.Column="1" Text="{Binding ArrivalText}" TextWrapping="Wrap" />
         </Grid>
+        <!-- Problems with its packets in the last hour (F1.20 behavior 5), in the warning colour with their names. -->
+        <StackPanel x:Name="ProblemsSection" Spacing="2" IsVisible="{Binding HasProblems}">
+          <TextBlock
+            Text="{l:T Details.Label.Problems}"
+            FontWeight="SemiBold"
+            Foreground="{DynamicResource Brush.Warn}"
+            Margin="0,4,0,2"
+          />
+          <ItemsControl ItemsSource="{Binding Problems}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:DetailLine">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,12,0" />
+                  <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
         <StackPanel x:Name="WeatherSection" Spacing="2" IsVisible="{Binding HasWeather}">
           <TextBlock Text="{l:T Details.Label.Weather}" FontWeight="SemiBold" Margin="0,4,0,2" />
           <ItemsControl ItemsSource="{Binding Weather}">

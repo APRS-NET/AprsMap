@@ -213,6 +213,35 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         TelemetryBits = latest.Digital.Count > 0 ? string.Concat(latest.Digital.Select(b => b ? '1' : '0')) : null;
     }
 
+    /// <summary>"Invalid packets: 3 in the last hour · latest: …" for each problem (F1.20 behavior 5); empty without any.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<DetailLine> Problems { get; } = [];
+
+    /// <summary>Whether the station's packets had problems in the last hour.</summary>
+    [ObservableProperty]
+    public partial bool HasProblems { get; private set; }
+
+    private void WriteProblems(IReadOnlyList<StationProblem>? problems)
+    {
+        Problems.Clear();
+        HasProblems = problems is { Count: > 0 };
+        foreach (var problem in problems ?? [])
+        {
+            Problems.Add(
+                new DetailLine(
+                    _text[$"Details.Problem.{problem.Kind}"],
+                    _text.Format(
+                        "Details.Problem.Count",
+                        new Dictionary<string, object?>
+                        {
+                            ["count"] = problem.Count,
+                            ["latest"] = problem.Latest is { } latest ? _text.Format(latest) : string.Empty,
+                        }
+                    )
+                )
+            );
+        }
+    }
+
     /// <summary>Whether the station has sent weather.</summary>
     [ObservableProperty]
     public partial bool HasWeather { get; private set; }
@@ -422,6 +451,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             Symbol = KindText = HeardText = HeardTime = PositionText = LocatorText = RangeText = MotionText = null;
             Comment = Status = ArrivalText = Path = DeviceText = LastPacket = HeardViaText = null;
             WriteWeather(null, units: UnitSettings.Metric, lastHeard: default);
+            WriteProblems(null);
             return;
         }
         var culture = _text.Culture;
@@ -469,6 +499,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         RangeText = Localization.RangeText.Format(d.DistanceKm, d.BearingDegrees, units.Distance, _text);
         MotionText = Motion(d, units, culture);
         WriteWeather(d.Weather, units, d.LastHeard);
+        WriteProblems(d.Problems);
         Comment = Visible(d.Comment);
         Status = Visible(d.Status);
         ArrivalText = Arrival(d.Arrival);

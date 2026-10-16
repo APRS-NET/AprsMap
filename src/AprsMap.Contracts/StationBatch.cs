@@ -161,6 +161,7 @@ public enum StationKind
 /// <param name="FirstHeardVia">The source its latest report arrived on first (F1.25 behavior 9).</param>
 /// <param name="SeenOn">Other sources its latest report was heard on.</param>
 /// <param name="Weather">Its latest weather readings (F1.10), when it has sent any.</param>
+/// <param name="Problems">What's wrong with its packets over the last hour (F1.20), when anything is.</param>
 public sealed record StationDetail(
     string Name,
     StationKind Kind,
@@ -187,8 +188,21 @@ public sealed record StationDetail(
     string? LastPacket = null,
     string? FirstHeardVia = null,
     IReadOnlyList<string>? SeenOn = null,
-    StationWeather? Weather = null
+    StationWeather? Weather = null,
+    IReadOnlyList<StationProblem>? Problems = null
 );
+
+/// <summary>
+/// One kind of problem with a station's packets over the last hour (docs/features/F1.20-anomalies.md, behavior 5).
+/// </summary>
+/// <param name="Kind">The flag: <see cref="Invalid"/> now; the track anomalies once APRS.NET reports them (G24).</param>
+/// <param name="Count">How many of its packets had it in the last hour.</param>
+/// <param name="Latest">The latest example, as an engine error the UI translates (a parse issue for Invalid).</param>
+public sealed record StationProblem(string Kind, int Count, EngineError? Latest)
+{
+    /// <summary>A packet with parse errors (behavior 2).</summary>
+    public const string Invalid = "invalid";
+}
 
 /// <summary>The equipment or software that sent a packet (docs/features/F1.6-station-details.md, behavior 2.7).</summary>
 /// <param name="Vendor">The maker, for example <c>Yaesu</c>.</param>

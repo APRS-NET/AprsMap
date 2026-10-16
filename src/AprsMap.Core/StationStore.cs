@@ -106,6 +106,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
 
             var entry = Touch(source.Value, StationKind.Station, packet, receivedAt, raw);
             CountLinks(entry, receivedAt);
+            NoteProblems(entry, packet, receivedAt);
             switch (packet.Payload)
             {
                 case PositionedPayload positioned:
@@ -158,6 +159,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             foreach (var entry in _entries.Values)
             {
                 TrimTelemetry(entry, now);
+                TrimProblems(entry, now);
                 var old = 0;
                 while (old < entry.Track.Count && entry.Track[old].Time < trackBefore)
                 {
@@ -686,6 +688,31 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         }
     }
 
+    /// <summary>How long a problem counts toward a station's (F1.20 behavior 3).</summary>
+    internal static readonly TimeSpan ProblemWindow = TimeSpan.FromHours(1);
+
+    /// <summary>A packet with parse errors counts as invalid for its station (F1.20 behavior 2).</summary>
+    private static void NoteProblems(Entry entry, AprsPacket packet, DateTimeOffset at)
+    {
+        var errors = PacketSummarizer
+            .Issues(packet)
+            .Where(e => e.Arg(EngineErrorArgs.Severity) == EngineErrorArgs.SeverityError)
+            .ToList();
+        if (errors.Count > 0)
+        {
+            entry.Invalid.Enqueue((at, errors[0]));
+        }
+        TrimProblems(entry, at);
+    }
+
+    private static void TrimProblems(Entry entry, DateTimeOffset now)
+    {
+        while (entry.Invalid.TryPeek(out var oldest) && oldest.At < now - ProblemWindow)
+        {
+            entry.Invalid.Dequeue();
+        }
+    }
+
     /// <summary>Counts each link the packet just heard from <paramref name="sender"/> crossed on RF (F1.21 behavior 4).</summary>
     private void CountLinks(Entry sender, DateTimeOffset at)
     {
@@ -1011,6 +1038,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 && (!filter.WithWeather || Weather is not null)
                 && (!filter.WithTrack || Track.Count > 1)
                 && (!filter.WithTelemetry || Telemetry is { Count: > 0 })
+                && (!filter.HasProblems || HasProblems)
                 && (filter.DeviceClasses is not { Count: > 0 } classes || classes.Contains(DeviceClass ?? string.Empty))
                 && (
                     filter.MicEStatuses is not { Count: > 0 } statuses
@@ -1024,6 +1052,12 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
 
         /// <summary>What it shows, for a signpost (F1.12).</summary>
         public string? Signpost { get; set; }
+
+        /// <summary>Its invalid packets over the last hour, oldest first, each with its first error (F1.20).</summary>
+        public Queue<(DateTimeOffset At, EngineError Issue)> Invalid { get; } = new();
+
+        /// <summary>Whether its packets had problems in the last hour (F1.20).</summary>
+        public bool HasProblems => Invalid.Count > 0;
 
         /// <summary>Its telemetry reports, oldest first (F1.11), once it has sent any.</summary>
         public List<TelemetrySample>? Telemetry { get; set; }
@@ -1091,7 +1125,8 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 distance,
                 bearing,
                 text is { Length: > RowCommentLength } ? text[..RowCommentLength] : text,
-                HasPosition
+                HasPosition,
+                HasProblems
             );
         }
 
@@ -1125,7 +1160,8 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 text,
                 FirstHeardVia,
                 SeenOn.Count == 0 ? null : [.. SeenOn],
-                Weather
+                Weather,
+                HasProblems ? [new StationProblem(StationProblem.Invalid, Invalid.Count, Invalid.Last().Issue)] : null
             );
         }
 

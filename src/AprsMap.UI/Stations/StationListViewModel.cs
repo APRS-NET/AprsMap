@@ -364,6 +364,10 @@ public sealed partial class StationListRow(StationRow row) : ObservableObject
     [ObservableProperty]
     public partial bool IsStale { get; private set; } = row.IsStale;
 
+    /// <summary>Its packets had problems in the last hour: a marker on the row (F1.20 behavior 6).</summary>
+    [ObservableProperty]
+    public partial bool HasProblems { get; private set; } = row.HasProblems;
+
     /// <summary>"4 min".</summary>
     [ObservableProperty]
     public partial string HeardText { get; private set; } = string.Empty;
@@ -380,6 +384,7 @@ public sealed partial class StationListRow(StationRow row) : ObservableObject
     {
         Row = row;
         IsStale = row.IsStale;
+        HasProblems = row.HasProblems;
         Comment = StationDetailsViewModel.Visible(row.Comment);
     }
 

@@ -1764,6 +1764,21 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>{channel} over the held reports: {values}</value>
     <comment>The accessible name of a channel's chart, which lists its values for screen readers.</comment>
   </data>
+  <data name="Filter.HasProblems" xml:space="preserve">
+    <value>sent invalid packets in the last hour</value>
+  </data>
+  <data name="Stations.HasProblems" xml:space="preserve">
+    <value>Problems with its packets in the last hour</value>
+  </data>
+  <data name="Details.Label.Problems" xml:space="preserve">
+    <value>Problems</value>
+  </data>
+  <data name="Details.Problem.invalid" xml:space="preserve">
+    <value>Invalid packets</value>
+  </data>
+  <data name="Details.Problem.Count" xml:space="preserve">
+    <value>{count, plural, one {once} other {# times}} in the last hour. Latest: {latest}</value>
+  </data>
   <data name="Settings.Map.Tracks" xml:space="preserve">
     <value>Tracks</value>
     <comment>Settings › Map: which stations' recent routes are drawn as lines.</comment>

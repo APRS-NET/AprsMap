@@ -68,7 +68,8 @@ public sealed record StationRow(
     double? DistanceKm,
     int? BearingDegrees,
     string? Comment,
-    bool HasPosition
+    bool HasPosition,
+    bool HasProblems = false
 );
 
 /// <summary>A page of the station list, and how many rows match in all.</summary>
@@ -88,6 +89,7 @@ public sealed record StationPage(IReadOnlyList<StationRow> Rows, int Total);
 /// <param name="WithWeather">Only stations that send weather (F1.10).</param>
 /// <param name="WithTrack">Only stations with a track of two or more positions (F1.5).</param>
 /// <param name="WithTelemetry">Only stations that send telemetry (F1.11).</param>
+/// <param name="HasProblems">Only stations whose packets had problems in the last hour (F1.20).</param>
 /// <param name="DeviceClasses">Device classes shown (aprs-deviceid's, such as <c>Tracker</c>); null or empty for all.</param>
 /// <param name="MicEStatuses">Mic-E statuses shown (APRS.NET's <c>MicEMessage</c> names); null or empty for all.</param>
 /// <param name="Tags">Comment and status tags shown (<c>!word!</c> and <c>#word</c>, as written); null or empty for all.</param>
@@ -102,7 +104,8 @@ public sealed record StationFilter(
     IReadOnlyList<string>? DeviceClasses = null,
     IReadOnlyList<string>? MicEStatuses = null,
     IReadOnlyList<string>? Tags = null,
-    bool WithTelemetry = false
+    bool WithTelemetry = false,
+    bool HasProblems = false
 )
 {
     /// <summary>Shows everything.</summary>
@@ -120,7 +123,8 @@ public sealed record StationFilter(
         && DeviceClasses is null or { Count: 0 }
         && MicEStatuses is null or { Count: 0 }
         && Tags is null or { Count: 0 }
-        && !WithTelemetry;
+        && !WithTelemetry
+        && !HasProblems;
 }
 
 /// <summary>How a station's last packet arrived, for the View filter (F1.9 behavior 1.4).</summary>
