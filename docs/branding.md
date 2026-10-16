@@ -13,6 +13,7 @@ a hunt through the code.
 | User-visible strings | **Never literal.** Bound to `Brand.DisplayName` and friends | Follows `Branding.props` automatically |
 | Window titles, installer names, web manifest | Generated from `Branding.props` | Follows automatically |
 | App icon (AGPL-3.0-only) | `build/branding/icon.svg`, rendered by `tools/make-icons.sh` into the window icon (`icon-256.png`), the Windows executable icon (`icon.ico`) and the browser's `favicon.svg`, `favicon.png` and `apple-touch-icon.png` | Not renamed: it is the APRS.NET icon, a map pin broadcasting radio waves. To change it, replace `icon.svg` and run the script; a test checks that the web copy matches |
+| Linux desktop entry (AGPL-3.0-only) | `tools/install-linux-desktop.sh` writes `~/.local/share/applications/<slug>.desktop` and the icon as `<slug>.svg`, from `build/Branding.props` | GNOME and other freedesktop shells show a window's icon only through a desktop entry whose `StartupWMClass` is the window class: the executable's name, the slug. `--uninstall` removes both |
 
 ## Rules
 
