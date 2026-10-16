@@ -1214,6 +1214,24 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>{distance} {point} {bearing}°</value>
     <comment>Distance and bearing from my location, for example "100 km NE 045°". distance: the distance with its unit. point: a compass point. bearing: whole degrees, three digits.</comment>
   </data>
+  <data name="Weather.Celsius" xml:space="preserve">
+    <value>{value} °C</value>
+  </data>
+  <data name="Weather.Fahrenheit" xml:space="preserve">
+    <value>{value} °F</value>
+  </data>
+  <data name="Weather.Millimetres" xml:space="preserve">
+    <value>{value} mm</value>
+  </data>
+  <data name="Weather.Inches" xml:space="preserve">
+    <value>{value} in</value>
+  </data>
+  <data name="Weather.Hectopascals" xml:space="preserve">
+    <value>{value} hPa</value>
+  </data>
+  <data name="Weather.InchesOfMercury" xml:space="preserve">
+    <value>{value} inHg</value>
+  </data>
   <data name="Range.Kilometres" xml:space="preserve">
     <value>{value} km</value>
   </data>
@@ -1309,6 +1327,49 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Details.Route.HopUnknown" xml:space="preserve">
     <value>{name} (position unknown)</value>
   </data>
+  <data name="Details.Label.Weather" xml:space="preserve">
+    <value>Weather</value>
+  </data>
+  <data name="Details.Weather.Wind" xml:space="preserve">
+    <value>Wind</value>
+  </data>
+  <data name="Details.Weather.Gust" xml:space="preserve">
+    <value>gusts {speed}</value>
+  </data>
+  <data name="Details.Weather.Temperature" xml:space="preserve">
+    <value>Temperature</value>
+  </data>
+  <data name="Details.Weather.Humidity" xml:space="preserve">
+    <value>Humidity</value>
+  </data>
+  <data name="Details.Weather.Percent" xml:space="preserve">
+    <value>{value} %</value>
+  </data>
+  <data name="Details.Weather.Pressure" xml:space="preserve">
+    <value>Pressure</value>
+  </data>
+  <data name="Details.Weather.RainHour" xml:space="preserve">
+    <value>Rain, last hour</value>
+  </data>
+  <data name="Details.Weather.Rain24" xml:space="preserve">
+    <value>Rain, last 24 hours</value>
+  </data>
+  <data name="Details.Weather.RainMidnight" xml:space="preserve">
+    <value>Rain since midnight</value>
+  </data>
+  <data name="Details.Weather.Snow" xml:space="preserve">
+    <value>Snow, last 24 hours</value>
+  </data>
+  <data name="Details.Weather.Luminosity" xml:space="preserve">
+    <value>Sunlight</value>
+  </data>
+  <data name="Details.Weather.WattsPerSquareMetre" xml:space="preserve">
+    <value>{value} W/m²</value>
+  </data>
+  <data name="Details.Weather.Age" xml:space="preserve">
+    <value>{minutes, plural, one {# minute old} other {# minutes old}}</value>
+    <comment>After a weather reading older than the station's last packet.</comment>
+  </data>
   <data name="Details.ClearTrack" xml:space="preserve">
     <value>Clear track</value>
     <comment>Details: empties the station's drawn route, keeping where it is now.</comment>
@@ -1362,6 +1423,72 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Data.Clear.Done.Packets" xml:space="preserve">
     <value>Cleared {count, plural, one {# packet} other {# packets}}.</value>
   </data>
+  <data name="Settings.Units" xml:space="preserve">
+    <value>Units</value>
+  </data>
+  <data name="Settings.Units.Distance" xml:space="preserve">
+    <value>Distance</value>
+  </data>
+  <data name="Settings.Units.Altitude" xml:space="preserve">
+    <value>Altitude</value>
+  </data>
+  <data name="Settings.Units.Temperature" xml:space="preserve">
+    <value>Temperature</value>
+  </data>
+  <data name="Settings.Units.Wind" xml:space="preserve">
+    <value>Wind speed</value>
+  </data>
+  <data name="Settings.Units.Rain" xml:space="preserve">
+    <value>Rain and snow</value>
+  </data>
+  <data name="Settings.Units.Pressure" xml:space="preserve">
+    <value>Pressure</value>
+  </data>
+  <data name="Settings.Units.DistanceUnit.Kilometres" xml:space="preserve">
+    <value>Kilometres</value>
+  </data>
+  <data name="Settings.Units.DistanceUnit.Miles" xml:space="preserve">
+    <value>Miles</value>
+  </data>
+  <data name="Settings.Units.DistanceUnit.NauticalMiles" xml:space="preserve">
+    <value>Nautical miles</value>
+  </data>
+  <data name="Settings.Units.AltitudeUnit.Metres" xml:space="preserve">
+    <value>Metres</value>
+  </data>
+  <data name="Settings.Units.AltitudeUnit.Feet" xml:space="preserve">
+    <value>Feet</value>
+  </data>
+  <data name="Settings.Units.TemperatureUnit.Celsius" xml:space="preserve">
+    <value>Celsius (°C)</value>
+  </data>
+  <data name="Settings.Units.TemperatureUnit.Fahrenheit" xml:space="preserve">
+    <value>Fahrenheit (°F)</value>
+  </data>
+  <data name="Settings.Units.SpeedUnit.KilometresPerHour" xml:space="preserve">
+    <value>Kilometres per hour</value>
+  </data>
+  <data name="Settings.Units.SpeedUnit.MilesPerHour" xml:space="preserve">
+    <value>Miles per hour</value>
+  </data>
+  <data name="Settings.Units.SpeedUnit.Knots" xml:space="preserve">
+    <value>Knots</value>
+  </data>
+  <data name="Settings.Units.SpeedUnit.MetresPerSecond" xml:space="preserve">
+    <value>Metres per second</value>
+  </data>
+  <data name="Settings.Units.RainUnit.Millimetres" xml:space="preserve">
+    <value>Millimetres</value>
+  </data>
+  <data name="Settings.Units.RainUnit.Inches" xml:space="preserve">
+    <value>Inches</value>
+  </data>
+  <data name="Settings.Units.PressureUnit.Hectopascals" xml:space="preserve">
+    <value>Hectopascals (hPa)</value>
+  </data>
+  <data name="Settings.Units.PressureUnit.InchesOfMercury" xml:space="preserve">
+    <value>Inches of mercury (inHg)</value>
+  </data>
   <data name="Settings.Map.Tracks" xml:space="preserve">
     <value>Tracks</value>
     <comment>Settings › Map: which stations' recent routes are drawn as lines.</comment>
@@ -1374,6 +1501,31 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Settings.Map.Tracks.None" xml:space="preserve">
     <value>None</value>
+  </data>
+  <data name="Settings.Map.WeatherLabels" xml:space="preserve">
+    <value>Weather labels</value>
+    <comment>Settings › Map: what weather stations show under their callsign.</comment>
+  </data>
+  <data name="Settings.Map.WeatherLabels.Temperature" xml:space="preserve">
+    <value>Temperature</value>
+  </data>
+  <data name="Settings.Map.WeatherLabels.TemperatureAndWind" xml:space="preserve">
+    <value>Temperature and wind</value>
+  </data>
+  <data name="Settings.Map.WeatherLabels.Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Settings.Map.Wind" xml:space="preserve">
+    <value>Wind</value>
+  </data>
+  <data name="Settings.Map.Wind.Help" xml:space="preserve">
+    <value>Barbs point from where the wind blows; each long feather is 10 knots, a short one 5 and a flag 50.</value>
+  </data>
+  <data name="Settings.Map.Wind.Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Settings.Map.Wind.Barbs" xml:space="preserve">
+    <value>Barbs</value>
   </data>
   <data name="Settings.Map.Paths" xml:space="preserve">
     <value>Packet paths</value>

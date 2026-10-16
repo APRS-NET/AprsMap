@@ -14,6 +14,7 @@ namespace AprsMap.Contracts;
 /// <param name="IsStale">Not heard for the stale time (F1.3 behavior 7): the map fades it.</param>
 /// <param name="DistanceKm">Great-circle distance from my location (F1.13 behavior 4); null without one.</param>
 /// <param name="BearingDegrees">Initial bearing from my location, 0–359 (F1.13 behavior 4); null without one.</param>
+/// <param name="Weather">For a station that reports weather: what its map label and wind barb show (F1.10).</param>
 public sealed record StationState(
     string Name,
     DateTimeOffset LastHeard,
@@ -23,8 +24,49 @@ public sealed record StationState(
     StationKind Kind = StationKind.Station,
     bool IsStale = false,
     double? DistanceKm = null,
-    int? BearingDegrees = null
+    int? BearingDegrees = null,
+    WeatherSummary? Weather = null
 );
+
+/// <summary>A weather station's latest temperature and wind, for the map (docs/features/F1.10-weather.md, behaviors 4, 5).</summary>
+/// <param name="TemperatureC">Temperature in °C.</param>
+/// <param name="WindDirection">Where the wind blows from, in degrees.</param>
+/// <param name="WindSpeedMs">Wind speed in m/s.</param>
+public sealed record WeatherSummary(double? TemperatureC, int? WindDirection, double? WindSpeedMs);
+
+/// <summary>
+/// A station's latest weather readings (docs/features/F1.10-weather.md, behaviors 1, 2), each with the time it was
+/// heard, in the engine's fixed units; the UI converts them. A reading never heard is null.
+/// </summary>
+/// <param name="WindDirection">Where the wind blows from, degrees.</param>
+/// <param name="WindSpeed">Sustained wind, m/s.</param>
+/// <param name="WindGust">Peak gust, m/s.</param>
+/// <param name="Temperature">°C.</param>
+/// <param name="RainLastHour">mm.</param>
+/// <param name="RainLast24Hours">mm.</param>
+/// <param name="RainSinceMidnight">mm.</param>
+/// <param name="Humidity">Percent.</param>
+/// <param name="Pressure">hPa.</param>
+/// <param name="Luminosity">W/m².</param>
+/// <param name="Snow">Snow in the last 24 hours, mm.</param>
+public sealed record StationWeather(
+    WeatherReading? WindDirection = null,
+    WeatherReading? WindSpeed = null,
+    WeatherReading? WindGust = null,
+    WeatherReading? Temperature = null,
+    WeatherReading? RainLastHour = null,
+    WeatherReading? RainLast24Hours = null,
+    WeatherReading? RainSinceMidnight = null,
+    WeatherReading? Humidity = null,
+    WeatherReading? Pressure = null,
+    WeatherReading? Luminosity = null,
+    WeatherReading? Snow = null
+);
+
+/// <summary>One weather reading and when it was heard.</summary>
+/// <param name="Value">The value, in the unit its <see cref="StationWeather"/> field names.</param>
+/// <param name="At">When the engine received it.</param>
+public sealed record WeatherReading(double Value, DateTimeOffset At);
 
 /// <summary>What an entry in the station store is (APRS101 chapter 11).</summary>
 public enum StationKind
@@ -73,6 +115,7 @@ public enum StationKind
 /// <param name="LastPacket">The last packet as received (TNC2 text, Latin-1).</param>
 /// <param name="FirstHeardVia">The source its latest report arrived on first (F1.25 behavior 9).</param>
 /// <param name="SeenOn">Other sources its latest report was heard on.</param>
+/// <param name="Weather">Its latest weather readings (F1.10), when it has sent any.</param>
 public sealed record StationDetail(
     string Name,
     StationKind Kind,
@@ -98,7 +141,8 @@ public sealed record StationDetail(
     StationArrival? Arrival = null,
     string? LastPacket = null,
     string? FirstHeardVia = null,
-    IReadOnlyList<string>? SeenOn = null
+    IReadOnlyList<string>? SeenOn = null,
+    StationWeather? Weather = null
 );
 
 /// <summary>The equipment or software that sent a packet (docs/features/F1.6-station-details.md, behavior 2.7).</summary>

@@ -114,6 +114,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             ShowProvider();
             ShowHome();
             _map.DistanceUnit = _state.DistanceUnit;
+            _map.Units = _state.Units;
             Place();
         }
     }
@@ -190,6 +191,9 @@ public sealed partial class MapPanel : UserControl, IDisposable
                 break;
             case nameof(MapViewModel.DistanceUnit):
                 _map.DistanceUnit = _state!.DistanceUnit;
+                break;
+            case nameof(MapViewModel.Units):
+                _map.Units = _state!.Units;
                 break;
             case nameof(MapViewModel.IsLoaded):
                 ShowProvider();

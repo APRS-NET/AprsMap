@@ -265,6 +265,33 @@ public static class SettingsRegistry
         );
         items.Add(
             new ChoiceSetting(
+                "map.weather-labels",
+                "Settings.Map.WeatherLabels",
+                null,
+                text,
+                () =>
+                    [
+                        (MapWeatherLabels.Temperature, text["Settings.Map.WeatherLabels.Temperature"]),
+                        (MapWeatherLabels.TemperatureAndWind, text["Settings.Map.WeatherLabels.TemperatureAndWind"]),
+                        (MapWeatherLabels.Off, text["Settings.Map.WeatherLabels.Off"]),
+                    ],
+                () => appearance.Current.MapWeatherLabels,
+                value => Update(s => s with { MapWeatherLabels = (MapWeatherLabels)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
+                "map.wind",
+                "Settings.Map.Wind",
+                "Settings.Map.Wind.Help",
+                text,
+                () => [(MapWind.Off, text["Settings.Map.Wind.Off"]), (MapWind.Barbs, text["Settings.Map.Wind.Barbs"])],
+                () => appearance.Current.MapWind,
+                value => Update(s => s with { MapWind = (MapWind)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
                 "map.symbol-size",
                 "Settings.Map.SymbolSize",
                 "Settings.Map.SymbolSize.Help",
@@ -388,6 +415,83 @@ public static class SettingsRegistry
             );
         }
         return items;
+    }
+
+    /// <summary>
+    /// Settings › Units (docs/features/F1.10-weather.md, behavior 6): a unit for each quantity, the station's setting
+    /// (<see cref="Contracts.AppSettings.Units"/>), saved through the engine.
+    /// </summary>
+    public static IReadOnlyList<SettingItem> Units(
+        Localizer text,
+        Func<Contracts.UnitSettings> get,
+        Action<Contracts.UnitSettings> save
+    )
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(get);
+        ArgumentNullException.ThrowIfNull(save);
+        ChoiceSetting Choice<T>(
+            string id,
+            string label,
+            T[] values,
+            Func<Contracts.UnitSettings, T> read,
+            Func<Contracts.UnitSettings, T, Contracts.UnitSettings> write
+        )
+            where T : struct, Enum =>
+            new(
+                id,
+                label,
+                null,
+                text,
+                () => [.. values.Select(v => ((object?)v, text[$"Settings.Units.{typeof(T).Name}.{v}"]))],
+                () => read(get()),
+                value => save(write(get(), (T)value!))
+            );
+        return
+        [
+            Choice(
+                "units.distance",
+                "Settings.Units.Distance",
+                Enum.GetValues<Contracts.DistanceUnit>(),
+                u => u.Distance,
+                (u, v) => u with { Distance = v }
+            ),
+            Choice(
+                "units.altitude",
+                "Settings.Units.Altitude",
+                Enum.GetValues<Contracts.AltitudeUnit>(),
+                u => u.Altitude,
+                (u, v) => u with { Altitude = v }
+            ),
+            Choice(
+                "units.temperature",
+                "Settings.Units.Temperature",
+                Enum.GetValues<Contracts.TemperatureUnit>(),
+                u => u.Temperature,
+                (u, v) => u with { Temperature = v }
+            ),
+            Choice(
+                "units.wind",
+                "Settings.Units.Wind",
+                Enum.GetValues<Contracts.SpeedUnit>(),
+                u => u.Wind,
+                (u, v) => u with { Wind = v }
+            ),
+            Choice(
+                "units.rain",
+                "Settings.Units.Rain",
+                Enum.GetValues<Contracts.RainUnit>(),
+                u => u.Rain,
+                (u, v) => u with { Rain = v }
+            ),
+            Choice(
+                "units.pressure",
+                "Settings.Units.Pressure",
+                Enum.GetValues<Contracts.PressureUnit>(),
+                u => u.Pressure,
+                (u, v) => u with { Pressure = v }
+            ),
+        ];
     }
 
     private static readonly int[] StaleSteps = [10, 15, 30, 60, 120];

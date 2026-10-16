@@ -283,6 +283,9 @@ public sealed partial class MainViewModel : ObservableObject
                     : null
             );
         var sources = new SourcesSectionViewModel(engine, _text, Show);
+        var unitItems = _settings is { ReadOnly: false }
+            ? SettingsRegistry.Units(_text, () => _settings?.Units ?? UnitSettings.Metric, SaveUnits)
+            : null;
         var settings = new SettingsViewModel(
             _appearance,
             time,
@@ -291,7 +294,8 @@ public sealed partial class MainViewModel : ObservableObject
             profiles,
             data,
             mapItems,
-            sources
+            sources,
+            unitItems
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
@@ -313,6 +317,26 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Saves new station aging times (Settings › Map, F1.3 behavior 9); a refusal shows in the error line.</summary>
+    /// <summary>Saves the station's units (F1.10 behavior 6) and shows them at once.</summary>
+    private async void SaveUnits(UnitSettings units)
+    {
+        if (_settings is not { } settings)
+        {
+            return;
+        }
+        var changed = settings with { Units = units };
+        try
+        {
+            await engine.SaveSettingsAsync(changed);
+            Show(changed);
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            ShowError(ex);
+        }
+    }
+
     private async void SaveAging(StationAging aging)
     {
         if (_settings is not { } settings)
@@ -780,6 +804,7 @@ public sealed partial class MainViewModel : ObservableObject
             Map.Home = active is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
             Map.HomeName = active?.Callsign;
             Map.DistanceUnit = settings.Units.Distance;
+            Map.Units = settings.Units;
         }
         var notSetUp = settings.Profiles.Count == 0;
         ShowGatewaySetupNote = notSetUp && settings.ReadOnly;

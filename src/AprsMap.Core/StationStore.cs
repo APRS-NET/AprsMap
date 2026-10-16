@@ -97,6 +97,9 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 case PositionedPayload positioned:
                     SetPosition(entry, positioned, receivedAt);
                     break;
+                case WeatherReport report:
+                    SetWeather(entry, report.Weather, receivedAt); // a weather report without a position (F1.10)
+                    break;
                 case StatusReport status:
                     entry.Status = status.Text;
                     if (entry.Symbol is null && status.Symbol is { } symbol)
@@ -546,11 +549,63 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 AddTrackPoint(entry, new TrackPoint(entry.Latitude.Value, entry.Longitude.Value, receivedAt));
             }
         }
+        if (positioned.Weather is { } weather)
+        {
+            SetWeather(entry, weather, receivedAt);
+            // A weather station's course and speed are the wind (APRS101 ch. 12), not how it moves.
+            entry.Symbol = positioned.Symbol.ToString();
+            entry.Comment = string.IsNullOrWhiteSpace(positioned.Comment) ? entry.Comment : positioned.Comment;
+            entry.AltitudeMetres = positioned.AltitudeFeet is { } wxFeet
+                ? wxFeet * MetresPerFoot
+                : entry.AltitudeMetres;
+            return;
+        }
         entry.Symbol = positioned.Symbol.ToString();
         entry.Comment = string.IsNullOrWhiteSpace(positioned.Comment) ? entry.Comment : positioned.Comment;
         entry.Course = positioned.Course ?? entry.Course;
         entry.SpeedKmh = positioned.SpeedKnots is { } knots ? knots * KmhPerKnot : entry.SpeedKmh;
         entry.AltitudeMetres = positioned.AltitudeFeet is { } feet ? feet * MetresPerFoot : entry.AltitudeMetres;
+    }
+
+    /// <summary>
+    /// Keeps each reading the report carries, with its own time, converted to the engine's units (F1.10 behaviors 1,
+    /// 2); readings it doesn't carry keep their last value.
+    /// </summary>
+    private static void SetWeather(Entry entry, WeatherData data, DateTimeOffset at)
+    {
+        var w = entry.Weather ?? new StationWeather();
+        WeatherReading? Read(double? value) => value is { } v ? new WeatherReading(v, at) : null;
+        double? Mm(double? inches) =>
+            inches is { } i ? AprsUnits.Convert(i, LengthUnit.Inches, LengthUnit.Millimeters) : null;
+        double? Ms(double? mph) =>
+            mph is { } m
+                ? AprsUnits.Convert(
+                    m,
+                    AprsNet.Packets.SpeedUnit.MilesPerHour,
+                    AprsNet.Packets.SpeedUnit.MetersPerSecond
+                )
+                : null;
+        entry.Weather = new StationWeather(
+            Read(data.WindDirection) ?? w.WindDirection,
+            Read(Ms(data.WindSpeedMph)) ?? w.WindSpeed,
+            Read(Ms(data.WindGustMph)) ?? w.WindGust,
+            Read(
+                data.TemperatureF is { } f
+                    ? AprsUnits.Convert(
+                        f,
+                        AprsNet.Packets.TemperatureUnit.Fahrenheit,
+                        AprsNet.Packets.TemperatureUnit.Celsius
+                    )
+                    : null
+            ) ?? w.Temperature,
+            Read(Mm(data.RainLastHourInches)) ?? w.RainLastHour,
+            Read(Mm(data.RainLast24HoursInches)) ?? w.RainLast24Hours,
+            Read(Mm(data.RainSinceMidnightInches)) ?? w.RainSinceMidnight,
+            Read(data.HumidityPercent) ?? w.Humidity,
+            Read(data.PressureMillibars) ?? w.Pressure, // a millibar is a hectopascal
+            Read(data.LuminosityWattsPerSquareMeter) ?? w.Luminosity,
+            Read(Mm(data.SnowLast24HoursInches)) ?? w.Snow
+        );
     }
 
     /// <summary>How close a report must be to the track's last point to count as not moving (F1.5 behavior 2).</summary>
@@ -658,6 +713,9 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         /// <summary>Other sources the latest report was heard on.</summary>
         public SortedSet<string> SeenOn { get; } = new(StringComparer.Ordinal);
 
+        /// <summary>Its latest weather readings (F1.10), once it has sent any.</summary>
+        public StationWeather? Weather { get; set; }
+
         /// <summary>Where it has been, oldest first (F1.5).</summary>
         public List<TrackPoint> Track { get; } = [];
 
@@ -678,7 +736,14 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 Kind,
                 IsStale,
                 distance,
-                bearing
+                bearing,
+                Weather is { } w
+                    ? new WeatherSummary(
+                        w.Temperature?.Value,
+                        w.WindDirection is { } d ? (int)d.Value : null,
+                        w.WindSpeed?.Value
+                    )
+                    : null
             );
         }
 
@@ -742,7 +807,8 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 arrival,
                 text,
                 FirstHeardVia,
-                SeenOn.Count == 0 ? null : [.. SeenOn]
+                SeenOn.Count == 0 ? null : [.. SeenOn],
+                Weather
             );
         }
 

@@ -123,6 +123,13 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial string? LastPacket { get; private set; }
 
+    /// <summary>The station's weather readings in words and the viewer's units (F1.10 behavior 3); empty without any.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<DetailLine> Weather { get; } = [];
+
+    /// <summary>Whether the station has sent weather.</summary>
+    [ObservableProperty]
+    public partial bool HasWeather { get; private set; }
+
     /// <summary>"No longer heard": the station left while the panel was open (behavior 3).</summary>
     [ObservableProperty]
     public partial bool IsGone { get; private set; }
@@ -324,6 +331,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         {
             Symbol = KindText = HeardText = HeardTime = PositionText = LocatorText = RangeText = MotionText = null;
             Comment = Status = ArrivalText = Path = DeviceText = LastPacket = HeardViaText = null;
+            WriteWeather(null, units: UnitSettings.Metric, lastHeard: default);
             return;
         }
         var culture = _text.Culture;
@@ -370,6 +378,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             : d.Locator;
         RangeText = Localization.RangeText.Format(d.DistanceKm, d.BearingDegrees, units.Distance, _text);
         MotionText = Motion(d, units, culture);
+        WriteWeather(d.Weather, units, d.LastHeard);
         Comment = Visible(d.Comment);
         Status = Visible(d.Status);
         ArrivalText = Arrival(d.Arrival);
@@ -384,6 +393,104 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         };
         LastPacket = d.LastPacket;
         HeardViaText = _sources?.Describe(d.FirstHeardVia, d.SeenOn, _text);
+    }
+
+    /// <summary>
+    /// One line per reading the station has sent (F1.10 behavior 3), each followed by its age when it's older than the
+    /// station's last packet: a station may send wind and rain in different packets.
+    /// </summary>
+    private void WriteWeather(StationWeather? w, UnitSettings units, DateTimeOffset lastHeard)
+    {
+        Weather.Clear();
+        HasWeather = w is not null;
+        if (w is null)
+        {
+            return;
+        }
+        if (w.WindDirection is { } from)
+        {
+            var wind = Localization.WeatherText.Compass(from.Value, _text);
+            if (w.WindSpeed is { } speed)
+            {
+                wind += " " + Localization.WeatherText.Speed(speed.Value, units.Wind, _text);
+            }
+            if (w.WindGust is { } gust)
+            {
+                wind +=
+                    " · "
+                    + _text.Format(
+                        "Details.Weather.Gust",
+                        new Dictionary<string, object?>
+                        {
+                            ["speed"] = Localization.WeatherText.Speed(gust.Value, units.Wind, _text),
+                        }
+                    );
+            }
+            Add("Details.Weather.Wind", wind, from);
+        }
+        else if (w.WindSpeed is { } calmish)
+        {
+            Add("Details.Weather.Wind", Localization.WeatherText.Speed(calmish.Value, units.Wind, _text), calmish);
+        }
+        if (w.Temperature is { } t)
+        {
+            Add(
+                "Details.Weather.Temperature",
+                Localization.WeatherText.Temperature(t.Value, units.Temperature, _text),
+                t
+            );
+        }
+        if (w.Humidity is { } h)
+        {
+            Add(
+                "Details.Weather.Humidity",
+                _text.Format("Details.Weather.Percent", new Dictionary<string, object?> { ["value"] = h.Value }),
+                h
+            );
+        }
+        if (w.Pressure is { } p)
+        {
+            Add("Details.Weather.Pressure", Localization.WeatherText.Pressure(p.Value, units.Pressure, _text), p);
+        }
+        if (w.RainLastHour is { } r1)
+        {
+            Add("Details.Weather.RainHour", Localization.WeatherText.Rain(r1.Value, units.Rain, _text), r1);
+        }
+        if (w.RainLast24Hours is { } r24)
+        {
+            Add("Details.Weather.Rain24", Localization.WeatherText.Rain(r24.Value, units.Rain, _text), r24);
+        }
+        if (w.RainSinceMidnight is { } rm)
+        {
+            Add("Details.Weather.RainMidnight", Localization.WeatherText.Rain(rm.Value, units.Rain, _text), rm);
+        }
+        if (w.Snow is { } s)
+        {
+            Add("Details.Weather.Snow", Localization.WeatherText.Rain(s.Value, units.Rain, _text), s);
+        }
+        if (w.Luminosity is { } l)
+        {
+            Add(
+                "Details.Weather.Luminosity",
+                _text.Format(
+                    "Details.Weather.WattsPerSquareMetre",
+                    new Dictionary<string, object?> { ["value"] = l.Value }
+                ),
+                l
+            );
+        }
+
+        void Add(string label, string value, WeatherReading reading)
+        {
+            var minutes = (long)(lastHeard - reading.At).TotalMinutes;
+            if (minutes >= 1)
+            {
+                value +=
+                    " · "
+                    + _text.Format("Details.Weather.Age", new Dictionary<string, object?> { ["minutes"] = minutes });
+            }
+            Weather.Add(new DetailLine(_text[label], value));
+        }
     }
 
     private string? Motion(StationDetail d, UnitSettings units, CultureInfo culture)
@@ -477,3 +584,8 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         return shown.ToString();
     }
 }
+
+/// <summary>One labelled line in the details, such as a weather reading.</summary>
+/// <param name="Label">"Temperature".</param>
+/// <param name="Value">"14 °C".</param>
+public sealed record DetailLine(string Label, string Value);

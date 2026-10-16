@@ -31,6 +31,10 @@ internal static class RangeText
         "NNW",
     ];
 
+    /// <summary>The 16-point compass key of a direction in degrees, for example <c>NNE</c>.</summary>
+    public static string Point(double degrees) =>
+        Points[(int)Math.Round(((degrees % 360) + 360) % 360 / 22.5, MidpointRounding.AwayFromZero) % 16];
+
     /// <summary>A distance in the viewer's unit: tenths close by, whole units further out ("4.2 km", "1,250 mi").</summary>
     public static string Distance(double km, DistanceUnit unit, Localizer text)
     {
@@ -53,7 +57,7 @@ internal static class RangeText
         {
             return null;
         }
-        var point = Points[(int)Math.Round(((degrees % 360) + 360) % 360 / 22.5, MidpointRounding.AwayFromZero) % 16];
+        var point = Point(degrees);
         return text.Format(
             "Range.Text",
             new Dictionary<string, object?>

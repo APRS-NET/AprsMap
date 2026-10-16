@@ -447,6 +447,51 @@
             </ItemsControl>
           </StackPanel>
 
+          <!-- Units (F1.10 behavior 6): the station's unit per quantity. -->
+          <StackPanel x:Name="UnitsSection" IsVisible="{Binding IsUnitsSection}" Spacing="20">
+            <ItemsControl x:Name="UnitOptions" ItemsSource="{Binding UnitItems}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="18" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.DataTemplates>
+                <DataTemplate DataType="s:ChoiceSetting">
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" />
+                    <ComboBox
+                      ItemsSource="{Binding Options}"
+                      SelectedItem="{Binding Selected}"
+                      AutomationProperties.Name="{Binding Label}"
+                      MinWidth="260"
+                    />
+                    <TextBlock
+                      Text="{Binding Help}"
+                      IsVisible="{Binding Help, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      FontSize="{DynamicResource Text.Small}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
+                </DataTemplate>
+                <DataTemplate DataType="s:ToggleSetting">
+                  <StackPanel Spacing="4">
+                    <CheckBox IsChecked="{Binding IsOn}" AutomationProperties.Name="{Binding Label}">
+                      <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                    </CheckBox>
+                    <TextBlock
+                      Text="{Binding Help}"
+                      IsVisible="{Binding Help, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      FontSize="{DynamicResource Text.Small}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.DataTemplates>
+            </ItemsControl>
+          </StackPanel>
+
           <!-- Data (F0.10): Reset the app, with a confirmation that says what goes. -->
           <StackPanel x:Name="DataSection" IsVisible="{Binding IsDataSection}" Spacing="12">
             <!-- Clear (F1.19): what the station has collected, each with a count, confirmed before it goes. -->

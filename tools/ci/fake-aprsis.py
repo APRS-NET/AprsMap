@@ -27,6 +27,13 @@ def aprs_position(lat, lon, symbol, comment):
     return f"!{lat_text}{symbol[0]}{lon_text}{symbol[1]}{comment}"
 
 
+def weather(rng):
+    """APRS101 ch. 12 readings after a weather station's position: wind direction/speed, gust, temperature, humidity
+    and pressure, so the map's weather labels and barbs have something to show (F1.10)."""
+    return (f"{rng.randrange(0, 360):03d}/{rng.randrange(0, 40):03d}g{rng.randrange(5, 60):03d}"
+            f"t{rng.randrange(20, 90):03d}h{rng.randrange(20, 99):02d}b{rng.randrange(9900, 10300):05d}")
+
+
 def stations(around, count):
     if around is None:
         return []
@@ -65,6 +72,7 @@ def beacon_infrastructure(stream, around):
 def serve(connection, number, around, count):
     stream = connection.makefile("rwb")
     fleet = stations(around, count)
+    wx_rng = random.Random(7)
     try:
         stream.write(b"# fake-aprsis 1.0\r\n")
         stream.flush()
@@ -73,7 +81,7 @@ def serve(connection, number, around, count):
         stream.write(f"# logresp N0TEST unverified, server FAKE{number}\r\n".encode())
         stream.flush()
         for station in fleet:  # everyone once at the start, so the map fills at once
-            line = f"{station['call']}>APRS,TCPIP*,qAC,FAKE:{aprs_position(station['lat'], station['lon'], station['symbol'], ' simulated')}"
+            line = f"{station['call']}>APRS,TCPIP*,qAC,FAKE:{aprs_position(station['lat'], station['lon'], station['symbol'], weather(wx_rng) if station['symbol'][1] == '_' else ' simulated')}"
             stream.write((line + "\r\n").encode())
         stream.flush()
         beacon_infrastructure(stream, around)
@@ -95,7 +103,7 @@ def serve(connection, number, around, count):
                 if station["moving"] and (n + i) % 10 == 0:
                     station["lat"] += 0.02 * math.cos(station["heading"])
                     station["lon"] += 0.02 * math.sin(station["heading"])
-                    line = f"{station['call']}>APRS,{PATHS[n % len(PATHS)]}:{aprs_position(station['lat'], station['lon'], station['symbol'], ' moving')}"
+                    line = f"{station['call']}>APRS,{PATHS[n % len(PATHS)]}:{aprs_position(station['lat'], station['lon'], station['symbol'], weather(wx_rng) if station['symbol'][1] == '_' else ' moving')}"
                     stream.write((line + "\r\n").encode())
             stream.flush()
             time.sleep(1)

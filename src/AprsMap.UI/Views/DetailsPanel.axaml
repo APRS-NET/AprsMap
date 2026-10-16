@@ -186,6 +186,23 @@
           />
           <SelectableTextBlock x:Name="ArrivalValue" Grid.Column="1" Text="{Binding ArrivalText}" TextWrapping="Wrap" />
         </Grid>
+        <StackPanel x:Name="WeatherSection" Spacing="2" IsVisible="{Binding HasWeather}">
+          <TextBlock Text="{l:T Details.Label.Weather}" FontWeight="SemiBold" Margin="0,4,0,2" />
+          <ItemsControl ItemsSource="{Binding Weather}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:DetailLine">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Label}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,12,0" />
+                  <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
         <Grid IsVisible="{Binding RouteText, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />

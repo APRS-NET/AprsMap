@@ -50,6 +50,7 @@ public sealed class MapView : Control, IDisposable
     private SKColor _trackColour = SKColors.Transparent;
     private SKColor _followedColour = SKColors.Transparent;
     private SKColor _casingColour = SKColors.Transparent;
+    private SKColor _textColour = SKColors.Transparent;
     private readonly Dictionary<string, MapLabel> _labels = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StationMark> _byName = new(StringComparer.Ordinal);
     private IReadOnlyList<StationMark> _marks = [];
@@ -129,6 +130,19 @@ public sealed class MapView : Control, IDisposable
         Watch("Map.ShowFilterCircles", v => ShowFilterCircles = v is true);
         Watch("Map.Tracks", v => Tracks = v is MapTracks tracks ? tracks : MapTracks.All);
         Watch("Map.Paths", v => Paths = v is MapPaths paths ? paths : MapPaths.SelectedStation);
+        Watch(
+            "Map.WeatherLabels",
+            v => WeatherLabels = v is MapWeatherLabels labels ? labels : MapWeatherLabels.Temperature
+        );
+        Watch("Map.Wind", v => Wind = v is MapWind wind ? wind : MapWind.Off);
+        Watch(
+            "Color.Text",
+            v =>
+            {
+                _textColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                InvalidateVisual();
+            }
+        );
         Watch(
             "Color.Track",
             v =>
@@ -217,6 +231,74 @@ public sealed class MapView : Control, IDisposable
             field = value;
             InvalidateVisual();
         }
+    }
+
+    /// <summary>The station's units, for weather labels (F1.10 behavior 6).</summary>
+    public UnitSettings Units
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = UnitSettings.Metric;
+
+    /// <summary>What weather stations' labels add under the callsign (F1.10 behavior 4).</summary>
+    public MapWeatherLabels WeatherLabels
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = MapWeatherLabels.Temperature;
+
+    /// <summary>Whether weather stations get wind barbs (F1.10 behavior 5).</summary>
+    public MapWind Wind
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>The label text for <paramref name="mark"/>: its name, and a weather line under it (F1.10 behavior 4).</summary>
+    internal string LabelText(StationMark mark) =>
+        WeatherLabels != MapWeatherLabels.Off
+        && Localization.WeatherText.MapLine(
+            mark.Weather,
+            WeatherLabels == MapWeatherLabels.TemperatureAndWind,
+            Units,
+            Localization.Localizer.Instance
+        )
+            is { } line
+            ? mark.Name + "\n" + line
+            : mark.Name;
+
+    /// <summary>This frame's wind barbs for the stations on screen; null with barbs off.</summary>
+    internal WindBarbs? BuildBarbs(IReadOnlyList<StationMark> marks, SKPoint[] screen)
+    {
+        if (Wind != MapWind.Barbs)
+        {
+            return null;
+        }
+        var barbs = new WindBarbs();
+        var visible = new Rect(Bounds.Size).Inflate(_symbolDip * 2);
+        for (var i = 0; i < marks.Count; i++)
+        {
+            if (
+                marks[i].Weather is { WindDirection: { } from, WindSpeedMs: { } speed }
+                && visible.Contains(new Point(screen[i].X, screen[i].Y))
+            )
+            {
+                barbs.Add(screen[i], from, speed, (float)(_symbolDip / 2));
+            }
+        }
+        return barbs;
     }
 
     /// <summary>Which packet paths are drawn (F1.21 behavior 6).</summary>
@@ -515,6 +597,7 @@ public sealed class MapView : Control, IDisposable
             new TrackColours(_trackColour, _followedColour, _casingColour)
         );
         var route = BuildRoute(viewport);
+        var barbs = BuildBarbs(marks, screen);
         context.Custom(
             new DrawOperation(
                 new Rect(Bounds.Size),
@@ -525,7 +608,8 @@ public sealed class MapView : Control, IDisposable
                 _dot,
                 EffectiveDimming,
                 tracks,
-                route
+                route,
+                barbs
             )
         );
         if (route?.DirectLabel is var (at, km))
@@ -636,7 +720,7 @@ public sealed class MapView : Control, IDisposable
             {
                 continue;
             }
-            var label = Label(marks[i].Name);
+            var label = Label(LabelText(marks[i]));
             var rect = new Rect(at.X - label.Width / 2, at.Y + _symbolDip / 2 + 1, label.Width, label.Height);
             if (!placed.TryAdd(rect.Inflate(1)))
             {
@@ -677,7 +761,10 @@ public sealed class MapView : Control, IDisposable
                     typeface,
                     _labelSize,
                     brush
-                );
+                )
+                {
+                    TextAlignment = TextAlignment.Center, // a weather line centres under the callsign
+                };
             if (_labels.Count >= MaxLabels)
             {
                 ClearLabels(); // bounded: names come and go
@@ -1096,7 +1183,8 @@ public sealed class MapView : Control, IDisposable
         SKColor dot,
         double dimming,
         TrackLayer.TrackFrame tracks,
-        RouteFrame? route
+        RouteFrame? route,
+        WindBarbs? barbs
     ) : ICustomDrawOperation
     {
         public Rect Bounds => bounds;
@@ -1105,6 +1193,7 @@ public sealed class MapView : Control, IDisposable
         {
             tracks.Dispose();
             route?.Dispose();
+            barbs?.Dispose();
         }
 
         public bool Equals(ICustomDrawOperation? other) => false;
@@ -1146,6 +1235,7 @@ public sealed class MapView : Control, IDisposable
             route?.Draw(canvas); // the selected packet's route over the tracks (F1.21 behavior 2)
             // Stations over the tiles (and over the dimming, so they keep their contrast).
             owner._stations.Draw(canvas, marks, screen, symbolDip, Math.Max(1f, canvas.TotalMatrix.ScaleX), dot);
+            barbs?.Draw(canvas, owner._textColour, owner._casingColour); // wind over the symbols (F1.10 behavior 5)
         }
     }
 }
