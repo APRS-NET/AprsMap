@@ -14,6 +14,52 @@ public sealed class StationStoreTests
         store.Apply(AprsPacket.Parse(line), at);
 
     [Fact]
+    public void TheDetailsSayWhatSentTheLastPacketAndHowItArrived()
+    {
+        var store = new StationStore();
+        const string Line = "N0CALL-9>APDR16,N2DIGI*,WIDE2-1,qAR,N1GATE:!4903.50N/07201.75W>";
+
+        Apply(store, Line, T0);
+
+        var entry = store.Get("N0CALL-9")!;
+        Assert.Equal(Line, entry.LastPacket);
+        Assert.Equal("FN39", entry.Locator![..4]);
+        Assert.Equal(6, entry.Locator.Length);
+        Assert.Equal("APRSdroid", entry.Device!.Model);
+        Assert.Equal(ArrivalKind.Digipeated, entry.Arrival!.Kind);
+        Assert.Equal(["N2DIGI"], entry.Arrival.Digipeaters);
+        Assert.Equal("N1GATE", entry.Arrival.Gateway);
+    }
+
+    [Theory]
+    [InlineData("N0CALL>APRS,WIDE1-1,qAR,N1GATE:>hi", ArrivalKind.Direct, "N1GATE")]
+    [InlineData("N0CALL>APRS,TCPIP*,qAC,T2TEST:>hi", ArrivalKind.Internet, "T2TEST")]
+    [InlineData("N0CALL>APRS,qAS,T2TEST:>hi", ArrivalKind.Unknown, "T2TEST")]
+    public void ThePathSaysHowItArrived(string line, ArrivalKind kind, string gateway)
+    {
+        var store = new StationStore();
+        Apply(store, line, T0);
+
+        var arrival = store.Get("N0CALL")!.Arrival!;
+        Assert.Equal(kind, arrival.Kind);
+        Assert.Equal(gateway, arrival.Gateway);
+        Assert.Empty(arrival.Digipeaters);
+    }
+
+    [Fact]
+    public void AThirdPartyPacketArrivedByTheRouteInsideAndKeepsItsRawText()
+    {
+        var store = new StationStore();
+        const string Line = "N1GATE>APRS,TCPIP*,qAC,T2TEST:}N0CALL>APRS,N2DIGI*,N1GATE*:>hi";
+
+        Apply(store, Line, T0);
+
+        var entry = store.Get("N0CALL")!;
+        Assert.Equal(Line, entry.LastPacket);
+        Assert.Equal(ArrivalKind.Digipeated, entry.Arrival!.Kind);
+    }
+
+    [Fact]
     public void DistanceAndBearingAreMeasuredFromMyLocation()
     {
         var store = new StationStore();

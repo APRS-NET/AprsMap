@@ -46,6 +46,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     /// </summary>
     public void Apply(AprsPacket packet, DateTimeOffset receivedAt)
     {
+        var raw = packet.Raw.ToArray(); // as received, third-party wrapper and all
         if (packet.Payload is ThirdPartyPayload { Packet: { HasHeader: true } inner })
         {
             packet = inner;
@@ -67,15 +68,25 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                         report,
                         packet,
                         source.Value,
-                        receivedAt
+                        receivedAt,
+                        raw
                     );
                     return;
                 case ItemReport report:
-                    ApplyNamed(report.Name, StationKind.Item, report.IsLive, report, packet, source.Value, receivedAt);
+                    ApplyNamed(
+                        report.Name,
+                        StationKind.Item,
+                        report.IsLive,
+                        report,
+                        packet,
+                        source.Value,
+                        receivedAt,
+                        raw
+                    );
                     return;
             }
 
-            var entry = Touch(source.Value, StationKind.Station, packet, receivedAt);
+            var entry = Touch(source.Value, StationKind.Station, packet, receivedAt, raw);
             switch (packet.Payload)
             {
                 case PositionedPayload positioned:
@@ -213,11 +224,12 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         PositionedPayload report,
         AprsPacket packet,
         string sender,
-        DateTimeOffset receivedAt
+        DateTimeOffset receivedAt,
+        byte[] raw
     )
     {
         // The sender was heard too, whatever the object says.
-        Publish(Touch(sender, StationKind.Station, packet, receivedAt));
+        Publish(Touch(sender, StationKind.Station, packet, receivedAt, raw));
         if (!live)
         {
             // A kill removes it, whoever sent the kill (behavior 6); a later live packet brings it back.
@@ -231,7 +243,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         {
             return; // a station by that name heard already: a station's callsign isn't taken over by an object
         }
-        var entry = Touch(name, kind, packet, receivedAt);
+        var entry = Touch(name, kind, packet, receivedAt, raw);
         if (entry.Owner is { } owner && owner != sender)
         {
             entry.PreviousOwner = owner; // ownership moves (behavior 5)
@@ -242,7 +254,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     }
 
     /// <summary>The entry for <paramref name="name"/>, created if new, marked heard now.</summary>
-    private Entry Touch(string name, StationKind kind, AprsPacket packet, DateTimeOffset receivedAt)
+    private Entry Touch(string name, StationKind kind, AprsPacket packet, DateTimeOffset receivedAt, byte[] raw)
     {
         if (!_entries.TryGetValue(name, out var entry))
         {
@@ -263,6 +275,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         entry.IsStale = false;
         entry.Packets++;
         entry.Path = packet.Path is { } path ? string.Join(',', path.Select(p => p.ToString())) : null;
+        entry.LastPacket = raw;
         return entry;
     }
 
@@ -330,6 +343,9 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         public string? Owner { get; set; }
         public string? PreviousOwner { get; set; }
 
+        /// <summary>The last packet's bytes as received; the details work out its device and route from them.</summary>
+        public byte[]? LastPacket { get; set; }
+
         public bool HasPosition => Latitude is not null && Longitude is not null;
 
         public StationState ToState(AprsPosition? home)
@@ -365,6 +381,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         public StationDetail ToDetail(AprsPosition? home)
         {
             var (distance, bearing) = From(home);
+            var (device, arrival, text) = StationFacts.Of(LastPacket);
             return new(
                 Name,
                 Kind,
@@ -384,7 +401,11 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 Owner,
                 PreviousOwner,
                 distance,
-                bearing
+                bearing,
+                HasPosition ? MaidenheadLocator.FromPosition(Latitude!.Value, Longitude!.Value, 6).Value : null,
+                device,
+                arrival,
+                text
             );
         }
 

@@ -94,7 +94,7 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
     public async Task RemoteClientGetsAStationsFullEntry()
     {
         var engine = factory.Services.GetRequiredService<Engine>();
-        engine.Accept("N0DETAIL>APRS,WIDE1-1:!4903.50N/07201.75W>088/036 Detail test");
+        engine.Accept("N0DETAIL>APDR16,N2DIGI*,qAR,N1GATE:!4903.50N/07201.75W>088/036 Detail test");
         await using var remote = CreateRemote();
         await remote.StartAsync(Ct);
 
@@ -103,7 +103,11 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
         Assert.NotNull(detail);
         Assert.Equal(StationKind.Station, detail.Kind);
         Assert.Equal(88, detail.CourseDegrees);
-        Assert.Equal("WIDE1-1", detail.Path);
+        Assert.Equal("N2DIGI*,qAR,N1GATE", detail.Path);
+        Assert.Equal("APRSdroid", detail.Device?.Model);
+        Assert.Equal("N2DIGI", Assert.Single(detail.Arrival!.Digipeaters));
+        Assert.Equal(ArrivalKind.Digipeated, detail.Arrival?.Kind);
+        Assert.StartsWith("N0DETAIL>APDR16", detail.LastPacket, StringComparison.Ordinal);
         Assert.Null(await remote.GetStationAsync("N0NOBODY", Ct));
     }
 
