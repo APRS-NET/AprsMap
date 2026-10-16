@@ -62,6 +62,31 @@ public sealed class ShellViewTests
     }
 
     [AvaloniaFact]
+    public void ResumingThePacketListScrollsBackToTheNewest()
+    {
+        var (window, vm) = Show();
+        for (var i = 0; i < 200; i++)
+        {
+            vm.PacketList.Receive(FakeEngine.Packet($"N{i}"));
+        }
+        vm.PacketList.Flush();
+        Dispatcher.UIThread.RunJobs();
+        var list = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "PacketList");
+        var scroller = Assert.IsType<ScrollViewer>(list.Scroll);
+
+        scroller.Offset = new Vector(0, 400);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(vm.PacketList.IsPaused); // scrolled away from the newest
+
+        vm.PacketList.TogglePause();
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(vm.PacketList.IsPaused);
+        Assert.Equal(0, scroller.Offset.Y);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void TheAppMenuShowsClosedPanelsAndResetsTheLayout()
     {
         var (window, vm) = Show();

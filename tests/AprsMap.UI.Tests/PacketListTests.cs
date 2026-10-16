@@ -65,6 +65,22 @@ public class PacketListTests
     }
 
     [Fact]
+    public void ResumingRaisesResumedSoThePanelGoesBackToTheTop()
+    {
+        var list = Create();
+        var resumed = 0;
+        list.Resumed += (_, _) => resumed++;
+
+        list.TogglePause();
+        Assert.Equal(0, resumed); // pausing doesn't move the list
+        list.TogglePause();
+        Assert.Equal(1, resumed);
+        list.Scrolled(atTop: false);
+        list.Scrolled(atTop: true);
+        Assert.Equal(2, resumed);
+    }
+
+    [Fact]
     public async Task ChangingAFilterEmptiesTheListAndAsksTheEngineAgainWithIt()
     {
         var engine = new FakeEngine();

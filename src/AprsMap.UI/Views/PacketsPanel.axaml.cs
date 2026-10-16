@@ -38,6 +38,26 @@ public sealed partial class PacketsPanel : UserControl
         }
     }
 
+    private PacketListViewModel? _watched;
+
+    /// <inheritdoc />
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (_watched is not null)
+        {
+            _watched.Resumed -= OnResumed;
+        }
+        _watched = List;
+        if (_watched is not null)
+        {
+            _watched.Resumed += OnResumed;
+        }
+    }
+
+    /// <summary>Resuming shows the newest packets: the list goes back to its top (F1.8 behavior 6).</summary>
+    private void OnResumed(object? sender, EventArgs e) => _scroller?.ScrollToHome();
+
     private MainViewModel? Main => DataContext as MainViewModel;
 
     private PacketListViewModel? List => Main?.PacketList;
