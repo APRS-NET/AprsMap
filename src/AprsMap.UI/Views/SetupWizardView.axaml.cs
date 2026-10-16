@@ -16,7 +16,7 @@ namespace AprsMap.UI.Views;
 /// The first-run wizard. Code-behind only does what a view model can't: moving focus to each step's first field
 /// (behavior 31) and reaching the clipboard for the passcode calculator's Copy button.
 /// </summary>
-public sealed partial class SetupWizardView : UserControl
+public sealed partial class SetupWizardView : UserControl, IDisposable
 {
     private SetupWizardViewModel? _viewModel;
 
@@ -30,6 +30,72 @@ public sealed partial class SetupWizardView : UserControl
         {
             callsign.TextChanged += (_, _) => TidyCallsign(callsign);
         }
+        if (this.FindControl<Control>("MapPicker") is { } picker)
+        {
+            picker.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == IsVisibleProperty && picker.IsVisible)
+                {
+                    ShowPicker();
+                }
+            };
+        }
+        if (this.FindControl<Button>("UseMapPointButton") is { } use)
+        {
+            use.Click += async (_, _) =>
+            {
+                if (_picker?.View is var (lat, lon, _) && _viewModel is { } vm)
+                {
+                    await vm.UseMapPointAsync(lat, lon);
+                }
+            };
+        }
+        DetachedFromVisualTree += (_, _) => Dispose();
+    }
+
+    /// <summary>Releases the picker's map and its tiles.</summary>
+    public void Dispose()
+    {
+        _picker?.Dispose();
+        _picker = null;
+    }
+
+    private Map.MapView? _picker;
+
+    /// <summary>
+    /// The picker's map, made the first time it shows (behavior 9.5): with the map's tiles, at the location confirmed
+    /// so far, or the whole world.
+    /// </summary>
+    private void ShowPicker()
+    {
+        if (_picker is not null || DataContext is not SetupWizardViewModel { Map: { } map } vm)
+        {
+            return;
+        }
+        _picker = new Map.MapView();
+        if (map is { Tiles: { } tiles, Provider: { } provider })
+        {
+            _picker.ShowTiles(tiles, provider);
+        }
+        if (this.FindControl<Border>("PickerHost") is { } host)
+        {
+            host.Child = _picker;
+        }
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (vm is { Latitude: { } lat, Longitude: { } lon })
+            {
+                _picker.ShowAround(lat, lon, 20);
+            }
+            else if (map.Home is var (homeLat, homeLon))
+            {
+                _picker.ShowAround(homeLat, homeLon, 200);
+            }
+            else
+            {
+                _picker.ShowWorld();
+            }
+        });
     }
 
     /// <summary>

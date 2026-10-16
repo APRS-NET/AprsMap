@@ -1727,6 +1727,15 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.geocoding.offline" xml:space="preserve">
     <value>The Internet switch is off, so nothing is looked up. Turn it on from the connection menu.</value>
   </data>
+  <data name="Wizard.Location.Method.Map" xml:space="preserve">
+    <value>Pick on the map</value>
+  </data>
+  <data name="Wizard.Location.Map.Help" xml:space="preserve">
+    <value>Move and zoom the map until the crosshair is on the station's location, then use that point.</value>
+  </data>
+  <data name="Wizard.Location.Map.Use" xml:space="preserve">
+    <value>Use this point</value>
+  </data>
   <data name="Settings.Map.Tracks" xml:space="preserve">
     <value>Tracks</value>
     <comment>Settings › Map: which stations' recent routes are drawn as lines.</comment>

@@ -366,7 +366,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             return;
         }
-        var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation, mode, settings, profile);
+        var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation, mode, settings, profile) { Map = Map };
         try
         {
             await wizard.LoadAsync();
@@ -924,7 +924,7 @@ public sealed partial class MainViewModel : ObservableObject
         _openingSetup = true;
         try
         {
-            var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation);
+            var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation) { Map = Map };
             await wizard.LoadAsync();
             wizard.Closed += OnSetupClosed;
             Setup = wizard;
