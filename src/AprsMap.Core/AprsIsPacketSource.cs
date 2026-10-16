@@ -64,8 +64,13 @@ internal sealed class AprsIsPacketSourceFactory(
     TimeProvider timeProvider
 ) : IPacketSourceFactory
 {
+    /// <exception cref="NotSupportedException">The source isn't APRS-IS: the other kinds aren't built yet.</exception>
     public IPacketSource Create(StationProfile profile, SourceSettings source, string filter)
     {
+        if (source.Kind != SourceKind.AprsIs)
+        {
+            throw new NotSupportedException($"{source.Kind} sources aren't built yet.");
+        }
         var clientOptions = ClientOptions(profile, source.Server ?? string.Empty, filter, timeProvider);
         clientOptions.ReconnectDelay = options.Value.InitialRetryDelay;
         clientOptions.MaxReconnectDelay = options.Value.MaxRetryDelay;

@@ -12,8 +12,9 @@ public sealed partial class PacketRow : ObservableObject
     /// <summary>How much of the raw text after an issue's position is highlighted, at most.</summary>
     private const int FaultLength = 12;
 
-    internal PacketRow(PacketView packet, Localizer text, TimeZoneInfo zone)
+    internal PacketRow(PacketView packet, Localizer text, TimeZoneInfo zone, ViewModels.SourceNames? sources = null)
     {
+        SourceText = sources?.Describe(packet.SourceId, packet.SeenOn, text);
         Packet = packet;
         var local = TimeZoneInfo.ConvertTime(packet.ReceivedAt, zone);
         Time = local.ToString("T", text.Culture);
@@ -53,6 +54,9 @@ public sealed partial class PacketRow : ObservableObject
 
     /// <summary>The symbol's name, for the icon's accessible name.</summary>
     public string? SymbolName => Packet.SymbolName;
+
+    /// <summary>The source it arrived on, and where else it was seen; null with one source in use (F1.25 behavior 8).</summary>
+    public string? SourceText { get; }
 
     /// <summary>Whether APRS.NET reported issues (the warning marker).</summary>
     public bool HasIssues => Packet.HasIssues;

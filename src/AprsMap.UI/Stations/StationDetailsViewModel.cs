@@ -19,11 +19,19 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     private readonly TimeProvider _time;
     private readonly Localizer _text;
     private readonly Func<UnitSettings> _units;
+    private readonly ViewModels.SourceNames? _sources;
     private StationDetail? _detail;
     private int _loads;
 
-    internal StationDetailsViewModel(IEngineService engine, TimeProvider time, Localizer text, Func<UnitSettings> units)
+    internal StationDetailsViewModel(
+        IEngineService engine,
+        TimeProvider time,
+        Localizer text,
+        Func<UnitSettings> units,
+        ViewModels.SourceNames? sources = null
+    )
     {
+        _sources = sources;
         _engine = engine;
         _time = time;
         _text = text;
@@ -99,6 +107,10 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     /// <summary>The equipment that sent the last packet (behavior 2.7).</summary>
     [ObservableProperty]
     public partial string? DeviceText { get; private set; }
+
+    /// <summary>"First heard via Direwolf · also rotate.aprs2.net", with several sources in use (F1.25 behavior 9).</summary>
+    [ObservableProperty]
+    public partial string? HeardViaText { get; private set; }
 
     /// <summary>The last packet as received (behavior 2.8).</summary>
     [ObservableProperty]
@@ -221,7 +233,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         if (d is null || Name is null)
         {
             Symbol = KindText = HeardText = HeardTime = PositionText = LocatorText = RangeText = MotionText = null;
-            Comment = Status = ArrivalText = Path = DeviceText = LastPacket = null;
+            Comment = Status = ArrivalText = Path = DeviceText = LastPacket = HeardViaText = null;
             return;
         }
         var culture = _text.Culture;
@@ -281,6 +293,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             _ => null,
         };
         LastPacket = d.LastPacket;
+        HeardViaText = _sources?.Describe(d.FirstHeardVia, d.SeenOn, _text);
     }
 
     private string? Motion(StationDetail d, UnitSettings units, CultureInfo culture)

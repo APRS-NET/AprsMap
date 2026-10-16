@@ -71,6 +71,8 @@ public enum StationKind
 /// <param name="Device">What sent the last packet, from the aprs-deviceid list (G07), when known.</param>
 /// <param name="Arrival">How the last packet reached the engine, from its path (G20).</param>
 /// <param name="LastPacket">The last packet as received (TNC2 text, Latin-1).</param>
+/// <param name="FirstHeardVia">The source its latest report arrived on first (F1.25 behavior 9).</param>
+/// <param name="SeenOn">Other sources its latest report was heard on.</param>
 public sealed record StationDetail(
     string Name,
     StationKind Kind,
@@ -94,7 +96,9 @@ public sealed record StationDetail(
     string? Locator = null,
     StationDevice? Device = null,
     StationArrival? Arrival = null,
-    string? LastPacket = null
+    string? LastPacket = null,
+    string? FirstHeardVia = null,
+    IReadOnlyList<string>? SeenOn = null
 );
 
 /// <summary>The equipment or software that sent a packet (docs/features/F1.6-station-details.md, behavior 2.7).</summary>

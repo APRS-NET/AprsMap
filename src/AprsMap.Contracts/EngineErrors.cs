@@ -33,6 +33,9 @@ public static class EngineErrorCodes
     /// <summary>A profile uses a source that isn't in the list.</summary>
     public const string SourceUnknown = "settings.profile.source-unknown";
 
+    /// <summary>A source of a kind not built yet (KISS before 0.4.0, say) can't be opened.</summary>
+    public const string SourceKindNotBuilt = "source.kind-not-built";
+
     /// <summary>A profile uses more than one APRS-IS source (F1.25 behavior 3).</summary>
     public const string ProfileTwoAprsIs = "settings.profile.two-aprs-is";
 

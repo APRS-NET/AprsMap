@@ -27,7 +27,17 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly TimeProvider _time;
     private readonly ILogger<Engine> _logger;
     private readonly Lock _gate = new();
-    private readonly Queue<PacketView> _recent = new();
+    private readonly LinkedList<PacketView> _recent = new();
+
+    // The packets listed in the last duplicate window, by identity, so a copy heard on another source adds to their
+    // Seen on (F1.25 behavior 9). Oldest first, for expiry.
+    private readonly Dictionary<PacketIdentity, LinkedListNode<PacketView>> _listed = [];
+    private readonly Queue<(DateTimeOffset At, PacketIdentity Identity, LinkedListNode<PacketView> Node)> _listedOrder =
+        new();
+
+    // The non-APRS-IS sources open, with their connection state (F1.25 behavior 11), by source id.
+    private readonly Dictionary<string, (SourceSettings Source, Link Link)> _sourceLinks = new(StringComparer.Ordinal);
+    private TaskCompletionSource _settingsChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly List<(Channel<PacketView> Channel, PacketFilter? Filter)> _watchers = [];
     private readonly StationStore _stations;
     private readonly DuplicateFilter _duplicates;
@@ -106,7 +116,8 @@ public sealed partial class Engine : IEngineService, IDisposable
                     _reconnects,
                     _link.Error,
                     Filter: _filter,
-                    FilterAreas: _filterAreas
+                    FilterAreas: _filterAreas,
+                    Sources: SourceStatuses()
                 )
             );
         }
@@ -131,6 +142,7 @@ public sealed partial class Engine : IEngineService, IDisposable
                 _settings = saved;
             }
             MeasureFrom(saved);
+            SignalSettingsChanged();
 
             var after = Station.Of(saved);
             if (after is null ? before is not null : after.NeedsNewLogin(before))
@@ -160,10 +172,13 @@ public sealed partial class Engine : IEngineService, IDisposable
             {
                 _settings = AppSettings.Empty; // not the configured defaults: the point is to see first-run setup
                 _recent.Clear();
+                _listed.Clear();
+                _listedOrder.Clear();
                 _packets = 0;
             }
             _stations.Clear();
             MeasureFrom(AppSettings.Empty);
+            SignalSettingsChanged();
             LogReset();
             SignalRestart();
         }
@@ -316,14 +331,202 @@ public sealed partial class Engine : IEngineService, IDisposable
     public async Task RunAsync(CancellationToken cancellationToken)
     {
         var sweeping = SweepAsync(cancellationToken);
+        var others = RunOtherSourcesAsync(cancellationToken);
         try
         {
             await RunConnectionAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
+            await others.ConfigureAwait(false);
             await sweeping.ConfigureAwait(false);
         }
+    }
+
+    /// <summary>Wakes whatever waits for the settings to change.</summary>
+    private void SignalSettingsChanged()
+    {
+        TaskCompletionSource changed;
+        lock (_gate)
+        {
+            changed = _settingsChanged;
+            _settingsChanged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+        changed.TrySetResult();
+    }
+
+    /// <summary>
+    /// Keeps the active profile's other sources open (F1.25 behavior 4): TNCs and the like, beside the APRS-IS session.
+    /// A source both the old and the new profile use stays open across a switch; one whose details changed reopens.
+    /// </summary>
+    private async Task RunOtherSourcesAsync(CancellationToken cancellationToken)
+    {
+        var running = new Dictionary<string, (SourceSettings Source, CancellationTokenSource Stop, Task Run)>(
+            StringComparer.Ordinal
+        );
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                Task changed;
+                lock (_gate)
+                {
+                    changed = _settingsChanged.Task;
+                }
+                var settings = await LoadSettingsAsync(cancellationToken).ConfigureAwait(false);
+                var profile = settings.GetActiveProfile();
+                var wanted = profile is null
+                    ? []
+                    : settings.SourceList.Where(s => s.Kind != SourceKind.AprsIs && profile.Uses(s)).ToList();
+                foreach (var (id, run) in running.ToList())
+                {
+                    if (!wanted.Contains(run.Source))
+                    {
+                        await StopAsync(id, run.Stop, run.Run).ConfigureAwait(false);
+                        running.Remove(id);
+                    }
+                }
+                foreach (var source in wanted.Where(s => !running.ContainsKey(s.Id)))
+                {
+                    var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    running[source.Id] = (source, stop, RunSourceAsync(profile!, source, stop.Token));
+                }
+                await changed.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+        finally
+        {
+            foreach (var (id, run) in running)
+            {
+                await StopAsync(id, run.Stop, run.Run).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task StopAsync(string sourceId, CancellationTokenSource stop, Task run)
+    {
+        await stop.CancelAsync().ConfigureAwait(false);
+        await run.ConfigureAwait(false);
+        stop.Dispose();
+        lock (_gate)
+        {
+            _sourceLinks.Remove(sourceId);
+        }
+    }
+
+    /// <summary>One non-APRS-IS source, reconnecting with backoff until stopped; a kind not built yet stops at once.</summary>
+    private async Task RunSourceAsync(
+        StationProfile profile,
+        SourceSettings source,
+        CancellationToken cancellationToken
+    )
+    {
+        var delay = _options.InitialRetryDelay;
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            IPacketSource connection;
+            try
+            {
+                connection = _sources.Create(profile, source, string.Empty);
+            }
+            catch (NotSupportedException)
+            {
+                SetSourceLink(
+                    source,
+                    new Link(
+                        ConnectionState.NotConfigured,
+                        Error: new EngineError(
+                            EngineErrorCodes.SourceKindNotBuilt,
+                            "This kind of source isn't built yet."
+                        )
+                    )
+                );
+                return;
+            }
+            await using (connection.ConfigureAwait(false))
+            {
+                try
+                {
+                    SetSourceLink(source, new Link(ConnectionState.Connecting));
+                    var opened = await connection
+                        .StartAsync(
+                            e => SetSourceLink(source, new Link(e.State, e.Login?.Server, Error: e.Error)),
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                    SetSourceLink(source, new Link(ConnectionState.Connected, opened.Server, opened.Verified));
+                    delay = _options.InitialRetryDelay;
+                    await foreach (var packet in connection.ReadPacketsAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        Accept(packet, source.Id);
+                    }
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    SetSourceLink(
+                        source,
+                        new Link(
+                            ConnectionState.Reconnecting,
+                            RetryAt: _time.GetUtcNow() + delay,
+                            Error: new EngineError(EngineErrorCodes.AprsIsLinkFailed, ex.Message)
+                        )
+                    );
+                    LogSourceFailed(ex, source.Name, delay);
+                }
+            }
+            try
+            {
+                await Task.Delay(delay, _time, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            delay = TimeSpan.FromTicks(Math.Min(delay.Ticks * 2, _options.MaxRetryDelay.Ticks));
+        }
+    }
+
+    private void SetSourceLink(SourceSettings source, Link link)
+    {
+        lock (_gate)
+        {
+            _sourceLinks[source.Id] = (source, link);
+        }
+    }
+
+    /// <summary>Each source in use with its state: APRS-IS from the session, the others from their runners.</summary>
+    private List<SourceStatus> SourceStatuses()
+    {
+        var list = new List<SourceStatus>();
+        if (Station.Of(_settings) is { } station)
+        {
+            list.Add(
+                new SourceStatus(
+                    station.Source.Id,
+                    station.Source.Name,
+                    SourceKind.AprsIs,
+                    _link.State,
+                    _link.Server,
+                    _link.Error
+                )
+            );
+        }
+        list.AddRange(
+            _sourceLinks.Values.Select(v => new SourceStatus(
+                v.Source.Id,
+                v.Source.Name,
+                v.Source.Kind,
+                v.Link.State,
+                v.Link.Server,
+                v.Link.Error
+            ))
+        );
+        return list;
     }
 
     /// <inheritdoc />
@@ -454,7 +657,12 @@ public sealed partial class Engine : IEngineService, IDisposable
         Accept(packet);
     }
 
-    private void Accept(AprsPacket packet)
+    /// <summary>
+    /// Takes a packet from <paramref name="sourceId"/> (null from <see cref="Accept(string)"/>). A copy of one heard
+    /// first on another source isn't listed or counted again: the first stands, and its Seen on gains this source
+    /// (F1.25 behavior 9). A copy on the same source (another IGate on APRS-IS) is listed, marked (F1.8 behavior 2).
+    /// </summary>
+    private void Accept(AprsPacket packet, string? sourceId = null)
     {
         if (!packet.HasHeader)
         {
@@ -462,26 +670,66 @@ public sealed partial class Engine : IEngineService, IDisposable
         }
 
         var now = _time.GetUtcNow();
-        var duplicate = !_duplicates.TryAccept(packet);
-        var view = PacketSummarizer.Summarize(packet, now, duplicate);
+        var check = _duplicates.Check(packet, sourceId);
+        if (check.IsDuplicate && sourceId is not null && check.FirstSource is { } first && first != sourceId)
+        {
+            AddSeenOn(check.Identity, sourceId);
+            _stations.SeenOn(packet, sourceId);
+            return;
+        }
+        var duplicate = check.IsDuplicate;
+        var view = PacketSummarizer.Summarize(packet, now, duplicate) with { SourceId = sourceId };
         if (!duplicate)
         {
-            _stations.Apply(packet, now); // F1.3 behavior 11: a duplicate is listed, not applied again
+            _stations.Apply(packet, now, sourceId); // F1.3 behavior 11: a duplicate is listed, not applied again
         }
         EngineTelemetry.PacketsReceived.Add(1, new KeyValuePair<string, object?>("aprs.packet.type", view.Type));
         lock (_gate)
         {
             _packets++;
-            _recent.Enqueue(view);
+            var node = _recent.AddLast(view);
             while (_recent.Count > _options.RecentPacketCapacity)
             {
-                _recent.Dequeue();
+                _recent.RemoveFirst();
             }
+            Remember(check.Identity, node, now);
             foreach (var (watcher, filter) in _watchers)
             {
                 if (filter?.Matches(view) ?? true)
                 {
                     watcher.Writer.TryWrite(view);
+                }
+            }
+        }
+    }
+
+    /// <summary>Keeps <paramref name="node"/> findable by identity for one duplicate window.</summary>
+    private void Remember(PacketIdentity identity, LinkedListNode<PacketView> node, DateTimeOffset now)
+    {
+        _listed[identity] = node;
+        _listedOrder.Enqueue((now, identity, node));
+        while (_listedOrder.TryPeek(out var oldest) && now - oldest.At > DuplicateFilter.DefaultWindow)
+        {
+            _listedOrder.Dequeue();
+            // Only when the identity still points at this packet: a later copy may have replaced it.
+            if (_listed.TryGetValue(oldest.Identity, out var listed) && ReferenceEquals(listed, oldest.Node))
+            {
+                _listed.Remove(oldest.Identity);
+            }
+        }
+    }
+
+    /// <summary>The packet listed for <paramref name="identity"/> was heard on <paramref name="sourceId"/> too.</summary>
+    private void AddSeenOn(PacketIdentity identity, string sourceId)
+    {
+        lock (_gate)
+        {
+            if (_listed.TryGetValue(identity, out var node) && node.List is not null)
+            {
+                var seen = node.Value.SeenOn ?? [];
+                if (!seen.Contains(sourceId))
+                {
+                    node.Value = node.Value with { SeenOn = [.. seen, sourceId] };
                 }
             }
         }
@@ -801,7 +1049,7 @@ public sealed partial class Engine : IEngineService, IDisposable
                 LogConnected(login.Server);
                 await foreach (var packet in source.ReadPacketsAsync(session.Token).ConfigureAwait(false))
                 {
-                    Accept(packet);
+                    Accept(packet, profile.Source.Id);
                 }
             }
             catch (OperationCanceledException) when (refused && !cancellationToken.IsCancellationRequested)
@@ -867,6 +1115,9 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Reconnect requested; reconnecting now")]
     private partial void LogReconnectRequested();
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Source {Source} failed; trying again in {Delay}")]
+    private partial void LogSourceFailed(Exception exception, string source, TimeSpan delay);
 
     [LoggerMessage(
         Level = LogLevel.Information,
