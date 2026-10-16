@@ -30,8 +30,8 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | — |
 | G11 | Beacon scheduling algorithms | new: AprsNet.Beaconing | 2 | — |
 | G19 | Query and response handling | Packets + Messaging | 2 | — |
-| G12 | AX.25 UI frame codec (in source, not on NuGet) | new: AprsNet.Ax25 | 3 | — |
-| G13 | KISS framing and transports (serial, TCP) (in source, not on NuGet) | new: AprsNet.Kiss | 3 | — |
+| G12 | AX.25 UI frame codec (delivered) | new: AprsNet.Ax25 | 3 | — |
+| G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial reopen open) | new: AprsNet.Kiss | 3 | — |
 | G14 | Text-mode and Kenwood TNC support | new: AprsNet.Tnc | 3 | — |
 | G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | — |
 | G16 | IGate engine | new: AprsNet.IGate | 3 | — |
@@ -272,7 +272,8 @@ by rendering the TNC2 line").
 
 **Acceptance.** Round-trip frame ↔ TNC2 ↔ frame; H bits map to `*`; fuzzing does not throw.
 
-**Delivered in source** (`0.2.0-alpha.1`, package `AprsNet.Ax25` not on NuGet yet): decode and encode AX.25 UI frames.
+**Delivered** (`0.2.0-alpha.1` in source, on NuGet as `AprsNet.Ax25` from `0.2.0-alpha.3`): decode and encode AX.25 UI
+frames.
 
 ## G13: KISS framing and transports (serial, TCP)
 
@@ -286,8 +287,10 @@ transport.
 **Acceptance.** Escaping edge cases; split frames across reads; loopback transport tests; Direwolf interop smoke test
 (manual).
 
-**Delivered in source** (`0.2.0-alpha.1`, package `AprsNet.Kiss` not on NuGet yet): KISS framing, KISS over any
-stream (serial and Bluetooth), and a TCP TNC connection that reconnects. Still open, needed by AprsMap 0.4.0 (F1.25):
+**Delivered** (`0.2.0-alpha.1` in source, on NuGet as `AprsNet.Kiss` from `0.2.0-alpha.3`): KISS framing, KISS over
+any stream (serial and Bluetooth), and a TCP TNC connection that reconnects, configured with `KissTcpOptions`, that
+reports `StateChanged` and metrics as APRS-IS does, and limits the transmit rate. `KissTcpServer` shares one TNC with
+several KISS apps. Still open, needed by AprsMap 0.4.0 (F1.25):
 a serial connection that reopens the port after a USB unplug and replug (as `KissTcpConnection` reconnects), with the
 connection states F1.1 uses, and a list of the serial ports present. ([APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126))
 
