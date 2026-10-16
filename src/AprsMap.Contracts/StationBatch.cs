@@ -195,13 +195,31 @@ public sealed record StationDetail(
 /// <summary>
 /// One kind of problem with a station's packets over the last hour (docs/features/F1.20-anomalies.md, behavior 5).
 /// </summary>
-/// <param name="Kind">The flag: <see cref="Invalid"/> now; the track anomalies once APRS.NET reports them (G24).</param>
+/// <param name="Kind">The flag: <see cref="Invalid"/>, or one of the track anomalies (G24).</param>
 /// <param name="Count">How many of its packets had it in the last hour.</param>
-/// <param name="Latest">The latest example, as an engine error the UI translates (a parse issue for Invalid).</param>
+/// <param name="Latest">
+/// The latest example, as an engine error the UI translates: a parse issue for Invalid, an <c>anomaly.*</c> code with
+/// its figures for a track anomaly.
+/// </param>
 public sealed record StationProblem(string Kind, int Count, EngineError? Latest)
 {
     /// <summary>A packet with parse errors (behavior 2).</summary>
     public const string Invalid = "invalid";
+
+    /// <summary>The same position sent again too soon, or a late copy (behavior 1.1).</summary>
+    public const string RepeatedPosition = "repeated-position";
+
+    /// <summary>A jump faster than the station could go (behavior 1.2).</summary>
+    public const string ImpossibleSpeed = "impossible-speed";
+
+    /// <summary>Reports less than a second apart (behavior 1.3).</summary>
+    public const string RapidRepeat = "rapid-repeat";
+
+    /// <summary>A report timed before the previous one (behavior 1.4).</summary>
+    public const string TimeBackwards = "time-backwards";
+
+    /// <summary>A move that only reflects a change of ambiguity (behavior 1.5).</summary>
+    public const string AmbiguityJump = "ambiguity-jump";
 }
 
 /// <summary>The equipment or software that sent a packet (docs/features/F1.6-station-details.md, behavior 2.7).</summary>

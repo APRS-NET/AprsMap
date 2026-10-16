@@ -845,7 +845,9 @@ public sealed partial class Engine : IEngineService, IDisposable
         var view = PacketSummarizer.Summarize(packet, now, duplicate) with { SourceId = sourceId };
         if (!duplicate)
         {
-            _stations.Apply(packet, now, sourceId); // F1.3 behavior 11: a duplicate is listed, not applied again
+            // F1.3 behavior 11: a duplicate is listed, not applied again. The track analysis marks the packet (F1.20).
+            var anomalies = _stations.Apply(packet, now, sourceId);
+            view = anomalies == PacketAnomalies.None ? view : view with { Anomalies = anomalies };
         }
         EngineTelemetry.PacketsReceived.Add(1, new KeyValuePair<string, object?>("aprs.packet.type", view.Type));
         lock (_gate)

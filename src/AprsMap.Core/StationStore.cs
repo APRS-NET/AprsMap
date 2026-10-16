@@ -66,7 +66,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     /// updates its station's entry, positioned objects and items their own, and a kill removes one. A third-party packet
     /// updates the station inside it, not the gateway that wrapped it.
     /// </summary>
-    public void Apply(AprsPacket packet, DateTimeOffset receivedAt, string? sourceId = null)
+    public PacketAnomalies Apply(AprsPacket packet, DateTimeOffset receivedAt, string? sourceId = null)
     {
         var raw = packet.Raw.ToArray(); // as received, third-party wrapper and all
         if (packet.Payload is ThirdPartyPayload { Packet: { HasHeader: true } inner })
@@ -75,9 +75,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         }
         if (packet.Source is not { } source)
         {
-            return;
+            return PacketAnomalies.None;
         }
 
+        var anomalies = PacketAnomalies.None;
         lock (_gate)
         {
             _now = receivedAt > _now ? receivedAt : _now;
@@ -95,7 +96,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                         receivedAt,
                         raw
                     );
-                    return;
+                    return PacketAnomalies.None;
                 case ItemReport report:
                     ApplyNamed(
                         report.Name,
@@ -107,7 +108,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                         receivedAt,
                         raw
                     );
-                    return;
+                    return PacketAnomalies.None;
             }
 
             var entry = Touch(source.Value, StationKind.Station, packet, receivedAt, raw);
@@ -116,6 +117,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             switch (packet.Payload)
             {
                 case PositionedPayload positioned:
+                    anomalies = CheckTrack(entry, packet, positioned, receivedAt); // F1.20, before the move
                     SetPosition(entry, positioned, receivedAt);
                     break;
                 case TelemetryReport telemetry:
@@ -138,6 +140,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             }
             Publish(entry);
         }
+        return anomalies;
     }
 
     /// <summary>
@@ -771,6 +774,98 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         }
     }
 
+    // Track anomaly limits (F1.20 behavior 1): APRS.NET's defaults, with 1,000 km/h for anything that isn't an
+    // aircraft or balloon.
+    private static readonly TrackAnalysisOptions AirLimits = TrackAnalysisOptions.Default;
+    private static readonly TrackAnalysisOptions GroundLimits = TrackAnalysisOptions.Default with
+    {
+        MaxSpeedKmh = 1000,
+    };
+
+    /// <summary>The most recent reports a station keeps for the track analysis.</summary>
+    internal const int TrackReportsKept = 50;
+
+    /// <summary>
+    /// Checks a station's new position report against its recent ones with APRS.NET's track analysis (G24), counts
+    /// what it finds, and returns it so the packet can be marked.
+    /// </summary>
+    private static PacketAnomalies CheckTrack(
+        Entry entry,
+        AprsPacket packet,
+        PositionedPayload positioned,
+        DateTimeOffset at
+    )
+    {
+        if (positioned.IsPositionUnknown || TrackReport.FromPacket(packet, at) is not { } report)
+        {
+            return PacketAnomalies.None;
+        }
+        var limits =
+            AprsSymbolCatalog.Get(positioned.Symbol).Category == AprsSymbolCategory.Aircraft ? AirLimits : GroundLimits;
+        var check = TrackAnalysis.Check(entry.Reports, report, limits);
+        entry.Reports.Add(report);
+        var keepAfter = at - limits.LateCopyInterval;
+        var old = 0;
+        while (
+            old < entry.Reports.Count - 1
+            && (entry.Reports[old].ReceivedAt < keepAfter || entry.Reports.Count - old > TrackReportsKept)
+        )
+        {
+            old++;
+        }
+        entry.Reports.RemoveRange(0, old);
+        var found = (PacketAnomalies)(int)check.Anomalies;
+        foreach (
+            var flag in Enum.GetValues<PacketAnomalies>().Where(f => f != PacketAnomalies.None && found.HasFlag(f))
+        )
+        {
+            entry.Anomalies.Enqueue((at, KindOf(flag), ExampleOf(flag, check)));
+        }
+        TrimProblems(entry, at);
+        return found;
+    }
+
+    private static string KindOf(PacketAnomalies flag) =>
+        flag switch
+        {
+            PacketAnomalies.RepeatedPosition => StationProblem.RepeatedPosition,
+            PacketAnomalies.ImpossibleSpeed => StationProblem.ImpossibleSpeed,
+            PacketAnomalies.RapidRepeat => StationProblem.RapidRepeat,
+            PacketAnomalies.TimeBackwards => StationProblem.TimeBackwards,
+            _ => StationProblem.AmbiguityJump,
+        };
+
+    /// <summary>The figures behind a flag, as an engine error the UI words (<c>anomaly.*</c>).</summary>
+    private static EngineError ExampleOf(PacketAnomalies flag, TrackCheck check)
+    {
+        var kind = KindOf(flag);
+        var args = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (check.Interval is { } interval)
+        {
+            args["seconds"] = ((long)Math.Round(interval.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
+            args["milliseconds"] = ((long)Math.Round(interval.TotalMilliseconds)).ToString(
+                CultureInfo.InvariantCulture
+            );
+        }
+        if (check.DistanceKm is { } km)
+        {
+            args["distance"] = Math.Round(km, 1).ToString(CultureInfo.InvariantCulture);
+        }
+        if (check.SpeedKmh is { } speed && double.IsFinite(speed))
+        {
+            args["speed"] = Math.Round(speed).ToString(CultureInfo.InvariantCulture);
+        }
+        var message = flag switch
+        {
+            PacketAnomalies.RepeatedPosition => "The same position was sent again too soon, or as a late copy.",
+            PacketAnomalies.ImpossibleSpeed => "Further from the previous position than the station could have gone.",
+            PacketAnomalies.RapidRepeat => "Less than a second after the previous report.",
+            PacketAnomalies.TimeBackwards => "The report's time is earlier than the previous report's.",
+            _ => "The position moved only because its ambiguity changed.",
+        };
+        return new EngineError("anomaly." + kind, message, args);
+    }
+
     /// <summary>How long a problem counts toward a station's (F1.20 behavior 3).</summary>
     internal static readonly TimeSpan ProblemWindow = TimeSpan.FromHours(1);
 
@@ -793,6 +888,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         while (entry.Invalid.TryPeek(out var oldest) && oldest.At < now - ProblemWindow)
         {
             entry.Invalid.Dequeue();
+        }
+        while (entry.Anomalies.TryPeek(out var oldest) && oldest.At < now - ProblemWindow)
+        {
+            entry.Anomalies.Dequeue();
         }
     }
 
@@ -1140,8 +1239,14 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         /// <summary>Its invalid packets over the last hour, oldest first, each with its first error (F1.20).</summary>
         public Queue<(DateTimeOffset At, EngineError Issue)> Invalid { get; } = new();
 
+        /// <summary>Track anomalies over the last hour, oldest first (F1.20 behavior 3).</summary>
+        public Queue<(DateTimeOffset At, string Kind, EngineError Example)> Anomalies { get; } = new();
+
+        /// <summary>The station's recent position reports, for the track analysis (F1.20 behavior 1).</summary>
+        public List<TrackReport> Reports { get; } = [];
+
         /// <summary>Whether its packets had problems in the last hour (F1.20).</summary>
-        public bool HasProblems => Invalid.Count > 0;
+        public bool HasProblems => Invalid.Count > 0 || Anomalies.Count > 0;
 
         /// <summary>Its telemetry reports, oldest first (F1.11), once it has sent any.</summary>
         public List<(DateTimeOffset At, TelemetryReport Report)>? Telemetry { get; set; }
@@ -1245,11 +1350,27 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 FirstHeardVia,
                 SeenOn.Count == 0 ? null : [.. SeenOn],
                 Weather,
-                HasProblems ? [new StationProblem(StationProblem.Invalid, Invalid.Count, Invalid.Last().Issue)] : null
+                HasProblems ? Problems() : null
             );
         }
 
         public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"{Kind} {Name}");
+
+        /// <summary>Each kind of problem in the last hour, with its count and latest example (F1.20 behavior 5).</summary>
+        private List<StationProblem> Problems()
+        {
+            var problems = new List<StationProblem>();
+            if (Invalid.Count > 0)
+            {
+                problems.Add(new StationProblem(StationProblem.Invalid, Invalid.Count, Invalid.Last().Issue));
+            }
+            problems.AddRange(
+                Anomalies
+                    .GroupBy(a => a.Kind, StringComparer.Ordinal)
+                    .Select(g => new StationProblem(g.Key, g.Count(), g.Last().Example))
+            );
+            return problems;
+        }
     }
 
     /// <summary>One watcher's uncollected changes. Only touched under the store's lock.</summary>

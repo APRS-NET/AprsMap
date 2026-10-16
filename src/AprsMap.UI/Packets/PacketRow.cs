@@ -28,7 +28,25 @@ public sealed partial class PacketRow : ObservableObject
                 ],
                 text.Format(issue)
             )),
+            .. Enum.GetValues<PacketAnomalies>()
+                .Where(flag => flag != PacketAnomalies.None && packet.Anomalies.HasFlag(flag))
+                .Select(flag => new PacketIssueRow(text["Packets.Severity.Track"], text[AnomalyKey(flag)])),
         ];
+        AnomalyText =
+            packet.Anomalies == PacketAnomalies.None
+                ? null
+                : text.Format(
+                    "Packets.Anomalies",
+                    new Dictionary<string, object?>
+                    {
+                        ["flags"] = string.Join(
+                            ", ",
+                            Enum.GetValues<PacketAnomalies>()
+                                .Where(flag => flag != PacketAnomalies.None && packet.Anomalies.HasFlag(flag))
+                                .Select(flag => text[AnomalyNameKey(flag)])
+                        ),
+                    }
+                );
         (RawBefore, RawFault, RawAfter) = Split(packet);
         HopsText = packet.Hops.ToString(text.Culture);
         DigipeatedText = text.Format("Packets.Digipeated", new Dictionary<string, object?> { ["count"] = packet.Hops });
@@ -57,6 +75,33 @@ public sealed partial class PacketRow : ObservableObject
 
     /// <summary>The source it arrived on, and where else it was seen; null with one source in use (F1.25 behavior 8).</summary>
     public string? SourceText { get; }
+
+    /// <summary>Whether the packet doesn't fit its station's track (the track marker, F1.20 behavior 4).</summary>
+    public bool HasAnomalies => Packet.Anomalies != PacketAnomalies.None;
+
+    /// <summary>The track marker's name and tooltip, naming each flag; null without any.</summary>
+    public string? AnomalyText { get; }
+
+    // Written out key by key, so the localization guard sees every string.
+    private static string AnomalyNameKey(PacketAnomalies flag) =>
+        flag switch
+        {
+            PacketAnomalies.RepeatedPosition => "Details.Problem.repeated-position",
+            PacketAnomalies.ImpossibleSpeed => "Details.Problem.impossible-speed",
+            PacketAnomalies.RapidRepeat => "Details.Problem.rapid-repeat",
+            PacketAnomalies.TimeBackwards => "Details.Problem.time-backwards",
+            _ => "Details.Problem.ambiguity-jump",
+        };
+
+    private static string AnomalyKey(PacketAnomalies flag) =>
+        flag switch
+        {
+            PacketAnomalies.RepeatedPosition => "Packets.Anomaly.RepeatedPosition",
+            PacketAnomalies.ImpossibleSpeed => "Packets.Anomaly.ImpossibleSpeed",
+            PacketAnomalies.RapidRepeat => "Packets.Anomaly.RapidRepeat",
+            PacketAnomalies.TimeBackwards => "Packets.Anomaly.TimeBackwards",
+            _ => "Packets.Anomaly.AmbiguityJump",
+        };
 
     /// <summary>Whether APRS.NET reported issues (the warning marker).</summary>
     public bool HasIssues => Packet.HasIssues;

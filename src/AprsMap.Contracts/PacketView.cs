@@ -42,11 +42,41 @@ public sealed record PacketView(
     string? Symbol = null,
     int Hops = 0,
     string? SourceId = null,
-    IReadOnlyList<string>? SeenOn = null
+    IReadOnlyList<string>? SeenOn = null,
+    PacketAnomalies Anomalies = PacketAnomalies.None
 )
 {
     /// <summary>Whether APRS.NET reported any issue with the packet.</summary>
     public bool HasIssues => Issues is { Count: > 0 };
+
+    /// <summary>Whether the packet has parse issues or doesn't fit its station's track (F1.20).</summary>
+    public bool HasProblems => HasIssues || Anomalies != PacketAnomalies.None;
+}
+
+/// <summary>
+/// What looks wrong about a position report given its station's track (docs/features/F1.20-anomalies.md, behavior 1),
+/// from APRS.NET's track analysis (G24).
+/// </summary>
+[Flags]
+public enum PacketAnomalies
+{
+    /// <summary>Nothing.</summary>
+    None = 0,
+
+    /// <summary>The same position sent again too soon, or a late copy of an earlier one.</summary>
+    RepeatedPosition = 1,
+
+    /// <summary>Further from the previous position than the station could have gone.</summary>
+    ImpossibleSpeed = 2,
+
+    /// <summary>Less than a second after the station's previous report.</summary>
+    RapidRepeat = 4,
+
+    /// <summary>The report's own time is earlier than the previous timestamped report's.</summary>
+    TimeBackwards = 8,
+
+    /// <summary>The position moved only because its ambiguity changed.</summary>
+    AmbiguityJump = 16,
 }
 
 /// <summary>The kinds of packet the packet list filters by (F1.8 behavior 7).</summary>
@@ -107,7 +137,7 @@ public enum PacketMarkers
 /// <param name="Text">Matches the source, destination, path or raw text, ignoring case.</param>
 /// <param name="Station">Only this station's packets, ignoring case.</param>
 /// <param name="Kinds">Only these kinds; null or empty for all.</param>
-/// <param name="IssuesOnly">Only packets with parse issues.</param>
+/// <param name="IssuesOnly">Only packets with parse issues or track anomalies (F1.20 behavior 4).</param>
 public sealed record PacketFilter(
     string? Text = null,
     string? Station = null,
@@ -126,7 +156,7 @@ public sealed record PacketFilter(
     public bool Matches(PacketView packet)
     {
         ArgumentNullException.ThrowIfNull(packet);
-        if (IssuesOnly && !packet.HasIssues)
+        if (IssuesOnly && !packet.HasProblems)
         {
             return false;
         }

@@ -107,7 +107,11 @@ public sealed partial class Localizer
         var args = new Dictionary<string, object?>(StringComparer.Ordinal);
         foreach (var (name, value) in error.Args ?? new Dictionary<string, string>())
         {
-            args[name] = value;
+            // Arguments travel as text; numbers go back to numbers so plurals and the culture's digits apply.
+            args[name] =
+                long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var whole) ? whole
+                : double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var real) ? real
+                : value;
         }
         if (
             error.Arg(EngineErrorArgs.Index) is { } index
