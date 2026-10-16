@@ -10,9 +10,9 @@
     <ProductSlug>aprsmap</ProductSlug>
     <!-- Earlier slugs, semicolon-separated, so user data can be migrated after a rename. -->
     <PreviousSlugs></PreviousSlugs>
-    <!-- Transmitted device ID: APZNET (experimental APZ range) until APNETM is registered in aprs-deviceid. Not tied to
-         the product name; see docs/branding.md. -->
-    <ProductTocall>APZNET</ProductTocall>
+    <!-- Transmitted device ID: the APZAMP placeholder (experimental APZ range) until APNETM is registered in
+         aprs-deviceid. Not tied to the product name; see docs/branding.md. -->
+    <ProductTocall>APZAMP</ProductTocall>
     <ProductSourceUrl>https://github.com/APRS-NET/AprsMap</ProductSourceUrl>
     <Company>Derek Rowland</Company>
     <Product>$(ProductDisplayName)</Product>

@@ -27,11 +27,11 @@ a hunt through the code.
 3. **One spelling per form**, so a rename is a fixed set of replacements:
    `AprsMap` (code and prose), `aprsmap` (slugs, paths, config folder, container image), `APRSMAP` (environment-variable
    prefix), `aprs-map` is not used.
-4. **The TOCALL is a separate decision.** The transmitted device ID is `APZNET` for now, in the experimental `APZ`
-   range and the same one APRS.NET's tools use. The plan is to request **`APNETM`** in the aprs-deviceid list and
-   switch to it once it's assigned (maintainer decision, 2026-10-16). It is deliberately not tied to the product
-   name, which is expected to change as the app matures: renaming the product never changes the TOCALL, because
-   receivers identify existing installs by it.
+4. **The TOCALL is a separate decision.** The transmitted device ID is the `APZAMP` placeholder for now, in the
+   experimental `APZ` range. The plan is to request **`APNETM`** in the aprs-deviceid list and switch to it once it's
+   assigned (maintainer decision, 2026-10-16). It is deliberately not tied to the product name, which is expected to
+   change as the app matures: renaming the product never changes the TOCALL, because receivers identify existing
+   installs by it.
 5. **User data survives a rename.** Settings and caches are found through `Brand.Slug`; the app looks for the previous
    slug's folder on first start and migrates it (`Branding.props` keeps a `PreviousSlugs` list).
 
