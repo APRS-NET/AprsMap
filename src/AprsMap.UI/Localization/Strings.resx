@@ -2455,4 +2455,18 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Share (%)</value>
     <comment>Copied table's column header.</comment>
   </data>
+  <data name="Map.ClearStations" xml:space="preserve">
+    <value>Clear all stations from the map</value>
+    <comment>Map button: tooltip and accessible name.</comment>
+  </data>
+  <data name="Map.ClearStations.Question" xml:space="preserve">
+    <value>{count, plural, one {Clear the # station from the map, with its track? It comes back when it's heard again.} other {Clear all # stations from the map, with their tracks? They come back as they're heard again.}}</value>
+    <comment>Objects and items are included. Settings and profiles stay.</comment>
+  </data>
+  <data name="Map.ClearStations.Do" xml:space="preserve">
+    <value>Clear stations</value>
+  </data>
+  <data name="Map.ClearStations.Keep" xml:space="preserve">
+    <value>Keep them</value>
+  </data>
 </root>

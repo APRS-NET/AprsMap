@@ -337,6 +337,39 @@
           Height="{DynamicResource Icon.Size}"
         />
       </ToggleButton>
+      <!-- Clear stations (F1.19): every station, object and item off the map, after a question. -->
+      <Button
+        x:Name="ClearStationsButton"
+        IsVisible="{Binding CanClearData}"
+        ToolTip.Tip="{l:T Map.ClearStations}"
+        AutomationProperties.Name="{l:T Map.ClearStations}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <!-- An eraser, drawn for this app. -->
+        <PathIcon
+          Data="M 2.6,15.4 L 11.6,6.4 L 17.6,12.4 L 10,20 L 5.2,20 Z M 12.6,5.4 L 15,3 L 21,9 L 18.6,11.4 Z M 12.5,20 L 21,20 L 21,22 L 12.5,22 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+        <Button.Flyout>
+          <Flyout Placement="LeftEdgeAlignedTop">
+            <StackPanel Spacing="8" MaxWidth="320">
+              <TextBlock Text="{Binding ClearStationsQuestion}" TextWrapping="Wrap" />
+              <WrapPanel ItemSpacing="8">
+                <Button
+                  x:Name="ConfirmClearStationsButton"
+                  Classes="accent"
+                  Content="{l:T Map.ClearStations.Do}"
+                  Command="{Binding ClearStationsCommand}"
+                />
+                <Button x:Name="KeepStationsButton" Content="{l:T Map.ClearStations.Keep}" />
+              </WrapPanel>
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
     </StackPanel>
     <!-- While a View filter hides stations (F1.9 behavior 4): what's shown, and a way back to everything. -->
     <Border
