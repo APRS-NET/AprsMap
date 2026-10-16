@@ -79,6 +79,9 @@ public sealed partial class MainViewModel : ObservableObject
             _text,
             () => _settings?.Units ?? UnitSettings.Metric
         );
+        ViewFilter = new Stations.ViewFilterViewModel(engine, _text);
+        ViewFilter.Changed += (_, _) => OnViewFilterChanged();
+        StationList.Filter = () => ViewFilter.Current;
         Shell = new ShellViewModel(this, _text, managedWindows);
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
@@ -523,6 +526,7 @@ public sealed partial class MainViewModel : ObservableObject
             Map.UseProvider(_appearance.Current.MapProvider);
             _appearance.Changed += (_, settings) => Map.UseProvider(settings.MapProvider);
         }
+        await ViewFilter.LoadAsync(Preferences);
         await StationList.LoadAsync();
         var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
@@ -556,6 +560,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
         }
         StationCount = _stations.Count;
+        ViewFilter.ShowCounts(_stations.Count, _status?.Stations ?? _stations.Count);
         if (
             _routeQuery is { Path: null, TrackPoint: null } following
             && batch.Changed.Any(s => s.Name == following.Name)
@@ -736,6 +741,9 @@ public sealed partial class MainViewModel : ObservableObject
             // The gateway is away; the next move reports again.
         }
     }
+
+    /// <summary>The View filter (F1.9), for the map and the station list.</summary>
+    public Stations.ViewFilterViewModel ViewFilter { get; }
 
     /// <summary>The Stations panel (F1.7).</summary>
     public Stations.StationListViewModel StationList { get; }
@@ -950,11 +958,43 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    private CancellationTokenSource? _stationsRestart;
+
+    /// <summary>The View filter changed (F1.9): the station stream starts again with it, and the list asks again.</summary>
+    private void OnViewFilterChanged()
+    {
+        _stationsRestart?.Cancel();
+        _ = StationList.RefreshAsync();
+        ViewFilter.ShowCounts(_stations.Count, _status?.Stations ?? _stations.Count);
+    }
+
     private async Task WatchStationsAsync(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            using var restart = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _stationsRestart = restart;
+            try
+            {
+                await WatchStationsOnceAsync(restart.Token);
+                return;
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // The View filter changed: a new stream with a new snapshot.
+            }
+            finally
+            {
+                _stationsRestart = null;
+            }
+        }
+    }
+
+    private async Task WatchStationsOnceAsync(CancellationToken cancellationToken)
     {
         // The first batches are a full snapshot, so a resubscription starts from scratch once it arrives.
         var first = true;
-        await foreach (var batch in engine.WatchStationsAsync(cancellationToken))
+        await foreach (var batch in engine.WatchStationsAsync(ViewFilter.Current, cancellationToken))
         {
             if (first)
             {

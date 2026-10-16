@@ -93,8 +93,14 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     ) => _connection.StreamAsync<PacketView>(EngineHub.WatchPackets, filter, cancellationToken);
 
     /// <inheritdoc />
-    public IAsyncEnumerable<StationBatch> WatchStationsAsync(CancellationToken cancellationToken = default) =>
-        _connection.StreamAsync<StationBatch>(EngineHub.WatchStations, cancellationToken);
+    public IAsyncEnumerable<StationBatch> WatchStationsAsync(
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    ) => _connection.StreamAsync<StationBatch>(EngineHub.WatchStations, filter, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<ViewFacets>(EngineHub.GetViewFacets, cancellationToken));
 
     /// <inheritdoc />
     public Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default) =>

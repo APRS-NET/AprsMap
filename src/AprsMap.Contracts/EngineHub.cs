@@ -46,6 +46,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.SaveSettingsAsync"/>.</summary>
     public const string SaveSettings = "SaveSettings";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetViewFacetsAsync"/>.</summary>
+    public const string GetViewFacets = "GetViewFacets";
+
     /// <summary>Hub method for <see cref="IEngineService.GetClearCountsAsync"/>.</summary>
     public const string GetClearCounts = "GetClearCounts";
 

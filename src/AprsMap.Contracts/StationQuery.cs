@@ -15,7 +15,8 @@ public sealed record StationQuery(
     StationKinds Kinds = StationKinds.All,
     StationSort Sort = StationSort.LastHeard,
     int Offset = 0,
-    int Count = 100
+    int Count = 100,
+    StationFilter? Filter = null
 )
 {
     /// <summary>The most rows one page holds.</summary>
@@ -74,3 +75,80 @@ public sealed record StationRow(
 /// <param name="Rows">The rows, in order.</param>
 /// <param name="Total">How many entries match the search and kinds.</param>
 public sealed record StationPage(IReadOnlyList<StationRow> Rows, int Total);
+
+/// <summary>
+/// The viewer's View filter (docs/features/F1.9-view-filters.md, behavior 1): a station is shown when it matches every
+/// condition set. Emergencies are always shown (behavior 3). Conditions left at their defaults don't filter.
+/// </summary>
+/// <param name="Kinds">Stations, objects and items, or some of them.</param>
+/// <param name="Categories">Symbol categories shown (APRS.NET's <c>AprsSymbolCategory</c> names); null or empty for all.</param>
+/// <param name="HeardWithinMinutes">Only those heard this recently; null for any time.</param>
+/// <param name="Reception">How their last packet arrived.</param>
+/// <param name="MessageCapable">Only stations whose position says they take messages.</param>
+/// <param name="WithWeather">Only stations that send weather (F1.10).</param>
+/// <param name="WithTrack">Only stations with a track of two or more positions (F1.5).</param>
+/// <param name="DeviceClasses">Device classes shown (aprs-deviceid's, such as <c>Tracker</c>); null or empty for all.</param>
+/// <param name="MicEStatuses">Mic-E statuses shown (APRS.NET's <c>MicEMessage</c> names); null or empty for all.</param>
+/// <param name="Tags">Comment and status tags shown (<c>!word!</c> and <c>#word</c>, as written); null or empty for all.</param>
+public sealed record StationFilter(
+    StationKinds Kinds = StationKinds.All,
+    IReadOnlyList<string>? Categories = null,
+    int? HeardWithinMinutes = null,
+    Reception Reception = Reception.Any,
+    bool MessageCapable = false,
+    bool WithWeather = false,
+    bool WithTrack = false,
+    IReadOnlyList<string>? DeviceClasses = null,
+    IReadOnlyList<string>? MicEStatuses = null,
+    IReadOnlyList<string>? Tags = null
+)
+{
+    /// <summary>Shows everything.</summary>
+    public static StationFilter None { get; } = new();
+
+    /// <summary>Whether no condition is set.</summary>
+    public bool IsEmpty =>
+        Kinds == StationKinds.All
+        && Categories is null or { Count: 0 }
+        && HeardWithinMinutes is null
+        && Reception == Reception.Any
+        && !MessageCapable
+        && !WithWeather
+        && !WithTrack
+        && DeviceClasses is null or { Count: 0 }
+        && MicEStatuses is null or { Count: 0 }
+        && Tags is null or { Count: 0 };
+}
+
+/// <summary>How a station's last packet arrived, for the View filter (F1.9 behavior 1.4).</summary>
+public enum Reception
+{
+    /// <summary>However it arrived.</summary>
+    Any,
+
+    /// <summary>Heard directly on RF by an IGate.</summary>
+    Direct,
+
+    /// <summary>Repeated by digipeaters on RF.</summary>
+    Digipeated,
+
+    /// <summary>Heard on RF, directly or through digipeaters.</summary>
+    AnyRf,
+
+    /// <summary>From the internet, never on RF.</summary>
+    Internet,
+}
+
+/// <summary>
+/// The values heard so far, with how many stations have each, for the View filter's lists (F1.9 behavior 2): only what
+/// has been heard, so a list never offers an empty choice.
+/// </summary>
+public sealed record ViewFacets(
+    IReadOnlyList<Facet> Categories,
+    IReadOnlyList<Facet> DeviceClasses,
+    IReadOnlyList<Facet> MicEStatuses,
+    IReadOnlyList<Facet> Tags
+);
+
+/// <summary>One value of a <see cref="ViewFacets"/> list and how many stations have it.</summary>
+public sealed record Facet(string Value, int Count);

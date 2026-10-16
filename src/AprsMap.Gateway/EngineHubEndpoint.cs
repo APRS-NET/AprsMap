@@ -30,8 +30,11 @@ internal sealed class EngineHubEndpoint(
         engine.WatchPacketsAsync(filter, cancellationToken);
 
     [HubMethodName(EngineHub.WatchStations)]
-    public IAsyncEnumerable<StationBatch> WatchStations(CancellationToken cancellationToken) =>
-        engine.WatchStationsAsync(cancellationToken);
+    public IAsyncEnumerable<StationBatch> WatchStations(StationFilter? filter, CancellationToken cancellationToken) =>
+        engine.WatchStationsAsync(filter, cancellationToken);
+
+    [HubMethodName(EngineHub.GetViewFacets)]
+    public Task<ViewFacets> GetViewFacets() => engine.GetViewFacetsAsync(Context.ConnectionAborted);
 
     [HubMethodName(EngineHub.GetClearCounts)]
     public Task<ClearCounts> GetClearCounts() => engine.GetClearCountsAsync(Context.ConnectionAborted);

@@ -24,9 +24,17 @@ public interface IEngineService
     /// <summary>
     /// Streams the map's stations. The first batches hold every station the engine knows (a late joiner catches up
     /// without a separate snapshot call); after that, each batch holds what changed since the previous one, at most
-    /// every few hundred milliseconds, with only the latest state per station.
+    /// every few hundred milliseconds, with only the latest state per station. Only stations that pass
+    /// <paramref name="filter"/> are sent (F1.9): one that stops matching is removed, and one that starts matching
+    /// arrives with its track. To change the filter, start a new stream.
     /// </summary>
-    IAsyncEnumerable<StationBatch> WatchStationsAsync(CancellationToken cancellationToken = default);
+    IAsyncEnumerable<StationBatch> WatchStationsAsync(
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>The values heard so far with their counts, for the View filter's lists (F1.9 behavior 2).</summary>
+    Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Everything known about one station, object or item (F1.3 behavior 14), for the details pane and the station list;

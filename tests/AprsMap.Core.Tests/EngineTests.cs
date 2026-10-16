@@ -190,7 +190,7 @@ public class EngineTests
         engine.Accept(Status); // no position: not a station
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        await using var watch = engine.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        await using var watch = engine.WatchStationsAsync(cancellationToken: cts.Token).GetAsyncEnumerator(cts.Token);
         Assert.True(await watch.MoveNextAsync());
         var station = Assert.Single(watch.Current.Changed);
         Assert.Equal(
@@ -232,7 +232,7 @@ public class EngineTests
         var time = new FakeTimeProvider();
         var engine = CreateEngine(time);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        await using var watch = engine.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        await using var watch = engine.WatchStationsAsync(cancellationToken: cts.Token).GetAsyncEnumerator(cts.Token);
 
         // An interval with no changes sends nothing.
         var next = watch.MoveNextAsync().AsTask();
@@ -282,7 +282,7 @@ public class EngineTests
         }
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        await using var watch = engine.WatchStationsAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        await using var watch = engine.WatchStationsAsync(cancellationToken: cts.Token).GetAsyncEnumerator(cts.Token);
         Assert.True(await watch.MoveNextAsync());
         Assert.Equal(Engine.SnapshotBatchSize, watch.Current.Changed.Count);
         Assert.True(await watch.MoveNextAsync());

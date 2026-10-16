@@ -59,6 +59,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
         _map.KeyDown += OnMapKeyDown;
         _map.ContextRequested += OnContextRequested;
         _map.PannedByHand += (_, _) => StopFollowing();
+        FilterButton.Flyout!.Opened += (_, _) => _ = _main?.ViewFilter.RefreshFacetsAsync(); // what's been heard, now
         _map.TrackPointPicked += (_, point) => _main?.SelectTrackPoint(point.Name, point.Time);
         StopFollowingButton.Click += (_, _) => StopFollowing();
         SetMyLocationItem.Click += (_, _) =>

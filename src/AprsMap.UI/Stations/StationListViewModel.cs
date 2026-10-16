@@ -204,13 +204,17 @@ public sealed partial class StationListViewModel : ObservableObject
         }
     }
 
+    /// <summary>The View filter in effect (F1.9 behavior 6: the list shows what the map shows).</summary>
+    internal Func<StationFilter?> Filter { get; set; } = () => null;
+
     private StationQuery Query(int offset, int count) =>
         new(
             string.IsNullOrWhiteSpace(Search) ? null : Search.Trim(),
             SelectedKinds.Value,
             SelectedSort.Value,
             offset,
-            count
+            count,
+            Filter()
         );
 
     /// <summary>Updates rows already listed in place and adds the others at the end.</summary>

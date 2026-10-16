@@ -119,7 +119,8 @@ public sealed partial class Engine : IEngineService, IDisposable
                     Filter: _filter,
                     FilterAreas: _filterAreas,
                     Sources: SourceStatuses(),
-                    PacketHistory: _packetHistory
+                    PacketHistory: _packetHistory,
+                    Stations: _stations.Count
                 )
             );
         }
@@ -301,10 +302,11 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     /// <inheritdoc />
     public async IAsyncEnumerable<StationBatch> WatchStationsAsync(
+        StationFilter? filter = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
-        var watcher = _stations.Subscribe(out var snapshot, out var tracks);
+        var watcher = _stations.Subscribe(filter, out var snapshot, out var tracks);
         try
         {
             foreach (var chunk in snapshot.Chunk(SnapshotBatchSize))
@@ -558,6 +560,10 @@ public sealed partial class Engine : IEngineService, IDisposable
         ArgumentNullException.ThrowIfNull(name);
         return Task.FromResult(_stations.Get(name));
     }
+
+    /// <inheritdoc />
+    public Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_stations.Facets());
 
     /// <inheritdoc />
     public Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default)

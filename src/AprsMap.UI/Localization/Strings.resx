@@ -1489,6 +1489,216 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Units.PressureUnit.InchesOfMercury" xml:space="preserve">
     <value>Inches of mercury (inHg)</value>
   </data>
+  <data name="Filter.Button" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Filter.Title" xml:space="preserve">
+    <value>View filter</value>
+  </data>
+  <data name="Filter.Help" xml:space="preserve">
+    <value>Choose which stations the map and the station list show. What APRS-IS sends doesn't change.</value>
+  </data>
+  <data name="Filter.On" xml:space="preserve">
+    <value>My filter</value>
+  </data>
+  <data name="Filter.ShowAll" xml:space="preserve">
+    <value>Show all</value>
+  </data>
+  <data name="Filter.Reset" xml:space="preserve">
+    <value>Clear conditions</value>
+  </data>
+  <data name="Filter.Emergencies" xml:space="preserve">
+    <value>Emergencies are always shown.</value>
+  </data>
+  <data name="Filter.Chip" xml:space="preserve">
+    <value>Filtered · {shown, plural, other {#}} of {total, plural, other {#}} · emergencies always shown</value>
+  </data>
+  <data name="Filter.Counted" xml:space="preserve">
+    <value>{name} ({count, plural, other {#}})</value>
+  </data>
+  <data name="Filter.Label.Kinds" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="Filter.Label.Heard" xml:space="preserve">
+    <value>Heard</value>
+  </data>
+  <data name="Filter.Label.Reception" xml:space="preserve">
+    <value>Reception</value>
+  </data>
+  <data name="Filter.Label.Capability" xml:space="preserve">
+    <value>Only stations that</value>
+  </data>
+  <data name="Filter.Label.Categories" xml:space="preserve">
+    <value>Symbol categories</value>
+  </data>
+  <data name="Filter.Label.Devices" xml:space="preserve">
+    <value>Devices</value>
+  </data>
+  <data name="Filter.Label.MicE" xml:space="preserve">
+    <value>Mic-E status</value>
+  </data>
+  <data name="Filter.Label.Tags" xml:space="preserve">
+    <value>Tags</value>
+  </data>
+  <data name="Filter.None" xml:space="preserve">
+    <value>Nothing heard yet.</value>
+  </data>
+  <data name="Filter.MessageCapable" xml:space="preserve">
+    <value>take messages</value>
+  </data>
+  <data name="Filter.WithWeather" xml:space="preserve">
+    <value>send weather</value>
+  </data>
+  <data name="Filter.WithTrack" xml:space="preserve">
+    <value>have a track</value>
+  </data>
+  <data name="Filter.Kinds.All" xml:space="preserve">
+    <value>Stations, objects and items</value>
+  </data>
+  <data name="Filter.Kinds.Stations" xml:space="preserve">
+    <value>Stations only</value>
+  </data>
+  <data name="Filter.Kinds.ObjectsAndItems" xml:space="preserve">
+    <value>Objects and items only</value>
+  </data>
+  <data name="Filter.Heard.Any" xml:space="preserve">
+    <value>At any time</value>
+  </data>
+  <data name="Filter.Heard.Within" xml:space="preserve">
+    <value>In the last {minutes, plural, one {# minute} other {# minutes}}</value>
+  </data>
+  <data name="Filter.Reception.Any" xml:space="preserve">
+    <value>However it arrived</value>
+  </data>
+  <data name="Filter.Reception.Direct" xml:space="preserve">
+    <value>Heard directly on RF</value>
+  </data>
+  <data name="Filter.Reception.Digipeated" xml:space="preserve">
+    <value>Through digipeaters</value>
+  </data>
+  <data name="Filter.Reception.AnyRf" xml:space="preserve">
+    <value>On RF</value>
+  </data>
+  <data name="Filter.Reception.Internet" xml:space="preserve">
+    <value>From the internet only</value>
+  </data>
+  <data name="Filter.Category.Radio" xml:space="preserve">
+    <value>Radio</value>
+  </data>
+  <data name="Filter.Category.Vehicles" xml:space="preserve">
+    <value>Vehicles</value>
+  </data>
+  <data name="Filter.Category.Aircraft" xml:space="preserve">
+    <value>Aircraft</value>
+  </data>
+  <data name="Filter.Category.Marine" xml:space="preserve">
+    <value>Boats</value>
+  </data>
+  <data name="Filter.Category.Emergency" xml:space="preserve">
+    <value>Emergency services</value>
+  </data>
+  <data name="Filter.Category.Weather" xml:space="preserve">
+    <value>Weather</value>
+  </data>
+  <data name="Filter.Category.Places" xml:space="preserve">
+    <value>Places</value>
+  </data>
+  <data name="Filter.Category.People" xml:space="preserve">
+    <value>People</value>
+  </data>
+  <data name="Filter.Category.Markers" xml:space="preserve">
+    <value>Markers</value>
+  </data>
+  <data name="Filter.DeviceClass.Weather" xml:space="preserve">
+    <value>Weather stations</value>
+  </data>
+  <data name="Filter.DeviceClass.Tracker" xml:space="preserve">
+    <value>Trackers</value>
+  </data>
+  <data name="Filter.DeviceClass.Gadget" xml:space="preserve">
+    <value>Gadgets</value>
+  </data>
+  <data name="Filter.DeviceClass.Rig" xml:space="preserve">
+    <value>Radios</value>
+  </data>
+  <data name="Filter.DeviceClass.HandHeld" xml:space="preserve">
+    <value>Handhelds</value>
+  </data>
+  <data name="Filter.DeviceClass.App" xml:space="preserve">
+    <value>Phone apps</value>
+  </data>
+  <data name="Filter.DeviceClass.Software" xml:space="preserve">
+    <value>Software</value>
+  </data>
+  <data name="Filter.DeviceClass.Daemon" xml:space="preserve">
+    <value>Servers and daemons</value>
+  </data>
+  <data name="Filter.DeviceClass.Service" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="Filter.DeviceClass.Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="Filter.DeviceClass.Digipeater" xml:space="preserve">
+    <value>Digipeaters</value>
+  </data>
+  <data name="Filter.DeviceClass.IGate" xml:space="preserve">
+    <value>IGates</value>
+  </data>
+  <data name="Filter.DeviceClass.DStar" xml:space="preserve">
+    <value>D-STAR</value>
+  </data>
+  <data name="Filter.DeviceClass.Satellite" xml:space="preserve">
+    <value>Satellites</value>
+  </data>
+  <data name="Filter.MicE.OffDuty" xml:space="preserve">
+    <value>Off duty</value>
+  </data>
+  <data name="Filter.MicE.EnRoute" xml:space="preserve">
+    <value>En route</value>
+  </data>
+  <data name="Filter.MicE.InService" xml:space="preserve">
+    <value>In service</value>
+  </data>
+  <data name="Filter.MicE.Returning" xml:space="preserve">
+    <value>Returning</value>
+  </data>
+  <data name="Filter.MicE.Committed" xml:space="preserve">
+    <value>Committed</value>
+  </data>
+  <data name="Filter.MicE.Special" xml:space="preserve">
+    <value>Special</value>
+  </data>
+  <data name="Filter.MicE.Priority" xml:space="preserve">
+    <value>Priority</value>
+  </data>
+  <data name="Filter.MicE.Emergency" xml:space="preserve">
+    <value>Emergency</value>
+  </data>
+  <data name="Filter.MicE.Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Filter.MicE.Custom0" xml:space="preserve">
+    <value>Custom 0</value>
+  </data>
+  <data name="Filter.MicE.Custom1" xml:space="preserve">
+    <value>Custom 1</value>
+  </data>
+  <data name="Filter.MicE.Custom2" xml:space="preserve">
+    <value>Custom 2</value>
+  </data>
+  <data name="Filter.MicE.Custom3" xml:space="preserve">
+    <value>Custom 3</value>
+  </data>
+  <data name="Filter.MicE.Custom4" xml:space="preserve">
+    <value>Custom 4</value>
+  </data>
+  <data name="Filter.MicE.Custom5" xml:space="preserve">
+    <value>Custom 5</value>
+  </data>
+  <data name="Filter.MicE.Custom6" xml:space="preserve">
+    <value>Custom 6</value>
+  </data>
   <data name="Settings.Map.Tracks" xml:space="preserve">
     <value>Tracks</value>
     <comment>Settings › Map: which stations' recent routes are drawn as lines.</comment>

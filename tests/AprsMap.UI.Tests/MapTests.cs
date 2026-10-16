@@ -325,7 +325,7 @@ public sealed class MapTests
         }
     }
 
-    private sealed class MemoryStore : IPreferenceStore
+    internal sealed class MemoryStore : IPreferenceStore
     {
         private readonly Dictionary<string, string> _values = [];
 

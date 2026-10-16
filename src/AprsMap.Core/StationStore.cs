@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 using System.Globalization;
+using System.Text.RegularExpressions;
 using AprsMap.Contracts;
 using AprsNet.Packets;
+using AprsNet.Symbols;
 
 namespace AprsMap.Core;
 
@@ -12,7 +14,7 @@ namespace AprsMap.Core;
 /// go first beyond the cap, so memory stays bounded.
 /// </summary>
 // Duplicate packets (behavior 11) never reach the store: the engine drops them first (G05).
-internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntries)
+internal sealed partial class StationStore(int maxEntries = StationStore.DefaultMaxEntries)
 {
     /// <summary>The most entries kept (behavior 12).</summary>
     public const int DefaultMaxEntries = 50_000;
@@ -28,6 +30,9 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     private readonly List<StationWatcher> _watchers = [];
     private AprsPosition? _home;
     private StationAging _aging = StationAging.Default;
+
+    // The latest time the store has seen, for the View filter's "heard within" (F1.9).
+    private DateTimeOffset _now;
 
     // The source of the packet being applied, under the lock.
     private string? _sourceId;
@@ -62,6 +67,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
 
         lock (_gate)
         {
+            _now = receivedAt > _now ? receivedAt : _now;
             _sourceId = sourceId; // several sources apply at once: only under the lock
             switch (packet.Payload)
             {
@@ -102,6 +108,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                     break;
                 case StatusReport status:
                     entry.Status = status.Text;
+                    entry.SetTags(status.Text, entry.Comment);
                     if (entry.Symbol is null && status.Symbol is { } symbol)
                     {
                         entry.Symbol = symbol.ToString();
@@ -128,6 +135,14 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         lock (_gate)
         {
             _aging = aging;
+            _now = now > _now ? now : _now;
+            foreach (var watcher in _watchers.Where(w => w.Filter?.HeardWithinMinutes is not null))
+            {
+                foreach (var entry in _entries.Values.Where(e => e.HasPosition))
+                {
+                    watcher.Recheck(entry, _now); // "heard within" lets go as time passes
+                }
+            }
             foreach (var entry in _entries.Values)
             {
                 var old = 0;
@@ -228,6 +243,10 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 if (search is not null && !entry.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
+                }
+                if (query.Filter is { IsEmpty: false } filter && !entry.Matches(filter, _now))
+                {
+                    continue; // the View filter applies to the list too (F1.9 behavior 6)
                 }
                 var distance =
                     query.Sort == StationSort.Distance && home is { } from && entry.HasPosition
@@ -435,25 +454,54 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     /// <summary>Starts collecting changes for a new watcher and returns everything on the map so far.</summary>
     public StationWatcher Subscribe(out StationState[] snapshot) => Subscribe(out snapshot, out _);
 
+    /// <summary>Starts collecting changes, with tracks, for a watcher that shows everything.</summary>
+    public StationWatcher Subscribe(out StationState[] snapshot, out TrackUpdate[] tracks) =>
+        Subscribe(null, out snapshot, out tracks);
+
     /// <summary>
     /// Starts collecting changes for a new watcher and returns everything on the map so far, with every track as a
     /// reset (F1.5: a late viewer gets the snapshot first).
     /// </summary>
-    public StationWatcher Subscribe(out StationState[] snapshot, out TrackUpdate[] tracks)
+    /// <remarks>Only what passes <paramref name="filter"/> (F1.9), and later only its changes.</remarks>
+    public StationWatcher Subscribe(StationFilter? filter, out StationState[] snapshot, out TrackUpdate[] tracks)
     {
-        var watcher = new StationWatcher();
+        var watcher = new StationWatcher(filter is { IsEmpty: false } ? filter : null);
         lock (_gate)
         {
-            snapshot = [.. _entries.Values.Where(e => e.HasPosition).Select(e => e.ToState(_home))];
+            var shown = _entries.Values.Where(e => e.HasPosition && watcher.Wants(e, _now)).ToList();
+            snapshot = [.. shown.Select(e => e.ToState(_home))];
             tracks =
             [
-                .. _entries
-                    .Values.Where(e => e.HasPosition && e.Track.Count > 0)
-                    .Select(e => new TrackUpdate(e.Name, [.. e.Track], Reset: true)),
+                .. shown.Where(e => e.Track.Count > 0).Select(e => new TrackUpdate(e.Name, [.. e.Track], Reset: true)),
             ];
+            watcher.Showing(shown.Select(e => e.Name));
             _watchers.Add(watcher);
         }
         return watcher;
+    }
+
+    /// <summary>The values heard with their counts, for the View filter's lists (F1.9 behavior 2).</summary>
+    public ViewFacets Facets()
+    {
+        lock (_gate)
+        {
+            static IReadOnlyList<Facet> Count(IEnumerable<string?> values) =>
+                [
+                    .. values
+                        .OfType<string>()
+                        .GroupBy(v => v, StringComparer.OrdinalIgnoreCase)
+                        .Select(g => new Facet(g.Key, g.Count()))
+                        .OrderByDescending(f => f.Count)
+                        .ThenBy(f => f.Value, StringComparer.OrdinalIgnoreCase),
+                ];
+            var entries = _entries.Values.Where(e => e.HasPosition).ToList();
+            return new ViewFacets(
+                Count(entries.Select(e => e.Category)),
+                Count(entries.Select(e => e.DeviceClass)),
+                Count(entries.Select(e => e.MicE?.ToString())),
+                Count(entries.SelectMany(e => e.Tags))
+            );
+        }
     }
 
     public void Unsubscribe(StationWatcher watcher)
@@ -533,6 +581,12 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         entry.Path = packet.Path is { } path ? string.Join(',', path.Select(p => p.ToString())) : null;
         entry.LastPacket = raw;
         entry.FirstHeardVia = _sourceId; // a new report: seen on its source alone, so far (F1.25 behavior 9)
+        entry.Arrival = StationFacts.Route(entry.Path).Kind; // for the View filter's reception (F1.9)
+        if (packet.Destination?.Value is { } destination && destination != entry.Destination)
+        {
+            entry.Destination = destination; // the device changes with the destination (or Mic-E's), not every packet
+            entry.DeviceClass = StationFacts.Device(packet)?.Class;
+        }
         entry.SeenOn.Clear();
         return entry;
     }
@@ -550,6 +604,15 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
             }
         }
         entry.Area = positioned.Area is { } area ? AreaOf(area) : entry.Area;
+        entry.Messaging = positioned switch
+        {
+            PositionReport report => report.IsMessagingCapable,
+            MicEReport micE => micE.IsMessagingCapable,
+            _ => entry.Messaging,
+        };
+        entry.MicE = positioned is MicEReport { Message: var message } ? message : entry.MicE;
+        entry.Category = AprsSymbolCatalog.Get(positioned.Symbol).Category.ToString();
+        entry.SetTags(entry.Status, string.IsNullOrWhiteSpace(positioned.Comment) ? entry.Comment : positioned.Comment);
         entry.Signpost = positioned.Signpost ?? entry.Signpost;
         if (positioned.Weather is { } weather)
         {
@@ -685,7 +748,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         var state = entry.ToState(_home);
         foreach (var watcher in _watchers)
         {
-            watcher.Change(state);
+            watcher.Change(entry, state, _now);
         }
     }
 
@@ -702,8 +765,12 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         }
     }
 
+    /// <summary>A <c>!word!</c> or <c>#word</c> tag (F1.9 behavior 1.8).</summary>
+    [GeneratedRegex(@"![A-Za-z0-9_-]{2,20}!|(?<![\w&])#[A-Za-z][A-Za-z0-9_-]{1,19}")]
+    private static partial Regex TagPattern();
+
     /// <summary>One entry. Only touched under the store's lock.</summary>
-    private sealed class Entry(string name, StationKind kind)
+    internal sealed class Entry(string name, StationKind kind)
     {
         public string Name { get; } = name;
         public StationKind Kind { get; } = kind;
@@ -732,6 +799,80 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
 
         /// <summary>Other sources the latest report was heard on.</summary>
         public SortedSet<string> SeenOn { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>Whether its position says it takes messages (F1.9).</summary>
+        public bool Messaging { get; set; }
+
+        /// <summary>Its Mic-E status, when it sends Mic-E (F1.9).</summary>
+        public MicEMessage? MicE { get; set; }
+
+        /// <summary>Its symbol's category, APRS.NET's name for it (F1.9).</summary>
+        public string? Category { get; set; }
+
+        /// <summary>How its last packet arrived (F1.9).</summary>
+        public ArrivalKind Arrival { get; set; }
+
+        /// <summary>The destination its device was identified from, so it's identified again only when that changes.</summary>
+        public string? Destination { get; set; }
+
+        /// <summary>Its device's class, from the aprs-deviceid list (F1.9).</summary>
+        public string? DeviceClass { get; set; }
+
+        /// <summary><c>!word!</c> and <c>#word</c> tags in its comment and status, as written (F1.9 behavior 1.8).</summary>
+        public HashSet<string> Tags { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>An emergency: Mic-E emergency, or the emergency symbol (F1.9 behavior 3).</summary>
+        public bool IsEmergency => MicE == MicEMessage.Emergency || Symbol == "\\!";
+
+        public void SetTags(string? status, string? comment)
+        {
+            Tags.Clear();
+            foreach (var text in new[] { status, comment })
+            {
+                if (text is null)
+                {
+                    continue;
+                }
+                foreach (Match match in TagPattern().Matches(text))
+                {
+                    Tags.Add(match.Value);
+                }
+            }
+        }
+
+        /// <summary>Whether <paramref name="filter"/> shows it at <paramref name="now"/> (F1.9 behaviors 1, 3).</summary>
+        public bool Matches(StationFilter filter, DateTimeOffset now)
+        {
+            if (IsEmergency)
+            {
+                return true;
+            }
+            return filter.Kinds switch
+                {
+                    StationKinds.Stations => Kind == StationKind.Station,
+                    StationKinds.ObjectsAndItems => Kind != StationKind.Station,
+                    _ => true,
+                }
+                && (filter.Categories is not { Count: > 0 } categories || categories.Contains(Category ?? string.Empty))
+                && (filter.HeardWithinMinutes is not { } minutes || now - LastHeard <= TimeSpan.FromMinutes(minutes))
+                && filter.Reception switch
+                {
+                    Reception.Direct => Arrival == ArrivalKind.Direct,
+                    Reception.Digipeated => Arrival == ArrivalKind.Digipeated,
+                    Reception.AnyRf => Arrival is ArrivalKind.Direct or ArrivalKind.Digipeated,
+                    Reception.Internet => Arrival == ArrivalKind.Internet,
+                    _ => true,
+                }
+                && (!filter.MessageCapable || Messaging)
+                && (!filter.WithWeather || Weather is not null)
+                && (!filter.WithTrack || Track.Count > 1)
+                && (filter.DeviceClasses is not { Count: > 0 } classes || classes.Contains(DeviceClass ?? string.Empty))
+                && (
+                    filter.MicEStatuses is not { Count: > 0 } statuses
+                    || MicE is { } status && statuses.Contains(status.ToString())
+                )
+                && (filter.Tags is not { Count: > 0 } tags || tags.Any(Tags.Contains));
+        }
 
         /// <summary>The shape it draws, for an area object (F1.12).</summary>
         public AreaInfo? Area { get; set; }
@@ -844,11 +985,54 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     }
 
     /// <summary>One watcher's uncollected changes. Only touched under the store's lock.</summary>
-    internal sealed class StationWatcher
+    internal sealed class StationWatcher(StationFilter? filter = null)
     {
         private readonly Dictionary<string, StationState> _changed = new(StringComparer.Ordinal);
         private readonly HashSet<string> _removed = new(StringComparer.Ordinal);
         private readonly Dictionary<string, PendingTrack> _tracks = new(StringComparer.Ordinal);
+
+        // With a filter: the names this viewer is shown, so one that stops matching can be taken off (F1.9).
+        private readonly HashSet<string> _shown = new(StringComparer.Ordinal);
+
+        /// <summary>The View filter, or null to show everything.</summary>
+        public StationFilter? Filter { get; } = filter;
+
+        internal bool Wants(Entry entry, DateTimeOffset now) => Filter is null || entry.Matches(Filter, now);
+
+        internal void Showing(IEnumerable<string> names) => _shown.UnionWith(names);
+
+        private bool Shows(string name) => Filter is null || _shown.Contains(name);
+
+        /// <summary>The entry changed: sent if it matches; taken off if it stopped; sent with its track if it started.</summary>
+        internal void Change(Entry entry, StationState state, DateTimeOffset now)
+        {
+            if (Filter is null)
+            {
+                Change(state);
+                return;
+            }
+            if (entry.Matches(Filter, now))
+            {
+                if (_shown.Add(entry.Name))
+                {
+                    ResetTrack(entry.Name, entry.Track);
+                }
+                Change(state);
+            }
+            else if (_shown.Contains(entry.Name))
+            {
+                Remove(entry.Name);
+            }
+        }
+
+        /// <summary>Takes the entry off if it no longer matches (time-based conditions).</summary>
+        internal void Recheck(Entry entry, DateTimeOffset now)
+        {
+            if (Filter is not null && _shown.Contains(entry.Name) && !entry.Matches(Filter, now))
+            {
+                Remove(entry.Name);
+            }
+        }
 
         public void Change(StationState state)
         {
@@ -858,18 +1042,39 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
 
         public void Remove(string name)
         {
+            if (Filter is not null && !_shown.Remove(name))
+            {
+                return; // never shown to this viewer
+            }
             _changed.Remove(name);
             _removed.Add(name);
             // The viewer drops the track with the station; one heard again in the same batch starts a new track.
             _tracks[name] = new PendingTrack { Reset = true };
         }
 
-        public void AddTrackPoint(string name, TrackPoint point) => Track(name).Added.Add(point);
+        public void AddTrackPoint(string name, TrackPoint point)
+        {
+            if (Shows(name))
+            {
+                Track(name).Added.Add(point);
+            }
+        }
 
-        public void DropTrackPoints(string name, int count) => Track(name).Dropped += count;
+        public void DropTrackPoints(string name, int count)
+        {
+            if (Shows(name))
+            {
+                Track(name).Dropped += count;
+            }
+        }
 
-        public void ResetTrack(string name, IEnumerable<TrackPoint> points) =>
-            _tracks[name] = new PendingTrack { Reset = true, Added = [.. points] };
+        public void ResetTrack(string name, IEnumerable<TrackPoint> points)
+        {
+            if (Filter is null || _shown.Contains(name))
+            {
+                _tracks[name] = new PendingTrack { Reset = true, Added = [.. points] };
+            }
+        }
 
         public StationBatch? Drain()
         {

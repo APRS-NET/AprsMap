@@ -71,10 +71,21 @@ internal sealed class FakeEngine : IEngineService
         }
     }
 
+    /// <summary>The filters <see cref="WatchStationsAsync"/> was asked with, in order.</summary>
+    public List<StationFilter?> StationFilters { get; } = [];
+
+    /// <summary>What <see cref="GetViewFacetsAsync"/> answers.</summary>
+    public ViewFacets Facets { get; set; } = new([], [], [], []);
+
+    public Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Facets);
+
     public async IAsyncEnumerable<StationBatch> WatchStationsAsync(
+        StationFilter? filter = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
+        StationFilters.Add(filter);
         var stations = _stations;
         Interlocked.Increment(ref _stationSubscriptions);
         await foreach (var batch in stations.Reader.ReadAllAsync(cancellationToken))
