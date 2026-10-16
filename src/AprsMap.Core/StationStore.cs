@@ -25,6 +25,12 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
 
+    // Telemetry definitions by the station they define (the message's addressee, F1.11 behavior 1), kept apart from
+    // the entries: they may come from another callsign, and before the station is heard.
+    private readonly Dictionary<string, (TelemetryProfile Profile, DateTimeOffset At)> _telemetryProfiles = new(
+        StringComparer.Ordinal
+    );
+
     // Least recently heard first, for the cap.
     private readonly LinkedList<Entry> _byLastHeard = new();
     private readonly List<StationWatcher> _watchers = [];
@@ -115,6 +121,9 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 case TelemetryReport telemetry:
                     AddTelemetry(entry, telemetry, receivedAt); // F1.11
                     break;
+                case TelemetryDefinition definition:
+                    Define(definition, receivedAt); // F1.11 behavior 1: for the station it's addressed to
+                    break;
                 case WeatherReport report:
                     SetWeather(entry, report.Weather, receivedAt); // a weather report without a position (F1.10)
                     break;
@@ -156,6 +165,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                     watcher.Recheck(entry, _now); // "heard within" lets go as time passes
                 }
             }
+            ForgetTelemetryProfiles(now);
             foreach (var entry in _entries.Values)
             {
                 TrimTelemetry(entry, now);
@@ -662,17 +672,90 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
 
     private static void AddTelemetry(Entry entry, TelemetryReport report, DateTimeOffset at)
     {
-        var samples = entry.Telemetry ??= [];
-        samples.Add(
-            new TelemetrySample(
-                at,
-                string.IsNullOrEmpty(report.Sequence) ? null : report.Sequence,
-                [.. report.Analog],
-                [.. report.Digital]
-            )
-        );
+        // Kept as sent, so definitions that come later apply to it too (F1.11 behavior 3).
+        (entry.Telemetry ??= []).Add((at, report));
         TrimTelemetry(entry, at);
     }
+
+    /// <summary>A <c>PARM.</c>, <c>UNIT.</c>, <c>EQNS.</c> or <c>BITS.</c> replaces the earlier one of its kind (G09).</summary>
+    private void Define(TelemetryDefinition definition, DateTimeOffset at)
+    {
+        var name = definition.Addressee.Trim();
+        if (name.Length == 0)
+        {
+            return;
+        }
+        var profile = _telemetryProfiles.TryGetValue(name, out var held) ? held.Profile : TelemetryProfile.Empty;
+        _telemetryProfiles[name] = (profile.With(definition), at);
+    }
+
+    /// <summary>Definitions for a station that isn't held, and not renewed for a day, are let go.</summary>
+    private void ForgetTelemetryProfiles(DateTimeOffset now)
+    {
+        foreach (
+            var name in _telemetryProfiles
+                .Where(p => p.Value.At < now - TelemetryAge && !_entries.ContainsKey(p.Key))
+                .Select(p => p.Key)
+                .ToList()
+        )
+        {
+            _telemetryProfiles.Remove(name);
+        }
+    }
+
+    /// <summary>The station's held reports with its definitions applied, and what the definitions say.</summary>
+    private TelemetryView ViewOf(string name, List<(DateTimeOffset At, TelemetryReport Report)> reports)
+    {
+        var defined = _telemetryProfiles.TryGetValue(name, out var held);
+        var profile = defined ? held.Profile : TelemetryProfile.Empty;
+        TelemetryReading? last = null;
+        var samples = new List<TelemetrySample>(reports.Count);
+        foreach (var (at, report) in reports)
+        {
+            last = profile.Apply(report);
+            samples.Add(
+                new TelemetrySample(
+                    at,
+                    string.IsNullOrEmpty(report.Sequence) ? null : report.Sequence,
+                    [.. last.Analog.Select(a => a.Value)],
+                    [.. last.Digital.Select(d => d.IsOn)]
+                )
+            );
+        }
+        return new TelemetryView(samples, defined && last is { } reading ? DefinitionsOf(profile, reading) : null);
+    }
+
+    private static TelemetryDefinitions DefinitionsOf(TelemetryProfile profile, TelemetryReading reading) =>
+        new(
+            [
+                .. Enumerable
+                    .Range(0, TelemetryProfile.AnalogChannels)
+                    .Select(i =>
+                        i < reading.Analog.Count
+                            ? new TelemetryAnalogChannel(
+                                Blank(reading.Analog[i].Name),
+                                Blank(reading.Analog[i].Unit),
+                                reading.Analog[i].IsScaled
+                            )
+                            : new TelemetryAnalogChannel(
+                                Blank(profile.Names.ElementAtOrDefault(i)),
+                                Blank(profile.Units.ElementAtOrDefault(i)),
+                                i < profile.Equations.Count
+                            )
+                    ),
+            ],
+            [
+                .. Enumerable
+                    .Range(0, TelemetryProfile.DigitalChannels)
+                    .Select(i => new TelemetryDigitalChannel(
+                        Blank(profile.Names.ElementAtOrDefault(TelemetryProfile.AnalogChannels + i)),
+                        Blank(profile.Units.ElementAtOrDefault(TelemetryProfile.AnalogChannels + i))
+                    )),
+            ],
+            Blank(profile.ProjectName)
+        );
+
+    private static string? Blank(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
     private static void TrimTelemetry(Entry entry, DateTimeOffset now)
     {
@@ -782,8 +865,8 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     {
         lock (_gate)
         {
-            return _entries.TryGetValue(name, out var entry) && entry.Telemetry is { Count: > 0 } samples
-                ? new TelemetryView([.. samples])
+            return _entries.TryGetValue(name, out var entry) && entry.Telemetry is { Count: > 0 } reports
+                ? ViewOf(name, reports)
                 : null;
         }
     }
@@ -799,6 +882,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 entry.Telemetry = null;
                 cleared++;
             }
+            _telemetryProfiles.Clear(); // the definitions go with the reports
             return cleared;
         }
     }
@@ -1060,7 +1144,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         public bool HasProblems => Invalid.Count > 0;
 
         /// <summary>Its telemetry reports, oldest first (F1.11), once it has sent any.</summary>
-        public List<TelemetrySample>? Telemetry { get; set; }
+        public List<(DateTimeOffset At, TelemetryReport Report)>? Telemetry { get; set; }
 
         /// <summary>Its latest weather readings (F1.10), once it has sent any.</summary>
         public StationWeather? Weather { get; set; }
