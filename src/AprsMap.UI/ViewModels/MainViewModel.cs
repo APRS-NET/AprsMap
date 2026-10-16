@@ -53,6 +53,7 @@ public sealed partial class MainViewModel : ObservableObject
         this.time = time;
         _deviceLocation = deviceLocation;
         _appearance = appearance ?? new AppearanceService();
+        _appearance.Changed += (_, _) => OnPropertyChanged(nameof(ShowAllLinks));
         _showPseudoLanguage = showPseudoLanguage;
         _text = text ?? Localizer.Instance;
         SourceNames = new SourceNames(() => _settings);
@@ -622,6 +623,22 @@ public sealed partial class MainViewModel : ObservableObject
 
     private RouteQuery? _routeQuery;
     private int _routeLoads;
+
+    /// <summary>
+    /// Whether every RF link is drawn, not only the selected station's (F1.21 behavior 5): the map's button and the app
+    /// menu toggle the same viewer setting as Settings › Map.
+    /// </summary>
+    public bool ShowAllLinks
+    {
+        get => _appearance.Current.ShowAllLinks;
+        set
+        {
+            if (value != ShowAllLinks)
+            {
+                _appearance.Apply(_appearance.Current with { ShowAllLinks = value });
+            }
+        }
+    }
 
     /// <summary>The RF network's links over the last hour (F1.21 behavior 4); empty when the engine can't be reached.</summary>
     internal async Task<IReadOnlyList<NetworkLink>> LoadNetworkLinksAsync()

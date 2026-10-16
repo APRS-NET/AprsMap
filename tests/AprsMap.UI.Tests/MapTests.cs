@@ -5,6 +5,7 @@ using AprsMap.UI.Platform;
 using AprsMap.UI.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -122,6 +123,42 @@ public sealed class MapTests
         Assert.False(window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "HomeButton").IsVisible);
         Assert.NotNull(panel.View.View); // world view placed once it had a size
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void TheMapsButtonTogglesAllRfConnectionsForTheViewer()
+    {
+        var app = Assert.IsType<App>(Application.Current);
+        var before = app.Appearance.Current;
+        try
+        {
+            var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider(), appearance: app.Appearance);
+            using var panel = new MapPanel { DataContext = vm };
+            var window = new Window
+            {
+                Content = panel,
+                Width = 800,
+                Height = 600,
+            };
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var button = window.GetVisualDescendants().OfType<ToggleButton>().Single(b => b.Name == "AllLinksButton");
+
+            button.IsChecked = true;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.True(app.Appearance.Current.ShowAllLinks);
+            Assert.True(panel.View.ShowAllLinks);
+            vm.ShowAllLinks = false; // the app menu or Settings turning it off unticks the button
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(button.IsChecked);
+            Assert.False(panel.View.ShowAllLinks);
+            window.Close();
+        }
+        finally
+        {
+            app.Appearance.Apply(before);
+        }
     }
 
     [AvaloniaFact]

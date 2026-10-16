@@ -12,6 +12,10 @@
 >
   <UserControl.Styles>
     <!-- A filter in effect shows on its button too (F1.9 behavior 4). -->
+    <Style Selector="ToggleButton#AllLinksButton:checked /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.AccentSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+    </Style>
     <Style Selector="Button#FilterButton.on">
       <Setter Property="Background" Value="{DynamicResource Brush.AccentSoft}" />
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
@@ -317,6 +321,22 @@
           </Flyout>
         </Button.Flyout>
       </Button>
+      <ToggleButton
+        x:Name="AllLinksButton"
+        ToolTip.Tip="{l:T Map.AllLinks}"
+        AutomationProperties.Name="{l:T Map.AllLinks}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        IsChecked="{Binding ShowAllLinks}"
+      >
+        <!-- Three stations joined by dashed links, drawn for this app: Show all RF connections (F1.21 behavior 5). -->
+        <PathIcon
+          Data="M 2.5,18 A 2.5,2.5 0 1 0 7.5,18 A 2.5,2.5 0 1 0 2.5,18 Z M 16.5,18 A 2.5,2.5 0 1 0 21.5,18 A 2.5,2.5 0 1 0 16.5,18 Z M 9.5,6 A 2.5,2.5 0 1 0 14.5,6 A 2.5,2.5 0 1 0 9.5,6 Z M 6.4,15.6 L 7.6,14.4 L 8.6,15.4 L 7.4,16.6 Z M 8.6,13.4 L 9.8,12.2 L 10.8,13.2 L 9.6,14.4 Z M 10.8,11.2 L 11.4,10.6 L 12.4,11.6 L 11.8,12.2 Z M 16.6,15.6 L 15.4,14.4 L 14.4,15.4 L 15.6,16.6 Z M 14.4,13.4 L 13.2,12.2 L 12.2,13.2 L 13.4,14.4 Z M 8,19.2 L 10,19.2 L 10,20.8 L 8,20.8 Z M 11,19.2 L 13,19.2 L 13,20.8 L 11,20.8 Z M 14,19.2 L 16,19.2 L 16,20.8 L 14,20.8 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+      </ToggleButton>
     </StackPanel>
     <!-- While a View filter hides stations (F1.9 behavior 4): what's shown, and a way back to everything. -->
     <Border
