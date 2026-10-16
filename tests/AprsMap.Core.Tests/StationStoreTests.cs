@@ -47,6 +47,15 @@ public sealed class StationStoreTests
     }
 
     [Fact]
+    public void AGenericDestinationNamesNoDevice()
+    {
+        var store = new StationStore();
+        Apply(store, "N0CALL>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-", T0);
+
+        Assert.Null(store.Get("N0CALL")!.Device);
+    }
+
+    [Fact]
     public void AThirdPartyPacketArrivedByTheRouteInsideAndKeepsItsRawText()
     {
         var store = new StationStore();

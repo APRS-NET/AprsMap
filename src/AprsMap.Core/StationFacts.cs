@@ -29,10 +29,20 @@ internal static class StationFacts
     }
 
     /// <summary>The sender's equipment from its destination (TOCALL) or Mic-E code; null when the list doesn't know it.</summary>
-    public static StationDevice? Device(AprsPacket packet) =>
-        AprsDevices.Identify(packet) is { } device
-            ? new StationDevice(device.Vendor, device.Model, device.Class?.ToString())
-            : null;
+    public static StationDevice? Device(AprsPacket packet)
+    {
+        // The list names generic destinations (plain APRS) "Unknown": that says nothing.
+        if (AprsDevices.Identify(packet) is not { } device)
+        {
+            return null;
+        }
+        var vendor = Known(device.Vendor);
+        var model = Known(device.Model);
+        return vendor is null && model is null ? null : new StationDevice(vendor, model, device.Class?.ToString());
+    }
+
+    private static string? Known(string? name) =>
+        string.IsNullOrWhiteSpace(name) || name.Equals("Unknown", StringComparison.OrdinalIgnoreCase) ? null : name;
 
     /// <summary>How the packet travelled, from its path; null when it has no readable header.</summary>
     public static StationArrival? Arrival(AprsPacket packet)
