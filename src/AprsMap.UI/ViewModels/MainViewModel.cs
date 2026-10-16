@@ -616,6 +616,19 @@ public sealed partial class MainViewModel : ObservableObject
     private RouteQuery? _routeQuery;
     private int _routeLoads;
 
+    /// <summary>The RF network's links over the last hour (F1.21 behavior 4); empty when the engine can't be reached.</summary>
+    internal async Task<IReadOnlyList<NetworkLink>> LoadNetworkLinksAsync()
+    {
+        try
+        {
+            return await engine.GetNetworkLinksAsync();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
+        {
+            return [];
+        }
+    }
+
     /// <summary>A packet picked in the packet list: its station is selected and that packet's route shown.</summary>
     public void SelectPacket(PacketView packet)
     {

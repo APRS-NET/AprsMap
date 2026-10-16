@@ -31,6 +31,13 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     private AprsPosition? _home;
     private StationAging _aging = StationAging.Default;
 
+    // RF links over the last hour (F1.21 behavior 4): each packet's consecutive hops, oldest first, and the counts.
+    private readonly Queue<(DateTimeOffset At, string From, string To)> _linkEvents = new();
+    private readonly Dictionary<(string From, string To), int> _links = [];
+
+    /// <summary>How long a packet counts toward a link (decision 1).</summary>
+    internal static readonly TimeSpan LinkWindow = TimeSpan.FromHours(1);
+
     // The latest time the store has seen, for the View filter's "heard within" (F1.9).
     private DateTimeOffset _now;
 
@@ -98,6 +105,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             }
 
             var entry = Touch(source.Value, StationKind.Station, packet, receivedAt, raw);
+            CountLinks(entry, receivedAt);
             switch (packet.Payload)
             {
                 case PositionedPayload positioned:
@@ -139,6 +147,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         {
             _aging = aging;
             _now = now > _now ? now : _now;
+            ExpireLinks(now);
             foreach (var watcher in _watchers.Where(w => w.Filter?.HeardWithinMinutes is not null))
             {
                 foreach (var entry in _entries.Values.Where(e => e.HasPosition))
@@ -538,7 +547,9 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     )
     {
         // The sender was heard too, whatever the object says.
-        Publish(Touch(sender, StationKind.Station, packet, receivedAt, raw));
+        var senderEntry = Touch(sender, StationKind.Station, packet, receivedAt, raw);
+        CountLinks(senderEntry, receivedAt);
+        Publish(senderEntry);
         if (!live)
         {
             // A kill removes it, whoever sent the kill (behavior 6); a later live packet brings it back.
@@ -672,6 +683,70 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         if (samples.Count > TelemetryReports)
         {
             samples.RemoveRange(0, samples.Count - TelemetryReports);
+        }
+    }
+
+    /// <summary>Counts each link the packet just heard from <paramref name="sender"/> crossed on RF (F1.21 behavior 4).</summary>
+    private void CountLinks(Entry sender, DateTimeOffset at)
+    {
+        var (kind, hops) = StationFacts.Route(sender.Path);
+        if (kind is not (ArrivalKind.Direct or ArrivalKind.Digipeated))
+        {
+            return;
+        }
+        var from = sender.Name;
+        foreach (var (name, _) in hops)
+        {
+            _linkEvents.Enqueue((at, from, name));
+            _links[(from, name)] = _links.GetValueOrDefault((from, name)) + 1;
+            from = name;
+        }
+    }
+
+    /// <summary>Lets links' packets older than the window go (F1.21 behavior 4).</summary>
+    private void ExpireLinks(DateTimeOffset now)
+    {
+        while (_linkEvents.TryPeek(out var oldest) && oldest.At < now - LinkWindow)
+        {
+            _linkEvents.Dequeue();
+            var key = (oldest.From, oldest.To);
+            if (--_links[key] == 0)
+            {
+                _links.Remove(key);
+            }
+        }
+    }
+
+    /// <summary>The links over the last hour whose ends have known positions (F1.21 behavior 4).</summary>
+    public IReadOnlyList<NetworkLink> Links()
+    {
+        lock (_gate)
+        {
+            ExpireLinks(_now);
+            var links = new List<NetworkLink>(_links.Count);
+            foreach (var ((from, to), count) in _links)
+            {
+                if (
+                    _entries.TryGetValue(from, out var a)
+                    && a.HasPosition
+                    && _entries.TryGetValue(to, out var b)
+                    && b.HasPosition
+                )
+                {
+                    links.Add(
+                        new NetworkLink(
+                            from,
+                            a.Latitude!.Value,
+                            a.Longitude!.Value,
+                            to,
+                            b.Latitude!.Value,
+                            b.Longitude!.Value,
+                            count
+                        )
+                    );
+                }
+            }
+            return links;
         }
     }
 

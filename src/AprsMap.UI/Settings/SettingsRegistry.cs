@@ -257,6 +257,7 @@ public static class SettingsRegistry
                 () =>
                     [
                         (MapPaths.SelectedStation, text["Settings.Map.Paths.SelectedStation"]),
+                        (MapPaths.Network, text["Settings.Map.Paths.Network"]),
                         (MapPaths.Off, text["Settings.Map.Paths.Off"]),
                     ],
                 () => appearance.Current.MapPaths,

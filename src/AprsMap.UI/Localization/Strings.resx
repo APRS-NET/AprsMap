@@ -1818,6 +1818,9 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Map.Paths.SelectedStation" xml:space="preserve">
     <value>Selected station</value>
   </data>
+  <data name="Settings.Map.Paths.Network" xml:space="preserve">
+    <value>RF network over the last hour</value>
+  </data>
   <data name="Settings.Map.Paths.Off" xml:space="preserve">
     <value>Off</value>
   </data>

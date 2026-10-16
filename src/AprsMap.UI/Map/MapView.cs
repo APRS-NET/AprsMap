@@ -375,10 +375,18 @@ public sealed class MapView : Control, IDisposable
         get;
         set
         {
+            var changed = field != value;
             field = value;
             InvalidateVisual();
+            if (changed)
+            {
+                PathsChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
     } = MapPaths.SelectedStation;
+
+    /// <summary>Raised when <see cref="Paths"/> changes: the network's links are loaded when it's chosen.</summary>
+    public event EventHandler? PathsChanged;
 
     /// <summary>The route of the selected packet, drawn with <see cref="Paths"/> on (F1.21 behavior 2).</summary>
     public PacketRoute? Route
@@ -394,9 +402,31 @@ public sealed class MapView : Control, IDisposable
     /// <summary>Raised when a point of the selected station's track is clicked, with the station and the point's time.</summary>
     public event EventHandler<(string Name, DateTimeOffset Time)>? TrackPointPicked;
 
+    /// <summary>The RF network's links, drawn with <see cref="Paths"/> set to Network (F1.21 behavior 5).</summary>
+    public IReadOnlyList<NetworkLink> Links
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = [];
+
+    /// <summary>This frame's network links; null unless Paths shows the network.</summary>
+    internal LinkFrame? BuildLinks(Viewport viewport) =>
+        Paths == MapPaths.Network && Links.Count > 0
+            ? LinkFrame.Build(
+                Links,
+                (x, y) => ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default)),
+                _trackColour,
+                _casingColour
+            )
+            : null;
+
     /// <summary>This frame's route drawing; null with nothing to draw.</summary>
     internal RouteFrame? BuildRoute(Viewport viewport) =>
-        Paths == MapPaths.Off
+        Paths != MapPaths.SelectedStation
             ? null
             : RouteFrame.Build(
                 Route,
@@ -667,6 +697,7 @@ public sealed class MapView : Control, IDisposable
         var route = BuildRoute(viewport);
         var barbs = BuildBarbs(marks, screen);
         var areas = BuildAreas(viewport, marks);
+        var links = BuildLinks(viewport);
         context.Custom(
             new DrawOperation(
                 new Rect(Bounds.Size),
@@ -679,7 +710,8 @@ public sealed class MapView : Control, IDisposable
                 tracks,
                 route,
                 barbs,
-                areas
+                areas,
+                links
             )
         );
         DrawSignposts(context, marks, screen);
@@ -1256,7 +1288,8 @@ public sealed class MapView : Control, IDisposable
         TrackLayer.TrackFrame tracks,
         RouteFrame? route,
         WindBarbs? barbs,
-        AreaFrame? areas
+        AreaFrame? areas,
+        LinkFrame? links
     ) : ICustomDrawOperation
     {
         public Rect Bounds => bounds;
@@ -1267,6 +1300,7 @@ public sealed class MapView : Control, IDisposable
             route?.Dispose();
             barbs?.Dispose();
             areas?.Dispose();
+            links?.Dispose();
         }
 
         public bool Equals(ICustomDrawOperation? other) => false;
@@ -1305,6 +1339,7 @@ public sealed class MapView : Control, IDisposable
             canvas.Restore();
             // Tracks over the tiles and under the symbols (F1.5 behavior 5).
             areas?.Draw(canvas); // area shapes under tracks and symbols (F1.12 behavior 4)
+            links?.Draw(canvas); // the RF network (F1.21 behavior 5)
             tracks.Draw(canvas);
             route?.Draw(canvas); // the selected packet's route over the tracks (F1.21 behavior 2)
             // Stations over the tiles (and over the dimming, so they keep their contrast).

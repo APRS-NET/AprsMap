@@ -319,3 +319,24 @@ public sealed record TelemetrySample(
     IReadOnlyList<double?> Analog,
     IReadOnlyList<bool> Digital
 );
+
+/// <summary>
+/// One RF link between two stations over the last hour (docs/features/F1.21-rf-paths.md, behavior 4): consecutive hops
+/// of heard packets, a station to the digipeater that repeated it, a digipeater to the next, or the last to the IGate.
+/// </summary>
+/// <param name="From">The station that sent or repeated the packets.</param>
+/// <param name="FromLatitude">Its last known position.</param>
+/// <param name="FromLongitude">Its last known position.</param>
+/// <param name="To">The station that heard them.</param>
+/// <param name="ToLatitude">Its last known position.</param>
+/// <param name="ToLongitude">Its last known position.</param>
+/// <param name="Packets">How many packets crossed the link in the last hour.</param>
+public sealed record NetworkLink(
+    string From,
+    double FromLatitude,
+    double FromLongitude,
+    string To,
+    double ToLatitude,
+    double ToLongitude,
+    int Packets
+);

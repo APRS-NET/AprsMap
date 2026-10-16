@@ -152,6 +152,12 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync<int>(EngineHub.Clear, scope, cancellationToken));
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<NetworkLink>>(EngineHub.GetNetworkLinks, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default) =>
         WithEngineErrors(() =>
             _connection.InvokeAsync<TelemetryView?>(EngineHub.GetTelemetry, name, cancellationToken)

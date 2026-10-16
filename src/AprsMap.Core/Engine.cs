@@ -663,6 +663,10 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_stations.Links());
+
+    /// <inheritdoc />
     public Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(name);

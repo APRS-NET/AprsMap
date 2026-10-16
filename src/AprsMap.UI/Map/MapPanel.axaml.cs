@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 
 namespace AprsMap.UI.Map;
 
@@ -61,6 +62,10 @@ public sealed partial class MapPanel : UserControl, IDisposable
         _map.PannedByHand += (_, _) => StopFollowing();
         FilterButton.Flyout!.Opened += (_, _) => _ = _main?.ViewFilter.RefreshFacetsAsync(); // what's been heard, now
         _map.TrackPointPicked += (_, point) => _main?.SelectTrackPoint(point.Name, point.Time);
+        // The RF network (F1.21 behavior 5): loaded when chosen, and every half minute while it shows.
+        _map.PathsChanged += (_, _) => _ = LoadLinksAsync();
+        _linkTimer.Tick += (_, _) => _ = LoadLinksAsync();
+        _linkTimer.Start();
         StopFollowingButton.Click += (_, _) => StopFollowing();
         SetMyLocationItem.Click += (_, _) =>
         {
@@ -72,7 +77,11 @@ public sealed partial class MapPanel : UserControl, IDisposable
     }
 
     /// <summary>Releases the map's tiles.</summary>
-    public void Dispose() => _map.Dispose();
+    public void Dispose()
+    {
+        _linkTimer.Stop();
+        _map.Dispose();
+    }
 
     /// <summary>The map surface, for tests.</summary>
     internal MapView View => _map;
@@ -244,6 +253,18 @@ public sealed partial class MapPanel : UserControl, IDisposable
         {
             OnCentreRequested(sender, (station.Latitude, station.Longitude));
         }
+    }
+
+    private readonly DispatcherTimer _linkTimer = new() { Interval = TimeSpan.FromSeconds(30) };
+
+    private async Task LoadLinksAsync()
+    {
+        if (_map.Paths != Appearance.MapPaths.Network || _main is null)
+        {
+            _map.Links = [];
+            return;
+        }
+        _map.Links = await _main.LoadNetworkLinksAsync();
     }
 
     /// <summary>The followed station's track is drawn in its own style (F1.5 behavior 6).</summary>

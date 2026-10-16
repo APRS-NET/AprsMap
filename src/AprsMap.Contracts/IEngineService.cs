@@ -59,6 +59,12 @@ public interface IEngineService
     /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
     Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The RF network over the last hour (docs/features/F1.21-rf-paths.md, behavior 4): every link between two stations
+    /// whose positions are known, with how many packets crossed it.
+    /// </summary>
+    Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default);
+
     /// <summary>A station's held telemetry reports (F1.11); null when it has sent none.</summary>
     Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default);
 

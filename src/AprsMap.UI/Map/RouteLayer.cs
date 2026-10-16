@@ -143,3 +143,80 @@ internal sealed class RouteFrame : IDisposable
         _arrows.Dispose();
     }
 }
+
+/// <summary>
+/// The RF network's links (docs/features/F1.21-rf-paths.md, behavior 5): a line between each link's ends in the track
+/// colour, thicker for more packets. Built on the UI thread, drawn on the render thread.
+/// </summary>
+internal sealed class LinkFrame : IDisposable
+{
+    private readonly List<(SKPath Path, float Width)> _paths = [];
+    private readonly SKColor _colour;
+    private readonly SKColor _casing;
+
+    private LinkFrame(SKColor colour, SKColor casing)
+    {
+        _colour = colour;
+        _casing = casing;
+    }
+
+    /// <summary>The links drawn, for tests.</summary>
+    public int Count { get; private set; }
+
+    /// <summary>A link's line width: 1.5 for one packet, growing with the count's logarithm up to 6.</summary>
+    public static float WidthOf(int packets) => (float)Math.Min(6, 1.5 + Math.Log2(Math.Max(1, packets)) * 0.75);
+
+    public static LinkFrame Build(
+        IReadOnlyList<NetworkLink> links,
+        Func<double, double, SKPoint> toScreen,
+        SKColor colour,
+        SKColor casing
+    )
+    {
+        var frame = new LinkFrame(colour, casing);
+        var byWidth = new Dictionary<float, SKPath>();
+        foreach (var link in links)
+        {
+            var width = WidthOf(link.Packets);
+            if (!byWidth.TryGetValue(width, out var path))
+            {
+                byWidth[width] = path = new SKPath();
+            }
+            var (fx, fy) = SphericalMercator.FromLonLat(link.FromLongitude, link.FromLatitude);
+            var (tx, ty) = SphericalMercator.FromLonLat(link.ToLongitude, link.ToLatitude);
+            path.MoveTo(toScreen(fx, fy));
+            path.LineTo(toScreen(tx, ty));
+            frame.Count++;
+        }
+        frame._paths.AddRange(byWidth.Select(p => (p.Value, p.Key)));
+        return frame;
+    }
+
+    public void Draw(SKCanvas canvas)
+    {
+        using var paint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+        };
+        foreach (var casing in new[] { true, false })
+        {
+            foreach (var (path, width) in _paths)
+            {
+                paint.Color = casing ? _casing.WithAlpha(160) : _colour.WithAlpha(210);
+                paint.StrokeWidth = casing ? width + 2 : width;
+                canvas.DrawPath(path, paint);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        foreach (var (path, _) in _paths)
+        {
+            path.Dispose();
+        }
+        _paths.Clear();
+    }
+}

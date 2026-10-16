@@ -104,6 +104,9 @@ public enum MapPaths
 
     /// <summary>No paths.</summary>
     Off,
+
+    /// <summary>The RF network over the last hour: every link, thicker for more packets (behavior 5).</summary>
+    Network,
 }
 
 /// <summary>What a weather station's map label adds under its callsign (docs/features/F1.10-weather.md, behavior 4).</summary>
