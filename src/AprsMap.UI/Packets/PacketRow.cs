@@ -49,7 +49,12 @@ public sealed partial class PacketRow : ObservableObject
                 );
         (RawBefore, RawFault, RawAfter) = Split(packet);
         HopsText = packet.Hops.ToString(text.Culture);
-        DigipeatedText = text.Format("Packets.Digipeated", new Dictionary<string, object?> { ["count"] = packet.Hops });
+        var here = packet.Markers.HasFlag(PacketMarkers.HeardHere); // heard by this station's TNC (F3.1 behavior 8)
+        DigipeatedText = text.Format(
+            here ? "Packets.DigipeatedHere" : "Packets.Digipeated",
+            new Dictionary<string, object?> { ["count"] = packet.Hops }
+        );
+        DirectText = text[here ? "Packets.DirectHere" : "Packets.Direct"];
     }
 
     /// <summary>The packet as the engine sent it.</summary>
@@ -117,6 +122,9 @@ public sealed partial class PacketRow : ObservableObject
 
     /// <summary>How many digipeaters repeated it, written on the digipeated marker.</summary>
     public string HopsText { get; }
+
+    /// <summary>The direct marker's name and tooltip: an IGate heard it, or this station did.</summary>
+    public string DirectText { get; }
 
     /// <summary>The digipeated marker's name and tooltip, with the count in words.</summary>
     public string DigipeatedText { get; }

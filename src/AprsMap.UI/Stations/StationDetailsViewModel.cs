@@ -320,20 +320,31 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             return null;
         }
         var unit = _units().Distance;
+        // A route this station's receiver heard ends at "this station", not its callsign (F3.1 behavior 8).
+        string NameOf(RouteHop hop) => route.HeardHere && hop.IsGateway ? _text["Details.Route.ThisStation"] : hop.Name;
         string Hop(RouteHop hop) =>
             hop.DistanceKm is { } km
                 ? _text.Format(
                     "Details.Route.Hop",
                     new Dictionary<string, object?>
                     {
-                        ["name"] = hop.Name,
+                        ["name"] = NameOf(hop),
                         ["distance"] = Localization.RangeText.Distance(km, unit, _text),
                     }
                 )
-                : _text.Format("Details.Route.HopUnknown", new Dictionary<string, object?> { ["name"] = hop.Name });
+                : _text.Format("Details.Route.HopUnknown", new Dictionary<string, object?> { ["name"] = NameOf(hop) });
         return route.Kind switch
         {
             ArrivalKind.Internet => _text["Details.Route.Internet"],
+            ArrivalKind.Direct when route.HeardHere => route.Hops is [{ DistanceKm: { } here }]
+                ? _text.Format(
+                    "Details.Route.DirectHere",
+                    new Dictionary<string, object?>
+                    {
+                        ["distance"] = Localization.RangeText.Distance(here, unit, _text),
+                    }
+                )
+                : _text["Details.Arrival.HeardHere"],
             ArrivalKind.Direct when route.Hops is [{ } gateway] => gateway.DistanceKm is { } km
                 ? _text.Format(
                     "Details.Route.Direct",
@@ -700,6 +711,16 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         arrival switch
         {
             null => null,
+            // Heard by this station's own receiver, a TNC (F3.1 behavior 8): no IGate to name.
+            { HeardHere: true, Kind: ArrivalKind.Direct } => _text["Details.Arrival.HeardHere"],
+            { HeardHere: true, Kind: ArrivalKind.Digipeated } => _text.Format(
+                "Details.Arrival.DigipeatedHere",
+                new Dictionary<string, object?>
+                {
+                    ["count"] = arrival.Digipeaters.Count,
+                    ["digipeaters"] = string.Join(", ", arrival.Digipeaters),
+                }
+            ),
             { Kind: ArrivalKind.Direct, Gateway: { } gate } => _text.Format(
                 "Details.Arrival.DirectVia",
                 new Dictionary<string, object?> { ["gateway"] = gate }

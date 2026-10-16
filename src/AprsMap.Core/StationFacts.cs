@@ -13,7 +13,7 @@ namespace AprsMap.Core;
 internal static class StationFacts
 {
     /// <summary>The device, arrival and raw text of <paramref name="raw"/>, as received.</summary>
-    public static (StationDevice? Device, StationArrival? Arrival, string? Text) Of(byte[]? raw)
+    public static (StationDevice? Device, StationArrival? Arrival, string? Text) Of(byte[]? raw, bool heardHere = false)
     {
         if (raw is null)
         {
@@ -25,7 +25,7 @@ internal static class StationFacts
         {
             packet = inner; // the station inside sent it, by the route inside
         }
-        return (Device(packet), Arrival(packet), text);
+        return (Device(packet), Arrival(packet, heardHere), text);
     }
 
     /// <summary>The sender's equipment from its destination (TOCALL) or Mic-E code; null when the list doesn't know it.</summary>
@@ -48,11 +48,19 @@ internal static class StationFacts
     /// How a packet with <paramref name="path"/> travelled (F1.21 behavior 2): its arrival, and the stations it went
     /// through in order, the digipeaters that named themselves and then the IGate that heard it on RF.
     /// </summary>
-    public static (ArrivalKind Kind, IReadOnlyList<(string Name, bool IsGateway)> Hops) Route(string? path)
+    /// <param name="path">The packet's path as sent.</param>
+    /// <param name="heardHere">
+    /// Heard by this station's own receiver (F3.1 behavior 8): an RF path with no IGate, so it's direct unless a
+    /// digipeater marked itself as having repeated it, and the hops are only the digipeaters.
+    /// </param>
+    public static (ArrivalKind Kind, IReadOnlyList<(string Name, bool IsGateway)> Hops) Route(
+        string? path,
+        bool heardHere = false
+    )
     {
         if (string.IsNullOrWhiteSpace(path))
         {
-            return (ArrivalKind.Unknown, []);
+            return (heardHere ? ArrivalKind.Direct : ArrivalKind.Unknown, []);
         }
         PathAnalysis route;
         try
@@ -67,38 +75,40 @@ internal static class StationFacts
         {
             return (ArrivalKind.Unknown, []);
         }
-        var kind = KindOf(route);
+        var kind = KindOf(route, heardHere);
         var hops = new List<(string, bool)>();
         if (kind == ArrivalKind.Digipeated)
         {
             hops.AddRange(route.Digipeaters.Select(d => (d.Value, false)));
         }
-        if (kind is ArrivalKind.Direct or ArrivalKind.Digipeated && route.EntryStation is { } gateway)
+        if (!heardHere && kind is ArrivalKind.Direct or ArrivalKind.Digipeated && route.EntryStation is { } gateway)
         {
             hops.Add((gateway.Value, true));
         }
         return (kind, hops);
     }
 
-    private static ArrivalKind KindOf(PathAnalysis route) =>
-        route.IsFromInternet ? ArrivalKind.Internet
+    private static ArrivalKind KindOf(PathAnalysis route, bool heardHere = false) =>
+        heardHere ? (route.UsedHops.Count > 0 ? ArrivalKind.Digipeated : ArrivalKind.Direct)
+        : route.IsFromInternet ? ArrivalKind.Internet
         : route.IsHeardDirectly ? ArrivalKind.Direct
         : route.UsedHops.Count > 0 ? ArrivalKind.Digipeated
         : ArrivalKind.Unknown;
 
     /// <summary>How the packet travelled, from its path; null when it has no readable header.</summary>
-    public static StationArrival? Arrival(AprsPacket packet)
+    public static StationArrival? Arrival(AprsPacket packet, bool heardHere = false)
     {
         if (packet.Path is null)
         {
             return null;
         }
         var route = PathAnalysis.FromPacket(packet);
-        var kind = KindOf(route);
+        var kind = KindOf(route, heardHere);
         return new StationArrival(
             kind,
             kind == ArrivalKind.Digipeated ? [.. route.Digipeaters.Select(d => d.Value)] : [],
-            route.EntryStation?.Value
+            heardHere ? null : route.EntryStation?.Value,
+            heardHere
         );
     }
 }

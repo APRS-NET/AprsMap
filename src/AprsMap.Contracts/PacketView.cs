@@ -128,6 +128,12 @@ public enum PacketMarkers
     /// listed but doesn't update the station (F1.3 behavior 11).
     /// </summary>
     Duplicate = 8,
+
+    /// <summary>
+    /// Heard by this station's own receiver, a KISS TNC (F3.1 behavior 8), with <see cref="Direct"/> or
+    /// <see cref="Digipeated"/> saying how.
+    /// </summary>
+    HeardHere = 16,
 }
 
 /// <summary>

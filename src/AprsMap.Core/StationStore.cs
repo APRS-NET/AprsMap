@@ -49,6 +49,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
 
     // The source of the packet being applied, under the lock.
     private string? _sourceId;
+    private bool _heardHere;
+
+    // This station's callsign: where a packet its own receiver heard ends its route (F3.1 behavior 8).
+    private string? _homeName;
 
     public int Count
     {
@@ -66,7 +70,16 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     /// updates its station's entry, positioned objects and items their own, and a kill removes one. A third-party packet
     /// updates the station inside it, not the gateway that wrapped it.
     /// </summary>
-    public PacketAnomalies Apply(AprsPacket packet, DateTimeOffset receivedAt, string? sourceId = null)
+    /// <param name="packet">The packet.</param>
+    /// <param name="receivedAt">When it arrived.</param>
+    /// <param name="sourceId">The source it came from (F1.25), or null.</param>
+    /// <param name="heardHere">Whether this station's own receiver heard it, a KISS TNC (F3.1 behavior 8).</param>
+    public PacketAnomalies Apply(
+        AprsPacket packet,
+        DateTimeOffset receivedAt,
+        string? sourceId = null,
+        bool heardHere = false
+    )
     {
         var raw = packet.Raw.ToArray(); // as received, third-party wrapper and all
         if (packet.Payload is ThirdPartyPayload { Packet: { HasHeader: true } inner })
@@ -83,6 +96,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         {
             _now = receivedAt > _now ? receivedAt : _now;
             _sourceId = sourceId; // several sources apply at once: only under the lock
+            _heardHere = heardHere;
             switch (packet.Payload)
             {
                 case ObjectReport report:
@@ -304,11 +318,17 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     /// Measures distance and bearing from my location (F1.13 behavior 4), or not with nulls. A change sends every
     /// station on the map again, with its new distance.
     /// </summary>
-    public void SetHome(double? latitude, double? longitude)
+    /// <param name="latitude">My latitude, or null.</param>
+    /// <param name="longitude">My longitude, or null.</param>
+    /// <param name="name">
+    /// My callsign, where a packet my own receiver heard ends its route and its last network link (F3.1 behavior 8).
+    /// </param>
+    public void SetHome(double? latitude, double? longitude, string? name = null)
     {
         AprsPosition? home = latitude is { } lat && longitude is { } lon ? new AprsPosition(lat, lon) : null;
         lock (_gate)
         {
+            _homeName = string.IsNullOrWhiteSpace(name) ? null : name;
             if (home == _home)
             {
                 return;
@@ -360,6 +380,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 return null;
             }
             var path = query.Path ?? entry.Path;
+            var heardHere = query.Path is null ? entry.HeardHere : query.HeardHere;
             double? latitude = entry.Latitude;
             double? longitude = entry.Longitude;
             if (query.Path is null && query.TrackPoint is { } time)
@@ -369,15 +390,15 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 {
                     return null;
                 }
-                path = entry.TrackPaths[index];
+                (path, heardHere) = entry.TrackPaths[index];
                 (latitude, longitude) = (entry.Track[index].Latitude, entry.Track[index].Longitude);
             }
             if (query is { Latitude: { } lat, Longitude: { } lon })
             {
                 (latitude, longitude) = (lat, lon);
             }
-            var (kind, names) = StationFacts.Route(path);
-            var hops = new List<RouteHop>(names.Count);
+            var (kind, names) = StationFacts.Route(path, heardHere);
+            var hops = new List<RouteHop>(names.Count + 1);
             AprsPosition? last = latitude is { } la && longitude is { } lo ? new AprsPosition(la, lo) : null;
             foreach (var (name, isGateway) in names)
             {
@@ -400,7 +421,22 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                     hops.Add(new RouteHop(name, isGateway));
                 }
             }
-            return new PacketRoute(entry.Name, kind, latitude, longitude, hops);
+            if (heardHere && kind is ArrivalKind.Direct or ArrivalKind.Digipeated)
+            {
+                // Heard by this station: the route ends here, at its location when it has one (F3.1 behavior 8).
+                hops.Add(
+                    _home is { } home
+                        ? new RouteHop(
+                            _homeName ?? string.Empty,
+                            true,
+                            home.Latitude,
+                            home.Longitude,
+                            last is { } from ? Geodesy.DistanceKm(from, home) : null
+                        )
+                        : new RouteHop(_homeName ?? string.Empty, true)
+                );
+            }
+            return new PacketRoute(entry.Name, kind, latitude, longitude, hops, heardHere);
         }
     }
 
@@ -707,7 +743,8 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         entry.Path = packet.Path is { } path ? string.Join(',', path.Select(p => p.ToString())) : null;
         entry.LastPacket = raw;
         entry.FirstHeardVia = _sourceId; // a new report: seen on its source alone, so far (F1.25 behavior 9)
-        entry.Arrival = StationFacts.Route(entry.Path).Kind; // for the View filter's reception (F1.9)
+        entry.HeardHere = _heardHere;
+        entry.Arrival = StationFacts.Route(entry.Path, _heardHere).Kind; // for the View filter's reception (F1.9)
         if (packet.Destination?.Value is { } destination && destination != entry.Destination)
         {
             entry.Destination = destination; // the device changes with the destination (or Mic-E's), not every packet
@@ -995,10 +1032,14 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     /// <summary>Counts each link the packet just heard from <paramref name="sender"/> crossed on RF (F1.21 behavior 4).</summary>
     private void CountLinks(Entry sender, DateTimeOffset at)
     {
-        var (kind, hops) = StationFacts.Route(sender.Path);
+        var (kind, hops) = StationFacts.Route(sender.Path, sender.HeardHere);
         if (kind is not (ArrivalKind.Direct or ArrivalKind.Digipeated))
         {
             return;
+        }
+        if (sender.HeardHere && _homeName is { } me)
+        {
+            hops = [.. hops, (me, true)]; // the last link ends at this station (F3.1 behavior 8)
         }
         var from = sender.Name;
         foreach (var (name, _) in hops)
@@ -1162,11 +1203,11 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         )
         {
             track[^1] = track[^1] with { Time = point.Time };
-            entry.TrackPaths[^1] = entry.Path;
+            entry.TrackPaths[^1] = (entry.Path, entry.HeardHere);
             return;
         }
         track.Add(point);
-        entry.TrackPaths.Add(entry.Path);
+        entry.TrackPaths.Add((entry.Path, entry.HeardHere));
         foreach (var watcher in _watchers)
         {
             watcher.AddTrackPoint(entry.Name, point);
@@ -1358,7 +1399,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         public List<TrackPoint> Track { get; } = [];
 
         /// <summary>The path of the packet behind each track point, for its route (F1.21 behavior 2).</summary>
-        public List<string?> TrackPaths { get; } = [];
+        public List<(string? Path, bool HeardHere)> TrackPaths { get; } = [];
+
+        /// <summary>Whether the last packet was heard by this station's own receiver (F3.1 behavior 8).</summary>
+        public bool HeardHere { get; set; }
 
         public bool HasPosition => Latitude is not null && Longitude is not null;
 
@@ -1422,7 +1466,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         public StationDetail ToDetail(AprsPosition? home)
         {
             var (distance, bearing) = From(home);
-            var (device, arrival, text) = StationFacts.Of(LastPacket);
+            var (device, arrival, text) = StationFacts.Of(LastPacket, HeardHere);
             return new(
                 Name,
                 Kind,

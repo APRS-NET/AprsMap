@@ -719,7 +719,13 @@ public sealed partial class MainViewModel : ObservableObject
         }
         SelectedStation = packet.Source;
         _ = ShowRouteAsync(
-            new RouteQuery(packet.Source, packet.Path ?? string.Empty, packet.Latitude, packet.Longitude)
+            new RouteQuery(
+                packet.Source,
+                packet.Path ?? string.Empty,
+                packet.Latitude,
+                packet.Longitude,
+                HeardHere: packet.Markers.HasFlag(PacketMarkers.HeardHere)
+            )
         );
     }
 

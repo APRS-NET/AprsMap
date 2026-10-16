@@ -235,7 +235,16 @@ public sealed record StationDevice(string? Vendor, string? Model, string? Class)
 /// <param name="Kind">Heard directly on RF, through digipeaters, from the internet, or not said by the path.</param>
 /// <param name="Digipeaters">The digipeaters that repeated it and named themselves, in order.</param>
 /// <param name="Gateway">The IGate that put it on APRS-IS, or the server the sender connected to; null when unknown.</param>
-public sealed record StationArrival(ArrivalKind Kind, IReadOnlyList<string> Digipeaters, string? Gateway);
+/// <param name="HeardHere">
+/// Heard by this station's own receiver (a KISS TNC, docs/features/F3.1-kiss-sources.md behavior 8): no IGate, so
+/// <paramref name="Gateway"/> is null.
+/// </param>
+public sealed record StationArrival(
+    ArrivalKind Kind,
+    IReadOnlyList<string> Digipeaters,
+    string? Gateway,
+    bool HeardHere = false
+);
 
 /// <summary>
 /// Which packet's route to work out (docs/features/F1.21-rf-paths.md, behavior 2): a station's last packet, the packet
@@ -246,12 +255,14 @@ public sealed record StationArrival(ArrivalKind Kind, IReadOnlyList<string> Digi
 /// <param name="Latitude">Where the packet was sent from; null for the station's position.</param>
 /// <param name="Longitude">Where the packet was sent from; null for the station's position.</param>
 /// <param name="TrackPoint">The time of the track point whose packet to use (<see cref="TrackPoint.Time"/>).</param>
+/// <param name="HeardHere">Whether the packet picked was heard by this station's own receiver (F3.1 behavior 8).</param>
 public sealed record RouteQuery(
     string Name,
     string? Path = null,
     double? Latitude = null,
     double? Longitude = null,
-    DateTimeOffset? TrackPoint = null
+    DateTimeOffset? TrackPoint = null,
+    bool HeardHere = false
 );
 
 /// <summary>How one packet travelled, for drawing and words (docs/features/F1.21-rf-paths.md, behavior 2).</summary>
@@ -263,12 +274,16 @@ public sealed record RouteQuery(
 /// The stations it went through in order: each digipeater that named itself, then the IGate that put it on APRS-IS.
 /// Empty for a packet that never went over RF.
 /// </param>
+/// <param name="HeardHere">
+/// Heard by this station's own receiver (F3.1 behavior 8): the last hop is this station, at its location, not an IGate.
+/// </param>
 public sealed record PacketRoute(
     string Name,
     ArrivalKind Kind,
     double? Latitude,
     double? Longitude,
-    IReadOnlyList<RouteHop> Hops
+    IReadOnlyList<RouteHop> Hops,
+    bool HeardHere = false
 );
 
 /// <summary>One station a packet went through.</summary>

@@ -158,6 +158,64 @@ public sealed class RouteTests
         Assert.Null(vm.Details.RouteText);
     }
 
+    [Fact]
+    public async Task APacketThisStationHeardSaysSoWithTheDistanceToHere()
+    {
+        var engine = new FakeEngine();
+        engine.Routes["N0CALL-9"] = new PacketRoute(
+            "N0CALL-9",
+            ArrivalKind.Direct,
+            49,
+            -72,
+            [new RouteHop("N0ME", true, 49.1, -72, 11.1)],
+            HeardHere: true
+        );
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+
+        vm.SelectPacket(
+            new PacketView(
+                T0,
+                "N0CALL-9",
+                "Position",
+                "x",
+                "N0CALL-9>APRS,WIDE1-1:!",
+                49,
+                -72,
+                Path: "WIDE1-1",
+                Markers: PacketMarkers.HeardHere | PacketMarkers.Direct
+            )
+        );
+        await WaitUntil(() => vm.Route is not null);
+
+        Assert.True(engine.RouteQueries[^1].HeardHere);
+        Assert.Equal("Heard directly by this station, 11 km away", vm.Details.RouteText);
+    }
+
+    [Fact]
+    public void ARowThisStationHeardSaysSoOnItsMarker()
+    {
+        var text = new AprsMap.UI.Localization.Localizer(System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+        var here = new AprsMap.UI.Packets.PacketRow(
+            FakeEngine.Packet("N0CALL-9") with
+            {
+                Markers = PacketMarkers.HeardHere | PacketMarkers.Direct,
+            },
+            text,
+            TimeZoneInfo.Utc
+        );
+        var gated = new AprsMap.UI.Packets.PacketRow(
+            FakeEngine.Packet("N0CALL-9") with
+            {
+                Markers = PacketMarkers.Direct,
+            },
+            text,
+            TimeZoneInfo.Utc
+        );
+
+        Assert.Equal("Direct: this station heard it on RF with no digipeater", here.DirectText);
+        Assert.Equal("Direct: an IGate heard it on RF with no digipeater", gated.DirectText);
+    }
+
     private static async Task WaitUntil(Func<bool> condition)
     {
         for (var i = 0; i < 200 && !condition(); i++)

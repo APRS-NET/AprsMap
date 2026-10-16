@@ -873,11 +873,12 @@ public sealed partial class Engine : IEngineService, IDisposable
             return;
         }
         var duplicate = check.IsDuplicate;
-        var view = PacketSummarizer.Summarize(packet, now, duplicate) with { SourceId = sourceId };
+        var heardHere = IsOwnReceiver(sourceId); // a TNC: heard on RF by this station (F3.1 behavior 8)
+        var view = PacketSummarizer.Summarize(packet, now, duplicate, heardHere) with { SourceId = sourceId };
         if (!duplicate)
         {
             // F1.3 behavior 11: a duplicate is listed, not applied again. The track analysis marks the packet (F1.20).
-            var anomalies = _stations.Apply(packet, now, sourceId);
+            var anomalies = _stations.Apply(packet, now, sourceId, heardHere);
             view = anomalies == PacketAnomalies.None ? view : view with { Anomalies = anomalies };
         }
         EngineTelemetry.PacketsReceived.Add(1, new KeyValuePair<string, object?>("aprs.packet.type", view.Type));
@@ -901,6 +902,13 @@ public sealed partial class Engine : IEngineService, IDisposable
             }
         }
     }
+
+    /// <summary>Whether <paramref name="sourceId"/> is this station's own receiver: a KISS TNC (F3.1 behavior 8).</summary>
+    private bool IsOwnReceiver(string? sourceId) =>
+        sourceId is not null
+        && _settings?.SourceList.FirstOrDefault(s => s.Id == sourceId)?.Kind
+            is SourceKind.KissTcp
+                or SourceKind.KissSerial;
 
     /// <summary>Keeps <paramref name="node"/> findable by identity for one duplicate window.</summary>
     private void Remember(PacketIdentity identity, LinkedListNode<PacketView> node, DateTimeOffset now)
@@ -1155,7 +1163,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private void MeasureFrom(AppSettings settings)
     {
         var profile = settings.GetActiveProfile();
-        _stations.SetHome(profile?.Latitude, profile?.Longitude);
+        _stations.SetHome(profile?.Latitude, profile?.Longitude, profile?.Callsign);
     }
 
     /// <summary>The first profile, from the configured defaults (appsettings.json or environment), if they name a callsign.</summary>

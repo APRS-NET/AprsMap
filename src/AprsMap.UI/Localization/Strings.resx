@@ -2564,4 +2564,25 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.settings.source.kiss-invalid" xml:space="preserve">
     <value>A KISS source needs a host, a port from 1 to 65535, and a TNC port from 0 to 15.</value>
   </data>
+  <data name="Details.Arrival.HeardHere" xml:space="preserve">
+    <value>Heard directly by this station</value>
+    <comment>A packet this station's own TNC heard with no digipeater.</comment>
+  </data>
+  <data name="Details.Arrival.DigipeatedHere" xml:space="preserve">
+    <value>{count, plural, =0 {Through digipeaters, heard by this station} one {Through digipeater {digipeaters}, heard by this station} other {Through digipeaters {digipeaters}, heard by this station}}</value>
+  </data>
+  <data name="Details.Route.DirectHere" xml:space="preserve">
+    <value>Heard directly by this station, {distance} away</value>
+    <comment>distance: in the viewer's units.</comment>
+  </data>
+  <data name="Details.Route.ThisStation" xml:space="preserve">
+    <value>this station</value>
+    <comment>The end of a route this station's own TNC heard.</comment>
+  </data>
+  <data name="Packets.DirectHere" xml:space="preserve">
+    <value>Direct: this station heard it on RF with no digipeater</value>
+  </data>
+  <data name="Packets.DigipeatedHere" xml:space="preserve">
+    <value>{count, plural, one {Digipeated: repeated by # digipeater, heard by this station} other {Digipeated: repeated by # digipeaters, heard by this station}}</value>
+  </data>
 </root>
