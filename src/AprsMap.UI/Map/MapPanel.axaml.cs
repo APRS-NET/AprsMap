@@ -64,6 +64,11 @@ public sealed partial class MapPanel : UserControl, IDisposable
         _map.TrackPointPicked += (_, point) => _main?.SelectTrackPoint(point.Name, point.Time);
         // The RF network (F1.21 behavior 5): loaded when chosen, and every half minute while it shows.
         _map.PathsChanged += (_, _) => _ = LoadLinksAsync();
+        // Clear stations asks first, with the count now; either answer closes the question.
+        var question = ClearStationsButton.Flyout!;
+        question.Opened += (_, _) => _main?.AskClearStations();
+        ConfirmClearStationsButton.Click += (_, _) => question.Hide();
+        KeepStationsButton.Click += (_, _) => question.Hide();
         _linkTimer.Tick += (_, _) => _ = LoadLinksAsync();
         _linkTimer.Start();
         StopFollowingButton.Click += (_, _) => StopFollowing();

@@ -432,6 +432,38 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Whether this viewer may clear the station's data, for the main menu.</summary>
     public bool CanClearData => _settings is { ReadOnly: false };
 
+    /// <summary>
+    /// The map's Clear stations question, with how many there are now (docs/features/F1.19-housekeeping.md, behavior
+    /// 1); set as the question opens.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? ClearStationsQuestion { get; private set; }
+
+    /// <summary>Words the question for the stations held now.</summary>
+    public void AskClearStations() =>
+        ClearStationsQuestion = _text.Format(
+            "Map.ClearStations.Question",
+            new Dictionary<string, object?> { ["count"] = _status?.Stations ?? StationCount }
+        );
+
+    /// <summary>
+    /// Clears every station, object and item, with their tracks, for every viewer (F1.19), from the map's button. They
+    /// come back as they're heard again.
+    /// </summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task ClearStationsAsync()
+    {
+        try
+        {
+            await engine.ClearAsync(ClearScope.Stations);
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            ShowError(ex);
+        }
+    }
+
     private async Task ReloadSettingsAsync()
     {
         try
