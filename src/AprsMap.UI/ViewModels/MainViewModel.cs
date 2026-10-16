@@ -59,20 +59,6 @@ public sealed partial class MainViewModel : ObservableObject
         SourceNames = new SourceNames(() => _settings);
         PacketList = new PacketListViewModel(engine, time, _text, SourceNames);
         AprsIsSwitch = new SourceSwitch(SwitchAprsIsAsync);
-        Dashboard = new Statistics.DashboardViewModel(
-            engine,
-            time,
-            _text,
-            () => _status,
-            SourceNames,
-            AprsIsSwitch,
-            name => SelectedStation = name,
-            () =>
-            {
-                PacketList.IssuesOnly = true;
-                ShowPanel(PanelKinds.Packets);
-            }
-        );
         Details = new Stations.StationDetailsViewModel(
             engine,
             time,
@@ -99,6 +85,26 @@ public sealed partial class MainViewModel : ObservableObject
         ViewFilter.Changed += (_, _) => OnViewFilterChanged();
         StationList.Filter = () => ViewFilter.Current;
         Shell = new ShellViewModel(this, _text, managedWindows);
+        Dashboard = new Statistics.DashboardViewModel(
+            engine,
+            time,
+            _text,
+            () => _status,
+            SourceNames,
+            AprsIsSwitch,
+            name => SelectedStation = name,
+            () =>
+            {
+                PacketList.IssuesOnly = true;
+                ShowPanel(PanelKinds.Packets);
+            },
+            () => _settings?.Units ?? UnitSettings.Metric,
+            filter =>
+            {
+                ViewFilter.Use(filter); // a table row: its View filter, on the map (F1.22 behavior 12)
+                Shell.ShowMap();
+            }
+        );
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
     }

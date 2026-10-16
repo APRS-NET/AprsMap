@@ -189,6 +189,22 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         {
             return;
         }
+        Set(on, filter);
+    }
+
+    /// <summary>
+    /// Sets the conditions to <paramref name="filter"/> and turns the filter on, as one change: the dashboard's table
+    /// rows use it (F1.22 behavior 12).
+    /// </summary>
+    internal void Use(StationFilter filter)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        Set(true, filter);
+        Commit();
+    }
+
+    private void Set(bool on, StationFilter filter)
+    {
         _loading = true;
         Kind = KindOptions.FirstOrDefault(o => Equals(o.Value, filter.Kinds)) ?? KindOptions[0];
         Heard = HeardOptions.FirstOrDefault(o => Equals(o.Value, filter.HeardWithinMinutes)) ?? HeardOptions[0];

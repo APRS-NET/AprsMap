@@ -2364,4 +2364,95 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>APRS-IS on or off</value>
     <comment>A switch beside the connection pill and in the dashboard; its name for screen readers and its tooltip.</comment>
   </data>
+  <data name="Dashboard.Farthest" xml:space="preserve">
+    <value>Farthest heard directly</value>
+    <comment>Tile title: the longest RF hops an IGate heard with no digipeater.</comment>
+  </data>
+  <data name="Dashboard.Farthest.Row" xml:space="preserve">
+    <value>{distance} to {gateway}</value>
+    <comment>distance: in the viewer's units. gateway: the IGate that heard it.</comment>
+  </data>
+  <data name="Dashboard.WeatherTile" xml:space="preserve">
+    <value>Weather</value>
+    <comment>Tile title.</comment>
+  </data>
+  <data name="Dashboard.Weather.Count" xml:space="preserve">
+    <value>{count, plural, =0 {No weather stations reporting} one {# weather station reporting} other {# weather stations reporting}}</value>
+  </data>
+  <data name="Dashboard.Weather.Coldest" xml:space="preserve">
+    <value>Coldest</value>
+  </data>
+  <data name="Dashboard.Weather.Warmest" xml:space="preserve">
+    <value>Warmest</value>
+  </data>
+  <data name="Dashboard.Weather.Gustiest" xml:space="preserve">
+    <value>Strongest gust</value>
+  </data>
+  <data name="Dashboard.Weather.Row" xml:space="preserve">
+    <value>{what} {value}</value>
+    <comment>what: Coldest, Warmest or Strongest gust. value: a temperature or wind speed in the viewer's units.</comment>
+  </data>
+  <data name="Dashboard.Tables" xml:space="preserve">
+    <value>What's on the air</value>
+    <comment>Heading above the statistics tables.</comment>
+  </data>
+  <data name="Dashboard.Tables.Of" xml:space="preserve">
+    <value>{count, plural, one {Of the # station held now. Click a row to show only those on the map.} other {Of the # stations held now. Click a row to show only those on the map.}}</value>
+  </data>
+  <data name="Dashboard.Table.Platforms" xml:space="preserve">
+    <value>Devices</value>
+  </data>
+  <data name="Dashboard.Table.Symbols" xml:space="preserve">
+    <value>Symbols</value>
+  </data>
+  <data name="Dashboard.Table.Kinds" xml:space="preserve">
+    <value>Kinds</value>
+  </data>
+  <data name="Dashboard.Table.Reception" xml:space="preserve">
+    <value>How they arrived</value>
+  </data>
+  <data name="Dashboard.Table.Kind.Station" xml:space="preserve">
+    <value>Stations</value>
+  </data>
+  <data name="Dashboard.Table.Kind.Object" xml:space="preserve">
+    <value>Objects</value>
+  </data>
+  <data name="Dashboard.Table.Kind.Item" xml:space="preserve">
+    <value>Items</value>
+  </data>
+  <data name="Dashboard.Table.UnknownDevice" xml:space="preserve">
+    <value>Unknown device</value>
+    <comment>A device the aprs-deviceid list doesn't know.</comment>
+  </data>
+  <data name="Dashboard.Table.Count" xml:space="preserve">
+    <value>{count, plural, one {# station} other {# stations}}</value>
+  </data>
+  <data name="Dashboard.Table.Spoken" xml:space="preserve">
+    <value>{name}: {count}, {share}</value>
+    <comment>A table row read by a screen reader.</comment>
+  </data>
+  <data name="Dashboard.Table.Name" xml:space="preserve">
+    <value>Name</value>
+    <comment>Sort button: by name.</comment>
+  </data>
+  <data name="Dashboard.Table.ByCount" xml:space="preserve">
+    <value>Most</value>
+    <comment>Sort button: by count, most first.</comment>
+  </data>
+  <data name="Dashboard.Table.Copy" xml:space="preserve">
+    <value>Copy</value>
+    <comment>Copies the table as tab-separated text.</comment>
+  </data>
+  <data name="Dashboard.Table.Detail" xml:space="preserve">
+    <value>Class or category</value>
+    <comment>Copied table's column header.</comment>
+  </data>
+  <data name="Dashboard.Table.Stations" xml:space="preserve">
+    <value>Stations</value>
+    <comment>Copied table's column header.</comment>
+  </data>
+  <data name="Dashboard.Table.Share" xml:space="preserve">
+    <value>Share (%)</value>
+    <comment>Copied table's column header.</comment>
+  </data>
 </root>

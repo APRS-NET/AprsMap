@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 
 namespace AprsMap.UI.Statistics;
 
@@ -11,7 +12,25 @@ namespace AprsMap.UI.Statistics;
 public sealed partial class DashboardPanel : UserControl
 {
     /// <summary>Creates the view.</summary>
-    public DashboardPanel() => InitializeComponent();
+    public DashboardPanel()
+    {
+        InitializeComponent();
+        // Each table's Copy button: the table as tab-separated text (behavior 14).
+        AddHandler(Button.ClickEvent, OnClick);
+    }
+
+    private void OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (
+            e.Source is Button { Classes: var classes, DataContext: StatTable table }
+            && classes.Contains("copy-table")
+            && TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard
+        )
+        {
+            _ = clipboard.SetTextAsync(table.CopyText());
+            e.Handled = true;
+        }
+    }
 
     private DashboardViewModel? Model => DataContext as DashboardViewModel;
 

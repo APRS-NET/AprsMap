@@ -238,6 +238,97 @@
             <ItemsControl ItemsSource="{Binding BusiestRelays}" Margin="0,4,0,0" />
           </StackPanel>
         </Border>
+
+        <!-- Farthest heard directly (behavior 4.10). -->
+        <Border Classes="tile">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{l:T Dashboard.Farthest}" />
+            <ItemsControl ItemsSource="{Binding FarthestDirect}" Margin="0,4,0,0" />
+          </StackPanel>
+        </Border>
+
+        <!-- Weather (behavior 4.11). -->
+        <Border Classes="tile">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{l:T Dashboard.WeatherTile}" />
+            <TextBlock Classes="detail" Text="{Binding WeatherText}" Margin="0,4,0,4" />
+            <ItemsControl ItemsSource="{Binding WeatherExtremes}" />
+          </StackPanel>
+        </Border>
+
+        <!-- What's on the air (behaviors 10–14): the tables over the stations held now. -->
+        <StackPanel Width="{Binding $parent[WrapPanel].Bounds.Width}" Margin="0,8,12,8">
+          <TextBlock Text="{l:T Dashboard.Tables}" FontSize="{DynamicResource Text.Title}" FontWeight="SemiBold" />
+          <TextBlock Classes="detail" Text="{Binding TablesText}" />
+        </StackPanel>
+        <ItemsControl ItemsSource="{Binding Tables}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="d:StatTable">
+              <Border Classes="tile">
+                <StackPanel>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                      <ToggleButton
+                        Content="{l:T Dashboard.Table.ByCount}"
+                        IsChecked="{Binding !ByName}"
+                        Command="{Binding SortByCountCommand}"
+                        Padding="6,2"
+                      />
+                      <ToggleButton
+                        Content="{l:T Dashboard.Table.Name}"
+                        IsChecked="{Binding ByName}"
+                        Command="{Binding SortByNameCommand}"
+                        Padding="6,2"
+                      />
+                      <Button Classes="copy-table" Content="{l:T Dashboard.Table.Copy}" Padding="6,2" />
+                    </StackPanel>
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding Rows}" Margin="0,4,0,0">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="d:StatRow">
+                        <!-- The whole row applies its View filter (behavior 12); read as one sentence. -->
+                        <Button
+                          Command="{Binding Apply}"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Stretch"
+                          Background="{x:Null}"
+                          BorderThickness="0"
+                          Padding="2"
+                          AutomationProperties.Name="{Binding Spoken}"
+                        >
+                          <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                            <TextBlock TextTrimming="CharacterEllipsis">
+                              <Run Text="{Binding Name}" />
+                              <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
+                            </TextBlock>
+                            <TextBlock Grid.Column="1" Margin="8,0,0,0" Foreground="{DynamicResource Brush.TextMuted}">
+                              <Run Text="{Binding CountText}" />
+                              <Run Text=" · " />
+                              <Run Text="{Binding ShareText}" />
+                            </TextBlock>
+                            <ProgressBar
+                              Grid.Row="1"
+                              Grid.ColumnSpan="2"
+                              Classes="share"
+                              Value="{Binding Fraction}"
+                              AutomationProperties.AccessibilityView="Raw"
+                            />
+                          </Grid>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
       </WrapPanel>
     </ScrollViewer>
   </DockPanel>

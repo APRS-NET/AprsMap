@@ -666,8 +666,19 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <inheritdoc />
-    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_dashboard.Read(range, _time.GetUtcNow()));
+    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default)
+    {
+        var dashboard = _dashboard.Read(range, _time.GetUtcNow());
+        // The counters cover the range; the rest is read from the stations held (F1.22 behaviors 4.10, 4.11, 10).
+        return Task.FromResult(
+            dashboard with
+            {
+                FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5),
+                Weather = _stations.WeatherSince(dashboard.Start),
+                Tables = _stations.Statistics(),
+            }
+        );
+    }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default) =>

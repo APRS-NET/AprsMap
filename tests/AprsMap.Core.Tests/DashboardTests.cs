@@ -188,4 +188,59 @@ public sealed class DashboardTests
         Assert.Equal(new DashboardMoment("kiss", T0.AddMinutes(5)), Assert.Single(dashboard.Sources));
         Assert.Equal(0, dashboard.Packets.Sum());
     }
+
+    [Fact]
+    public async Task TheTablesCountDevicesSymbolsKindsAndReceptionOfTheStationsHeld()
+    {
+        var (engine, _) = Create();
+        engine.Accept("N0DROID-7>APDR16,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W>"); // APRSdroid, a car
+        engine.Accept("N0DROID-8>APDR16,TCPIP*,qAC,T2TEST:!4904.50N/07201.75W>");
+        engine.Accept(Direct); // an unknown device
+        engine.Accept("N0OBJ>APRS,TCPIP*,qAC,T2TEST:;AIDSTN1  *161200z4903.50N/07201.75Wa Aid station");
+
+        var tables = (await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).Tables!;
+
+        Assert.Equal(5, tables.Total); // the object's sender is a station too
+        var droid = Assert.Single(
+            tables.Platforms,
+            p => $"{p.Vendor} {p.Model}".Contains("APRSdroid", StringComparison.OrdinalIgnoreCase)
+        );
+        Assert.Equal(2, droid.Count);
+        Assert.Equal(new DashboardSymbol("/>", "Car", "Vehicles", 3), tables.Symbols[0]);
+        Assert.Contains(new DashboardCount(nameof(StationKind.Object), 1), tables.Kinds);
+        Assert.Contains(new DashboardCount(nameof(ArrivalKind.Direct), 1), tables.Reception);
+    }
+
+    [Fact]
+    public async Task WeatherExtremesComeFromTheStationsHeardInTheRange()
+    {
+        var (engine, time) = Create();
+        engine.Accept("N0COLD>APRS,TCPIP*,qAC,T2TEST:@161200z4903.50N/07201.75W_090/005g010t014");
+        engine.Accept("N0WARM>APRS,TCPIP*,qAC,T2TEST:@161200z4904.50N/07201.75W_090/005g030t095");
+
+        var weather = (await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).Weather!;
+
+        Assert.Equal(2, weather.Stations);
+        Assert.Equal("N0COLD", weather.Coldest!.Station);
+        Assert.Equal(-10, weather.Coldest.Value, 1); // 14 °F
+        Assert.Equal("N0WARM", weather.Warmest!.Station);
+        Assert.Equal("N0WARM", weather.Gustiest!.Station);
+
+        time.Advance(TimeSpan.FromHours(2));
+        Assert.Equal(0, (await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).Weather!.Stations);
+    }
+
+    [Fact]
+    public async Task TheFarthestDirectHopsNeedTheIGatesPosition()
+    {
+        var (engine, _) = Create();
+        engine.Accept(Direct); // heard directly by N0GATE, whose position isn't known yet
+        Assert.Empty((await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).FarthestDirect!);
+
+        engine.Accept("N0GATE>APRS,TCPIP*,qAC,T2TEST:!4913.50N/07201.75W&"); // 10' of latitude north: ~18.5 km
+
+        var hop = Assert.Single((await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).FarthestDirect!);
+        Assert.Equal(("N0CAR-9", "N0GATE"), (hop.Station, hop.Gateway));
+        Assert.Equal(18.53, hop.DistanceKm, 2);
+    }
 }

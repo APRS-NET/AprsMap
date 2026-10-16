@@ -193,6 +193,86 @@ public sealed class DashboardViewModelTests
         Assert.False(vm.IsRunning);
     }
 
+    [Fact]
+    public void TablesSortByCountOrNameCopyAsTabsAndRowsApplyTheirFilter()
+    {
+        var used = new List<StationFilter>();
+        var vm = new DashboardViewModel(
+            new FakeEngine(),
+            new FakeTimeProvider(T0),
+            new Localizer(CultureInfo.GetCultureInfo("en-US")),
+            () => null,
+            new SourceNames(() => null),
+            new SourceSwitch(_ => Task.CompletedTask),
+            _ => { },
+            () => { },
+            () => UnitSettings.Metric with { Distance = DistanceUnit.Miles, Temperature = TemperatureUnit.Fahrenheit },
+            used.Add
+        );
+
+        vm.Show(
+            Sample() with
+            {
+                FarthestDirect = [new("BASHOR", "KC0QBU", 38.2, T0)],
+                Weather = new DashboardWeather(2, new("N0COLD", -10), new("N0WARM", 30), null),
+                Tables = new DashboardTables(
+                    20,
+                    [new("Tracker", "Byonics", "TinyTrack", 5), new(null, null, null, 15)],
+                    [new("/>", "Car", "Vehicles", 4), new("/_", "Weather station", "Weather", 16)],
+                    [new(nameof(StationKind.Station), 19), new(nameof(StationKind.Object), 1)],
+                    [new(nameof(ArrivalKind.Internet), 12), new(nameof(ArrivalKind.Direct), 7)]
+                ),
+            }
+        );
+
+        Assert.Equal("24 mi to KC0QBU", vm.FarthestDirect[0].Value);
+        Assert.Equal(["N0COLD", "N0WARM"], vm.WeatherExtremes.Select(r => r.Name));
+        Assert.Equal("Coldest 14 °F", vm.WeatherExtremes[0].Value);
+        Assert.Equal(["Unknown device", "Byonics TinyTrack"], vm.Platforms.Rows.Select(r => r.Name)); // most first
+        Assert.Equal("5 stations", vm.Platforms.Rows[1].CountText);
+        Assert.Equal("25 %", vm.Platforms.Rows[1].ShareText);
+        Assert.Null(vm.Platforms.Rows[0].Apply); // no class to filter by
+
+        vm.Symbols.SortByNameCommand.Execute(null);
+        Assert.Equal(["Car", "Weather station"], vm.Symbols.Rows.Select(r => r.Name));
+        Assert.Equal(
+            "Symbols\tClass or category\tStations\tShare (%)\nCar\tVehicles\t4\t20\nWeather station\tWeather\t16\t80\n",
+            vm.Symbols.CopyText()
+        );
+
+        vm.Platforms.Rows[1].Apply!.Execute(null);
+        vm.Symbols.Rows[0].Apply!.Execute(null);
+        vm.StationKindsTable.Rows[1].Apply!.Execute(null);
+        vm.Reception.Rows[1].Apply!.Execute(null);
+        Assert.Equal(["Tracker"], used[0].DeviceClasses!);
+        Assert.Equal(["Vehicles"], used[1].Categories!);
+        Assert.Equal(StationKinds.ObjectsAndItems, used[2].Kinds);
+        Assert.Equal(Reception.Direct, used[3].Reception);
+    }
+
+    [Fact]
+    public void ARowsFilterTurnsTheViewFilterOnAndShowsTheMap()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider(T0));
+        vm.Shell.Show(AprsMap.UI.Shell.PanelKinds.Dashboard);
+
+        vm.Dashboard.Show(
+            Sample() with
+            {
+                Tables = new DashboardTables(5, [new("Tracker", "Byonics", "TinyTrack", 5)], [], [], []),
+            }
+        );
+        vm.Dashboard.Platforms.Rows[0].Apply!.Execute(null);
+
+        Assert.True(vm.ViewFilter.IsFiltered);
+        Assert.Equal(["Tracker"], vm.ViewFilter.Current!.DeviceClasses!);
+        var map = AprsMap
+            .UI.Shell.ShellViewModel.Dockables(vm.Shell.Layout)
+            .OfType<AprsMap.UI.Shell.MapDocument>()
+            .Single();
+        Assert.Same(map, ((Dock.Model.Core.IDock)map.Owner!).ActiveDockable);
+    }
+
     private static async Task WaitUntil(Func<bool> condition)
     {
         for (var i = 0; i < 200 && !condition(); i++)

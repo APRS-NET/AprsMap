@@ -27,6 +27,8 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly Func<EngineStatus?> _status;
     private readonly SourceNames _sources;
     private readonly SourceSwitch _aprsIs;
+    private readonly Func<UnitSettings> _units;
+    private readonly Action<StationFilter> _useFilter;
     private readonly Action<string> _select;
     private readonly Action _showProblems;
     private CancellationTokenSource? _running;
@@ -40,9 +42,17 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         SourceNames sources,
         SourceSwitch aprsIs,
         Action<string> select,
-        Action showProblems
+        Action showProblems,
+        Func<UnitSettings>? units = null,
+        Action<StationFilter>? useFilter = null
     )
     {
+        _units = units ?? (() => UnitSettings.Metric);
+        _useFilter = useFilter ?? (_ => { });
+        Platforms = new StatTable(text, "Dashboard.Table.Platforms");
+        Symbols = new StatTable(text, "Dashboard.Table.Symbols");
+        StationKindsTable = new StatTable(text, "Dashboard.Table.Kinds");
+        Reception = new StatTable(text, "Dashboard.Table.Reception");
         _engine = engine;
         _time = time;
         _text = text;
@@ -113,6 +123,35 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 
     /// <summary>The busiest digipeaters and IGates (behavior 4.9), each selectable.</summary>
     public ObservableCollection<CountRow> BusiestRelays { get; } = [];
+
+    /// <summary>The farthest direct RF hops (behavior 4.10): each station, its distance and the IGate.</summary>
+    public ObservableCollection<CountRow> FarthestDirect { get; } = [];
+
+    /// <summary>"8 weather stations reporting"; null before the first numbers.</summary>
+    [ObservableProperty]
+    public partial string? WeatherText { get; private set; }
+
+    /// <summary>The coldest, warmest and gustiest weather stations (behavior 4.11), each selectable.</summary>
+    public ObservableCollection<CountRow> WeatherExtremes { get; } = [];
+
+    /// <summary>"Of the 120 stations held now", above the tables (behavior 10).</summary>
+    [ObservableProperty]
+    public partial string? TablesText { get; private set; }
+
+    /// <summary>Devices by class, vendor and model (behavior 10.1).</summary>
+    public StatTable Platforms { get; }
+
+    /// <summary>Symbols (behavior 10.2).</summary>
+    public StatTable Symbols { get; }
+
+    /// <summary>Stations, objects and items (behavior 10.3).</summary>
+    public StatTable StationKindsTable { get; }
+
+    /// <summary>How stations arrived (behavior 10.4).</summary>
+    public StatTable Reception { get; }
+
+    /// <summary>The four tables, in order.</summary>
+    public IReadOnlyList<StatTable> Tables => [Platforms, Symbols, StationKindsTable, Reception];
 
     /// <summary>Starts asking for numbers, now and every 10 seconds, until <see cref="Stop"/> (the tab hidden).</summary>
     public void Start()
@@ -315,6 +354,8 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             ? null
             : _text.Format("Dashboard.Reconnects", new Dictionary<string, object?> { ["count"] = status.Reconnects });
 
+        ShowExtras(dashboard);
+
         var top = dashboard.BusiestStations.Count > 0 ? dashboard.BusiestStations[0].Count : 0;
         Replace(
             BusiestStations,
@@ -336,6 +377,149 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             ))
         );
     }
+
+    private void ShowExtras(Dashboard dashboard)
+    {
+        var units = _units();
+        Replace(
+            FarthestDirect,
+            (dashboard.FarthestDirect ?? []).Select(h => new CountRow(
+                h.Station,
+                _text.Format(
+                    "Dashboard.Farthest.Row",
+                    new Dictionary<string, object?>
+                    {
+                        ["distance"] = Localization.RangeText.Distance(h.DistanceKm, units.Distance, _text),
+                        ["gateway"] = h.Gateway,
+                    }
+                ),
+                0,
+                Select(h.Station)
+            ))
+        );
+        var weather = dashboard.Weather;
+        WeatherText = weather is null
+            ? null
+            : _text.Format("Dashboard.Weather.Count", new Dictionary<string, object?> { ["count"] = weather.Stations });
+        var extremes = new List<CountRow>();
+        if (weather?.Coldest is { } cold)
+        {
+            extremes.Add(
+                Extreme(
+                    "Dashboard.Weather.Coldest",
+                    cold,
+                    Localization.WeatherText.Temperature(cold.Value, units.Temperature, _text)
+                )
+            );
+        }
+        if (weather?.Warmest is { } warm)
+        {
+            extremes.Add(
+                Extreme(
+                    "Dashboard.Weather.Warmest",
+                    warm,
+                    Localization.WeatherText.Temperature(warm.Value, units.Temperature, _text)
+                )
+            );
+        }
+        if (weather?.Gustiest is { } gust)
+        {
+            extremes.Add(
+                Extreme(
+                    "Dashboard.Weather.Gustiest",
+                    gust,
+                    Localization.WeatherText.Speed(gust.Value, units.Wind, _text)
+                )
+            );
+        }
+        Replace(WeatherExtremes, extremes);
+
+        if (dashboard.Tables is not { } tables)
+        {
+            return;
+        }
+        TablesText = _text.Format("Dashboard.Tables.Of", new Dictionary<string, object?> { ["count"] = tables.Total });
+        Platforms.Show(
+            tables.Platforms.Select(p =>
+                (
+                    p.Vendor is null && p.Model is null
+                        ? _text["Dashboard.Table.UnknownDevice"]
+                        : string.Join(' ', new[] { p.Vendor, p.Model }.Where(s => !string.IsNullOrWhiteSpace(s))),
+                    p.Class is { } c ? Label($"Filter.DeviceClass.{c}", c) : null,
+                    p.Count,
+                    p.Class is { } cls ? new StationFilter(DeviceClasses: [cls]) : (StationFilter?)null
+                )
+            ),
+            _useFilter
+        );
+        Symbols.Show(
+            tables.Symbols.Select(s =>
+                (
+                    s.Name,
+                    (string?)Label($"Filter.Category.{s.Category}", s.Category),
+                    s.Count,
+                    (StationFilter?)new StationFilter(Categories: [s.Category])
+                )
+            ),
+            _useFilter
+        );
+        StationKindsTable.Show(
+            tables.Kinds.Select(k =>
+                (
+                    _text[StationKindKey(k.Key)],
+                    (string?)null,
+                    k.Count,
+                    (StationFilter?)
+                        new StationFilter(
+                            Kinds: k.Key == nameof(StationKind.Station)
+                                ? StationKinds.Stations
+                                : StationKinds.ObjectsAndItems
+                        )
+                )
+            ),
+            _useFilter
+        );
+        Reception.Show(
+            tables.Reception.Select(r =>
+                (
+                    _text[ArrivalKey(Enum.TryParse<ArrivalKind>(r.Key, out var kind) ? kind : ArrivalKind.Unknown)],
+                    (string?)null,
+                    r.Count,
+                    r.Key switch
+                    {
+                        nameof(ArrivalKind.Direct) => new StationFilter(Reception: Contracts.Reception.Direct),
+                        nameof(ArrivalKind.Digipeated) => new StationFilter(Reception: Contracts.Reception.Digipeated),
+                        nameof(ArrivalKind.Internet) => new StationFilter(Reception: Contracts.Reception.Internet),
+                        _ => (StationFilter?)null,
+                    }
+                )
+            ),
+            _useFilter
+        );
+    }
+
+    /// <summary>"KE0PVI · Coldest 44 °F": the station is the link.</summary>
+    private CountRow Extreme(string key, DashboardReading reading, string value) =>
+        new(
+            reading.Station,
+            _text.Format(
+                "Dashboard.Weather.Row",
+                new Dictionary<string, object?> { ["what"] = _text[key], ["value"] = value }
+            ),
+            0,
+            Select(reading.Station)
+        );
+
+    /// <summary>A label from the strings when there is one, the value as it is otherwise.</summary>
+    private string Label(string key, string fallback) => Localizer.Exists(key) ? _text[key] : fallback;
+
+    private static string StationKindKey(string kind) =>
+        kind switch
+        {
+            nameof(StationKind.Object) => "Dashboard.Table.Kind.Object",
+            nameof(StationKind.Item) => "Dashboard.Table.Kind.Item",
+            _ => "Dashboard.Table.Kind.Station",
+        };
 
     /// <summary>Opens the packet list with Issues only on (behavior 5).</summary>
     [RelayCommand]

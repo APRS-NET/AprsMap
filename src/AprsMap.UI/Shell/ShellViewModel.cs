@@ -189,6 +189,15 @@ public sealed partial class ShellViewModel : ObservableObject
         OnChanged();
     }
 
+    /// <summary>Brings the map's tab to the front (a dashboard row applied a filter to it, F1.22 behavior 12).</summary>
+    public void ShowMap()
+    {
+        if (Dockables(Layout).OfType<MapDocument>().FirstOrDefault() is { Owner: IDock owner } map)
+        {
+            owner.ActiveDockable = map;
+        }
+    }
+
     /// <summary>The dashboard shown and brought to the front, as a tab beside the map if it was closed (F1.22 behavior 1).</summary>
     private void ShowDashboard()
     {
