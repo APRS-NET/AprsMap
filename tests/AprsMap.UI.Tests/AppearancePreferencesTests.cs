@@ -32,6 +32,7 @@ public sealed class AppearancePreferencesTests : IDisposable
         MapSymbolScale = 1.5,
         MapBrightness = MapBrightness.Dark,
         MapLabels = MapLabels.None,
+        ShowFilterCircles = true,
         MapProvider = "topo",
         Language = "de",
     };
