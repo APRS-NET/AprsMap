@@ -514,6 +514,13 @@ public sealed partial class MainViewModel : ObservableObject
             }
         }
         StationCount = _stations.Count;
+        if (
+            _routeQuery is { Path: null, TrackPoint: null } following
+            && batch.Changed.Any(s => s.Name == following.Name)
+        )
+        {
+            _ = ShowRouteAsync(following); // the station's last packet changed
+        }
         StationsChanged?.Invoke(this, batch);
         Details.Changed(batch);
         StationList.Changed();
@@ -545,9 +552,64 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSelectedStationChanged(string? value)
     {
         _ = Details.ShowAsync(value);
+        _ = ShowRouteAsync(value is null ? null : new RouteQuery(value));
         if (value is not null)
         {
             LastSelectedStation = value;
+        }
+    }
+
+    /// <summary>
+    /// The route drawn for the selection (docs/features/F1.21-rf-paths.md, behavior 2): the selected station's last
+    /// packet, a packet picked in the list, or a track point's; null for none.
+    /// </summary>
+    [ObservableProperty]
+    public partial PacketRoute? Route { get; private set; }
+
+    private RouteQuery? _routeQuery;
+    private int _routeLoads;
+
+    /// <summary>A packet picked in the packet list: its station is selected and that packet's route shown.</summary>
+    public void SelectPacket(PacketView packet)
+    {
+        ArgumentNullException.ThrowIfNull(packet);
+        if (packet.Source.Length == 0)
+        {
+            return;
+        }
+        SelectedStation = packet.Source;
+        _ = ShowRouteAsync(
+            new RouteQuery(packet.Source, packet.Path ?? string.Empty, packet.Latitude, packet.Longitude)
+        );
+    }
+
+    /// <summary>A point of the selected station's track picked on the map: that packet's route (F1.5 behavior 6).</summary>
+    public void SelectTrackPoint(string name, DateTimeOffset time)
+    {
+        SelectedStation = name;
+        _ = ShowRouteAsync(new RouteQuery(name, TrackPoint: time));
+    }
+
+    private async Task ShowRouteAsync(RouteQuery? query)
+    {
+        _routeQuery = query;
+        var load = ++_routeLoads;
+        PacketRoute? route = null;
+        if (query is not null)
+        {
+            try
+            {
+                route = await engine.GetRouteAsync(query);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
+            {
+                route = null; // the engine went away; the next selection asks again
+            }
+        }
+        if (load == _routeLoads)
+        {
+            Route = route;
+            Details.ShowRoute(route);
         }
     }
 

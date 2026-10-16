@@ -286,12 +286,71 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
             if (entry.Track.Count > 1)
             {
                 entry.Track.RemoveRange(0, entry.Track.Count - 1);
+                entry.TrackPaths.RemoveRange(0, entry.TrackPaths.Count - 1);
                 foreach (var watcher in _watchers)
                 {
                     watcher.ResetTrack(name, entry.Track);
                 }
             }
             return true;
+        }
+    }
+
+    /// <summary>
+    /// How a packet of <paramref name="query"/>'s station travelled (F1.21 behavior 2), with each hop's last known
+    /// position; null when there's no such station or track point.
+    /// </summary>
+    public PacketRoute? Route(RouteQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        lock (_gate)
+        {
+            if (!_entries.TryGetValue(query.Name, out var entry))
+            {
+                return null;
+            }
+            var path = query.Path ?? entry.Path;
+            double? latitude = entry.Latitude;
+            double? longitude = entry.Longitude;
+            if (query.Path is null && query.TrackPoint is { } time)
+            {
+                var index = entry.Track.FindIndex(p => p.Time == time);
+                if (index < 0)
+                {
+                    return null;
+                }
+                path = entry.TrackPaths[index];
+                (latitude, longitude) = (entry.Track[index].Latitude, entry.Track[index].Longitude);
+            }
+            if (query is { Latitude: { } lat, Longitude: { } lon })
+            {
+                (latitude, longitude) = (lat, lon);
+            }
+            var (kind, names) = StationFacts.Route(path);
+            var hops = new List<RouteHop>(names.Count);
+            AprsPosition? last = latitude is { } la && longitude is { } lo ? new AprsPosition(la, lo) : null;
+            foreach (var (name, isGateway) in names)
+            {
+                if (_entries.TryGetValue(name, out var hop) && hop.HasPosition)
+                {
+                    var at = new AprsPosition(hop.Latitude!.Value, hop.Longitude!.Value);
+                    hops.Add(
+                        new RouteHop(
+                            name,
+                            isGateway,
+                            at.Latitude,
+                            at.Longitude,
+                            last is { } from ? Geodesy.DistanceKm(from, at) : null
+                        )
+                    );
+                    last = at;
+                }
+                else
+                {
+                    hops.Add(new RouteHop(name, isGateway));
+                }
+            }
+            return new PacketRoute(entry.Name, kind, latitude, longitude, hops);
         }
     }
 
@@ -465,9 +524,11 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         )
         {
             track[^1] = track[^1] with { Time = point.Time };
+            entry.TrackPaths[^1] = entry.Path;
             return;
         }
         track.Add(point);
+        entry.TrackPaths.Add(entry.Path);
         foreach (var watcher in _watchers)
         {
             watcher.AddTrackPoint(entry.Name, point);
@@ -483,6 +544,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
             return;
         }
         entry.Track.RemoveRange(0, count);
+        entry.TrackPaths.RemoveRange(0, count);
         foreach (var watcher in _watchers)
         {
             watcher.DropTrackPoints(entry.Name, count);
@@ -549,6 +611,9 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
 
         /// <summary>Where it has been, oldest first (F1.5).</summary>
         public List<TrackPoint> Track { get; } = [];
+
+        /// <summary>The path of the packet behind each track point, for its route (F1.21 behavior 2).</summary>
+        public List<string?> TrackPaths { get; } = [];
 
         public bool HasPosition => Latitude is not null && Longitude is not null;
 

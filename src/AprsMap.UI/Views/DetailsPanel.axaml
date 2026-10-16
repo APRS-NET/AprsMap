@@ -186,6 +186,18 @@
           />
           <SelectableTextBlock x:Name="ArrivalValue" Grid.Column="1" Text="{Binding ArrivalText}" TextWrapping="Wrap" />
         </Grid>
+        <Grid IsVisible="{Binding RouteText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Route}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock x:Name="RouteValue" Grid.Column="1" Text="{Binding RouteText}" TextWrapping="Wrap" />
+        </Grid>
         <Grid IsVisible="{Binding HeardViaText, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />

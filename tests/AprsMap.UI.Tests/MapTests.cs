@@ -230,6 +230,7 @@ public sealed class MapTests
                 "map.brightness",
                 "map.labels",
                 "map.tracks",
+                "map.paths",
                 "map.symbol-size",
                 "map.filter-circles",
                 "map.stale-after",

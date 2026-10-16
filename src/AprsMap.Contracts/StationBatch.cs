@@ -116,6 +116,54 @@ public sealed record StationDevice(string? Vendor, string? Model, string? Class)
 /// <param name="Gateway">The IGate that put it on APRS-IS, or the server the sender connected to; null when unknown.</param>
 public sealed record StationArrival(ArrivalKind Kind, IReadOnlyList<string> Digipeaters, string? Gateway);
 
+/// <summary>
+/// Which packet's route to work out (docs/features/F1.21-rf-paths.md, behavior 2): a station's last packet, the packet
+/// behind one of its track points, or a packet the caller has (from the packet list).
+/// </summary>
+/// <param name="Name">The station, object or item.</param>
+/// <param name="Path">The packet's path as sent (<see cref="PacketView.Path"/>); null for the station's own.</param>
+/// <param name="Latitude">Where the packet was sent from; null for the station's position.</param>
+/// <param name="Longitude">Where the packet was sent from; null for the station's position.</param>
+/// <param name="TrackPoint">The time of the track point whose packet to use (<see cref="TrackPoint.Time"/>).</param>
+public sealed record RouteQuery(
+    string Name,
+    string? Path = null,
+    double? Latitude = null,
+    double? Longitude = null,
+    DateTimeOffset? TrackPoint = null
+);
+
+/// <summary>How one packet travelled, for drawing and words (docs/features/F1.21-rf-paths.md, behavior 2).</summary>
+/// <param name="Name">The station that sent it.</param>
+/// <param name="Kind">Heard directly, digipeated, from the internet, or not said by the path.</param>
+/// <param name="Latitude">Where it was sent from, when known.</param>
+/// <param name="Longitude">Where it was sent from, when known.</param>
+/// <param name="Hops">
+/// The stations it went through in order: each digipeater that named itself, then the IGate that put it on APRS-IS.
+/// Empty for a packet that never went over RF.
+/// </param>
+public sealed record PacketRoute(
+    string Name,
+    ArrivalKind Kind,
+    double? Latitude,
+    double? Longitude,
+    IReadOnlyList<RouteHop> Hops
+);
+
+/// <summary>One station a packet went through.</summary>
+/// <param name="Name">Its callsign.</param>
+/// <param name="IsGateway">The IGate that heard it last and put it on APRS-IS; otherwise a digipeater.</param>
+/// <param name="Latitude">Its last known position; null when it hasn't sent one.</param>
+/// <param name="Longitude">Its last known position; null when it hasn't sent one.</param>
+/// <param name="DistanceKm">How far it is from the last known point before it; null when either is unknown.</param>
+public sealed record RouteHop(
+    string Name,
+    bool IsGateway,
+    double? Latitude = null,
+    double? Longitude = null,
+    double? DistanceKm = null
+);
+
 /// <summary>How a packet reached the engine.</summary>
 public enum ArrivalKind
 {

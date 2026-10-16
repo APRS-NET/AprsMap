@@ -558,6 +558,13 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <inheritdoc />
+    public Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return Task.FromResult(_stations.Route(query));
+    }
+
+    /// <inheritdoc />
     public Task ClearTrackAsync(string name, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(name);

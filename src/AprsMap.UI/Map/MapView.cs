@@ -128,6 +128,7 @@ public sealed class MapView : Control, IDisposable
         );
         Watch("Map.ShowFilterCircles", v => ShowFilterCircles = v is true);
         Watch("Map.Tracks", v => Tracks = v is MapTracks tracks ? tracks : MapTracks.All);
+        Watch("Map.Paths", v => Paths = v is MapPaths paths ? paths : MapPaths.SelectedStation);
         Watch(
             "Color.Track",
             v =>
@@ -217,6 +218,43 @@ public sealed class MapView : Control, IDisposable
             InvalidateVisual();
         }
     }
+
+    /// <summary>Which packet paths are drawn (F1.21 behavior 6).</summary>
+    public MapPaths Paths
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = MapPaths.SelectedStation;
+
+    /// <summary>The route of the selected packet, drawn with <see cref="Paths"/> on (F1.21 behavior 2).</summary>
+    public PacketRoute? Route
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>Raised when a point of the selected station's track is clicked, with the station and the point's time.</summary>
+    public event EventHandler<(string Name, DateTimeOffset Time)>? TrackPointPicked;
+
+    /// <summary>This frame's route drawing; null with nothing to draw.</summary>
+    internal RouteFrame? BuildRoute(Viewport viewport) =>
+        Paths == MapPaths.Off
+            ? null
+            : RouteFrame.Build(
+                Route,
+                (x, y) => ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default)),
+                (float)(_symbolDip / 2),
+                _followedColour,
+                _casingColour
+            );
 
     /// <summary>The tracks held, for tests.</summary>
     internal TrackLayer TrackLayer => _tracks;
@@ -476,6 +514,7 @@ public sealed class MapView : Control, IDisposable
             TrackStyleFor,
             new TrackColours(_trackColour, _followedColour, _casingColour)
         );
+        var route = BuildRoute(viewport);
         context.Custom(
             new DrawOperation(
                 new Rect(Bounds.Size),
@@ -485,9 +524,14 @@ public sealed class MapView : Control, IDisposable
                 (float)_symbolDip,
                 _dot,
                 EffectiveDimming,
-                tracks
+                tracks,
+                route
             )
         );
+        if (route?.DirectLabel is var (at, km))
+        {
+            DrawRouteLabel(context, new Point(at.X, at.Y), km);
+        }
         DrawFilterAreas(context, viewport);
         DrawLabels(context, marks, screen);
         if (Selected is { } name && _ringPen is not null && FindIndex(marks, name) is { } selected)
@@ -499,6 +543,26 @@ public sealed class MapView : Control, IDisposable
         {
             Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
         }
+    }
+
+    /// <summary>The distance of a direct route, on the dotted line, in a box like a label's halo (F1.21 behavior 2).</summary>
+    private void DrawRouteLabel(DrawingContext context, Point at, double km)
+    {
+        if (_labelBrush is null || _haloBrush is null)
+        {
+            return;
+        }
+        var text = new FormattedText(
+            Localization.RangeText.Distance(km, DistanceUnit, Localization.Localizer.Instance),
+            Localization.Localizer.Instance.Culture,
+            FlowDirection.LeftToRight,
+            Typeface.Default,
+            _labelSize,
+            _labelBrush
+        );
+        var box = new Rect(at.X - (text.Width / 2) - 3, at.Y - (text.Height / 2) - 1, text.Width + 6, text.Height + 2);
+        context.DrawRectangle(_haloBrush, null, box, 3, 3);
+        context.DrawText(text, new Point(box.X + 3, box.Y + 1));
     }
 
     /// <summary>How a station's track is drawn now, or null for not at all (F1.5 behaviors 6–8).</summary>
@@ -746,7 +810,20 @@ public sealed class MapView : Control, IDisposable
         var at = e.GetPosition(this);
         if (_pressedAt is { } pressed && Math.Abs(at.X - pressed.X) + Math.Abs(at.Y - pressed.Y) < ClickDistance)
         {
-            Select(HitTest(at)?.Name); // a click on a station selects it; on the background, clears (behavior 18)
+            var hit = HitTest(at)?.Name;
+            if (
+                hit is null
+                && Selected is { } selected
+                && _tracks.PointAt(selected, _map.Navigator.Viewport, new SKPoint((float)at.X, (float)at.Y), 6)
+                    is { } time
+            )
+            {
+                TrackPointPicked?.Invoke(this, (selected, time)); // the packet behind a point of the selected track
+            }
+            else
+            {
+                Select(hit); // a click on a station selects it; on the background, clears (behavior 18)
+            }
         }
         _pressedAt = null;
         QueueRefresh();
@@ -1018,12 +1095,17 @@ public sealed class MapView : Control, IDisposable
         float symbolDip,
         SKColor dot,
         double dimming,
-        TrackLayer.TrackFrame tracks
+        TrackLayer.TrackFrame tracks,
+        RouteFrame? route
     ) : ICustomDrawOperation
     {
         public Rect Bounds => bounds;
 
-        public void Dispose() => tracks.Dispose();
+        public void Dispose()
+        {
+            tracks.Dispose();
+            route?.Dispose();
+        }
 
         public bool Equals(ICustomDrawOperation? other) => false;
 
@@ -1061,6 +1143,7 @@ public sealed class MapView : Control, IDisposable
             canvas.Restore();
             // Tracks over the tiles and under the symbols (F1.5 behavior 5).
             tracks.Draw(canvas);
+            route?.Draw(canvas); // the selected packet's route over the tracks (F1.21 behavior 2)
             // Stations over the tiles (and over the dimming, so they keep their contrast).
             owner._stations.Draw(canvas, marks, screen, symbolDip, Math.Max(1f, canvas.TotalMatrix.ScaleX), dot);
         }

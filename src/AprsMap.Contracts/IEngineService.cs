@@ -35,6 +35,13 @@ public interface IEngineService
     Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// How a packet travelled (docs/features/F1.21-rf-paths.md, behavior 2): the station's last packet, a track point's,
+    /// or one from the packet list, with the position of each digipeater and IGate the engine knows. Null when the
+    /// engine has no such station or track point.
+    /// </summary>
+    Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Empties a station's track except its latest point (docs/features/F1.5-tracks.md, behavior 10); the change streams
     /// to every viewer. Nothing happens when there's no such track.
     /// </summary>

@@ -46,6 +46,22 @@ def stations(around, count):
     ]
 
 
+# The IGates and digipeaters the paths name, with positions near the stations so a route can be drawn (F1.21).
+INFRASTRUCTURE = [("N0GATE-1", 0.1, 0.1, "/&"), ("N0GATE-2", -0.2, -0.1, "/&"), ("N0DIGI-1", 0.15, -0.2, "/#"),
+                  ("N0DIGI-2", -0.1, 0.25, "/#")]
+
+# How the stations' reports arrive: heard directly by an IGate, through a digipeater, or from the internet.
+PATHS = ["WIDE1-1,qAR,N0GATE-1", "N0DIGI-1*,WIDE2-1,qAR,N0GATE-1", "TCPIP*,qAC,FAKE", "N0DIGI-2*,WIDE2-1,qAR,N0GATE-2"]
+
+
+def beacon_infrastructure(stream, around):
+    if around is None:
+        return
+    for call, dlat, dlon, symbol in INFRASTRUCTURE:
+        line = f"{call}>APRS,TCPIP*,qAC,FAKE:{aprs_position(around[0] + dlat, around[1] + dlon, symbol, ' fake')}"
+        stream.write((line + "\r\n").encode())
+
+
 def serve(connection, number, around, count):
     stream = connection.makefile("rwb")
     fleet = stations(around, count)
@@ -60,7 +76,10 @@ def serve(connection, number, around, count):
             line = f"{station['call']}>APRS,TCPIP*,qAC,FAKE:{aprs_position(station['lat'], station['lon'], station['symbol'], ' simulated')}"
             stream.write((line + "\r\n").encode())
         stream.flush()
+        beacon_infrastructure(stream, around)
         for i in range(100000):
+            if i % 60 == 59:
+                beacon_infrastructure(stream, around)
             # Heard direct, digipeated or from the internet, for the packet list's markers; now and then the same
             # packet again through a second IGate, as a duplicate.
             path = ["WIDE1-1,qAR,N0GATE-1", "N0DIGI-1*,WIDE2-1,qAR,N0GATE-1", "TCPIP*,qAC,FAKE"][i % 3]
@@ -76,7 +95,7 @@ def serve(connection, number, around, count):
                 if station["moving"] and (n + i) % 10 == 0:
                     station["lat"] += 0.02 * math.cos(station["heading"])
                     station["lon"] += 0.02 * math.sin(station["heading"])
-                    line = f"{station['call']}>APRS,TCPIP*,qAC,FAKE:{aprs_position(station['lat'], station['lon'], station['symbol'], ' moving')}"
+                    line = f"{station['call']}>APRS,{PATHS[n % len(PATHS)]}:{aprs_position(station['lat'], station['lon'], station['symbol'], ' moving')}"
                     stream.write((line + "\r\n").encode())
             stream.flush()
             time.sleep(1)

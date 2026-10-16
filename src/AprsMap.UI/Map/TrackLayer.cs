@@ -36,6 +36,31 @@ internal sealed class TrackLayer
     /// <summary>The points held for <paramref name="name"/>, in map coordinates, oldest first; empty for none.</summary>
     public IReadOnlyList<MPoint> PointsOf(string name) => _tracks.TryGetValue(name, out var track) ? track.Points : [];
 
+    /// <summary>
+    /// The time of the point of <paramref name="name"/>'s track nearest <paramref name="at"/> on screen, within
+    /// <paramref name="slop"/> pixels; null when none is that close (F1.5: a selected track's point picks its packet).
+    /// </summary>
+    public DateTimeOffset? PointAt(string name, Mapsui.Viewport viewport, SKPoint at, float slop)
+    {
+        if (!_tracks.TryGetValue(name, out var track))
+        {
+            return null;
+        }
+        DateTimeOffset? best = null;
+        var bestDistance = slop * slop;
+        for (var i = 0; i < track.Points.Count; i++)
+        {
+            var p = Screen(viewport, track.Points[i]);
+            var d = ((p.X - at.X) * (p.X - at.X)) + ((p.Y - at.Y) * (p.Y - at.Y));
+            if (d <= bestDistance)
+            {
+                bestDistance = d;
+                best = track.Times[i];
+            }
+        }
+        return best;
+    }
+
     public void Clear() => _tracks.Clear();
 
     public void Remove(string name) => _tracks.Remove(name);
@@ -48,6 +73,7 @@ internal sealed class TrackLayer
             _tracks[update.Name] = track = new Track();
         }
         TrackUpdates.Apply(track.Points, update, ToMap);
+        TrackUpdates.Apply(track.Times, update, p => p.Time);
         track.Dirty = true;
         if (track.Points.Count == 0)
         {
@@ -121,6 +147,9 @@ internal sealed class TrackLayer
         private MRect _bounds = new(0, 0, 0, 0);
 
         public List<MPoint> Points { get; } = [];
+
+        /// <summary>When each point was heard, for picking its packet.</summary>
+        public List<DateTimeOffset> Times { get; } = [];
 
         public bool Dirty { get; set; } = true;
 

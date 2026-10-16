@@ -33,6 +33,9 @@ internal sealed class EngineHubEndpoint(
     public IAsyncEnumerable<StationBatch> WatchStations(CancellationToken cancellationToken) =>
         engine.WatchStationsAsync(cancellationToken);
 
+    [HubMethodName(EngineHub.GetRoute)]
+    public Task<PacketRoute?> GetRoute(RouteQuery query) => engine.GetRouteAsync(query, Context.ConnectionAborted);
+
     [HubMethodName(EngineHub.GetStation)]
     public Task<StationDetail?> GetStation(string name) => engine.GetStationAsync(name, Context.ConnectionAborted);
 

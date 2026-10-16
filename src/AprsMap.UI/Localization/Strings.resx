@@ -1288,6 +1288,27 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Map.RemoveAfter.Never" xml:space="preserve">
     <value>Never</value>
   </data>
+  <data name="Details.Label.Route" xml:space="preserve">
+    <value>Route</value>
+    <comment>Details: how the packet shown on the map travelled, hop by hop.</comment>
+  </data>
+  <data name="Details.Route.Internet" xml:space="preserve">
+    <value>Not heard on RF</value>
+  </data>
+  <data name="Details.Route.Direct" xml:space="preserve">
+    <value>Heard directly by {gateway}, {distance} away</value>
+    <comment>gateway: the IGate's callsign. distance: for example "23 km".</comment>
+  </data>
+  <data name="Details.Route.DirectUnknown" xml:space="preserve">
+    <value>Heard directly by {gateway}, whose position isn't known</value>
+  </data>
+  <data name="Details.Route.Hop" xml:space="preserve">
+    <value>{name} ({distance})</value>
+    <comment>One hop of a route, with the distance from the point before it. Hops are joined with arrows.</comment>
+  </data>
+  <data name="Details.Route.HopUnknown" xml:space="preserve">
+    <value>{name} (position unknown)</value>
+  </data>
   <data name="Details.ClearTrack" xml:space="preserve">
     <value>Clear track</value>
     <comment>Details: empties the station's drawn route, keeping where it is now.</comment>
@@ -1304,6 +1325,19 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Settings.Map.Tracks.None" xml:space="preserve">
     <value>None</value>
+  </data>
+  <data name="Settings.Map.Paths" xml:space="preserve">
+    <value>Packet paths</value>
+    <comment>Settings › Map: whether the route a selected packet took over the air is drawn.</comment>
+  </data>
+  <data name="Settings.Map.Paths.Help" xml:space="preserve">
+    <value>Draws how the selected station's last packet, or a packet picked in the list, reached the internet: dotted to the IGate that heard it, arrows through digipeaters.</value>
+  </data>
+  <data name="Settings.Map.Paths.SelectedStation" xml:space="preserve">
+    <value>Selected station</value>
+  </data>
+  <data name="Settings.Map.Paths.Off" xml:space="preserve">
+    <value>Off</value>
   </data>
   <data name="Settings.Map.TrackPoints" xml:space="preserve">
     <value>Positions kept per track</value>

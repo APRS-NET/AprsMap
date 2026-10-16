@@ -250,6 +250,21 @@ public static class SettingsRegistry
         );
         items.Add(
             new ChoiceSetting(
+                "map.paths",
+                "Settings.Map.Paths",
+                "Settings.Map.Paths.Help",
+                text,
+                () =>
+                    [
+                        (MapPaths.SelectedStation, text["Settings.Map.Paths.SelectedStation"]),
+                        (MapPaths.Off, text["Settings.Map.Paths.Off"]),
+                    ],
+                () => appearance.Current.MapPaths,
+                value => Update(s => s with { MapPaths = (MapPaths)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
                 "map.symbol-size",
                 "Settings.Map.SymbolSize",
                 "Settings.Map.SymbolSize.Help",

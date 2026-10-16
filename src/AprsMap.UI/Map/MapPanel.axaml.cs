@@ -59,6 +59,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
         _map.KeyDown += OnMapKeyDown;
         _map.ContextRequested += OnContextRequested;
         _map.PannedByHand += (_, _) => StopFollowing();
+        _map.TrackPointPicked += (_, point) => _main?.SelectTrackPoint(point.Name, point.Time);
         StopFollowingButton.Click += (_, _) => StopFollowing();
         SetMyLocationItem.Click += (_, _) =>
         {
@@ -101,6 +102,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.CentreOnStationRequested += OnCentreOnStation;
             _map.SetStations(_main.Stations);
             _map.SetTracks(_main.Tracks);
+            _map.Route = _main.Route;
             _map.SetFilterAreas(_main.FilterAreas);
             ShowFollowed();
             _map.Select(_main.SelectedStation);
@@ -282,6 +284,10 @@ public sealed partial class MapPanel : UserControl, IDisposable
         if (e.PropertyName == nameof(MainViewModel.SelectedStation) && _main is not null)
         {
             _map.Select(_main.SelectedStation);
+        }
+        else if (e.PropertyName == nameof(MainViewModel.Route) && _main is not null)
+        {
+            _map.Route = _main.Route;
         }
         else if (e.PropertyName == nameof(MainViewModel.FilterAreas) && _main is not null)
         {

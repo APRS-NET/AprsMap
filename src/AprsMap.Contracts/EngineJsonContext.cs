@@ -18,6 +18,8 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(PacketFilter))]
 [JsonSerializable(typeof(StationBatch))]
 [JsonSerializable(typeof(StationDetail))]
+[JsonSerializable(typeof(RouteQuery))]
+[JsonSerializable(typeof(PacketRoute))]
 [JsonSerializable(typeof(StationQuery))]
 [JsonSerializable(typeof(MapViewReport))]
 [JsonSerializable(typeof(StationPage))]

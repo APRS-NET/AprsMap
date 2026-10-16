@@ -172,6 +172,18 @@ internal sealed class FakeEngine : IEngineService
 
     public int Reconnects { get; private set; }
 
+    /// <summary>What <see cref="GetRouteAsync"/> answers, by station; none by default.</summary>
+    public Dictionary<string, PacketRoute> Routes { get; } = [];
+
+    /// <summary>The queries <see cref="GetRouteAsync"/> was asked, in order.</summary>
+    public List<RouteQuery> RouteQueries { get; } = [];
+
+    public Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default)
+    {
+        RouteQueries.Add(query);
+        return Task.FromResult(Routes.GetValueOrDefault(query.Name));
+    }
+
     /// <summary>The stations whose track <see cref="ClearTrackAsync"/> cleared, in order.</summary>
     public List<string> ClearedTracks { get; } = [];
 

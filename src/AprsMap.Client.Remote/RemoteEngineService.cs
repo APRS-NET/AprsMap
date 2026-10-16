@@ -134,6 +134,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ResetSettings, cancellationToken));
 
     /// <inheritdoc />
+    public Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<PacketRoute?>(EngineHub.GetRoute, query, cancellationToken));
+
+    /// <inheritdoc />
     public Task ClearTrackAsync(string name, CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ClearTrack, name, cancellationToken));
 

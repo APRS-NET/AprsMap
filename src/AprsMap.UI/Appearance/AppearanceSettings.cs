@@ -96,6 +96,16 @@ public enum MapTracks
     None,
 }
 
+/// <summary>Which packet paths the map draws (docs/features/F1.21-rf-paths.md, behavior 6).</summary>
+public enum MapPaths
+{
+    /// <summary>The route of the selected station's, packet's or track point's packet.</summary>
+    SelectedStation,
+
+    /// <summary>No paths.</summary>
+    Off,
+}
+
 /// <summary>Icon size in the UI chrome (map symbols have their own scale).</summary>
 public enum IconSize
 {
@@ -171,6 +181,9 @@ public sealed record AppearanceSettings
 
     /// <summary>Which tracks the map draws (F1.5 behavior 8).</summary>
     public MapTracks MapTracks { get; init; } = MapTracks.All;
+
+    /// <summary>Which packet paths the map draws (F1.21 behavior 6).</summary>
+    public MapPaths MapPaths { get; init; } = MapPaths.SelectedStation;
 
     /// <summary>The tile provider's key, or null for the first one the engine offers (F1.4 behavior 11).</summary>
     public string? MapProvider { get; init; }

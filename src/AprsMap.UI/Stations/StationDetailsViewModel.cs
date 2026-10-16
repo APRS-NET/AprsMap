@@ -39,7 +39,11 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         _time = time;
         _text = text;
         _units = units;
-        _text.LanguageChanged += (_, _) => Write();
+        _text.LanguageChanged += (_, _) =>
+        {
+            Write();
+            RouteText = Words(_route);
+        };
     }
 
     /// <summary>Raised by Centre: the map centres on the station (behavior 4).</summary>
@@ -131,6 +135,64 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     /// <summary>The map's chip while following: "Following N0CALL-9" (F1.7 behavior 8).</summary>
     public string? FollowingText =>
         IsFollowing ? _text.Format("Map.Following", new Dictionary<string, object?> { ["name"] = Name }) : null;
+
+    /// <summary>
+    /// The route of the packet shown on the map in words (F1.21 behavior 2): "Heard directly by N0GATE-1, 23 km away",
+    /// or each hop with its distance; "Not heard on RF" for a packet from the internet. Null when the path says nothing.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? RouteText { get; private set; }
+
+    private PacketRoute? _route;
+
+    /// <summary>Shows <paramref name="route"/> in words.</summary>
+    internal void ShowRoute(PacketRoute? route)
+    {
+        _route = route;
+        RouteText = Words(route);
+    }
+
+    private string? Words(PacketRoute? route)
+    {
+        if (route is null)
+        {
+            return null;
+        }
+        var unit = _units().Distance;
+        string Hop(RouteHop hop) =>
+            hop.DistanceKm is { } km
+                ? _text.Format(
+                    "Details.Route.Hop",
+                    new Dictionary<string, object?>
+                    {
+                        ["name"] = hop.Name,
+                        ["distance"] = Localization.RangeText.Distance(km, unit, _text),
+                    }
+                )
+                : _text.Format("Details.Route.HopUnknown", new Dictionary<string, object?> { ["name"] = hop.Name });
+        return route.Kind switch
+        {
+            ArrivalKind.Internet => _text["Details.Route.Internet"],
+            ArrivalKind.Direct when route.Hops is [{ } gateway] => gateway.DistanceKm is { } km
+                ? _text.Format(
+                    "Details.Route.Direct",
+                    new Dictionary<string, object?>
+                    {
+                        ["gateway"] = gateway.Name,
+                        ["distance"] = Localization.RangeText.Distance(km, unit, _text),
+                    }
+                )
+                : _text.Format(
+                    "Details.Route.DirectUnknown",
+                    new Dictionary<string, object?> { ["gateway"] = gateway.Name }
+                ),
+            ArrivalKind.Digipeated when route.Hops.Count > 0 => string.Join(
+                " → ",
+                [route.Name, .. route.Hops.Select(Hop)]
+            ),
+            _ => null,
+        };
+    }
 
     /// <summary>Whether Clear track is offered: the station has a track, and this viewer may clear it (F1.5 behavior 10).</summary>
     [ObservableProperty]
