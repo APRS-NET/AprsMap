@@ -99,14 +99,13 @@ public enum MapTracks
 /// <summary>Which packet paths the map draws (docs/features/F1.21-rf-paths.md, behavior 6).</summary>
 public enum MapPaths
 {
-    /// <summary>The route of the selected station's, packet's or track point's packet.</summary>
+    /// <summary>
+    /// The selected station's RF links over the last hour, and the route of a packet or track point picked.
+    /// </summary>
     SelectedStation,
 
     /// <summary>No paths.</summary>
     Off,
-
-    /// <summary>The RF network over the last hour: every link, thicker for more packets (behavior 5).</summary>
-    Network,
 }
 
 /// <summary>What a weather station's map label adds under its callsign (docs/features/F1.10-weather.md, behavior 4).</summary>
@@ -210,6 +209,9 @@ public sealed record AppearanceSettings
 
     /// <summary>Which packet paths the map draws (F1.21 behavior 6).</summary>
     public MapPaths MapPaths { get; init; } = MapPaths.SelectedStation;
+
+    /// <summary>Whether every RF link of the last hour is drawn, not just the selected station's (F1.21 behavior 5).</summary>
+    public bool ShowAllLinks { get; init; }
 
     /// <summary>Whether area objects are drawn as their shapes (F1.12 behavior 7).</summary>
     public bool ShowAreas { get; init; } = true;

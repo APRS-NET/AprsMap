@@ -145,8 +145,8 @@ internal sealed class RouteFrame : IDisposable
 }
 
 /// <summary>
-/// The RF network's links (docs/features/F1.21-rf-paths.md, behavior 5): a line between each link's ends in the track
-/// colour, thicker for more packets. Built on the UI thread, drawn on the render thread.
+/// The RF network's links (docs/features/F1.21-rf-paths.md, behavior 5): a dashed line between each link's ends in the
+/// track colour, thicker for more packets. Built on the UI thread, drawn on the render thread.
 /// </summary>
 internal sealed class LinkFrame : IDisposable
 {
@@ -198,13 +198,16 @@ internal sealed class LinkFrame : IDisposable
         {
             IsAntialias = true,
             Style = SKPaintStyle.Stroke,
-            StrokeCap = SKStrokeCap.Round,
+            StrokeCap = SKStrokeCap.Butt,
         };
         foreach (var casing in new[] { true, false })
         {
             foreach (var (path, width) in _paths)
             {
-                paint.Color = casing ? _casing.WithAlpha(160) : _colour.WithAlpha(210);
+                // Dashes that grow with the line, so a thick link still reads as dashed, apart from a solid track.
+                using var dashes = SKPathEffect.CreateDash([width * 4 + 4, width * 2 + 4], 0);
+                paint.PathEffect = dashes;
+                paint.Color = casing ? _casing.WithAlpha(160) : _colour.WithAlpha(230);
                 paint.StrokeWidth = casing ? width + 2 : width;
                 canvas.DrawPath(path, paint);
             }

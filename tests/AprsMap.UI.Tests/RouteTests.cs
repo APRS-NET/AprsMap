@@ -91,6 +91,7 @@ public sealed class RouteTests
 
         Assert.Equal(new RouteQuery("N0CALL-9"), engine.RouteQueries[^1]);
         Assert.Equal("Heard directly by N0GATE-1, 19 km away", vm.Details.RouteText);
+        Assert.Null(vm.PickedRoute); // the map shows a selected station's links, not its last route
     }
 
     [Fact]
@@ -107,6 +108,7 @@ public sealed class RouteTests
 
         Assert.Equal("N0CALL-9", vm.SelectedStation);
         Assert.Equal(new RouteQuery("N0CALL-9", "N0DIGI-1*", 49, -72), engine.RouteQueries[^1]);
+        Assert.Same(vm.Route, vm.PickedRoute);
         Assert.Equal("N0CALL-9 → N0DIGI-1 (9.7 km) → N0GATE-1 (21 km)", vm.Details.RouteText);
     }
 

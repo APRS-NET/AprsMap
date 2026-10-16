@@ -137,6 +137,7 @@ public sealed class MapView : Control, IDisposable
         );
         Watch("Map.Wind", v => Wind = v is MapWind wind ? wind : MapWind.Off);
         Watch("Map.ShowAreas", v => ShowAreas = v is not false);
+        Watch("Map.ShowAllLinks", v => ShowAllLinks = v is true);
         for (var i = 0; i < _areaColours.Length; i++)
         {
             var token = i;
@@ -385,10 +386,32 @@ public sealed class MapView : Control, IDisposable
         }
     } = MapPaths.SelectedStation;
 
-    /// <summary>Raised when <see cref="Paths"/> changes: the network's links are loaded when it's chosen.</summary>
+    /// <summary>
+    /// Raised when <see cref="Paths"/> or <see cref="ShowAllLinks"/> changes: the network's links are loaded unless
+    /// paths are off.
+    /// </summary>
     public event EventHandler? PathsChanged;
 
-    /// <summary>The route of the selected packet, drawn with <see cref="Paths"/> on (F1.21 behavior 2).</summary>
+    /// <summary>Whether every RF link is drawn rather than only the selected station's (F1.21 behavior 5).</summary>
+    public bool ShowAllLinks
+    {
+        get;
+        set
+        {
+            var changed = field != value;
+            field = value;
+            InvalidateVisual();
+            if (changed)
+            {
+                PathsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The route of a packet or track point picked, drawn with <see cref="Paths"/> on (F1.21 behavior 2); a selected
+    /// station shows its links instead.
+    /// </summary>
     public PacketRoute? Route
     {
         get;
@@ -402,7 +425,10 @@ public sealed class MapView : Control, IDisposable
     /// <summary>Raised when a point of the selected station's track is clicked, with the station and the point's time.</summary>
     public event EventHandler<(string Name, DateTimeOffset Time)>? TrackPointPicked;
 
-    /// <summary>The RF network's links, drawn with <see cref="Paths"/> set to Network (F1.21 behavior 5).</summary>
+    /// <summary>
+    /// The RF network's links (F1.21 behavior 5): the selected station's are drawn, or all of them with
+    /// <see cref="ShowAllLinks"/>.
+    /// </summary>
     public IReadOnlyList<NetworkLink> Links
     {
         get;
@@ -413,16 +439,23 @@ public sealed class MapView : Control, IDisposable
         }
     } = [];
 
-    /// <summary>This frame's network links; null unless Paths shows the network.</summary>
-    internal LinkFrame? BuildLinks(Viewport viewport) =>
-        Paths == MapPaths.Network && Links.Count > 0
-            ? LinkFrame.Build(
-                Links,
+    /// <summary>This frame's network links: all of them, the selected station's, or null with none to draw.</summary>
+    internal LinkFrame? BuildLinks(Viewport viewport)
+    {
+        if (Paths == MapPaths.Off || Links.Count == 0 || (!ShowAllLinks && Selected is null))
+        {
+            return null;
+        }
+        var links = ShowAllLinks ? Links : [.. Links.Where(l => l.From == Selected || l.To == Selected)];
+        return links.Count == 0
+            ? null
+            : LinkFrame.Build(
+                links,
                 (x, y) => ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default)),
                 _trackColour,
                 _casingColour
-            )
-            : null;
+            );
+    }
 
     /// <summary>This frame's route drawing; null with nothing to draw.</summary>
     internal RouteFrame? BuildRoute(Viewport viewport) =>
