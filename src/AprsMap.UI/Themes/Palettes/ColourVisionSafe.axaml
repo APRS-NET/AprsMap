@@ -18,6 +18,7 @@
       <Color x:Key="Color.AccentSoft">#E3EEF6</Color>
       <Color x:Key="Color.Transmit">#9A3562</Color>
       <Color x:Key="Color.Ok">#00558A</Color>
+      <Color x:Key="Color.OkSoft">#E0EEF7</Color>
       <Color x:Key="Color.Warn">#8F5A00</Color>
       <Color x:Key="Color.Scrim">#6616191D</Color>
     </ResourceDictionary>
@@ -31,6 +32,7 @@
       <Color x:Key="Color.AccentSoft">#1E3447</Color>
       <Color x:Key="Color.Transmit">#E27FB0</Color>
       <Color x:Key="Color.Ok">#56B4E9</Color>
+      <Color x:Key="Color.OkSoft">#18344A</Color>
       <Color x:Key="Color.Warn">#E6B547</Color>
       <Color x:Key="Color.Scrim">#99000000</Color>
     </ResourceDictionary>

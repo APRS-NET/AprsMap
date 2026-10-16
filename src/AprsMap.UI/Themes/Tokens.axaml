@@ -14,6 +14,7 @@
   <SolidColorBrush x:Key="Brush.AccentSoft" Color="{DynamicResource Color.AccentSoft}" />
   <SolidColorBrush x:Key="Brush.Transmit" Color="{DynamicResource Color.Transmit}" />
   <SolidColorBrush x:Key="Brush.Ok" Color="{DynamicResource Color.Ok}" />
+  <SolidColorBrush x:Key="Brush.OkSoft" Color="{DynamicResource Color.OkSoft}" />
   <SolidColorBrush x:Key="Brush.Warn" Color="{DynamicResource Color.Warn}" />
   <!-- Dims what is behind a dialog. Plain translucent, never blurred. -->
   <SolidColorBrush x:Key="Brush.Scrim" Color="{DynamicResource Color.Scrim}" />

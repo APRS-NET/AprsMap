@@ -27,7 +27,7 @@ public class MainViewTests
         window.Show();
 
         var label = window.GetLogicalDescendants().OfType<TextBlock>().Single(t => t.Name == "ConnectionLabel");
-        Assert.Equal("APRS-IS connected · T2TEST", label.Text);
+        Assert.Equal("APRS-IS connected", label.Text);
         // The Packets panel is built by the shell, after the window's first layout pass.
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         var list = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "PacketList");
@@ -95,7 +95,7 @@ public class MainViewTests
         window.Show();
         var button = window.GetLogicalDescendants().OfType<Button>().Single(b => b.Name == "ConnectionButton");
 
-        Assert.Equal("Login verified · reconnected once", ToolTip.GetTip(button));
+        Assert.Equal("Server T2TEST · login verified · reconnected once", ToolTip.GetTip(button));
         var flyout = Assert.IsType<MenuFlyout>(button.Flyout);
         flyout.ShowAt(button);
         var item = Assert.IsType<MenuItem>(Assert.Single(flyout.Items));

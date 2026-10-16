@@ -121,6 +121,7 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             json.WriteNumber("mapSymbolScale", s.MapSymbolScale);
             json.WriteString("mapBrightness", s.MapBrightness.ToString());
             json.WriteString("mapLabels", s.MapLabels.ToString());
+            json.WriteBoolean("showFilterCircles", s.ShowFilterCircles);
             if (s.MapProvider is { } provider)
             {
                 json.WriteString("mapProvider", provider);
@@ -200,6 +201,13 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             if (Enum<MapLabels>(root, "mapLabels") is { } labels)
             {
                 s = s with { MapLabels = labels };
+            }
+            if (
+                root.TryGetProperty("showFilterCircles", out var circles)
+                && circles.ValueKind is JsonValueKind.True or JsonValueKind.False
+            )
+            {
+                s = s with { ShowFilterCircles = circles.GetBoolean() };
             }
             if (root.TryGetProperty("mapProvider", out var provider) && provider.ValueKind == JsonValueKind.String)
             {

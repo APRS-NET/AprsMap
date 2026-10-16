@@ -10,7 +10,7 @@ namespace AprsMap.UI.Tests;
 public class MainViewModelTests
 {
     [Theory]
-    [InlineData(ConnectionState.Connected, "APRS-IS connected · T2TEST")]
+    [InlineData(ConnectionState.Connected, "APRS-IS connected")]
     [InlineData(ConnectionState.Connecting, "APRS-IS connecting to T2TEST…")]
     [InlineData(ConnectionState.Reconnecting, "APRS-IS reconnecting… · ")]
     [InlineData(ConnectionState.Refused, "APRS-IS login refused · ")]
@@ -33,12 +33,12 @@ public class MainViewModelTests
 
         vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 0, "1.0.0", Verified: true, Reconnects: 2));
 
-        Assert.Equal("APRS-IS connected · T2TEST · verified", vm.ConnectionText);
-        Assert.Equal("Login verified · reconnected 2 times", vm.ConnectionDetails);
+        Assert.Equal("APRS-IS connected", vm.ConnectionText);
+        Assert.Equal("Server T2TEST · login verified · reconnected 2 times", vm.ConnectionDetails);
 
         vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 0, "1.0.0"));
 
-        Assert.Equal("Login not verified: receive-only · no reconnects", vm.ConnectionDetails);
+        Assert.Equal("Server T2TEST · login not verified: receive-only · no reconnects", vm.ConnectionDetails);
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public class MainViewModelTests
 
         engine.StatusFailure = null;
         await AdvanceUntil(time, () => vm.ErrorText is null);
-        Assert.Equal("APRS-IS connected · T2TEST", vm.ConnectionText);
+        Assert.Equal("APRS-IS connected", vm.ConnectionText);
 
         await cts.CancelAsync();
         await run;
@@ -328,7 +328,7 @@ public class MainViewModelTests
         text.SetLanguage(Localizer.PseudoLanguage);
 
         Assert.StartsWith("[Öñļý", vm.ErrorText, StringComparison.Ordinal);
-        Assert.StartsWith("[ÅÞŔŠ-ÎŠ çöññéçţéð · T2TEST", vm.ConnectionText, StringComparison.Ordinal);
+        Assert.StartsWith("[ÅÞŔŠ-ÎŠ çöññéçţéð", vm.ConnectionText, StringComparison.Ordinal);
         Assert.StartsWith("[2 þåçķéţš", vm.PacketCountText, StringComparison.Ordinal);
     }
 
@@ -384,7 +384,7 @@ public class MainViewModelTests
             await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, cts.Token);
         }
         Assert.Equal("N0CALL", Assert.Single(vm.Packets).Source);
-        Assert.Equal("APRS-IS connected · T2TEST", vm.ConnectionText);
+        Assert.Equal("APRS-IS connected", vm.ConnectionText);
 
         engine.Status = engine.Status with { Connection = ConnectionState.Reconnecting };
         time.Advance(TimeSpan.FromSeconds(2));

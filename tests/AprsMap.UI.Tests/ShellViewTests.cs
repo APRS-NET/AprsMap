@@ -5,6 +5,7 @@ using AprsMap.UI.ViewModels;
 using AprsMap.UI.Views;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -72,8 +73,15 @@ public sealed class ShellViewTests
         var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "AppMenuButton");
         var menu = Assert.IsType<MenuFlyout>(button.Flyout);
 
-        menu.ShowAt(button);
+        Dispatcher.UIThread.RunJobs(); // the menu follows the closed panel
+        // A real click, as the desktop gets one; the menu is already filled when it opens.
+        var centre = button
+            .TranslatePoint(new Avalonia.Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!
+            .Value;
+        window.MouseDown(centre, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(centre, Avalonia.Input.MouseButton.Left);
         Dispatcher.UIThread.RunJobs();
+        Assert.True(menu.IsOpen);
         var headers = menu.Items.OfType<MenuItem>().Select(i => i.Header?.ToString()).ToList();
         Assert.Equal(["Show Stations", "Reset layout"], headers); // no Gather outside the desktop app
         var show = menu.Items.OfType<MenuItem>().First();

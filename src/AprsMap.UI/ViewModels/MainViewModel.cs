@@ -408,6 +408,14 @@ public sealed partial class MainViewModel : ObservableObject
         ShowConnection();
     }
 
+    /// <summary>Connected to APRS-IS: the pill is shown in the OK colours.</summary>
+    [ObservableProperty]
+    public partial bool IsConnected { get; private set; }
+
+    /// <summary>Connected without a verified login: the pill carries the receive-only symbol.</summary>
+    [ObservableProperty]
+    public partial bool IsReceiveOnly { get; private set; }
+
     /// <summary>Reloads the page for the new version (the browser app).</summary>
     [RelayCommand]
     private void Reload() => Restart?.Invoke();
@@ -449,6 +457,8 @@ public sealed partial class MainViewModel : ObservableObject
         ConnectionDetails =
             _engineUnreachable || _status is null ? null : ViewModels.ConnectionText.Details(_text, _status);
         IsConnectionWarning = !_engineUnreachable && _status?.Connection == ConnectionState.Refused;
+        IsConnected = !_engineUnreachable && _status?.Connection == ConnectionState.Connected;
+        IsReceiveOnly = IsConnected && _status is { Verified: false };
         IsEngineAway = _engineUnreachable;
         CanReconnect =
             !_engineUnreachable
