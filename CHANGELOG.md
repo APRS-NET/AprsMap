@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.3.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.3.0-alpha.2...v0.3.0-alpha.3) (2026-10-16)
+
+
+### Features
+
+* **engine:** dashboard counters for the last 24 hours (F1.22) ([9bd8933](https://github.com/APRS-NET/AprsMap/commit/9bd893311b3febe98c068a1f6d2cec85be043295))
+* flag position reports that don't fit their station's track (F1.20) ([ea6c6c6](https://github.com/APRS-NET/AprsMap/commit/ea6c6c6f9ae8bdddca2ac60d0416cace0e01acfd))
+* KISS over TCP sources, receive only (F3.1) ([4a956aa](https://github.com/APRS-NET/AprsMap/commit/4a956aa21fbea62292657832cf0b01d515773170))
+* **map:** RF links for the selected station only, dashed, with Show all RF connections ([e80a6fd](https://github.com/APRS-NET/AprsMap/commit/e80a6fdfb805d86fa64bd7c938598f773924b46b))
+* **map:** toggle all RF connections from a button on the map ([b62d4d0](https://github.com/APRS-NET/AprsMap/commit/b62d4d0fb10a65b35f976832877d31229e2ea982))
+* **map:** toggle all RF connections from the map and the app menu ([11f6c90](https://github.com/APRS-NET/AprsMap/commit/11f6c901d152fbc879a17690a46f804b9e28d868))
+* packets a TNC heard are heard by this station (F3.1) ([c7f1117](https://github.com/APRS-NET/AprsMap/commit/c7f1117bbd8876c5cfce35fbc37d64f993c42397))
+* packets a TNC heard are heard by this station (F3.1) ([a0f9964](https://github.com/APRS-NET/AprsMap/commit/a0f9964745ea7ad63d83f5a9291ca3f9ee31cfb6))
+* **packets:** save as text, CSV, JSON, indented JSON or YAML ([912a75c](https://github.com/APRS-NET/AprsMap/commit/912a75cc91f4a884bce3199e0208fab25e4bad12))
+* **packets:** save as text, CSV, JSON, indented JSON or YAML ([4eb4ef9](https://github.com/APRS-NET/AprsMap/commit/4eb4ef9bc5fc336a3fdfb757036e9b0266c84373))
+* telemetry with the station's names, units and scaling (F1.11) ([676d400](https://github.com/APRS-NET/AprsMap/commit/676d400ed38bcdc1220b95f6fd202cc9987e00ac))
+* **ui:** a Clear stations button on the map (F1.19) ([b2afd86](https://github.com/APRS-NET/AprsMap/commit/b2afd86b23980e90f7ceb0a5e234722bd9378835))
+* **ui:** a Clear stations button on the map (F1.19) ([ff9f6a7](https://github.com/APRS-NET/AprsMap/commit/ff9f6a799260d0da1dab09e3c92256426333b474))
+* **ui:** a Dashboard tab beside the map, with live tiles and sparklines (F1.22) ([3de0e67](https://github.com/APRS-NET/AprsMap/commit/3de0e67c53f387ae8eea7678cc005f1abeb4c416))
+* **ui:** an APRS-IS on/off switch beside the connection pill and in the dashboard ([1479209](https://github.com/APRS-NET/AprsMap/commit/1479209454ce4560f135a093f59be0d28ffd8cb6))
+* **ui:** each TNC's pill works like the APRS-IS one, with a switch and Reconnect now (F3.1) ([d9deeaf](https://github.com/APRS-NET/AprsMap/commit/d9deeaf99d10134844ea76e6113b52ea63b227da))
+* **ui:** the dashboard's farthest direct hops, weather extremes and statistics tables (F1.22) ([1860fc8](https://github.com/APRS-NET/AprsMap/commit/1860fc83b5d38363153217d5323fb42c0b4c6f22))
+* **ui:** the dashboard's farthest direct hops, weather extremes and statistics tables (F1.22) ([56473f9](https://github.com/APRS-NET/AprsMap/commit/56473f911d69d5ce4d8133f67ebefbe33827017d))
+
+
+### Bug Fixes
+
+* **map:** the RF connections toggle lives on the map only, not in the app menu ([cc5e31d](https://github.com/APRS-NET/AprsMap/commit/cc5e31d1c0fc1e02d22c16c17939f01be843c392))
+* **packets:** keep the Save menu filled rather than refilling it as it opens ([f04ba40](https://github.com/APRS-NET/AprsMap/commit/f04ba40817993483f71d010123c475f3faaac905))
+* **packets:** resuming the packet list scrolls back to the newest packets ([1050512](https://github.com/APRS-NET/AprsMap/commit/1050512193c3ecfb949192ce1714f423008baabb))
+* **packets:** resuming the packet list scrolls back to the newest packets ([71e6aa5](https://github.com/APRS-NET/AprsMap/commit/71e6aa523852c6077f1568305d7345913ba7da2d))
+* **ui:** a table row no filter fits is drawn as a plain row, not a disabled button ([fe249b5](https://github.com/APRS-NET/AprsMap/commit/fe249b5b40b2f0842a2762c598c1fd5dd319d009))
+* **ui:** the APRS-IS switch sits inside the pill, which says APRS-IS off itself ([b75f5fa](https://github.com/APRS-NET/AprsMap/commit/b75f5fa8acf746569d17f0a69a27845c1ed0743a))
+
 ## [0.3.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.3.0-alpha.1...v0.3.0-alpha.2) (2026-10-16)
 
 
