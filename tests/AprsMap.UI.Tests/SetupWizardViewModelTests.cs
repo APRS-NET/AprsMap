@@ -363,6 +363,85 @@ public class SetupWizardViewModelTests
         Assert.True(closed);
     }
 
+    [Fact]
+    public async Task ATncInsteadMakesAnRfOnlyProfileInThreeSteps()
+    {
+        var engine = new FakeEngine { Settings = AppSettings.Empty };
+        var wizard = await AtStep(SetupStep.Server, engine);
+        bool? closed = null;
+        wizard.Closed += (_, saved) => closed = saved;
+
+        wizard.UseTnc = true;
+        Assert.Equal("Step 3 of 3", wizard.StepText); // no passcode step
+        Assert.True(wizard.IsLastStep);
+        Assert.False(wizard.UseAprsIs);
+        Assert.True(wizard.HasInput);
+        await wizard.NextCommand.ExecuteAsync(null);
+        Assert.Equal("Type where the TNC is: a host name or address.", wizard.TncError);
+        Assert.Empty(engine.Saved);
+
+        wizard.TncHost = " 10.10.20.144 ";
+        Assert.Null(wizard.TncError);
+        await wizard.NextCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(engine.Saved);
+        var profile = Assert.Single(saved.Profiles);
+        var tnc = Assert.Single(saved.SourceList); // no APRS-IS source
+        Assert.Equal(
+            (SourceKind.KissTcp, "10.10.20.144", "10.10.20.144", (int?)null),
+            (tnc.Kind, tnc.Name, tnc.Host, tnc.Port)
+        );
+        Assert.Equal([tnc.Id], profile.SourceIds);
+        Assert.Equal(-1, profile.Passcode);
+        Assert.True(closed);
+    }
+
+    [Fact]
+    public async Task ATncInsteadReusesASourceThatConnectsThereAndDropsAprsIs()
+    {
+        var tnc = new SourceSettings("tnc", "Direwolf", SourceKind.KissTcp, Host: "10.10.20.144");
+        var two = FakeEngine.TwoProfiles();
+        var settings = two with
+        {
+            Sources = [FakeEngine.Rotate, tnc],
+            Profiles = [two.Profiles[0] with { Callsign = "AB1CD-9", Passcode = 12345 }, two.Profiles[1]],
+        };
+        var engine = new FakeEngine { Settings = settings };
+        var editing = settings.Profiles[0];
+        var wizard = new SetupWizardViewModel(engine, English(), null, WizardMode.Edit, settings, editing);
+        await wizard.LoadAsync(TestContext.Current.CancellationToken);
+
+        wizard.UseTnc = true;
+        wizard.TncHost = "10.10.20.144";
+        wizard.TncPort = "8001";
+        await wizard.FinishCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(engine.Saved);
+        Assert.Equal(2, saved.SourceList.Count); // nothing new
+        var profile = saved.Profiles.Single(p => p.Id == editing.Id);
+        Assert.Equal(["tnc"], profile.SourceIds);
+        Assert.Equal(editing.Passcode, profile.Passcode); // kept for when APRS-IS is added back
+    }
+
+    [Fact]
+    public async Task ARejectedTncIsShownOnTheServerStep()
+    {
+        var engine = new FakeEngine
+        {
+            Settings = AppSettings.Empty,
+            SaveFailure = EngineErrors.Create(EngineErrorCodes.KissSourceInvalid, "English reason"),
+        };
+        var wizard = await AtStep(SetupStep.Server, engine);
+        wizard.UseTnc = true;
+        wizard.TncHost = "localhost";
+        wizard.TncPort = "eighty";
+
+        await wizard.NextCommand.ExecuteAsync(null);
+
+        Assert.Equal(SetupStep.Server, wizard.Step);
+        Assert.NotNull(wizard.TncError);
+    }
+
     [Theory]
     [InlineData("en-US", true)]
     [InlineData("en-GB", false)]

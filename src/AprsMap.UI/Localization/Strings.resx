@@ -587,6 +587,19 @@
   <data name="Wizard.Server.Help" xml:space="preserve">
     <value>Most people keep the worldwide choice; a regional server can be closer.</value>
   </data>
+  <data name="Wizard.Tnc.Use" xml:space="preserve">
+    <value>Use a TNC instead</value>
+    <comment>Check box on the server step: receive on RF through a TNC rather than from APRS-IS.</comment>
+  </data>
+  <data name="Wizard.Tnc.Title" xml:space="preserve">
+    <value>TNC</value>
+  </data>
+  <data name="Wizard.Tnc.Help" xml:space="preserve">
+    <value>Direwolf, soundmodem or another TNC that serves KISS over TCP. The station receives on RF only: nothing is sent to APRS-IS, so no passcode is needed. In the web app the server connects to the TNC, so localhost means the server's computer.</value>
+  </data>
+  <data name="Wizard.Tnc.HostEmpty" xml:space="preserve">
+    <value>Type where the TNC is: a host name or address.</value>
+  </data>
   <data name="Wizard.Server.Region" xml:space="preserve">
     <value>By region</value>
     <comment>Choice: pick one of the regional servers.</comment>
