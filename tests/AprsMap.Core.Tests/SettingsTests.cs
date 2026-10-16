@@ -21,6 +21,16 @@ public sealed class SettingsTests : IDisposable
         }
     }
 
+    private static readonly SourceSettings Rotate = InMemorySettingsStore.Rotate;
+
+    /// <summary>Rotate with a filter of its own, for the portable profile.</summary>
+    private static readonly SourceSettings Filtered = Rotate with
+    {
+        Id = "filtered",
+        Name = "rotate (filtered)",
+        Filter = "r/40/-105/50",
+    };
+
     private static AppSettings TwoProfiles()
     {
         var home = InMemorySettingsStore.Profile("N0CALL", "home") with { Latitude = 40.0, Longitude = -105.0 };
@@ -28,9 +38,64 @@ public sealed class SettingsTests : IDisposable
         {
             Name = "Portable",
             Passcode = 12345,
-            Filter = "r/40/-105/50",
+            SourceIds = [Filtered.Id],
         };
-        return new AppSettings([home, portable], "portable", UnitSettings.Imperial);
+        return new AppSettings([home, portable], "portable", UnitSettings.Imperial, Sources: [Rotate, Filtered]);
+    }
+
+    private static string OldSettings(params (string Id, string Server, string? Filter)[] profiles) =>
+        $$"""
+        {
+          "profiles": [{{string.Join(",", profiles.Select(p => $$"""
+            { "id": "{{p.Id}}", "name": "{{p.Id}}", "callsign": "N0CALL", "passcode": -1, "server": "{{p.Server}}"{{(p.Filter is null ? "" : $", \"filter\": \"{p.Filter}\"")}} }
+            """))}}],
+          "activeProfileId": "{{profiles[0].Id}}",
+          "units": { "altitude": "Metres", "distance": "Kilometres", "pressure": "Hectopascals", "rain": "Millimetres", "temperature": "Celsius", "wind": "KilometresPerHour" }
+        }
+        """;
+
+    private async Task<(AppSettings Settings, string Folder)> MigrateAsync(string json)
+    {
+        var folder = Path.Combine(_root, Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        await File.WriteAllTextAsync(Path.Combine(folder, FileSettingsStore.FileName), json, Ct);
+        return ((await new FileSettingsStore(folder).LoadAsync(Ct))!, folder);
+    }
+
+    [Fact]
+    public async Task OldSettingsOnTwoServersBecomeTwoSourcesEachTickedByItsProfileAndTheOldFileIsKept()
+    {
+        var json = OldSettings(("home", "rotate.aprs2.net:14580", null), ("away", "euro.aprs2.net:14580", "t/m"));
+
+        var (settings, folder) = await MigrateAsync(json);
+
+        Assert.Equal(["rotate.aprs2.net", "euro.aprs2.net"], settings.SourceList.Select(s => s.Name));
+        var home = settings.AprsIsSourceOf(settings.Profiles[0])!;
+        var away = settings.AprsIsSourceOf(settings.Profiles[1])!;
+        Assert.Equal(("rotate.aprs2.net:14580", null), (home.Server, home.Filter));
+        Assert.Equal(("euro.aprs2.net:14580", "t/m"), (away.Server, away.Filter));
+        Assert.Equal(json, await File.ReadAllTextAsync(Path.Combine(folder, "settings.json.v1"), Ct));
+        SettingsValidator.Validate(settings, TimeProvider.System);
+
+        // Saved converted: the next load reads it as it is.
+        var again = await new FileSettingsStore(folder).LoadAsync(Ct);
+        Assert.Equal(settings.SourceList, again!.SourceList);
+    }
+
+    [Fact]
+    public async Task ProfilesOnOneServerShareASourceUnlessTheirFiltersDiffer()
+    {
+        var (agree, _) = await MigrateAsync(
+            OldSettings(("a", "rotate.aprs2.net:14580", "t/m"), ("b", "rotate.aprs2.net:14580", "t/m"))
+        );
+        var (differ, _) = await MigrateAsync(
+            OldSettings(("a", "rotate.aprs2.net:14580", "t/m"), ("b", "rotate.aprs2.net:14580", null))
+        );
+
+        Assert.Single(agree.SourceList);
+        Assert.Equal(agree.Profiles[0].SourceIds, agree.Profiles[1].SourceIds);
+        Assert.Equal(["rotate.aprs2.net", "rotate.aprs2.net (2)"], differ.SourceList.Select(s => s.Name));
+        Assert.NotEqual(differ.Profiles[0].SourceIds, differ.Profiles[1].SourceIds);
     }
 
     [Fact]
@@ -163,6 +228,13 @@ public sealed class SettingsTests : IDisposable
         var good = TwoProfiles();
         var home = good.Profiles[0];
         AppSettings HomeOnly(StationProfile profile) => good with { Profiles = [profile], ActiveProfileId = "home" };
+        AppSettings HomeOn(SourceSettings source) =>
+            good with
+            {
+                Profiles = [home],
+                ActiveProfileId = "home",
+                Sources = [source],
+            };
         return new()
         {
             {
@@ -184,10 +256,18 @@ public sealed class SettingsTests : IDisposable
             },
             { EngineErrorCodes.ProfilePositionOffGlobe, "N0CALL", HomeOnly(home with { Latitude = 91 }) },
             { EngineErrorCodes.ProfilePositionIncomplete, "N0CALL", HomeOnly(home with { Longitude = null }) },
-            { "aprs.server-port-invalid", "N0CALL", HomeOnly(home with { Server = "host:x" }) },
-            { "aprs.server-host-invalid", "N0CALL", HomeOnly(home with { Server = "bad host" }) },
+            { "aprs.server-port-invalid", "N0CALL", HomeOn(Rotate with { Server = "host:x" }) },
+            { "aprs.server-host-invalid", "N0CALL", HomeOn(Rotate with { Server = "bad host" }) },
             { "aprs.callsign-invalid-length", "N0CALL", HomeOnly(home with { Callsign = "" }) },
-            { "aprs.filter-control-character", "N0CALL", HomeOnly(home with { Filter = "r/1/2/3\n#" }) },
+            { "aprs.filter-control-character", "N0CALL", HomeOn(Rotate with { Filter = "r/1/2/3\n#" }) },
+            { EngineErrorCodes.SourceInvalid, null, good with { Sources = [Rotate, Rotate with { Name = "Again" }] } },
+            { EngineErrorCodes.SourceInvalid, null, good with { Sources = [Rotate with { Name = " " }, Filtered] } },
+            { EngineErrorCodes.SourceUnknown, "N0CALL", HomeOn(Filtered) },
+            {
+                EngineErrorCodes.ProfileTwoAprsIs,
+                "N0CALL",
+                HomeOnly(home with { SourceIds = [Rotate.Id, Filtered.Id] })
+            },
             { EngineErrorCodes.ActiveProfileMissing, null, good with { ActiveProfileId = "nobody" } },
             { EngineErrorCodes.ActiveProfileMissing, null, AppSettings.Empty with { ActiveProfileId = "home" } },
             { EngineErrorCodes.SettingsIncomplete, null, good with { Units = null! } },
@@ -212,28 +292,29 @@ public sealed class SettingsTests : IDisposable
     [Fact]
     public void OnlyLoginChangesNeedANewLogin()
     {
-        var profile = TwoProfiles().Profiles[1];
+        var station = new Station(TwoProfiles().Profiles[1], Filtered);
 
-        Assert.False(profile.NeedsNewLogin(profile with { Name = "Renamed", Latitude = 1, Filter = null }));
-        Assert.True(profile.NeedsNewLogin(null));
-        Assert.True(profile.NeedsNewLogin(profile with { Id = "x" }));
-        Assert.True(profile.NeedsNewLogin(profile with { Callsign = "N0CALL-8" }));
-        Assert.True(profile.NeedsNewLogin(profile with { Passcode = -1 }));
-        Assert.True(profile.NeedsNewLogin(profile with { Server = "noam.aprs2.net:14580" }));
+        Assert.False(
+            station.NeedsNewLogin(station with { Profile = station.Profile with { Name = "Renamed", Latitude = 1 } })
+        );
+        Assert.False(station.NeedsNewLogin(station with { Source = Rotate })); // the same server, another filter
+        Assert.True(station.NeedsNewLogin(null));
+        Assert.True(station.NeedsNewLogin(station with { Profile = station.Profile with { Id = "x" } }));
+        Assert.True(station.NeedsNewLogin(station with { Profile = station.Profile with { Callsign = "N0CALL-8" } }));
+        Assert.True(station.NeedsNewLogin(station with { Profile = station.Profile with { Passcode = -1 } }));
+        Assert.True(station.NeedsNewLogin(station with { Source = Rotate with { Server = "noam.aprs2.net:14580" } }));
     }
 
     [Fact]
-    public void ItsFilterTextRangeAndLocationNeedANewFilter()
+    public void TheSourcesFilterTextAndTheProfilesRangeAndLocationNeedANewFilter()
     {
-        var profile = TwoProfiles().Profiles[1] with { Latitude = 40, Longitude = -105 };
+        var station = new Station(TwoProfiles().Profiles[1] with { Latitude = 40, Longitude = -105 }, Filtered);
 
-        Assert.True(profile.NeedsNewFilter(null));
-        Assert.True(profile.NeedsNewFilter(profile with { Filter = null }));
-        Assert.True(profile.NeedsNewFilter(profile with { RangeKm = 50 }));
-        // The location centres my range part (F1.2), with or without the profile's own text.
-        Assert.True(profile.NeedsNewFilter(profile with { Latitude = 41 }));
-        Assert.True(profile.NeedsNewFilter(profile with { Longitude = null, Latitude = null }));
-        Assert.False(profile.NeedsNewFilter(profile with { Name = "Renamed" }));
+        Assert.True(station.NeedsNewFilter(null));
+        Assert.True(station.NeedsNewFilter(station with { Source = Rotate }));
+        Assert.True(station.NeedsNewFilter(station with { Profile = station.Profile with { RangeKm = 50 } }));
+        Assert.True(station.NeedsNewFilter(station with { Profile = station.Profile with { Latitude = 41 } }));
+        Assert.False(station.NeedsNewFilter(station with { Profile = station.Profile with { Name = "Renamed" } }));
     }
 
     [Theory]
@@ -248,13 +329,8 @@ public sealed class SettingsTests : IDisposable
         string expected
     )
     {
-        var profile = InMemorySettingsStore.Profile("N0CALL") with
-        {
-            Filter = filter,
-            Latitude = latitude,
-            Longitude = longitude,
-        };
+        var profile = InMemorySettingsStore.Profile("N0CALL") with { Latitude = latitude, Longitude = longitude };
 
-        Assert.Equal(expected, FilterComposer.Compose(profile, []));
+        Assert.Equal(expected, FilterComposer.Compose(profile, filter, []));
     }
 }

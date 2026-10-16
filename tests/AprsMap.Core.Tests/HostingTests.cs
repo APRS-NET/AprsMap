@@ -82,7 +82,14 @@ public class HostingTests
         );
 
         var ex = Assert.Throws<AprsNet.Packets.AprsValidationException>(() =>
-            factory.Create(InMemorySettingsStore.Profile("N0CALL") with { Server = "bad host:x" }, "m/150")
+            factory.Create(
+                InMemorySettingsStore.Profile("N0CALL"),
+                InMemorySettingsStore.Rotate with
+                {
+                    Server = "bad host:x",
+                },
+                "m/150"
+            )
         );
         Assert.Equal(AprsNet.Packets.AprsValidationErrorCode.ServerHostInvalid, ex.Code);
     }
@@ -97,7 +104,8 @@ public class HostingTests
         );
 
         var source = factory.Create(
-            InMemorySettingsStore.Profile("N0CALL") with
+            InMemorySettingsStore.Profile("N0CALL"),
+            InMemorySettingsStore.Rotate with
             {
                 Server = "localhost:14580",
             },
@@ -130,7 +138,7 @@ public class HostingTests
     {
         public TaskCompletionSource Created { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public IPacketSource Create(StationProfile profile, string filter)
+        public IPacketSource Create(StationProfile profile, SourceSettings source, string filter)
         {
             Created.TrySetResult();
             return this;

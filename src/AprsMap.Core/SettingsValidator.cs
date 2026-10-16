@@ -19,6 +19,20 @@ internal static class SettingsValidator
             throw Fail(EngineErrorCodes.SettingsIncomplete, "Settings are incomplete.");
         }
 
+        // The source list (F1.25): ids unique, names given, an APRS-IS source with a server.
+        var sources = new Dictionary<string, SourceSettings>(StringComparer.Ordinal);
+        foreach (var source in settings.SourceList)
+        {
+            if (
+                string.IsNullOrWhiteSpace(source.Id)
+                || string.IsNullOrWhiteSpace(source.Name)
+                || !sources.TryAdd(source.Id, source)
+            )
+            {
+                throw Fail(EngineErrorCodes.SourceInvalid, "Every source needs its own id and a name.");
+            }
+        }
+
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var profile in settings.Profiles)
@@ -56,9 +70,36 @@ internal static class SettingsValidator
                 );
             }
 
+            if (profile.SourceIds.FirstOrDefault(id => !sources.ContainsKey(id)) is { } unknown)
+            {
+                throw Fail(
+                    EngineErrorCodes.SourceUnknown,
+                    $"Profile '{profile.Name}' uses a source that isn't in the list.",
+                    profile.Name
+                );
+            }
+            var aprsIs = profile.SourceIds.Select(id => sources[id]).Where(s => s.Kind == SourceKind.AprsIs).ToList();
+            if (aprsIs.Count > 1)
+            {
+                throw Fail(
+                    EngineErrorCodes.ProfileTwoAprsIs,
+                    $"Profile '{profile.Name}' uses more than one APRS-IS source; one login at a time.",
+                    profile.Name
+                );
+            }
+            if (aprsIs.Count == 0)
+            {
+                continue; // nothing to log in to: allowed (F1.25 behavior 6)
+            }
+
             try
             {
-                AprsIsPacketSourceFactory.ClientOptions(profile, FilterComposer.Compose(profile, []), time);
+                AprsIsPacketSourceFactory.ClientOptions(
+                    profile,
+                    aprsIs[0].Server ?? string.Empty,
+                    FilterComposer.Compose(profile, aprsIs[0].Filter, []),
+                    time
+                );
             }
             catch (AprsValidationException ex)
             {

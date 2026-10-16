@@ -323,12 +323,14 @@ public sealed partial class ProfilesSectionViewModel : ObservableObject, IDispos
         {
             var name = new Dictionary<string, object?> { ["profile"] = row.Name };
             row.ActiveText = row.IsActive ? _text["Settings.Profiles.Active"] : null;
+            // Where it connects: its APRS-IS source's server, by region when it is a preset (F1.25).
+            var server = Current.AprsIsSourceOf(row.Profile)?.Server;
             var preset = _presets.FirstOrDefault(p =>
-                string.Equals(p.Server, row.Profile.Server, StringComparison.OrdinalIgnoreCase)
+                string.Equals(p.Server, server, StringComparison.OrdinalIgnoreCase)
             );
             var regionKey = preset is null ? null : "Wizard.Server.Region." + preset.Key;
             row.ServerText =
-                preset is null ? row.Profile.Server
+                preset is null ? server ?? _text["Settings.Profiles.NoSource"]
                 : Localizer.Exists(regionKey!) ? _text[regionKey!]
                 : preset.Name;
             row.UseName = _text.Format("Settings.Profiles.UseNamed", name);

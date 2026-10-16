@@ -246,14 +246,19 @@ internal sealed class FakeEngine : IEngineService
         CancellationToken cancellationToken = default
     ) => Task.FromResult(latitude > 40 ? "DN70kb" : "DM79xx");
 
+    /// <summary>The APRS-IS source the test profiles use.</summary>
+    public static SourceSettings Rotate { get; } =
+        new("rotate", "rotate.aprs2.net", SourceKind.AprsIs, "rotate.aprs2.net:14580");
+
     public static AppSettings TwoProfiles() =>
         new(
             [
-                new("home", "Home", "N0CALL", -1, "rotate.aprs2.net:14580", null, null, null),
-                new("portable", "Portable", "N0CALL-7", -1, "rotate.aprs2.net:14580", null, null, null),
+                new("home", "Home", "N0CALL", -1, [Rotate.Id], null, null),
+                new("portable", "Portable", "N0CALL-7", -1, [Rotate.Id], null, null),
             ],
             "home",
-            UnitSettings.Metric
+            UnitSettings.Metric,
+            Sources: [Rotate]
         );
 
     public static PacketView Packet(string source) =>

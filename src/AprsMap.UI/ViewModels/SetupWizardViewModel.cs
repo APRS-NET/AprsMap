@@ -537,12 +537,13 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         ProfileName = profile.Name;
         _settingName = false;
         _nameChosen = true;
-        Filter = profile.Filter ?? string.Empty;
+        // Where it connects is its APRS-IS source's (F1.25 behavior 5).
+        var source = _existing?.AprsIsSourceOf(profile);
+        var server = source?.Server ?? string.Empty;
+        Filter = source?.Filter ?? string.Empty;
         RangeKm = profile.RangeKm;
         OnPropertyChanged(nameof(SelectedRange));
-        var preset = _presets.FirstOrDefault(p =>
-            string.Equals(p.Server, profile.Server, StringComparison.OrdinalIgnoreCase)
-        );
+        var preset = _presets.FirstOrDefault(p => string.Equals(p.Server, server, StringComparison.OrdinalIgnoreCase));
         if (preset is not null)
         {
             SelectedServer = Servers.FirstOrDefault(s => s.Key == preset.Key);
@@ -550,7 +551,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         else
         {
             UseOwnServer = true;
-            OwnServer = profile.Server;
+            OwnServer = server;
         }
         ReceiveOnly = profile.Passcode < 0;
         PasscodeText = profile.Passcode < 0 ? string.Empty : profile.Passcode.ToString(CultureInfo.InvariantCulture);
@@ -940,13 +941,18 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             return;
         }
 
+        var source = SourceFor(Server, IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null);
+        var others = _editing is null
+            ? []
+            : _editing.SourceIds.Where(id =>
+                _existing?.SourceList.FirstOrDefault(s => s.Id == id) is not { Kind: SourceKind.AprsIs }
+            );
         var profile = new StationProfile(
             _editing?.Id ?? Guid.NewGuid().ToString("N"),
             IsProfileMode && ProfileName.Trim().Length > 0 ? ProfileName.Trim() : Callsign,
             Callsign,
             passcode,
-            Server,
-            IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null,
+            [.. others, source.Id],
             Latitude,
             Longitude,
             IsProfileMode ? RangeKm : StationProfile.DefaultRangeKm
@@ -954,7 +960,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            await _engine.SaveSettingsAsync(Settings(profile));
+            await _engine.SaveSettingsAsync(Settings(profile, source));
             Closed?.Invoke(this, true);
         }
         catch (ArgumentException ex)
@@ -971,21 +977,44 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         }
     }
 
-    /// <summary>The settings to save: the first profile, or the current ones with this profile added or replaced.</summary>
-    private AppSettings Settings(StationProfile profile) =>
-        Mode switch
+    /// <summary>
+    /// The APRS-IS source for <paramref name="server"/> and <paramref name="filter"/>: an existing one with both the
+    /// same, or a new one named after the server (F1.25 behavior 7).
+    /// </summary>
+    private SourceSettings SourceFor(string server, string? filter) =>
+        _existing?.SourceList.FirstOrDefault(s =>
+            s.Kind == SourceKind.AprsIs
+            && string.Equals(s.Server, server, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(s.Filter, filter, StringComparison.Ordinal)
+        )
+        ?? SourceSettings.AprsIsFor(server, filter);
+
+    /// <summary>
+    /// The settings to save: the first profile, or the current ones with this profile added or replaced, and its
+    /// source added when it is new.
+    /// </summary>
+    private AppSettings Settings(StationProfile profile, SourceSettings source)
+    {
+        var existing = _existing ?? AppSettings.Empty;
+        IReadOnlyList<SourceSettings> sources = existing.SourceList.Any(s => s.Id == source.Id)
+            ? existing.SourceList
+            : [.. existing.SourceList, source];
+        return Mode switch
         {
-            WizardMode.Add => _existing! with
+            WizardMode.Add => existing with
             {
-                Profiles = [.. _existing.Profiles, profile],
-                ActiveProfileId = SwitchToNew ? profile.Id : _existing.ActiveProfileId,
+                Profiles = [.. existing.Profiles, profile],
+                ActiveProfileId = SwitchToNew ? profile.Id : existing.ActiveProfileId,
+                Sources = sources,
             },
-            WizardMode.Edit => _existing! with
+            WizardMode.Edit => existing with
             {
-                Profiles = [.. _existing.Profiles.Select(p => p.Id == profile.Id ? profile : p)],
+                Profiles = [.. existing.Profiles.Select(p => p.Id == profile.Id ? profile : p)],
+                Sources = sources,
             },
-            _ => new AppSettings([profile], profile.Id, UnitsFor(_text.Culture)),
+            _ => new AppSettings([profile], profile.Id, UnitsFor(_text.Culture), Sources: [source]),
         };
+    }
 
     /// <summary>Returns to the step a rejection is about and shows it there (behavior 29).</summary>
     private void ShowRejection(ArgumentException exception)

@@ -57,17 +57,15 @@ public class EngineJsonContextTests
     [Fact]
     public void SettingsRoundTripWithoutReflection()
     {
-        var profile = new StationProfile(
-            "home",
-            "Home",
-            "N0CALL-9",
-            12345,
+        var source = new SourceSettings(
+            "rotate",
+            "rotate",
+            SourceKind.AprsIs,
             "rotate.aprs2.net:14580",
-            "r/40/-105/50",
-            40,
-            -105
+            "r/40/-105/50"
         );
-        var settings = new AppSettings([profile], "home", UnitSettings.Imperial, ReadOnly: true);
+        var profile = new StationProfile("home", "Home", "N0CALL-9", 12345, [source.Id], 40, -105);
+        var settings = new AppSettings([profile], "home", UnitSettings.Imperial, ReadOnly: true, Sources: [source]);
 
         var copy = RoundTrip(settings);
 

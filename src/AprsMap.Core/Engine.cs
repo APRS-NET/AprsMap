@@ -124,7 +124,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         await _settingsLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var before = (await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false)).GetActiveProfile();
+            var before = Station.Of(await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false));
             await _settingsStore.SaveAsync(saved, cancellationToken).ConfigureAwait(false);
             lock (_gate)
             {
@@ -132,7 +132,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             }
             MeasureFrom(saved);
 
-            var after = saved.GetActiveProfile();
+            var after = Station.Of(saved);
             if (after is null ? before is not null : after.NeedsNewLogin(before))
             {
                 LogProfileChanged(after?.Name ?? "(none)");
@@ -369,10 +369,10 @@ public sealed partial class Engine : IEngineService, IDisposable
             TimeSpan? retryIn = null; // null: wait for a restart
             try
             {
-                var profile = (await LoadSettingsAsync(cancellationToken).ConfigureAwait(false)).GetActiveProfile();
+                var profile = Station.Of(await LoadSettingsAsync(cancellationToken).ConfigureAwait(false));
                 if (profile is null)
                 {
-                    // Nothing to log in with: wait until settings supply a profile.
+                    // Nothing to log in with: wait until settings supply a profile with an APRS-IS source.
                     SetLink(new Link(ConnectionState.NotConfigured));
                     LogNotConfigured();
                 }
@@ -412,7 +412,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             {
                 EngineTelemetry.ConnectionFailures.Add(1);
                 retryIn = delay;
-                SetRetry(_settings?.GetActiveProfile(), AprsIsErrors.From(ex, wasConnected: false), delay);
+                SetRetry(Station.Of(_settings), AprsIsErrors.From(ex, wasConnected: false), delay);
                 LogConnectionFailed(ex, delay);
             }
 
@@ -551,13 +551,13 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <summary>The filter the active profile would be sent with now, for tests.</summary>
-    internal string? PreviewFilter() => _settings?.GetActiveProfile() is { } profile ? ComposeFilter(profile) : null;
+    internal string? PreviewFilter() => Station.Of(_settings) is { } station ? ComposeFilter(station) : null;
 
     /// <summary>The filter for <paramref name="profile"/> with the map views reported, most recently moved first.</summary>
-    private string ComposeFilter(StationProfile profile) => ComposeParts(profile).Text;
+    private string ComposeFilter(Station profile) => ComposeParts(profile).Text;
 
     /// <summary>The filter and its circles; a followed station's circle is centred where it was last heard.</summary>
-    private (string Text, IReadOnlyList<FilterArea> Areas) ComposeParts(StationProfile profile)
+    private (string Text, IReadOnlyList<FilterArea> Areas) ComposeParts(Station profile)
     {
         MapViewReport[] views;
         lock (_gate)
@@ -565,7 +565,8 @@ public sealed partial class Engine : IEngineService, IDisposable
             views = [.. _views.Select(v => v.View).Reverse()];
         }
         return FilterComposer.ComposeParts(
-            profile,
+            profile.Profile,
+            profile.Filter,
             views,
             name => _stations.Get(name) is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null
         );
@@ -577,7 +578,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     /// </summary>
     private void RefreshFilter()
     {
-        var profile = _settings?.GetActiveProfile();
+        var profile = Station.Of(_settings);
         if (profile is null)
         {
             return;
@@ -618,13 +619,13 @@ public sealed partial class Engine : IEngineService, IDisposable
                 _filterScheduled = false;
             }
         }
-        if (_settings?.GetActiveProfile() is { } profile)
+        if (Station.Of(_settings) is { } profile)
         {
             await SendFilterAsync(profile, CancellationToken.None).ConfigureAwait(false);
         }
     }
 
-    private async Task SendFilterAsync(StationProfile profile, CancellationToken cancellationToken)
+    private async Task SendFilterAsync(Station profile, CancellationToken cancellationToken)
     {
         var (filter, areas) = ComposeParts(profile);
         IPacketSource? source;
@@ -719,17 +720,20 @@ public sealed partial class Engine : IEngineService, IDisposable
         }
 
         var callsign = _options.Callsign.Trim().ToUpperInvariant();
+        var source = SourceSettings.AprsIsFor(
+            _options.Server,
+            string.IsNullOrWhiteSpace(_options.Filter) ? null : _options.Filter
+        );
         var profile = new StationProfile(
             Guid.NewGuid().ToString("N"),
             callsign,
             callsign,
             _options.Passcode,
-            _options.Server,
-            string.IsNullOrWhiteSpace(_options.Filter) ? null : _options.Filter,
+            [source.Id],
             null,
             null
         );
-        var settings = new AppSettings([profile], profile.Id, UnitSettings.Metric);
+        var settings = new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [source]);
         try
         {
             SettingsValidator.Validate(settings, _time);
@@ -743,7 +747,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <summary>Runs one session until cancelled. Returns true when it ended because the server refused a new login.</summary>
-    private async Task<bool> RunOnceAsync(StationProfile profile, CancellationToken cancellationToken)
+    private async Task<bool> RunOnceAsync(Station profile, CancellationToken cancellationToken)
     {
         using var activity = EngineTelemetry.ActivitySource.StartActivity("aprs-is.session", ActivityKind.Client);
         using var session = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -756,7 +760,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             _filterAreas = areas;
             _filterSentAt = _time.GetUtcNow();
         }
-        var source = _sources.Create(profile, filter);
+        var source = _sources.Create(profile.Profile, profile.Source, filter);
         await using (source.ConfigureAwait(false))
         {
             // Disposing the source stops its callbacks, so a session never reports after the next one has started.
@@ -818,7 +822,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         return refused;
     }
 
-    private void SetRetry(StationProfile? profile, EngineError? error, TimeSpan wait) =>
+    private void SetRetry(Station? profile, EngineError? error, TimeSpan wait) =>
         SetLink(
             new Link(ConnectionState.Reconnecting, profile?.Server, RetryAt: _time.GetUtcNow() + wait, Error: error)
         );

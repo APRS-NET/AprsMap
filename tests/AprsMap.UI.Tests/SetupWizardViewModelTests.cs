@@ -355,8 +355,9 @@ public class SetupWizardViewModelTests
         var profile = Assert.Single(saved.Profiles);
         Assert.Equal(profile.Id, saved.ActiveProfileId);
         Assert.Equal(("AB1CD-9", "AB1CD-9", -1), (profile.Name, profile.Callsign, profile.Passcode));
-        Assert.Equal("rotate.aprs2.net:14580", profile.Server);
-        Assert.Null(profile.Filter);
+        var source = Assert.Single(saved.SourceList); // the wizard sets up the APRS-IS source (F1.25 behavior 7)
+        Assert.Equal((SourceKind.AprsIs, "rotate.aprs2.net:14580", null), (source.Kind, source.Server, source.Filter));
+        Assert.Equal([source.Id], profile.SourceIds);
         Assert.Equal((40.5, -105.0), (profile.Latitude, profile.Longitude));
         Assert.Equal(UnitSettings.Imperial, saved.Units); // en-US
         Assert.True(closed);

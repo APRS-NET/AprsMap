@@ -49,6 +49,9 @@ public sealed record PacketSourceEvent(
 /// <summary>Creates a <see cref="IPacketSource"/> for each profile the engine logs in with.</summary>
 public interface IPacketSourceFactory
 {
-    /// <summary>Creates a source that logs in with <paramref name="profile"/> and <paramref name="filter"/>.</summary>
-    IPacketSource Create(StationProfile profile, string filter);
+    /// <summary>
+    /// Creates a connection to <paramref name="source"/> that logs in as <paramref name="profile"/> with
+    /// <paramref name="filter"/>.
+    /// </summary>
+    IPacketSource Create(StationProfile profile, SourceSettings source, string filter);
 }
