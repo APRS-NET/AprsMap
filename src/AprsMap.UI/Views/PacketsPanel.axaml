@@ -47,6 +47,20 @@
           </DataTemplate>
         </ComboBox.ItemTemplate>
       </ComboBox>
+      <ComboBox
+        x:Name="SourceBox"
+        ItemsSource="{Binding Sources}"
+        SelectedItem="{Binding SelectedSource}"
+        IsVisible="{Binding HasSources}"
+        AutomationProperties.Name="{l:T Packets.Source}"
+        ToolTip.Tip="{l:T Packets.Source}"
+      >
+        <ComboBox.ItemTemplate>
+          <DataTemplate x:DataType="p:PacketListViewModel+SourceOption">
+            <TextBlock Text="{Binding Name}" />
+          </DataTemplate>
+        </ComboBox.ItemTemplate>
+      </ComboBox>
       <ToggleButton x:Name="IssuesOnlyButton" IsChecked="{Binding IssuesOnly}" Content="{l:T Packets.IssuesOnly}" />
       <ToggleButton x:Name="ShowRawButton" IsChecked="{Binding ShowRaw}" Content="{l:T Packets.ShowRaw}" />
       <Button

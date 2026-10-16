@@ -54,6 +54,18 @@ public class PacketFilterTests
     }
 
     [Fact]
+    public void ASourceMatchesWhereThePacketArrivedOrWasAlsoSeen()
+    {
+        var filter = new PacketFilter(SourceId: "tnc");
+
+        Assert.False(filter.IsEmpty);
+        Assert.False(filter.Matches(Packet));
+        Assert.True(filter.Matches(Packet with { SourceId = "tnc" }));
+        Assert.True(filter.Matches(Packet with { SourceId = "rotate", SeenOn = ["tnc"] }));
+        Assert.False(filter.Matches(Packet with { SourceId = "rotate", SeenOn = ["other"] }));
+    }
+
+    [Fact]
     public void EveryPartMustMatch() =>
         Assert.False(new PacketFilter(Text: "N0CALL", Kinds: [PacketKind.Message]).Matches(Packet));
 }

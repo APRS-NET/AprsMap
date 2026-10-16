@@ -32,6 +32,9 @@ public sealed partial class Engine : IEngineService, IDisposable
     // The packets listed in the last duplicate window, by identity, so a copy heard on another source adds to their
     // Seen on (F1.25 behavior 9). Oldest first, for expiry.
     private readonly Dictionary<PacketIdentity, LinkedListNode<PacketView>> _listed = [];
+
+    // Seen on for a first copy another source is still taking in: applied when that copy is listed.
+    private readonly Dictionary<PacketIdentity, (DateTimeOffset At, List<string> Sources)> _seenEarly = [];
     private readonly Queue<(DateTimeOffset At, PacketIdentity Identity, LinkedListNode<PacketView> Node)> _listedOrder =
         new();
 
@@ -189,6 +192,7 @@ public sealed partial class Engine : IEngineService, IDisposable
                 _recent.Clear();
                 _listed.Clear();
                 _listedOrder.Clear();
+                _seenEarly.Clear();
                 _packets = 0;
             }
             _stations.Clear();
@@ -764,6 +768,7 @@ public sealed partial class Engine : IEngineService, IDisposable
                 _recent.Clear();
                 _listed.Clear();
                 _listedOrder.Clear();
+                _seenEarly.Clear();
                 _packetHistory++;
                 return count;
             }
@@ -981,6 +986,10 @@ public sealed partial class Engine : IEngineService, IDisposable
         lock (_gate)
         {
             _packets++;
+            if (!duplicate && _seenEarly.Remove(check.Identity, out var early))
+            {
+                view = view with { SeenOn = [.. early.Sources] };
+            }
             var node = _recent.AddLast(view);
             while (_recent.Count > _options.RecentPacketCapacity)
             {
@@ -1025,13 +1034,51 @@ public sealed partial class Engine : IEngineService, IDisposable
     {
         lock (_gate)
         {
-            if (_listed.TryGetValue(identity, out var node) && node.List is not null)
+            if (!_listed.TryGetValue(identity, out var node) || node.List is null)
+            {
+                // The first copy is still on its way to the list (sources run side by side): it takes this when listed.
+                ForgetEarly(_time.GetUtcNow());
+                if (!_seenEarly.TryGetValue(identity, out var early))
+                {
+                    _seenEarly[identity] = early = (_time.GetUtcNow(), []);
+                }
+                if (!early.Sources.Contains(sourceId))
+                {
+                    early.Sources.Add(sourceId);
+                }
+            }
+            else
             {
                 var seen = node.Value.SeenOn ?? [];
                 if (!seen.Contains(sourceId))
                 {
-                    node.Value = node.Value with { SeenOn = [.. seen, sourceId] };
+                    var before = node.Value;
+                    node.Value = before with { SeenOn = [.. seen, sourceId] };
+                    // A list showing only this source hadn't been sent the packet: it was heard there too now (F3.1 behavior 10).
+                    foreach (var (watcher, filter) in _watchers)
+                    {
+                        if (filter?.SourceId == sourceId && !filter.Matches(before) && filter.Matches(node.Value))
+                        {
+                            watcher.Writer.TryWrite(node.Value);
+                        }
+                    }
                 }
+            }
+        }
+    }
+
+    /// <summary>Drops early Seen on whose first copy never got listed, such as one cleared away meanwhile.</summary>
+    private void ForgetEarly(DateTimeOffset now)
+    {
+        if (_seenEarly.Count == 0)
+        {
+            return;
+        }
+        foreach (var (identity, early) in _seenEarly.ToList())
+        {
+            if (now - early.At > DuplicateFilter.DefaultWindow)
+            {
+                _seenEarly.Remove(identity);
             }
         }
     }

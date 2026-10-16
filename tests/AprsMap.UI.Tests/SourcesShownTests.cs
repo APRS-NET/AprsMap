@@ -80,6 +80,45 @@ public class SourcesShownTests
     }
 
     [Fact]
+    public async Task ThePacketListCanShowOnlyWhatOneSourceHeard()
+    {
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        var list = vm.PacketList;
+        vm.Show(engine.Settings);
+        Assert.False(list.HasSources); // one source: no choice to make
+
+        vm.Show(WithTnc());
+        Assert.True(list.HasSources);
+        Assert.Equal(["All sources", "rotate.aprs2.net", "Direwolf"], list.Sources.Select(s => s.Name));
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var watching = list.WatchAsync(cts.Token);
+        list.SelectedSource = list.Sources.Single(s => s.Id == "tnc");
+        await WaitUntil(() => engine.PacketFilter?.SourceId == "tnc");
+        Assert.True(list.IsFiltered);
+
+        vm.Show(WithTnc()); // settings shown again keep the choice
+        Assert.Equal("tnc", list.SelectedSource?.Id);
+        vm.Show(engine.Settings); // the TNC isn't used any more
+        Assert.False(list.HasSources);
+        Assert.Null(list.SelectedSource?.Id);
+        await WaitUntil(() => engine.PacketFilter is { SourceId: null });
+
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => watching);
+    }
+
+    private static async Task WaitUntil(Func<bool> condition)
+    {
+        for (var i = 0; i < 400 && !condition(); i++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+        Assert.True(condition());
+    }
+
+    [Fact]
     public void EachSourceBesidesAprsIsHasAPill()
     {
         var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());

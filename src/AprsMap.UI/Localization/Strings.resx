@@ -1920,6 +1920,13 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Packets.Type" xml:space="preserve">
     <value>Packet type</value>
   </data>
+  <data name="Packets.Source" xml:space="preserve">
+    <value>Source</value>
+    <comment>The packet list's filter by where packets came from: an APRS-IS server or a TNC.</comment>
+  </data>
+  <data name="Packets.Source.All" xml:space="preserve">
+    <value>All sources</value>
+  </data>
   <data name="Packets.IssuesOnly" xml:space="preserve">
     <value>Issues only</value>
     <comment>Shows only packets that couldn't be fully decoded or don't fit their station's track.</comment>

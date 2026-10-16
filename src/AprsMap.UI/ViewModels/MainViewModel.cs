@@ -1033,6 +1033,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var couldClear = CanClearData;
         _settings = settings;
+        PacketList.ShowSources(settings);
         CanToggle = !settings.ReadOnly;
         if (CanClearData != couldClear)
         {
