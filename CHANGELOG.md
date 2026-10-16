@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.2.0-alpha.4...v0.3.0-alpha.1) (2026-10-16)
+
+
+### Miscellaneous Chores
+
+* **deps:** APRS.NET 0.2.0-alpha.3, and release 0.3.0-alpha.1 ([313f1ed](https://github.com/APRS-NET/AprsMap/commit/313f1ed826154f8d26054e754d0114bb85c8f52a))
+
 ## [0.2.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.2.0-alpha.3...v0.2.0-alpha.4) (2026-10-16)
 
 
