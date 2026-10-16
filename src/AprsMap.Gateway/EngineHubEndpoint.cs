@@ -6,12 +6,16 @@ using Microsoft.Extensions.Options;
 namespace AprsMap.Gateway;
 
 /// <summary>Exposes the in-process <see cref="IEngineService"/> to remote UIs. Method names come from <see cref="EngineHub"/>.</summary>
-internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayOptions> options) : Hub
+internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayOptions> options, Viewers viewers) : Hub
 {
     private bool AllowSettingsChanges => options.Value.AllowSettingsChanges;
 
     [HubMethodName(EngineHub.GetStatus)]
-    public Task<EngineStatus> GetStatus() => engine.GetStatusAsync(Context.ConnectionAborted);
+    public async Task<EngineStatus> GetStatus() =>
+        (await engine.GetStatusAsync(Context.ConnectionAborted).ConfigureAwait(false)) with
+        {
+            Viewers = viewers.Count,
+        };
 
     [HubMethodName(EngineHub.WatchPackets)]
     public IAsyncEnumerable<PacketView> WatchPackets(PacketFilter? filter, CancellationToken cancellationToken) =>

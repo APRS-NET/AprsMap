@@ -234,6 +234,10 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     [ObservableProperty]
     public partial string? EngineText { get; set; }
 
+    /// <summary>"3 viewers connected", on a gateway (F1.14 behavior 11); null on desktop.</summary>
+    [ObservableProperty]
+    public partial string? ViewersText { get; set; }
+
     /// <summary>Whether the APRS-IS login is verified and how often it reconnected, while connected.</summary>
     [ObservableProperty]
     public partial string? ConnectionText { get; set; }
@@ -283,6 +287,9 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
                 }
             );
         ConnectionText = _status is null ? null : ViewModels.ConnectionText.Details(text, _status);
+        ViewersText = _status?.Viewers is { } viewers
+            ? text.Format("Settings.About.Viewers", new Dictionary<string, object?> { ["count"] = viewers })
+            : null;
         ShowLookupCredit = _geocoding?.Enabled == true;
     }
 }

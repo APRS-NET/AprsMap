@@ -16,6 +16,9 @@ internal static class Program
     /// <summary>How long to wait for the gateway before saying it can't be reached.</summary>
     private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(15);
 
+    /// <summary>How often a browser turned away by a full gateway tries again.</summary>
+    private const int BusyRetrySeconds = 30;
+
     /// <summary>
     /// main.js passes the page URL; the gateway that served the page is the one we talk to, at the page's own path, so
     /// a gateway under a path base (<c>/aprs/</c>) needs no setting (F1.14 behavior 1).
@@ -54,6 +57,18 @@ internal static class Program
             try
             {
                 await engine.StartAsync(timeout.Token);
+            }
+            catch (EngineAccessException ex) when (ex.EngineError.Code == EngineErrorCodes.GatewayBusy)
+            {
+                // Full (F1.14 behavior 3): say so, and try again every 30 seconds.
+                StartupPage.ShowError(
+                    text["Startup.Busy.Title"],
+                    text.Format(ex.EngineError),
+                    text["Startup.Retry"],
+                    BusyRetrySeconds
+                );
+                await engine.DisposeAsync();
+                return;
             }
             catch (Exception ex)
                 when (ex is HttpRequestException or OperationCanceledException or InvalidOperationException)

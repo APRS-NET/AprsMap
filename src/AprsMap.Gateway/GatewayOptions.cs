@@ -26,6 +26,18 @@ internal sealed class GatewayOptions
     /// </summary>
     public IList<string> KnownProxies { get; } = [];
 
+    /// <summary>The most browsers connected at once (F1.14 behavior 3).</summary>
+    public int MaxViewers { get; set; } = 100;
+
+    /// <summary>The most browsers connected at once from one address.</summary>
+    public int MaxViewersPerAddress { get; set; } = 5;
+
+    /// <summary>Hub calls a viewer may make per second, on average (F1.14 behavior 4).</summary>
+    public int CallsPerSecond { get; set; } = 20;
+
+    /// <summary>Hub calls a viewer may make at once, above the average.</summary>
+    public int CallBurst { get; set; } = 40;
+
     /// <summary>Who may show the app in a frame: the CSP <c>frame-ancestors</c> sources (F1.14 behavior 10).</summary>
     public string FrameAncestors { get; set; } = "'self'";
 }

@@ -353,6 +353,13 @@
               Foreground="{DynamicResource Brush.TextMuted}"
             />
             <TextBlock
+              x:Name="ViewersLabel"
+              TextWrapping="Wrap"
+              Text="{Binding About.ViewersText}"
+              IsVisible="{Binding About.ViewersText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+            />
+            <TextBlock
               x:Name="AboutConnectionLabel"
               TextWrapping="Wrap"
               Text="{Binding About.ConnectionText}"

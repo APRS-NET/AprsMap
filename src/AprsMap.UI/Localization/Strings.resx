@@ -103,6 +103,12 @@
   <data name="Error.gateway.settings-read-only" xml:space="preserve">
     <value>This gateway's settings can't be changed from the browser: operator sign-in isn't available yet.</value>
   </data>
+  <data name="Error.gateway.busy" xml:space="preserve">
+    <value>This gateway has as many viewers as it allows. Try again in a little while.</value>
+  </data>
+  <data name="Error.gateway.rate-limited" xml:space="preserve">
+    <value>Too many requests to the gateway at once; slowing down.</value>
+  </data>
   <data name="Error.gateway.operator-only" xml:space="preserve">
     <value>Only this gateway's operator can do that, and operator sign-in isn't available yet.</value>
   </data>
@@ -528,6 +534,9 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Only a published build includes the WebAssembly graphics. Use the gateway (docker compose up), or publish the browser app.</value>
     <comment>Keep 'docker compose up' as it is.</comment>
   </data>
+  <data name="Startup.Busy.Title" xml:space="preserve">
+    <value>The gateway is full</value>
+  </data>
   <data name="Startup.Retry" xml:space="preserve">
     <value>Try again</value>
     <comment>Button that reloads the page.</comment>
@@ -695,6 +704,9 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.About.Version" xml:space="preserve">
     <value>Version {version}</value>
     <comment>version: the app's version, such as 0.1.0-alpha.11.</comment>
+  </data>
+  <data name="Settings.About.Viewers" xml:space="preserve">
+    <value>{count, plural, one {# viewer connected to this gateway} other {# viewers connected to this gateway}}</value>
   </data>
   <data name="Settings.About.Engine" xml:space="preserve">
     <value>Engine {version} · APRS.NET {aprsnet}</value>
