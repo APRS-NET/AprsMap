@@ -64,6 +64,23 @@
     <value>APRS-IS disconnected</value>
     <comment>Status bar.</comment>
   </data>
+  <data name="Status.GatewayReconnecting" xml:space="preserve">
+    <value>Reconnecting to the gateway…</value>
+    <comment>Status bar in the browser while the gateway can't be reached; the map and lists keep what they had.</comment>
+  </data>
+  <data name="Shell.Outdated" xml:space="preserve">
+    <value>A new version is available.</value>
+    <comment>Shown when the gateway was upgraded under this page.</comment>
+  </data>
+  <data name="Shell.Reload" xml:space="preserve">
+    <value>Reload</value>
+  </data>
+  <data name="Startup.Outdated.Title" xml:space="preserve">
+    <value>A new version is available</value>
+  </data>
+  <data name="Error.gateway.outdated" xml:space="preserve">
+    <value>A new version of the app is available. Reload the page to use it.</value>
+  </data>
   <data name="Status.EngineUnreachable" xml:space="preserve">
     <value>Engine unreachable · retrying</value>
     <comment>Status bar when the app can't reach its engine (in the browser: the gateway).</comment>

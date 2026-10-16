@@ -81,6 +81,9 @@ public static class EngineErrorCodes
     /// <summary>This viewer made too many calls in a short time (F1.14 behavior 4).</summary>
     public const string GatewayRateLimited = "gateway.rate-limited";
 
+    /// <summary>The app and the gateway speak different contract versions: the page needs reloading (F1.14 behavior 8).</summary>
+    public const string GatewayOutdated = "gateway.outdated";
+
     /// <summary>Address lookup is turned off.</summary>
     public const string GeocodingDisabled = "geocoding.disabled";
 

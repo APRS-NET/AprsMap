@@ -2,6 +2,7 @@
 using AprsMap.Client.Remote;
 using AprsMap.Contracts;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace AprsMap.Gateway.Tests;
 
@@ -63,6 +64,47 @@ public sealed class ViewerLimitTests(LimitedGatewayFactory factory) : IClassFixt
         }
 
         Assert.InRange(limited, 5, 7); // a burst of 3, then about 1 a second
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("?contract=0")]
+    public async Task AnAppOnAnotherContractVersionIsToldToReload(string query)
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsync(
+            EngineHub.Path + "/negotiate" + query + (query.Length == 0 ? "?" : "&") + "negotiateVersion=1",
+            null,
+            Ct
+        );
+
+        Assert.Equal(System.Net.HttpStatusCode.Conflict, response.StatusCode);
+        Assert.True(EngineHub.TryDecodeError(await response.Content.ReadAsStringAsync(Ct), out var error));
+        Assert.Equal(EngineErrorCodes.GatewayOutdated, error.Code);
+    }
+
+    [Fact]
+    public async Task OnceTheGatewayRefusesTheVersionEveryCallSaysSo()
+    {
+        var contract = new ContractCheck();
+        using var invoker = new HttpMessageInvoker(contract.Wrap(new RefuseNegotiate()));
+        await invoker.SendAsync(new HttpRequestMessage(HttpMethod.Post, "http://gw/hubs/engine/negotiate"), Ct);
+        Assert.True(contract.IsOutdated);
+
+        // A client whose connection never started fails its calls; with the check tripped they say why.
+        var connection = new HubConnectionBuilder().WithUrl("http://gw/hubs/engine").Build();
+        await using var remote = new RemoteEngineService(connection, contract);
+        var outdated = await Assert.ThrowsAsync<EngineAccessException>(() => remote.GetStatusAsync(Ct));
+        Assert.Equal(EngineErrorCodes.GatewayOutdated, outdated.EngineError.Code);
+    }
+
+    private sealed class RefuseNegotiate : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken
+        ) => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.Conflict));
     }
 
     private static async Task WaitUntilAsync(Func<Task<bool>> condition)

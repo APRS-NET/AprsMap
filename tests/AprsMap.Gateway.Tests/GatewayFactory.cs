@@ -53,7 +53,7 @@ public class GatewayFactory : WebApplicationFactory<Program>
     {
         var connection = new HubConnectionBuilder()
             .WithUrl(
-                new Uri(Server.BaseAddress, EngineHub.Path),
+                RemoteEngineService.HubUri(Server.BaseAddress),
                 o =>
                 {
                     o.HttpMessageHandlerFactory = _ => Server.CreateHandler();

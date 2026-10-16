@@ -9,6 +9,19 @@ public static class EngineHub
     /// <summary>The hub's path on the gateway.</summary>
     public const string Path = "/hubs/engine";
 
+    /// <summary>
+    /// The contract's version: raised whenever a hub member or record changes in a way an older app can't follow. The
+    /// app sends it with its connection (<see cref="ContractQuery"/>), and a gateway on another version refuses it with
+    /// <see cref="EngineErrorCodes.GatewayOutdated"/> (F1.14 behavior 8).
+    /// </summary>
+    public const int ContractVersion = 1;
+
+    /// <summary>The query value the app's contract version travels in, on the hub's address.</summary>
+    public const string ContractQuery = "contract";
+
+    /// <summary>English text of <see cref="EngineErrorCodes.GatewayOutdated"/>.</summary>
+    public const string OutdatedMessage = "A new version of the app is available. Reload the page to use it.";
+
     /// <summary>Hub method for <see cref="IEngineService.GetStatusAsync"/>.</summary>
     public const string GetStatus = "GetStatus";
 
