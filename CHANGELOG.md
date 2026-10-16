@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.2.0-alpha.3...v0.2.0-alpha.4) (2026-10-16)
+
+
+### Features
+
+* **ui:** the APRS-IS pill is light green when connected, with a receive-only mark ([0bc0c0f](https://github.com/APRS-NET/AprsMap/commit/0bc0c0f2b816534db03e97e776706ad5117364cd))
+
+
+### Bug Fixes
+
+* **map:** never read styled properties from the render thread ([588d08c](https://github.com/APRS-NET/AprsMap/commit/588d08cef19ac3028c41dd5006b09987b947d158))
+* **map:** never read styled properties from the render thread ([3d6b518](https://github.com/APRS-NET/AprsMap/commit/3d6b51886a46119641b712f3d0808d3e171d8a78))
+* **ui:** desktop menu, touchpad zoom, filter-circle setting, and a quieter APRS-IS pill ([20f727f](https://github.com/APRS-NET/AprsMap/commit/20f727f9b1226bb7cb7b3e3a9dc8ba24ef6be874))
+* **ui:** Show the filter's ranges on the map is remembered ([6439853](https://github.com/APRS-NET/AprsMap/commit/6439853ea50ff70abc632137bc84014e6b160808))
+* **ui:** the app menu opens filled on desktop, and a touchpad zooms the map ([7f442b9](https://github.com/APRS-NET/AprsMap/commit/7f442b9a7ea00b4d20ec583bcaf627fa5b545bea))
+
 ## [0.2.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.2.0-alpha.2...v0.2.0-alpha.3) (2026-10-16)
 
 
