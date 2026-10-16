@@ -3,13 +3,13 @@
 What you should expect to see when you run AprsMap today, and what isn't there yet. Per-feature status lives in
 [scope.md](scope.md); this page is the short version for someone trying the app.
 
-As of 2026-10-16 (`0.3.0-alpha.1`): **the first map, receive-only.** The app connects to APRS-IS, draws the stations
-around you on a live map, and lists them and their packets. It doesn't send anything yet.
+As of 2026-10-16 (`main`, toward `0.4.0-alpha.1`): **receive-only, from APRS-IS and from your own TNC.** The app
+connects to APRS-IS and to KISS TNCs over TCP (Direwolf, soundmodem), draws the stations on a live map with their
+tracks and RF paths, lists them and their packets, and has a dashboard of live numbers beside the map. It doesn't send
+anything yet. The last release, `0.3.0-alpha.3`, has the first map only.
 
-**Next:** the [0.4.0-alpha.1 milestone](https://github.com/APRS-NET/AprsMap/milestone/2): receiving on RF through KISS
-TNCs (Direwolf over TCP, USB serial TNCs), and the map features this release leaves out: tracks, RF paths, view filters,
-weather, telemetry, area objects, anomaly flags, housekeeping and quick toggles, and a dashboard of live numbers and
-sparklines beside the map.
+**Next:** [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/3): hardware TNCs over USB serial (MFJ TNC-X,
+NinoTNC), the dashboard's extras, and the public receive-only console (F1.26, spec in review).
 
 ## What you'll see
 
@@ -19,28 +19,37 @@ sparklines beside the map.
 to the app grid with its icon (GNOME shows the icon only through that entry).
 
 1. **First run:** the setup wizard covers the window. It asks for your callsign, an optional location (Maidenhead
-   locator, address or postal code, or coordinates; in the browser also "this device's location"), the APRS-IS
-   server, and an optional passcode. The passcode calculator is there, behind the "licensed, own callsign" tick.
+   locator, address or postal code, coordinates, or a point on a map; in the browser also "this device's location"),
+   the APRS-IS server or **a TNC instead** (RF only, no passcode), and an optional passcode. The passcode calculator is there, behind the "licensed, own callsign" tick.
    Settings are saved in your user folder (`~/.aprsnet/aprsmap` on Linux, `%APPDATA%\aprsnet\aprsmap` on Windows,
    `~/Library/Application Support/aprsnet/aprsmap` on macOS).
 2. **The window:** the map in the centre, with panels around it that dock, tab, split, auto-hide and float. The layout
    and the window's place are remembered; the menu (☰) brings back closed panels and resets the layout.
-   - **Status bar:** the product name, the profile picker (switching reconnects), the APRS-IS pill, packet and station
-     counts, and a gear for Settings. The pill is light green when connected, and shows an eye when the login isn't
-     verified (receive-only). Its tooltip names the server, the login state and the reconnects; clicking it offers
-     Reconnect now. The connection reconnects by itself and shows why and when; a refused login waits instead.
+   - **Status bar:** the product name, the profile picker (switching reconnects), the APRS-IS pill and one pill per
+     TNC, packet and station counts, and a gear for Settings. Each pill has an on/off switch on its left, is light green
+     when connected, and its menu offers Reconnect now; the APRS-IS pill shows an eye when the login isn't verified
+     (receive-only), and its menu also has the quick toggles for the Internet and map tiles. Connections reconnect by
+     themselves and say why and when; a refused login waits instead.
    - **Map:** OpenStreetMap-style tiles (cached), station symbols with overlays, callsign labels where they fit, and
-     stations that fade when stale and go when old. Pan, zoom (mouse, wheel, touchpad, keys), Home and Fit. Hover for a
-     station's name and distance; click to select it. Right-click (or long-press) sets my location, shown as a house,
-     with Undo. Optionally, the filter's ranges as dashed circles.
+     stations that fade when stale and go when old. Tracks, area objects (circles, boxes, lines) and, for the selected
+     station, its RF paths as dashed lines to the digipeaters and IGates that heard it (or all of them with **Show all
+     connections**). Pan, zoom (mouse, wheel, touchpad, keys), Home and Fit; a button clears the stations off the map.
+     Hover for a station's name and distance; click to select it, or the house to select your own station and see what
+     your radio heard. Right-click (or long-press) sets my location, with Undo. Optionally, the filter's ranges as
+     dashed circles. A **View filter** narrows what's drawn (kind, category, device, how it arrived, with weather).
+   - **Dashboard** (a tab beside the map): stations and packets heard, new stations, packet rates and types, problems,
+     each connection's state with its switch, busiest stations and digipeaters, farthest direct hops, weather extremes,
+     and tables of devices, symbols, kinds and reception, over the last hour to the last day.
    - **Stations** (left): every station, object and item, searchable, sorted by last heard, name or distance, and
      filtered to stations or objects and items; Centre and Follow.
    - **Details** (right): the selected station's position and locator, distance and bearing from me, speed, course,
-     altitude, comment and status, how it arrived (direct, digipeated or internet) and its path, device, and last
-     packet. Centre, Follow and Copy position.
+     altitude, comment and status, how it arrived (heard by this station, direct, digipeated or internet) and its path,
+     which source it came from and where else it was seen, device, weather, telemetry with named channels, anomalies
+     (positions that don't fit its track), and last packet. Centre, Follow and Copy position.
    - **Packets** (bottom): the live packet list, newest first: time, symbol, source, summary and markers (direct,
-     digipeated with the hop count, duplicate, parse issues). A row expands to the raw text with the faulty part
-     marked. Filter by text, station, type or issues; pause (Space); Copy and Save.
+     digipeated with the hop count, duplicate, heard here, parse issues and anomalies). A row expands to the raw text
+     with the faulty part marked. Filter by text, station, type, source or issues; pause (Space), and resuming jumps
+     back to the newest; Copy, and Save as text, CSV, JSON or YAML.
 3. **Traffic:** the APRS-IS filter is automatic: my range around my location, plus the area the map shows (up to
    1,000 km across), plus a followed station's surroundings, plus the source's own filter text if it has one. It
    updates as you pan and zoom without logging in again.
@@ -48,9 +57,11 @@ to the app grid with its icon (GNOME shows the icon only through that entry).
    - **Appearance:** theme, standard, high-contrast or colour-vision-safe colours, text size up to 200 %, icon size,
      corners, density, motion, language; applied live, per viewer, with Reset and Undo.
    - **Profiles:** add, edit, copy, delete with Undo, switch.
-   - **Sources:** the APRS-IS servers profiles pick from, with their filter text. KISS TNCs are listed as coming.
+   - **Sources:** the APRS-IS servers and KISS over TCP TNCs profiles pick from (host, port, TNC port). KISS over
+     serial is listed as coming.
    - **Map:** tile provider, brightness, labels, symbol size, the filter circles, and when stations fade and go.
-   - **Data:** Reset the app (delete everything and run first-run setup again; `--reset-all` at start-up).
+   - **Data:** clear stations, stale stations, tracks or the packet history, and Reset the app (delete everything and
+     run first-run setup again; `--reset-all` at start-up).
    - **About:** versions, the connection's details, licences, source link and credits.
 
 ### Web app
@@ -78,10 +89,9 @@ the same window as the desktop app, live.
 
 | What | Where it's planned |
 | --- | --- |
-| RF: KISS TNCs over TCP and USB serial, as sources beside APRS-IS | F3.1, [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/2) |
-| Tracks, RF paths, view filters, weather, telemetry, area objects, anomaly flags, clearing data, quick toggles | Phase 1, [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/2) |
-| A map picker in the wizard | F0.5, [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/2) |
-| A dashboard tab beside the map: live tiles, sparklines and statistics tables | F1.22, [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/2) |
+| RF: hardware TNCs over USB serial (MFJ TNC-X, NinoTNC) | F3.1, [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/3) |
+| Dashboard extras: sparkline values on hover and by keyboard, My view, Copy on the tiles | F1.22, [#176](https://github.com/APRS-NET/AprsMap/issues/176) |
+| A public receive-only console: viewer and operator ports, location privacy | F1.26, spec in review |
 | Extra map views, dead reckoning, destination, saved layouts, web pop-out panels | Phase 1, later |
 | Sending anything (beacons, messages, objects) and operator sign-in on the gateway | Phase 2 |
 | GPS, IGate, digipeater | Phase 3 |
