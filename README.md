@@ -10,10 +10,11 @@ macOS, and a web app served by a Docker gateway, both running the same UI on the
 from [APRS.NET](https://github.com/APRS-NET/APRS.NET). The feature set is a clean-room reimplementation of the
 functionality of APRSIS32, redesigned with a modern UI (see [docs/clean-room.md](docs/clean-room.md)).
 
-Status: `0.3.0-alpha.1`, the first map, receive-only. The app connects to APRS-IS and shows the stations around you on
-a live map, with station and packet lists and station details, on the desktop and in the browser; it doesn't transmit
-yet. Next is receiving on RF through KISS TNCs. See [docs/status.md](docs/status.md) for what to expect when you run it, and
-[docs/scope.md](docs/scope.md) for the plan.
+Status: `0.4.0-alpha.1`, receive-only, from APRS-IS and from your own TNC. The app connects to APRS-IS and to KISS TNCs
+over TCP (Direwolf, soundmodem) and shows the stations on a live map with their tracks and RF paths, with station and
+packet lists, station details (weather, telemetry, anomalies) and a dashboard of live numbers, on the desktop and in the
+browser; it doesn't transmit yet. Next are hardware TNCs over USB serial. See [docs/status.md](docs/status.md) for what
+to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 
 > [!WARNING]
 > **Alpha software.** Every release is an alpha pre-release (`0.x.y-alpha.N`) until at least v1.0.0. Behaviour and
