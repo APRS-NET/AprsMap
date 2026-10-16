@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.3.0-alpha.3...v0.3.0-alpha.4) (2026-10-16)
+
+
+### Features
+
+* filter the packet list by source (F3.1) ([acf6782](https://github.com/APRS-NET/AprsMap/commit/acf67829dd63ca397d0ddd47ec4a3fac2247e11e))
+* select this station on the map, with what its radio heard (F3.1) ([a4005e0](https://github.com/APRS-NET/AprsMap/commit/a4005e0e3d5b0b50e7ae61feb9a71092f2ef7593))
+* select this station on the map, with what its radio heard (F3.1) ([78e00b1](https://github.com/APRS-NET/AprsMap/commit/78e00b1e506001fa74612a3d32463d3f5b27771a))
+* **ui:** each TNC's switch on the dashboard's Connection rows (F3.1) ([e0f0ccb](https://github.com/APRS-NET/AprsMap/commit/e0f0ccbb606f5a412cb2dce7da7fce9272ca0dcf))
+* **ui:** Use a TNC instead in the setup wizard (F3.1) ([dc04842](https://github.com/APRS-NET/AprsMap/commit/dc04842ca1dc10fa69e8f5f16ab439fd3d021225))
+
 ## [0.3.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.3.0-alpha.2...v0.3.0-alpha.3) (2026-10-16)
 
 
