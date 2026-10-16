@@ -6,6 +6,13 @@ namespace AprsMap.Gateway.Tests;
 
 public class RemoteEngineServiceTests
 {
+    [Theory]
+    [InlineData("http://host:8080/", "http://host:8080/hubs/engine")]
+    [InlineData("https://host/aprs/", "https://host/aprs/hubs/engine")]
+    [InlineData("https://host/aprs", "https://host/aprs/hubs/engine")]
+    public void TheHubIsFoundUnderTheGatewaysOwnPath(string gateway, string hub) =>
+        Assert.Equal(new Uri(hub), RemoteEngineService.HubUri(new Uri(gateway)));
+
     [Fact]
     public async Task CreateBuildsADisconnectedClientForTheGateway()
     {

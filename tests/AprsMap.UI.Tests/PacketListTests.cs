@@ -168,6 +168,33 @@ public class PacketListTests
     }
 
     [Fact]
+    public void RouteMarkersAreNamedInWords()
+    {
+        var digipeated = new PacketRow(
+            FakeEngine.Packet("N0CALL") with
+            {
+                Markers = PacketMarkers.Digipeated | PacketMarkers.Duplicate,
+                Hops = 2,
+            },
+            Localizer.Instance,
+            TimeZoneInfo.Utc
+        );
+        var direct = new PacketRow(
+            FakeEngine.Packet("N0CALL") with
+            {
+                Markers = PacketMarkers.Direct,
+            },
+            Localizer.Instance,
+            TimeZoneInfo.Utc
+        );
+
+        Assert.True(digipeated.IsDigipeated && digipeated.IsDuplicate && !digipeated.IsDirect);
+        Assert.Equal("2", digipeated.HopsText);
+        Assert.Equal("Digipeated: repeated by 2 digipeaters", digipeated.DigipeatedText);
+        Assert.True(direct.IsDirect && !direct.IsDigipeated && !direct.IsDuplicate);
+    }
+
+    [Fact]
     public void CopyAndSaveWriteRawLinesOldestFirst()
     {
         var list = Create();

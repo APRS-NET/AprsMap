@@ -29,6 +29,8 @@ public sealed partial class PacketRow : ObservableObject
             )),
         ];
         (RawBefore, RawFault, RawAfter) = Split(packet);
+        HopsText = packet.Hops.ToString(text.Culture);
+        DigipeatedText = text.Format("Packets.Digipeated", new Dictionary<string, object?> { ["count"] = packet.Hops });
     }
 
     /// <summary>The packet as the engine sent it.</summary>
@@ -57,6 +59,21 @@ public sealed partial class PacketRow : ObservableObject
 
     /// <summary>Whether it was carried inside another station's packet (the third-party marker).</summary>
     public bool IsThirdParty => Packet.Markers.HasFlag(PacketMarkers.ThirdParty);
+
+    /// <summary>Whether an IGate heard it on RF straight from the sender (the direct marker).</summary>
+    public bool IsDirect => Packet.Markers.HasFlag(PacketMarkers.Direct);
+
+    /// <summary>Whether digipeaters repeated it on RF (the digipeated marker, with <see cref="HopsText"/>).</summary>
+    public bool IsDigipeated => Packet.Markers.HasFlag(PacketMarkers.Digipeated);
+
+    /// <summary>How many digipeaters repeated it, written on the digipeated marker.</summary>
+    public string HopsText { get; }
+
+    /// <summary>The digipeated marker's name and tooltip, with the count in words.</summary>
+    public string DigipeatedText { get; }
+
+    /// <summary>Whether it's a copy of a packet received within 30 s (the duplicate marker; the row is muted).</summary>
+    public bool IsDuplicate => Packet.Markers.HasFlag(PacketMarkers.Duplicate);
 
     /// <summary>Each issue in words, for the expanded row.</summary>
     public IReadOnlyList<PacketIssueRow> Issues { get; }

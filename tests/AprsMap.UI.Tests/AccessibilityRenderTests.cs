@@ -72,8 +72,43 @@ public sealed class AccessibilityRenderTests : IDisposable
             }
         );
         vm.ShowError(EngineErrors.Create(EngineErrorCodes.OperatorOnly, "English"));
+        engine.Details["N0CALL-15"] = FakeEngine.Detail("N0CALL-15", DateTimeOffset.UnixEpoch);
+        engine.StationPage = new StationPage(
+            [
+                new StationRow(
+                    "N0CALL-15",
+                    StationKind.Station,
+                    "/>",
+                    DateTimeOffset.UnixEpoch,
+                    false,
+                    1234.5,
+                    191,
+                    "Heading home on the long way round",
+                    true
+                ),
+                new StationRow(
+                    "LEADER",
+                    StationKind.Object,
+                    "/>",
+                    DateTimeOffset.UnixEpoch,
+                    true,
+                    null,
+                    null,
+                    null,
+                    true
+                ),
+            ],
+            2
+        );
+        await vm.StationList.RefreshAsync();
         var window = Show(vm);
         Check(window, "main view", failures);
+        vm.SelectedStation = "N0CALL-15";
+        for (var i = 0; i < 50 && vm.Details.LastPacket is null; i++)
+        {
+            await Task.Yield();
+        }
+        Check(window, "details", failures);
 
         // Settings, both sections.
         await vm.OpenSettingsCommand.ExecuteAsync(null);

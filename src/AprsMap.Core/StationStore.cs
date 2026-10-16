@@ -11,7 +11,7 @@ namespace AprsMap.Core;
 /// one copy of the map, never a backlog of packets. Entries fade and leave by age (<see cref="Sweep"/>) and the oldest
 /// go first beyond the cap, so memory stays bounded.
 /// </summary>
-// Duplicate packets (behavior 11) are dropped once APRS.NET's duplicate detection ships (G05).
+// Duplicate packets (behavior 11) never reach the store: the engine drops them first (G05).
 internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntries)
 {
     /// <summary>The most entries kept (behavior 12).</summary>
@@ -26,6 +26,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     // Least recently heard first, for the cap.
     private readonly LinkedList<Entry> _byLastHeard = new();
     private readonly List<StationWatcher> _watchers = [];
+    private AprsPosition? _home;
 
     public int Count
     {
@@ -45,6 +46,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     /// </summary>
     public void Apply(AprsPacket packet, DateTimeOffset receivedAt)
     {
+        var raw = packet.Raw.ToArray(); // as received, third-party wrapper and all
         if (packet.Payload is ThirdPartyPayload { Packet: { HasHeader: true } inner })
         {
             packet = inner;
@@ -66,15 +68,25 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                         report,
                         packet,
                         source.Value,
-                        receivedAt
+                        receivedAt,
+                        raw
                     );
                     return;
                 case ItemReport report:
-                    ApplyNamed(report.Name, StationKind.Item, report.IsLive, report, packet, source.Value, receivedAt);
+                    ApplyNamed(
+                        report.Name,
+                        StationKind.Item,
+                        report.IsLive,
+                        report,
+                        packet,
+                        source.Value,
+                        receivedAt,
+                        raw
+                    );
                     return;
             }
 
-            var entry = Touch(source.Value, StationKind.Station, packet, receivedAt);
+            var entry = Touch(source.Value, StationKind.Station, packet, receivedAt, raw);
             switch (packet.Payload)
             {
                 case PositionedPayload positioned:
@@ -134,7 +146,86 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     {
         lock (_gate)
         {
-            return _entries.TryGetValue(name, out var entry) ? entry.ToDetail() : null;
+            return _entries.TryGetValue(name, out var entry) ? entry.ToDetail(_home) : null;
+        }
+    }
+
+    /// <summary>The longest comment start a station list row carries.</summary>
+    internal const int RowCommentLength = 80;
+
+    /// <summary>
+    /// One page of the station list (F1.7): entries whose name contains the search, of the kinds asked for, in order.
+    /// Only the page's rows are built, so a query over the whole store costs one pass and one sort.
+    /// </summary>
+    public StationPage Query(StationQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var search = string.IsNullOrWhiteSpace(query.Search) ? null : query.Search.Trim();
+        var offset = Math.Max(0, query.Offset);
+        var count = Math.Clamp(query.Count, 0, StationQuery.MaxCount);
+        lock (_gate)
+        {
+            var home = _home;
+            var matches = new List<(Entry Entry, double Distance)>();
+            foreach (var entry in _entries.Values)
+            {
+                if (
+                    query.Kinds switch
+                    {
+                        StationKinds.Stations => entry.Kind != StationKind.Station,
+                        StationKinds.ObjectsAndItems => entry.Kind == StationKind.Station,
+                        _ => false,
+                    }
+                )
+                {
+                    continue;
+                }
+                if (search is not null && !entry.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                var distance =
+                    query.Sort == StationSort.Distance && home is { } from && entry.HasPosition
+                        ? Geodesy.DistanceKm(from, new AprsPosition(entry.Latitude!.Value, entry.Longitude!.Value))
+                        : double.PositiveInfinity;
+                matches.Add((entry, distance));
+            }
+            Comparison<(Entry Entry, double Distance)> order = query.Sort switch
+            {
+                StationSort.Name => (a, b) => string.CompareOrdinal(a.Entry.Name, b.Entry.Name),
+                StationSort.Distance => (a, b) =>
+                    a.Distance.CompareTo(b.Distance) is var c && c != 0
+                        ? c
+                        : string.CompareOrdinal(a.Entry.Name, b.Entry.Name),
+                _ => (a, b) =>
+                    b.Entry.LastHeard.CompareTo(a.Entry.LastHeard) is var c && c != 0
+                        ? c
+                        : string.CompareOrdinal(a.Entry.Name, b.Entry.Name),
+            };
+            matches.Sort(order);
+            var rows = matches.Skip(offset).Take(count).Select(m => m.Entry.ToRow(home)).ToArray();
+            return new StationPage(rows, matches.Count);
+        }
+    }
+
+    /// <summary>
+    /// Measures distance and bearing from my location (F1.13 behavior 4), or not with nulls. A change sends every
+    /// station on the map again, with its new distance.
+    /// </summary>
+    public void SetHome(double? latitude, double? longitude)
+    {
+        AprsPosition? home = latitude is { } lat && longitude is { } lon ? new AprsPosition(lat, lon) : null;
+        lock (_gate)
+        {
+            if (home == _home)
+            {
+                return;
+            }
+            _home = home;
+            foreach (var entry in _entries.Values)
+            {
+                Publish(entry);
+            }
         }
     }
 
@@ -161,7 +252,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         var watcher = new StationWatcher();
         lock (_gate)
         {
-            snapshot = [.. _entries.Values.Where(e => e.HasPosition).Select(e => e.ToState())];
+            snapshot = [.. _entries.Values.Where(e => e.HasPosition).Select(e => e.ToState(_home))];
             _watchers.Add(watcher);
         }
         return watcher;
@@ -191,11 +282,12 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         PositionedPayload report,
         AprsPacket packet,
         string sender,
-        DateTimeOffset receivedAt
+        DateTimeOffset receivedAt,
+        byte[] raw
     )
     {
         // The sender was heard too, whatever the object says.
-        Publish(Touch(sender, StationKind.Station, packet, receivedAt));
+        Publish(Touch(sender, StationKind.Station, packet, receivedAt, raw));
         if (!live)
         {
             // A kill removes it, whoever sent the kill (behavior 6); a later live packet brings it back.
@@ -209,7 +301,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         {
             return; // a station by that name heard already: a station's callsign isn't taken over by an object
         }
-        var entry = Touch(name, kind, packet, receivedAt);
+        var entry = Touch(name, kind, packet, receivedAt, raw);
         if (entry.Owner is { } owner && owner != sender)
         {
             entry.PreviousOwner = owner; // ownership moves (behavior 5)
@@ -220,7 +312,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     }
 
     /// <summary>The entry for <paramref name="name"/>, created if new, marked heard now.</summary>
-    private Entry Touch(string name, StationKind kind, AprsPacket packet, DateTimeOffset receivedAt)
+    private Entry Touch(string name, StationKind kind, AprsPacket packet, DateTimeOffset receivedAt, byte[] raw)
     {
         if (!_entries.TryGetValue(name, out var entry))
         {
@@ -241,6 +333,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         entry.IsStale = false;
         entry.Packets++;
         entry.Path = packet.Path is { } path ? string.Join(',', path.Select(p => p.ToString())) : null;
+        entry.LastPacket = raw;
         return entry;
     }
 
@@ -266,7 +359,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         {
             return;
         }
-        var state = entry.ToState();
+        var state = entry.ToState(_home);
         foreach (var watcher in _watchers)
         {
             watcher.Change(state);
@@ -308,13 +401,63 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         public string? Owner { get; set; }
         public string? PreviousOwner { get; set; }
 
+        /// <summary>The last packet's bytes as received; the details work out its device and route from them.</summary>
+        public byte[]? LastPacket { get; set; }
+
         public bool HasPosition => Latitude is not null && Longitude is not null;
 
-        public StationState ToState() =>
-            new(Name, LastHeard, Latitude!.Value, Longitude!.Value, Symbol ?? string.Empty, Kind, IsStale);
+        public StationState ToState(AprsPosition? home)
+        {
+            var (distance, bearing) = From(home);
+            return new(
+                Name,
+                LastHeard,
+                Latitude!.Value,
+                Longitude!.Value,
+                Symbol ?? string.Empty,
+                Kind,
+                IsStale,
+                distance,
+                bearing
+            );
+        }
 
-        public StationDetail ToDetail() =>
-            new(
+        /// <summary>Distance in km and whole-degree bearing from <paramref name="home"/>; nulls when either is unknown.</summary>
+        private (double?, int?) From(AprsPosition? home)
+        {
+            if (home is not { } from || !HasPosition)
+            {
+                return (null, null);
+            }
+            var to = new AprsPosition(Latitude!.Value, Longitude!.Value);
+            return (
+                Geodesy.DistanceKm(from, to),
+                (int)Math.Round(Geodesy.InitialBearing(from, to), MidpointRounding.AwayFromZero) % 360
+            );
+        }
+
+        public StationRow ToRow(AprsPosition? home)
+        {
+            var (distance, bearing) = From(home);
+            var text = Comment ?? Status;
+            return new(
+                Name,
+                Kind,
+                Symbol,
+                LastHeard,
+                IsStale,
+                distance,
+                bearing,
+                text is { Length: > RowCommentLength } ? text[..RowCommentLength] : text,
+                HasPosition
+            );
+        }
+
+        public StationDetail ToDetail(AprsPosition? home)
+        {
+            var (distance, bearing) = From(home);
+            var (device, arrival, text) = StationFacts.Of(LastPacket);
+            return new(
                 Name,
                 Kind,
                 LastHeard,
@@ -331,8 +474,15 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 AltitudeMetres,
                 Path,
                 Owner,
-                PreviousOwner
+                PreviousOwner,
+                distance,
+                bearing,
+                HasPosition ? MaidenheadLocator.FromPosition(Latitude!.Value, Longitude!.Value, 6).Value : null,
+                device,
+                arrival,
+                text
             );
+        }
 
         public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"{Kind} {Name}");
     }

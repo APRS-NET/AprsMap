@@ -21,6 +21,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetStationAsync"/>.</summary>
     public const string GetStation = "GetStation";
 
+    /// <summary>Hub method for <see cref="IEngineService.QueryStationsAsync"/>.</summary>
+    public const string QueryStations = "QueryStations";
+
     /// <summary>Hub method for <see cref="IEngineService.GetSettingsAsync"/>.</summary>
     public const string GetSettings = "GetSettings";
 

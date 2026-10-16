@@ -2,7 +2,6 @@
 using AprsMap.Contracts;
 using AprsMap.Gateway;
 using AprsMap.Hosting;
-using Microsoft.AspNetCore.StaticFiles;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
@@ -19,15 +18,15 @@ builder
     .Services.AddSignalR()
     .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default));
 builder.Services.AddOptions<GatewayOptions>().BindConfiguration(GatewayOptions.SectionName);
+var gateway = GatewayHttp.Options(builder.Configuration);
+builder.Services.AddGatewayProxies(gateway);
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
+app.UseGatewayFront(gateway);
 
 // The browser app (AprsMap.Browser's publish output) is copied into wwwroot by the Dockerfile.
-var contentTypes = new FileExtensionContentTypeProvider();
-contentTypes.Mappings[".dat"] = "application/octet-stream";
-app.UseDefaultFiles();
-app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypes });
+app.UseBrowserApp();
 
 app.MapHub<EngineHubEndpoint>(EngineHub.Path);
 app.MapTiles();

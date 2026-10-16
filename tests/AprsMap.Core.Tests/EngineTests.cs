@@ -78,6 +78,64 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task ADuplicateIsListedMarkedButDoesNotUpdateTheStation()
+    {
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero));
+        var engine = CreateEngine(time);
+        var first = time.GetUtcNow();
+        engine.Accept("N0CALL-9>APRS,WIDE1-1,qAR,N1GATE:!4903.50N/07201.75W>Heading home");
+
+        time.Advance(TimeSpan.FromSeconds(10)); // the same packet through another IGate
+        engine.Accept("N0CALL-9>APRS,N2DIGI*,qAR,N3GATE:!4903.50N/07201.75W>Heading home");
+        Assert.Equal(first, (await engine.GetStationAsync("N0CALL-9", Ct))!.LastHeard);
+
+        time.Advance(TimeSpan.FromSeconds(30)); // outside the 30 s window: a new report
+        engine.Accept("N0CALL-9>APRS,WIDE1-1,qAR,N1GATE:!4903.50N/07201.75W>Heading home");
+        Assert.Equal(time.GetUtcNow(), (await engine.GetStationAsync("N0CALL-9", Ct))!.LastHeard);
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var markers = new List<PacketMarkers>();
+        await foreach (var packet in engine.WatchPacketsAsync(null, cts.Token))
+        {
+            markers.Add(packet.Markers);
+            if (markers.Count == 3)
+            {
+                break;
+            }
+        }
+        Assert.Equal(
+            [PacketMarkers.Direct, PacketMarkers.Duplicate | PacketMarkers.Digipeated, PacketMarkers.Direct],
+            markers
+        );
+    }
+
+    [Fact]
+    public async Task StationsAreMeasuredFromTheActiveProfilesLocation()
+    {
+        var engine = CreateEngine(new FakeTimeProvider());
+        engine.Accept("N0FAR>APRS:!4038.17N/10410.17W-");
+        var settings = await engine.GetSettingsAsync(Ct);
+        Assert.Null((await engine.GetStationAsync("N0FAR", Ct))!.DistanceKm);
+
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Profiles =
+                [
+                    .. settings.Profiles.Select(p =>
+                        p.Id == settings.ActiveProfileId ? p with { Latitude = 40, Longitude = -105 } : p
+                    ),
+                ],
+            },
+            Ct
+        );
+
+        var station = (await engine.GetStationAsync("N0FAR", Ct))!;
+        Assert.Equal(100, station.DistanceKm!.Value, 0);
+        Assert.Equal(45, station.BearingDegrees);
+    }
+
+    [Fact]
     public async Task FilteredWatchersGetOnlyMatchingPacketsHeldAndLive()
     {
         var engine = CreateEngine(new FakeTimeProvider());

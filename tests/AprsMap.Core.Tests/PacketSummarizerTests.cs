@@ -70,8 +70,30 @@ public class PacketSummarizerTests
         Assert.Equal(PacketKind.Position, view.Kind);
         Assert.Equal("/>", view.Symbol);
         Assert.False(view.HasIssues);
-        Assert.Equal(PacketMarkers.None, view.Markers);
+        Assert.Equal(PacketMarkers.Direct, view.Markers); // no digipeater used: the IGate heard it straight
     }
+
+    [Theory]
+    [InlineData("N0CALL>APRS,WIDE1-1,qAR,N1GATE:>hi", PacketMarkers.Direct, 0)]
+    [InlineData("N0CALL>APRS,N2DIGI*,WIDE2-1,qAR,N1GATE:>hi", PacketMarkers.Digipeated, 1)]
+    [InlineData("N0CALL>APRS,N2DIGI,WIDE1*,WIDE2-1,qAO,N1GATE:>hi", PacketMarkers.Digipeated, 2)]
+    [InlineData("N0CALL>APRS,TCPIP*,qAC,T2TEST:>hi", PacketMarkers.None, 0)]
+    [InlineData("N0CALL>APRS,qAS,T2TEST:>hi", PacketMarkers.None, 0)]
+    public void ThePathSaysWhetherItWasHeardDirectOrDigipeated(string line, PacketMarkers markers, int hops)
+    {
+        var view = PacketSummarizer.Summarize(AprsPacket.Parse(line), Now);
+
+        Assert.Equal(markers, view.Markers);
+        Assert.Equal(hops, view.Hops);
+    }
+
+    [Fact]
+    public void ADuplicateIsMarked() =>
+        Assert.True(
+            PacketSummarizer
+                .Summarize(AprsPacket.Parse("N0CALL>APRS,TCPIP*,qAC,T2TEST:>hi"), Now, duplicate: true)
+                .Markers.HasFlag(PacketMarkers.Duplicate)
+        );
 
     [Fact]
     public void StatusWithASymbolCarriesIt()
@@ -107,7 +129,7 @@ public class PacketSummarizerTests
         var view = PacketSummarizer.Summarize(AprsPacket.Parse(Line), Now);
 
         Assert.Equal("N0CALL", view.Source);
-        Assert.Equal(PacketMarkers.ThirdParty, view.Markers);
+        Assert.True(view.Markers.HasFlag(PacketMarkers.ThirdParty));
         Assert.Equal(Line, view.Raw);
         var issue = Assert.Single(view.Issues!, i => i.Code == "aprs.parse.invalid-latitude");
         Assert.Equal(

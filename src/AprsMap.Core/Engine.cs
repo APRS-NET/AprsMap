@@ -30,6 +30,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly Queue<PacketView> _recent = new();
     private readonly List<(Channel<PacketView> Channel, PacketFilter? Filter)> _watchers = [];
     private readonly StationStore _stations;
+    private readonly DuplicateFilter _duplicates;
     private Link _link = new(ConnectionState.Disconnected);
     private int _reconnects;
     private IPacketSource? _source;
@@ -57,6 +58,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         _settingsStore = settingsStore;
         _geocoder = geocoder ?? NoGeocoder.Instance;
         _time = time;
+        _duplicates = new DuplicateFilter(timeProvider: time);
         _logger = logger;
     }
 
@@ -119,6 +121,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             {
                 _settings = saved;
             }
+            MeasureFrom(saved);
 
             var after = saved.GetActiveProfile();
             if (after is null ? before is not null : after.NeedsNewLogin(before))
@@ -151,6 +154,7 @@ public sealed partial class Engine : IEngineService, IDisposable
                 _packets = 0;
             }
             _stations.Clear();
+            MeasureFrom(AppSettings.Empty);
             LogReset();
             SignalRestart();
         }
@@ -320,6 +324,13 @@ public sealed partial class Engine : IEngineService, IDisposable
         return Task.FromResult(_stations.Get(name));
     }
 
+    /// <inheritdoc />
+    public Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return Task.FromResult(_stations.Query(query));
+    }
+
     /// <summary>Marks stations stale and removes expired ones, once a <see cref="EngineOptions.SweepInterval"/> (F1.3 behavior 10).</summary>
     private async Task SweepAsync(CancellationToken cancellationToken)
     {
@@ -442,8 +453,12 @@ public sealed partial class Engine : IEngineService, IDisposable
         }
 
         var now = _time.GetUtcNow();
-        var view = PacketSummarizer.Summarize(packet, now);
-        _stations.Apply(packet, now);
+        var duplicate = !_duplicates.TryAccept(packet);
+        var view = PacketSummarizer.Summarize(packet, now, duplicate);
+        if (!duplicate)
+        {
+            _stations.Apply(packet, now); // F1.3 behavior 11: a duplicate is listed, not applied again
+        }
         EngineTelemetry.PacketsReceived.Add(1, new KeyValuePair<string, object?>("aprs.packet.type", view.Type));
         lock (_gate)
         {
@@ -554,7 +569,15 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             _settings = settings;
         }
+        MeasureFrom(settings);
         return settings;
+    }
+
+    /// <summary>Distances and bearings are from the active profile's location (F1.13 behavior 4).</summary>
+    private void MeasureFrom(AppSettings settings)
+    {
+        var profile = settings.GetActiveProfile();
+        _stations.SetHome(profile?.Latitude, profile?.Longitude);
     }
 
     /// <summary>The first profile, from the configured defaults (appsettings.json or environment), if they name a callsign.</summary>

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 using AprsMap.Contracts;
 using AprsNet.AprsIsTcpClient;
+using AprsNet.Filters;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -104,17 +105,17 @@ internal sealed class AprsIsPacketSourceFactory(
     /// The stand-in is everything within <see cref="DefaultRangeKm"/> km of the station's location, or of its last
     /// position on APRS-IS when no location is set (aprs-is.net server-side filter commands <c>r/</c> and <c>m/</c>).
     /// </summary>
-    // SHIM: G04 (typed APRS-IS filter builder), and until F1.2 makes the filter follow the map.
+    // Until F1.2 makes the filter follow the map.
     internal static string EffectiveFilter(StationProfile profile)
     {
         if (!string.IsNullOrWhiteSpace(profile.Filter))
         {
             return profile.Filter;
         }
-        var range = DefaultRangeKm.ToString(System.Globalization.CultureInfo.InvariantCulture);
-        return profile is { Latitude: { } lat, Longitude: { } lon }
-            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"r/{lat:0.####}/{lon:0.####}/{range}")
-            : $"m/{range}";
+        var term = profile is { Latitude: { } lat, Longitude: { } lon }
+            ? AprsFilterTerm.Range(new AprsPosition(lat, lon), DefaultRangeKm)
+            : AprsFilterTerm.MyRange(DefaultRangeKm);
+        return term.ToString();
     }
 
     // APRS-IS login fields are space-separated tokens.

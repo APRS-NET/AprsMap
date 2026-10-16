@@ -54,6 +54,19 @@ public sealed partial class MainViewModel : ObservableObject
         _showPseudoLanguage = showPseudoLanguage;
         _text = text ?? Localizer.Instance;
         PacketList = new PacketListViewModel(engine, time, _text);
+        Details = new Stations.StationDetailsViewModel(
+            engine,
+            time,
+            _text,
+            () => _settings?.Units ?? UnitSettings.Metric
+        );
+        Details.CloseRequested += (_, _) => SelectedStation = null;
+        StationList = new Stations.StationListViewModel(
+            engine,
+            time,
+            _text,
+            () => _settings?.Units ?? UnitSettings.Metric
+        );
         Shell = new ShellViewModel(this, _text, managedWindows);
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
@@ -408,6 +421,7 @@ public sealed partial class MainViewModel : ObservableObject
             Map.UseProvider(_appearance.Current.MapProvider);
             _appearance.Changed += (_, settings) => Map.UseProvider(settings.MapProvider);
         }
+        await StationList.LoadAsync();
         var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);
@@ -428,6 +442,8 @@ public sealed partial class MainViewModel : ObservableObject
         }
         StationCount = _stations.Count;
         StationsChanged?.Invoke(this, batch);
+        Details.Changed(batch);
+        StationList.Changed();
     }
 
     /// <summary>Every station on the map, by name, as the station stream has them.</summary>
@@ -445,6 +461,43 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The station selected on the map or in a list, for the Details panel (F1.6); null for none.</summary>
     [ObservableProperty]
     public partial string? SelectedStation { get; set; }
+
+    /// <summary>The Details panel (F1.6): the selected station, in full.</summary>
+    public Stations.StationDetailsViewModel Details { get; }
+
+    partial void OnSelectedStationChanged(string? value)
+    {
+        _ = Details.ShowAsync(value);
+        if (value is not null)
+        {
+            LastSelectedStation = value;
+        }
+    }
+
+    /// <summary>The Stations panel (F1.7).</summary>
+    public Stations.StationListViewModel StationList { get; }
+
+    /// <summary>Where this viewer's own preferences live (the station list's sort); null keeps them for this run.</summary>
+    public IPreferenceStore? Preferences
+    {
+        get => StationList.Preferences;
+        init => StationList.Preferences = value;
+    }
+
+    /// <summary>The station selected most recently, for Go to (F1.7 behavior 9) after the selection is cleared.</summary>
+    public string? LastSelectedStation { get; private set; }
+
+    /// <summary>Raised to centre the map on a station by name (F1.7 behaviors 7 and 9).</summary>
+    public event EventHandler<string>? CentreOnStationRequested;
+
+    /// <summary>Raised by <c>/</c> or Ctrl+F: the station search takes focus (F1.7 behavior 3).</summary>
+    public event EventHandler? FocusStationSearchRequested;
+
+    /// <summary>Centres the map on <paramref name="name"/> (Enter or double-click in the list).</summary>
+    internal void CentreOn(string name) => CentreOnStationRequested?.Invoke(this, name);
+
+    /// <summary>Puts the keyboard in the station search.</summary>
+    internal void FocusStationSearch() => FocusStationSearchRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Shows freshly loaded settings without treating them as the user's choice.</summary>
     internal void Show(AppSettings settings)
@@ -466,10 +519,14 @@ public sealed partial class MainViewModel : ObservableObject
             _showingSettings = false;
         }
 
+        var active = settings.GetActiveProfile();
+        CanSetMyLocation = active is not null && !settings.ReadOnly;
         if (Map is not null)
         {
-            // Home is the active profile's location (behavior 3).
-            Map.Home = settings.GetActiveProfile() is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
+            // Home is the active profile's location (behavior 3), drawn as a house with its callsign (F1.13).
+            Map.Home = active is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
+            Map.HomeName = active?.Callsign;
+            Map.DistanceUnit = settings.Units.Distance;
         }
         var notSetUp = settings.Profiles.Count == 0;
         ShowGatewaySetupNote = notSetUp && settings.ReadOnly;
@@ -560,6 +617,8 @@ public sealed partial class MainViewModel : ObservableObject
 
     internal void Show(EngineStatus status)
     {
+        Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
+        StationList.Rewrite();
         PacketCount = status.PacketsReceived;
         _status = status;
         _engineUnreachable = false;

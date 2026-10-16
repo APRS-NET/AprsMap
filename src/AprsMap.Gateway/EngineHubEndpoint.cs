@@ -24,6 +24,10 @@ internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayO
     [HubMethodName(EngineHub.GetStation)]
     public Task<StationDetail?> GetStation(string name) => engine.GetStationAsync(name, Context.ConnectionAborted);
 
+    [HubMethodName(EngineHub.QueryStations)]
+    public Task<StationPage> QueryStations(StationQuery query) =>
+        engine.QueryStationsAsync(query, Context.ConnectionAborted);
+
     /// <summary>The settings; read-only, with passcodes hidden, unless this gateway allows settings changes.</summary>
     [HubMethodName(EngineHub.GetSettings)]
     public async Task<AppSettings> GetSettings()

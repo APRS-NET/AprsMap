@@ -10,7 +10,7 @@ using Avalonia.Media;
 namespace AprsMap.UI.Views;
 
 /// <summary>
-/// The view for each panel of the shell, picked by its kind. Panels not built yet (the map, Stations, Details) show a
+/// The view for each panel of the shell, picked by its kind. Panels without a view show a
 /// short note instead, so the default layout already has its final shape.
 /// </summary>
 public sealed class PanelTemplate : IDataTemplate
@@ -23,6 +23,8 @@ public sealed class PanelTemplate : IDataTemplate
         param switch
         {
             PanelTool { Kind: PanelKinds.Packets } panel => new PacketsPanel { DataContext = panel.Context },
+            PanelTool { Kind: PanelKinds.Details } panel => new DetailsPanel { DataContext = panel.Context },
+            PanelTool { Kind: PanelKinds.Stations } panel => new StationsPanel { DataContext = panel.Context },
             PanelTool panel => Placeholder(panel.Kind),
             MapDocument { Context: ViewModels.MainViewModel { Map: not null } context } => new Map.MapPanel
             {

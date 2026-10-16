@@ -1,0 +1,124 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The Stations panel (F1.7): search, sort and kinds above the list of stations the engine holds. Its DataContext is
+     the main view model; everything inside works on its station list. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:s="using:AprsMap.UI.Stations"
+  xmlns:p="using:AprsMap.UI.Packets"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Views.StationsPanel"
+  x:DataType="vm:MainViewModel"
+>
+  <UserControl.Styles>
+    <!-- A stale station is greyed (behavior 1). -->
+    <Style Selector="Grid.stale TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+    </Style>
+    <Style Selector="Grid.stale Image">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+  </UserControl.Styles>
+  <DockPanel
+    DataContext="{Binding StationList}"
+    x:DataType="s:StationListViewModel"
+    Background="{DynamicResource Brush.Surface}"
+  >
+    <StackPanel DockPanel.Dock="Top" Margin="8,6" Spacing="6">
+      <TextBox
+        x:Name="SearchBox"
+        Text="{Binding Search}"
+        PlaceholderText="{l:T Stations.Search}"
+        AutomationProperties.Name="{l:T Stations.Search}"
+        FontFamily="{DynamicResource Font.Mono}"
+      />
+      <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6">
+        <ComboBox
+          x:Name="SortBox"
+          ItemsSource="{Binding Sorts}"
+          SelectedItem="{Binding SelectedSort}"
+          AutomationProperties.Name="{l:T Stations.Sort}"
+          ToolTip.Tip="{l:T Stations.Sort}"
+        >
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="s:NamedChoice">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <ComboBox
+          x:Name="KindsBox"
+          ItemsSource="{Binding KindOptions}"
+          SelectedItem="{Binding SelectedKinds}"
+          AutomationProperties.Name="{l:T Stations.Kinds}"
+          ToolTip.Tip="{l:T Stations.Kinds}"
+        >
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="s:NamedChoice">
+              <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </WrapPanel>
+      <TextBlock
+        x:Name="CountLine"
+        Text="{Binding CountText}"
+        Foreground="{DynamicResource Brush.TextMuted}"
+        AutomationProperties.LiveSetting="Polite"
+      />
+    </StackPanel>
+    <Panel>
+      <ListBox x:Name="StationList" ItemsSource="{Binding Rows}" AutomationProperties.Name="{Binding CountText}">
+        <ListBox.ContextMenu>
+          <ContextMenu>
+            <MenuItem x:Name="CentreItem" Header="{l:T Stations.Centre}" InputGesture="Enter" />
+            <MenuItem x:Name="FollowItem" Header="{l:T Stations.Follow}" InputGesture="L" />
+          </ContextMenu>
+        </ListBox.ContextMenu>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="s:StationListRow">
+            <Grid ColumnDefinitions="Auto,Auto,*" RowDefinitions="Auto,Auto" Classes.stale="{Binding IsStale}">
+              <Image
+                Grid.RowSpan="2"
+                Source="{Binding Symbol, Converter={x:Static p:SymbolIcons.Instance}}"
+                Width="{DynamicResource Icon.Size}"
+                Height="{DynamicResource Icon.Size}"
+                VerticalAlignment="Center"
+                Margin="0,0,8,0"
+              />
+              <TextBlock
+                Grid.Column="1"
+                Text="{Binding Name}"
+                FontFamily="{DynamicResource Font.Mono}"
+                FontWeight="SemiBold"
+              />
+              <TextBlock
+                Grid.Column="2"
+                Text="{Binding HeardText}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextAlignment="Right"
+                TextWrapping="Wrap"
+                Margin="8,0,0,0"
+              />
+              <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" TextTrimming="CharacterEllipsis">
+                <Run Text="{Binding RangeText}" Foreground="{DynamicResource Brush.Accent}" />
+                <Run Text="{Binding Comment}" Foreground="{DynamicResource Brush.TextMuted}" />
+              </TextBlock>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+      <TextBlock
+        Text="{Binding EmptyText}"
+        IsVisible="{Binding IsEmpty}"
+        Foreground="{DynamicResource Brush.TextMuted}"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        TextWrapping="Wrap"
+        TextAlignment="Center"
+        Margin="16"
+      />
+    </Panel>
+  </DockPanel>
+</UserControl>

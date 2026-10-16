@@ -12,6 +12,8 @@ namespace AprsMap.Contracts;
 /// <param name="Symbol">The symbol as transmitted: table or overlay character, then code (for example <c>/&gt;</c>).</param>
 /// <param name="Kind">A station, an object or an item.</param>
 /// <param name="IsStale">Not heard for the stale time (F1.3 behavior 7): the map fades it.</param>
+/// <param name="DistanceKm">Great-circle distance from my location (F1.13 behavior 4); null without one.</param>
+/// <param name="BearingDegrees">Initial bearing from my location, 0–359 (F1.13 behavior 4); null without one.</param>
 public sealed record StationState(
     string Name,
     DateTimeOffset LastHeard,
@@ -19,7 +21,9 @@ public sealed record StationState(
     double Longitude,
     string Symbol,
     StationKind Kind = StationKind.Station,
-    bool IsStale = false
+    bool IsStale = false,
+    double? DistanceKm = null,
+    int? BearingDegrees = null
 );
 
 /// <summary>What an entry in the station store is (APRS101 chapter 11).</summary>
@@ -61,6 +65,12 @@ public enum StationKind
 /// <param name="Path">The path of the last packet, as received (for example <c>WIDE1-1,qAR,N0IGT</c>).</param>
 /// <param name="Owner">For an object or item: the station that sent its latest packet.</param>
 /// <param name="PreviousOwner">For an object or item: the owner before <paramref name="Owner"/>, if it changed hands.</param>
+/// <param name="DistanceKm">Great-circle distance from my location (F1.13 behavior 4); null when either is unknown.</param>
+/// <param name="BearingDegrees">Initial bearing from my location, 0–359; null when either position is unknown.</param>
+/// <param name="Locator">The position's Maidenhead locator, 6 characters, when a position has been heard.</param>
+/// <param name="Device">What sent the last packet, from the aprs-deviceid list (G07), when known.</param>
+/// <param name="Arrival">How the last packet reached the engine, from its path (G20).</param>
+/// <param name="LastPacket">The last packet as received (TNC2 text, Latin-1).</param>
 public sealed record StationDetail(
     string Name,
     StationKind Kind,
@@ -78,8 +88,45 @@ public sealed record StationDetail(
     double? AltitudeMetres,
     string? Path,
     string? Owner,
-    string? PreviousOwner
+    string? PreviousOwner,
+    double? DistanceKm = null,
+    int? BearingDegrees = null,
+    string? Locator = null,
+    StationDevice? Device = null,
+    StationArrival? Arrival = null,
+    string? LastPacket = null
 );
+
+/// <summary>The equipment or software that sent a packet (docs/features/F1.6-station-details.md, behavior 2.7).</summary>
+/// <param name="Vendor">The maker, for example <c>Yaesu</c>.</param>
+/// <param name="Model">The model, for example <c>FTM-500D</c>.</param>
+/// <param name="Class">
+/// The aprs-deviceid class name, such as <c>Tracker</c>, <c>Rig</c>, <c>HandHeld</c>, <c>Software</c> or
+/// <c>Digipeater</c>; the UI words it.
+/// </param>
+public sealed record StationDevice(string? Vendor, string? Model, string? Class);
+
+/// <summary>How a packet reached the engine (docs/features/F1.6-station-details.md, behavior 2.6).</summary>
+/// <param name="Kind">Heard directly on RF, through digipeaters, from the internet, or not said by the path.</param>
+/// <param name="Digipeaters">The digipeaters that repeated it and named themselves, in order.</param>
+/// <param name="Gateway">The IGate that put it on APRS-IS, or the server the sender connected to; null when unknown.</param>
+public sealed record StationArrival(ArrivalKind Kind, IReadOnlyList<string> Digipeaters, string? Gateway);
+
+/// <summary>How a packet reached the engine.</summary>
+public enum ArrivalKind
+{
+    /// <summary>The path doesn't say (a server passing it on, say).</summary>
+    Unknown,
+
+    /// <summary>Heard on RF straight from the sender, with no digipeater.</summary>
+    Direct,
+
+    /// <summary>Repeated by digipeaters on RF.</summary>
+    Digipeated,
+
+    /// <summary>Sent over the internet, never on RF.</summary>
+    Internet,
+}
 
 /// <summary>
 /// One step of <see cref="IEngineService.WatchStationsAsync"/>: the stations that changed since the last batch (latest

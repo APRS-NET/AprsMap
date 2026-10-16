@@ -34,6 +34,9 @@ public interface IEngineService
     /// </summary>
     Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default);
 
+    /// <summary>One page of the station list, searched, filtered and sorted by the engine (F1.7).</summary>
+    Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default);
+
     /// <summary>The user's settings. A gateway may return them read-only, with passcodes hidden.</summary>
     Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default);
 

@@ -107,6 +107,48 @@ internal sealed class FakeEngine : IEngineService
 
     public Dictionary<string, StationDetail> Details { get; } = [];
 
+    /// <summary>A station with every detail line known: digipeated, with a device, motion, comment and status.</summary>
+    public static StationDetail Detail(string name, DateTimeOffset heard) =>
+        new(
+            name,
+            StationKind.Station,
+            heard,
+            12,
+            false,
+            40.015,
+            -105.2705,
+            0,
+            "/>",
+            "Heading home",
+            "Net tonight",
+            88,
+            66.672,
+            1609.344,
+            "N2DIGI*,WIDE2-1,qAR,N1GATE",
+            null,
+            null,
+            100,
+            45,
+            "DN70kb",
+            new StationDevice("Yaesu", "FTM-500D", "Rig"),
+            new StationArrival(ArrivalKind.Digipeated, ["N2DIGI"], "N1GATE"),
+            $"{name}>APY500,N2DIGI*,WIDE2-1,qAR,N1GATE:!4000.90N/10516.23W>088/036/A=005280Heading home"
+        );
+
+    /// <summary>What <see cref="QueryStationsAsync"/> returns; the last query is kept in <see cref="LastQuery"/>.</summary>
+    public StationPage StationPage { get; set; } = new([], 0);
+
+    public StationQuery? LastQuery { get; private set; }
+
+    public int Queries { get; private set; }
+
+    public Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default)
+    {
+        LastQuery = query;
+        Queries++;
+        return Task.FromResult(StationPage);
+    }
+
     public Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default) =>
         Task.FromResult(Details.GetValueOrDefault(name));
 
