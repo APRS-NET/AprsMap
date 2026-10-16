@@ -31,6 +31,20 @@ internal static class SettingsValidator
             {
                 throw Fail(EngineErrorCodes.SourceInvalid, "Every source needs its own id and a name.");
             }
+            if (
+                source.Kind == SourceKind.KissTcp
+                && (
+                    string.IsNullOrWhiteSpace(source.Host)
+                    || source.Port is < 1 or > 65535
+                    || source.TncPort is < 0 or > 15
+                )
+            )
+            {
+                throw Fail(
+                    EngineErrorCodes.KissSourceInvalid,
+                    "A KISS source needs a host, a port from 1 to 65535 and a TNC port from 0 to 15."
+                );
+            }
         }
 
         var ids = new HashSet<string>(StringComparer.Ordinal);

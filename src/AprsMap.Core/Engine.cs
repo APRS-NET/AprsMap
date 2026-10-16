@@ -493,7 +493,16 @@ public sealed partial class Engine : IEngineService, IDisposable
                     SetSourceLink(source, new Link(ConnectionState.Connecting));
                     var opened = await connection
                         .StartAsync(
-                            e => SetSourceLink(source, new Link(e.State, e.Login?.Server, Error: e.Error)),
+                            e =>
+                                SetSourceLink(
+                                    source,
+                                    new Link(
+                                        e.State,
+                                        e.Login?.Server,
+                                        RetryAt: e.RetryIn is { } wait ? _time.GetUtcNow() + wait : null,
+                                        Error: e.Error
+                                    )
+                                ),
                             cancellationToken
                         )
                         .ConfigureAwait(false);
@@ -515,7 +524,9 @@ public sealed partial class Engine : IEngineService, IDisposable
                         new Link(
                             ConnectionState.Reconnecting,
                             RetryAt: _time.GetUtcNow() + delay,
-                            Error: new EngineError(EngineErrorCodes.AprsIsLinkFailed, ex.Message)
+                            Error: ex is IHasEngineError coded
+                                ? coded.EngineError
+                                : new EngineError(EngineErrorCodes.AprsIsLinkFailed, ex.Message)
                         )
                     );
                     LogSourceFailed(ex, source.Name, delay);

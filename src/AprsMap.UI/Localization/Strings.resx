@@ -2244,4 +2244,36 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Doesn't fit its track: {flags}</value>
     <comment>The track marker's tooltip. flags: the anomalies' names, comma-separated.</comment>
   </data>
+  <data name="Settings.Sources.Host" xml:space="preserve">
+    <value>Host</value>
+    <comment>KISS over TCP: the TNC's host name or address.</comment>
+  </data>
+  <data name="Settings.Sources.HostExample" xml:space="preserve">
+    <value>localhost or 192.168.1.20</value>
+    <comment>Placeholder: where Direwolf or soundmodem runs.</comment>
+  </data>
+  <data name="Settings.Sources.Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Settings.Sources.TncPort" xml:space="preserve">
+    <value>TNC port</value>
+    <comment>A multi-port TNC's radio port, 0 to 15; 0 for most.</comment>
+  </data>
+  <data name="Settings.Sources.UseWith" xml:space="preserve">
+    <value>Use with</value>
+    <comment>The profiles that open this source.</comment>
+  </data>
+  <data name="Error.kiss.unreachable" xml:space="preserve">
+    <value>TNC not reachable</value>
+    <comment>Shown in a KISS source's status.</comment>
+  </data>
+  <data name="Error.kiss.closed" xml:space="preserve">
+    <value>The TNC closed the connection</value>
+  </data>
+  <data name="Error.kiss.link-failed" xml:space="preserve">
+    <value>Link to the TNC failed</value>
+  </data>
+  <data name="Error.settings.source.kiss-invalid" xml:space="preserve">
+    <value>A KISS source needs a host, a port from 1 to 65535, and a TNC port from 0 to 15.</value>
+  </data>
 </root>

@@ -681,7 +681,10 @@ public class EngineTests
         await run;
     }
 
-    private static readonly SourceSettings Tnc = new("tnc", "Direwolf", SourceKind.KissTcp);
+    private static readonly SourceSettings Tnc = new("tnc", "Direwolf", SourceKind.KissTcp, Host: "127.0.0.1");
+
+    // KISS over serial isn't built yet (it waits for hardware testing of APRS.NET#126).
+    private static readonly SourceSettings SerialTnc = new("serial", "TNC-X", SourceKind.KissSerial);
 
     [Fact]
     public async Task APacketOnTwoSourcesIsListedOnceAndSeenOnTheSecond()
@@ -779,7 +782,7 @@ public class EngineTests
     {
         var profile = InMemorySettingsStore.Profile("N0TEST") with
         {
-            SourceIds = [InMemorySettingsStore.Rotate.Id, Tnc.Id],
+            SourceIds = [InMemorySettingsStore.Rotate.Id, SerialTnc.Id],
         };
         var engine = new Engine(
             Options.Create(new EngineOptions()),
@@ -793,7 +796,7 @@ public class EngineTests
                     [profile],
                     profile.Id,
                     UnitSettings.Metric,
-                    Sources: [InMemorySettingsStore.Rotate with { Server = "127.0.0.1:1" }, Tnc]
+                    Sources: [InMemorySettingsStore.Rotate with { Server = "127.0.0.1:1" }, SerialTnc]
                 )
             ),
             new FakeTimeProvider(),
@@ -803,7 +806,7 @@ public class EngineTests
 
         var run = engine.RunAsync(cts.Token);
         await WaitUntil(async () =>
-            (await engine.GetStatusAsync(Ct)).Sources?.FirstOrDefault(s => s.Id == Tnc.Id) is { } tnc
+            (await engine.GetStatusAsync(Ct)).Sources?.FirstOrDefault(s => s.Id == SerialTnc.Id) is { } tnc
             && tnc.Error?.Code == EngineErrorCodes.SourceKindNotBuilt
         );
 

@@ -20,7 +20,7 @@ public class SourcesSectionTests
     private static AppSettings BothOnRotate() => FakeEngine.TwoProfiles() with { Sources = [FakeEngine.Rotate, Euro] };
 
     [Fact]
-    public void EachSourceSaysWhoUsesItAndOnlyAprsIsCanBeAddedForNow()
+    public void EachSourceSaysWhoUsesItAndAprsIsOrKissOverTcpCanBeAdded()
     {
         var (section, _) = Create(BothOnRotate());
 
@@ -28,10 +28,64 @@ public class SourcesSectionTests
         Assert.Equal("Used by: Home, Portable", section.Rows[0].UsedByText);
         Assert.Equal("Not used by any profile", section.Rows[1].UsedByText);
         Assert.Equal(
-            ["APRS-IS", "KISS over TCP · coming", "KISS over serial · coming", "GPS · coming"],
+            ["APRS-IS", "KISS over TCP", "KISS over serial · coming", "GPS · coming"],
             section.Kinds.Select(k => k.Name)
         );
-        Assert.Equal([true, false, false, false], section.Kinds.Select(k => k.IsAvailable));
+        Assert.Equal([true, true, false, false], section.Kinds.Select(k => k.IsAvailable));
+    }
+
+    [Fact]
+    public async Task AddingAKissSourceTicksItForTheActiveProfileByDefault()
+    {
+        var (section, engine) = Create(BothOnRotate());
+        section.AddCommand.Execute(null);
+        section.Kinds[1].IsSelected = true; // KISS over TCP
+
+        Assert.True(section.IsKiss);
+        Assert.False(section.IsAprsIs);
+        Assert.Equal([true, false], section.EditProfiles.Select(p => p.IsChecked)); // the active profile
+        section.EditHost = " 10.10.20.144 ";
+        await section.SaveCommand.ExecuteAsync(null);
+
+        var tnc = engine.Settings.SourceList.Single(s => s.Kind == SourceKind.KissTcp);
+        Assert.Equal(("10.10.20.144", "10.10.20.144", null, null), (tnc.Name, tnc.Host, tnc.Port, tnc.TncPort));
+        Assert.Equal("10.10.20.144:8001", section.Rows[^1].Server);
+        Assert.Contains(tnc.Id, engine.Settings.Profiles[0].SourceIds);
+        Assert.DoesNotContain(tnc.Id, engine.Settings.Profiles[1].SourceIds);
+        Assert.False(section.IsEditing);
+    }
+
+    [Fact]
+    public async Task EditingAKissSourceKeepsItsKindAndMovesItBetweenProfiles()
+    {
+        var tnc = new SourceSettings("tnc", "Direwolf", SourceKind.KissTcp, Host: "10.10.20.144");
+        var settings = BothOnRotate() with { Sources = [FakeEngine.Rotate, Euro, tnc] };
+        settings = settings with
+        {
+            Profiles =
+            [
+                settings.Profiles[0] with
+                {
+                    SourceIds = [.. settings.Profiles[0].SourceIds, "tnc"],
+                },
+                settings.Profiles[1],
+            ],
+        };
+        var (section, engine) = Create(settings);
+
+        section.Rows[2].EditCommand.Execute(null);
+        Assert.False(section.CanPickKind);
+        Assert.Equal([true, false], section.EditProfiles.Select(p => p.IsChecked));
+        section.EditPort = "8002";
+        section.EditTncPort = "1";
+        section.EditProfiles[0].IsChecked = false;
+        section.EditProfiles[1].IsChecked = true;
+        await section.SaveCommand.ExecuteAsync(null);
+
+        var saved = engine.Settings.SourceList.Single(s => s.Id == "tnc");
+        Assert.Equal((8002, 1), (saved.Port, saved.TncPort));
+        Assert.DoesNotContain("tnc", engine.Settings.Profiles[0].SourceIds);
+        Assert.Contains("tnc", engine.Settings.Profiles[1].SourceIds);
     }
 
     [Fact]
