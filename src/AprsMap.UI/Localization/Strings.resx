@@ -1922,7 +1922,7 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Packets.IssuesOnly" xml:space="preserve">
     <value>Issues only</value>
-    <comment>Shows only packets that couldn't be fully decoded.</comment>
+    <comment>Shows only packets that couldn't be fully decoded or don't fit their station's track.</comment>
   </data>
   <data name="Packets.ShowRaw" xml:space="preserve">
     <value>Raw text</value>
@@ -2468,5 +2468,129 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Map.ClearStations.Keep" xml:space="preserve">
     <value>Keep them</value>
+  </data>
+  <data name="Details.Telemetry.On" xml:space="preserve">
+    <value>on</value>
+    <comment>A telemetry bit that is on, when the station gave it no label of its own.</comment>
+  </data>
+  <data name="Details.Telemetry.Off" xml:space="preserve">
+    <value>off</value>
+    <comment>A telemetry bit that is off.</comment>
+  </data>
+  <data name="Details.Problem.repeated-position" xml:space="preserve">
+    <value>Repeated position</value>
+  </data>
+  <data name="Details.Problem.impossible-speed" xml:space="preserve">
+    <value>Impossible speed</value>
+  </data>
+  <data name="Details.Problem.rapid-repeat" xml:space="preserve">
+    <value>Rapid repeats</value>
+  </data>
+  <data name="Details.Problem.time-backwards" xml:space="preserve">
+    <value>Time going backwards</value>
+  </data>
+  <data name="Details.Problem.ambiguity-jump" xml:space="preserve">
+    <value>Ambiguity jumps</value>
+  </data>
+  <data name="Error.anomaly.repeated-position" xml:space="preserve">
+    <value>the same position {seconds, plural, one {# second} other {# seconds}} after the previous report</value>
+    <comment>A track anomaly's latest example. seconds: since the previous report.</comment>
+  </data>
+  <data name="Error.anomaly.impossible-speed" xml:space="preserve">
+    <value>{speed} km/h from the previous position: {distance} km in {seconds, plural, one {# second} other {# seconds}}</value>
+    <comment>speed, distance: numbers in km/h and km.</comment>
+  </data>
+  <data name="Error.anomaly.rapid-repeat" xml:space="preserve">
+    <value>{milliseconds} ms after the previous report</value>
+  </data>
+  <data name="Error.anomaly.time-backwards" xml:space="preserve">
+    <value>its own time is earlier than the previous report's</value>
+  </data>
+  <data name="Error.anomaly.ambiguity-jump" xml:space="preserve">
+    <value>the position moved only because its ambiguity changed</value>
+  </data>
+  <data name="Packets.Severity.Track" xml:space="preserve">
+    <value>Track</value>
+    <comment>An expanded packet's line about a track anomaly (F1.20).</comment>
+  </data>
+  <data name="Packets.Anomaly.RepeatedPosition" xml:space="preserve">
+    <value>The same position was sent again too soon, or arrived as a late copy of an earlier report.</value>
+  </data>
+  <data name="Packets.Anomaly.ImpossibleSpeed" xml:space="preserve">
+    <value>It's further from the previous position than the station could have gone in the time between.</value>
+  </data>
+  <data name="Packets.Anomaly.RapidRepeat" xml:space="preserve">
+    <value>It came less than a second after the station's previous report.</value>
+  </data>
+  <data name="Packets.Anomaly.TimeBackwards" xml:space="preserve">
+    <value>Its own time is earlier than the station's previous timestamped report.</value>
+  </data>
+  <data name="Packets.Anomaly.AmbiguityJump" xml:space="preserve">
+    <value>The position moved only because its ambiguity changed, not because the station did.</value>
+  </data>
+  <data name="Packets.Anomalies" xml:space="preserve">
+    <value>Doesn't fit its track: {flags}</value>
+    <comment>The track marker's tooltip. flags: the anomalies' names, comma-separated.</comment>
+  </data>
+  <data name="Settings.Sources.Host" xml:space="preserve">
+    <value>Host</value>
+    <comment>KISS over TCP: the TNC's host name or address.</comment>
+  </data>
+  <data name="Settings.Sources.HostExample" xml:space="preserve">
+    <value>localhost or 192.168.1.20</value>
+    <comment>Placeholder: where Direwolf or soundmodem runs.</comment>
+  </data>
+  <data name="Settings.Sources.Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Settings.Sources.TncPort" xml:space="preserve">
+    <value>TNC port</value>
+    <comment>A multi-port TNC's radio port, 0 to 15; 0 for most.</comment>
+  </data>
+  <data name="Settings.Sources.UseWith" xml:space="preserve">
+    <value>Use with</value>
+    <comment>The profiles that open this source.</comment>
+  </data>
+  <data name="Error.kiss.unreachable" xml:space="preserve">
+    <value>TNC not reachable</value>
+    <comment>Shown in a KISS source's status.</comment>
+  </data>
+  <data name="Error.kiss.closed" xml:space="preserve">
+    <value>The TNC closed the connection</value>
+  </data>
+  <data name="Error.kiss.link-failed" xml:space="preserve">
+    <value>Link to the TNC failed</value>
+  </data>
+  <data name="Error.settings.source.kiss-invalid" xml:space="preserve">
+    <value>A KISS source needs a host, a port from 1 to 65535, and a TNC port from 0 to 15.</value>
+  </data>
+  <data name="Details.Arrival.HeardHere" xml:space="preserve">
+    <value>Heard directly by this station</value>
+    <comment>A packet this station's own TNC heard with no digipeater.</comment>
+  </data>
+  <data name="Details.Arrival.DigipeatedHere" xml:space="preserve">
+    <value>{count, plural, =0 {Through digipeaters, heard by this station} one {Through digipeater {digipeaters}, heard by this station} other {Through digipeaters {digipeaters}, heard by this station}}</value>
+  </data>
+  <data name="Details.Route.DirectHere" xml:space="preserve">
+    <value>Heard directly by this station, {distance} away</value>
+    <comment>distance: in the viewer's units.</comment>
+  </data>
+  <data name="Details.Route.ThisStation" xml:space="preserve">
+    <value>this station</value>
+    <comment>The end of a route this station's own TNC heard.</comment>
+  </data>
+  <data name="Packets.DirectHere" xml:space="preserve">
+    <value>Direct: this station heard it on RF with no digipeater</value>
+  </data>
+  <data name="Packets.DigipeatedHere" xml:space="preserve">
+    <value>{count, plural, one {Digipeated: repeated by # digipeater, heard by this station} other {Digipeated: repeated by # digipeaters, heard by this station}}</value>
+  </data>
+  <data name="Status.Source.Off" xml:space="preserve">
+    <value>{source} off</value>
+    <comment>A source's pill while it's switched off.</comment>
+  </data>
+  <data name="Toggles.Switch.Source" xml:space="preserve">
+    <value>{source} on or off</value>
+    <comment>The switch on a source's pill: its name for screen readers and its tooltip.</comment>
   </data>
 </root>

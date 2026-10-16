@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using System.Collections.ObjectModel;
+using System.Globalization;
 using AprsMap.Contracts;
 using AprsMap.UI.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -25,7 +26,52 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         _engine = engine;
         _text = text;
         _saved = saved;
-        Kinds = [.. Enum.GetValues<SourceKind>().Select(k => new SourceKindChoice(k, k == SourceKind.AprsIs, text))];
+        Kinds =
+        [
+            .. Enum.GetValues<SourceKind>()
+                .Select(k => new SourceKindChoice(k, k is SourceKind.AprsIs or SourceKind.KissTcp, text, this)),
+        ];
+    }
+
+    /// <summary>The kind in the form: picked for a new source, fixed for one being edited.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAprsIs), nameof(IsKiss))]
+    public partial SourceKind EditKind { get; set; } = SourceKind.AprsIs;
+
+    /// <summary>Whether the form shows APRS-IS's server and filter.</summary>
+    public bool IsAprsIs => EditKind == SourceKind.AprsIs;
+
+    /// <summary>Whether the form shows a KISS TNC's host, port and the profiles that use it (F3.1 behavior 1).</summary>
+    public bool IsKiss => EditKind == SourceKind.KissTcp;
+
+    /// <summary>Whether the kind can still be picked: only while adding.</summary>
+    [ObservableProperty]
+    public partial bool CanPickKind { get; private set; }
+
+    /// <summary>The TNC's host in the form.</summary>
+    [ObservableProperty]
+    public partial string EditHost { get; set; } = string.Empty;
+
+    /// <summary>The TNC's port in the form; empty for 8001.</summary>
+    [ObservableProperty]
+    public partial string EditPort { get; set; } = string.Empty;
+
+    /// <summary>The TNC's radio port in the form, 0 to 15; empty for 0.</summary>
+    [ObservableProperty]
+    public partial string EditTncPort { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The profiles, each ticked when it uses the KISS source being edited (F3.1 behavior 2); a new one is ticked for
+    /// the active profile, so it opens at once.
+    /// </summary>
+    public ObservableCollection<ProfileChoice> EditProfiles { get; } = [];
+
+    partial void OnEditKindChanged(SourceKind value)
+    {
+        foreach (var kind in Kinds)
+        {
+            kind.Refresh();
+        }
     }
 
     /// <summary>The sources, in order.</summary>
@@ -129,7 +175,10 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     {
         _editingId = null;
         EditTitle = _text["Settings.Sources.Add"];
-        EditName = EditServer = EditFilter = string.Empty;
+        EditName = EditServer = EditFilter = EditHost = EditPort = EditTncPort = string.Empty;
+        EditKind = SourceKind.AprsIs;
+        CanPickKind = true;
+        FillProfiles(id => id == _settings.ActiveProfileId);
         EditUsedBy = null;
         Error = null;
         IsEditing = true;
@@ -143,8 +192,14 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
             new Dictionary<string, object?> { ["source"] = row.Name }
         );
         EditName = row.Source.Name;
+        EditKind = row.Source.Kind;
+        CanPickKind = false;
         EditServer = row.Source.Server ?? string.Empty;
         EditFilter = row.Source.Filter ?? string.Empty;
+        EditHost = row.Source.Host ?? string.Empty;
+        EditPort = row.Source.Port?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        EditTncPort = row.Source.TncPort?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        FillProfiles(id => _settings.Profiles.Any(p => p.Id == id && p.Uses(row.Source)));
         EditUsedBy = row.UsedByText;
         Error = null;
         IsEditing = true;
@@ -154,6 +209,11 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveAsync()
     {
+        if (IsKiss)
+        {
+            await SaveKissAsync();
+            return;
+        }
         var server = EditServer.Trim();
         var name = EditName.Trim().Length > 0 ? EditName.Trim() : SourceSettings.NameFor(server);
         var filter = EditFilter.Trim().Length > 0 ? EditFilter.Trim() : null;
@@ -174,6 +234,66 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         if (await SaveSettingsAsync(_settings with { Sources = sources }))
         {
             IsEditing = false;
+        }
+    }
+
+    /// <summary>
+    /// Saves a KISS over TCP source and ticks or unticks it on each profile as the form says (F3.1 behaviors 1, 2). A
+    /// port that isn't a number is passed on as out of range, so the engine's check words it.
+    /// </summary>
+    private async Task SaveKissAsync()
+    {
+        var host = EditHost.Trim();
+        int? port = EditPort.Trim().Length == 0 ? null : Number(EditPort);
+        int? tncPort = EditTncPort.Trim().Length == 0 ? null : Number(EditTncPort);
+        var name = EditName.Trim().Length > 0 ? EditName.Trim() : host;
+        var source = _editingId is { } id
+            ? _settings.SourceList.Single(s => s.Id == id) with
+            {
+                Name = name,
+                Host = host,
+                Port = port,
+                TncPort = tncPort,
+            }
+            : SourceSettings.KissTcpFor(host, port, tncPort) with
+            {
+                Name = name,
+            };
+        var ticked = EditProfiles.Where(p => p.IsChecked).Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
+        var settings = _settings with
+        {
+            Sources = _editingId is null
+                ? [.. _settings.SourceList, source]
+                : [.. _settings.SourceList.Select(s => s.Id == source.Id ? source : s)],
+            Profiles =
+            [
+                .. _settings.Profiles.Select(p =>
+                    ticked.Contains(p.Id) == p.SourceIds.Contains(source.Id)
+                        ? p
+                        : p with
+                        {
+                            SourceIds = ticked.Contains(p.Id)
+                                ? [.. p.SourceIds, source.Id]
+                                : [.. p.SourceIds.Where(s => s != source.Id)],
+                        }
+                ),
+            ],
+        };
+        if (await SaveSettingsAsync(settings))
+        {
+            IsEditing = false;
+        }
+
+        static int Number(string text) =>
+            int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : -1;
+    }
+
+    private void FillProfiles(Func<string, bool> ticked)
+    {
+        EditProfiles.Clear();
+        foreach (var profile in _settings.Profiles)
+        {
+            EditProfiles.Add(new ProfileChoice(profile.Id, profile.Name) { IsChecked = ticked(profile.Id) });
         }
     }
 
@@ -261,7 +381,7 @@ public sealed partial class SourceRow(SourceSettings source, SourcesSectionViewM
     public string Name => Source.Name;
 
     /// <summary>Where it connects, for APRS-IS.</summary>
-    public string? Server => Source.Server;
+    public string? Server => Source.Server ?? Source.KissEndpoint;
 
     /// <summary>Its filter text, when it has one.</summary>
     public string? Filter => Source.Filter;
@@ -290,10 +410,30 @@ public sealed partial class SourceRow(SourceSettings source, SourcesSectionViewM
 }
 
 /// <summary>A kind Add a source offers, with "coming" for those not built yet.</summary>
-public sealed partial class SourceKindChoice(SourceKind kind, bool isAvailable, Localizer text) : ObservableObject
+public sealed partial class SourceKindChoice(
+    SourceKind kind,
+    bool isAvailable,
+    Localizer text,
+    SourcesSectionViewModel section
+) : ObservableObject
 {
     /// <summary>The kind.</summary>
     public SourceKind Kind { get; } = kind;
+
+    /// <summary>Whether it's the kind in the form; picking it switches the form's fields.</summary>
+    public bool IsSelected
+    {
+        get => section.EditKind == Kind;
+        set
+        {
+            if (value && IsAvailable)
+            {
+                section.EditKind = Kind;
+            }
+        }
+    }
+
+    internal void Refresh() => OnPropertyChanged(nameof(IsSelected));
 
     /// <summary>Whether it can be added now.</summary>
     public bool IsAvailable { get; } = isAvailable;
@@ -311,4 +451,18 @@ public sealed partial class SourceKindChoice(SourceKind kind, bool isAvailable, 
                 "Settings.Sources.Coming",
                 new Dictionary<string, object?> { ["kind"] = text[$"Settings.Sources.Kind.{kind}"] }
             );
+}
+
+/// <summary>A profile in the KISS form's "Use with" list (F3.1 behavior 2).</summary>
+public sealed partial class ProfileChoice(string id, string name) : ObservableObject
+{
+    /// <summary>The profile's id.</summary>
+    public string Id { get; } = id;
+
+    /// <summary>The profile's name.</summary>
+    public string Name { get; } = name;
+
+    /// <summary>Whether the profile uses the source.</summary>
+    [ObservableProperty]
+    public partial bool IsChecked { get; set; }
 }

@@ -76,6 +76,12 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.ReconnectAsync"/>.</summary>
     public const string Reconnect = "Reconnect";
 
+    /// <summary>Hub method for <see cref="IEngineService.SetSourceEnabledAsync"/>.</summary>
+    public const string SetSourceEnabled = "SetSourceEnabled";
+
+    /// <summary>Hub method for <see cref="IEngineService.ReconnectSourceAsync"/>.</summary>
+    public const string ReconnectSource = "ReconnectSource";
+
     /// <summary>Hub method for <see cref="IEngineService.ResetSettingsAsync"/>.</summary>
     public const string ResetSettings = "ResetSettings";
 

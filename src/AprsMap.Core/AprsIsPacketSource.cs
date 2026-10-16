@@ -2,6 +2,7 @@
 using AprsMap.Contracts;
 using AprsNet.AprsIsTcpClient;
 using AprsNet.Filters;
+using AprsNet.Kiss;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -64,9 +65,27 @@ internal sealed class AprsIsPacketSourceFactory(
     TimeProvider timeProvider
 ) : IPacketSourceFactory
 {
-    /// <exception cref="NotSupportedException">The source isn't APRS-IS: the other kinds aren't built yet.</exception>
+    /// <exception cref="NotSupportedException">A kind that isn't built yet: KISS over serial and GPS.</exception>
     public IPacketSource Create(StationProfile profile, SourceSettings source, string filter)
     {
+        if (source.Kind == SourceKind.KissTcp)
+        {
+            // F3.1: receive only. Nothing here sends; transmitting through a TNC is Phase 2, behind a verified login.
+            return new KissPacketSource(
+                new KissTcpConnection(
+                    new KissTcpOptions
+                    {
+                        Host = source.Host ?? string.Empty,
+                        Port = source.Port ?? SourceSettings.DefaultKissPort,
+                        TncPort = source.TncPort ?? 0,
+                        ReconnectDelay = options.Value.InitialRetryDelay,
+                        MaxReconnectDelay = options.Value.MaxRetryDelay,
+                        TimeProvider = timeProvider,
+                    }
+                ),
+                source.KissEndpoint ?? source.Name
+            );
+        }
         if (source.Kind != SourceKind.AprsIs)
         {
             throw new NotSupportedException($"{source.Kind} sources aren't built yet.");

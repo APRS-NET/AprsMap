@@ -151,6 +151,22 @@ internal sealed class EngineHubEndpoint(
         return engine.ReconnectAsync(Context.ConnectionAborted);
     }
 
+    /// <summary>A source switched on or off changes the station for every viewer: the settings gate (F3.1 behavior 6).</summary>
+    [HubMethodName(EngineHub.SetSourceEnabled)]
+    public Task SetSourceEnabled(string sourceId, bool enabled)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.SetSourceEnabledAsync(sourceId, enabled, Context.ConnectionAborted);
+    }
+
+    /// <summary>Reconnecting a source affects every viewer, so it has the same gate (F3.1 behavior 5).</summary>
+    [HubMethodName(EngineHub.ReconnectSource)]
+    public Task ReconnectSource(string sourceId)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ReconnectSourceAsync(sourceId, Context.ConnectionAborted);
+    }
+
     /// <summary>Address lookup is offered only where settings can be changed, so the gateway isn't an open proxy.</summary>
     [HubMethodName(EngineHub.GetGeocodingInfo)]
     public async Task<GeocodingInfo> GetGeocodingInfo() =>

@@ -57,9 +57,83 @@ public sealed class TelemetryDisplayTests
         Assert.Equal([1, 1.5], vm.Details.Telemetry[0].Values);
         Assert.Contains("1, 1.5", vm.Details.Telemetry[0].ChartName, StringComparison.Ordinal);
         Assert.Equal("11000000", vm.Details.TelemetryBits);
+        Assert.True(vm.Details.IsTelemetryRaw); // no definitions: the note says the values are raw
 
         vm.SelectedStation = null;
         Assert.False(vm.Details.HasTelemetry);
+    }
+
+    [Fact]
+    public async Task DefinitionsNameTheChannelsWithTheirUnitsAndTheBits()
+    {
+        var time = new FakeTimeProvider(T0.AddMinutes(2));
+        var engine = new FakeEngine();
+        engine.Details["N0QBF-11"] = new StationDetail(
+            "N0QBF-11",
+            StationKind.Station,
+            T0,
+            1,
+            false,
+            null,
+            null,
+            0,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+        engine.Telemetry["N0QBF-11"] = new TelemetryView(
+            [
+                new TelemetrySample(
+                    T0,
+                    "005",
+                    [1034.8, null, null, null, null],
+                    [true, false, false, false, false, false, false, false]
+                ),
+            ],
+            new TelemetryDefinitions(
+                [
+                    new("Battery", "Volts", true),
+                    new(null, null, false),
+                    new(null, null, false),
+                    new(null, null, false),
+                    new(null, null, false),
+                ],
+                [
+                    new("Camra", "Clik"),
+                    new("Chute", "OPEN!"),
+                    new(null, null),
+                    new(null, null),
+                    new(null, null),
+                    new(null, null),
+                    new(null, null),
+                    new(null, null),
+                ],
+                "N0QBF's Big Balloon"
+            )
+        );
+        var vm = new MainViewModel(engine, time);
+
+        vm.SelectedStation = "N0QBF-11";
+        for (var i = 0; i < 200 && !vm.Details.HasTelemetry; i++)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(["Battery 1034.8 Volts"], vm.Details.Telemetry.Select(c => $"{c.Name} {c.Latest}"));
+        Assert.Contains("Battery over the held reports", vm.Details.Telemetry[0].ChartName, StringComparison.Ordinal);
+        Assert.Equal(
+            [new Stations.DetailLine("Camra", "Clik"), new Stations.DetailLine("Chute", "off")],
+            vm.Details.TelemetryBitLines
+        );
+        Assert.Null(vm.Details.TelemetryBits);
+        Assert.Equal("N0QBF's Big Balloon", vm.Details.TelemetryProject);
+        Assert.False(vm.Details.IsTelemetryRaw);
     }
 
     [Fact]
@@ -84,7 +158,24 @@ public sealed class TelemetryDisplayTests
             null,
             null,
             null,
-            Problems: [new StationProblem(StationProblem.Invalid, 3, new EngineError("aprs.parse.x", "Bad latitude."))]
+            Problems:
+            [
+                new StationProblem(StationProblem.Invalid, 3, new EngineError("aprs.parse.x", "Bad latitude.")),
+                new StationProblem(
+                    StationProblem.ImpossibleSpeed,
+                    1,
+                    new EngineError(
+                        "anomaly.impossible-speed",
+                        "Too fast.",
+                        new Dictionary<string, string>
+                        {
+                            ["speed"] = "3336",
+                            ["distance"] = "55.6",
+                            ["seconds"] = "60",
+                        }
+                    )
+                ),
+            ]
         );
         var vm = new MainViewModel(engine, new FakeTimeProvider(T0));
 
@@ -94,8 +185,14 @@ public sealed class TelemetryDisplayTests
             await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, TestContext.Current.CancellationToken);
         }
 
-        var line = Assert.Single(vm.Details.Problems);
+        Assert.Equal(2, vm.Details.Problems.Count);
+        var line = vm.Details.Problems[0];
         Assert.Equal("Invalid packets", line.Label);
         Assert.Equal("3 times in the last hour. Latest: Bad latitude.", line.Value);
+        Assert.Equal("Impossible speed", vm.Details.Problems[1].Label);
+        Assert.Equal(
+            "once in the last hour. Latest: 3336 km/h from the previous position: 55.6 km in 60 seconds",
+            vm.Details.Problems[1].Value
+        );
     }
 }

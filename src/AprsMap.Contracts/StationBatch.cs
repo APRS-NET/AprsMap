@@ -195,13 +195,31 @@ public sealed record StationDetail(
 /// <summary>
 /// One kind of problem with a station's packets over the last hour (docs/features/F1.20-anomalies.md, behavior 5).
 /// </summary>
-/// <param name="Kind">The flag: <see cref="Invalid"/> now; the track anomalies once APRS.NET reports them (G24).</param>
+/// <param name="Kind">The flag: <see cref="Invalid"/>, or one of the track anomalies (G24).</param>
 /// <param name="Count">How many of its packets had it in the last hour.</param>
-/// <param name="Latest">The latest example, as an engine error the UI translates (a parse issue for Invalid).</param>
+/// <param name="Latest">
+/// The latest example, as an engine error the UI translates: a parse issue for Invalid, an <c>anomaly.*</c> code with
+/// its figures for a track anomaly.
+/// </param>
 public sealed record StationProblem(string Kind, int Count, EngineError? Latest)
 {
     /// <summary>A packet with parse errors (behavior 2).</summary>
     public const string Invalid = "invalid";
+
+    /// <summary>The same position sent again too soon, or a late copy (behavior 1.1).</summary>
+    public const string RepeatedPosition = "repeated-position";
+
+    /// <summary>A jump faster than the station could go (behavior 1.2).</summary>
+    public const string ImpossibleSpeed = "impossible-speed";
+
+    /// <summary>Reports less than a second apart (behavior 1.3).</summary>
+    public const string RapidRepeat = "rapid-repeat";
+
+    /// <summary>A report timed before the previous one (behavior 1.4).</summary>
+    public const string TimeBackwards = "time-backwards";
+
+    /// <summary>A move that only reflects a change of ambiguity (behavior 1.5).</summary>
+    public const string AmbiguityJump = "ambiguity-jump";
 }
 
 /// <summary>The equipment or software that sent a packet (docs/features/F1.6-station-details.md, behavior 2.7).</summary>
@@ -217,7 +235,16 @@ public sealed record StationDevice(string? Vendor, string? Model, string? Class)
 /// <param name="Kind">Heard directly on RF, through digipeaters, from the internet, or not said by the path.</param>
 /// <param name="Digipeaters">The digipeaters that repeated it and named themselves, in order.</param>
 /// <param name="Gateway">The IGate that put it on APRS-IS, or the server the sender connected to; null when unknown.</param>
-public sealed record StationArrival(ArrivalKind Kind, IReadOnlyList<string> Digipeaters, string? Gateway);
+/// <param name="HeardHere">
+/// Heard by this station's own receiver (a KISS TNC, docs/features/F3.1-kiss-sources.md behavior 8): no IGate, so
+/// <paramref name="Gateway"/> is null.
+/// </param>
+public sealed record StationArrival(
+    ArrivalKind Kind,
+    IReadOnlyList<string> Digipeaters,
+    string? Gateway,
+    bool HeardHere = false
+);
 
 /// <summary>
 /// Which packet's route to work out (docs/features/F1.21-rf-paths.md, behavior 2): a station's last packet, the packet
@@ -228,12 +255,14 @@ public sealed record StationArrival(ArrivalKind Kind, IReadOnlyList<string> Digi
 /// <param name="Latitude">Where the packet was sent from; null for the station's position.</param>
 /// <param name="Longitude">Where the packet was sent from; null for the station's position.</param>
 /// <param name="TrackPoint">The time of the track point whose packet to use (<see cref="TrackPoint.Time"/>).</param>
+/// <param name="HeardHere">Whether the packet picked was heard by this station's own receiver (F3.1 behavior 8).</param>
 public sealed record RouteQuery(
     string Name,
     string? Path = null,
     double? Latitude = null,
     double? Longitude = null,
-    DateTimeOffset? TrackPoint = null
+    DateTimeOffset? TrackPoint = null,
+    bool HeardHere = false
 );
 
 /// <summary>How one packet travelled, for drawing and words (docs/features/F1.21-rf-paths.md, behavior 2).</summary>
@@ -245,12 +274,16 @@ public sealed record RouteQuery(
 /// The stations it went through in order: each digipeater that named itself, then the IGate that put it on APRS-IS.
 /// Empty for a packet that never went over RF.
 /// </param>
+/// <param name="HeardHere">
+/// Heard by this station's own receiver (F3.1 behavior 8): the last hop is this station, at its location, not an IGate.
+/// </param>
 public sealed record PacketRoute(
     string Name,
     ArrivalKind Kind,
     double? Latitude,
     double? Longitude,
-    IReadOnlyList<RouteHop> Hops
+    IReadOnlyList<RouteHop> Hops,
+    bool HeardHere = false
 );
 
 /// <summary>One station a packet went through.</summary>
@@ -316,17 +349,47 @@ public sealed record TrackPoint(double Latitude, double Longitude, DateTimeOffse
 public sealed record TrackUpdate(string Name, IReadOnlyList<TrackPoint> Added, int Dropped = 0, bool Reset = false);
 
 /// <summary>
-/// A station's held telemetry reports, oldest first (docs/features/F1.11-telemetry.md, behaviors 1, 3). Values are raw
-/// until APRS.NET applies the station's definitions (G09).
+/// A station's held telemetry reports, oldest first, with its definitions applied (docs/features/F1.11-telemetry.md,
+/// behaviors 1–3). Definitions that arrive later apply to the reports already held.
 /// </summary>
 /// <param name="Samples">The reports held: up to 100, none older than 24 hours.</param>
-public sealed record TelemetryView(IReadOnlyList<TelemetrySample> Samples);
+/// <param name="Definitions">
+/// What the station's <c>PARM.</c>, <c>UNIT.</c>, <c>EQNS.</c> and <c>BITS.</c> messages said; null when it hasn't sent
+/// any, and the values are raw.
+/// </param>
+public sealed record TelemetryView(IReadOnlyList<TelemetrySample> Samples, TelemetryDefinitions? Definitions = null);
 
-/// <summary>One telemetry report.</summary>
+/// <summary>A station's telemetry definitions, channel by channel (F1.11 behavior 2).</summary>
+/// <param name="Analog">The five analog channels in order.</param>
+/// <param name="Digital">The eight digital channels in order.</param>
+/// <param name="ProjectName">The project name from <c>BITS.</c>, when it gave one.</param>
+public sealed record TelemetryDefinitions(
+    IReadOnlyList<TelemetryAnalogChannel> Analog,
+    IReadOnlyList<TelemetryDigitalChannel> Digital,
+    string? ProjectName = null
+);
+
+/// <summary>An analog channel as defined.</summary>
+/// <param name="Name">Its name from <c>PARM.</c>, or null.</param>
+/// <param name="Unit">Its unit from <c>UNIT.</c>, or null.</param>
+/// <param name="IsScaled">Whether an <c>EQNS.</c> equation turns its raw value into the one shown.</param>
+public sealed record TelemetryAnalogChannel(string? Name, string? Unit, bool IsScaled);
+
+/// <summary>A digital channel as defined.</summary>
+/// <param name="Name">Its name from <c>PARM.</c>, or null.</param>
+/// <param name="Label">Its label from <c>UNIT.</c>, such as "on" or "open", or null.</param>
+public sealed record TelemetryDigitalChannel(string? Name, string? Label);
+
+/// <summary>One telemetry report, with the station's definitions applied.</summary>
 /// <param name="At">When the engine received it.</param>
 /// <param name="Sequence">Its sequence as sent (a number, or <c>MIC</c>), when it has one.</param>
-/// <param name="Analog">The five analog channels as sent; null where a channel was left out.</param>
-/// <param name="Digital">The eight bits as sent.</param>
+/// <param name="Analog">
+/// The five analog channels, each through its equation when the station defined one, otherwise as sent; null where
+/// a channel was left out.
+/// </param>
+/// <param name="Digital">
+/// The eight digital channels, on or off by the station's <c>BITS.</c> sense; without one, as sent (1 is on).
+/// </param>
 public sealed record TelemetrySample(
     DateTimeOffset At,
     string? Sequence,

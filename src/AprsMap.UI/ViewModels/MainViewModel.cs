@@ -719,7 +719,13 @@ public sealed partial class MainViewModel : ObservableObject
         }
         SelectedStation = packet.Source;
         _ = ShowRouteAsync(
-            new RouteQuery(packet.Source, packet.Path ?? string.Empty, packet.Latitude, packet.Longitude)
+            new RouteQuery(
+                packet.Source,
+                packet.Path ?? string.Empty,
+                packet.Latitude,
+                packet.Longitude,
+                HeardHere: packet.Markers.HasFlag(PacketMarkers.HeardHere)
+            )
         );
     }
 
@@ -757,37 +763,82 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Sources by name, for the lists and details (F1.25).</summary>
     public SourceNames SourceNames { get; }
 
-    /// <summary>A pill per source besides APRS-IS, with its own state (F1.25 behavior 11); empty with one source.</summary>
-    public ObservableCollection<string> SourcePills { get; } = [];
+    /// <summary>
+    /// A pill per source besides APRS-IS (F1.25 behavior 11): its state in words and colour, a switch to turn it off
+    /// and on, and Reconnect now (F3.1 behaviors 5, 6); empty with only APRS-IS.
+    /// </summary>
+    public ObservableCollection<SourcePill> SourcePills { get; } = [];
 
     private void ShowSourcePills(EngineStatus status)
     {
-        var pills = (status.Sources ?? [])
-            .Where(s => s.Kind != SourceKind.AprsIs)
-            .Select(s =>
-                s.Error is { } error && s.State is not ConnectionState.Connected
-                    ? _text.Format(
-                        "Status.Source.Error",
-                        new Dictionary<string, object?> { ["source"] = s.Name, ["error"] = _text.Format(error) }
-                    )
-                    : _text.Format(
-                        s.State switch
-                        {
-                            ConnectionState.Connected => "Status.Source.Connected",
-                            ConnectionState.Reconnecting => "Status.Source.Reconnecting",
-                            _ => "Status.Source.Connecting",
-                        },
-                        new Dictionary<string, object?> { ["source"] = s.Name }
-                    )
-            )
-            .ToList();
-        if (!pills.SequenceEqual(SourcePills))
+        var sources = (status.Sources ?? []).Where(s => s.Kind != SourceKind.AprsIs).ToList();
+        for (var i = SourcePills.Count - 1; i >= 0; i--)
         {
-            SourcePills.Clear();
-            foreach (var pill in pills)
+            if (!sources.Any(s => s.Id == SourcePills[i].Id))
             {
-                SourcePills.Add(pill);
+                SourcePills.RemoveAt(i);
             }
+        }
+        for (var i = 0; i < sources.Count; i++)
+        {
+            var source = sources[i];
+            var pill = SourcePills.FirstOrDefault(p => p.Id == source.Id);
+            if (pill is null)
+            {
+                pill = new SourcePill(
+                    source.Id,
+                    _text,
+                    on => SwitchSourceAsync(source.Id, on),
+                    () => ReconnectSourceAsync(source.Id)
+                );
+                SourcePills.Insert(Math.Min(i, SourcePills.Count), pill);
+            }
+            pill.Show(source, CanToggle);
+        }
+    }
+
+    /// <summary>A source's switch was flipped (F3.1 behavior 6); the pill shows what the engine settles on.</summary>
+    private async Task SwitchSourceAsync(string id, bool on)
+    {
+        try
+        {
+            await engine.SetSourceEnabledAsync(id, on);
+            if (_status is { Sources: { } sources })
+            {
+                // Shown at once, not at the next status poll.
+                _status = _status with
+                {
+                    Sources =
+                    [
+                        .. sources.Select(s =>
+                            s.Id == id ? s with { Enabled = on, State = ConnectionState.Disconnected, Error = null } : s
+                        ),
+                    ],
+                };
+            }
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            ShowError(ex);
+        }
+        if (_status is not null)
+        {
+            ShowSourcePills(_status); // springs back if the engine refused
+        }
+    }
+
+    /// <summary>Reconnect now on a source's pill (F3.1 behavior 5).</summary>
+    private async Task ReconnectSourceAsync(string id)
+    {
+        try
+        {
+            await engine.ReconnectSourceAsync(id);
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            ShowError(ex);
         }
     }
 

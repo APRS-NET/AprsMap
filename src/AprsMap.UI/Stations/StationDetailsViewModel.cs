@@ -137,9 +137,20 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial string? TelemetryText { get; private set; }
 
-    /// <summary>The eight bits of the latest report, as 0s and 1s.</summary>
+    /// <summary>The eight bits of the latest report, as 0s and 1s, for a station without definitions.</summary>
     [ObservableProperty]
     public partial string? TelemetryBits { get; private set; }
+
+    /// <summary>Each named bit of the latest report, on or off (F1.11 behavior 2); empty without definitions.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<DetailLine> TelemetryBitLines { get; } = [];
+
+    /// <summary>The project name from the station's <c>BITS.</c>; null without one.</summary>
+    [ObservableProperty]
+    public partial string? TelemetryProject { get; private set; }
+
+    /// <summary>Whether the values are raw: the station hasn't sent definitions (F1.11 behavior 3).</summary>
+    [ObservableProperty]
+    public partial bool IsTelemetryRaw { get; private set; }
 
     private TelemetryView? _telemetry;
 
@@ -168,8 +179,12 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     private void WriteTelemetry()
     {
         Telemetry.Clear();
+        TelemetryBitLines.Clear();
         var samples = _telemetry?.Samples;
+        var definitions = _telemetry?.Definitions;
         HasTelemetry = samples is { Count: > 0 };
+        IsTelemetryRaw = definitions is null;
+        TelemetryProject = definitions?.ProjectName;
         if (samples is not { Count: > 0 })
         {
             TelemetryText = TelemetryBits = null;
@@ -193,11 +208,13 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             {
                 continue;
             }
-            var label = $"A{channel + 1}";
+            var defined = definitions?.Analog.ElementAtOrDefault(channel);
+            var label = defined?.Name ?? $"A{channel + 1}";
+            var unit = defined?.Unit is { } u ? " " + u : string.Empty;
             Telemetry.Add(
                 new TelemetryChannel(
                     label,
-                    latest.Analog[channel]?.ToString("0.###", culture) ?? "–",
+                    latest.Analog[channel] is { } value ? value.ToString("0.###", culture) + unit : "–",
                     values,
                     _text.Format(
                         "Details.Telemetry.Chart",
@@ -210,7 +227,28 @@ public sealed partial class StationDetailsViewModel : ObservableObject
                 )
             );
         }
-        TelemetryBits = latest.Digital.Count > 0 ? string.Concat(latest.Digital.Select(b => b ? '1' : '0')) : null;
+        if (definitions is null)
+        {
+            TelemetryBits = latest.Digital.Count > 0 ? string.Concat(latest.Digital.Select(b => b ? '1' : '0')) : null;
+            return;
+        }
+        TelemetryBits = null;
+        for (var bit = 0; bit < latest.Digital.Count; bit++)
+        {
+            var defined = definitions.Digital.ElementAtOrDefault(bit);
+            if (defined?.Name is null && defined?.Label is null)
+            {
+                continue; // a bit the station didn't define says nothing to read
+            }
+            TelemetryBitLines.Add(
+                new DetailLine(
+                    defined.Name ?? $"B{bit + 1}",
+                    latest.Digital[bit]
+                        ? defined.Label ?? _text["Details.Telemetry.On"]
+                        : _text["Details.Telemetry.Off"]
+                )
+            );
+        }
     }
 
     /// <summary>"Invalid packets: 3 in the last hour · latest: …" for each problem (F1.20 behavior 5); empty without any.</summary>
@@ -282,20 +320,31 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             return null;
         }
         var unit = _units().Distance;
+        // A route this station's receiver heard ends at "this station", not its callsign (F3.1 behavior 8).
+        string NameOf(RouteHop hop) => route.HeardHere && hop.IsGateway ? _text["Details.Route.ThisStation"] : hop.Name;
         string Hop(RouteHop hop) =>
             hop.DistanceKm is { } km
                 ? _text.Format(
                     "Details.Route.Hop",
                     new Dictionary<string, object?>
                     {
-                        ["name"] = hop.Name,
+                        ["name"] = NameOf(hop),
                         ["distance"] = Localization.RangeText.Distance(km, unit, _text),
                     }
                 )
-                : _text.Format("Details.Route.HopUnknown", new Dictionary<string, object?> { ["name"] = hop.Name });
+                : _text.Format("Details.Route.HopUnknown", new Dictionary<string, object?> { ["name"] = NameOf(hop) });
         return route.Kind switch
         {
             ArrivalKind.Internet => _text["Details.Route.Internet"],
+            ArrivalKind.Direct when route.HeardHere => route.Hops is [{ DistanceKm: { } here }]
+                ? _text.Format(
+                    "Details.Route.DirectHere",
+                    new Dictionary<string, object?>
+                    {
+                        ["distance"] = Localization.RangeText.Distance(here, unit, _text),
+                    }
+                )
+                : _text["Details.Arrival.HeardHere"],
             ArrivalKind.Direct when route.Hops is [{ } gateway] => gateway.DistanceKm is { } km
                 ? _text.Format(
                     "Details.Route.Direct",
@@ -662,6 +711,16 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         arrival switch
         {
             null => null,
+            // Heard by this station's own receiver, a TNC (F3.1 behavior 8): no IGate to name.
+            { HeardHere: true, Kind: ArrivalKind.Direct } => _text["Details.Arrival.HeardHere"],
+            { HeardHere: true, Kind: ArrivalKind.Digipeated } => _text.Format(
+                "Details.Arrival.DigipeatedHere",
+                new Dictionary<string, object?>
+                {
+                    ["count"] = arrival.Digipeaters.Count,
+                    ["digipeaters"] = string.Join(", ", arrival.Digipeaters),
+                }
+            ),
             { Kind: ArrivalKind.Direct, Gateway: { } gate } => _text.Format(
                 "Details.Arrival.DirectVia",
                 new Dictionary<string, object?> { ["gateway"] = gate }

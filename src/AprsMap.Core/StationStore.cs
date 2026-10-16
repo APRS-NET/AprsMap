@@ -25,6 +25,12 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
 
+    // Telemetry definitions by the station they define (the message's addressee, F1.11 behavior 1), kept apart from
+    // the entries: they may come from another callsign, and before the station is heard.
+    private readonly Dictionary<string, (TelemetryProfile Profile, DateTimeOffset At)> _telemetryProfiles = new(
+        StringComparer.Ordinal
+    );
+
     // Least recently heard first, for the cap.
     private readonly LinkedList<Entry> _byLastHeard = new();
     private readonly List<StationWatcher> _watchers = [];
@@ -43,6 +49,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
 
     // The source of the packet being applied, under the lock.
     private string? _sourceId;
+    private bool _heardHere;
+
+    // This station's callsign: where a packet its own receiver heard ends its route (F3.1 behavior 8).
+    private string? _homeName;
 
     public int Count
     {
@@ -60,7 +70,16 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     /// updates its station's entry, positioned objects and items their own, and a kill removes one. A third-party packet
     /// updates the station inside it, not the gateway that wrapped it.
     /// </summary>
-    public void Apply(AprsPacket packet, DateTimeOffset receivedAt, string? sourceId = null)
+    /// <param name="packet">The packet.</param>
+    /// <param name="receivedAt">When it arrived.</param>
+    /// <param name="sourceId">The source it came from (F1.25), or null.</param>
+    /// <param name="heardHere">Whether this station's own receiver heard it, a KISS TNC (F3.1 behavior 8).</param>
+    public PacketAnomalies Apply(
+        AprsPacket packet,
+        DateTimeOffset receivedAt,
+        string? sourceId = null,
+        bool heardHere = false
+    )
     {
         var raw = packet.Raw.ToArray(); // as received, third-party wrapper and all
         if (packet.Payload is ThirdPartyPayload { Packet: { HasHeader: true } inner })
@@ -69,13 +88,15 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         }
         if (packet.Source is not { } source)
         {
-            return;
+            return PacketAnomalies.None;
         }
 
+        var anomalies = PacketAnomalies.None;
         lock (_gate)
         {
             _now = receivedAt > _now ? receivedAt : _now;
             _sourceId = sourceId; // several sources apply at once: only under the lock
+            _heardHere = heardHere;
             switch (packet.Payload)
             {
                 case ObjectReport report:
@@ -89,7 +110,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                         receivedAt,
                         raw
                     );
-                    return;
+                    return PacketAnomalies.None;
                 case ItemReport report:
                     ApplyNamed(
                         report.Name,
@@ -101,7 +122,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                         receivedAt,
                         raw
                     );
-                    return;
+                    return PacketAnomalies.None;
             }
 
             var entry = Touch(source.Value, StationKind.Station, packet, receivedAt, raw);
@@ -110,10 +131,14 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             switch (packet.Payload)
             {
                 case PositionedPayload positioned:
+                    anomalies = CheckTrack(entry, packet, positioned, receivedAt); // F1.20, before the move
                     SetPosition(entry, positioned, receivedAt);
                     break;
                 case TelemetryReport telemetry:
                     AddTelemetry(entry, telemetry, receivedAt); // F1.11
+                    break;
+                case TelemetryDefinition definition:
+                    Define(definition, receivedAt); // F1.11 behavior 1: for the station it's addressed to
                     break;
                 case WeatherReport report:
                     SetWeather(entry, report.Weather, receivedAt); // a weather report without a position (F1.10)
@@ -129,6 +154,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             }
             Publish(entry);
         }
+        return anomalies;
     }
 
     /// <summary>
@@ -156,6 +182,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                     watcher.Recheck(entry, _now); // "heard within" lets go as time passes
                 }
             }
+            ForgetTelemetryProfiles(now);
             foreach (var entry in _entries.Values)
             {
                 TrimTelemetry(entry, now);
@@ -291,11 +318,17 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     /// Measures distance and bearing from my location (F1.13 behavior 4), or not with nulls. A change sends every
     /// station on the map again, with its new distance.
     /// </summary>
-    public void SetHome(double? latitude, double? longitude)
+    /// <param name="latitude">My latitude, or null.</param>
+    /// <param name="longitude">My longitude, or null.</param>
+    /// <param name="name">
+    /// My callsign, where a packet my own receiver heard ends its route and its last network link (F3.1 behavior 8).
+    /// </param>
+    public void SetHome(double? latitude, double? longitude, string? name = null)
     {
         AprsPosition? home = latitude is { } lat && longitude is { } lon ? new AprsPosition(lat, lon) : null;
         lock (_gate)
         {
+            _homeName = string.IsNullOrWhiteSpace(name) ? null : name;
             if (home == _home)
             {
                 return;
@@ -347,6 +380,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 return null;
             }
             var path = query.Path ?? entry.Path;
+            var heardHere = query.Path is null ? entry.HeardHere : query.HeardHere;
             double? latitude = entry.Latitude;
             double? longitude = entry.Longitude;
             if (query.Path is null && query.TrackPoint is { } time)
@@ -356,15 +390,15 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 {
                     return null;
                 }
-                path = entry.TrackPaths[index];
+                (path, heardHere) = entry.TrackPaths[index];
                 (latitude, longitude) = (entry.Track[index].Latitude, entry.Track[index].Longitude);
             }
             if (query is { Latitude: { } lat, Longitude: { } lon })
             {
                 (latitude, longitude) = (lat, lon);
             }
-            var (kind, names) = StationFacts.Route(path);
-            var hops = new List<RouteHop>(names.Count);
+            var (kind, names) = StationFacts.Route(path, heardHere);
+            var hops = new List<RouteHop>(names.Count + 1);
             AprsPosition? last = latitude is { } la && longitude is { } lo ? new AprsPosition(la, lo) : null;
             foreach (var (name, isGateway) in names)
             {
@@ -387,7 +421,22 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                     hops.Add(new RouteHop(name, isGateway));
                 }
             }
-            return new PacketRoute(entry.Name, kind, latitude, longitude, hops);
+            if (heardHere && kind is ArrivalKind.Direct or ArrivalKind.Digipeated)
+            {
+                // Heard by this station: the route ends here, at its location when it has one (F3.1 behavior 8).
+                hops.Add(
+                    _home is { } home
+                        ? new RouteHop(
+                            _homeName ?? string.Empty,
+                            true,
+                            home.Latitude,
+                            home.Longitude,
+                            last is { } from ? Geodesy.DistanceKm(from, home) : null
+                        )
+                        : new RouteHop(_homeName ?? string.Empty, true)
+                );
+            }
+            return new PacketRoute(entry.Name, kind, latitude, longitude, hops, heardHere);
         }
     }
 
@@ -694,7 +743,8 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         entry.Path = packet.Path is { } path ? string.Join(',', path.Select(p => p.ToString())) : null;
         entry.LastPacket = raw;
         entry.FirstHeardVia = _sourceId; // a new report: seen on its source alone, so far (F1.25 behavior 9)
-        entry.Arrival = StationFacts.Route(entry.Path).Kind; // for the View filter's reception (F1.9)
+        entry.HeardHere = _heardHere;
+        entry.Arrival = StationFacts.Route(entry.Path, _heardHere).Kind; // for the View filter's reception (F1.9)
         if (packet.Destination?.Value is { } destination && destination != entry.Destination)
         {
             entry.Destination = destination; // the device changes with the destination (or Mic-E's), not every packet
@@ -759,17 +809,90 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
 
     private static void AddTelemetry(Entry entry, TelemetryReport report, DateTimeOffset at)
     {
-        var samples = entry.Telemetry ??= [];
-        samples.Add(
-            new TelemetrySample(
-                at,
-                string.IsNullOrEmpty(report.Sequence) ? null : report.Sequence,
-                [.. report.Analog],
-                [.. report.Digital]
-            )
-        );
+        // Kept as sent, so definitions that come later apply to it too (F1.11 behavior 3).
+        (entry.Telemetry ??= []).Add((at, report));
         TrimTelemetry(entry, at);
     }
+
+    /// <summary>A <c>PARM.</c>, <c>UNIT.</c>, <c>EQNS.</c> or <c>BITS.</c> replaces the earlier one of its kind (G09).</summary>
+    private void Define(TelemetryDefinition definition, DateTimeOffset at)
+    {
+        var name = definition.Addressee.Trim();
+        if (name.Length == 0)
+        {
+            return;
+        }
+        var profile = _telemetryProfiles.TryGetValue(name, out var held) ? held.Profile : TelemetryProfile.Empty;
+        _telemetryProfiles[name] = (profile.With(definition), at);
+    }
+
+    /// <summary>Definitions for a station that isn't held, and not renewed for a day, are let go.</summary>
+    private void ForgetTelemetryProfiles(DateTimeOffset now)
+    {
+        foreach (
+            var name in _telemetryProfiles
+                .Where(p => p.Value.At < now - TelemetryAge && !_entries.ContainsKey(p.Key))
+                .Select(p => p.Key)
+                .ToList()
+        )
+        {
+            _telemetryProfiles.Remove(name);
+        }
+    }
+
+    /// <summary>The station's held reports with its definitions applied, and what the definitions say.</summary>
+    private TelemetryView ViewOf(string name, List<(DateTimeOffset At, TelemetryReport Report)> reports)
+    {
+        var defined = _telemetryProfiles.TryGetValue(name, out var held);
+        var profile = defined ? held.Profile : TelemetryProfile.Empty;
+        TelemetryReading? last = null;
+        var samples = new List<TelemetrySample>(reports.Count);
+        foreach (var (at, report) in reports)
+        {
+            last = profile.Apply(report);
+            samples.Add(
+                new TelemetrySample(
+                    at,
+                    string.IsNullOrEmpty(report.Sequence) ? null : report.Sequence,
+                    [.. last.Analog.Select(a => a.Value)],
+                    [.. last.Digital.Select(d => d.IsOn)]
+                )
+            );
+        }
+        return new TelemetryView(samples, defined && last is { } reading ? DefinitionsOf(profile, reading) : null);
+    }
+
+    private static TelemetryDefinitions DefinitionsOf(TelemetryProfile profile, TelemetryReading reading) =>
+        new(
+            [
+                .. Enumerable
+                    .Range(0, TelemetryProfile.AnalogChannels)
+                    .Select(i =>
+                        i < reading.Analog.Count
+                            ? new TelemetryAnalogChannel(
+                                Blank(reading.Analog[i].Name),
+                                Blank(reading.Analog[i].Unit),
+                                reading.Analog[i].IsScaled
+                            )
+                            : new TelemetryAnalogChannel(
+                                Blank(profile.Names.ElementAtOrDefault(i)),
+                                Blank(profile.Units.ElementAtOrDefault(i)),
+                                i < profile.Equations.Count
+                            )
+                    ),
+            ],
+            [
+                .. Enumerable
+                    .Range(0, TelemetryProfile.DigitalChannels)
+                    .Select(i => new TelemetryDigitalChannel(
+                        Blank(profile.Names.ElementAtOrDefault(TelemetryProfile.AnalogChannels + i)),
+                        Blank(profile.Units.ElementAtOrDefault(TelemetryProfile.AnalogChannels + i))
+                    )),
+            ],
+            Blank(profile.ProjectName)
+        );
+
+    private static string? Blank(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 
     private static void TrimTelemetry(Entry entry, DateTimeOffset now)
     {
@@ -783,6 +906,98 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         {
             samples.RemoveRange(0, samples.Count - TelemetryReports);
         }
+    }
+
+    // Track anomaly limits (F1.20 behavior 1): APRS.NET's defaults, with 1,000 km/h for anything that isn't an
+    // aircraft or balloon.
+    private static readonly TrackAnalysisOptions AirLimits = TrackAnalysisOptions.Default;
+    private static readonly TrackAnalysisOptions GroundLimits = TrackAnalysisOptions.Default with
+    {
+        MaxSpeedKmh = 1000,
+    };
+
+    /// <summary>The most recent reports a station keeps for the track analysis.</summary>
+    internal const int TrackReportsKept = 50;
+
+    /// <summary>
+    /// Checks a station's new position report against its recent ones with APRS.NET's track analysis (G24), counts
+    /// what it finds, and returns it so the packet can be marked.
+    /// </summary>
+    private static PacketAnomalies CheckTrack(
+        Entry entry,
+        AprsPacket packet,
+        PositionedPayload positioned,
+        DateTimeOffset at
+    )
+    {
+        if (positioned.IsPositionUnknown || TrackReport.FromPacket(packet, at) is not { } report)
+        {
+            return PacketAnomalies.None;
+        }
+        var limits =
+            AprsSymbolCatalog.Get(positioned.Symbol).Category == AprsSymbolCategory.Aircraft ? AirLimits : GroundLimits;
+        var check = TrackAnalysis.Check(entry.Reports, report, limits);
+        entry.Reports.Add(report);
+        var keepAfter = at - limits.LateCopyInterval;
+        var old = 0;
+        while (
+            old < entry.Reports.Count - 1
+            && (entry.Reports[old].ReceivedAt < keepAfter || entry.Reports.Count - old > TrackReportsKept)
+        )
+        {
+            old++;
+        }
+        entry.Reports.RemoveRange(0, old);
+        var found = (PacketAnomalies)(int)check.Anomalies;
+        foreach (
+            var flag in Enum.GetValues<PacketAnomalies>().Where(f => f != PacketAnomalies.None && found.HasFlag(f))
+        )
+        {
+            entry.Anomalies.Enqueue((at, KindOf(flag), ExampleOf(flag, check)));
+        }
+        TrimProblems(entry, at);
+        return found;
+    }
+
+    private static string KindOf(PacketAnomalies flag) =>
+        flag switch
+        {
+            PacketAnomalies.RepeatedPosition => StationProblem.RepeatedPosition,
+            PacketAnomalies.ImpossibleSpeed => StationProblem.ImpossibleSpeed,
+            PacketAnomalies.RapidRepeat => StationProblem.RapidRepeat,
+            PacketAnomalies.TimeBackwards => StationProblem.TimeBackwards,
+            _ => StationProblem.AmbiguityJump,
+        };
+
+    /// <summary>The figures behind a flag, as an engine error the UI words (<c>anomaly.*</c>).</summary>
+    private static EngineError ExampleOf(PacketAnomalies flag, TrackCheck check)
+    {
+        var kind = KindOf(flag);
+        var args = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (check.Interval is { } interval)
+        {
+            args["seconds"] = ((long)Math.Round(interval.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
+            args["milliseconds"] = ((long)Math.Round(interval.TotalMilliseconds)).ToString(
+                CultureInfo.InvariantCulture
+            );
+        }
+        if (check.DistanceKm is { } km)
+        {
+            args["distance"] = Math.Round(km, 1).ToString(CultureInfo.InvariantCulture);
+        }
+        if (check.SpeedKmh is { } speed && double.IsFinite(speed))
+        {
+            args["speed"] = Math.Round(speed).ToString(CultureInfo.InvariantCulture);
+        }
+        var message = flag switch
+        {
+            PacketAnomalies.RepeatedPosition => "The same position was sent again too soon, or as a late copy.",
+            PacketAnomalies.ImpossibleSpeed => "Further from the previous position than the station could have gone.",
+            PacketAnomalies.RapidRepeat => "Less than a second after the previous report.",
+            PacketAnomalies.TimeBackwards => "The report's time is earlier than the previous report's.",
+            _ => "The position moved only because its ambiguity changed.",
+        };
+        return new EngineError("anomaly." + kind, message, args);
     }
 
     /// <summary>How long a problem counts toward a station's (F1.20 behavior 3).</summary>
@@ -808,15 +1023,23 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         {
             entry.Invalid.Dequeue();
         }
+        while (entry.Anomalies.TryPeek(out var oldest) && oldest.At < now - ProblemWindow)
+        {
+            entry.Anomalies.Dequeue();
+        }
     }
 
     /// <summary>Counts each link the packet just heard from <paramref name="sender"/> crossed on RF (F1.21 behavior 4).</summary>
     private void CountLinks(Entry sender, DateTimeOffset at)
     {
-        var (kind, hops) = StationFacts.Route(sender.Path);
+        var (kind, hops) = StationFacts.Route(sender.Path, sender.HeardHere);
         if (kind is not (ArrivalKind.Direct or ArrivalKind.Digipeated))
         {
             return;
+        }
+        if (sender.HeardHere && _homeName is { } me)
+        {
+            hops = [.. hops, (me, true)]; // the last link ends at this station (F3.1 behavior 8)
         }
         var from = sender.Name;
         foreach (var (name, _) in hops)
@@ -879,8 +1102,8 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     {
         lock (_gate)
         {
-            return _entries.TryGetValue(name, out var entry) && entry.Telemetry is { Count: > 0 } samples
-                ? new TelemetryView([.. samples])
+            return _entries.TryGetValue(name, out var entry) && entry.Telemetry is { Count: > 0 } reports
+                ? ViewOf(name, reports)
                 : null;
         }
     }
@@ -896,6 +1119,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 entry.Telemetry = null;
                 cleared++;
             }
+            _telemetryProfiles.Clear(); // the definitions go with the reports
             return cleared;
         }
     }
@@ -979,11 +1203,11 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         )
         {
             track[^1] = track[^1] with { Time = point.Time };
-            entry.TrackPaths[^1] = entry.Path;
+            entry.TrackPaths[^1] = (entry.Path, entry.HeardHere);
             return;
         }
         track.Add(point);
-        entry.TrackPaths.Add(entry.Path);
+        entry.TrackPaths.Add((entry.Path, entry.HeardHere));
         foreach (var watcher in _watchers)
         {
             watcher.AddTrackPoint(entry.Name, point);
@@ -1156,11 +1380,17 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         /// <summary>Its invalid packets over the last hour, oldest first, each with its first error (F1.20).</summary>
         public Queue<(DateTimeOffset At, EngineError Issue)> Invalid { get; } = new();
 
+        /// <summary>Track anomalies over the last hour, oldest first (F1.20 behavior 3).</summary>
+        public Queue<(DateTimeOffset At, string Kind, EngineError Example)> Anomalies { get; } = new();
+
+        /// <summary>The station's recent position reports, for the track analysis (F1.20 behavior 1).</summary>
+        public List<TrackReport> Reports { get; } = [];
+
         /// <summary>Whether its packets had problems in the last hour (F1.20).</summary>
-        public bool HasProblems => Invalid.Count > 0;
+        public bool HasProblems => Invalid.Count > 0 || Anomalies.Count > 0;
 
         /// <summary>Its telemetry reports, oldest first (F1.11), once it has sent any.</summary>
-        public List<TelemetrySample>? Telemetry { get; set; }
+        public List<(DateTimeOffset At, TelemetryReport Report)>? Telemetry { get; set; }
 
         /// <summary>Its latest weather readings (F1.10), once it has sent any.</summary>
         public StationWeather? Weather { get; set; }
@@ -1169,7 +1399,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         public List<TrackPoint> Track { get; } = [];
 
         /// <summary>The path of the packet behind each track point, for its route (F1.21 behavior 2).</summary>
-        public List<string?> TrackPaths { get; } = [];
+        public List<(string? Path, bool HeardHere)> TrackPaths { get; } = [];
+
+        /// <summary>Whether the last packet was heard by this station's own receiver (F3.1 behavior 8).</summary>
+        public bool HeardHere { get; set; }
 
         public bool HasPosition => Latitude is not null && Longitude is not null;
 
@@ -1233,7 +1466,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         public StationDetail ToDetail(AprsPosition? home)
         {
             var (distance, bearing) = From(home);
-            var (device, arrival, text) = StationFacts.Of(LastPacket);
+            var (device, arrival, text) = StationFacts.Of(LastPacket, HeardHere);
             return new(
                 Name,
                 Kind,
@@ -1261,11 +1494,27 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 FirstHeardVia,
                 SeenOn.Count == 0 ? null : [.. SeenOn],
                 Weather,
-                HasProblems ? [new StationProblem(StationProblem.Invalid, Invalid.Count, Invalid.Last().Issue)] : null
+                HasProblems ? Problems() : null
             );
         }
 
         public override string ToString() => string.Create(CultureInfo.InvariantCulture, $"{Kind} {Name}");
+
+        /// <summary>Each kind of problem in the last hour, with its count and latest example (F1.20 behavior 5).</summary>
+        private List<StationProblem> Problems()
+        {
+            var problems = new List<StationProblem>();
+            if (Invalid.Count > 0)
+            {
+                problems.Add(new StationProblem(StationProblem.Invalid, Invalid.Count, Invalid.Last().Issue));
+            }
+            problems.AddRange(
+                Anomalies
+                    .GroupBy(a => a.Kind, StringComparer.Ordinal)
+                    .Select(g => new StationProblem(g.Key, g.Count(), g.Last().Example))
+            );
+            return problems;
+        }
     }
 
     /// <summary>One watcher's uncollected changes. Only touched under the store's lock.</summary>

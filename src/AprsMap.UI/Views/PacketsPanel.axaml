@@ -154,14 +154,25 @@
                   AutomationProperties.Name="{l:T Packets.HasIssues}"
                   Focusable="False"
                 />
+                <!-- Doesn't fit its station's track (F1.20 behavior 4): a broken path, named in the tooltip. -->
+                <PathIcon
+                  IsVisible="{Binding HasAnomalies}"
+                  Data="M 2,20 L 7,13 L 9,14.5 L 4,21.5 Z M 10,11 L 13,7 L 15,8.5 L 12,12.5 Z M 16,5 L 19,1 L 21,2.5 L 18,6.5 Z M 15,15 L 22,15 L 22,17 L 15,17 Z M 17.5,12.5 L 19.5,12.5 L 19.5,19.5 L 17.5,19.5 Z"
+                  Foreground="{DynamicResource Brush.Warn}"
+                  Width="{DynamicResource Icon.Size}"
+                  Height="{DynamicResource Icon.Size}"
+                  ToolTip.Tip="{Binding AnomalyText}"
+                  AutomationProperties.Name="{Binding AnomalyText}"
+                  Focusable="False"
+                />
                 <PathIcon
                   IsVisible="{Binding IsDirect}"
                   Data="F0 M 12,2 A 10,10 0 1 1 12,22 A 10,10 0 1 1 12,2 Z M 12,5 A 7,7 0 1 0 12,19 A 7,7 0 1 0 12,5 Z M 12,9 A 3,3 0 1 1 12,15 A 3,3 0 1 1 12,9 Z"
                   Foreground="{DynamicResource Brush.Accent}"
                   Width="{DynamicResource Icon.Size}"
                   Height="{DynamicResource Icon.Size}"
-                  ToolTip.Tip="{l:T Packets.Direct}"
-                  AutomationProperties.Name="{l:T Packets.Direct}"
+                  ToolTip.Tip="{Binding DirectText}"
+                  AutomationProperties.Name="{Binding DirectText}"
                 />
                 <StackPanel
                   IsVisible="{Binding IsDigipeated}"
