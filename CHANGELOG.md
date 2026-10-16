@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.3.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.3.0-alpha.1...v0.3.0-alpha.2) (2026-10-16)
+
+
+### Features
+
+* a View filter for the map and the station list (F1.9) ([6186b9a](https://github.com/APRS-NET/AprsMap/commit/6186b9ad42487880ce5b5b4bcdef3c55257e2c45)), closes [#123](https://github.com/APRS-NET/AprsMap/issues/123)
+* area objects drawn as their shapes, and signposts (F1.12) ([09e487e](https://github.com/APRS-NET/AprsMap/commit/09e487ef9a7e9c717dab8604a87cee0ef57b6ac9)), closes [#126](https://github.com/APRS-NET/AprsMap/issues/126)
+* clear stations, stale stations, tracks or the packet history (F1.19) ([efca48f](https://github.com/APRS-NET/AprsMap/commit/efca48f9409c5714e80c3ecccd1b868cfd96194d)), closes [#128](https://github.com/APRS-NET/AprsMap/issues/128)
+* flag stations that send invalid packets (F1.20) ([2d7c1fe](https://github.com/APRS-NET/AprsMap/commit/2d7c1fe6f6150011f0d5b526b64670cd6433f3f4))
+* flag stations that send invalid packets (F1.20) ([085a079](https://github.com/APRS-NET/AprsMap/commit/085a07980810dc766eb5595c48451c59456af480))
+* pick the station's location on a map in the setup wizard (F0.5) ([76a36ea](https://github.com/APRS-NET/AprsMap/commit/76a36ea983b726f065da36e9c406ae2113b92ec6)), closes [#130](https://github.com/APRS-NET/AprsMap/issues/130)
+* quick toggles for the Internet, APRS-IS and map tiles (F1.15) ([0da0536](https://github.com/APRS-NET/AprsMap/commit/0da0536330915acb2ad496de8f2d0890b49dc8ec)), closes [#129](https://github.com/APRS-NET/AprsMap/issues/129)
+* show the selected packet's path, dotted to the IGate when heard directly (F1.21) ([809f2e8](https://github.com/APRS-NET/AprsMap/commit/809f2e83cb1323a2f355e13ad9687464112ccc62))
+* telemetry in the details, raw for now (F1.11) ([5a53cd1](https://github.com/APRS-NET/AprsMap/commit/5a53cd1d95f0271cd2550b1889e14a258457b104))
+* the RF network over the last hour on the map (F1.21) ([09fe30e](https://github.com/APRS-NET/AprsMap/commit/09fe30ee748a9b60865f4c402b4d558c5688671d)), closes [#122](https://github.com/APRS-NET/AprsMap/issues/122)
+* tracks behind moving stations, with Clear track (F1.5) ([3361184](https://github.com/APRS-NET/AprsMap/commit/3361184585b92dea81528dff4a6056872f402134)), closes [#121](https://github.com/APRS-NET/AprsMap/issues/121)
+* weather readings in the details and on the map, and Settings › Units (F1.10) ([0a88fda](https://github.com/APRS-NET/AprsMap/commit/0a88fdafddd31d7d79adf39320dc3352a68a848d)), closes [#124](https://github.com/APRS-NET/AprsMap/issues/124)
+
+
+### Bug Fixes
+
+* **ui:** the wizard's filter help says the text is added to the automatic filter ([f602cf7](https://github.com/APRS-NET/AprsMap/commit/f602cf7ebb805d6444171c75750c490b80e9d9fc))
+
 ## [0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.2.0-alpha.4...v0.3.0-alpha.1) (2026-10-16)
 
 
