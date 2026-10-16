@@ -150,6 +150,64 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         }
     }
 
+    /// <summary>The longest comment start a station list row carries.</summary>
+    internal const int RowCommentLength = 80;
+
+    /// <summary>
+    /// One page of the station list (F1.7): entries whose name contains the search, of the kinds asked for, in order.
+    /// Only the page's rows are built, so a query over the whole store costs one pass and one sort.
+    /// </summary>
+    public StationPage Query(StationQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var search = string.IsNullOrWhiteSpace(query.Search) ? null : query.Search.Trim();
+        var offset = Math.Max(0, query.Offset);
+        var count = Math.Clamp(query.Count, 0, StationQuery.MaxCount);
+        lock (_gate)
+        {
+            var home = _home;
+            var matches = new List<(Entry Entry, double Distance)>();
+            foreach (var entry in _entries.Values)
+            {
+                if (
+                    query.Kinds switch
+                    {
+                        StationKinds.Stations => entry.Kind != StationKind.Station,
+                        StationKinds.ObjectsAndItems => entry.Kind == StationKind.Station,
+                        _ => false,
+                    }
+                )
+                {
+                    continue;
+                }
+                if (search is not null && !entry.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                var distance =
+                    query.Sort == StationSort.Distance && home is { } from && entry.HasPosition
+                        ? Geodesy.DistanceKm(from, new AprsPosition(entry.Latitude!.Value, entry.Longitude!.Value))
+                        : double.PositiveInfinity;
+                matches.Add((entry, distance));
+            }
+            Comparison<(Entry Entry, double Distance)> order = query.Sort switch
+            {
+                StationSort.Name => (a, b) => string.CompareOrdinal(a.Entry.Name, b.Entry.Name),
+                StationSort.Distance => (a, b) =>
+                    a.Distance.CompareTo(b.Distance) is var c && c != 0
+                        ? c
+                        : string.CompareOrdinal(a.Entry.Name, b.Entry.Name),
+                _ => (a, b) =>
+                    b.Entry.LastHeard.CompareTo(a.Entry.LastHeard) is var c && c != 0
+                        ? c
+                        : string.CompareOrdinal(a.Entry.Name, b.Entry.Name),
+            };
+            matches.Sort(order);
+            var rows = matches.Skip(offset).Take(count).Select(m => m.Entry.ToRow(home)).ToArray();
+            return new StationPage(rows, matches.Count);
+        }
+    }
+
     /// <summary>
     /// Measures distance and bearing from my location (F1.13 behavior 4), or not with nulls. A change sends every
     /// station on the map again, with its new distance.
@@ -375,6 +433,23 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
             return (
                 Geodesy.DistanceKm(from, to),
                 (int)Math.Round(Geodesy.InitialBearing(from, to), MidpointRounding.AwayFromZero) % 360
+            );
+        }
+
+        public StationRow ToRow(AprsPosition? home)
+        {
+            var (distance, bearing) = From(home);
+            var text = Comment ?? Status;
+            return new(
+                Name,
+                Kind,
+                Symbol,
+                LastHeard,
+                IsStale,
+                distance,
+                bearing,
+                text is { Length: > RowCommentLength } ? text[..RowCommentLength] : text,
+                HasPosition
             );
         }
 

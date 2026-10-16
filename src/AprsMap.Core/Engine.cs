@@ -324,6 +324,13 @@ public sealed partial class Engine : IEngineService, IDisposable
         return Task.FromResult(_stations.Get(name));
     }
 
+    /// <inheritdoc />
+    public Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return Task.FromResult(_stations.Query(query));
+    }
+
     /// <summary>Marks stations stale and removes expired ones, once a <see cref="EngineOptions.SweepInterval"/> (F1.3 behavior 10).</summary>
     private async Task SweepAsync(CancellationToken cancellationToken)
     {

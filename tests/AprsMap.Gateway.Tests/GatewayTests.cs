@@ -91,6 +91,22 @@ public sealed class GatewayTests(GatewayFactory factory) : IClassFixture<Gateway
     }
 
     [Fact]
+    public async Task RemoteClientQueriesTheStationList()
+    {
+        var engine = factory.Services.GetRequiredService<Engine>();
+        engine.Accept("N0QUERY-1>APRS:!4903.50N/07201.75W>One");
+        engine.Accept("N0QUERY-2>APRS:!4903.50N/07201.75W>Two");
+        await using var remote = CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var page = await remote.QueryStationsAsync(new StationQuery("n0query", Sort: StationSort.Name, Count: 1), Ct);
+
+        Assert.Equal(2, page.Total);
+        Assert.Equal("N0QUERY-1", Assert.Single(page.Rows).Name);
+        Assert.Equal("One", page.Rows[0].Comment);
+    }
+
+    [Fact]
     public async Task RemoteClientGetsAStationsFullEntry()
     {
         var engine = factory.Services.GetRequiredService<Engine>();

@@ -135,6 +135,20 @@ internal sealed class FakeEngine : IEngineService
             $"{name}>APY500,N2DIGI*,WIDE2-1,qAR,N1GATE:!4000.90N/10516.23W>088/036/A=005280Heading home"
         );
 
+    /// <summary>What <see cref="QueryStationsAsync"/> returns; the last query is kept in <see cref="LastQuery"/>.</summary>
+    public StationPage StationPage { get; set; } = new([], 0);
+
+    public StationQuery? LastQuery { get; private set; }
+
+    public int Queries { get; private set; }
+
+    public Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default)
+    {
+        LastQuery = query;
+        Queries++;
+        return Task.FromResult(StationPage);
+    }
+
     public Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default) =>
         Task.FromResult(Details.GetValueOrDefault(name));
 

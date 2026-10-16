@@ -70,6 +70,13 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     }
 
     /// <inheritdoc />
+    public Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return _connection.InvokeAsync<StationPage>(EngineHub.QueryStations, query, cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task ResetSettingsAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ResetSettings, cancellationToken));
 
