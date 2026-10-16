@@ -905,7 +905,7 @@ Start the gateway (for example with docker compose up), then open the app from t
     <comment>Label of the APRS-IS server-side filter field.</comment>
   </data>
   <data name="Wizard.Filter.Help" xml:space="preserve">
-    <value>Empty means everything within 150 km of the profile's location. Otherwise it's sent to the server as typed.</value>
+    <value>Optional. The filter already follows your range and the map; this text is added to it as typed.</value>
   </data>
   <data name="Wizard.Filter.Link" xml:space="preserve">
     <value>Filter syntax</value>
