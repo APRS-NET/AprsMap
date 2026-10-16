@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.2.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.2.0-alpha.2...v0.2.0-alpha.3) (2026-10-16)
+
+
+### Features
+
+* **engine:** build the APRS-IS filter from my range, map views and followed stations ([ef2c324](https://github.com/APRS-NET/AprsMap/commit/ef2c32466de5370bc5be80c6141d0baf61277f7f))
+* **engine:** build the APRS-IS filter from my range, map views and followed stations ([b802d2c](https://github.com/APRS-NET/AprsMap/commit/b802d2cf82e221a39f0ff331933fd8074086255d))
+* **engine:** distance and bearing from my location ([51a3442](https://github.com/APRS-NET/AprsMap/commit/51a344260ce045d9755ae210c86ec9c52015e1b2))
+* **engine:** distance and bearing from my location ([5ad0c58](https://github.com/APRS-NET/AprsMap/commit/5ad0c586c92619fe3a9b5cce1858b03f2fe433f8))
+* **engine:** query the station list a page at a time ([f09887d](https://github.com/APRS-NET/AprsMap/commit/f09887d06c095c87eda61b2c23014431bb27b731))
+* **engine:** several sources at once, with the source of every packet and where else it was seen ([1ce329e](https://github.com/APRS-NET/AprsMap/commit/1ce329e70dc32166164ee6f59756e220f0a17454))
+* **engine:** several sources at once, with the source of every packet and where else it was seen ([b1079c2](https://github.com/APRS-NET/AprsMap/commit/b1079c2502f3acd412dbc6b0b4b9e76118f1db19))
+* **engine:** sources in the settings, with profiles picking from them ([6a7221d](https://github.com/APRS-NET/AprsMap/commit/6a7221de9d5e67e3ff0663bbfdb4633cb69f95e8))
+* **engine:** sources in the settings, with profiles picking from them ([c8e2ab9](https://github.com/APRS-NET/AprsMap/commit/c8e2ab9c040cf5ad3e855df17f30c65dc62ec306))
+* **engine:** station details say what sent the last packet and how it arrived ([8612cad](https://github.com/APRS-NET/AprsMap/commit/8612cad8e423d233fc45e8db5f7355390826ead8))
+* **gateway:** run behind a proxy, with security headers and caching ([3f7b0e0](https://github.com/APRS-NET/AprsMap/commit/3f7b0e07cff3d1d7fb91198d0b4b6fa6f2d14ff8))
+* **gateway:** run behind a proxy, with security headers and caching ([90cc78c](https://github.com/APRS-NET/AprsMap/commit/90cc78ca0e382e83cc1654727834b9a667f519a5))
+* **gateway:** say when the gateway is reconnecting, and when the page is out of date ([cbee88b](https://github.com/APRS-NET/AprsMap/commit/cbee88b359393e820cf7f5bc2e8ca93db091b109))
+* **gateway:** say when the gateway is reconnecting, and when the page is out of date ([c3673cf](https://github.com/APRS-NET/AprsMap/commit/c3673cf93a2323c6e594a1fd4400890e34a26979))
+* **gateway:** viewer limits, rate limiting and the viewer count ([ea80886](https://github.com/APRS-NET/AprsMap/commit/ea808861cd091aa6474dc5574ff79da03ce4be64))
+* **gateway:** viewer limits, rate limiting and the viewer count ([dc3b10b](https://github.com/APRS-NET/AprsMap/commit/dc3b10b298e9d200ba4622d17f8250115c55c684))
+* **map:** my location as a house, and Set my location here with Undo ([b3a74a7](https://github.com/APRS-NET/AprsMap/commit/b3a74a739bc604b8317c34c89cec8737ad7f8e58))
+* **packets:** direct, digipeated and duplicate markers; duplicates don't update stations ([#95](https://github.com/APRS-NET/AprsMap/issues/95)) ([a2ba9c2](https://github.com/APRS-NET/AprsMap/commit/a2ba9c29645b910492b844e1e3944dc90dcae499))
+* **ui:** report the map for the filter, set the range, and show the filter ([fadc82f](https://github.com/APRS-NET/AprsMap/commit/fadc82f76fc542d12a5f7340be57bd32786344bd))
+* **ui:** report the map for the filter, set the range, and show the filter ([94dd44b](https://github.com/APRS-NET/AprsMap/commit/94dd44be767f9502dc31b0a823dd709f9c3cf43f))
+* **ui:** Settings &gt; Sources, and profiles picking their source ([6097399](https://github.com/APRS-NET/AprsMap/commit/609739929153b82dadb4205b9b56078f6127aa75))
+* **ui:** the Details panel ([e4e1317](https://github.com/APRS-NET/AprsMap/commit/e4e131747092f668dc5c89fc6fb1b933e32a68db))
+* **ui:** the Stations panel ([891d0fb](https://github.com/APRS-NET/AprsMap/commit/891d0fb149479830ef64418918747396f9997463))
+
+
+### Bug Fixes
+
+* **engine:** a generic destination names no device ([2562e06](https://github.com/APRS-NET/AprsMap/commit/2562e06abf314ddb248acaeb7c79b7df07ff70f6))
+* **ui:** source choices fit at double text size ([c8a1ac6](https://github.com/APRS-NET/AprsMap/commit/c8a1ac67f552d450d7a617a3d9c54f35ddb89694))
+
 ## [0.2.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.2.0-alpha.1...v0.2.0-alpha.2) (2026-10-15)
 
 
