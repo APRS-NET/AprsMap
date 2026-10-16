@@ -613,6 +613,13 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial PacketRoute? Route { get; private set; }
 
+    /// <summary>
+    /// The route the map draws: a packet picked in the list or a track point's (F1.21 behavior 2). A selected station
+    /// shows its RF links instead (behavior 5), so its last packet's route stays in the details.
+    /// </summary>
+    [ObservableProperty]
+    public partial PacketRoute? PickedRoute { get; private set; }
+
     private RouteQuery? _routeQuery;
     private int _routeLoads;
 
@@ -669,6 +676,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (load == _routeLoads)
         {
             Route = route;
+            PickedRoute = query is { Path: null, TrackPoint: null } ? null : route;
             Details.ShowRoute(route);
         }
     }

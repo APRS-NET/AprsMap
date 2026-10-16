@@ -34,6 +34,7 @@ public sealed class AppearancePreferencesTests : IDisposable
         MapLabels = MapLabels.None,
         ShowFilterCircles = true,
         MapTracks = MapTracks.None,
+        ShowAllLinks = true,
         MapProvider = "topo",
         Language = "de",
     };
@@ -60,6 +61,13 @@ public sealed class AppearancePreferencesTests : IDisposable
 
         Assert.Equal(new AppearanceSettings { Palette = Palette.HighContrast, Corners = CornerStyle.Sharp }, read);
     }
+
+    [Fact]
+    public void TheOldNetworkPathsModeBecomesShowAllConnections() =>
+        Assert.Equal(
+            new AppearanceSettings { MapPaths = MapPaths.SelectedStation, ShowAllLinks = true },
+            AppearancePreferences.Read("""{ "version": 1, "mapPaths": "Network" }""")
+        );
 
     [Theory]
     [InlineData("{ not json")]

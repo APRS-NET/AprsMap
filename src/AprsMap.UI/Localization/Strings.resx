@@ -1828,13 +1828,17 @@ Start the gateway (for example with docker compose up), then open the app from t
     <comment>Settings › Map: whether the route a selected packet took over the air is drawn.</comment>
   </data>
   <data name="Settings.Map.Paths.Help" xml:space="preserve">
-    <value>Draws how the selected station's last packet, or a packet picked in the list, reached the internet: dotted to the IGate that heard it, arrows through digipeaters.</value>
+    <value>Selecting a station draws its RF connections over the last hour as dashed lines: the IGates and digipeaters that heard it, and the stations it heard. A packet picked in the list draws how it reached the internet: dotted to the IGate that heard it, arrows through digipeaters.</value>
   </data>
   <data name="Settings.Map.Paths.SelectedStation" xml:space="preserve">
     <value>Selected station</value>
   </data>
-  <data name="Settings.Map.Paths.Network" xml:space="preserve">
-    <value>RF network over the last hour</value>
+  <data name="Settings.Map.AllLinks" xml:space="preserve">
+    <value>Show all RF connections</value>
+    <comment>Settings › Map: a checkbox; draws every station's RF connections, not only the selected station's.</comment>
+  </data>
+  <data name="Settings.Map.AllLinks.Help" xml:space="preserve">
+    <value>Draws every RF connection heard in the last hour, thicker for more packets, whether or not a station is selected.</value>
   </data>
   <data name="Settings.Map.Paths.Off" xml:space="preserve">
     <value>Off</value>

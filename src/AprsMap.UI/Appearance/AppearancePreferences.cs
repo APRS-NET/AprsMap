@@ -123,6 +123,7 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             json.WriteString("mapLabels", s.MapLabels.ToString());
             json.WriteString("mapTracks", s.MapTracks.ToString());
             json.WriteString("mapPaths", s.MapPaths.ToString());
+            json.WriteBoolean("showAllLinks", s.ShowAllLinks);
             json.WriteBoolean("showAreas", s.ShowAreas);
             json.WriteString("mapWeatherLabels", s.MapWeatherLabels.ToString());
             json.WriteString("mapWind", s.MapWind.ToString());
@@ -221,6 +222,21 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             if (Enum<MapPaths>(root, "mapPaths") is { } paths)
             {
                 s = s with { MapPaths = paths };
+            }
+            else if (
+                root.TryGetProperty("mapPaths", out var oldPaths)
+                && oldPaths.ValueKind == JsonValueKind.String
+                && oldPaths.ValueEquals("Network")
+            )
+            {
+                s = s with { ShowAllLinks = true }; // the network was a paths mode before it was a checkbox
+            }
+            if (
+                root.TryGetProperty("showAllLinks", out var allLinks)
+                && allLinks.ValueKind is JsonValueKind.True or JsonValueKind.False
+            )
+            {
+                s = s with { ShowAllLinks = allLinks.GetBoolean() };
             }
             if (Enum<MapWeatherLabels>(root, "mapWeatherLabels") is { } weatherLabels)
             {

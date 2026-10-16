@@ -257,11 +257,20 @@ public static class SettingsRegistry
                 () =>
                     [
                         (MapPaths.SelectedStation, text["Settings.Map.Paths.SelectedStation"]),
-                        (MapPaths.Network, text["Settings.Map.Paths.Network"]),
                         (MapPaths.Off, text["Settings.Map.Paths.Off"]),
                     ],
                 () => appearance.Current.MapPaths,
                 value => Update(s => s with { MapPaths = (MapPaths)value! })
+            )
+        );
+        items.Add(
+            new ToggleSetting(
+                "map.all-links",
+                "Settings.Map.AllLinks",
+                "Settings.Map.AllLinks.Help",
+                text,
+                () => appearance.Current.ShowAllLinks,
+                value => Update(s => s with { ShowAllLinks = value })
             )
         );
         items.Add(

@@ -186,6 +186,7 @@ public sealed class AppearanceService
         yield return ("Map.Tracks", s.MapTracks);
         yield return ("Map.Paths", s.MapPaths);
         yield return ("Map.ShowAreas", s.ShowAreas);
+        yield return ("Map.ShowAllLinks", s.ShowAllLinks);
         yield return ("Map.WeatherLabels", s.MapWeatherLabels);
         yield return ("Map.Wind", s.MapWind);
         // Docking chrome (tabs, panel headers, floating window titles) follows the text size like everything else.

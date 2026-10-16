@@ -231,6 +231,7 @@ public sealed class MapTests
                 "map.labels",
                 "map.tracks",
                 "map.paths",
+                "map.all-links",
                 "map.weather-labels",
                 "map.wind",
                 "map.symbol-size",

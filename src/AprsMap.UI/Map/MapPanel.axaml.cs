@@ -112,7 +112,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.CentreOnStationRequested += OnCentreOnStation;
             _map.SetStations(_main.Stations);
             _map.SetTracks(_main.Tracks);
-            _map.Route = _main.Route;
+            _map.Route = _main.PickedRoute;
             _map.SetFilterAreas(_main.FilterAreas);
             ShowFollowed();
             _map.Select(_main.SelectedStation);
@@ -259,7 +259,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
 
     private async Task LoadLinksAsync()
     {
-        if (_map.Paths != Appearance.MapPaths.Network || _main is null)
+        if (_map.Paths == Appearance.MapPaths.Off || (!_map.ShowAllLinks && _map.Selected is null) || _main is null)
         {
             _map.Links = [];
             return;
@@ -310,10 +310,11 @@ public sealed partial class MapPanel : UserControl, IDisposable
         if (e.PropertyName == nameof(MainViewModel.SelectedStation) && _main is not null)
         {
             _map.Select(_main.SelectedStation);
+            _ = LoadLinksAsync(); // the newly selected station's connections, fresh
         }
-        else if (e.PropertyName == nameof(MainViewModel.Route) && _main is not null)
+        else if (e.PropertyName == nameof(MainViewModel.PickedRoute) && _main is not null)
         {
-            _map.Route = _main.Route;
+            _map.Route = _main.PickedRoute;
         }
         else if (e.PropertyName == nameof(MainViewModel.FilterAreas) && _main is not null)
         {
