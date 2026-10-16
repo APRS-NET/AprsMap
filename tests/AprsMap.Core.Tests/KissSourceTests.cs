@@ -79,6 +79,7 @@ public sealed class KissSourceTests
 
         var only = Assert.Single(heard);
         Assert.Equal(("N0CAR-9", tnc.Id), (only.Source, only.SourceId));
+        Assert.Equal(PacketMarkers.HeardHere | PacketMarkers.Direct, only.Markers); // heard by this station's TNC
         Assert.NotNull(await engine.GetStationAsync("N0CAR-9", Ct));
         Assert.Equal(ConnectionState.Connected, (await StatusOf(engine, tnc.Id))!.State);
 

@@ -18,7 +18,13 @@ public static class PacketSummarizer
     /// <param name="packet">The packet as received.</param>
     /// <param name="receivedAt">When it was received.</param>
     /// <param name="duplicate">Whether it repeats a packet received within the duplicate window.</param>
-    public static PacketView Summarize(AprsPacket packet, DateTimeOffset receivedAt, bool duplicate = false)
+    /// <param name="heardHere">Whether this station's own receiver heard it (F3.1 behavior 8).</param>
+    public static PacketView Summarize(
+        AprsPacket packet,
+        DateTimeOffset receivedAt,
+        bool duplicate = false,
+        bool heardHere = false
+    )
     {
         ArgumentNullException.ThrowIfNull(packet);
 
@@ -27,7 +33,12 @@ public static class PacketSummarizer
         var route = PathAnalysis.FromPacket(packet);
         var hops = route.IsFromInternet ? 0 : route.UsedHops.Count;
         var markers = duplicate ? PacketMarkers.Duplicate : PacketMarkers.None;
-        if (route.IsHeardDirectly)
+        if (heardHere)
+        {
+            // An RF path with no IGate: direct unless a digipeater marked itself.
+            markers |= PacketMarkers.HeardHere | (hops > 0 ? PacketMarkers.Digipeated : PacketMarkers.Direct);
+        }
+        else if (route.IsHeardDirectly)
         {
             markers |= PacketMarkers.Direct;
         }

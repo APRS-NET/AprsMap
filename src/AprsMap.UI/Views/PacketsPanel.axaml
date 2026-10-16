@@ -171,8 +171,8 @@
                   Foreground="{DynamicResource Brush.Accent}"
                   Width="{DynamicResource Icon.Size}"
                   Height="{DynamicResource Icon.Size}"
-                  ToolTip.Tip="{l:T Packets.Direct}"
-                  AutomationProperties.Name="{l:T Packets.Direct}"
+                  ToolTip.Tip="{Binding DirectText}"
+                  AutomationProperties.Name="{Binding DirectText}"
                 />
                 <StackPanel
                   IsVisible="{Binding IsDigipeated}"
