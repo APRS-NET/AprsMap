@@ -92,7 +92,10 @@ public sealed partial class MainViewModel : ObservableObject
             _text,
             () => _status,
             SourceNames,
-            AprsIsSwitch,
+            source =>
+                source.Kind == SourceKind.AprsIs
+                    ? AprsIsSwitch
+                    : SourcePills.FirstOrDefault(p => p.Id == source.Id)?.Switch,
             name => SelectedStation = name,
             () =>
             {

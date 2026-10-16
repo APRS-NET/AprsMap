@@ -64,7 +64,7 @@ public sealed class DashboardViewModelTests
                 new Localizer(CultureInfo.GetCultureInfo("en-US")),
                 () => Status,
                 new SourceNames(() => null),
-                Switch,
+                source => source.Kind == SourceKind.AprsIs ? Switch : null,
                 Selected.Add,
                 () => ProblemsShown++
             );
@@ -159,6 +159,48 @@ public sealed class DashboardViewModelTests
     }
 
     [Fact]
+    public async Task ATncRowHasItsPillsSwitchAndSaysOffWhenItsOff()
+    {
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider(T0));
+        vm.Show(engine.Settings);
+        EngineStatus Status(bool tncOn) =>
+            new(ConnectionState.Connected, "T2TEST", 0, "1", Toggles: StationToggles.AllOn)
+            {
+                Sources =
+                [
+                    new("rotate", "rotate.aprs2.net", SourceKind.AprsIs, ConnectionState.Connected, "T2TEST"),
+                    new(
+                        "tnc",
+                        "Direwolf",
+                        SourceKind.KissTcp,
+                        tncOn ? ConnectionState.Connected : ConnectionState.Disconnected
+                    )
+                    {
+                        Enabled = tncOn,
+                    },
+                ],
+            };
+        vm.Show(Status(tncOn: true));
+
+        vm.Dashboard.Show(Sample());
+
+        var tnc = vm.Dashboard.Connections[1];
+        Assert.Same(vm.SourcePills[0].Switch, tnc.Switch); // the pill and the row move together
+        Assert.Equal(("Connected", "Direwolf on or off"), (tnc.State, tnc.SwitchName));
+        Assert.Equal("APRS-IS on or off", vm.Dashboard.Connections[0].SwitchName);
+
+        tnc.Switch!.IsOn = false;
+        await WaitUntil(() => engine.SourcesSwitched.Count == 1);
+        Assert.Equal(("tnc", false), engine.SourcesSwitched[0]);
+        vm.Show(Status(tncOn: false));
+        vm.Dashboard.Show(Sample());
+        Assert.Equal("Off", vm.Dashboard.Connections[1].State);
+        Assert.False(vm.Dashboard.Connections[1].IsQuiet); // off isn't quiet
+        Assert.False(vm.SourcePills[0].Switch.IsOn);
+    }
+
+    [Fact]
     public void NothingYetSaysItsWaiting()
     {
         var vm = new Harness().Create();
@@ -203,7 +245,7 @@ public sealed class DashboardViewModelTests
             new Localizer(CultureInfo.GetCultureInfo("en-US")),
             () => null,
             new SourceNames(() => null),
-            new SourceSwitch(_ => Task.CompletedTask),
+            _ => null,
             _ => { },
             () => { },
             () => UnitSettings.Metric with { Distance = DistanceUnit.Miles, Temperature = TemperatureUnit.Fahrenheit },

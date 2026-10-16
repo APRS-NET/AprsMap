@@ -98,8 +98,8 @@
             OnContent="{x:Null}"
             OffContent="{x:Null}"
             Margin="8,0,0,0"
-            ToolTip.Tip="{l:T Toggles.Switch.AprsIs}"
-            AutomationProperties.Name="{l:T Toggles.Switch.AprsIs}"
+            ToolTip.Tip="{Binding SwitchName}"
+            AutomationProperties.Name="{Binding SwitchName}"
           />
         </Grid>
         <TextBlock

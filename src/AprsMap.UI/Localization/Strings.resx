@@ -2310,6 +2310,10 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Dashboard.State.Disconnected" xml:space="preserve">
     <value>Disconnected</value>
   </data>
+  <data name="Dashboard.State.Off" xml:space="preserve">
+    <value>Off</value>
+    <comment>A source switched off by the operator.</comment>
+  </data>
   <data name="Dashboard.State.Connecting" xml:space="preserve">
     <value>Connecting</value>
   </data>
