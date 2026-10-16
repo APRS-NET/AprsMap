@@ -90,21 +90,30 @@ public sealed class KissSourceTests
     [Fact]
     public async Task ATncThatClosesIsReconnectedAndItsPillSaysSo()
     {
-        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
-        var (engine, tnc) = Create(((IPEndPoint)listener.LocalEndpoint).Port);
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var (engine, tnc) = Create(port);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var run = engine.RunAsync(cts.Token);
 
         var first = await listener.AcceptTcpClientAsync(Ct);
         await WaitUntil(async () => (await StatusOf(engine, tnc.Id))?.State == ConnectionState.Connected);
-        first.Dispose(); // Direwolf restarted
+        // Direwolf stops: not listening while it's down, so the pill holds Reconnecting long enough to be seen (with a
+        // listener up, the OS accepts the reconnect at once and Reconnecting can pass between two polls).
+        listener.Dispose();
+        first.Dispose();
 
         await WaitUntil(async () =>
             (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Reconnecting } s
-            && s.Error?.Code is EngineErrorCodes.KissClosed or EngineErrorCodes.KissLinkFailed
+            && s.Error?.Code
+                is EngineErrorCodes.KissClosed
+                    or EngineErrorCodes.KissLinkFailed
+                    or EngineErrorCodes.KissUnreachable
         );
-        using var second = await listener.AcceptTcpClientAsync(Ct); // and it comes back by itself
+        using var restarted = new TcpListener(IPAddress.Loopback, port);
+        restarted.Start(); // Direwolf is back
+        using var second = await restarted.AcceptTcpClientAsync(Ct); // and the source comes back by itself
         await WaitUntil(async () => (await StatusOf(engine, tnc.Id))?.State == ConnectionState.Connected);
 
         await cts.CancelAsync();
