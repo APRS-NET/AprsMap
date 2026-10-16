@@ -19,7 +19,7 @@ public enum SetupStep
     /// <summary>Where the station is (optional).</summary>
     Location,
 
-    /// <summary>Which APRS-IS server.</summary>
+    /// <summary>Which APRS-IS server, or a TNC instead.</summary>
     Server,
 
     /// <summary>Passcode, or receive only.</summary>
@@ -286,8 +286,11 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// <summary>Whether Back has nowhere to go.</summary>
     public bool IsFirstStep => Step == SetupStep.Callsign;
 
-    /// <summary>Whether Next is Finish.</summary>
-    public bool IsLastStep => Step == SetupStep.Passcode;
+    /// <summary>Whether Next is Finish: on the passcode step, or on the server step with a TNC (no APRS-IS login).</summary>
+    public bool IsLastStep => Step == SetupStep.Passcode || (Step == SetupStep.Server && UseTnc);
+
+    /// <summary>How many steps there are: 4, or 3 with a TNC, which needs no passcode.</summary>
+    public int StepCount => UseTnc ? 3 : 4;
 
     /// <summary>"Step 2 of 4", in the viewer's language.</summary>
     [ObservableProperty]
@@ -526,6 +529,40 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             ? OwnServer.Trim()
             : SelectedServer?.Server ?? (_presets.Count > 0 ? _presets[0].Server : string.Empty);
 
+    /// <summary>
+    /// Use a TNC instead (F1.25 behavior 7, F3.1 behavior 3): the profile receives on RF only, through a KISS over TCP
+    /// source, with no APRS-IS source and no passcode step.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UseAprsIs), nameof(IsLastStep), nameof(StepCount))]
+    public partial bool UseTnc { get; set; }
+
+    /// <summary>The opposite of <see cref="UseTnc"/>, for the APRS-IS fields.</summary>
+    public bool UseAprsIs => !UseTnc;
+
+    /// <summary>Where the TNC is: a host name or address.</summary>
+    [ObservableProperty]
+    public partial string TncHost { get; set; } = string.Empty;
+
+    /// <summary>The TNC's KISS port, 8001 to start with (Direwolf's and soundmodem's).</summary>
+    [ObservableProperty]
+    public partial string TncPort { get; set; } = SourceSettings.DefaultKissPort.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>Why the TNC's details can't be used, or null.</summary>
+    [ObservableProperty]
+    public partial string? TncError { get; set; }
+
+    partial void OnTncHostChanged(string value) => TncError = null;
+
+    partial void OnTncPortChanged(string value) => TncError = null;
+
+    partial void OnUseTncChanged(bool value)
+    {
+        TncError = null;
+        OnStepChanged(Step); // "Step 3 of 3"
+        NextCommand.NotifyCanExecuteChanged();
+    }
+
     // ── Step 4: passcode ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Receive only (the default), or log in with a passcode (behavior 24).</summary>
@@ -644,6 +681,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Longitude?.ToString(CultureInfo.InvariantCulture) ?? "",
             Server,
             ReceiveOnly ? "" : PasscodeText,
+            UseTnc ? $"{TncHost}:{TncPort}" : "",
             LocatorText,
             CoordinatesText,
             AddressText
@@ -659,6 +697,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
                 || CoordinatesText.Length > 0
                 || AddressText.Length > 0
                 || UseOwnServer
+                || UseTnc
                 || !ReceiveOnly;
 
     // ── Navigation ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -676,6 +715,9 @@ public sealed partial class SetupWizardViewModel : ObservableObject
                 break;
             case SetupStep.Location when await ConfirmPendingAsync():
                 Step = SetupStep.Server;
+                break;
+            case SetupStep.Server when CheckServer() && UseTnc:
+                await FinishAsync();
                 break;
             case SetupStep.Server when CheckServer():
                 Step = SetupStep.Passcode;
@@ -766,6 +808,15 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 
     private bool CheckServer()
     {
+        if (UseTnc)
+        {
+            if (TncHost.Trim().Length == 0)
+            {
+                TncError = _text["Wizard.Tnc.HostEmpty"];
+                return false;
+            }
+            return true;
+        }
         if (UseOwnServer && OwnServer.Trim().Length == 0)
         {
             ServerError = _text["Error.aprs.server-host-empty"];
@@ -1002,18 +1053,24 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Step = SetupStep.Callsign;
             return;
         }
-        if (IsNewSource && !CheckServer())
+        if ((UseTnc || IsNewSource) && !CheckServer())
         {
             Step = SetupStep.Server;
             return;
         }
-        if (!TryPasscode(out var passcode))
+        var passcode = -1;
+        if (UseTnc)
+        {
+            passcode = _editing?.Passcode ?? -1; // no APRS-IS login to use it; kept for when one's added
+        }
+        else if (!TryPasscode(out passcode))
         {
             return;
         }
 
-        var source = IsNewSource
-            ? SourceFor(Server, IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null)
+        var source =
+            UseTnc ? TncFor(TncHost.Trim(), TncPort.Trim())
+            : IsNewSource ? SourceFor(Server, IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null)
             : SelectedSource?.Source; // an existing source, or none
         var others = _editing is null
             ? []
@@ -1025,7 +1082,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             IsProfileMode && ProfileName.Trim().Length > 0 ? ProfileName.Trim() : Callsign,
             Callsign,
             passcode,
-            [.. others, .. source is null ? Array.Empty<string>() : [source.Id]],
+            [.. others.Where(id => id != source?.Id), .. source is null ? Array.Empty<string>() : [source.Id]],
             Latitude,
             Longitude,
             IsProfileMode ? RangeKm : StationProfile.DefaultRangeKm
@@ -1061,6 +1118,29 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             && string.Equals(s.Filter, filter, StringComparison.Ordinal)
         )
         ?? SourceSettings.AprsIsFor(server, filter);
+
+    /// <summary>
+    /// The KISS over TCP source for <paramref name="host"/> and <paramref name="port"/>: an existing one that connects
+    /// there, or a new one named after the host (F3.1 behavior 1.1). A port that isn't a number is passed on as out of
+    /// range, so the engine's check words it.
+    /// </summary>
+    private SourceSettings TncFor(string host, string port)
+    {
+        int? number =
+            port.Length == 0 ? null
+            : int.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n
+            : -1;
+        if (number == SourceSettings.DefaultKissPort)
+        {
+            number = null;
+        }
+        return _existing?.SourceList.FirstOrDefault(s =>
+                s.Kind == SourceKind.KissTcp
+                && string.Equals(s.Host, host, StringComparison.OrdinalIgnoreCase)
+                && (s.Port ?? SourceSettings.DefaultKissPort) == (number ?? SourceSettings.DefaultKissPort)
+            )
+            ?? SourceSettings.KissTcpFor(host, number);
+    }
 
     /// <summary>
     /// The settings to save: the first profile, or the current ones with this profile added or replaced, and its
@@ -1105,6 +1185,11 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Step = SetupStep.Callsign;
             NameError = message;
         }
+        else if (code == EngineErrorCodes.KissSourceInvalid && UseTnc)
+        {
+            Step = SetupStep.Server;
+            TncError = message;
+        }
         else if (code.StartsWith("aprs.server-", StringComparison.Ordinal))
         {
             Step = SetupStep.Server;
@@ -1140,7 +1225,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     {
         StepText = _text.Format(
             "Wizard.StepOf",
-            new Dictionary<string, object?> { ["step"] = StepNumber, ["steps"] = 4 }
+            new Dictionary<string, object?> { ["step"] = StepNumber, ["steps"] = StepCount }
         );
         IsConfirmingClose = false;
     }

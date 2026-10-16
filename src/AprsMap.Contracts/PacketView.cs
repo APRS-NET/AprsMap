@@ -144,11 +144,15 @@ public enum PacketMarkers
 /// <param name="Station">Only this station's packets, ignoring case.</param>
 /// <param name="Kinds">Only these kinds; null or empty for all.</param>
 /// <param name="IssuesOnly">Only packets with parse issues or track anomalies (F1.20 behavior 4).</param>
+/// <param name="SourceId">
+/// Only packets heard on this source (F3.1 behavior 10): arrived on it, or also seen on it (<see cref="PacketView.SeenOn"/>).
+/// </param>
 public sealed record PacketFilter(
     string? Text = null,
     string? Station = null,
     IReadOnlyList<PacketKind>? Kinds = null,
-    bool IssuesOnly = false
+    bool IssuesOnly = false,
+    string? SourceId = null
 )
 {
     /// <summary>Whether the filter lets every packet through.</summary>
@@ -156,7 +160,8 @@ public sealed record PacketFilter(
         string.IsNullOrWhiteSpace(Text)
         && string.IsNullOrWhiteSpace(Station)
         && Kinds is not { Count: > 0 }
-        && !IssuesOnly;
+        && !IssuesOnly
+        && SourceId is null;
 
     /// <summary>Whether <paramref name="packet"/> passes the filter.</summary>
     public bool Matches(PacketView packet)
@@ -167,6 +172,10 @@ public sealed record PacketFilter(
             return false;
         }
         if (Kinds is { Count: > 0 } kinds && !kinds.Contains(packet.Kind))
+        {
+            return false;
+        }
+        if (SourceId is { } source && packet.SourceId != source && packet.SeenOn?.Contains(source) != true)
         {
             return false;
         }

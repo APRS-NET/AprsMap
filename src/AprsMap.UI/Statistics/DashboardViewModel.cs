@@ -26,7 +26,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly Localizer _text;
     private readonly Func<EngineStatus?> _status;
     private readonly SourceNames _sources;
-    private readonly SourceSwitch _aprsIs;
+    private readonly Func<SourceStatus, SourceSwitch?> _switchOf;
     private readonly Func<UnitSettings> _units;
     private readonly Action<StationFilter> _useFilter;
     private readonly Action<string> _select;
@@ -40,7 +40,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         Localizer text,
         Func<EngineStatus?> status,
         SourceNames sources,
-        SourceSwitch aprsIs,
+        Func<SourceStatus, SourceSwitch?> switchOf,
         Action<string> select,
         Action showProblems,
         Func<UnitSettings>? units = null,
@@ -58,7 +58,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         _text = text;
         _status = status;
         _sources = sources;
-        _aprsIs = aprsIs;
+        _switchOf = switchOf;
         _select = select;
         _showProblems = showProblems;
         Ranges = [.. Enum.GetValues<DashboardRange>().Select(r => new RangeOption(r, this))];
@@ -340,14 +340,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         Replace(
             Connections,
             (status?.Sources ?? []).Select(source =>
-                SourceRow.Of(
-                    _text,
-                    source,
-                    Last(lastBySource, source.Id),
-                    dashboard.At,
-                    Clock,
-                    source.Kind == SourceKind.AprsIs ? _aprsIs : null
-                )
+                SourceRow.Of(_text, source, Last(lastBySource, source.Id), dashboard.At, Clock, _switchOf(source))
             )
         );
         ReconnectsText = status is null
@@ -691,9 +684,16 @@ public sealed record CountRow(string Name, string Value, double Fraction, IRelay
 
 /// <summary>
 /// One source's connection: its name, state and the time since its last packet, quiet in words too, and its on/off
-/// switch where it has one (APRS-IS; KISS sources gain theirs with F3.1).
+/// switch where it has one: the one in its pill, APRS-IS's or a TNC's (F1.15, F3.1 behavior 6).
 /// </summary>
-public sealed record SourceRow(string Name, string State, string? Last, bool IsQuiet, SourceSwitch? Switch = null)
+public sealed record SourceRow(
+    string Name,
+    string State,
+    string? Last,
+    bool IsQuiet,
+    SourceSwitch? Switch = null,
+    string? SwitchName = null
+)
 {
     /// <summary>Whether the row has an on/off switch.</summary>
     public bool HasSwitch => Switch is not null;
@@ -708,17 +708,21 @@ public sealed record SourceRow(string Name, string State, string? Last, bool IsQ
     )
     {
         var state = text[
-            source.State switch
-            {
-                ConnectionState.Connecting => "Dashboard.State.Connecting",
-                ConnectionState.Connected => "Dashboard.State.Connected",
-                ConnectionState.Reconnecting => "Dashboard.State.Reconnecting",
-                ConnectionState.NotConfigured => "Dashboard.State.NotConfigured",
-                _ => "Dashboard.State.Disconnected",
-            }
+            !source.Enabled
+                ? "Dashboard.State.Off"
+                : source.State switch
+                {
+                    ConnectionState.Connecting => "Dashboard.State.Connecting",
+                    ConnectionState.Connected => "Dashboard.State.Connected",
+                    ConnectionState.Reconnecting => "Dashboard.State.Reconnecting",
+                    ConnectionState.NotConfigured => "Dashboard.State.NotConfigured",
+                    _ => "Dashboard.State.Disconnected",
+                }
         ];
         var quiet =
-            source.State == ConnectionState.Connected && (last is null || now - last > DashboardViewModel.QuietAfter);
+            source.Enabled
+            && source.State == ConnectionState.Connected
+            && (last is null || now - last > DashboardViewModel.QuietAfter);
         var lastText =
             last is { } at
                 ? text.Format(
@@ -732,6 +736,10 @@ public sealed record SourceRow(string Name, string State, string? Last, bool IsQ
                 )
             : quiet ? text["Dashboard.Source.NoPackets"]
             : null;
-        return new SourceRow(source.Name, state, lastText, quiet, onOff);
+        var switchName =
+            onOff is null ? null
+            : source.Kind == SourceKind.AprsIs ? text["Toggles.Switch.AprsIs"]
+            : text.Format("Toggles.Switch.Source", new Dictionary<string, object?> { ["source"] = source.Name });
+        return new SourceRow(source.Name, state, lastText, quiet, onOff, switchName);
     }
 }

@@ -92,7 +92,10 @@ public sealed partial class MainViewModel : ObservableObject
             _text,
             () => _status,
             SourceNames,
-            AprsIsSwitch,
+            source =>
+                source.Kind == SourceKind.AprsIs
+                    ? AprsIsSwitch
+                    : SourcePills.FirstOrDefault(p => p.Id == source.Id)?.Switch,
             name => SelectedStation = name,
             () =>
             {
@@ -1033,6 +1036,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var couldClear = CanClearData;
         _settings = settings;
+        PacketList.ShowSources(settings);
         CanToggle = !settings.ReadOnly;
         if (CanClearData != couldClear)
         {

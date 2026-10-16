@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+using System.Collections.ObjectModel;
 using AprsMap.Contracts;
 using AprsMap.UI.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -46,6 +47,8 @@ public sealed partial class PacketListViewModel : ObservableObject
         _text = text;
         Kinds = [new KindOption(null, text), .. Enum.GetValues<PacketKind>().Select(k => new KindOption(k, text))];
         SelectedKind = Kinds[0];
+        Sources = [new SourceOption(null, text["Packets.Source.All"])];
+        SelectedSource = Sources[0];
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
     }
@@ -67,6 +70,17 @@ public sealed partial class PacketListViewModel : ObservableObject
     /// <summary>The type filter.</summary>
     [ObservableProperty]
     public partial KindOption SelectedKind { get; set; }
+
+    /// <summary>The source filter's choices: all, and each source the active profile uses (F3.1 behavior 10).</summary>
+    public ObservableCollection<SourceOption> Sources { get; }
+
+    /// <summary>The source filter.</summary>
+    [ObservableProperty]
+    public partial SourceOption? SelectedSource { get; set; }
+
+    /// <summary>Whether the source filter is offered: the active profile uses more than one source.</summary>
+    [ObservableProperty]
+    public partial bool HasSources { get; private set; }
 
     /// <summary>Only packets with parse issues.</summary>
     [ObservableProperty]
@@ -109,7 +123,8 @@ public sealed partial class PacketListViewModel : ObservableObject
             string.IsNullOrWhiteSpace(FilterText) ? null : FilterText.Trim(),
             string.IsNullOrWhiteSpace(Station) ? null : Station.Trim(),
             SelectedKind?.Kind is { } kind ? [kind] : null,
-            IssuesOnly
+            IssuesOnly,
+            SelectedSource?.Id
         );
 
     /// <summary>
@@ -212,6 +227,35 @@ public sealed partial class PacketListViewModel : ObservableObject
         Station = null;
         IssuesOnly = false;
         SelectedKind = Kinds[0];
+        SelectedSource = Sources[0];
+    }
+
+    /// <summary>
+    /// Offers the sources <paramref name="settings"/>' active profile uses, keeping the one chosen while it's still used.
+    /// </summary>
+    internal void ShowSources(AppSettings settings)
+    {
+        var used = settings.GetActiveProfile()?.SourceIds ?? [];
+        var options = used.Select(id => new SourceOption(
+                id,
+                settings.SourceList.FirstOrDefault(s => s.Id == id)?.Name ?? id
+            ))
+            .ToList();
+        if (options.Select(o => (o.Id, o.Name)).SequenceEqual(Sources.Skip(1).Select(o => (o.Id, o.Name))))
+        {
+            return;
+        }
+        var chosen = SelectedSource?.Id;
+        while (Sources.Count > 1)
+        {
+            Sources.RemoveAt(Sources.Count - 1);
+        }
+        foreach (var option in options)
+        {
+            Sources.Add(option);
+        }
+        HasSources = options.Count > 1;
+        SelectedSource = HasSources ? Sources.FirstOrDefault(o => o.Id == chosen) ?? Sources[0] : Sources[0];
     }
 
     /// <summary>The raw lines of <paramref name="rows"/>, oldest first, for Copy (F1.8 behavior 8).</summary>
@@ -251,6 +295,14 @@ public sealed partial class PacketListViewModel : ObservableObject
     partial void OnSelectedKindChanged(KindOption value) => Restart();
 
     partial void OnIssuesOnlyChanged(bool value) => Restart();
+
+    partial void OnSelectedSourceChanged(SourceOption? oldValue, SourceOption? newValue)
+    {
+        if (oldValue?.Id != newValue?.Id)
+        {
+            Restart();
+        }
+    }
 
     partial void OnNewWhilePausedChanged(int value) => UpdatePauseText();
 
@@ -353,8 +405,23 @@ public sealed partial class PacketListViewModel : ObservableObject
         {
             kind.Retranslate(_text);
         }
+        Sources[0].Name = _text["Packets.Source.All"];
         UpdatePauseText();
         UpdateEmpty();
+    }
+
+    /// <summary>One choice of the source filter.</summary>
+    public sealed partial class SourceOption(string? id, string name) : ObservableObject
+    {
+        /// <summary>The source's id; null for all.</summary>
+        public string? Id { get; } = id;
+
+        /// <summary>Its name, or "All sources".</summary>
+        [ObservableProperty]
+        public partial string Name { get; set; } = name;
+
+        /// <inheritdoc />
+        public override string ToString() => Name;
     }
 
     /// <summary>One choice of the type filter.</summary>

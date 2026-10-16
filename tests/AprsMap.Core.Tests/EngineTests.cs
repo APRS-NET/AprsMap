@@ -729,6 +729,43 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task AListOfOneSourceGetsAPacketWhenItsHeardThereSecond()
+    {
+        var sources = new FakeSourceFactory();
+        var aprsIs = sources.Enqueue("T2TEST");
+        var tnc = sources.EnqueueFor(Tnc.Id, "DIREWOLF");
+        var profile = InMemorySettingsStore.Profile("N0TEST") with
+        {
+            SourceIds = [InMemorySettingsStore.Rotate.Id, Tnc.Id],
+        };
+        var store = new InMemorySettingsStore(
+            new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [InMemorySettingsStore.Rotate, Tnc])
+        );
+        var engine = CreateEngine(new FakeTimeProvider(), sources, settings: store);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var run = engine.RunAsync(cts.Token);
+        await aprsIs.Connected.Task.WaitAsync(Ct);
+        await tnc.Connected.Task.WaitAsync(Ct);
+        await using var onlyTnc = engine
+            .WatchPacketsAsync(new PacketFilter(SourceId: Tnc.Id), cts.Token)
+            .GetAsyncEnumerator(cts.Token);
+        var next = onlyTnc.MoveNextAsync();
+
+        await aprsIs.Write("N0NET-1>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Internet only");
+        await aprsIs.Write("N0RF-9>APRS,WIDE1-1,qAR,N1GATE:!4903.50N/07201.75W>Heard on RF");
+        await WaitUntil(async () => (await engine.GetStationAsync("N0RF-9", Ct)) is not null);
+        Assert.False(next.IsCompleted); // nothing from the TNC yet
+        await tnc.Write("N0RF-9>APRS,WIDE1-1:!4903.50N/07201.75W>Heard on RF");
+
+        Assert.True(await next);
+        Assert.Equal(("N0RF-9", "rotate"), (onlyTnc.Current.Source, onlyTnc.Current.SourceId));
+        Assert.Equal(Tnc.Id, Assert.Single(onlyTnc.Current.SeenOn!));
+
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
     public async Task SwitchingBetweenProfilesThatShareASourceKeepsItOpen()
     {
         var sources = new FakeSourceFactory();

@@ -181,4 +181,25 @@ public class SetupWizardViewTests
         Assert.Equal(string.Empty, Find<TextBox>(window, "PasscodeBox").Text);
         window.Close();
     }
+
+    [AvaloniaFact]
+    public async Task UseATncInsteadSwapsTheServerForTheTncsDetails()
+    {
+        var (window, vm, _) = await ShowNotSetUp();
+        var wizard = vm.Setup!;
+        wizard.Callsign = "AB1CD-9";
+        await wizard.NextCommand.ExecuteAsync(null);
+        await wizard.NextCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(Find<Control>(window, "AprsIsFields").IsEffectivelyVisible);
+        Assert.False(Find<Control>(window, "TncFields").IsEffectivelyVisible);
+
+        Find<CheckBox>(window, "UseTncBox").IsChecked = true;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(Find<Control>(window, "AprsIsFields").IsEffectivelyVisible);
+        Assert.True(Find<TextBox>(window, "TncHostBox").IsEffectivelyVisible);
+        Assert.Equal("8001", Find<TextBox>(window, "TncPortBox").Text);
+        Assert.Equal("Step 3 of 3", wizard.StepText);
+    }
 }
