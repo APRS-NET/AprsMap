@@ -625,8 +625,8 @@ public sealed partial class MainViewModel : ObservableObject
     private int _routeLoads;
 
     /// <summary>
-    /// Whether every RF link is drawn, not only the selected station's (F1.21 behavior 5): the map's button and the app
-    /// menu toggle the same viewer setting as Settings › Map.
+    /// Whether every RF link is drawn, not only the selected station's (F1.21 behavior 5): the map's button toggles the
+    /// same viewer setting as Settings › Map.
     /// </summary>
     public bool ShowAllLinks
     {

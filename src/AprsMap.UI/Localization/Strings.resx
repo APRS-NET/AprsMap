@@ -1374,10 +1374,6 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Clear track</value>
     <comment>Details: empties the station's drawn route, keeping where it is now.</comment>
   </data>
-  <data name="Shell.Menu.AllLinks" xml:space="preserve">
-    <value>Show all RF connections</value>
-    <comment>Main menu: a check item; draws every station's RF connections on the map, not only the selected station's.</comment>
-  </data>
   <data name="Map.AllLinks" xml:space="preserve">
     <value>Show all RF connections</value>
     <comment>Map button tooltip and name: a toggle; draws every station's RF connections, not only the selected station's.</comment>

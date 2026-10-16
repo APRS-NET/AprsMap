@@ -83,11 +83,7 @@ public sealed class ShellViewTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(menu.IsOpen);
         var headers = menu.Items.OfType<MenuItem>().Select(i => i.Header?.ToString()).ToList();
-        Assert.Equal(["Show Stations", "Show all RF connections", "Reset layout"], headers); // no Gather outside the desktop app
-        var allLinks = menu.Items.OfType<MenuItem>().ElementAt(1);
-        Assert.False(allLinks.IsChecked);
-        allLinks.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(MenuItem.ClickEvent));
-        Assert.True(vm.ShowAllLinks);
+        Assert.Equal(["Show Stations", "Reset layout"], headers); // no Gather outside the desktop app
         var show = menu.Items.OfType<MenuItem>().First();
         show.Command!.Execute(show.CommandParameter);
         menu.Hide();

@@ -83,7 +83,7 @@ public sealed partial class MainView : UserControl
 
     /// <summary>
     /// The app menu's items, built as it opens because the closed panels change (F1.0 behaviors 4, 10, 14): Show for each
-    /// closed panel, Show all RF connections (F1.21 behavior 5), Reset layout, and on the desktop Gather floating windows.
+    /// closed panel, Reset layout, and on the desktop Gather floating windows.
     /// </summary>
     private void FillAppMenu()
     {
@@ -108,14 +108,6 @@ public sealed partial class MainView : UserControl
         {
             AppMenu.Items.Add(new Separator());
         }
-        var allLinks = new MenuItem
-        {
-            Header = text["Shell.Menu.AllLinks"],
-            ToggleType = MenuItemToggleType.CheckBox,
-            IsChecked = vm.ShowAllLinks,
-        };
-        allLinks.Click += (_, _) => vm.ShowAllLinks = !vm.ShowAllLinks;
-        AppMenu.Items.Add(allLinks);
         AppMenu.Items.Add(new MenuItem { Header = text["Shell.Menu.ResetLayout"], Command = vm.ResetLayoutCommand });
         if (vm.CanClearData)
         {
