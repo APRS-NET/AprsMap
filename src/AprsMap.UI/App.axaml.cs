@@ -175,6 +175,7 @@ public sealed class App : Application, IDisposable
             {
                 ClearLocalData = () => ClearLocalDataAsync(created!),
                 Map = new Map.MapViewModel(_platform.Tiles, _platform.Preferences, TimeProvider.System),
+                Preferences = _platform.Preferences,
                 MainScreen = MainScreen,
                 SharedStation = _platform.SharedStation,
                 Restart = _platform.Restart,

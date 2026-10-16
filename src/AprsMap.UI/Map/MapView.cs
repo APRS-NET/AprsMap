@@ -122,6 +122,9 @@ public sealed class MapView : Control, IDisposable
         ClearLabels();
     }
 
+    /// <summary>Raised when the map is dragged by hand: following a station stops (F1.7 behavior 8).</summary>
+    public event EventHandler? PannedByHand;
+
     /// <summary>Raised when a station is selected by click or tap, or the selection cleared on the background (behavior 18).</summary>
     public event EventHandler<string?>? SelectionChanged;
 
@@ -568,6 +571,10 @@ public sealed class MapView : Control, IDisposable
             return;
         }
         var to = e.GetPosition(this);
+        if (to != from)
+        {
+            PannedByHand?.Invoke(this, EventArgs.Empty);
+        }
         _map.Navigator.Manipulate(
             new Manipulation(new ScreenPosition(to.X, to.Y), new ScreenPosition(from.X, from.Y), 1, 0, 0)
         );

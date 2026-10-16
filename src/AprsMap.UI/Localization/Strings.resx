@@ -1361,4 +1361,62 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Details.ShowPath" xml:space="preserve">
     <value>Show path</value>
   </data>
+  <data name="Stations.Search" xml:space="preserve">
+    <value>Search stations</value>
+  </data>
+  <data name="Stations.Sort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="Stations.Sort.LastHeard" xml:space="preserve">
+    <value>Last heard</value>
+  </data>
+  <data name="Stations.Sort.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Stations.Sort.Distance" xml:space="preserve">
+    <value>Distance</value>
+  </data>
+  <data name="Stations.Kinds" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="Stations.Kinds.All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Stations.Kinds.Stations" xml:space="preserve">
+    <value>Stations</value>
+  </data>
+  <data name="Stations.Kinds.ObjectsAndItems" xml:space="preserve">
+    <value>Objects and items</value>
+  </data>
+  <data name="Stations.Count" xml:space="preserve">
+    <value>{count, plural, =0 {No stations} one {# station} other {# stations}}</value>
+    <comment>How many entries match the search and kinds.</comment>
+  </data>
+  <data name="Stations.None" xml:space="preserve">
+    <value>No stations heard yet.</value>
+  </data>
+  <data name="Stations.NoneMatching" xml:space="preserve">
+    <value>No stations match.</value>
+  </data>
+  <data name="Stations.HeardMinutes" xml:space="preserve">
+    <value>{minutes, plural, =0 {now} other {# min}}</value>
+    <comment>How long ago a station was heard, short, in a list column.</comment>
+  </data>
+  <data name="Stations.HeardHours" xml:space="preserve">
+    <value>{hours} h</value>
+    <comment>How long ago a station was heard, in whole hours, short.</comment>
+  </data>
+  <data name="Stations.Centre" xml:space="preserve">
+    <value>Centre on map</value>
+  </data>
+  <data name="Stations.Follow" xml:space="preserve">
+    <value>Follow</value>
+  </data>
+  <data name="Map.Following" xml:space="preserve">
+    <value>Following {name}</value>
+    <comment>Chip on the map while it keeps a station centred.</comment>
+  </data>
+  <data name="Map.StopFollowing" xml:space="preserve">
+    <value>Stop following</value>
+  </data>
 </root>

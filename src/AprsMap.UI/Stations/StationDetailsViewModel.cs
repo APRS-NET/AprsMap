@@ -110,7 +110,12 @@ public sealed partial class StationDetailsViewModel : ObservableObject
 
     /// <summary>Whether the map keeps centring on the station as it moves (behavior 4).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FollowingText))]
     public partial bool IsFollowing { get; set; }
+
+    /// <summary>The map's chip while following: "Following N0CALL-9" (F1.7 behavior 8).</summary>
+    public string? FollowingText =>
+        IsFollowing ? _text.Format("Map.Following", new Dictionary<string, object?> { ["name"] = Name }) : null;
 
     /// <summary>Whether Centre, Follow and Copy position have a position to work with.</summary>
     public bool HasPosition => _detail is { Latitude: not null, Longitude: not null };

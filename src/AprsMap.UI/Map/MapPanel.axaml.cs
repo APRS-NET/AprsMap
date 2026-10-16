@@ -53,6 +53,8 @@ public sealed partial class MapPanel : UserControl, IDisposable
         };
         _map.KeyDown += OnMapKeyDown;
         _map.ContextRequested += OnContextRequested;
+        _map.PannedByHand += (_, _) => StopFollowing();
+        StopFollowingButton.Click += (_, _) => StopFollowing();
         SetMyLocationItem.Click += (_, _) =>
         {
             if (_menuAt is var (lat, lon) && _main is not null)
@@ -81,6 +83,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.StationsChanged -= OnStationsChanged;
             _main.PropertyChanged -= OnMainChanged;
             _main.Details.CentreRequested -= OnCentreRequested;
+            _main.CentreOnStationRequested -= OnCentreOnStation;
         }
         _main = DataContext as MainViewModel;
         if (_main is not null)
@@ -88,6 +91,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.StationsChanged += OnStationsChanged;
             _main.PropertyChanged += OnMainChanged;
             _main.Details.CentreRequested += OnCentreRequested;
+            _main.CentreOnStationRequested += OnCentreOnStation;
             _map.SetStations(_main.Stations);
             _map.Select(_main.SelectedStation);
         }
@@ -134,8 +138,19 @@ public sealed partial class MapPanel : UserControl, IDisposable
 
     private void OnMapKeyDown(object? sender, KeyEventArgs e)
     {
+        if (e.Key == Key.F && e.KeyModifiers == KeyModifiers.Control && _main is not null)
+        {
+            _main.FocusStationSearch(); // Ctrl+F finds a station (F1.7 behavior 3)
+            e.Handled = true;
+            return;
+        }
         if (e.KeyModifiers != KeyModifiers.None)
         {
+            return;
+        }
+        if (_main is not null && FollowKeys(e.Key, _main))
+        {
+            e.Handled = true;
             return;
         }
         if (e.Key == Key.H && _state?.HasHome == true)
@@ -168,6 +183,57 @@ public sealed partial class MapPanel : UserControl, IDisposable
                 ShowProvider();
                 Place();
                 break;
+        }
+    }
+
+    /// <summary>
+    /// <c>/</c> finds a station, <c>L</c> follows the selected one, <c>G</c> goes to the last selected station or home,
+    /// and Escape stops following (F1.7 behaviors 3, 8 and 9).
+    /// </summary>
+    private bool FollowKeys(Key key, MainViewModel main)
+    {
+        switch (key)
+        {
+            case Key.Oem2 or Key.Divide:
+                main.FocusStationSearch();
+                return true;
+            case Key.L when main.SelectedStation is not null:
+                main.Details.IsFollowing = !main.Details.IsFollowing;
+                return true;
+            case Key.G:
+                if ((main.SelectedStation ?? main.LastSelectedStation) is { } name && Find(name) is not null)
+                {
+                    main.CentreOn(name);
+                }
+                else
+                {
+                    GoHome();
+                }
+                return true;
+            case Key.Escape when main.Details.IsFollowing:
+                StopFollowing();
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private StationState? Find(string name) => _main?.Stations.FirstOrDefault(s => s.Name == name);
+
+    /// <summary>Centres on a station from the list (F1.7 behavior 7), keeping the zoom.</summary>
+    private void OnCentreOnStation(object? sender, string name)
+    {
+        if (Find(name) is { } station)
+        {
+            OnCentreRequested(sender, (station.Latitude, station.Longitude));
+        }
+    }
+
+    private void StopFollowing()
+    {
+        if (_main is not null)
+        {
+            _main.Details.IsFollowing = false;
         }
     }
 
