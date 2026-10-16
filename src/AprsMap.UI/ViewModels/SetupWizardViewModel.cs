@@ -149,7 +149,11 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             [
                 .. sources.Select(s => new SourceChoice(
                     s,
-                    s.Name == s.Server ? s.Name : $"{s.Name} · {s.Server}",
+                    // A source named after its server says it once; one named otherwise shows where it connects.
+                    s.Name == s.Server
+                    || s.Name == SourceSettings.NameFor(s.Server ?? string.Empty)
+                        ? s.Name
+                        : $"{s.Name} · {s.Server}",
                     false,
                     false
                 )),

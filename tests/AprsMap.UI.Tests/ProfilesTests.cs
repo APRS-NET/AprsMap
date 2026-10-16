@@ -261,8 +261,8 @@ public class ProfilesTests
         var wizard = await Wizard(engine, WizardMode.Edit, engine.Settings.Profiles[1]);
         Assert.Equal(
             [
-                "rotate.aprs2.net · rotate.aprs2.net:14580",
-                "t2test.example · t2test.example:10152",
+                "rotate.aprs2.net",
+                "t2test.example",
                 "rotate (filtered) · rotate.aprs2.net:14580",
                 "A new server…",
                 "None (no APRS-IS)",
