@@ -42,6 +42,10 @@ public sealed partial class MapPanel : UserControl, IDisposable
             if (_placed && _map.View is var (lat, lon, resolution))
             {
                 _state?.Remember(new MapViewState(lat, lon, resolution));
+                // Half the view's diagonal on the ground, for the filter (F1.2 behavior 1.2).
+                var diagonal = Math.Sqrt(Math.Pow(_map.Bounds.Width, 2) + Math.Pow(_map.Bounds.Height, 2));
+                var radiusKm = diagonal / 2 * resolution * Math.Cos(lat * Math.PI / 180) / 1000;
+                _main?.MapMoved(lat, lon, radiusKm);
             }
         };
         _map.SizeChanged += (_, e) =>
@@ -93,6 +97,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.Details.CentreRequested += OnCentreRequested;
             _main.CentreOnStationRequested += OnCentreOnStation;
             _map.SetStations(_main.Stations);
+            _map.SetFilterAreas(_main.FilterAreas);
             _map.Select(_main.SelectedStation);
         }
         _state = _main?.Map;
@@ -260,6 +265,10 @@ public sealed partial class MapPanel : UserControl, IDisposable
         if (e.PropertyName == nameof(MainViewModel.SelectedStation) && _main is not null)
         {
             _map.Select(_main.SelectedStation);
+        }
+        else if (e.PropertyName == nameof(MainViewModel.FilterAreas) && _main is not null)
+        {
+            _map.SetFilterAreas(_main.FilterAreas);
         }
     }
 

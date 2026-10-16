@@ -375,6 +375,26 @@
                 Margin="28,0,0,0"
               />
               <StackPanel IsVisible="{Binding IsProfileMode}" Spacing="4" Margin="0,8,0,0">
+                <TextBlock Text="{l:T Wizard.Range}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <ComboBox
+                  x:Name="RangeBox"
+                  ItemsSource="{Binding Ranges}"
+                  SelectedItem="{Binding SelectedRange}"
+                  AutomationProperties.Name="{l:T Wizard.Range}"
+                >
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:RangeChoice">
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock
+                  Text="{l:T Wizard.Range.Help}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  FontSize="{DynamicResource Text.Small}"
+                  TextWrapping="Wrap"
+                  Margin="0,0,0,8"
+                />
                 <TextBlock Text="{l:T Wizard.Filter}" Foreground="{DynamicResource Brush.TextMuted}" />
                 <TextBox
                   x:Name="FilterBox"

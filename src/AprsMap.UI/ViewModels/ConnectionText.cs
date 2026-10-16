@@ -38,17 +38,27 @@ internal static class ConnectionText
     /// Whether the login is verified and how often the connection came back, for the tooltip and About; null when there
     /// is no connection to describe.
     /// </summary>
-    public static string? Details(Localizer text, EngineStatus status) =>
-        status.Connection is ConnectionState.Connected or ConnectionState.Reconnecting
-            ? text.Format(
-                "Status.Details",
-                new Dictionary<string, object?>
-                {
-                    ["verified"] = status.Verified ? "yes" : "no",
-                    ["reconnects"] = status.Reconnects,
-                }
-            )
-            : null;
+    public static string? Details(Localizer text, EngineStatus status)
+    {
+        if (status.Connection is not (ConnectionState.Connected or ConnectionState.Reconnecting))
+        {
+            return null;
+        }
+        var details = text.Format(
+            "Status.Details",
+            new Dictionary<string, object?>
+            {
+                ["verified"] = status.Verified ? "yes" : "no",
+                ["reconnects"] = status.Reconnects,
+            }
+        );
+        // The filter in use, for anyone checking what APRS-IS sends (F1.2 behavior 7).
+        return string.IsNullOrEmpty(status.Filter)
+            ? details
+            : details
+                + Environment.NewLine
+                + text.Format("Status.Filter", new Dictionary<string, object?> { ["filter"] = status.Filter });
+    }
 
     /// <summary>Whether the status bar text changes by itself, second by second (the reconnect countdown).</summary>
     public static bool IsCountingDown(EngineStatus? status) =>
