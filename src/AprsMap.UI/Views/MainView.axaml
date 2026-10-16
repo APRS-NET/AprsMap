@@ -15,6 +15,10 @@
   FontSize="{DynamicResource Text.Body}"
 >
   <UserControl.Styles>
+    <!-- While the engine is away the panels keep what they had, faded as out of date (F1.14 behavior 7). -->
+    <Style Selector="DockControl.away">
+      <Setter Property="Opacity" Value="{DynamicResource Opacity.Away}" />
+    </Style>
     <!-- The narrow layout's tabs use the text tokens, not Fluent's large tab headers, so they follow the text size. -->
     <Style Selector="TabControl#NarrowShell > TabItem">
       <Setter Property="FontSize" Value="{DynamicResource Text.Title}" />
@@ -77,6 +81,23 @@
               <MenuFlyout Placement="BottomEdgeAlignedRight" />
             </Button.Flyout>
           </Button>
+          <!-- After a gateway upgrade: this page is older than the gateway (F1.14 behavior 8). -->
+          <DockPanel x:Name="OutdatedBar" DockPanel.Dock="Bottom" IsVisible="{Binding IsOutdated}" Margin="0,6,0,0">
+            <Button
+              x:Name="ReloadButton"
+              DockPanel.Dock="Right"
+              Classes="accent"
+              Content="{l:T Shell.Reload}"
+              Command="{Binding ReloadCommand}"
+              VerticalAlignment="Center"
+            />
+            <TextBlock
+              Text="{l:T Shell.Outdated}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+              VerticalAlignment="Center"
+            />
+          </DockPanel>
           <!-- Said once when the saved layout couldn't be read (F1.0 behavior 10). -->
           <DockPanel
             x:Name="LayoutNoticeBar"
@@ -197,6 +218,7 @@
         <TabControl x:Name="NarrowShell" IsVisible="False" />
         <DockControl
           x:Name="ShellDock"
+          Classes.away="{Binding IsEngineAway}"
           Layout="{Binding Shell.Layout}"
           Factory="{Binding Shell.Factory}"
           InitializeLayout="False"

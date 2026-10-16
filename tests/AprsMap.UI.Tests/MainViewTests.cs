@@ -36,6 +36,28 @@ public class MainViewTests
     }
 
     [AvaloniaFact]
+    public void ThePanelsFadeWhileTheEngineIsAway()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider()) { SharedStation = true };
+        var window = new Window
+        {
+            Content = new MainView { DataContext = vm },
+            Width = 800,
+            Height = 600,
+        };
+        window.Show();
+        var dock = window.GetVisualDescendants().OfType<Dock.Avalonia.Controls.DockControl>().Single();
+        Assert.Equal(1, dock.Opacity);
+
+        vm.MarkEngineAway();
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        Assert.True(window.TryFindResource("Opacity.Away", out var faded));
+        Assert.Equal(faded, dock.Opacity);
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void ADuplicateRowIsMuted()
     {
         var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());

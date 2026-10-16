@@ -13,43 +13,59 @@ namespace AprsMap.Client.Remote;
 public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
 {
     private readonly HubConnection _connection;
+    private readonly ContractCheck? _contract;
 
-    /// <summary>Wraps an existing hub connection (useful for custom transports and tests).</summary>
-    public RemoteEngineService(HubConnection connection)
+    /// <summary>
+    /// Wraps an existing hub connection (useful for custom transports and tests); <paramref name="contract"/>, when it
+    /// is the connection's message handler, says when the gateway has moved to another contract version.
+    /// </summary>
+    public RemoteEngineService(HubConnection connection, ContractCheck? contract = null)
     {
         ArgumentNullException.ThrowIfNull(connection);
         _connection = connection;
+        _contract = contract;
     }
 
     /// <summary>Creates a client for the gateway at <paramref name="gatewayBaseUri"/>, reconnecting automatically.</summary>
     public static RemoteEngineService Create(Uri gatewayBaseUri)
     {
         ArgumentNullException.ThrowIfNull(gatewayBaseUri);
+        var contract = new ContractCheck();
         var connection = new HubConnectionBuilder()
-            .WithUrl(HubUri(gatewayBaseUri))
+            .WithUrl(HubUri(gatewayBaseUri), o => o.HttpMessageHandlerFactory = contract.Wrap)
             .WithAutomaticReconnect(new KeepTryingPolicy())
             // The browser app has no reflection-based JSON (WebAssembly publish turns it off).
             .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default))
             .Build();
-        return new RemoteEngineService(connection);
+        return new RemoteEngineService(connection, contract);
     }
 
     /// <summary>
-    /// The hub's address under <paramref name="gatewayBaseUri"/>, keeping its path: <c>https://host/aprs/</c> gives
-    /// <c>https://host/aprs/hubs/engine</c>, for a gateway behind a proxy path.
+    /// The hub's address under <paramref name="gatewayBaseUri"/>, keeping its path (<c>https://host/aprs/</c> gives
+    /// <c>https://host/aprs/hubs/engine</c>, for a gateway behind a proxy path), with this app's contract version.
     /// </summary>
     public static Uri HubUri(Uri gatewayBaseUri)
     {
         ArgumentNullException.ThrowIfNull(gatewayBaseUri);
         var path = gatewayBaseUri.AbsolutePath.EndsWith('/') ? gatewayBaseUri : new Uri(gatewayBaseUri + "/");
-        return new Uri(path, EngineHub.Path.TrimStart('/'));
+        var hub = new Uri(path, EngineHub.Path.TrimStart('/'));
+        return new Uri(
+            hub,
+            string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"?{EngineHub.ContractQuery}={EngineHub.ContractVersion}"
+            )
+        );
     }
 
     /// <summary>The underlying connection state.</summary>
     public HubConnectionState State => _connection.State;
 
     /// <summary>Connects to the gateway. Call once before using the service.</summary>
-    /// <remarks>A gateway at its viewer limit refuses with <see cref="EngineErrorCodes.GatewayBusy"/> (F1.14 behavior 3).</remarks>
+    /// <remarks>
+    /// A gateway at its viewer limit refuses with <see cref="EngineErrorCodes.GatewayBusy"/> (F1.14 behavior 3), and
+    /// one on another contract version with <see cref="EngineErrorCodes.GatewayOutdated"/> (behavior 8).
+    /// </remarks>
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -59,6 +75,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
         {
             throw EngineErrors.Create(EngineErrorCodes.GatewayBusy, EngineHub.BusyMessage, innerException: ex);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            throw EngineErrors.Create(EngineErrorCodes.GatewayOutdated, EngineHub.OutdatedMessage, innerException: ex);
         }
     }
 
@@ -164,21 +184,20 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _connection.DisposeAsync();
 
-    /// <summary>Raises the gateway's <see cref="EngineError"/> as the same exception the in-process engine throws.</summary>
-    private static async Task WithEngineErrors(Func<Task> call)
-    {
-        try
-        {
-            await call().ConfigureAwait(false);
-        }
-        catch (HubException ex) when (EngineHub.TryDecodeError(ex.Message, out var error))
-        {
-            throw EngineErrors.ToException(error, ex);
-        }
-    }
+    /// <summary>
+    /// Raises the gateway's <see cref="EngineError"/> as the same exception the in-process engine throws; any failure
+    /// after the gateway moved to another contract version is <see cref="EngineErrorCodes.GatewayOutdated"/>.
+    /// </summary>
+    private async Task WithEngineErrors(Func<Task> call) =>
+        await WithEngineErrors(async () =>
+            {
+                await call().ConfigureAwait(false);
+                return true;
+            })
+            .ConfigureAwait(false);
 
     /// <inheritdoc cref="WithEngineErrors(Func{Task})"/>
-    private static async Task<T> WithEngineErrors<T>(Func<Task<T>> call)
+    private async Task<T> WithEngineErrors<T>(Func<Task<T>> call)
     {
         try
         {
@@ -187,6 +206,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         catch (HubException ex) when (EngineHub.TryDecodeError(ex.Message, out var error))
         {
             throw EngineErrors.ToException(error, ex);
+        }
+        catch (Exception ex) when (_contract?.IsOutdated == true && ex is not OperationCanceledException)
+        {
+            throw EngineErrors.Create(EngineErrorCodes.GatewayOutdated, EngineHub.OutdatedMessage, innerException: ex);
         }
     }
 

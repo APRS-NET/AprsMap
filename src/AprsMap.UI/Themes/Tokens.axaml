@@ -28,6 +28,8 @@
   <x:Double x:Key="Size.ListItemMinHeight">36</x:Double>
   <!-- Transitions; 0 when motion is reduced (F0.6 behavior 12). -->
   <x:TimeSpan x:Key="Motion.Duration">0:0:0.15</x:TimeSpan>
+  <!-- How faded the panels are while the engine can't be reached. -->
+  <x:Double x:Key="Opacity.Away">0.6</x:Double>
   <CornerRadius x:Key="Radius.Control">8</CornerRadius>
   <CornerRadius x:Key="Radius.Panel">12</CornerRadius>
   <FontFamily x:Key="Font.Mono">Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace</FontFamily>

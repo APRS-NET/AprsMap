@@ -58,6 +58,17 @@ internal static class Program
             {
                 await engine.StartAsync(timeout.Token);
             }
+            catch (EngineAccessException ex) when (ex.EngineError.Code == EngineErrorCodes.GatewayOutdated)
+            {
+                // A cached page older than the gateway (F1.14 behavior 8): a reload fetches the new one.
+                StartupPage.ShowError(
+                    text["Startup.Outdated.Title"],
+                    text.Format(ex.EngineError),
+                    text["Shell.Reload"]
+                );
+                await engine.DisposeAsync();
+                return;
+            }
             catch (EngineAccessException ex) when (ex.EngineError.Code == EngineErrorCodes.GatewayBusy)
             {
                 // Full (F1.14 behavior 3): say so, and try again every 30 seconds.

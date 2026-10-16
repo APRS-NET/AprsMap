@@ -174,6 +174,45 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public async Task InTheBrowserTheGatewayIsReconnectingAndThePanelsFadeUntilItAnswers()
+    {
+        var engine = new FakeEngine { StatusFailure = new HttpRequestException("Gateway unreachable") };
+        var time = new FakeTimeProvider();
+        var vm = new MainViewModel(engine, time) { SharedStation = true };
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        var run = vm.StartAsync(cts.Token);
+        await WaitUntil(() => vm.IsEngineAway);
+        Assert.Equal("Reconnecting to the gateway…", vm.ConnectionText);
+        Assert.Null(vm.ErrorText); // the transport's own message isn't shown
+
+        engine.StatusFailure = null;
+        await AdvanceUntil(time, () => !vm.IsEngineAway);
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task AnOutdatedPageOffersReload()
+    {
+        var engine = new FakeEngine
+        {
+            StatusFailure = EngineErrors.Create(EngineErrorCodes.GatewayOutdated, EngineHub.OutdatedMessage),
+        };
+        var reloads = 0;
+        var vm = new MainViewModel(engine, new FakeTimeProvider()) { Restart = () => reloads++ };
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        var run = vm.StartAsync(cts.Token);
+        await WaitUntil(() => vm.IsOutdated);
+        vm.ReloadCommand.Execute(null);
+
+        Assert.Equal(1, reloads);
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
     public async Task AnEndedStationStreamIsResubscribedFromAFreshSnapshot()
     {
         var engine = new FakeEngine();

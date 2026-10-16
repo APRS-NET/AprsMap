@@ -124,15 +124,33 @@ internal sealed partial class Viewers : IDisposable
 }
 
 /// <summary>
-/// Refuses a new browser at the hub's negotiate request when the gateway is full (F1.14 behavior 3), with
-/// <see cref="EngineErrorCodes.GatewayBusy"/> as the body of a 503, before any connection is made.
+/// Checks a new browser at the hub's negotiate request, before any connection is made: an app on another contract
+/// version is refused with <see cref="EngineErrorCodes.GatewayOutdated"/> in a 409 (F1.14 behavior 8), and when the
+/// gateway is full, with <see cref="EngineErrorCodes.GatewayBusy"/> in a 503 (behavior 3).
 /// </summary>
 internal static class ViewerGate
 {
+    private static readonly string Version = EngineHub.ContractVersion.ToString(
+        System.Globalization.CultureInfo.InvariantCulture
+    );
+
     public static void UseViewerGate(this WebApplication app) =>
         app.Use(
             async (context, next) =>
             {
+                if (
+                    context.Request.Path.StartsWithSegments(EngineHub.Path + "/negotiate")
+                    && context.Request.Query[EngineHub.ContractQuery] != Version
+                )
+                {
+                    context.Response.StatusCode = StatusCodes.Status409Conflict;
+                    await context.Response.WriteAsync(
+                        EngineHub.EncodeError(
+                            new EngineError(EngineErrorCodes.GatewayOutdated, EngineHub.OutdatedMessage)
+                        )
+                    );
+                    return;
+                }
                 if (
                     context.Request.Path.StartsWithSegments(EngineHub.Path + "/negotiate")
                     && !context.RequestServices.GetRequiredService<Viewers>().CanJoin(Viewers.AddressOf(context))

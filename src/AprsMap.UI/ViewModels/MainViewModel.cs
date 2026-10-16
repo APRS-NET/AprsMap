@@ -9,6 +9,7 @@ using AprsMap.UI.Platform;
 using AprsMap.UI.Settings;
 using AprsMap.UI.Shell;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace AprsMap.UI.ViewModels;
 
@@ -369,8 +370,34 @@ public sealed partial class MainViewModel : ObservableObject
     public partial string? ErrorText { get; set; }
 
     /// <summary>Shows <paramref name="error"/> in the viewer's language, or clears it.</summary>
+    /// <summary>
+    /// The gateway now runs a newer app than this page (F1.14 behavior 8): the main view offers Reload instead of
+    /// failing calls.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsOutdated { get; private set; }
+
+    /// <summary>The engine can't be reached just now (the gateway restarting, say): the panels are shown faded.</summary>
+    [ObservableProperty]
+    public partial bool IsEngineAway { get; private set; }
+
+    /// <summary>Shows the engine as unreachable until the next status answers, for tests of the faded panels.</summary>
+    internal void MarkEngineAway()
+    {
+        _engineUnreachable = true;
+        ShowConnection();
+    }
+
+    /// <summary>Reloads the page for the new version (the browser app).</summary>
+    [RelayCommand]
+    private void Reload() => Restart?.Invoke();
+
     internal void ShowError(Exception? error)
     {
+        if (error is IHasEngineError { EngineError.Code: EngineErrorCodes.GatewayOutdated })
+        {
+            IsOutdated = true;
+        }
         _error = error;
         ErrorText = error is null ? null : _text.Describe(error);
     }
@@ -396,12 +423,13 @@ public sealed partial class MainViewModel : ObservableObject
     private void ShowConnection()
     {
         ConnectionText =
-            _engineUnreachable ? _text["Status.EngineUnreachable"]
+            _engineUnreachable ? _text[SharedStation ? "Status.GatewayReconnecting" : "Status.EngineUnreachable"]
             : _status is null ? _text["Status.Starting"]
             : ViewModels.ConnectionText.Summary(_text, _status, time.GetUtcNow());
         ConnectionDetails =
             _engineUnreachable || _status is null ? null : ViewModels.ConnectionText.Details(_text, _status);
         IsConnectionWarning = !_engineUnreachable && _status?.Connection == ConnectionState.Refused;
+        IsEngineAway = _engineUnreachable;
         CanReconnect =
             !_engineUnreachable
             && _status is { Connection: not (ConnectionState.NotConfigured or ConnectionState.Disconnected) }
@@ -641,8 +669,18 @@ public sealed partial class MainViewModel : ObservableObject
             }
             catch (Exception ex)
             {
-                // Any failure talking to the engine is shown and retried, never left unobserved.
-                ShowError(ex);
+                // Any failure talking to the engine is shown and retried, never left unobserved. In the browser a lost
+                // connection is the status bar's "Reconnecting to the gateway…", not the transport's own message
+                // (F1.14 behavior 7); the engine's own errors are still shown.
+                if (SharedStation && ex is not IHasEngineError)
+                {
+                    _engineUnreachable = true;
+                    ShowConnection();
+                }
+                else
+                {
+                    ShowError(ex);
+                }
             }
 
             try
@@ -695,11 +733,15 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 status = await engine.GetStatusAsync(cancellationToken);
             }
-            catch (Exception) when (!cancellationToken.IsCancellationRequested)
+            catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
             {
                 // The last APRS-IS state shown is no longer known.
                 _engineUnreachable = true;
                 ShowConnection();
+                if (ex is IHasEngineError { EngineError.Code: EngineErrorCodes.GatewayOutdated })
+                {
+                    IsOutdated = true;
+                }
                 throw;
             }
             Show(status);
