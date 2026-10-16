@@ -34,6 +34,12 @@ public interface IEngineService
     /// </summary>
     Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Reports what this app's map shows, for the APRS-IS filter (F1.2): call it when the map stops moving or starts or
+    /// stops following a station. On a gateway the map part counts only with <c>Gateway:FollowViewers</c>.
+    /// </summary>
+    Task SetMapViewAsync(MapViewReport view, CancellationToken cancellationToken = default);
+
     /// <summary>One page of the station list, searched, filtered and sorted by the engine (F1.7).</summary>
     Task<StationPage> QueryStationsAsync(StationQuery query, CancellationToken cancellationToken = default);
 

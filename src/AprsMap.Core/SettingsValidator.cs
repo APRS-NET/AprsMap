@@ -58,7 +58,7 @@ internal static class SettingsValidator
 
             try
             {
-                AprsIsPacketSourceFactory.ClientOptions(profile, time);
+                AprsIsPacketSourceFactory.ClientOptions(profile, FilterComposer.Compose(profile, []), time);
             }
             catch (AprsValidationException ex)
             {

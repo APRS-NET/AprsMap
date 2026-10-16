@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="AprsMap.Core.Tests" />
+    <InternalsVisibleTo Include="AprsMap.Gateway.Tests" />
   </ItemGroup>
 
   <ItemGroup>

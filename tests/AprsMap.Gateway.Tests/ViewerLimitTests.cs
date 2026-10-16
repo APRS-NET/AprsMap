@@ -3,6 +3,7 @@ using AprsMap.Client.Remote;
 using AprsMap.Contracts;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AprsMap.Gateway.Tests;
 
@@ -17,6 +18,34 @@ public sealed class LimitedGatewayFactory : GatewayFactory
             .UseSetting("Gateway:MaxViewersPerAddress", "2")
             .UseSetting("Gateway:CallsPerSecond", "1")
             .UseSetting("Gateway:CallBurst", "3");
+    }
+}
+
+/// <summary>A gateway whose filter follows its viewers' maps (F1.2 behavior 9).</summary>
+public sealed class FollowingGatewayFactory : GatewayFactory
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.UseSetting("Gateway:FollowViewers", "true");
+    }
+}
+
+public sealed class FollowViewersTests(FollowingGatewayFactory factory) : IClassFixture<FollowingGatewayFactory>
+{
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task EachViewersMapAddsARangeCappedAt500Km()
+    {
+        var engine = factory.Services.GetRequiredService<Core.Engine>();
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+        await remote.GetSettingsAsync(Ct);
+
+        await remote.SetMapViewAsync(new MapViewReport(35, -90, 900), Ct);
+
+        Assert.Contains("r/35/-90/500", engine.PreviewFilter(), StringComparison.Ordinal);
     }
 }
 
@@ -97,6 +126,24 @@ public sealed class ViewerLimitTests(LimitedGatewayFactory factory) : IClassFixt
         await using var remote = new RemoteEngineService(connection, contract);
         var outdated = await Assert.ThrowsAsync<EngineAccessException>(() => remote.GetStatusAsync(Ct));
         Assert.Equal(EngineErrorCodes.GatewayOutdated, outdated.EngineError.Code);
+    }
+
+    [Fact]
+    public async Task WithoutFollowViewersABrowsersMapViewChangesNothingButItsFollowedStationCounts()
+    {
+        var engine = factory.Services.GetRequiredService<Core.Engine>();
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+        await remote.GetSettingsAsync(Ct); // loads the settings
+        var before = engine.PreviewFilter();
+
+        await remote.SetMapViewAsync(new MapViewReport(35, -90, 80, "W1AW-9"), Ct);
+
+        var after = engine.PreviewFilter()!;
+        Assert.DoesNotContain("r/35/-90", after, StringComparison.Ordinal);
+        Assert.EndsWith("f/W1AW-9/150", after, StringComparison.Ordinal);
+        await remote.DisposeAsync();
+        await WaitUntilAsync(() => Task.FromResult(engine.PreviewFilter() == before)); // it left: no longer counts
     }
 
     private sealed class RefuseNegotiate : HttpMessageHandler

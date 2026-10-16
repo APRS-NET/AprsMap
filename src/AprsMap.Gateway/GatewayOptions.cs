@@ -26,6 +26,13 @@ internal sealed class GatewayOptions
     /// </summary>
     public IList<string> KnownProxies { get; } = [];
 
+    /// <summary>
+    /// Lets each browser's map view widen the station's APRS-IS filter (F1.2 behavior 9): up to 8 views, each capped at
+    /// 500 km. Off by default, so anonymous viewers can't steer what the station receives; followed stations count
+    /// either way.
+    /// </summary>
+    public bool FollowViewers { get; set; }
+
     /// <summary>The most browsers connected at once (F1.14 behavior 3).</summary>
     public int MaxViewers { get; set; } = 100;
 

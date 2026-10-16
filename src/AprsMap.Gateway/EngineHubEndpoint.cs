@@ -6,8 +6,16 @@ using Microsoft.Extensions.Options;
 namespace AprsMap.Gateway;
 
 /// <summary>Exposes the in-process <see cref="IEngineService"/> to remote UIs. Method names come from <see cref="EngineHub"/>.</summary>
-internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayOptions> options, Viewers viewers) : Hub
+internal sealed class EngineHubEndpoint(
+    IEngineService engine,
+    IOptions<GatewayOptions> options,
+    Viewers viewers,
+    Core.Engine filterEngine
+) : Hub
 {
+    /// <summary>The widest a viewer's map part may be on a gateway that follows viewers (F1.2 behavior 9).</summary>
+    internal const double MaxViewerViewKm = 500;
+
     private bool AllowSettingsChanges => options.Value.AllowSettingsChanges;
 
     [HubMethodName(EngineHub.GetStatus)]
@@ -27,6 +35,30 @@ internal sealed class EngineHubEndpoint(IEngineService engine, IOptions<GatewayO
 
     [HubMethodName(EngineHub.GetStation)]
     public Task<StationDetail?> GetStation(string name) => engine.GetStationAsync(name, Context.ConnectionAborted);
+
+    /// <summary>
+    /// A browser's map view, for the station's filter (F1.2 behaviors 8 and 9): its followed station always, its map
+    /// part only when this gateway follows viewers, and then at most <see cref="MaxViewerViewKm"/> wide.
+    /// </summary>
+    [HubMethodName(EngineHub.SetMapView)]
+    public Task SetMapView(MapViewReport view)
+    {
+        ArgumentNullException.ThrowIfNull(view);
+        filterEngine.SetMapView(
+            Context.ConnectionId,
+            options.Value.FollowViewers
+                ? view with
+                {
+                    RadiusKm = Math.Min(view.RadiusKm, MaxViewerViewKm),
+                }
+                : view with
+                {
+                    Latitude = null,
+                    Longitude = null,
+                }
+        );
+        return Task.CompletedTask;
+    }
 
     [HubMethodName(EngineHub.QueryStations)]
     public Task<StationPage> QueryStations(StationQuery query) =>
