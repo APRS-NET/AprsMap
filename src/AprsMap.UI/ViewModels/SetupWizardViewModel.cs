@@ -110,6 +110,52 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         _editing = editing;
         _text = text ?? Localizer.Instance;
         _text.LanguageChanged += (_, _) => Retranslate();
+        SourceChoices = ChoicesOfSources();
+        // Editing keeps the profile's source; a new profile starts with the active one's (F1.25 behavior 6).
+        var current = existing?.AprsIsSourceOf(editing ?? existing.GetActiveProfile());
+        SelectedSource =
+            SourceChoices.FirstOrDefault(c => current is not null && c.Source?.Id == current.Id)
+            ?? (editing is not null && current is null ? SourceChoices.FirstOrDefault(c => c.IsNone) : null)
+            ?? SourceChoices.FirstOrDefault(c => c.IsNew);
+    }
+
+    /// <summary>
+    /// The APRS-IS sources a profile may pick, then a new server and none; empty for first run or with no sources yet,
+    /// when the server step sets up a new one.
+    /// </summary>
+    public IReadOnlyList<SourceChoice> SourceChoices { get; }
+
+    /// <summary>Whether the profile picks from existing sources.</summary>
+    public bool HasSourceChoices => SourceChoices.Count > 0;
+
+    /// <summary>The source chosen.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNewSource))]
+    public partial SourceChoice? SelectedSource { get; set; }
+
+    /// <summary>Whether the server step sets up a new APRS-IS source (server presets and filter text).</summary>
+    public bool IsNewSource => !HasSourceChoices || SelectedSource?.IsNew == true;
+
+    private IReadOnlyList<SourceChoice> ChoicesOfSources()
+    {
+        if (!IsProfileMode || _existing is null)
+        {
+            return [];
+        }
+        var sources = _existing.SourceList.Where(s => s.Kind == SourceKind.AprsIs).ToList();
+        return sources.Count == 0
+            ? []
+            :
+            [
+                .. sources.Select(s => new SourceChoice(
+                    s,
+                    s.Name == s.Server ? s.Name : $"{s.Name} · {s.Server}",
+                    false,
+                    false
+                )),
+                new SourceChoice(null, _text["Wizard.Source.New"], true, false),
+                new SourceChoice(null, _text["Wizard.Source.None"], false, true),
+            ];
     }
 
     /// <summary>Raised when the wizard should close: after saving (true) or when the user gives up (false).</summary>
@@ -568,6 +614,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Callsign,
             ProfileName,
             Filter,
+            SelectedSource?.Name ?? "",
             RangeKm.ToString(CultureInfo.InvariantCulture),
             Latitude?.ToString(CultureInfo.InvariantCulture) ?? "",
             Longitude?.ToString(CultureInfo.InvariantCulture) ?? "",
@@ -931,7 +978,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Step = SetupStep.Callsign;
             return;
         }
-        if (!CheckServer())
+        if (IsNewSource && !CheckServer())
         {
             Step = SetupStep.Server;
             return;
@@ -941,7 +988,9 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             return;
         }
 
-        var source = SourceFor(Server, IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null);
+        var source = IsNewSource
+            ? SourceFor(Server, IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null)
+            : SelectedSource?.Source; // an existing source, or none
         var others = _editing is null
             ? []
             : _editing.SourceIds.Where(id =>
@@ -952,7 +1001,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             IsProfileMode && ProfileName.Trim().Length > 0 ? ProfileName.Trim() : Callsign,
             Callsign,
             passcode,
-            [.. others, source.Id],
+            [.. others, .. source is null ? Array.Empty<string>() : [source.Id]],
             Latitude,
             Longitude,
             IsProfileMode ? RangeKm : StationProfile.DefaultRangeKm
@@ -993,12 +1042,13 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// The settings to save: the first profile, or the current ones with this profile added or replaced, and its
     /// source added when it is new.
     /// </summary>
-    private AppSettings Settings(StationProfile profile, SourceSettings source)
+    private AppSettings Settings(StationProfile profile, SourceSettings? source)
     {
         var existing = _existing ?? AppSettings.Empty;
-        IReadOnlyList<SourceSettings> sources = existing.SourceList.Any(s => s.Id == source.Id)
-            ? existing.SourceList
-            : [.. existing.SourceList, source];
+        IReadOnlyList<SourceSettings> sources =
+            source is null || existing.SourceList.Any(s => s.Id == source.Id)
+                ? existing.SourceList
+                : [.. existing.SourceList, source];
         return Mode switch
         {
             WizardMode.Add => existing with
@@ -1012,7 +1062,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
                 Profiles = [.. existing.Profiles.Select(p => p.Id == profile.Id ? profile : p)],
                 Sources = sources,
             },
-            _ => new AppSettings([profile], profile.Id, UnitsFor(_text.Culture), Sources: [source]),
+            _ => new AppSettings([profile], profile.Id, UnitsFor(_text.Culture), Sources: sources),
         };
     }
 
@@ -1097,6 +1147,17 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 /// <param name="Km">The range in km; 0 for none.</param>
 /// <param name="Name">Its name, such as "150 km".</param>
 public sealed record RangeChoice(int Km, string Name)
+{
+    /// <inheritdoc />
+    public override string ToString() => Name;
+}
+
+/// <summary>An APRS-IS source the profile editor offers, or a new server, or none.</summary>
+/// <param name="Source">The source, or null for a new server or none.</param>
+/// <param name="Name">How it is listed.</param>
+/// <param name="IsNew">Set up a new source from the server step.</param>
+/// <param name="IsNone">No APRS-IS source: the profile receives nothing from APRS-IS.</param>
+public sealed record SourceChoice(SourceSettings? Source, string Name, bool IsNew, bool IsNone)
 {
     /// <inheritdoc />
     public override string ToString() => Name;

@@ -139,8 +139,10 @@ public sealed class LanguageViewTests : IDisposable
                 .OfType<TextBlock>()
                 .Where(t => t.IsEffectivelyVisible && !string.IsNullOrEmpty(t.Text) && t.Text.Any(char.IsLetter))
                 .Where(t =>
-                    t.Text is not ("N0CALL" or "N0CALL-7" or "Home" or "Portable") && t.Text != Brand.DisplayName
-                ) // data
+                    t.Text is not ("N0CALL" or "N0CALL-7" or "Home" or "Portable")
+                    && t.Text != Brand.DisplayName
+                    && !t.Text!.StartsWith("rotate.aprs2.net", StringComparison.Ordinal)
+                ) // data: callsigns, profile and source names, servers
                 .ToList();
             Assert.NotEmpty(texts);
             Assert.All(

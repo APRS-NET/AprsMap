@@ -53,6 +53,7 @@ public class SettingsKeyboardTests
         {
             await Press(window, PhysicalKey.Tab, RawInputModifiers.Shift);
         }
+        await Press(window, PhysicalKey.ArrowDown); // Sources
         await Press(window, PhysicalKey.ArrowDown);
         Assert.Equal("appearance", vm.Settings.SelectedSection?.Id);
         await Press(window, PhysicalKey.Tab);

@@ -275,7 +275,17 @@ public sealed partial class MainViewModel : ObservableObject
                     ? (() => _settings?.EffectiveAging ?? StationAging.Default, SaveAging)
                     : null
             );
-        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage, profiles, data, mapItems);
+        var sources = new SourcesSectionViewModel(engine, _text, Show);
+        var settings = new SettingsViewModel(
+            _appearance,
+            time,
+            _text,
+            _showPseudoLanguage,
+            profiles,
+            data,
+            mapItems,
+            sources
+        );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
         GeocodingInfo? geocoding = null;
@@ -290,6 +300,7 @@ public sealed partial class MainViewModel : ObservableObject
         settings.Show(_status, geocoding);
         if (_settings is { } current)
         {
+            sources.Show(current);
             await profiles.ShowAsync(current);
         }
     }
@@ -601,6 +612,15 @@ public sealed partial class MainViewModel : ObservableObject
 
         var active = settings.GetActiveProfile();
         CanSetMyLocation = active is not null && !settings.ReadOnly;
+        // Sources and profiles each show the other's names (F1.25 behavior 2): both follow a change from either.
+        if (Settings is { } open && !ReferenceEquals(open.Sources?.Current, settings))
+        {
+            open.Sources?.Show(settings);
+            if (open.Profiles is { } profilesSection && !ReferenceEquals(profilesSection.Current, settings))
+            {
+                _ = profilesSection.ShowAsync(settings);
+            }
+        }
         if (Map is not null)
         {
             // Home is the active profile's location (behavior 3), drawn as a house with its callsign (F1.13).

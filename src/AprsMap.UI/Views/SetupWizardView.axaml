@@ -331,49 +331,67 @@
                 Foreground="{DynamicResource Brush.TextMuted}"
                 TextWrapping="Wrap"
               />
-              <RadioButton
-                x:Name="RegionChoice"
-                GroupName="Server"
-                Content="{l:T Wizard.Server.Region}"
-                IsChecked="{Binding UseRegionServer}"
-              />
-              <ComboBox
-                x:Name="ServerPicker"
-                ItemsSource="{Binding Servers}"
-                SelectedItem="{Binding SelectedServer}"
-                IsEnabled="{Binding UseRegionServer}"
-                AutomationProperties.Name="{l:T Wizard.Server.Region}"
-                Margin="28,0,0,0"
-                MinWidth="240"
-              >
-                <ComboBox.ItemTemplate>
-                  <DataTemplate x:DataType="vm:ServerChoice">
-                    <TextBlock>
-                      <Run Text="{Binding Name}" />
-                      <Run
-                        Text="{Binding Server}"
-                        Foreground="{DynamicResource Brush.TextMuted}"
-                        FontFamily="{DynamicResource Font.Mono}"
-                      />
-                    </TextBlock>
-                  </DataTemplate>
-                </ComboBox.ItemTemplate>
-              </ComboBox>
-              <RadioButton
-                x:Name="OwnServerChoice"
-                GroupName="Server"
-                Content="{l:T Wizard.Server.Own}"
-                IsChecked="{Binding UseOwnServer}"
-              />
-              <TextBox
-                x:Name="OwnServerBox"
-                Text="{Binding OwnServer}"
-                IsEnabled="{Binding UseOwnServer}"
-                PlaceholderText="{l:T Wizard.Server.Own.Watermark}"
-                AutomationProperties.Name="{l:T Wizard.Server.Own}"
-                FontFamily="{DynamicResource Font.Mono}"
-                Margin="28,0,0,0"
-              />
+              <!-- A profile picks an APRS-IS source from the list, or sets one up for a new server (F1.25 behavior 4). -->
+              <StackPanel IsVisible="{Binding HasSourceChoices}" Spacing="4">
+                <TextBlock Text="{l:T Wizard.Source}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <ComboBox
+                  x:Name="SourcePicker"
+                  ItemsSource="{Binding SourceChoices}"
+                  SelectedItem="{Binding SelectedSource}"
+                  AutomationProperties.Name="{l:T Wizard.Source}"
+                >
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SourceChoice">
+                      <TextBlock Text="{Binding Name}" />
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+              <StackPanel IsVisible="{Binding IsNewSource}" Spacing="8">
+                <RadioButton
+                  x:Name="RegionChoice"
+                  GroupName="Server"
+                  Content="{l:T Wizard.Server.Region}"
+                  IsChecked="{Binding UseRegionServer}"
+                />
+                <ComboBox
+                  x:Name="ServerPicker"
+                  ItemsSource="{Binding Servers}"
+                  SelectedItem="{Binding SelectedServer}"
+                  IsEnabled="{Binding UseRegionServer}"
+                  AutomationProperties.Name="{l:T Wizard.Server.Region}"
+                  Margin="28,0,0,0"
+                  MinWidth="240"
+                >
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ServerChoice">
+                      <TextBlock>
+                        <Run Text="{Binding Name}" />
+                        <Run
+                          Text="{Binding Server}"
+                          Foreground="{DynamicResource Brush.TextMuted}"
+                          FontFamily="{DynamicResource Font.Mono}"
+                        />
+                      </TextBlock>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <RadioButton
+                  x:Name="OwnServerChoice"
+                  GroupName="Server"
+                  Content="{l:T Wizard.Server.Own}"
+                  IsChecked="{Binding UseOwnServer}"
+                />
+                <TextBox
+                  x:Name="OwnServerBox"
+                  Text="{Binding OwnServer}"
+                  IsEnabled="{Binding UseOwnServer}"
+                  PlaceholderText="{l:T Wizard.Server.Own.Watermark}"
+                  AutomationProperties.Name="{l:T Wizard.Server.Own}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                  Margin="28,0,0,0"
+                />
+              </StackPanel>
               <StackPanel IsVisible="{Binding IsProfileMode}" Spacing="4" Margin="0,8,0,0">
                 <TextBlock Text="{l:T Wizard.Range}" Foreground="{DynamicResource Brush.TextMuted}" />
                 <ComboBox
@@ -395,25 +413,27 @@
                   TextWrapping="Wrap"
                   Margin="0,0,0,8"
                 />
-                <TextBlock Text="{l:T Wizard.Filter}" Foreground="{DynamicResource Brush.TextMuted}" />
-                <TextBox
-                  x:Name="FilterBox"
-                  Text="{Binding Filter}"
-                  AutomationProperties.Name="{l:T Wizard.Filter}"
-                  FontFamily="{DynamicResource Font.Mono}"
-                />
-                <TextBlock
-                  Text="{l:T Wizard.Filter.Help}"
-                  Foreground="{DynamicResource Brush.TextMuted}"
-                  FontSize="{DynamicResource Text.Small}"
-                  TextWrapping="Wrap"
-                />
-                <HyperlinkButton
-                  Content="{l:T Wizard.Filter.Link}"
-                  NavigateUri="{x:Static vm:SetupWizardViewModel.FilterHelpUri}"
-                  FontSize="{DynamicResource Text.Small}"
-                  Padding="0"
-                />
+                <StackPanel IsVisible="{Binding IsNewSource}" Spacing="4">
+                  <TextBlock Text="{l:T Wizard.Filter}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="FilterBox"
+                    Text="{Binding Filter}"
+                    AutomationProperties.Name="{l:T Wizard.Filter}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                  />
+                  <TextBlock
+                    Text="{l:T Wizard.Filter.Help}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    FontSize="{DynamicResource Text.Small}"
+                    TextWrapping="Wrap"
+                  />
+                  <HyperlinkButton
+                    Content="{l:T Wizard.Filter.Link}"
+                    NavigateUri="{x:Static vm:SetupWizardViewModel.FilterHelpUri}"
+                    FontSize="{DynamicResource Text.Small}"
+                    Padding="0"
+                  />
+                </StackPanel>
               </StackPanel>
               <TextBlock
                 x:Name="ServerErrorLabel"

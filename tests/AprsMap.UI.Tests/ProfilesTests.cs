@@ -237,6 +237,7 @@ public class ProfilesTests
         wizard.ProfileName = "Hiking";
         wizard.Callsign = "AB1CD-9";
         Assert.Equal("Hiking", wizard.ProfileName);
+        wizard.SelectedSource = wizard.SourceChoices.Single(c => c.IsNew); // a new source, for the filter text
         wizard.Filter = " b/AB1CD* ";
         await ToLastStep(wizard);
         await wizard.FinishCommand.ExecuteAsync(null);
@@ -251,6 +252,34 @@ public class ProfilesTests
         Assert.Equal(2, saved.SourceList.Count);
         Assert.Equal("home", saved.ActiveProfileId); // not switched without the tick
         Assert.Equal(FakeEngine.TwoProfiles().Units, saved.Units);
+    }
+
+    [Fact]
+    public async Task AProfileCanPickAnExistingSourceOrNone()
+    {
+        var engine = new FakeEngine { Settings = WithLocation() };
+        var wizard = await Wizard(engine, WizardMode.Edit, engine.Settings.Profiles[1]);
+        Assert.Equal(
+            [
+                "rotate.aprs2.net · rotate.aprs2.net:14580",
+                "t2test.example · t2test.example:10152",
+                "rotate (filtered) · rotate.aprs2.net:14580",
+                "A new server…",
+                "None (no APRS-IS)",
+            ],
+            wizard.SourceChoices.Select(c => c.Name)
+        );
+        Assert.Equal(T2Test.Id, wizard.SelectedSource?.Source?.Id); // its own
+        Assert.False(wizard.IsNewSource);
+
+        wizard.SelectedSource = wizard.SourceChoices.Single(c => c.IsNone);
+        wizard.Callsign = "AB1CD-7"; // the wizard refuses the N0CALL placeholder
+        await ToLastStep(wizard);
+        await wizard.FinishCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(engine.Saved);
+        Assert.Empty(saved.Profiles[1].SourceIds); // allowed: it receives nothing (F1.25 behavior 6)
+        Assert.Equal(3, saved.SourceList.Count); // the list is left as it was
     }
 
     [Fact]
