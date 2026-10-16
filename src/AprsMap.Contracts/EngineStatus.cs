@@ -116,6 +116,9 @@ public enum ClearScope
 
     /// <summary>The held packets.</summary>
     Packets,
+
+    /// <summary>Every station's telemetry reports (F1.11).</summary>
+    Telemetry,
 }
 
 /// <summary>How much each <see cref="ClearScope"/> would clear now, for the counts beside each choice.</summary>
@@ -123,4 +126,5 @@ public enum ClearScope
 /// <param name="StaleStations">Those past the stale time.</param>
 /// <param name="Tracks">Stations with a track of two or more positions.</param>
 /// <param name="Packets">Packets held for the packet list.</param>
-public sealed record ClearCounts(int Stations, int StaleStations, int Tracks, int Packets);
+/// <param name="Telemetry">Stations with telemetry reports held.</param>
+public sealed record ClearCounts(int Stations, int StaleStations, int Tracks, int Packets, int Telemetry = 0);

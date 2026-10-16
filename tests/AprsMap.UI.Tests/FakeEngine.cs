@@ -224,6 +224,12 @@ internal sealed class FakeEngine : IEngineService
         return Task.FromResult(1);
     }
 
+    /// <summary>What <see cref="GetTelemetryAsync"/> answers, by station; none by default.</summary>
+    public Dictionary<string, TelemetryView> Telemetry { get; } = [];
+
+    public Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Telemetry.GetValueOrDefault(name));
+
     /// <summary>What <see cref="GetRouteAsync"/> answers, by station; none by default.</summary>
     public Dictionary<string, PacketRoute> Routes { get; } = [];
 

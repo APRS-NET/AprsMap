@@ -59,6 +59,9 @@ public interface IEngineService
     /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
     Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default);
 
+    /// <summary>A station's held telemetry reports (F1.11); null when it has sent none.</summary>
+    Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// How a packet travelled (docs/features/F1.21-rf-paths.md, behavior 2): the station's last packet, a track point's,
     /// or one from the packet list, with the position of each digipeater and IGate the engine knows. Null when the

@@ -624,13 +624,13 @@ public sealed partial class Engine : IEngineService, IDisposable
     /// <inheritdoc />
     public Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default)
     {
-        var (stations, stale, tracks) = _stations.Counts();
+        var (stations, stale, tracks, telemetry) = _stations.Counts();
         int packets;
         lock (_gate)
         {
             packets = _recent.Count;
         }
-        return Task.FromResult(new ClearCounts(stations, stale, tracks, packets));
+        return Task.FromResult(new ClearCounts(stations, stale, tracks, packets, telemetry));
     }
 
     /// <inheritdoc />
@@ -642,6 +642,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             ClearScope.StaleStations => _stations.ClearStale(),
             ClearScope.Tracks => _stations.ClearTracks(),
             ClearScope.Packets => ClearPackets(),
+            ClearScope.Telemetry => _stations.ClearTelemetry(),
             _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "Not something Clear knows."),
         };
         LogCleared(scope, cleared);
@@ -659,6 +660,13 @@ public sealed partial class Engine : IEngineService, IDisposable
                 return count;
             }
         }
+    }
+
+    /// <inheritdoc />
+    public Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return Task.FromResult(_stations.Telemetry(name));
     }
 
     /// <inheritdoc />

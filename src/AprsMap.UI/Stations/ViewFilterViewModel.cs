@@ -71,6 +71,9 @@ public sealed partial class ViewFilterViewModel : ObservableObject
     [ObservableProperty]
     public partial bool WithTrack { get; set; }
 
+    [ObservableProperty]
+    public partial bool WithTelemetry { get; set; }
+
     public IReadOnlyList<FilterOption> KindOptions { get; }
 
     public IReadOnlyList<FilterOption> HeardOptions { get; }
@@ -101,7 +104,8 @@ public sealed partial class ViewFilterViewModel : ObservableObject
             WithTrack,
             Checked(DeviceClasses),
             Checked(MicEStatuses),
-            Checked(Tags)
+            Checked(Tags),
+            WithTelemetry
         );
 
     /// <summary>The filter in effect: the conditions with My filter on, otherwise none.</summary>
@@ -132,7 +136,7 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         Kind = KindOptions[0];
         Heard = HeardOptions[0];
         ReceptionChoice = ReceptionOptions[0];
-        MessageCapable = WithWeather = WithTrack = false;
+        MessageCapable = WithWeather = WithTrack = WithTelemetry = false;
         foreach (var choice in Categories.Concat(DeviceClasses).Concat(MicEStatuses).Concat(Tags))
         {
             choice.IsChecked = false;
@@ -189,6 +193,7 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         MessageCapable = filter.MessageCapable;
         WithWeather = filter.WithWeather;
         WithTrack = filter.WithTrack;
+        WithTelemetry = filter.WithTelemetry;
         // Ticked values come back before anything is heard: kept as choices with no count yet.
         Fill(Categories, [], filter.Categories, v => $"Filter.Category.{v}");
         Fill(DeviceClasses, [], filter.DeviceClasses, v => $"Filter.DeviceClass.{v}");
@@ -230,6 +235,8 @@ public sealed partial class ViewFilterViewModel : ObservableObject
     partial void OnWithWeatherChanged(bool value) => Apply();
 
     partial void OnWithTrackChanged(bool value) => Apply();
+
+    partial void OnWithTelemetryChanged(bool value) => Apply();
 
     /// <summary>A condition changed: choosing one turns My filter on, since picking one and seeing nothing change would puzzle.</summary>
     internal void Apply()

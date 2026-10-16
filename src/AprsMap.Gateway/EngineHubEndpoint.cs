@@ -55,6 +55,9 @@ internal sealed class EngineHubEndpoint(
         return engine.ClearAsync(scope, Context.ConnectionAborted);
     }
 
+    [HubMethodName(EngineHub.GetTelemetry)]
+    public Task<TelemetryView?> GetTelemetry(string name) => engine.GetTelemetryAsync(name, Context.ConnectionAborted);
+
     [HubMethodName(EngineHub.GetRoute)]
     public Task<PacketRoute?> GetRoute(RouteQuery query) => engine.GetRouteAsync(query, Context.ConnectionAborted);
 

@@ -58,6 +58,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.ClearAsync"/>.</summary>
     public const string Clear = "Clear";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetTelemetryAsync"/>.</summary>
+    public const string GetTelemetry = "GetTelemetry";
+
     /// <summary>Hub method for <see cref="IEngineService.GetRouteAsync"/>.</summary>
     public const string GetRoute = "GetRoute";
 

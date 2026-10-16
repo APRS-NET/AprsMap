@@ -300,3 +300,22 @@ public sealed record TrackPoint(double Latitude, double Longitude, DateTimeOffse
 /// <param name="Dropped">How many of the oldest points to drop, for the history's length and age limits.</param>
 /// <param name="Reset">Forget the points held first: a new viewer's snapshot, or a cleared track.</param>
 public sealed record TrackUpdate(string Name, IReadOnlyList<TrackPoint> Added, int Dropped = 0, bool Reset = false);
+
+/// <summary>
+/// A station's held telemetry reports, oldest first (docs/features/F1.11-telemetry.md, behaviors 1, 3). Values are raw
+/// until APRS.NET applies the station's definitions (G09).
+/// </summary>
+/// <param name="Samples">The reports held: up to 100, none older than 24 hours.</param>
+public sealed record TelemetryView(IReadOnlyList<TelemetrySample> Samples);
+
+/// <summary>One telemetry report.</summary>
+/// <param name="At">When the engine received it.</param>
+/// <param name="Sequence">Its sequence as sent (a number, or <c>MIC</c>), when it has one.</param>
+/// <param name="Analog">The five analog channels as sent; null where a channel was left out.</param>
+/// <param name="Digital">The eight bits as sent.</param>
+public sealed record TelemetrySample(
+    DateTimeOffset At,
+    string? Sequence,
+    IReadOnlyList<double?> Analog,
+    IReadOnlyList<bool> Digital
+);

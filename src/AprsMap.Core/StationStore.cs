@@ -103,6 +103,9 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 case PositionedPayload positioned:
                     SetPosition(entry, positioned, receivedAt);
                     break;
+                case TelemetryReport telemetry:
+                    AddTelemetry(entry, telemetry, receivedAt); // F1.11
+                    break;
                 case WeatherReport report:
                     SetWeather(entry, report.Weather, receivedAt); // a weather report without a position (F1.10)
                     break;
@@ -145,6 +148,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             }
             foreach (var entry in _entries.Values)
             {
+                TrimTelemetry(entry, now);
                 var old = 0;
                 while (old < entry.Track.Count && entry.Track[old].Time < trackBefore)
                 {
@@ -386,14 +390,15 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     }
 
     /// <summary>How many entries there are, how many are stale, and how many have a track to clear (F1.19).</summary>
-    public (int Entries, int Stale, int Tracks) Counts()
+    public (int Entries, int Stale, int Tracks, int Telemetry) Counts()
     {
         lock (_gate)
         {
             return (
                 _entries.Count,
                 _entries.Values.Count(e => e.IsStale),
-                _entries.Values.Count(e => e.Track.Count > 1)
+                _entries.Values.Count(e => e.Track.Count > 1),
+                _entries.Values.Count(e => e.Telemetry is { Count: > 0 })
             );
         }
     }
@@ -604,6 +609,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             }
         }
         entry.Area = positioned.Area is { } area ? AreaOf(area) : entry.Area;
+        if (positioned.Telemetry is { } comment)
+        {
+            AddTelemetry(entry, comment, receivedAt); // telemetry in a position's comment (F1.11)
+        }
         entry.Messaging = positioned switch
         {
             PositionReport report => report.IsMessagingCapable,
@@ -630,6 +639,66 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         entry.Course = positioned.Course ?? entry.Course;
         entry.SpeedKmh = positioned.SpeedKnots is { } knots ? knots * KmhPerKnot : entry.SpeedKmh;
         entry.AltitudeMetres = positioned.AltitudeFeet is { } feet ? feet * MetresPerFoot : entry.AltitudeMetres;
+    }
+
+    /// <summary>The most telemetry reports a station keeps (F1.11 behavior 1).</summary>
+    internal const int TelemetryReports = 100;
+
+    /// <summary>The oldest telemetry report a station keeps.</summary>
+    internal static readonly TimeSpan TelemetryAge = TimeSpan.FromHours(24);
+
+    private static void AddTelemetry(Entry entry, TelemetryReport report, DateTimeOffset at)
+    {
+        var samples = entry.Telemetry ??= [];
+        samples.Add(
+            new TelemetrySample(
+                at,
+                string.IsNullOrEmpty(report.Sequence) ? null : report.Sequence,
+                [.. report.Analog],
+                [.. report.Digital]
+            )
+        );
+        TrimTelemetry(entry, at);
+    }
+
+    private static void TrimTelemetry(Entry entry, DateTimeOffset now)
+    {
+        if (entry.Telemetry is not { } samples)
+        {
+            return;
+        }
+        var old = samples.FindIndex(s => s.At >= now - TelemetryAge);
+        samples.RemoveRange(0, old < 0 ? samples.Count : old);
+        if (samples.Count > TelemetryReports)
+        {
+            samples.RemoveRange(0, samples.Count - TelemetryReports);
+        }
+    }
+
+    /// <summary>A station's held telemetry (F1.11), or null without any.</summary>
+    public TelemetryView? Telemetry(string name)
+    {
+        lock (_gate)
+        {
+            return _entries.TryGetValue(name, out var entry) && entry.Telemetry is { Count: > 0 } samples
+                ? new TelemetryView([.. samples])
+                : null;
+        }
+    }
+
+    /// <summary>Forgets every station's telemetry (F1.19); returns how many stations had some.</summary>
+    public int ClearTelemetry()
+    {
+        lock (_gate)
+        {
+            var cleared = 0;
+            foreach (var entry in _entries.Values.Where(e => e.Telemetry is { Count: > 0 }))
+            {
+                entry.Telemetry = null;
+                cleared++;
+            }
+            return cleared;
+        }
     }
 
     /// <summary>An area object's shape for the map (F1.12 behavior 1).</summary>
@@ -866,6 +935,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 && (!filter.MessageCapable || Messaging)
                 && (!filter.WithWeather || Weather is not null)
                 && (!filter.WithTrack || Track.Count > 1)
+                && (!filter.WithTelemetry || Telemetry is { Count: > 0 })
                 && (filter.DeviceClasses is not { Count: > 0 } classes || classes.Contains(DeviceClass ?? string.Empty))
                 && (
                     filter.MicEStatuses is not { Count: > 0 } statuses
@@ -879,6 +949,9 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
 
         /// <summary>What it shows, for a signpost (F1.12).</summary>
         public string? Signpost { get; set; }
+
+        /// <summary>Its telemetry reports, oldest first (F1.11), once it has sent any.</summary>
+        public List<TelemetrySample>? Telemetry { get; set; }
 
         /// <summary>Its latest weather readings (F1.10), once it has sent any.</summary>
         public StationWeather? Weather { get; set; }

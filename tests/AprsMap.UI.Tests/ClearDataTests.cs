@@ -25,6 +25,7 @@ public sealed class ClearDataTests
                 "Stale stations only (12)",
                 "Tracks, keeping where each station is now (30)",
                 "Packet history (5,000)",
+                "Telemetry reports (0 stations)",
             ],
             clear.Rows.Select(r => r.Text)
         );

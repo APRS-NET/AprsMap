@@ -19,6 +19,7 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(StationBatch))]
 [JsonSerializable(typeof(StationDetail))]
 [JsonSerializable(typeof(RouteQuery))]
+[JsonSerializable(typeof(TelemetryView))]
 [JsonSerializable(typeof(ClearCounts))]
 [JsonSerializable(typeof(StationFilter))]
 [JsonSerializable(typeof(Toggle))]

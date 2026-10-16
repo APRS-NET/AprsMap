@@ -126,6 +126,93 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     /// <summary>The station's weather readings in words and the viewer's units (F1.10 behavior 3); empty without any.</summary>
     public System.Collections.ObjectModel.ObservableCollection<DetailLine> Weather { get; } = [];
 
+    /// <summary>The station's telemetry channels (F1.11 behavior 4): latest value and chart each; empty without any.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<TelemetryChannel> Telemetry { get; } = [];
+
+    /// <summary>Whether the station has sent telemetry.</summary>
+    [ObservableProperty]
+    public partial bool HasTelemetry { get; private set; }
+
+    /// <summary>"Report 123 · 2 minutes ago · 40 reports held".</summary>
+    [ObservableProperty]
+    public partial string? TelemetryText { get; private set; }
+
+    /// <summary>The eight bits of the latest report, as 0s and 1s.</summary>
+    [ObservableProperty]
+    public partial string? TelemetryBits { get; private set; }
+
+    private TelemetryView? _telemetry;
+
+    private async Task LoadTelemetryAsync(string name, int load)
+    {
+        TelemetryView? telemetry;
+        try
+        {
+            telemetry = await _engine.GetTelemetryAsync(name);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
+        {
+            return;
+        }
+        if (load == _loads && Name == name)
+        {
+            _telemetry = telemetry;
+            WriteTelemetry();
+        }
+    }
+
+    /// <summary>
+    /// The latest values and a chart per analog channel over the held reports (F1.11 behaviors 3, 4), raw until
+    /// APRS.NET applies the station's definitions (G09).
+    /// </summary>
+    private void WriteTelemetry()
+    {
+        Telemetry.Clear();
+        var samples = _telemetry?.Samples;
+        HasTelemetry = samples is { Count: > 0 };
+        if (samples is not { Count: > 0 })
+        {
+            TelemetryText = TelemetryBits = null;
+            return;
+        }
+        var latest = samples[^1];
+        TelemetryText = _text.Format(
+            "Details.Telemetry.Latest",
+            new Dictionary<string, object?>
+            {
+                ["sequence"] = latest.Sequence ?? "none",
+                ["minutes"] = (long)Math.Max(0, (_time.GetUtcNow() - latest.At).TotalMinutes),
+                ["count"] = samples.Count,
+            }
+        );
+        var culture = _text.Culture;
+        for (var channel = 0; channel < latest.Analog.Count; channel++)
+        {
+            var values = samples.Select(s => channel < s.Analog.Count ? s.Analog[channel] : null).ToList();
+            if (values.All(v => v is null))
+            {
+                continue;
+            }
+            var label = $"A{channel + 1}";
+            Telemetry.Add(
+                new TelemetryChannel(
+                    label,
+                    latest.Analog[channel]?.ToString("0.###", culture) ?? "–",
+                    values,
+                    _text.Format(
+                        "Details.Telemetry.Chart",
+                        new Dictionary<string, object?>
+                        {
+                            ["channel"] = label,
+                            ["values"] = string.Join(", ", values.Select(v => v?.ToString("0.###", culture) ?? "–")),
+                        }
+                    )
+                )
+            );
+        }
+        TelemetryBits = latest.Digital.Count > 0 ? string.Concat(latest.Digital.Select(b => b ? '1' : '0')) : null;
+    }
+
     /// <summary>Whether the station has sent weather.</summary>
     [ObservableProperty]
     public partial bool HasWeather { get; private set; }
@@ -235,6 +322,8 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             IsFollowing = false;
             IsGone = false;
             _detail = null;
+            _telemetry = null;
+            WriteTelemetry();
         }
         Name = name;
         CanClearTrack = name is not null && _canClearTrack(name);
@@ -244,6 +333,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             return;
         }
         var load = ++_loads;
+        _ = LoadTelemetryAsync(name, load);
         StationDetail? detail;
         try
         {
@@ -589,3 +679,10 @@ public sealed partial class StationDetailsViewModel : ObservableObject
 /// <param name="Label">"Temperature".</param>
 /// <param name="Value">"14 °C".</param>
 public sealed record DetailLine(string Label, string Value);
+
+/// <summary>One telemetry channel in the details: its latest value and its values over the held reports.</summary>
+/// <param name="Name">"A1".</param>
+/// <param name="Latest">The latest value, as written.</param>
+/// <param name="Values">Its values, oldest first, for the chart.</param>
+/// <param name="ChartName">The chart's accessible name, with every value, for screen readers.</param>
+public sealed record TelemetryChannel(string Name, string Latest, IReadOnlyList<double?> Values, string ChartName);

@@ -227,6 +227,9 @@
                   <CheckBox x:Name="FilterTrack" IsChecked="{Binding ViewFilter.WithTrack}">
                     <TextBlock Text="{l:T Filter.WithTrack}" TextWrapping="Wrap" />
                   </CheckBox>
+                  <CheckBox x:Name="FilterTelemetry" IsChecked="{Binding ViewFilter.WithTelemetry}">
+                    <TextBlock Text="{l:T Filter.WithTelemetry}" TextWrapping="Wrap" />
+                  </CheckBox>
                 </StackPanel>
                 <StackPanel Spacing="2">
                   <TextBlock Text="{l:T Filter.Label.Categories}" FontWeight="SemiBold" />

@@ -109,6 +109,7 @@ public sealed partial class ClearDataViewModel : ObservableObject
             ClearScope.Stations => _counts.Stations,
             ClearScope.StaleStations => _counts.StaleStations,
             ClearScope.Tracks => _counts.Tracks,
+            ClearScope.Telemetry => _counts.Telemetry,
             _ => _counts.Packets,
         };
 

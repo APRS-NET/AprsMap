@@ -87,6 +87,7 @@ public sealed record StationPage(IReadOnlyList<StationRow> Rows, int Total);
 /// <param name="MessageCapable">Only stations whose position says they take messages.</param>
 /// <param name="WithWeather">Only stations that send weather (F1.10).</param>
 /// <param name="WithTrack">Only stations with a track of two or more positions (F1.5).</param>
+/// <param name="WithTelemetry">Only stations that send telemetry (F1.11).</param>
 /// <param name="DeviceClasses">Device classes shown (aprs-deviceid's, such as <c>Tracker</c>); null or empty for all.</param>
 /// <param name="MicEStatuses">Mic-E statuses shown (APRS.NET's <c>MicEMessage</c> names); null or empty for all.</param>
 /// <param name="Tags">Comment and status tags shown (<c>!word!</c> and <c>#word</c>, as written); null or empty for all.</param>
@@ -100,7 +101,8 @@ public sealed record StationFilter(
     bool WithTrack = false,
     IReadOnlyList<string>? DeviceClasses = null,
     IReadOnlyList<string>? MicEStatuses = null,
-    IReadOnlyList<string>? Tags = null
+    IReadOnlyList<string>? Tags = null,
+    bool WithTelemetry = false
 )
 {
     /// <summary>Shows everything.</summary>
@@ -117,7 +119,8 @@ public sealed record StationFilter(
         && !WithTrack
         && DeviceClasses is null or { Count: 0 }
         && MicEStatuses is null or { Count: 0 }
-        && Tags is null or { Count: 0 };
+        && Tags is null or { Count: 0 }
+        && !WithTelemetry;
 }
 
 /// <summary>How a station's last packet arrived, for the View filter (F1.9 behavior 1.4).</summary>

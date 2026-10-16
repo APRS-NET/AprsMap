@@ -203,6 +203,59 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
+        <!-- Telemetry (F1.11): the latest values and a chart per channel; raw until definitions apply (G09). -->
+        <StackPanel x:Name="TelemetrySection" Spacing="2" IsVisible="{Binding HasTelemetry}">
+          <TextBlock Text="{l:T Details.Label.Telemetry}" FontWeight="SemiBold" Margin="0,4,0,2" />
+          <TextBlock
+            Text="{Binding TelemetryText}"
+            TextWrapping="Wrap"
+            Foreground="{DynamicResource Brush.TextMuted}"
+          />
+          <ItemsControl ItemsSource="{Binding Telemetry}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:TelemetryChannel">
+                <Grid Margin="0,2">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Name}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,0,12,0" />
+                  <SelectableTextBlock Grid.Column="1" Text="{Binding Latest}" MinWidth="56" Margin="0,0,8,0" />
+                  <s:Sparkline
+                    Grid.Column="2"
+                    Values="{Binding Values}"
+                    Stroke="{DynamicResource Brush.Accent}"
+                    Height="18"
+                    AutomationProperties.Name="{Binding ChartName}"
+                  />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Grid IsVisible="{Binding TelemetryBits, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+              Text="{l:T Details.Telemetry.Bits}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              Margin="0,0,12,0"
+            />
+            <SelectableTextBlock
+              Grid.Column="1"
+              Text="{Binding TelemetryBits}"
+              FontFamily="{DynamicResource Font.Mono}"
+            />
+          </Grid>
+          <TextBlock
+            Text="{l:T Details.Telemetry.Raw}"
+            TextWrapping="Wrap"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            FontSize="{DynamicResource Text.Small}"
+          />
+        </StackPanel>
         <Grid IsVisible="{Binding RouteText, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />

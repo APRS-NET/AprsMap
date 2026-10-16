@@ -1736,6 +1736,34 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Wizard.Location.Map.Use" xml:space="preserve">
     <value>Use this point</value>
   </data>
+  <data name="Filter.WithTelemetry" xml:space="preserve">
+    <value>send telemetry</value>
+  </data>
+  <data name="Settings.Data.Clear.Telemetry" xml:space="preserve">
+    <value>Telemetry reports ({count, plural, other {#}} stations)</value>
+  </data>
+  <data name="Settings.Data.Clear.Confirm.Telemetry" xml:space="preserve">
+    <value>Clear the telemetry of {count, plural, one {# station} other {# stations}}? This can't be undone.</value>
+  </data>
+  <data name="Settings.Data.Clear.Done.Telemetry" xml:space="preserve">
+    <value>Cleared the telemetry of {count, plural, one {# station} other {# stations}}.</value>
+  </data>
+  <data name="Details.Label.Telemetry" xml:space="preserve">
+    <value>Telemetry</value>
+  </data>
+  <data name="Details.Telemetry.Latest" xml:space="preserve">
+    <value>{sequence, select, none {} other {Report {sequence} · }}{minutes, plural, =0 {just now} one {# minute ago} other {# minutes ago}} · {count, plural, one {# report held} other {# reports held}}</value>
+  </data>
+  <data name="Details.Telemetry.Raw" xml:space="preserve">
+    <value>Raw values: the channels' names, units and scaling aren't applied yet.</value>
+  </data>
+  <data name="Details.Telemetry.Bits" xml:space="preserve">
+    <value>Bits</value>
+  </data>
+  <data name="Details.Telemetry.Chart" xml:space="preserve">
+    <value>{channel} over the held reports: {values}</value>
+    <comment>The accessible name of a channel's chart, which lists its values for screen readers.</comment>
+  </data>
   <data name="Settings.Map.Tracks" xml:space="preserve">
     <value>Tracks</value>
     <comment>Settings › Map: which stations' recent routes are drawn as lines.</comment>

@@ -81,6 +81,8 @@ def beacon_infrastructure(stream, around):
         stream.write(f"N0NET>APRS,TCPIP*,qAC,FAKE:;{name:<9}*092345z{lat}\\{lon}{ext}\r\n".encode())
     lat, lon = latlon(around[0] - 0.05, around[1] + 0.2)
     stream.write(f"N0NET>APRS,TCPIP*,qAC,FAKE:)I25 3N!{lat}\\{lon}m{{55}}\r\n".encode())
+    lat, lon = latlon(around[0] + 0.12, around[1] - 0.05)
+    stream.write(f"N0TLM>APRS,TCPIP*,qAC,FAKE:!{lat}/{lon}r telemetry\r\n".encode())
     for call, dlat, dlon, symbol in INFRASTRUCTURE:
         line = f"{call}>APRS,TCPIP*,qAC,FAKE:{aprs_position(around[0] + dlat, around[1] + dlon, symbol, ' fake')}"
         stream.write((line + "\r\n").encode())
@@ -111,6 +113,10 @@ def serve(connection, number, around, count):
             stream.write(f"N0SRC-{i % 9 + 1}>APRS,{path}:>fake packet {i}\r\n".encode())
             if i % 5 == 1:
                 stream.write(f"N0SRC-{i % 9 + 1}>APRS,N0DIGI-2*,qAR,N0GATE-2:>fake packet {i}\r\n".encode())
+            if around is not None and i % 10 == 5:
+                # Telemetry every 10 s (F1.11): a slow sine, a ramp, and some bits.
+                a1 = int(128 + 100 * math.sin(i / 30))
+                stream.write(f"N0TLM>APRS,TCPIP*,qAC,FAKE:T#{i % 1000:03d},{a1:03d},{i % 256:03d},050,000,255,{i % 2}{(i // 2) % 2}100000\r\n".encode())
             if i % 15 == 7:
                 # A malformed position now and then, for the packet list's parse issues.
                 stream.write(f"N0BAD-{i % 3 + 1}>APRS,TCPIP*:!9999.99N/99999.99W- malformed {i}\r\n".encode())
