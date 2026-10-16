@@ -158,7 +158,24 @@ public sealed class TelemetryDisplayTests
             null,
             null,
             null,
-            Problems: [new StationProblem(StationProblem.Invalid, 3, new EngineError("aprs.parse.x", "Bad latitude."))]
+            Problems:
+            [
+                new StationProblem(StationProblem.Invalid, 3, new EngineError("aprs.parse.x", "Bad latitude.")),
+                new StationProblem(
+                    StationProblem.ImpossibleSpeed,
+                    1,
+                    new EngineError(
+                        "anomaly.impossible-speed",
+                        "Too fast.",
+                        new Dictionary<string, string>
+                        {
+                            ["speed"] = "3336",
+                            ["distance"] = "55.6",
+                            ["seconds"] = "60",
+                        }
+                    )
+                ),
+            ]
         );
         var vm = new MainViewModel(engine, new FakeTimeProvider(T0));
 
@@ -168,8 +185,14 @@ public sealed class TelemetryDisplayTests
             await Task.Delay(TimeSpan.FromMilliseconds(5), TimeProvider.System, TestContext.Current.CancellationToken);
         }
 
-        var line = Assert.Single(vm.Details.Problems);
+        Assert.Equal(2, vm.Details.Problems.Count);
+        var line = vm.Details.Problems[0];
         Assert.Equal("Invalid packets", line.Label);
         Assert.Equal("3 times in the last hour. Latest: Bad latitude.", line.Value);
+        Assert.Equal("Impossible speed", vm.Details.Problems[1].Label);
+        Assert.Equal(
+            "once in the last hour. Latest: 3336 km/h from the previous position: 55.6 km in 60 seconds",
+            vm.Details.Problems[1].Value
+        );
     }
 }

@@ -1922,7 +1922,7 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Packets.IssuesOnly" xml:space="preserve">
     <value>Issues only</value>
-    <comment>Shows only packets that couldn't be fully decoded.</comment>
+    <comment>Shows only packets that couldn't be fully decoded or don't fit their station's track.</comment>
   </data>
   <data name="Packets.ShowRaw" xml:space="preserve">
     <value>Raw text</value>
@@ -2476,5 +2476,60 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Details.Telemetry.Off" xml:space="preserve">
     <value>off</value>
     <comment>A telemetry bit that is off.</comment>
+  </data>
+  <data name="Details.Problem.repeated-position" xml:space="preserve">
+    <value>Repeated position</value>
+  </data>
+  <data name="Details.Problem.impossible-speed" xml:space="preserve">
+    <value>Impossible speed</value>
+  </data>
+  <data name="Details.Problem.rapid-repeat" xml:space="preserve">
+    <value>Rapid repeats</value>
+  </data>
+  <data name="Details.Problem.time-backwards" xml:space="preserve">
+    <value>Time going backwards</value>
+  </data>
+  <data name="Details.Problem.ambiguity-jump" xml:space="preserve">
+    <value>Ambiguity jumps</value>
+  </data>
+  <data name="Error.anomaly.repeated-position" xml:space="preserve">
+    <value>the same position {seconds, plural, one {# second} other {# seconds}} after the previous report</value>
+    <comment>A track anomaly's latest example. seconds: since the previous report.</comment>
+  </data>
+  <data name="Error.anomaly.impossible-speed" xml:space="preserve">
+    <value>{speed} km/h from the previous position: {distance} km in {seconds, plural, one {# second} other {# seconds}}</value>
+    <comment>speed, distance: numbers in km/h and km.</comment>
+  </data>
+  <data name="Error.anomaly.rapid-repeat" xml:space="preserve">
+    <value>{milliseconds} ms after the previous report</value>
+  </data>
+  <data name="Error.anomaly.time-backwards" xml:space="preserve">
+    <value>its own time is earlier than the previous report's</value>
+  </data>
+  <data name="Error.anomaly.ambiguity-jump" xml:space="preserve">
+    <value>the position moved only because its ambiguity changed</value>
+  </data>
+  <data name="Packets.Severity.Track" xml:space="preserve">
+    <value>Track</value>
+    <comment>An expanded packet's line about a track anomaly (F1.20).</comment>
+  </data>
+  <data name="Packets.Anomaly.RepeatedPosition" xml:space="preserve">
+    <value>The same position was sent again too soon, or arrived as a late copy of an earlier report.</value>
+  </data>
+  <data name="Packets.Anomaly.ImpossibleSpeed" xml:space="preserve">
+    <value>It's further from the previous position than the station could have gone in the time between.</value>
+  </data>
+  <data name="Packets.Anomaly.RapidRepeat" xml:space="preserve">
+    <value>It came less than a second after the station's previous report.</value>
+  </data>
+  <data name="Packets.Anomaly.TimeBackwards" xml:space="preserve">
+    <value>Its own time is earlier than the station's previous timestamped report.</value>
+  </data>
+  <data name="Packets.Anomaly.AmbiguityJump" xml:space="preserve">
+    <value>The position moved only because its ambiguity changed, not because the station did.</value>
+  </data>
+  <data name="Packets.Anomalies" xml:space="preserve">
+    <value>Doesn't fit its track: {flags}</value>
+    <comment>The track marker's tooltip. flags: the anomalies' names, comma-separated.</comment>
   </data>
 </root>

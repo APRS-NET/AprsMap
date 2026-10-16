@@ -235,6 +235,25 @@ public class PacketListTests
     }
 
     [Fact]
+    public void ATrackAnomalyGetsItsMarkerNamedAndExplained()
+    {
+        var row = new PacketRow(
+            FakeEngine.Packet("N0CAR-9") with
+            {
+                Anomalies = PacketAnomalies.ImpossibleSpeed | PacketAnomalies.RapidRepeat,
+            },
+            new AprsMap.UI.Localization.Localizer(System.Globalization.CultureInfo.GetCultureInfo("en-US")),
+            TimeZoneInfo.Utc
+        );
+
+        Assert.True(row.HasAnomalies);
+        Assert.False(row.HasIssues);
+        Assert.Equal("Doesn't fit its track: Impossible speed, Rapid repeats", row.AnomalyText);
+        Assert.Equal(["Track", "Track"], row.Issues.Select(i => i.Severity));
+        Assert.StartsWith("It's further from the previous position", row.Issues[0].Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ALargeBatchReplacesTheListInOneGo()
     {
         var list = Create();
