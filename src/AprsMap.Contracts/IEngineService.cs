@@ -34,6 +34,16 @@ public interface IEngineService
     /// </summary>
     Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default);
 
+    /// <summary>How much each kind of Clear would clear now (docs/features/F1.19-housekeeping.md, behavior 1).</summary>
+    Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Clears what <paramref name="scope"/> names (docs/features/F1.19-housekeeping.md) and returns how many it cleared;
+    /// the removals stream to every viewer. Settings, profiles and preferences are never touched.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// How a packet travelled (docs/features/F1.21-rf-paths.md, behavior 2): the station's last packet, a track point's,
     /// or one from the packet list, with the position of each digipeater and IGate the engine knows. Null when the

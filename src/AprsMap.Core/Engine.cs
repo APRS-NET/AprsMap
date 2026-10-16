@@ -52,6 +52,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private int _reconnects;
     private IPacketSource? _source;
     private long _packets;
+    private int _packetHistory;
     private AppSettings? _settings;
 
     // Cancelled (and replaced) when the active profile's login changes or a reconnect is asked for, to end the current
@@ -117,7 +118,8 @@ public sealed partial class Engine : IEngineService, IDisposable
                     _link.Error,
                     Filter: _filter,
                     FilterAreas: _filterAreas,
-                    Sources: SourceStatuses()
+                    Sources: SourceStatuses(),
+                    PacketHistory: _packetHistory
                 )
             );
         }
@@ -558,6 +560,46 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <inheritdoc />
+    public Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default)
+    {
+        var (stations, stale, tracks) = _stations.Counts();
+        int packets;
+        lock (_gate)
+        {
+            packets = _recent.Count;
+        }
+        return Task.FromResult(new ClearCounts(stations, stale, tracks, packets));
+    }
+
+    /// <inheritdoc />
+    public Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default)
+    {
+        var cleared = scope switch
+        {
+            ClearScope.Stations => _stations.Clear(),
+            ClearScope.StaleStations => _stations.ClearStale(),
+            ClearScope.Tracks => _stations.ClearTracks(),
+            ClearScope.Packets => ClearPackets(),
+            _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "Not something Clear knows."),
+        };
+        LogCleared(scope, cleared);
+        return Task.FromResult(cleared);
+
+        int ClearPackets()
+        {
+            lock (_gate)
+            {
+                var count = _recent.Count;
+                _recent.Clear();
+                _listed.Clear();
+                _listedOrder.Clear();
+                _packetHistory++;
+                return count;
+            }
+        }
+    }
+
+    /// <inheritdoc />
     public Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
@@ -579,6 +621,17 @@ public sealed partial class Engine : IEngineService, IDisposable
         return Task.FromResult(_stations.Query(query));
     }
 
+    /// <summary>One pass of the sweep: stale, removed and aged-out track points (F1.3 behavior 10, F1.5 behavior 1).</summary>
+    internal void SweepNow(DateTimeOffset now)
+    {
+        AppSettings? settings;
+        lock (_gate)
+        {
+            settings = _settings;
+        }
+        _stations.Sweep(now, (settings ?? AppSettings.Empty).EffectiveAging);
+    }
+
     /// <summary>Marks stations stale and removes expired ones, once a <see cref="EngineOptions.SweepInterval"/> (F1.3 behavior 10).</summary>
     private async Task SweepAsync(CancellationToken cancellationToken)
     {
@@ -587,12 +640,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
             {
-                AppSettings? settings;
-                lock (_gate)
-                {
-                    settings = _settings;
-                }
-                _stations.Sweep(_time.GetUtcNow(), (settings ?? AppSettings.Empty).EffectiveAging);
+                SweepNow(_time.GetUtcNow());
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
@@ -1148,6 +1196,9 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Settings reset: every profile and setting was deleted")]
     private partial void LogReset();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Cleared {Count} ({Scope})")]
+    private partial void LogCleared(ClearScope scope, int count);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Reconnect requested; reconnecting now")]
     private partial void LogReconnectRequested();

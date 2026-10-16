@@ -28,6 +28,9 @@ public sealed partial class DataSectionViewModel : ObservableObject
         Retranslate();
     }
 
+    /// <summary>Clear (F1.19), where this viewer may change the station; null otherwise.</summary>
+    public ClearDataViewModel? Clear { get; init; }
+
     /// <summary>Whether the station's settings live on a gateway, shared with other viewers.</summary>
     public bool SharedStation { get; }
 
@@ -81,6 +84,9 @@ public sealed partial class DataSectionViewModel : ObservableObject
         }
     }
 
-    internal void Retranslate() =>
+    internal void Retranslate()
+    {
         Description = _text[SharedStation ? "Settings.Data.Description.Browser" : "Settings.Data.Description.Desktop"];
+        Clear?.Retranslate();
+    }
 }

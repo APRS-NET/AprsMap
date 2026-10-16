@@ -33,6 +33,17 @@ internal sealed class EngineHubEndpoint(
     public IAsyncEnumerable<StationBatch> WatchStations(CancellationToken cancellationToken) =>
         engine.WatchStationsAsync(cancellationToken);
 
+    [HubMethodName(EngineHub.GetClearCounts)]
+    public Task<ClearCounts> GetClearCounts() => engine.GetClearCountsAsync(Context.ConnectionAborted);
+
+    /// <summary>Clearing empties the store for every viewer, so it has the same gate as changing settings (F1.19 behavior 5).</summary>
+    [HubMethodName(EngineHub.Clear)]
+    public Task<int> Clear(ClearScope scope)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ClearAsync(scope, Context.ConnectionAborted);
+    }
+
     [HubMethodName(EngineHub.GetRoute)]
     public Task<PacketRoute?> GetRoute(RouteQuery query) => engine.GetRouteAsync(query, Context.ConnectionAborted);
 

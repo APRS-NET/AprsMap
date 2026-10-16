@@ -194,6 +194,18 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     private void OnLanguageChanged(object? sender, EventArgs e) => Retranslate();
 
+    /// <summary>Data's counts are fetched each time it's shown: the store changes all the time (F1.19 behavior 1).</summary>
+    partial void OnSelectedSectionChanged(SettingsSection? value)
+    {
+        if (value?.Id == "data" && Data?.Clear is { } clear)
+        {
+            _ = clear.RefreshAsync();
+        }
+    }
+
+    /// <summary>Shows Settings › Data (the main menu's Clear data).</summary>
+    internal void ShowData() => SelectedSection = Sections.FirstOrDefault(s => s.Id == "data") ?? SelectedSection;
+
     private void Retranslate()
     {
         Title = _text["Settings.Title"];

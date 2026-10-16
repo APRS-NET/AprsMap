@@ -134,6 +134,14 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ResetSettings, cancellationToken));
 
     /// <inheritdoc />
+    public Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<ClearCounts>(EngineHub.GetClearCounts, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<int>(EngineHub.Clear, scope, cancellationToken));
+
+    /// <inheritdoc />
     public Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<PacketRoute?>(EngineHub.GetRoute, query, cancellationToken));
 

@@ -253,7 +253,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The Settings page while it is open, or null (docs/features/F0.6-appearance.md).</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(OpenSettingsCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenSettingsCommand), nameof(OpenClearDataCommand))]
     public partial SettingsViewModel? Settings { get; set; }
 
     private bool CanOpenSettings() => Settings is null && Setup is null;
@@ -268,7 +268,10 @@ public sealed partial class MainViewModel : ObservableObject
             SharedStation,
             canResetStation: _settings is { ReadOnly: false },
             ResetAppAsync
-        );
+        )
+        {
+            Clear = _settings is { ReadOnly: false } ? new ClearDataViewModel(engine, _text) : null,
+        };
         var mapItems = Map is null
             ? null
             : SettingsRegistry.Map(
@@ -360,7 +363,22 @@ public sealed partial class MainViewModel : ObservableObject
         Settings = null;
     }
 
-    partial void OnSetupChanged(SetupWizardViewModel? value) => OpenSettingsCommand.NotifyCanExecuteChanged();
+    partial void OnSetupChanged(SetupWizardViewModel? value)
+    {
+        OpenSettingsCommand.NotifyCanExecuteChanged();
+        OpenClearDataCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>The main menu's Clear data: Settings › Data, where Clear is (docs/features/F1.19-housekeeping.md).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanOpenSettings))]
+    internal async Task OpenClearDataAsync()
+    {
+        await OpenSettingsAsync();
+        Settings?.ShowData();
+    }
+
+    /// <summary>Whether this viewer may clear the station's data, for the main menu.</summary>
+    public bool CanClearData => _settings is { ReadOnly: false };
 
     private async Task ReloadSettingsAsync()
     {
@@ -723,7 +741,12 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Shows freshly loaded settings without treating them as the user's choice.</summary>
     internal void Show(AppSettings settings)
     {
+        var couldClear = CanClearData;
         _settings = settings;
+        if (CanClearData != couldClear)
+        {
+            OnPropertyChanged(nameof(CanClearData));
+        }
         _showingSettings = true;
         try
         {
@@ -852,6 +875,10 @@ public sealed partial class MainViewModel : ObservableObject
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();
         PacketCount = status.PacketsReceived;
+        if (_status is { } before && status.PacketHistory != before.PacketHistory)
+        {
+            PacketList.Clear(); // someone cleared the packet history (F1.19 behavior 3)
+        }
         _status = status;
         _engineUnreachable = false;
         ShowConnection();

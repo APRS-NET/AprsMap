@@ -1165,7 +1165,7 @@ public class EngineTests
     }
 
     /// <summary>Hands out scripted sources in order; once the script runs out, every attempt fails.</summary>
-    private sealed class FakeSourceFactory : IPacketSourceFactory
+    internal sealed class FakeSourceFactory : IPacketSourceFactory
     {
         private readonly Queue<FakeSource?> _script = new();
         private int _attempts;
@@ -1212,7 +1212,7 @@ public class EngineTests
         }
     }
 
-    private sealed class FakeSource(string? server, bool refuse = false, bool verified = false) : IPacketSource
+    internal sealed class FakeSource(string? server, bool refuse = false, bool verified = false) : IPacketSource
     {
         private readonly Channel<string> _lines = Channel.CreateUnbounded<string>();
         private Action<PacketSourceEvent>? _stateChanged;

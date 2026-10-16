@@ -449,6 +449,66 @@
 
           <!-- Data (F0.10): Reset the app, with a confirmation that says what goes. -->
           <StackPanel x:Name="DataSection" IsVisible="{Binding IsDataSection}" Spacing="12">
+            <!-- Clear (F1.19): what the station has collected, each with a count, confirmed before it goes. -->
+            <StackPanel
+              x:Name="ClearSection"
+              Spacing="8"
+              IsVisible="{Binding Data.Clear, Converter={x:Static ObjectConverters.IsNotNull}}"
+            >
+              <TextBlock Text="{l:T Settings.Data.Clear.Title}" FontWeight="SemiBold" />
+              <TextBlock Text="{l:T Settings.Data.Clear.Description}" TextWrapping="Wrap" />
+              <ItemsControl x:Name="ClearRows" ItemsSource="{Binding Data.Clear.Rows}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="s:ClearRow">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                      <TextBlock Text="{Binding Text}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                      <Button
+                        Grid.Column="1"
+                        Content="{l:T Settings.Data.Clear.Button}"
+                        Command="{Binding ClearCommand}"
+                        IsEnabled="{Binding !IsEmpty}"
+                        AutomationProperties.Name="{Binding Text}"
+                        Margin="8,0,0,0"
+                      />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <Border
+                x:Name="ClearConfirmation"
+                IsVisible="{Binding Data.Clear.IsConfirming, FallbackValue=False}"
+                BorderBrush="{DynamicResource Brush.Warn}"
+                BorderThickness="{DynamicResource Thickness.Border}"
+                CornerRadius="{DynamicResource Radius.Control}"
+                Padding="12"
+              >
+                <StackPanel Spacing="10">
+                  <TextBlock
+                    Text="{Binding Data.Clear.ConfirmText}"
+                    Foreground="{DynamicResource Brush.Warn}"
+                    FontWeight="SemiBold"
+                    TextWrapping="Wrap"
+                  />
+                  <WrapPanel ItemSpacing="8" LineSpacing="8">
+                    <Button
+                      x:Name="ConfirmClearButton"
+                      Content="{l:T Settings.Data.Clear.Button}"
+                      Command="{Binding Data.Clear.ConfirmCommand}"
+                    />
+                    <Button
+                      x:Name="CancelClearButton"
+                      Content="{l:T Settings.Data.Confirm.Cancel}"
+                      Command="{Binding Data.Clear.CancelCommand}"
+                    />
+                  </WrapPanel>
+                </StackPanel>
+              </Border>
+              <TextBlock
+                Text="{Binding Data.Clear.ResultText}"
+                IsVisible="{Binding Data.Clear.ResultText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
             <TextBlock Text="{l:T Settings.Data.Reset.Title}" FontWeight="SemiBold" />
             <TextBlock Text="{Binding Data.Description}" TextWrapping="Wrap" />
             <Button

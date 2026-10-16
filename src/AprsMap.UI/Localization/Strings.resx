@@ -1313,6 +1313,55 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Clear track</value>
     <comment>Details: empties the station's drawn route, keeping where it is now.</comment>
   </data>
+  <data name="Shell.Menu.ClearData" xml:space="preserve">
+    <value>Clear data…</value>
+    <comment>Main menu: opens Settings › Data, where stations, tracks and packets can be cleared.</comment>
+  </data>
+  <data name="Settings.Data.Clear.Title" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Settings.Data.Clear.Description" xml:space="preserve">
+    <value>Start fresh without restarting: clear what the station has collected. Settings, profiles and preferences stay. New packets fill it again as they arrive.</value>
+  </data>
+  <data name="Settings.Data.Clear.Button" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Settings.Data.Clear.Stations" xml:space="preserve">
+    <value>Stations, objects and items, with their tracks ({count, plural, other {#}})</value>
+  </data>
+  <data name="Settings.Data.Clear.StaleStations" xml:space="preserve">
+    <value>Stale stations only ({count, plural, other {#}})</value>
+  </data>
+  <data name="Settings.Data.Clear.Tracks" xml:space="preserve">
+    <value>Tracks, keeping where each station is now ({count, plural, other {#}})</value>
+  </data>
+  <data name="Settings.Data.Clear.Packets" xml:space="preserve">
+    <value>Packet history ({count, plural, other {#}})</value>
+  </data>
+  <data name="Settings.Data.Clear.Confirm.Stations" xml:space="preserve">
+    <value>Clear {count, plural, one {# station} other {# stations}}, objects and items included? This can't be undone.</value>
+  </data>
+  <data name="Settings.Data.Clear.Confirm.StaleStations" xml:space="preserve">
+    <value>Clear {count, plural, one {# stale station} other {# stale stations}}? This can't be undone.</value>
+  </data>
+  <data name="Settings.Data.Clear.Confirm.Tracks" xml:space="preserve">
+    <value>Clear {count, plural, one {# track} other {# tracks}}? This can't be undone.</value>
+  </data>
+  <data name="Settings.Data.Clear.Confirm.Packets" xml:space="preserve">
+    <value>Clear {count, plural, one {# packet} other {# packets}} from the packet list, for every viewer? This can't be undone.</value>
+  </data>
+  <data name="Settings.Data.Clear.Done.Stations" xml:space="preserve">
+    <value>Cleared {count, plural, one {# station} other {# stations}}.</value>
+  </data>
+  <data name="Settings.Data.Clear.Done.StaleStations" xml:space="preserve">
+    <value>Cleared {count, plural, one {# stale station} other {# stale stations}}.</value>
+  </data>
+  <data name="Settings.Data.Clear.Done.Tracks" xml:space="preserve">
+    <value>Cleared {count, plural, one {# track} other {# tracks}}.</value>
+  </data>
+  <data name="Settings.Data.Clear.Done.Packets" xml:space="preserve">
+    <value>Cleared {count, plural, one {# packet} other {# packets}}.</value>
+  </data>
   <data name="Settings.Map.Tracks" xml:space="preserve">
     <value>Tracks</value>
     <comment>Settings › Map: which stations' recent routes are drawn as lines.</comment>

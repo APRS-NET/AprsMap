@@ -172,6 +172,28 @@ internal sealed class FakeEngine : IEngineService
 
     public int Reconnects { get; private set; }
 
+    /// <summary>What <see cref="GetClearCountsAsync"/> answers.</summary>
+    public ClearCounts ClearCounts { get; set; } = new(0, 0, 0, 0);
+
+    /// <summary>The scopes <see cref="ClearAsync"/> cleared, in order.</summary>
+    public List<ClearScope> Cleared { get; } = [];
+
+    /// <summary>When set, <see cref="ClearAsync"/> throws it.</summary>
+    public Exception? ClearFailure { get; set; }
+
+    public Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(ClearCounts);
+
+    public Task<int> ClearAsync(ClearScope scope, CancellationToken cancellationToken = default)
+    {
+        if (ClearFailure is { } failure)
+        {
+            return Task.FromException<int>(failure);
+        }
+        Cleared.Add(scope);
+        return Task.FromResult(1);
+    }
+
     /// <summary>What <see cref="GetRouteAsync"/> answers, by station; none by default.</summary>
     public Dictionary<string, PacketRoute> Routes { get; } = [];
 

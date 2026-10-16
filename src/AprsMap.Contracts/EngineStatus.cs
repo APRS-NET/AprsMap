@@ -54,6 +54,9 @@ public enum ConnectionState
 /// Each source the active profile uses, with its own connection state (F1.25 behavior 11). The top-level fields are the
 /// APRS-IS source's.
 /// </param>
+/// <param name="PacketHistory">
+/// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
+/// </param>
 public sealed record EngineStatus(
     ConnectionState Connection,
     string? Server,
@@ -69,7 +72,8 @@ public sealed record EngineStatus(
     int? Viewers = null,
     string? Filter = null,
     IReadOnlyList<FilterArea>? FilterAreas = null,
-    IReadOnlyList<SourceStatus>? Sources = null
+    IReadOnlyList<SourceStatus>? Sources = null,
+    int PacketHistory = 0
 );
 
 /// <summary>One source's connection, for its status pill (F1.25 behavior 11).</summary>
@@ -93,3 +97,26 @@ public sealed record SourceStatus(
 /// <param name="Longitude">The centre.</param>
 /// <param name="RadiusKm">The radius in km.</param>
 public sealed record FilterArea(double Latitude, double Longitude, double RadiusKm);
+
+/// <summary>What Clear empties (docs/features/F1.19-housekeeping.md, behavior 1).</summary>
+public enum ClearScope
+{
+    /// <summary>Every station, object and item, with their tracks.</summary>
+    Stations,
+
+    /// <summary>Only the stations past the stale time.</summary>
+    StaleStations,
+
+    /// <summary>Every track, keeping each station's latest position.</summary>
+    Tracks,
+
+    /// <summary>The held packets.</summary>
+    Packets,
+}
+
+/// <summary>How much each <see cref="ClearScope"/> would clear now, for the counts beside each choice.</summary>
+/// <param name="Stations">Stations, objects and items held.</param>
+/// <param name="StaleStations">Those past the stale time.</param>
+/// <param name="Tracks">Stations with a track of two or more positions.</param>
+/// <param name="Packets">Packets held for the packet list.</param>
+public sealed record ClearCounts(int Stations, int StaleStations, int Tracks, int Packets);

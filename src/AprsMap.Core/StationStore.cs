@@ -363,11 +363,59 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         }
     }
 
-    /// <summary>Forgets every entry, telling each watcher they're gone (F0.10).</summary>
-    public void Clear()
+    /// <summary>How many entries there are, how many are stale, and how many have a track to clear (F1.19).</summary>
+    public (int Entries, int Stale, int Tracks) Counts()
     {
         lock (_gate)
         {
+            return (
+                _entries.Count,
+                _entries.Values.Count(e => e.IsStale),
+                _entries.Values.Count(e => e.Track.Count > 1)
+            );
+        }
+    }
+
+    /// <summary>Removes every stale entry, telling each watcher (F1.19 behavior 1); returns how many went.</summary>
+    public int ClearStale()
+    {
+        lock (_gate)
+        {
+            var stale = _entries.Values.Where(e => e.IsStale).ToList();
+            foreach (var entry in stale)
+            {
+                Remove(entry);
+            }
+            return stale.Count;
+        }
+    }
+
+    /// <summary>Empties every track except each latest point (F1.19 behavior 1); returns how many tracks it cleared.</summary>
+    public int ClearTracks()
+    {
+        lock (_gate)
+        {
+            var cleared = 0;
+            foreach (var entry in _entries.Values.Where(e => e.Track.Count > 1))
+            {
+                entry.Track.RemoveRange(0, entry.Track.Count - 1);
+                entry.TrackPaths.RemoveRange(0, entry.TrackPaths.Count - 1);
+                foreach (var watcher in _watchers)
+                {
+                    watcher.ResetTrack(entry.Name, entry.Track);
+                }
+                cleared++;
+            }
+            return cleared;
+        }
+    }
+
+    /// <summary>Forgets every entry, telling each watcher they're gone (F0.10); returns how many there were.</summary>
+    public int Clear()
+    {
+        lock (_gate)
+        {
+            var count = _entries.Count;
             foreach (var entry in _entries.Values.Where(e => e.HasPosition))
             {
                 foreach (var watcher in _watchers)
@@ -377,6 +425,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
             }
             _entries.Clear();
             _byLastHeard.Clear();
+            return count;
         }
     }
 
