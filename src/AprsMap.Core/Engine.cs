@@ -294,17 +294,38 @@ public sealed partial class Engine : IEngineService, IDisposable
     /// <summary>How many stations the first batches of <see cref="WatchStationsAsync"/> carry each.</summary>
     internal const int SnapshotBatchSize = 1000;
 
+    /// <summary>About how many track points each of the snapshot's track batches carries.</summary>
+    internal const int SnapshotTrackPoints = 20_000;
+
     /// <inheritdoc />
     public async IAsyncEnumerable<StationBatch> WatchStationsAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
-        var watcher = _stations.Subscribe(out var snapshot);
+        var watcher = _stations.Subscribe(out var snapshot, out var tracks);
         try
         {
             foreach (var chunk in snapshot.Chunk(SnapshotBatchSize))
             {
                 yield return new StationBatch(chunk, []);
+            }
+            // Then the tracks, a batch per SnapshotTrackPoints points or so, after the stations they belong to.
+            var points = 0;
+            var some = new List<TrackUpdate>();
+            foreach (var track in tracks)
+            {
+                some.Add(track);
+                points += track.Added.Count;
+                if (points >= SnapshotTrackPoints)
+                {
+                    yield return new StationBatch([], [], [.. some]);
+                    some.Clear();
+                    points = 0;
+                }
+            }
+            if (some.Count > 0)
+            {
+                yield return new StationBatch([], [], [.. some]);
             }
 
             using var timer = new PeriodicTimer(_options.StationBatchInterval, _time);
@@ -534,6 +555,14 @@ public sealed partial class Engine : IEngineService, IDisposable
     {
         ArgumentNullException.ThrowIfNull(name);
         return Task.FromResult(_stations.Get(name));
+    }
+
+    /// <inheritdoc />
+    public Task ClearTrackAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        _stations.ClearTrack(name);
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />

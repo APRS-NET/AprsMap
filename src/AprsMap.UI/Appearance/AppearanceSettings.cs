@@ -83,6 +83,19 @@ public enum MapLabels
     None,
 }
 
+/// <summary>Which tracks the map draws (docs/features/F1.5-tracks.md, behavior 8).</summary>
+public enum MapTracks
+{
+    /// <summary>Every station's track.</summary>
+    All,
+
+    /// <summary>Only the selected and the followed station's.</summary>
+    SelectedAndFollowed,
+
+    /// <summary>No tracks.</summary>
+    None,
+}
+
 /// <summary>Icon size in the UI chrome (map symbols have their own scale).</summary>
 public enum IconSize
 {
@@ -155,6 +168,9 @@ public sealed record AppearanceSettings
 
     /// <summary>Which station labels the map draws (F1.4 behavior 17).</summary>
     public MapLabels MapLabels { get; init; } = MapLabels.AllThatFit;
+
+    /// <summary>Which tracks the map draws (F1.5 behavior 8).</summary>
+    public MapTracks MapTracks { get; init; } = MapTracks.All;
 
     /// <summary>The tile provider's key, or null for the first one the engine offers (F1.4 behavior 11).</summary>
     public string? MapProvider { get; init; }

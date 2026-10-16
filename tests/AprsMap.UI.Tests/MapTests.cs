@@ -229,10 +229,13 @@ public sealed class MapTests
             [
                 "map.brightness",
                 "map.labels",
+                "map.tracks",
                 "map.symbol-size",
                 "map.filter-circles",
                 "map.stale-after",
                 "map.remove-after",
+                "map.track-points",
+                "map.track-age",
             ],
             settings.MapItems.Select(i => i.Id)
         );
@@ -248,6 +251,14 @@ public sealed class MapTests
         var remove = (Settings.ChoiceSetting)settings.MapItems.Single(i => i.Id == "map.remove-after");
         Assert.DoesNotContain(remove.Options, o => o.Value is int m && m <= 60);
         Assert.Contains(remove.Options, o => o.Value is null); // never
+
+        var tracks = (Settings.ChoiceSetting)settings.MapItems.Single(i => i.Id == "map.tracks");
+        tracks.Selected = tracks.Options.Single(o => Equals(o.Value, Appearance.MapTracks.SelectedAndFollowed));
+        Assert.Equal(Appearance.MapTracks.SelectedAndFollowed, appearance.Current.MapTracks);
+        var points = (Settings.ChoiceSetting)settings.MapItems.Single(i => i.Id == "map.track-points");
+        points.Selected = points.Options.Single(o => Equals(o.Value, 1000));
+        await WaitUntil(() => engine.Saved[^1].Aging?.TrackPoints == 1000);
+        Assert.Equal(new StationAging(60, 120, 1000, 120), engine.Saved[^1].Aging);
     }
 
     [AvaloniaFact]
@@ -264,6 +275,8 @@ public sealed class MapTests
         await vm.OpenSettingsAsync();
 
         Assert.DoesNotContain(vm.Settings!.MapItems, i => i.Id.StartsWith("map.stale", StringComparison.Ordinal));
+        Assert.DoesNotContain(vm.Settings!.MapItems, i => i.Id.StartsWith("map.track-", StringComparison.Ordinal));
+        Assert.Contains(vm.Settings!.MapItems, i => i.Id == "map.tracks"); // the viewer's own choice
     }
 
     [Fact]

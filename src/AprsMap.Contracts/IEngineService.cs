@@ -35,6 +35,13 @@ public interface IEngineService
     Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Empties a station's track except its latest point (docs/features/F1.5-tracks.md, behavior 10); the change streams
+    /// to every viewer. Nothing happens when there's no such track.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task ClearTrackAsync(string name, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Reports what this app's map shows, for the APRS-IS filter (F1.2): call it when the map stops moving or starts or
     /// stops following a station. On a gateway the map part counts only with <c>Gateway:FollowViewers</c>.
     /// </summary>

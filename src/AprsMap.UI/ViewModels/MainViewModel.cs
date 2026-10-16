@@ -29,6 +29,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly AppearanceService _appearance;
     private readonly bool _showPseudoLanguage;
     private readonly Dictionary<string, StationState> _stations = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, List<TrackPoint>> _tracks = new(StringComparer.Ordinal);
     private AppSettings? _settings;
     private bool _showingSettings;
     private EngineStatus? _status;
@@ -61,7 +62,8 @@ public sealed partial class MainViewModel : ObservableObject
             time,
             _text,
             () => _settings?.Units ?? UnitSettings.Metric,
-            SourceNames
+            SourceNames,
+            name => _settings is { ReadOnly: false } && _tracks.TryGetValue(name, out var track) && track.Count > 1
         );
         Details.CloseRequested += (_, _) => SelectedStation = null;
         Details.PropertyChanged += (_, e) =>
@@ -497,6 +499,19 @@ public sealed partial class MainViewModel : ObservableObject
         foreach (var name in batch.Removed)
         {
             _stations.Remove(name);
+            _tracks.Remove(name);
+        }
+        foreach (var update in batch.Tracks ?? [])
+        {
+            if (!_tracks.TryGetValue(update.Name, out var points))
+            {
+                _tracks[update.Name] = points = [];
+            }
+            UI.Map.TrackUpdates.Apply(points, update, p => p);
+            if (points.Count == 0)
+            {
+                _tracks.Remove(update.Name);
+            }
         }
         StationCount = _stations.Count;
         StationsChanged?.Invoke(this, batch);
@@ -506,6 +521,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Every station on the map, by name, as the station stream has them.</summary>
     public IReadOnlyCollection<StationState> Stations => _stations.Values;
+
+    /// <summary>Every station's track (F1.5), oldest point first, as the station stream has them.</summary>
+    public IEnumerable<KeyValuePair<string, IReadOnlyList<TrackPoint>>> Tracks =>
+        _tracks.Select(t => KeyValuePair.Create(t.Key, (IReadOnlyList<TrackPoint>)t.Value));
 
     /// <summary>
     /// Raised after each batch from the station stream (about every 250 ms at most), with the batch; after a fresh
@@ -826,6 +845,7 @@ public sealed partial class MainViewModel : ObservableObject
             if (first)
             {
                 _stations.Clear();
+                _tracks.Clear();
                 StationsChanged?.Invoke(this, Snapshot);
                 first = false;
             }

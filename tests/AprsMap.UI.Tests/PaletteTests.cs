@@ -57,6 +57,16 @@ public class PaletteTests
     }
 
     [Theory]
+    [MemberData(nameof(Combinations))]
+    public void TracksStandOutFromTheGround(Palette palette, string variant)
+    {
+        var colours = Load(palette, variant);
+
+        Assert.True(Contrast(colours["Track"], colours["Ground"]) >= 3.0); // a graphic, F1.5 behavior 6
+        Assert.True(Contrast(colours["Track"], colours["Surface"]) >= 3.0);
+    }
+
+    [Theory]
     [InlineData("Light")]
     [InlineData("Dark")]
     public void HighContrastBordersAreVisible(string variant)

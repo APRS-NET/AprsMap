@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using System.ComponentModel;
 using AprsMap.Contracts;
+using AprsMap.UI.Stations;
 using AprsMap.UI.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -87,6 +88,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.StationsChanged -= OnStationsChanged;
             _main.PropertyChanged -= OnMainChanged;
             _main.Details.CentreRequested -= OnCentreRequested;
+            _main.Details.PropertyChanged -= OnDetailsChanged;
             _main.CentreOnStationRequested -= OnCentreOnStation;
         }
         _main = DataContext as MainViewModel;
@@ -95,9 +97,12 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.StationsChanged += OnStationsChanged;
             _main.PropertyChanged += OnMainChanged;
             _main.Details.CentreRequested += OnCentreRequested;
+            _main.Details.PropertyChanged += OnDetailsChanged;
             _main.CentreOnStationRequested += OnCentreOnStation;
             _map.SetStations(_main.Stations);
+            _map.SetTracks(_main.Tracks);
             _map.SetFilterAreas(_main.FilterAreas);
+            ShowFollowed();
             _map.Select(_main.SelectedStation);
         }
         _state = _main?.Map;
@@ -234,6 +239,18 @@ public sealed partial class MapPanel : UserControl, IDisposable
         }
     }
 
+    /// <summary>The followed station's track is drawn in its own style (F1.5 behavior 6).</summary>
+    private void OnDetailsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(StationDetailsViewModel.FollowingText))
+        {
+            ShowFollowed();
+        }
+    }
+
+    private void ShowFollowed() =>
+        _map.Followed = _main?.Details is { IsFollowing: true } details ? details.Name : null;
+
     private void StopFollowing()
     {
         if (_main is not null)
@@ -311,6 +328,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
         if (ReferenceEquals(batch, MainViewModel.Snapshot) && _main is not null)
         {
             _map.SetStations(_main.Stations); // replaced as a whole
+            _map.SetTracks(_main.Tracks);
         }
         else
         {

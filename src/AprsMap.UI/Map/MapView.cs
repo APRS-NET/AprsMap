@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
+using AprsMap.UI.Appearance;
 using AprsNet.Packets;
 using Avalonia;
 using Avalonia.Controls;
@@ -45,6 +46,10 @@ public sealed class MapView : Control, IDisposable
     private readonly Mapsui.Map _map = new();
     private readonly MapRenderer _renderer = new();
     private readonly StationLayer _stations = new();
+    private readonly TrackLayer _tracks = new();
+    private SKColor _trackColour = SKColors.Transparent;
+    private SKColor _followedColour = SKColors.Transparent;
+    private SKColor _casingColour = SKColors.Transparent;
     private readonly Dictionary<string, MapLabel> _labels = new(StringComparer.Ordinal);
     private readonly Dictionary<string, StationMark> _byName = new(StringComparer.Ordinal);
     private IReadOnlyList<StationMark> _marks = [];
@@ -115,12 +120,30 @@ public sealed class MapView : Control, IDisposable
             v =>
             {
                 _ringPen = v is Color c ? new ImmutablePen(new ImmutableSolidColorBrush(c), 2) : null;
+                _followedColour = v is Color a ? new SKColor(a.R, a.G, a.B, a.A) : SKColors.Transparent;
                 _filterPen = v is Color f
                     ? new ImmutablePen(new ImmutableSolidColorBrush(f), 1.5, new ImmutableDashStyle([4, 4], 0))
                     : null;
             }
         );
         Watch("Map.ShowFilterCircles", v => ShowFilterCircles = v is true);
+        Watch("Map.Tracks", v => Tracks = v is MapTracks tracks ? tracks : MapTracks.All);
+        Watch(
+            "Color.Track",
+            v =>
+            {
+                _trackColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                InvalidateVisual();
+            }
+        );
+        Watch(
+            "Color.Surface",
+            v =>
+            {
+                _casingColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                InvalidateVisual();
+            }
+        );
         Watch("Color.TextMuted", v => _dot = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent);
         ActualThemeVariantChanged += (_, _) => InvalidateVisual();
     }
@@ -173,6 +196,43 @@ public sealed class MapView : Control, IDisposable
         InvalidateVisual();
     }
 
+    /// <summary>Which tracks are drawn (F1.5 behavior 8).</summary>
+    public MapTracks Tracks
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = MapTracks.All;
+
+    /// <summary>The station the map follows, whose track is drawn thicker in the accent colour (F1.5 behavior 6).</summary>
+    public string? Followed
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>The tracks held, for tests.</summary>
+    internal TrackLayer TrackLayer => _tracks;
+
+    /// <summary>Every station's track, replacing those held (a panel shown again, or a resubscription).</summary>
+    public void SetTracks(IEnumerable<KeyValuePair<string, IReadOnlyList<TrackPoint>>> tracks)
+    {
+        ArgumentNullException.ThrowIfNull(tracks);
+        _tracks.Clear();
+        foreach (var (name, points) in tracks)
+        {
+            _tracks.Apply(new TrackUpdate(name, points, Reset: true));
+        }
+        InvalidateVisual();
+    }
+
     /// <summary>Whether callsigns are drawn under the symbols, where they fit (behavior 17).</summary>
     public bool ShowLabels { get; set; } = true;
 
@@ -198,6 +258,11 @@ public sealed class MapView : Control, IDisposable
         foreach (var name in batch.Removed)
         {
             _byName.Remove(name);
+            _tracks.Remove(name);
+        }
+        foreach (var update in batch.Tracks ?? [])
+        {
+            _tracks.Apply(update);
         }
         _marks = [.. _byName.Values];
         _drawn = _me is null ? _marks : [.. _marks, _me];
@@ -406,8 +471,22 @@ public sealed class MapView : Control, IDisposable
         // The map and symbols first: the tiles would cover anything drawn before them.
         // Everything the render thread needs is read here, on the UI thread: styled properties such as the theme
         // variant can't be read from the render thread (on desktop that throws every frame and blanks the window).
+        var tracks = _tracks.Build(
+            viewport,
+            TrackStyleFor,
+            new TrackColours(_trackColour, _followedColour, _casingColour)
+        );
         context.Custom(
-            new DrawOperation(new Rect(Bounds.Size), this, marks, screen, (float)_symbolDip, _dot, EffectiveDimming)
+            new DrawOperation(
+                new Rect(Bounds.Size),
+                this,
+                marks,
+                screen,
+                (float)_symbolDip,
+                _dot,
+                EffectiveDimming,
+                tracks
+            )
         );
         DrawFilterAreas(context, viewport);
         DrawLabels(context, marks, screen);
@@ -420,6 +499,21 @@ public sealed class MapView : Control, IDisposable
         {
             Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
         }
+    }
+
+    /// <summary>How a station's track is drawn now, or null for not at all (F1.5 behaviors 6–8).</summary>
+    internal (TrackStyle, bool)? TrackStyleFor(string name)
+    {
+        var style =
+            name == Followed ? TrackStyle.Followed
+            : name == Selected ? TrackStyle.Selected
+            : Tracks == MapTracks.All ? TrackStyle.Other
+            : (TrackStyle?)null;
+        if (Tracks == MapTracks.None || style is not { } drawn)
+        {
+            return null;
+        }
+        return (drawn, _byName.TryGetValue(name, out var mark) && mark.IsStale);
     }
 
     /// <summary>
@@ -923,12 +1017,13 @@ public sealed class MapView : Control, IDisposable
         SKPoint[] screen,
         float symbolDip,
         SKColor dot,
-        double dimming
+        double dimming,
+        TrackLayer.TrackFrame tracks
     ) : ICustomDrawOperation
     {
         public Rect Bounds => bounds;
 
-        public void Dispose() { }
+        public void Dispose() => tracks.Dispose();
 
         public bool Equals(ICustomDrawOperation? other) => false;
 
@@ -964,6 +1059,8 @@ public sealed class MapView : Control, IDisposable
                 canvas.DrawRect(0, 0, (float)bounds.Width, (float)bounds.Height, dim);
             }
             canvas.Restore();
+            // Tracks over the tiles and under the symbols (F1.5 behavior 5).
+            tracks.Draw(canvas);
             // Stations over the tiles (and over the dimming, so they keep their contrast).
             owner._stations.Draw(canvas, marks, screen, symbolDip, Math.Max(1f, canvas.TotalMatrix.ScaleX), dot);
         }

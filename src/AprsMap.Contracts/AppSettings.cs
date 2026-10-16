@@ -51,9 +51,25 @@ public sealed record AppSettings(
 /// </summary>
 /// <param name="StaleAfterMinutes">Not heard for this long: faded on the map, greyed in lists.</param>
 /// <param name="RemoveAfterMinutes">Not heard for this long: removed; null never removes.</param>
-public sealed record StationAging(int StaleAfterMinutes, int? RemoveAfterMinutes)
+/// <param name="TrackPoints">The most positions a track keeps (docs/features/F1.5-tracks.md, behavior 1).</param>
+/// <param name="TrackMinutes">How long a track keeps a position.</param>
+public sealed record StationAging(
+    int StaleAfterMinutes,
+    int? RemoveAfterMinutes,
+    int TrackPoints = StationAging.DefaultTrackPoints,
+    int TrackMinutes = StationAging.DefaultTrackMinutes
+)
 {
-    /// <summary>Stale after 30 minutes, removed after 2 hours.</summary>
+    /// <summary>A track's default length (decision 1).</summary>
+    public const int DefaultTrackPoints = 500;
+
+    /// <summary>A track's default age, matching the default removal time (decision 1).</summary>
+    public const int DefaultTrackMinutes = 120;
+
+    /// <summary>The most positions a track may be set to keep.</summary>
+    public const int MaxTrackPoints = 5_000;
+
+    /// <summary>Stale after 30 minutes, removed after 2 hours, tracks of 500 points and 2 hours.</summary>
     public static StationAging Default { get; } = new(30, 120);
 }
 

@@ -20,6 +20,7 @@
       <Color x:Key="Color.Ok">#0B4A2C</Color>
       <Color x:Key="Color.OkSoft">#D8F3E3</Color>
       <Color x:Key="Color.Warn">#6B3300</Color>
+      <Color x:Key="Color.Track">#4B1670</Color>
       <Color x:Key="Color.Scrim">#99000000</Color>
     </ResourceDictionary>
     <ResourceDictionary x:Key="Dark">
@@ -34,6 +35,7 @@
       <Color x:Key="Color.Ok">#8EE3B4</Color>
       <Color x:Key="Color.OkSoft">#0F3320</Color>
       <Color x:Key="Color.Warn">#FFD08A</Color>
+      <Color x:Key="Color.Track">#E6C6FF</Color>
       <Color x:Key="Color.Scrim">#CC000000</Color>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>

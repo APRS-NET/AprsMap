@@ -27,6 +27,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     private readonly LinkedList<Entry> _byLastHeard = new();
     private readonly List<StationWatcher> _watchers = [];
     private AprsPosition? _home;
+    private StationAging _aging = StationAging.Default;
 
     // The source of the packet being applied, under the lock.
     private string? _sourceId;
@@ -94,7 +95,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
             switch (packet.Payload)
             {
                 case PositionedPayload positioned:
-                    SetPosition(entry, positioned);
+                    SetPosition(entry, positioned, receivedAt);
                     break;
                 case StatusReport status:
                     entry.Status = status.Text;
@@ -120,8 +121,20 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         DateTimeOffset? removeBefore = aging.RemoveAfterMinutes is { } minutes
             ? now - TimeSpan.FromMinutes(minutes)
             : null;
+        var trackBefore = now - TimeSpan.FromMinutes(aging.TrackMinutes);
         lock (_gate)
         {
+            _aging = aging;
+            foreach (var entry in _entries.Values)
+            {
+                var old = 0;
+                while (old < entry.Track.Count && entry.Track[old].Time < trackBefore)
+                {
+                    old++;
+                }
+                DropTrack(entry, old); // F1.5 behavior 1: none older than the track's age
+            }
+
             // Oldest first, so the pass can stop at the first entry heard recently enough.
             for (var node = _byLastHeard.First; node is not null; )
             {
@@ -258,6 +271,39 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         }
     }
 
+    /// <summary>
+    /// Empties the track of <paramref name="name"/> except its latest point (F1.5 behavior 10); false when there's no
+    /// such entry.
+    /// </summary>
+    public bool ClearTrack(string name)
+    {
+        lock (_gate)
+        {
+            if (!_entries.TryGetValue(name, out var entry))
+            {
+                return false;
+            }
+            if (entry.Track.Count > 1)
+            {
+                entry.Track.RemoveRange(0, entry.Track.Count - 1);
+                foreach (var watcher in _watchers)
+                {
+                    watcher.ResetTrack(name, entry.Track);
+                }
+            }
+            return true;
+        }
+    }
+
+    /// <summary>The track of <paramref name="name"/>, oldest first; empty when there's none.</summary>
+    public IReadOnlyList<TrackPoint> GetTrack(string name)
+    {
+        lock (_gate)
+        {
+            return _entries.TryGetValue(name, out var entry) ? [.. entry.Track] : [];
+        }
+    }
+
     /// <summary>Forgets every entry, telling each watcher they're gone (F0.10).</summary>
     public void Clear()
     {
@@ -276,12 +322,24 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     }
 
     /// <summary>Starts collecting changes for a new watcher and returns everything on the map so far.</summary>
-    public StationWatcher Subscribe(out StationState[] snapshot)
+    public StationWatcher Subscribe(out StationState[] snapshot) => Subscribe(out snapshot, out _);
+
+    /// <summary>
+    /// Starts collecting changes for a new watcher and returns everything on the map so far, with every track as a
+    /// reset (F1.5: a late viewer gets the snapshot first).
+    /// </summary>
+    public StationWatcher Subscribe(out StationState[] snapshot, out TrackUpdate[] tracks)
     {
         var watcher = new StationWatcher();
         lock (_gate)
         {
             snapshot = [.. _entries.Values.Where(e => e.HasPosition).Select(e => e.ToState(_home))];
+            tracks =
+            [
+                .. _entries
+                    .Values.Where(e => e.HasPosition && e.Track.Count > 0)
+                    .Select(e => new TrackUpdate(e.Name, [.. e.Track], Reset: true)),
+            ];
             _watchers.Add(watcher);
         }
         return watcher;
@@ -336,7 +394,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
             entry.PreviousOwner = owner; // ownership moves (behavior 5)
         }
         entry.Owner = sender;
-        SetPosition(entry, report);
+        SetPosition(entry, report, receivedAt);
         Publish(entry);
     }
 
@@ -368,19 +426,67 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         return entry;
     }
 
-    private static void SetPosition(Entry entry, PositionedPayload positioned)
+    private void SetPosition(Entry entry, PositionedPayload positioned, DateTimeOffset receivedAt)
     {
         if (!positioned.IsPositionUnknown)
         {
             entry.Latitude = positioned.Position.Latitude;
             entry.Longitude = positioned.Position.Longitude;
             entry.Ambiguity = positioned.Position.Ambiguity;
+            if (positioned.Position.Ambiguity == 0) // an ambiguous position isn't a point on a route (F1.5 behavior 2)
+            {
+                AddTrackPoint(entry, new TrackPoint(entry.Latitude.Value, entry.Longitude.Value, receivedAt));
+            }
         }
         entry.Symbol = positioned.Symbol.ToString();
         entry.Comment = string.IsNullOrWhiteSpace(positioned.Comment) ? entry.Comment : positioned.Comment;
         entry.Course = positioned.Course ?? entry.Course;
         entry.SpeedKmh = positioned.SpeedKnots is { } knots ? knots * KmhPerKnot : entry.SpeedKmh;
         entry.AltitudeMetres = positioned.AltitudeFeet is { } feet ? feet * MetresPerFoot : entry.AltitudeMetres;
+    }
+
+    /// <summary>How close a report must be to the track's last point to count as not moving (F1.5 behavior 2).</summary>
+    internal const double TrackMoveKm = 0.02;
+
+    /// <summary>
+    /// Adds a point to the entry's track (F1.5 behaviors 1, 2): a report within 20 m of the last point moves that
+    /// point's time on instead, and the oldest points go beyond the track's length. Every point is joined until
+    /// APRS.NET's track anomaly analysis (G24) can say which aren't (behavior 3).
+    /// </summary>
+    private void AddTrackPoint(Entry entry, TrackPoint point)
+    {
+        var track = entry.Track;
+        if (
+            track.Count > 0
+            && Geodesy.DistanceKm(
+                new AprsPosition(track[^1].Latitude, track[^1].Longitude),
+                new AprsPosition(point.Latitude, point.Longitude)
+            ) < TrackMoveKm
+        )
+        {
+            track[^1] = track[^1] with { Time = point.Time };
+            return;
+        }
+        track.Add(point);
+        foreach (var watcher in _watchers)
+        {
+            watcher.AddTrackPoint(entry.Name, point);
+        }
+        DropTrack(entry, track.Count - _aging.TrackPoints);
+    }
+
+    /// <summary>Drops the <paramref name="count"/> oldest points of the entry's track, telling every watcher.</summary>
+    private void DropTrack(Entry entry, int count)
+    {
+        if (count <= 0)
+        {
+            return;
+        }
+        entry.Track.RemoveRange(0, count);
+        foreach (var watcher in _watchers)
+        {
+            watcher.DropTrackPoints(entry.Name, count);
+        }
     }
 
     /// <summary>Queues the entry's map state for every watcher; entries without a position aren't on the map.</summary>
@@ -440,6 +546,9 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
 
         /// <summary>Other sources the latest report was heard on.</summary>
         public SortedSet<string> SeenOn { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>Where it has been, oldest first (F1.5).</summary>
+        public List<TrackPoint> Track { get; } = [];
 
         public bool HasPosition => Latitude is not null && Longitude is not null;
 
@@ -531,6 +640,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     {
         private readonly Dictionary<string, StationState> _changed = new(StringComparer.Ordinal);
         private readonly HashSet<string> _removed = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, PendingTrack> _tracks = new(StringComparer.Ordinal);
 
         public void Change(StationState state)
         {
@@ -542,18 +652,56 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         {
             _changed.Remove(name);
             _removed.Add(name);
+            // The viewer drops the track with the station; one heard again in the same batch starts a new track.
+            _tracks[name] = new PendingTrack { Reset = true };
         }
+
+        public void AddTrackPoint(string name, TrackPoint point) => Track(name).Added.Add(point);
+
+        public void DropTrackPoints(string name, int count) => Track(name).Dropped += count;
+
+        public void ResetTrack(string name, IEnumerable<TrackPoint> points) =>
+            _tracks[name] = new PendingTrack { Reset = true, Added = [.. points] };
 
         public StationBatch? Drain()
         {
-            if (_changed.Count == 0 && _removed.Count == 0)
+            if (_changed.Count == 0 && _removed.Count == 0 && _tracks.Count == 0)
             {
                 return null;
             }
-            var batch = new StationBatch([.. _changed.Values], [.. _removed]);
+            List<TrackUpdate>? tracks = null;
+            foreach (var (name, pending) in _tracks)
+            {
+                if (!_removed.Contains(name))
+                {
+                    (tracks ??= []).Add(new TrackUpdate(name, pending.Added, pending.Dropped, pending.Reset));
+                }
+            }
+            var batch = new StationBatch([.. _changed.Values], [.. _removed], tracks);
             _changed.Clear();
             _removed.Clear();
+            _tracks.Clear();
             return batch;
+        }
+
+        private PendingTrack Track(string name)
+        {
+            if (!_tracks.TryGetValue(name, out var pending))
+            {
+                _tracks[name] = pending = new PendingTrack();
+            }
+            return pending;
+        }
+
+        /// <summary>
+        /// A track's changes since the last drain. Applied as reset, then added, then dropped from the oldest end, they
+        /// give the store's track: drops only ever take the oldest points, so they commute with later additions.
+        /// </summary>
+        private sealed class PendingTrack
+        {
+            public bool Reset { get; init; }
+            public List<TrackPoint> Added { get; init; } = [];
+            public int Dropped { get; set; }
         }
     }
 }

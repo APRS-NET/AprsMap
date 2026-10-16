@@ -100,6 +100,14 @@ internal sealed class EngineHubEndpoint(
         return engine.ResetSettingsAsync(Context.ConnectionAborted);
     }
 
+    /// <summary>The track is every viewer's, so clearing it has the same gate as changing settings (F1.5 behavior 10).</summary>
+    [HubMethodName(EngineHub.ClearTrack)]
+    public Task ClearTrack(string name)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ClearTrackAsync(name, Context.ConnectionAborted);
+    }
+
     /// <summary>Reconnecting affects every viewer, so it has the same gate as changing settings.</summary>
     [HubMethodName(EngineHub.Reconnect)]
     public Task Reconnect()

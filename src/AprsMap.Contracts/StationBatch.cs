@@ -137,5 +137,29 @@ public enum ArrivalKind
 /// state only) and the names that left the map.
 /// </summary>
 /// <param name="Changed">Stations that are new or changed.</param>
-/// <param name="Removed">Names to take off the map, such as killed objects.</param>
-public sealed record StationBatch(IReadOnlyList<StationState> Changed, IReadOnlyList<string> Removed);
+/// <param name="Removed">Names to take off the map, such as killed objects; their tracks go with them.</param>
+/// <param name="Tracks">
+/// Track changes since the last batch, one per station (docs/features/F1.5-tracks.md); the first batches carry every
+/// track as a reset. Null when no track changed.
+/// </param>
+public sealed record StationBatch(
+    IReadOnlyList<StationState> Changed,
+    IReadOnlyList<string> Removed,
+    IReadOnlyList<TrackUpdate>? Tracks = null
+);
+
+/// <summary>One point of a station's position history (docs/features/F1.5-tracks.md, behavior 1).</summary>
+/// <param name="Latitude">Latitude in degrees.</param>
+/// <param name="Longitude">Longitude in degrees.</param>
+/// <param name="Time">When the station was last heard at this point (a report within 20 m moves the time on).</param>
+public sealed record TrackPoint(double Latitude, double Longitude, DateTimeOffset Time);
+
+/// <summary>
+/// How one station's track changed: apply <see cref="Reset"/> first (forget the points held), then append
+/// <see cref="Added"/>, then drop <see cref="Dropped"/> points from the oldest end. The result matches the engine's.
+/// </summary>
+/// <param name="Name">The station, object or item.</param>
+/// <param name="Added">New points, oldest first.</param>
+/// <param name="Dropped">How many of the oldest points to drop, for the history's length and age limits.</param>
+/// <param name="Reset">Forget the points held first: a new viewer's snapshot, or a cleared track.</param>
+public sealed record TrackUpdate(string Name, IReadOnlyList<TrackPoint> Added, int Dropped = 0, bool Reset = false);

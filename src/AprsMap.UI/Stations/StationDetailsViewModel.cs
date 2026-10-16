@@ -20,6 +20,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     private readonly Localizer _text;
     private readonly Func<UnitSettings> _units;
     private readonly ViewModels.SourceNames? _sources;
+    private readonly Func<string, bool> _canClearTrack;
     private StationDetail? _detail;
     private int _loads;
 
@@ -28,10 +29,12 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         TimeProvider time,
         Localizer text,
         Func<UnitSettings> units,
-        ViewModels.SourceNames? sources = null
+        ViewModels.SourceNames? sources = null,
+        Func<string, bool>? canClearTrack = null
     )
     {
         _sources = sources;
+        _canClearTrack = canClearTrack ?? (_ => false);
         _engine = engine;
         _time = time;
         _text = text;
@@ -129,6 +132,29 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     public string? FollowingText =>
         IsFollowing ? _text.Format("Map.Following", new Dictionary<string, object?> { ["name"] = Name }) : null;
 
+    /// <summary>Whether Clear track is offered: the station has a track, and this viewer may clear it (F1.5 behavior 10).</summary>
+    [ObservableProperty]
+    public partial bool CanClearTrack { get; private set; }
+
+    /// <summary>Empties the station's track except its latest point, for every viewer (F1.5 behavior 10).</summary>
+    [RelayCommand]
+    private async Task ClearTrackAsync()
+    {
+        if (Name is not { } name)
+        {
+            return;
+        }
+        try
+        {
+            await _engine.ClearTrackAsync(name);
+            CanClearTrack = false;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            CanClearTrack = false; // not this viewer's to clear after all; the track stays
+        }
+    }
+
     /// <summary>Whether Centre, Follow and Copy position have a position to work with.</summary>
     public bool HasPosition => _detail is { Latitude: not null, Longitude: not null };
 
@@ -142,6 +168,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             _detail = null;
         }
         Name = name;
+        CanClearTrack = name is not null && _canClearTrack(name);
         if (name is null)
         {
             Write();
@@ -183,6 +210,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         {
             return;
         }
+        CanClearTrack = _canClearTrack(name);
         if (batch.Removed.Contains(name))
         {
             IsGone = true;

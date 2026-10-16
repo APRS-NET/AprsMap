@@ -250,7 +250,7 @@
     <comment>profile: the profile's name.</comment>
   </data>
   <data name="Error.settings.stations.aging-invalid" xml:space="preserve">
-    <value>Stations go stale after a minute or more, and are removed only after they're stale.</value>
+    <value>Stations go stale after a minute or more, and are removed only after they're stale. Tracks keep 2 to 5,000 positions, for a minute or more.</value>
   </data>
   <data name="Error.settings.active-profile-missing" xml:space="preserve">
     <value>The active profile must be one of the profiles.</value>
@@ -1287,6 +1287,35 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Settings.Map.RemoveAfter.Never" xml:space="preserve">
     <value>Never</value>
+  </data>
+  <data name="Details.ClearTrack" xml:space="preserve">
+    <value>Clear track</value>
+    <comment>Details: empties the station's drawn route, keeping where it is now.</comment>
+  </data>
+  <data name="Settings.Map.Tracks" xml:space="preserve">
+    <value>Tracks</value>
+    <comment>Settings › Map: which stations' recent routes are drawn as lines.</comment>
+  </data>
+  <data name="Settings.Map.Tracks.All" xml:space="preserve">
+    <value>All stations</value>
+  </data>
+  <data name="Settings.Map.Tracks.SelectedAndFollowed" xml:space="preserve">
+    <value>Selected and followed only</value>
+  </data>
+  <data name="Settings.Map.Tracks.None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="Settings.Map.TrackPoints" xml:space="preserve">
+    <value>Positions kept per track</value>
+  </data>
+  <data name="Settings.Map.TrackPoints.Help" xml:space="preserve">
+    <value>A track keeps up to this many positions, for this long. For every viewer of this station.</value>
+  </data>
+  <data name="Settings.Map.TrackAge" xml:space="preserve">
+    <value>Keep track positions for</value>
+  </data>
+  <data name="Settings.Map.Positions" xml:space="preserve">
+    <value>{count, plural, one {# position} other {# positions}}</value>
   </data>
   <data name="Settings.Map.Minutes" xml:space="preserve">
     <value>{minutes, plural, one {# minute} other {# minutes}}</value>

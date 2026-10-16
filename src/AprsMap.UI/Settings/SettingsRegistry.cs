@@ -234,6 +234,22 @@ public static class SettingsRegistry
         );
         items.Add(
             new ChoiceSetting(
+                "map.tracks",
+                "Settings.Map.Tracks",
+                null,
+                text,
+                () =>
+                    [
+                        (MapTracks.All, text["Settings.Map.Tracks.All"]),
+                        (MapTracks.SelectedAndFollowed, text["Settings.Map.Tracks.SelectedAndFollowed"]),
+                        (MapTracks.None, text["Settings.Map.Tracks.None"]),
+                    ],
+                () => appearance.Current.MapTracks,
+                value => Update(s => s with { MapTracks = (MapTracks)value! })
+            )
+        );
+        items.Add(
+            new ChoiceSetting(
                 "map.symbol-size",
                 "Settings.Map.SymbolSize",
                 "Settings.Map.SymbolSize.Help",
@@ -312,12 +328,57 @@ public static class SettingsRegistry
             );
             items.Add(stale);
             items.Add(remove);
+            // F1.5 behavior 1: the station's track limits, for every viewer.
+            items.Add(
+                new ChoiceSetting(
+                    "map.track-points",
+                    "Settings.Map.TrackPoints",
+                    "Settings.Map.TrackPoints.Help",
+                    text,
+                    () =>
+                        [
+                            .. TrackPointSteps
+                                .Union([current.TrackPoints])
+                                .Order()
+                                .Select(n =>
+                                    (
+                                        (object?)n,
+                                        text.Format(
+                                            "Settings.Map.Positions",
+                                            new Dictionary<string, object?> { ["count"] = n }
+                                        )
+                                    )
+                                ),
+                        ],
+                    () => current.TrackPoints,
+                    value => Set(current with { TrackPoints = (int)value! })
+                )
+            );
+            items.Add(
+                new ChoiceSetting(
+                    "map.track-age",
+                    "Settings.Map.TrackAge",
+                    "Settings.Map.TrackPoints.Help",
+                    text,
+                    () =>
+                        [
+                            .. TrackAgeSteps
+                                .Union([current.TrackMinutes])
+                                .Order()
+                                .Select(m => ((object?)m, Minutes(text, m))),
+                        ],
+                    () => current.TrackMinutes,
+                    value => Set(current with { TrackMinutes = (int)value! })
+                )
+            );
         }
         return items;
     }
 
     private static readonly int[] StaleSteps = [10, 15, 30, 60, 120];
     private static readonly int[] RemoveSteps = [30, 60, 120, 360, 1440];
+    private static readonly int[] TrackPointSteps = [100, 250, 500, 1000, 2000, 5000];
+    private static readonly int[] TrackAgeSteps = [30, 60, 120, 360, 1440];
 
     private static string Minutes(Localizer text, int minutes) =>
         minutes % 60 == 0

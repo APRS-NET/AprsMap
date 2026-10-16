@@ -172,6 +172,15 @@ internal sealed class FakeEngine : IEngineService
 
     public int Reconnects { get; private set; }
 
+    /// <summary>The stations whose track <see cref="ClearTrackAsync"/> cleared, in order.</summary>
+    public List<string> ClearedTracks { get; } = [];
+
+    public Task ClearTrackAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ClearedTracks.Add(name);
+        return Task.CompletedTask;
+    }
+
     /// <summary>When set, <see cref="ReconnectAsync"/> throws it.</summary>
     public Exception? ReconnectFailure { get; set; }
 

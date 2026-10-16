@@ -46,6 +46,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.SaveSettingsAsync"/>.</summary>
     public const string SaveSettings = "SaveSettings";
 
+    /// <summary>Hub method for <see cref="IEngineService.ClearTrackAsync"/>.</summary>
+    public const string ClearTrack = "ClearTrack";
+
     /// <summary>Hub method for <see cref="IEngineService.ReconnectAsync"/>.</summary>
     public const string Reconnect = "Reconnect";
 

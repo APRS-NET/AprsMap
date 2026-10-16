@@ -202,6 +202,12 @@ public class EngineTests
             }
         );
 
+        // Then the tracks (F1.5), as resets.
+        Assert.True(await watch.MoveNextAsync());
+        var track = Assert.Single(watch.Current.Tracks!);
+        Assert.Equal("N0CALL-9", track.Name);
+        Assert.True(track.Reset);
+
         // Two moves and a new station inside one interval arrive as one batch with the latest state only.
         var next = watch.MoveNextAsync().AsTask();
         engine.Accept("N0CALL-9>APRS:!4904.00N/07202.00W>");
@@ -214,6 +220,7 @@ public class EngineTests
         Assert.Equal(["N0CALL-9", "N0NEW"], batch.Changed.Select(s => s.Name).Order());
         Assert.Equal(49.0833, batch.Changed.Single(s => s.Name == "N0CALL-9").Latitude, 4);
         Assert.Equal("/-", batch.Changed.Single(s => s.Name == "N0NEW").Symbol);
+        Assert.Equal(2, batch.Tracks!.Single(t => t.Name == "N0CALL-9").Added.Count);
 
         await cts.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await watch.MoveNextAsync());
