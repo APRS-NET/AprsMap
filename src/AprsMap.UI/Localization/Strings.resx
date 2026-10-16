@@ -25,8 +25,8 @@
     <comment>Status bar, before the engine has answered.</comment>
   </data>
   <data name="Status.Connected" xml:space="preserve">
-    <value>APRS-IS connected · {server}{verified, select, yes { · verified} other {}}</value>
-    <comment>Status bar. server: the APRS-IS server's name, as it reports it (not translated). verified: yes when the server accepted the passcode.</comment>
+    <value>APRS-IS connected</value>
+    <comment>Status bar, while connected. The server and whether the login is verified are in its tooltip.</comment>
   </data>
   <data name="Status.Connecting" xml:space="preserve">
     <value>APRS-IS connecting to {server}…</value>
@@ -45,8 +45,8 @@
     <comment>Status bar; the app doesn't retry by itself. reason: what the server said, in its own words (not translated).</comment>
   </data>
   <data name="Status.Details" xml:space="preserve">
-    <value>{verified, select, yes {Login verified} other {Login not verified: receive-only}} · {reconnects, plural, =0 {no reconnects} one {reconnected once} other {reconnected # times}}</value>
-    <comment>The connection's tooltip and a line in About. verified: yes when the server accepted the passcode. reconnects: how many times the connection came back since it first logged in.</comment>
+    <value>Server {server} · {verified, select, yes {login verified} other {login not verified: receive-only}} · {reconnects, plural, =0 {no reconnects} one {reconnected once} other {reconnected # times}}</value>
+    <comment>The connection's tooltip and a line in About. server: the APRS-IS server's name, as it reports it (not translated). verified: yes when the server accepted the passcode. reconnects: how many times the connection came back since it first logged in.</comment>
   </data>
   <data name="Status.Reconnect" xml:space="preserve">
     <value>Reconnect now</value>
@@ -187,6 +187,10 @@
   </data>
   <data name="Status.Source.Error" xml:space="preserve">
     <value>{source}: {error}</value>
+  </data>
+  <data name="Status.ReceiveOnly" xml:space="preserve">
+    <value>Receive-only: the login isn't verified, so this station can't send</value>
+    <comment>Tooltip and accessible name of the eye symbol on the connection pill.</comment>
   </data>
   <data name="Status.Filter" xml:space="preserve">
     <value>Filter: {filter}</value>

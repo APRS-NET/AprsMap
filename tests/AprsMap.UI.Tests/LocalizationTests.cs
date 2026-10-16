@@ -36,7 +36,7 @@ public class LocalizationTests
             text["Error.geocoding.unreachable"]
         );
         Assert.Equal(
-            "APRS-IS connected · T2TEST",
+            "APRS-IS connected",
             text.Format(
                 "Status.Connected",
                 new Dictionary<string, object?> { ["server"] = "T2TEST", ["verified"] = "no" }

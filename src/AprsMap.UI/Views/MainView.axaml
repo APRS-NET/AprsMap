@@ -30,6 +30,11 @@
     <Style Selector="Button#ConnectionButton">
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
     </Style>
+    <!-- Connected: the OK colours, quiet (F1.1). -->
+    <Style Selector="Button#ConnectionButton.ok">
+      <Setter Property="Background" Value="{DynamicResource Brush.OkSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ok}" />
+    </Style>
     <Style Selector="Button#ConnectionButton.warn">
       <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Warn}" />
@@ -163,6 +168,7 @@
             <Button
               x:Name="ConnectionButton"
               Classes.warn="{Binding IsConnectionWarning}"
+              Classes.ok="{Binding IsConnected}"
               CornerRadius="{DynamicResource Radius.Control}"
               BorderThickness="{DynamicResource Thickness.Border}"
               Padding="10,4"
@@ -171,7 +177,19 @@
               AutomationProperties.Name="{l:T Status.Menu}"
               AutomationProperties.HelpText="{Binding ConnectionText}"
             >
-              <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <!-- Receive-only (an unverified login): an eye, as in "can look, can't send". -->
+                <PathIcon
+                  x:Name="ReceiveOnlyIcon"
+                  IsVisible="{Binding IsReceiveOnly}"
+                  Data="F0 M 12,5 C 6.5,5 2.7,9.4 1.5,12 C 2.7,14.6 6.5,19 12,19 C 17.5,19 21.3,14.6 22.5,12 C 21.3,9.4 17.5,5 12,5 Z M 12,7 C 16,7 19,10 20.3,12 C 19,14 16,17 12,17 C 8,17 5,14 3.7,12 C 5,10 8,7 12,7 Z M 12,8.5 A 3.5,3.5 0 1 0 12,15.5 A 3.5,3.5 0 1 0 12,8.5 Z"
+                  Width="{DynamicResource Icon.Size}"
+                  Height="{DynamicResource Icon.Size}"
+                  ToolTip.Tip="{l:T Status.ReceiveOnly}"
+                  AutomationProperties.Name="{l:T Status.ReceiveOnly}"
+                />
+                <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" TextWrapping="Wrap" />
+              </StackPanel>
               <Button.Flyout>
                 <MenuFlyout>
                   <MenuItem

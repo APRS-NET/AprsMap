@@ -162,7 +162,7 @@ public sealed class LanguageViewTests : IDisposable
         var (window, _) = Show();
         var connection = Labels(window).Single(l => l.Name == "ConnectionLabel");
         var picker = window.GetLogicalDescendants().OfType<ComboBox>().Single(c => c.Name == "ProfilePicker");
-        Assert.Equal("APRS-IS connected · T2TEST", connection.Text);
+        Assert.Equal("APRS-IS connected", connection.Text);
         Assert.Equal("Station profile", ToolTip.GetTip(picker));
 
         Localizer.Instance.SetLanguage(Localizer.PseudoLanguage);
@@ -171,7 +171,7 @@ public sealed class LanguageViewTests : IDisposable
         Assert.Equal("home", (picker.SelectedItem as StationProfile)?.Id); // state kept
 
         Localizer.Instance.SetLanguage(null);
-        Assert.Equal("APRS-IS connected · T2TEST", connection.Text);
+        Assert.Equal("APRS-IS connected", connection.Text);
         window.Close();
     }
 }

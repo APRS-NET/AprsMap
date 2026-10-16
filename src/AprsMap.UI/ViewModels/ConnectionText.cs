@@ -48,6 +48,7 @@ internal static class ConnectionText
             "Status.Details",
             new Dictionary<string, object?>
             {
+                ["server"] = status.Server ?? "?",
                 ["verified"] = status.Verified ? "yes" : "no",
                 ["reconnects"] = status.Reconnects,
             }

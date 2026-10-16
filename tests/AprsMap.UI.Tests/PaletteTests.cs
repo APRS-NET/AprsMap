@@ -42,6 +42,7 @@ public class PaletteTests
             }
         }
         Check("Text", "AccentSoft"); // the wizard's confirmation line
+        Check("Text", "OkSoft"); // the connected status pill
 
         Assert.Empty(failures);
 
