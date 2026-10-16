@@ -60,6 +60,10 @@
     <value>APRS-IS not set up · add a callsign</value>
     <comment>Status bar before first-run setup.</comment>
   </data>
+  <data name="Status.AprsIsOff" xml:space="preserve">
+    <value>APRS-IS off</value>
+    <comment>Status bar pill while APRS-IS is switched off (a quick toggle), or held off by the Internet switch.</comment>
+  </data>
   <data name="Status.Disconnected" xml:space="preserve">
     <value>APRS-IS disconnected</value>
     <comment>Status bar.</comment>

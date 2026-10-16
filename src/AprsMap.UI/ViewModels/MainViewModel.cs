@@ -867,6 +867,11 @@ public sealed partial class MainViewModel : ObservableObject
                 var t => t with { Tiles = on },
             };
             ShowToggles(toggles);
+            if (_status is not null)
+            {
+                _status = _status with { Toggles = toggles };
+                ShowConnection(); // the pill says "APRS-IS off" now, not at the next status poll
+            }
             ToggleAnnouncement = _text.Format(
                 "Toggles.Announce",
                 new Dictionary<string, object?> { ["name"] = _text[$"Toggles.{toggle}"], ["on"] = on ? "yes" : "no" }
@@ -890,10 +895,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             markers.Add(_text["Toggles.Marker.Internet"]);
         }
-        if (!toggles.AprsIs)
-        {
-            markers.Add(_text["Toggles.Marker.AprsIs"]);
-        }
+        // APRS-IS off shows in its own pill ("APRS-IS off", with its switch), not as another marker.
         if (!toggles.Tiles)
         {
             markers.Add(_text["Toggles.Marker.Tiles"]);

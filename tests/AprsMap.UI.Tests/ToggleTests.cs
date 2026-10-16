@@ -9,7 +9,7 @@ namespace AprsMap.UI.Tests;
 public sealed class ToggleTests
 {
     [Fact]
-    public async Task ATogglesMenuItemFlipsItAndAMarkerSaysItIsOff()
+    public async Task ATogglesMenuItemFlipsItAndThePillSaysItIsOff()
     {
         var engine = new FakeEngine();
         var vm = new MainViewModel(engine, new FakeTimeProvider());
@@ -22,7 +22,8 @@ public sealed class ToggleTests
 
         Assert.Equal([(Toggle.AprsIs, false)], engine.Toggled);
         Assert.False(vm.AprsIsOn);
-        Assert.Equal(["APRS-IS off"], vm.ToggleMarkers);
+        Assert.Equal("APRS-IS off", vm.ConnectionText); // its own pill says so, at once
+        Assert.Empty(vm.ToggleMarkers); // no second pill for it
         Assert.Equal("APRS-IS off", vm.ToggleAnnouncement);
     }
 
@@ -40,7 +41,8 @@ public sealed class ToggleTests
         await WaitUntil(() => !vm.AprsIsOn);
 
         Assert.Equal([(Toggle.AprsIs, false)], engine.Toggled);
-        Assert.Equal(["APRS-IS off"], vm.ToggleMarkers);
+        Assert.Equal("APRS-IS off", vm.ConnectionText);
+        Assert.Empty(vm.ToggleMarkers);
         await vm.ToggleCommand.ExecuteAsync(Toggle.AprsIs); // the menu turns it back on: the switch follows
         Assert.True(vm.AprsIsSwitch.IsOn);
     }

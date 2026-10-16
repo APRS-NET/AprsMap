@@ -27,19 +27,22 @@
     </Style>
     <!-- A refused login needs the user: the status takes the warning colour, as errors do, on the surface colour the
          contrast checks cover (not the button's own fill). -->
-    <Style Selector="Button#ConnectionButton">
+    <!-- The connection pill: its switch and its status button share one outline, coloured by the state. A refused login
+         needs the user: the status takes the warning colour, as errors do, on the surface colour the contrast checks
+         cover. -->
+    <Style Selector="Border#ConnectionPill">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
     </Style>
     <!-- Connected: the OK colours, quiet (F1.1). -->
-    <Style Selector="Button#ConnectionButton.ok">
+    <Style Selector="Border#ConnectionPill.ok">
       <Setter Property="Background" Value="{DynamicResource Brush.OkSoft}" />
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ok}" />
     </Style>
-    <Style Selector="Button#ConnectionButton.warn">
-      <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+    <Style Selector="Border#ConnectionPill.warn">
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Warn}" />
     </Style>
-    <Style Selector="Button#ConnectionButton.warn TextBlock#ConnectionLabel">
+    <Style Selector="Border#ConnectionPill.warn TextBlock#ConnectionLabel">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
     </Style>
   </UserControl.Styles>
@@ -164,85 +167,96 @@
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <!-- APRS-IS on or off in one click (F1.15): the same toggle as the menu's, beside the pill it controls. -->
-            <ToggleSwitch
-              x:Name="AprsIsSwitch"
-              Classes="compact"
-              DataContext="{Binding AprsIsSwitch}"
-              x:DataType="vm:SourceSwitch"
-              IsChecked="{Binding IsOn}"
-              IsEnabled="{Binding CanChange}"
-              OnContent="{x:Null}"
-              OffContent="{x:Null}"
-              VerticalAlignment="Center"
-              ToolTip.Tip="{l:T Toggles.Switch.AprsIs}"
-              AutomationProperties.Name="{l:T Toggles.Switch.AprsIs}"
-            />
-            <!-- The connection status opens a menu with Reconnect now (F1.1 behavior 7); its tooltip has the details. -->
-            <Button
-              x:Name="ConnectionButton"
+            <!-- The connection pill: the APRS-IS switch on its left (F1.15), then the status, which opens a menu with
+                 Reconnect now (F1.1 behavior 7); its tooltip has the details. -->
+            <Border
+              x:Name="ConnectionPill"
               Classes.warn="{Binding IsConnectionWarning}"
               Classes.ok="{Binding IsConnected}"
               CornerRadius="{DynamicResource Radius.Control}"
               BorderThickness="{DynamicResource Thickness.Border}"
-              Padding="10,4"
               VerticalAlignment="Center"
-              ToolTip.Tip="{Binding ConnectionDetails}"
-              AutomationProperties.Name="{l:T Status.Menu}"
-              AutomationProperties.HelpText="{Binding ConnectionText}"
             >
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <!-- Receive-only (an unverified login): an eye, as in "can look, can't send". -->
-                <PathIcon
-                  x:Name="ReceiveOnlyIcon"
-                  IsVisible="{Binding IsReceiveOnly}"
-                  Data="F0 M 12,5 C 6.5,5 2.7,9.4 1.5,12 C 2.7,14.6 6.5,19 12,19 C 17.5,19 21.3,14.6 22.5,12 C 21.3,9.4 17.5,5 12,5 Z M 12,7 C 16,7 19,10 20.3,12 C 19,14 16,17 12,17 C 8,17 5,14 3.7,12 C 5,10 8,7 12,7 Z M 12,8.5 A 3.5,3.5 0 1 0 12,15.5 A 3.5,3.5 0 1 0 12,8.5 Z"
-                  Width="{DynamicResource Icon.Size}"
-                  Height="{DynamicResource Icon.Size}"
-                  ToolTip.Tip="{l:T Status.ReceiveOnly}"
-                  AutomationProperties.Name="{l:T Status.ReceiveOnly}"
+              <StackPanel Orientation="Horizontal">
+                <ToggleSwitch
+                  x:Name="AprsIsSwitch"
+                  DataContext="{Binding AprsIsSwitch}"
+                  x:DataType="vm:SourceSwitch"
+                  IsChecked="{Binding IsOn}"
+                  IsEnabled="{Binding CanChange}"
+                  OnContent="{x:Null}"
+                  OffContent="{x:Null}"
+                  MinWidth="0"
+                  Margin="8,0,0,0"
+                  VerticalAlignment="Center"
+                  ToolTip.Tip="{l:T Toggles.Switch.AprsIs}"
+                  AutomationProperties.Name="{l:T Toggles.Switch.AprsIs}"
                 />
-                <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" TextWrapping="Wrap" />
+                <Button
+                  x:Name="ConnectionButton"
+                  Background="{Binding #ConnectionPill.Background}"
+                  BorderThickness="0"
+                  CornerRadius="{DynamicResource Radius.Control}"
+                  Padding="6,4,10,4"
+                  VerticalAlignment="Center"
+                  ToolTip.Tip="{Binding ConnectionDetails}"
+                  AutomationProperties.Name="{l:T Status.Menu}"
+                  AutomationProperties.HelpText="{Binding ConnectionText}"
+                >
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <!-- Receive-only (an unverified login): an eye, as in "can look, can't send". -->
+                    <PathIcon
+                      x:Name="ReceiveOnlyIcon"
+                      IsVisible="{Binding IsReceiveOnly}"
+                      Data="F0 M 12,5 C 6.5,5 2.7,9.4 1.5,12 C 2.7,14.6 6.5,19 12,19 C 17.5,19 21.3,14.6 22.5,12 C 21.3,9.4 17.5,5 12,5 Z M 12,7 C 16,7 19,10 20.3,12 C 19,14 16,17 12,17 C 8,17 5,14 3.7,12 C 5,10 8,7 12,7 Z M 12,8.5 A 3.5,3.5 0 1 0 12,15.5 A 3.5,3.5 0 1 0 12,8.5 Z"
+                      Width="{DynamicResource Icon.Size}"
+                      Height="{DynamicResource Icon.Size}"
+                      ToolTip.Tip="{l:T Status.ReceiveOnly}"
+                      AutomationProperties.Name="{l:T Status.ReceiveOnly}"
+                    />
+                    <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" TextWrapping="Wrap" />
+                  </StackPanel>
+                  <Button.Flyout>
+                    <MenuFlyout>
+                      <MenuItem
+                        x:Name="ReconnectItem"
+                        Header="{l:T Status.Reconnect}"
+                        Command="{Binding ReconnectCommand}"
+                      />
+                      <Separator />
+                      <!-- Quick toggles (F1.15): the station's, so read-only for a gateway's viewers. -->
+                      <MenuItem
+                        x:Name="InternetToggle"
+                        Header="{l:T Toggles.Internet}"
+                        ToggleType="CheckBox"
+                        IsChecked="{Binding InternetOn, Mode=OneWay}"
+                        IsEnabled="{Binding CanToggle}"
+                        Command="{Binding ToggleCommand}"
+                        CommandParameter="{x:Static c:Toggle.Internet}"
+                      />
+                      <MenuItem
+                        x:Name="AprsIsToggle"
+                        Header="{l:T Toggles.AprsIs}"
+                        ToggleType="CheckBox"
+                        IsChecked="{Binding AprsIsOn, Mode=OneWay}"
+                        IsEnabled="{Binding CanToggleDependents}"
+                        Command="{Binding ToggleCommand}"
+                        CommandParameter="{x:Static c:Toggle.AprsIs}"
+                      />
+                      <MenuItem
+                        x:Name="TilesToggle"
+                        Header="{l:T Toggles.Tiles}"
+                        ToggleType="CheckBox"
+                        IsChecked="{Binding TilesOn, Mode=OneWay}"
+                        IsEnabled="{Binding CanToggleDependents}"
+                        Command="{Binding ToggleCommand}"
+                        CommandParameter="{x:Static c:Toggle.Tiles}"
+                      />
+                    </MenuFlyout>
+                  </Button.Flyout>
+                </Button>
               </StackPanel>
-              <Button.Flyout>
-                <MenuFlyout>
-                  <MenuItem
-                    x:Name="ReconnectItem"
-                    Header="{l:T Status.Reconnect}"
-                    Command="{Binding ReconnectCommand}"
-                  />
-                  <Separator />
-                  <!-- Quick toggles (F1.15): the station's, so read-only for a gateway's viewers. -->
-                  <MenuItem
-                    x:Name="InternetToggle"
-                    Header="{l:T Toggles.Internet}"
-                    ToggleType="CheckBox"
-                    IsChecked="{Binding InternetOn, Mode=OneWay}"
-                    IsEnabled="{Binding CanToggle}"
-                    Command="{Binding ToggleCommand}"
-                    CommandParameter="{x:Static c:Toggle.Internet}"
-                  />
-                  <MenuItem
-                    x:Name="AprsIsToggle"
-                    Header="{l:T Toggles.AprsIs}"
-                    ToggleType="CheckBox"
-                    IsChecked="{Binding AprsIsOn, Mode=OneWay}"
-                    IsEnabled="{Binding CanToggleDependents}"
-                    Command="{Binding ToggleCommand}"
-                    CommandParameter="{x:Static c:Toggle.AprsIs}"
-                  />
-                  <MenuItem
-                    x:Name="TilesToggle"
-                    Header="{l:T Toggles.Tiles}"
-                    ToggleType="CheckBox"
-                    IsChecked="{Binding TilesOn, Mode=OneWay}"
-                    IsEnabled="{Binding CanToggleDependents}"
-                    Command="{Binding ToggleCommand}"
-                    CommandParameter="{x:Static c:Toggle.Tiles}"
-                  />
-                </MenuFlyout>
-              </Button.Flyout>
-            </Button>
+            </Border>
             <!-- A marker per toggle that is off, with its name, never colour alone (F1.15 behavior 4). -->
             <ItemsControl x:Name="ToggleMarkers" ItemsSource="{Binding ToggleMarkers}" VerticalAlignment="Center">
               <ItemsControl.ItemsPanel>
