@@ -23,7 +23,7 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | G06 | Third-party (`}`) payload decoding (delivered) | Packets | 1 | — |
 | G07 | Device identification from the aprs-deviceid list (delivered) | AprsNet.DeviceId | 1 | [APRS.NET#119](https://github.com/APRS-NET/APRS.NET/issues/119) |
 | G08 | Geodesy and Maidenhead helpers (delivered) | Packets | 1 | [APRS.NET#120](https://github.com/APRS-NET/APRS.NET/issues/120) |
-| G09 | Telemetry definitions applied to reports | Packets | 1 | [APRS.NET#153](https://github.com/APRS-NET/APRS.NET/issues/153) |
+| G09 | Telemetry definitions applied to reports (delivered, `0.3.0-alpha.2`: `TelemetryProfile`) | Packets | 1 | [APRS.NET#153](https://github.com/APRS-NET/APRS.NET/issues/153) |
 | G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs (delivered) | Packets | 1 | [APRS.NET#121](https://github.com/APRS-NET/APRS.NET/issues/121) |
 | G01 | `Callsign.Parse` and a packet encoder (partly delivered) | Packets | 2 | — |
 | G02 | Transmit through APRS-IS, and passcode generation (delivered) | AprsIsTcpClient | 2 | — |
@@ -31,7 +31,7 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | G11 | Beacon scheduling algorithms | new: AprsNet.Beaconing | 2 | — |
 | G19 | Query and response handling | Packets + Messaging | 2 | — |
 | G12 | AX.25 UI frame codec (delivered) | new: AprsNet.Ax25 | 3 | — |
-| G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial reopen open) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126) |
+| G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial published in `0.3.0-alpha.2` as `AprsNet.Kiss.Serial`, issue open for hardware testing) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126) |
 | G14 | Text-mode and Kenwood TNC support | new: AprsNet.Tnc | 3 | — |
 | G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | — |
 | G16 | IGate engine | new: AprsNet.IGate | 3 | — |
@@ -39,7 +39,7 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | G18 | Raw weather station data and storm objects | Packets | 4 | — |
 | G21 | APRS-IS server side: client logins, passcode check, filter evaluation (filters delivered; server in source, not on NuGet) | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |
 | G22 | AGWPE TCP transport | new: AprsNet.Agw | 3 | — |
-| G24 | Station track anomaly analysis | Packets (or new AprsNet.Analysis) | 1 | [APRS.NET#154](https://github.com/APRS-NET/APRS.NET/issues/154) |
+| G24 | Station track anomaly analysis (delivered, `0.3.0-alpha.2`: `TrackAnalysis`) | Packets | 1 | [APRS.NET#154](https://github.com/APRS-NET/APRS.NET/issues/154) |
 | G25 | Frequency specification parsing and validation | Packets | 3 | — |
 | G26 | APRS-IS server presets a UI can list (delivered) | AprsIsTcpClient | 0 | — |
 | G27 | Validation errors with stable codes (delivered) | AprsIsTcpClient, Packets | 0 | — |
