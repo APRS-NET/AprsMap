@@ -1928,6 +1928,26 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Packets.Save" xml:space="preserve">
     <value>Save…</value>
   </data>
+  <data name="Packets.Format.Text" xml:space="preserve">
+    <value>Text log (.txt)</value>
+    <comment>Packets › Save menu: a file format.</comment>
+  </data>
+  <data name="Packets.Format.Csv" xml:space="preserve">
+    <value>CSV for spreadsheets (.csv)</value>
+    <comment>Packets › Save menu: a file format.</comment>
+  </data>
+  <data name="Packets.Format.Json" xml:space="preserve">
+    <value>JSON (.json)</value>
+    <comment>Packets › Save menu: a file format, compact.</comment>
+  </data>
+  <data name="Packets.Format.JsonIndented" xml:space="preserve">
+    <value>JSON, indented (.json)</value>
+    <comment>Packets › Save menu: a file format, laid out for reading.</comment>
+  </data>
+  <data name="Packets.Format.Yaml" xml:space="preserve">
+    <value>YAML (.yaml)</value>
+    <comment>Packets › Save menu: a file format.</comment>
+  </data>
   <data name="Packets.SaveTitle" xml:space="preserve">
     <value>Save packets</value>
   </data>

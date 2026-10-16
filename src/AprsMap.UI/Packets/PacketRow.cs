@@ -95,10 +95,6 @@ public sealed partial class PacketRow : ObservableObject
     [ObservableProperty]
     public partial bool IsExpanded { get; set; }
 
-    /// <summary>The line written by Save (F1.8 behavior 10): the time received in UTC, then the raw text.</summary>
-    internal string LogLine =>
-        string.Create(CultureInfo.InvariantCulture, $"{Packet.ReceivedAt.UtcDateTime:yyyy-MM-ddTHH:mm:ss.fffZ} {Raw}");
-
     /// <summary>
     /// The raw text cut around the first issue that gives a position: up to the next space, at most a few characters,
     /// and at least one.

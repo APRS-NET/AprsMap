@@ -218,15 +218,22 @@ public sealed partial class PacketListViewModel : ObservableObject
     public static string CopyText(IEnumerable<PacketRow> rows) =>
         string.Join(Environment.NewLine, rows.OrderBy(r => r.Packet.ReceivedAt).Select(r => r.Raw));
 
-    /// <summary>Every row as a log line, oldest first, for Save (F1.8 behavior 10).</summary>
-    public string SaveText() => string.Concat(Rows.Reverse().Select(r => r.LogLine + Environment.NewLine));
+    /// <summary>Every row shown, oldest first, in <paramref name="exporter"/>'s format, for Save (F1.8 behavior 10).</summary>
+    public string SaveText(Export.PacketExporter exporter)
+    {
+        ArgumentNullException.ThrowIfNull(exporter);
+        return exporter.Export([.. Rows.Reverse().Select(r => r.Packet)], id => _sources?.NameOf(id) ?? id);
+    }
 
-    /// <summary>The name Save suggests: the packets' date and time.</summary>
-    public string SaveName() =>
-        string.Create(
+    /// <summary>The name Save suggests: the packets' date and time, with the format's extension.</summary>
+    public string SaveName(Export.PacketExporter exporter)
+    {
+        ArgumentNullException.ThrowIfNull(exporter);
+        return string.Create(
             System.Globalization.CultureInfo.InvariantCulture,
-            $"packets-{TimeZoneInfo.ConvertTime(_time.GetUtcNow(), _time.LocalTimeZone):yyyyMMdd-HHmmss}.txt"
+            $"packets-{TimeZoneInfo.ConvertTime(_time.GetUtcNow(), _time.LocalTimeZone):yyyyMMdd-HHmmss}.{exporter.Extension}"
         );
+    }
 
     /// <summary>Empties the list (Reset the app).</summary>
     internal void Clear()
