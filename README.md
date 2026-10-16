@@ -3,7 +3,7 @@
 [![CI](https://github.com/APRS-NET/AprsMap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/APRS-NET/AprsMap/actions/workflows/ci.yml)
 [![Packages](https://github.com/APRS-NET/AprsMap/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/APRS-NET/AprsMap/actions/workflows/packages.yml)
 [![Line coverage](https://raw.githubusercontent.com/APRS-NET/AprsMap/badges/badge_linecoverage.svg)](#code-coverage)
-[![AI-DECLARATION: pair](https://img.shields.io/badge/䷼%20AI--DECLARATION-pair-ffedd5?labelColor=ffedd5)](https://ai-declaration.md)
+[![AI-DECLARATION: copilot](https://img.shields.io/badge/䷼%20AI--DECLARATION-copilot-fee2e2?labelColor=fee2e2)](https://ai-declaration.md)
 
 An APRS map client for amateur radio, built on .NET 10 and Avalonia: a native desktop app for Windows, Linux and
 macOS, and a web app served by a Docker gateway, both running the same UI on the same engine. APRS protocol work comes
@@ -142,8 +142,9 @@ the tag through [MinVer](https://github.com/adamralph/minver). The series starts
 
 ## AI assistance
 
-AprsMap is developed with an AI coding assistant (Claude Code) working alongside the maintainer, who understands,
-reviews and commits every change. See [AI-DECLARATION.md](AI-DECLARATION.md).
+AprsMap is developed with an AI coding assistant (Claude Code) as a copilot: the maintainer directs the work, and the
+assistant carries out whole tasks, asking for decisions and permission as it goes. The maintainer reviews and merges
+every change. See [AI-DECLARATION.md](AI-DECLARATION.md).
 
 ## Licence
 
