@@ -17,7 +17,9 @@ public sealed partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
-        AppMenu.Opening += (_, _) => FillAppMenu();
+        // Kept filled, never filled as it opens: on the desktop the menu is a window of its own, created as it opens,
+        // and one emptied and refilled then showed nothing. It follows the layout and the language instead.
+        Localization.Localizer.Instance.LanguageChanged += (_, _) => FillAppMenu();
         // Dock doesn't report splitter drags or floating-window resizes; a released pointer may have done either.
         ShellDock.AddHandler(
             PointerReleasedEvent,
@@ -130,7 +132,23 @@ public sealed partial class MainView : UserControl
     {
         base.OnDataContextChanged(e);
         BindSettingsKey();
+        if (_shell is not null)
+        {
+            _shell.Changed -= OnShellChanged;
+        }
+        _shell = (DataContext as MainViewModel)?.Shell;
+        if (_shell is not null)
+        {
+            _shell.Changed += OnShellChanged;
+        }
+        FillAppMenu();
     }
+
+    private Shell.ShellViewModel? _shell;
+
+    /// <summary>A panel closed or came back: the menu's Show items follow, on the UI thread.</summary>
+    private void OnShellChanged(object? sender, EventArgs e) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(FillAppMenu);
 
     /// <summary>
     /// Ctrl+, opens Settings (Cmd+, on macOS: the platform's command key; F0.6 behavior 1). Bound on the window, so it

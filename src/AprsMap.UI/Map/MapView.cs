@@ -51,6 +51,11 @@ public sealed class MapView : Control, IDisposable
     private IReadOnlyList<StationMark> _drawn = [];
     private StationMark? _me;
     private Point? _pressedAt;
+    private double _wheel;
+    private double _pinch;
+
+    /// <summary>How much pinch makes one zoom step.</summary>
+    private const double PinchStep = 0.25;
     private double _symbolDip = 24;
     private double _labelSize = 12;
     private double _labelScale = 1;
@@ -72,6 +77,7 @@ public sealed class MapView : Control, IDisposable
     {
         ClipToBounds = true;
         Focusable = true;
+        AddHandler(PointerTouchPadGestureMagnifyEvent, OnPinch);
         _map.RefreshGraphicsRequest += (_, _) => Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
         // Tiles arrive after the frame that asked for them: draw again when they do (the browser draws only on demand).
         _map.DataChanged += (_, _) => Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
@@ -699,10 +705,47 @@ public sealed class MapView : Control, IDisposable
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
     {
         base.OnPointerWheelChanged(e);
-        var at = e.GetPosition(this);
-        _map.Navigator.MouseWheelZoom(Math.Sign(e.Delta.Y), new ScreenPosition(at.X, at.Y));
-        QueueRefresh();
         e.Handled = true;
+        // A wheel notch is a delta of 1; a touchpad sends a stream of small fractions, and sideways ones with no
+        // vertical part. Zoom one step per whole notch, adding the fractions up, so a two-finger scroll zooms smoothly
+        // and a sideways one doesn't zoom at all (behavior 5).
+        _wheel += e.Delta.Y;
+        if (!(Math.Abs(_wheel) >= 1))
+        {
+            return; // a fraction so far (or not a number)
+        }
+        // At most one step per event: a burst of momentum, or one huge delta, mustn't queue a run of zooms.
+        var zoomIn = _wheel > 0;
+        _wheel = 0;
+        ZoomAt(e.GetPosition(this), zoomIn);
+    }
+
+    /// <summary>A touchpad pinch zooms about the fingers (behavior 5), one step per quarter of scale.</summary>
+    private void OnPinch(object? sender, PointerDeltaEventArgs e)
+    {
+        e.Handled = true;
+        _pinch += e.Delta.X;
+        if (Math.Abs(_pinch) < PinchStep)
+        {
+            return;
+        }
+        ZoomAt(e.GetPosition(this), _pinch > 0);
+        _pinch = 0;
+    }
+
+    /// <summary>One zoom step in or out, keeping the place under <paramref name="at"/> where it is.</summary>
+    private void ZoomAt(Point at, bool zoomIn)
+    {
+        var position = new ScreenPosition(at.X, at.Y);
+        if (zoomIn)
+        {
+            _map.Navigator.ZoomIn(position);
+        }
+        else
+        {
+            _map.Navigator.ZoomOut(position);
+        }
+        QueueRefresh();
     }
 
     /// <inheritdoc />
