@@ -41,6 +41,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly List<(Channel<PacketView> Channel, PacketFilter? Filter)> _watchers = [];
     private readonly StationStore _stations;
     private readonly DuplicateFilter _duplicates;
+    private readonly DashboardCounters _dashboard;
 
     // The map views reported for the filter (F1.2), by viewer, most recently moved last.
     private readonly List<(string Viewer, MapViewReport View)> _views = [];
@@ -77,6 +78,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         _geocoder = geocoder ?? NoGeocoder.Instance;
         _time = time;
         _duplicates = new DuplicateFilter(timeProvider: time);
+        _dashboard = new DashboardCounters(time.GetUtcNow());
         _logger = logger;
     }
 
@@ -653,6 +655,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             lock (_gate)
             {
                 var count = _recent.Count;
+                _dashboard.Clear(_time.GetUtcNow());
                 _recent.Clear();
                 _listed.Clear();
                 _listedOrder.Clear();
@@ -660,6 +663,21 @@ public sealed partial class Engine : IEngineService, IDisposable
                 return count;
             }
         }
+    }
+
+    /// <inheritdoc />
+    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default)
+    {
+        var dashboard = _dashboard.Read(range, _time.GetUtcNow());
+        // The counters cover the range; the rest is read from the stations held (F1.22 behaviors 4.10, 4.11, 10).
+        return Task.FromResult(
+            dashboard with
+            {
+                FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5),
+                Weather = _stations.WeatherSince(dashboard.Start),
+                Tables = _stations.Statistics(),
+            }
+        );
     }
 
     /// <inheritdoc />
@@ -815,6 +833,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             // Text that wasn't read as Latin-1, from a source other than the APRS.NET client. Drop the line, not the
             // connection.
             EngineTelemetry.LinesRejected.Add(1);
+            _dashboard.RecordRejected(_time.GetUtcNow());
             LogLineRejected(ex);
             return;
         }
@@ -839,6 +858,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             AddSeenOn(check.Identity, sourceId);
             _stations.SeenOn(packet, sourceId);
+            _dashboard.RecordSource(sourceId, now); // still delivering, though another source was first
             return;
         }
         var duplicate = check.IsDuplicate;
@@ -848,6 +868,8 @@ public sealed partial class Engine : IEngineService, IDisposable
             _stations.Apply(packet, now, sourceId); // F1.3 behavior 11: a duplicate is listed, not applied again
         }
         EngineTelemetry.PacketsReceived.Add(1, new KeyValuePair<string, object?>("aprs.packet.type", view.Type));
+        var (arrival, relays) = StationFacts.Route(view.Path);
+        _dashboard.Record(view, arrival, relays, now);
         lock (_gate)
         {
             _packets++;

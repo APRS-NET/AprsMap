@@ -1,0 +1,371 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The dashboard tab (F1.22): the range, then tiles of numbers, sparklines and short lists that wrap to the width.
+     Every number is written out; sparklines are extra. Its DataContext is the dashboard view model. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:d="using:AprsMap.UI.Statistics"
+  xmlns:s="using:AprsMap.UI.Stations"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Statistics.DashboardPanel"
+  x:DataType="d:DashboardViewModel"
+>
+  <UserControl.Styles>
+    <Style Selector="Border.tile">
+      <Setter Property="Width" Value="{DynamicResource Size.Tile}" />
+      <Setter Property="Margin" Value="0,0,12,12" />
+      <Setter Property="Padding" Value="12" />
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource Thickness.Border}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource Radius.Panel}" />
+    </Style>
+    <Style Selector="TextBlock.title">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+      <Setter Property="FontSize" Value="{DynamicResource Text.Small}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.number">
+      <Setter Property="FontSize" Value="{DynamicResource Text.Display}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.detail">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <!-- A quiet source (behavior 4.7): said in words, and in the warning colour. -->
+    <Style Selector="TextBlock.detail.quiet">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
+    <Style Selector="s|Sparkline">
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Margin" Value="0,8,0,4" />
+      <Setter Property="FromZero" Value="True" />
+      <Setter Property="Stroke" Value="{DynamicResource Brush.Accent}" />
+    </Style>
+    <Style Selector="ProgressBar.share">
+      <Setter Property="Minimum" Value="0" />
+      <Setter Property="Maximum" Value="1" />
+      <Setter Property="MinHeight" Value="4" />
+      <Setter Property="Height" Value="4" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
+
+  <UserControl.DataTemplates>
+    <!-- A list row: the name (a link to the station where it is one), its value, and a bar. -->
+    <DataTemplate DataType="d:CountRow">
+      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Margin="0,2">
+        <HyperlinkButton
+          Content="{Binding Name}"
+          Command="{Binding Open}"
+          IsVisible="{Binding CanOpen}"
+          Padding="0"
+          Foreground="{DynamicResource Brush.Text}"
+        />
+        <TextBlock Text="{Binding Name}" IsVisible="{Binding !CanOpen}" TextTrimming="CharacterEllipsis" />
+        <TextBlock
+          Grid.Column="1"
+          Text="{Binding Value}"
+          Margin="8,0,0,0"
+          Foreground="{DynamicResource Brush.TextMuted}"
+        />
+        <ProgressBar
+          Grid.Row="1"
+          Grid.ColumnSpan="2"
+          Classes="share"
+          Value="{Binding Fraction}"
+          IsVisible="{Binding Fraction}"
+          AutomationProperties.AccessibilityView="Raw"
+        />
+      </Grid>
+    </DataTemplate>
+    <DataTemplate DataType="d:SourceRow">
+      <StackPanel Margin="0,2">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+            <Run Text="{Binding Name}" FontWeight="SemiBold" />
+            <Run Text=" · " />
+            <Run Text="{Binding State}" />
+          </TextBlock>
+          <!-- The source on or off (F1.15), the same switch as the connection pill's. -->
+          <ToggleSwitch
+            Grid.Column="1"
+            Classes="compact"
+            IsVisible="{Binding HasSwitch}"
+            IsChecked="{Binding Switch.IsOn}"
+            IsEnabled="{Binding Switch.CanChange}"
+            OnContent="{x:Null}"
+            OffContent="{x:Null}"
+            Margin="8,0,0,0"
+            ToolTip.Tip="{l:T Toggles.Switch.AprsIs}"
+            AutomationProperties.Name="{l:T Toggles.Switch.AprsIs}"
+          />
+        </Grid>
+        <TextBlock
+          Text="{Binding Last}"
+          Classes="detail"
+          Classes.quiet="{Binding IsQuiet}"
+          IsVisible="{Binding Last, Converter={x:Static ObjectConverters.IsNotNull}}"
+        />
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <DockPanel Background="{DynamicResource Brush.Ground}">
+    <!-- The range and when the numbers were taken (behaviors 2, 3). -->
+    <WrapPanel DockPanel.Dock="Top" Margin="12,12,12,4" Orientation="Horizontal">
+      <TextBlock Text="{l:T Dashboard.Range}" VerticalAlignment="Center" Margin="0,0,8,0" />
+      <ItemsControl ItemsSource="{Binding Ranges}" Margin="0,0,16,0">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="4" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="d:DashboardViewModel+RangeOption">
+            <RadioButton GroupName="DashboardRange" Content="{Binding Label}" IsChecked="{Binding IsSelected}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock x:Name="AsOf" Text="{Binding AsOfText}" Foreground="{DynamicResource Brush.TextMuted}" />
+        <TextBlock
+          Text="{Binding HistoryText}"
+          Classes="detail"
+          IsVisible="{Binding HistoryText, Converter={x:Static ObjectConverters.IsNotNull}}"
+        />
+      </StackPanel>
+    </WrapPanel>
+    <TextBlock
+      DockPanel.Dock="Top"
+      x:Name="WaitingNote"
+      Text="{l:T Dashboard.Waiting}"
+      IsVisible="{Binding IsWaiting}"
+      Classes="detail"
+      Margin="12,4"
+    />
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+      <WrapPanel Margin="12,8,0,0" Orientation="Horizontal">
+        <!-- Stations heard (behavior 4.1). -->
+        <Border Classes="tile" AutomationProperties.Name="{Binding Stations.Spoken}">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{Binding Stations.Title}" />
+            <TextBlock Classes="number" Text="{Binding Stations.Number}" />
+            <TextBlock Classes="detail" Text="{Binding Stations.Detail}" />
+            <s:Sparkline Values="{Binding Stations.Series}" />
+          </StackPanel>
+        </Border>
+
+        <!-- New stations (behavior 4.2), with the newest. -->
+        <Border Classes="tile" AutomationProperties.Name="{Binding NewStations.Spoken}">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{Binding NewStations.Title}" />
+            <TextBlock Classes="number" Text="{Binding NewStations.Number}" />
+            <s:Sparkline Values="{Binding NewStations.Series}" />
+            <TextBlock Classes="detail" Text="{l:T Dashboard.NewStations.Help}" />
+            <ItemsControl ItemsSource="{Binding Newest}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Packets received (behavior 4.3), by source when there are several. -->
+        <Border Classes="tile" AutomationProperties.Name="{Binding Packets.Spoken}">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{Binding Packets.Title}" />
+            <TextBlock Classes="number" Text="{Binding Packets.Number}" />
+            <TextBlock Classes="detail" Text="{Binding Packets.Detail}" />
+            <s:Sparkline Values="{Binding Packets.Series}" />
+            <ItemsControl ItemsSource="{Binding BySource}" />
+          </StackPanel>
+        </Border>
+
+        <!-- How packets arrive (behavior 4.4). -->
+        <Border Classes="tile" AutomationProperties.Name="{Binding Arrivals.Spoken}">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{Binding Arrivals.Title}" />
+            <TextBlock Classes="number" Text="{Binding Arrivals.Number}" />
+            <TextBlock Classes="detail" Text="{Binding Arrivals.Detail}" />
+            <s:Sparkline Values="{Binding Arrivals.Series}" />
+            <ItemsControl ItemsSource="{Binding ArrivalRows}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Packet types (behavior 4.5). -->
+        <Border Classes="tile">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{l:T Dashboard.Kinds}" />
+            <ItemsControl ItemsSource="{Binding Kinds}" Margin="0,4,0,0" />
+          </StackPanel>
+        </Border>
+
+        <!-- Problems (behavior 4.6). -->
+        <Border Classes="tile" AutomationProperties.Name="{Binding Problems.Spoken}">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{Binding Problems.Title}" />
+            <TextBlock Classes="number" Text="{Binding Problems.Number}" />
+            <TextBlock Classes="detail" Text="{l:T Dashboard.Problems.Help}" />
+            <s:Sparkline Values="{Binding Problems.Series}" />
+            <Button
+              x:Name="ShowProblems"
+              Content="{l:T Dashboard.Problems.Show}"
+              Command="{Binding ShowProblemsCommand}"
+            />
+          </StackPanel>
+        </Border>
+
+        <!-- Connection (behavior 4.7). -->
+        <Border Classes="tile">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{l:T Dashboard.Connection}" />
+            <ItemsControl ItemsSource="{Binding Connections}" Margin="0,4,0,0" />
+            <TextBlock Classes="detail" Text="{Binding ReconnectsText}" Margin="0,4,0,0" />
+          </StackPanel>
+        </Border>
+
+        <!-- Busiest stations (behavior 4.8). -->
+        <Border Classes="tile">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{l:T Dashboard.BusiestStations}" />
+            <ItemsControl ItemsSource="{Binding BusiestStations}" Margin="0,4,0,0" />
+          </StackPanel>
+        </Border>
+
+        <!-- Busiest digipeaters and IGates (behavior 4.9). -->
+        <Border Classes="tile">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{l:T Dashboard.BusiestRelays}" />
+            <ItemsControl ItemsSource="{Binding BusiestRelays}" Margin="0,4,0,0" />
+          </StackPanel>
+        </Border>
+
+        <!-- Farthest heard directly (behavior 4.10). -->
+        <Border Classes="tile">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{l:T Dashboard.Farthest}" />
+            <ItemsControl ItemsSource="{Binding FarthestDirect}" Margin="0,4,0,0" />
+          </StackPanel>
+        </Border>
+
+        <!-- Weather (behavior 4.11). -->
+        <Border Classes="tile">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{l:T Dashboard.WeatherTile}" />
+            <TextBlock Classes="detail" Text="{Binding WeatherText}" Margin="0,4,0,4" />
+            <ItemsControl ItemsSource="{Binding WeatherExtremes}" />
+          </StackPanel>
+        </Border>
+
+        <!-- What's on the air (behaviors 10–14): the tables over the stations held now. -->
+        <StackPanel Width="{Binding $parent[WrapPanel].Bounds.Width}" Margin="0,8,12,8">
+          <TextBlock Text="{l:T Dashboard.Tables}" FontSize="{DynamicResource Text.Title}" FontWeight="SemiBold" />
+          <TextBlock Classes="detail" Text="{Binding TablesText}" />
+        </StackPanel>
+        <ItemsControl ItemsSource="{Binding Tables}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="d:StatTable">
+              <Border Classes="tile">
+                <StackPanel>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                      <ToggleButton
+                        Content="{l:T Dashboard.Table.ByCount}"
+                        IsChecked="{Binding !ByName}"
+                        Command="{Binding SortByCountCommand}"
+                        Padding="6,2"
+                      />
+                      <ToggleButton
+                        Content="{l:T Dashboard.Table.Name}"
+                        IsChecked="{Binding ByName}"
+                        Command="{Binding SortByNameCommand}"
+                        Padding="6,2"
+                      />
+                      <Button Classes="copy-table" Content="{l:T Dashboard.Table.Copy}" Padding="6,2" />
+                    </StackPanel>
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding Rows}" Margin="0,4,0,0">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="d:StatRow">
+                        <Panel>
+                          <!-- The whole row applies its View filter (behavior 12); read as one sentence. -->
+                          <Button
+                            Command="{Binding Apply}"
+                            IsVisible="{Binding CanApply}"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Stretch"
+                            Background="{x:Null}"
+                            BorderThickness="0"
+                            Padding="2"
+                            AutomationProperties.Name="{Binding Spoken}"
+                          >
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                              <TextBlock TextTrimming="CharacterEllipsis">
+                                <Run Text="{Binding Name}" />
+                                <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
+                              </TextBlock>
+                              <TextBlock
+                                Grid.Column="1"
+                                Margin="8,0,0,0"
+                                Foreground="{DynamicResource Brush.TextMuted}"
+                              >
+                                <Run Text="{Binding CountText}" />
+                                <Run Text=" · " />
+                                <Run Text="{Binding ShareText}" />
+                              </TextBlock>
+                              <ProgressBar
+                                Grid.Row="1"
+                                Grid.ColumnSpan="2"
+                                Classes="share"
+                                Value="{Binding Fraction}"
+                                AutomationProperties.AccessibilityView="Raw"
+                              />
+                            </Grid>
+                          </Button>
+                          <!-- A row no View filter fits (an unknown device): the same line, not a button. -->
+                          <Border
+                            IsVisible="{Binding !CanApply}"
+                            Padding="2"
+                            AutomationProperties.Name="{Binding Spoken}"
+                          >
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                              <TextBlock TextTrimming="CharacterEllipsis">
+                                <Run Text="{Binding Name}" />
+                                <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
+                              </TextBlock>
+                              <TextBlock
+                                Grid.Column="1"
+                                Margin="8,0,0,0"
+                                Foreground="{DynamicResource Brush.TextMuted}"
+                              >
+                                <Run Text="{Binding CountText}" />
+                                <Run Text=" · " />
+                                <Run Text="{Binding ShareText}" />
+                              </TextBlock>
+                              <ProgressBar
+                                Grid.Row="1"
+                                Grid.ColumnSpan="2"
+                                Classes="share"
+                                Value="{Binding Fraction}"
+                                AutomationProperties.AccessibilityView="Raw"
+                              />
+                            </Grid>
+                          </Border>
+                        </Panel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </WrapPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

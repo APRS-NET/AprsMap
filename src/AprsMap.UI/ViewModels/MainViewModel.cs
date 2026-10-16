@@ -58,6 +58,7 @@ public sealed partial class MainViewModel : ObservableObject
         _text = text ?? Localizer.Instance;
         SourceNames = new SourceNames(() => _settings);
         PacketList = new PacketListViewModel(engine, time, _text, SourceNames);
+        AprsIsSwitch = new SourceSwitch(SwitchAprsIsAsync);
         Details = new Stations.StationDetailsViewModel(
             engine,
             time,
@@ -84,6 +85,26 @@ public sealed partial class MainViewModel : ObservableObject
         ViewFilter.Changed += (_, _) => OnViewFilterChanged();
         StationList.Filter = () => ViewFilter.Current;
         Shell = new ShellViewModel(this, _text, managedWindows);
+        Dashboard = new Statistics.DashboardViewModel(
+            engine,
+            time,
+            _text,
+            () => _status,
+            SourceNames,
+            AprsIsSwitch,
+            name => SelectedStation = name,
+            () =>
+            {
+                PacketList.IssuesOnly = true;
+                ShowPanel(PanelKinds.Packets);
+            },
+            () => _settings?.Units ?? UnitSettings.Metric,
+            filter =>
+            {
+                ViewFilter.Use(filter); // a table row: its View filter, on the map (F1.22 behavior 12)
+                Shell.ShowMap();
+            }
+        );
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
     }
@@ -187,6 +208,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The Packets panel (F1.8).</summary>
     public PacketListViewModel PacketList { get; }
+
+    /// <summary>The dashboard tab (F1.22).</summary>
+    public Statistics.DashboardViewModel Dashboard { get; }
 
     /// <summary>The packet list's rows, newest first.</summary>
     public PacketRows Packets => PacketList.Rows;
@@ -807,6 +831,28 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial string? ToggleAnnouncement { get; private set; }
 
+    /// <summary>
+    /// The APRS-IS on/off switch on the connection pill and the dashboard's Connection tile: the same toggle as the
+    /// connection menu's (F1.15), shared so every switch moves together.
+    /// </summary>
+    public SourceSwitch AprsIsSwitch { get; }
+
+    /// <summary>A switch was flipped to <paramref name="on"/>; whatever the engine says, the switch shows after.</summary>
+    private async Task SwitchAprsIsAsync(bool on)
+    {
+        if (on != AprsIsOn)
+        {
+            await ToggleAsync(Toggle.AprsIs);
+        }
+        AprsIsSwitch.Show(AprsIsOn, CanToggleDependents); // springs back if the engine refused
+    }
+
+    partial void OnAprsIsOnChanged(bool value) => AprsIsSwitch.Show(value, CanToggleDependents);
+
+    partial void OnInternetOnChanged(bool value) => AprsIsSwitch.Show(AprsIsOn, CanToggleDependents);
+
+    partial void OnCanToggleChanged(bool value) => AprsIsSwitch.Show(AprsIsOn, CanToggleDependents);
+
     /// <summary>Turns <paramref name="toggle"/> the other way (F1.15).</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private async Task ToggleAsync(Toggle toggle)
@@ -827,6 +873,11 @@ public sealed partial class MainViewModel : ObservableObject
                 var t => t with { Tiles = on },
             };
             ShowToggles(toggles);
+            if (_status is not null)
+            {
+                _status = _status with { Toggles = toggles };
+                ShowConnection(); // the pill says "APRS-IS off" now, not at the next status poll
+            }
             ToggleAnnouncement = _text.Format(
                 "Toggles.Announce",
                 new Dictionary<string, object?> { ["name"] = _text[$"Toggles.{toggle}"], ["on"] = on ? "yes" : "no" }
@@ -850,10 +901,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             markers.Add(_text["Toggles.Marker.Internet"]);
         }
-        if (!toggles.AprsIs)
-        {
-            markers.Add(_text["Toggles.Marker.AprsIs"]);
-        }
+        // APRS-IS off shows in its own pill ("APRS-IS off", with its switch), not as another marker.
         if (!toggles.Tiles)
         {
             markers.Add(_text["Toggles.Marker.Tiles"]);

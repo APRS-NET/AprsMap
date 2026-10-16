@@ -186,8 +186,15 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>The toggles <see cref="SetToggleAsync"/> set, in order.</summary>
     public List<(Toggle Toggle, bool Enabled)> Toggled { get; } = [];
 
+    /// <summary>When set, <see cref="SetToggleAsync"/> throws it (a gateway viewer without sign-in).</summary>
+    public Exception? ToggleFailure { get; set; }
+
     public Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default)
     {
+        if (ToggleFailure is { } failure)
+        {
+            return Task.FromException(failure);
+        }
         Toggled.Add((toggle, enabled));
         var toggles = Settings.EffectiveToggles;
         Settings = Settings with
@@ -222,6 +229,46 @@ internal sealed class FakeEngine : IEngineService
         }
         Cleared.Add(scope);
         return Task.FromResult(1);
+    }
+
+    /// <summary>What <see cref="GetDashboardAsync"/> answers; an empty hour by default.</summary>
+    public Dashboard? Dashboard { get; set; }
+
+    /// <summary>The ranges <see cref="GetDashboardAsync"/> was asked for, in order.</summary>
+    public List<DashboardRange> DashboardRanges { get; } = [];
+
+    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default)
+    {
+        DashboardRanges.Add(range);
+        return Task.FromResult(Dashboard ?? EmptyDashboard(range));
+    }
+
+    /// <summary>A dashboard with nothing counted: 60 zero points a minute from the epoch.</summary>
+    public static Dashboard EmptyDashboard(DashboardRange range = DashboardRange.Hour)
+    {
+        int[] zeros = [.. Enumerable.Repeat(0, 60)];
+        return new Dashboard(
+            DateTimeOffset.UnixEpoch.AddHours(1),
+            range,
+            DateTimeOffset.UnixEpoch,
+            TimeSpan.FromMinutes(1),
+            DateTimeOffset.UnixEpoch,
+            zeros,
+            0,
+            [],
+            zeros,
+            0,
+            zeros,
+            0,
+            [],
+            [],
+            [],
+            zeros,
+            0,
+            [],
+            [],
+            []
+        );
     }
 
     /// <summary>What <see cref="GetNetworkLinksAsync"/> answers.</summary>

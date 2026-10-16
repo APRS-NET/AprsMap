@@ -11,6 +11,10 @@ internal static class ConnectionText
     public static string Summary(Localizer text, EngineStatus status, DateTimeOffset now)
     {
         var server = status.Server ?? string.Empty;
+        if (status.Toggles is { AprsIs: false } or { Internet: false })
+        {
+            return text["Status.AprsIsOff"]; // switched off (F1.15): the pill says so, no separate marker
+        }
         return status.Connection switch
         {
             ConnectionState.Connected => text.Format(

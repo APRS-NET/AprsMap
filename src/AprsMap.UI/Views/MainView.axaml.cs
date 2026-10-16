@@ -61,13 +61,19 @@ public sealed partial class MainView : UserControl
     {
         var template = new PanelTemplate();
         var text = Localization.Localizer.Instance;
-        string[] kinds = [PanelKinds.Map, .. PanelKinds.All.Select(p => p.Kind)];
+        string[] kinds = [PanelKinds.Map, PanelKinds.Dashboard, .. PanelKinds.All.Select(p => p.Kind)];
         foreach (var kind in kinds)
         {
             object panel;
             if (kind == PanelKinds.Map)
             {
                 panel = ShellFactory.CreateMap();
+            }
+            else if (kind == PanelKinds.Dashboard)
+            {
+                var dashboard = ShellFactory.CreateDashboard();
+                dashboard.Context = DataContext;
+                panel = dashboard;
             }
             else
             {

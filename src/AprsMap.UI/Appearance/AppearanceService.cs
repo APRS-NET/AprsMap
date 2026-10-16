@@ -167,6 +167,8 @@ public sealed class AppearanceService
         yield return ("Text.Body", 14 * s.TextScale);
         yield return ("Text.Small", 12.5 * s.TextScale);
         yield return ("Text.Title", 17 * s.TextScale);
+        yield return ("Text.Display", 26 * s.TextScale);
+        yield return ("Size.Tile", 300 * s.TextScale);
         // Map symbols and their labels scale together with the map symbol size (F1.4 behavior 16).
         yield return ("Map.SymbolSize", Math.Round(24 * s.MapSymbolScale));
         yield return ("Map.LabelSize", 12 * s.MapSymbolScale);

@@ -520,6 +520,101 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         }
     }
 
+    /// <summary>The statistics tables over the stations held now (F1.22 behavior 10).</summary>
+    public DashboardTables Statistics()
+    {
+        lock (_gate)
+        {
+            var entries = _entries.Values.ToList();
+            static List<DashboardCount> Counts(IEnumerable<string> keys) =>
+                [
+                    .. keys.GroupBy(k => k, StringComparer.Ordinal)
+                        .Select(g => new DashboardCount(g.Key, g.Count()))
+                        .OrderByDescending(c => c.Count)
+                        .ThenBy(c => c.Key, StringComparer.Ordinal),
+                ];
+            return new DashboardTables(
+                entries.Count,
+                [
+                    .. entries
+                        .Where(e => e.Kind == StationKind.Station)
+                        .GroupBy(e => (e.Device?.Class, e.Device?.Vendor, e.Device?.Model))
+                        .Select(g => new DashboardPlatform(g.Key.Class, g.Key.Vendor, g.Key.Model, g.Count()))
+                        .OrderByDescending(p => p.Count)
+                        .ThenBy(p => p.Vendor, StringComparer.OrdinalIgnoreCase)
+                        .ThenBy(p => p.Model, StringComparer.OrdinalIgnoreCase),
+                ],
+                [
+                    .. entries
+                        .Where(e => e.Symbol is { Length: 2 })
+                        .GroupBy(e => e.Symbol!, StringComparer.Ordinal)
+                        .Select(g =>
+                        {
+                            var symbol = AprsSymbolCatalog.Get(new AprsSymbol(g.Key[0], g.Key[1]));
+                            return new DashboardSymbol(g.Key, symbol.Name, symbol.Category.ToString(), g.Count());
+                        })
+                        .OrderByDescending(s => s.Count)
+                        .ThenBy(s => s.Name, StringComparer.OrdinalIgnoreCase),
+                ],
+                Counts(entries.Select(e => e.Kind.ToString())),
+                Counts(entries.Where(e => e.Kind == StationKind.Station).Select(e => e.Arrival.ToString()))
+            );
+        }
+    }
+
+    /// <summary>
+    /// The weather stations heard since <paramref name="since"/> and the extremes of their latest readings (F1.22
+    /// behavior 4.11).
+    /// </summary>
+    public DashboardWeather WeatherSince(DateTimeOffset since)
+    {
+        lock (_gate)
+        {
+            var reporting = _entries.Values.Where(e => e.LastHeard >= since && e.Weather is not null).ToList();
+            var temperatures = reporting
+                .Where(e => e.Weather!.Temperature is not null)
+                .Select(e => new DashboardReading(e.Name, e.Weather!.Temperature!.Value))
+                .ToList();
+            var gusts = reporting
+                .Where(e => e.Weather!.WindGust is not null)
+                .Select(e => new DashboardReading(e.Name, e.Weather!.WindGust!.Value))
+                .ToList();
+            return new DashboardWeather(
+                reporting.Count,
+                temperatures.MinBy(t => t.Value),
+                temperatures.MaxBy(t => t.Value),
+                gusts.MaxBy(g => g.Value)
+            );
+        }
+    }
+
+    /// <summary>
+    /// The longest direct RF hops among stations heard since <paramref name="since"/> whose IGate's position is known,
+    /// farthest first (F1.22 behavior 4.10).
+    /// </summary>
+    public IReadOnlyList<DashboardHop> FarthestDirect(DateTimeOffset since, int count)
+    {
+        List<(string Name, DateTimeOffset At)> direct;
+        lock (_gate)
+        {
+            direct =
+            [
+                .. _entries
+                    .Values.Where(e => e.LastHeard >= since && e.Arrival == ArrivalKind.Direct && e.HasPosition)
+                    .Select(e => (e.Name, e.LastHeard)),
+            ];
+        }
+        return
+        [
+            .. direct
+                .Select(d => (d.Name, d.At, Route: Route(new RouteQuery(d.Name))))
+                .Where(d => d.Route is { Kind: ArrivalKind.Direct, Hops: [{ IsGateway: true, DistanceKm: not null }] })
+                .Select(d => new DashboardHop(d.Name, d.Route!.Hops[0].Name, d.Route.Hops[0].DistanceKm!.Value, d.At))
+                .OrderByDescending(h => h.DistanceKm)
+                .Take(count),
+        ];
+    }
+
     public void Unsubscribe(StationWatcher watcher)
     {
         lock (_gate)
@@ -603,7 +698,9 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         if (packet.Destination?.Value is { } destination && destination != entry.Destination)
         {
             entry.Destination = destination; // the device changes with the destination (or Mic-E's), not every packet
-            entry.DeviceClass = StationFacts.Device(packet)?.Class;
+            var device = StationFacts.Device(packet);
+            entry.DeviceClass = device?.Class;
+            entry.Device = device; // for the dashboard's platforms (F1.22 behavior 10)
         }
         entry.SeenOn.Clear();
         return entry;
@@ -988,6 +1085,9 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
 
         /// <summary>Its device's class, from the aprs-deviceid list (F1.9).</summary>
         public string? DeviceClass { get; set; }
+
+        /// <summary>The device's vendor, model and class from the destination or Mic-E code (G07); null when unknown.</summary>
+        public StationDevice? Device { get; set; }
 
         /// <summary><c>!word!</c> and <c>#word</c> tags in its comment and status, as written (F1.9 behavior 1.8).</summary>
         public HashSet<string> Tags { get; } = new(StringComparer.OrdinalIgnoreCase);
