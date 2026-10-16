@@ -156,6 +156,16 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync<Dashboard>(EngineHub.GetDashboard, range, cancellationToken));
 
     /// <inheritdoc />
+    public Task SetSourceEnabledAsync(string sourceId, bool enabled, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync(EngineHub.SetSourceEnabled, sourceId, enabled, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task ReconnectSourceAsync(string sourceId, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ReconnectSource, sourceId, cancellationToken));
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() =>
             _connection.InvokeAsync<IReadOnlyList<NetworkLink>>(EngineHub.GetNetworkLinks, cancellationToken)

@@ -43,6 +43,9 @@ public sealed partial class Engine : IEngineService, IDisposable
     private readonly DuplicateFilter _duplicates;
     private readonly DashboardCounters _dashboard;
 
+    // Each open source's current attempt, so Reconnect now can end it (F3.1 behavior 5). Only touched under the lock.
+    private readonly Dictionary<string, CancellationTokenSource> _sourceAttempts = new(StringComparer.Ordinal);
+
     // The map views reported for the filter (F1.2), by viewer, most recently moved last.
     private readonly List<(string Viewer, MapViewReport View)> _views = [];
     private string? _filter;
@@ -421,7 +424,11 @@ public sealed partial class Engine : IEngineService, IDisposable
                 var profile = settings.GetActiveProfile();
                 var wanted = profile is null
                     ? []
-                    : settings.SourceList.Where(s => s.Kind != SourceKind.AprsIs && profile.Uses(s)).ToList();
+                    : settings
+                        .SourceList.Where(s =>
+                            s.Kind != SourceKind.AprsIs && profile.Uses(s) && settings.EffectiveToggles.IsSourceOn(s.Id) // switched off: stopped (F3.1 behavior 6)
+                        )
+                        .ToList();
                 foreach (var (id, run) in running.ToList())
                 {
                     if (!wanted.Contains(run.Source))
@@ -456,10 +463,14 @@ public sealed partial class Engine : IEngineService, IDisposable
         lock (_gate)
         {
             _sourceLinks.Remove(sourceId);
+            _sourceAttempts.Remove(sourceId);
         }
     }
 
-    /// <summary>One non-APRS-IS source, reconnecting with backoff until stopped; a kind not built yet stops at once.</summary>
+    /// <summary>
+    /// One non-APRS-IS source, reconnecting with backoff until stopped; a kind not built yet stops at once. Each attempt
+    /// has its own token, so Reconnect now (F3.1 behavior 5) can end the connection or the wait and start again at once.
+    /// </summary>
     private async Task RunSourceAsync(
         StationProfile profile,
         SourceSettings source,
@@ -469,6 +480,12 @@ public sealed partial class Engine : IEngineService, IDisposable
         var delay = _options.InitialRetryDelay;
         while (!cancellationToken.IsCancellationRequested)
         {
+            using var attempt = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            lock (_gate)
+            {
+                _sourceAttempts[source.Id] = attempt;
+            }
+            var kicked = false;
             IPacketSource connection;
             try
             {
@@ -505,12 +522,12 @@ public sealed partial class Engine : IEngineService, IDisposable
                                         Error: e.Error
                                     )
                                 ),
-                            cancellationToken
+                            attempt.Token
                         )
                         .ConfigureAwait(false);
                     SetSourceLink(source, new Link(ConnectionState.Connected, opened.Server, opened.Verified));
                     delay = _options.InitialRetryDelay;
-                    await foreach (var packet in connection.ReadPacketsAsync(cancellationToken).ConfigureAwait(false))
+                    await foreach (var packet in connection.ReadPacketsAsync(attempt.Token).ConfigureAwait(false))
                     {
                         Accept(packet, source.Id);
                     }
@@ -518,6 +535,10 @@ public sealed partial class Engine : IEngineService, IDisposable
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
                     return;
+                }
+                catch (OperationCanceledException) when (attempt.IsCancellationRequested)
+                {
+                    kicked = true; // Reconnect now
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
@@ -534,9 +555,19 @@ public sealed partial class Engine : IEngineService, IDisposable
                     LogSourceFailed(ex, source.Name, delay);
                 }
             }
+            if (kicked)
+            {
+                delay = _options.InitialRetryDelay;
+                continue;
+            }
             try
             {
-                await Task.Delay(delay, _time, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(delay, _time, attempt.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                delay = _options.InitialRetryDelay; // Reconnect now, during the wait
+                continue;
             }
             catch (OperationCanceledException)
             {
@@ -544,6 +575,53 @@ public sealed partial class Engine : IEngineService, IDisposable
             }
             delay = TimeSpan.FromTicks(Math.Min(delay.Ticks * 2, _options.MaxRetryDelay.Ticks));
         }
+    }
+
+    /// <inheritdoc />
+    public async Task SetSourceEnabledAsync(
+        string sourceId,
+        bool enabled,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(sourceId);
+        var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+        if (
+            !settings.SourceList.Any(s => s.Id == sourceId)
+            || settings.EffectiveToggles.IsSourceOn(sourceId) == enabled
+        )
+        {
+            return;
+        }
+        // Saved with the toggles; the runner of other sources stops or opens it as the settings change.
+        await SaveSettingsAsync(
+                settings with
+                {
+                    Toggles = settings.EffectiveToggles.WithSource(sourceId, enabled),
+                },
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+    }
+
+    /// <inheritdoc />
+    public Task ReconnectSourceAsync(string sourceId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(sourceId);
+        CancellationTokenSource? attempt;
+        lock (_gate)
+        {
+            _sourceAttempts.TryGetValue(sourceId, out attempt);
+        }
+        try
+        {
+            attempt?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // The attempt ended as it was asked to: the next one is on its way.
+        }
+        return Task.CompletedTask;
     }
 
     private void SetSourceLink(SourceSettings source, Link link)
@@ -578,9 +656,25 @@ public sealed partial class Engine : IEngineService, IDisposable
                 v.Source.Kind,
                 v.Link.State,
                 v.Link.Server,
-                v.Link.Error
+                v.Link.Error,
+                RetryAt: v.Link.RetryAt
             ))
         );
+        // A source switched off stays listed, so its pill can switch it on again (F3.1 behavior 6).
+        if (_settings?.GetActiveProfile() is { } profile)
+        {
+            var toggles = _settings.EffectiveToggles;
+            list.AddRange(
+                _settings
+                    .SourceList.Where(s =>
+                        s.Kind != SourceKind.AprsIs
+                        && profile.Uses(s)
+                        && !toggles.IsSourceOn(s.Id)
+                        && !_sourceLinks.ContainsKey(s.Id)
+                    )
+                    .Select(s => new SourceStatus(s.Id, s.Name, s.Kind, ConnectionState.Disconnected, Enabled: false))
+            );
+        }
         return list;
     }
 
@@ -882,7 +976,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             view = anomalies == PacketAnomalies.None ? view : view with { Anomalies = anomalies };
         }
         EngineTelemetry.PacketsReceived.Add(1, new KeyValuePair<string, object?>("aprs.packet.type", view.Type));
-        var (arrival, relays) = StationFacts.Route(view.Path);
+        var (arrival, relays) = StationFacts.Route(view.Path, heardHere);
         _dashboard.Record(view, arrival, relays, now);
         lock (_gate)
         {

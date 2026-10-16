@@ -133,6 +133,39 @@ public sealed class KissSourceTests
         await run;
     }
 
+    [Fact]
+    public async Task SwitchingATncOffStopsItAndOnOpensItAgainAndReconnectNowReconnects()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var (engine, tnc) = Create(((IPEndPoint)listener.LocalEndpoint).Port);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var run = engine.RunAsync(cts.Token);
+        using var first = await listener.AcceptTcpClientAsync(Ct);
+        await WaitUntil(async () => (await StatusOf(engine, tnc.Id))?.State == ConnectionState.Connected);
+
+        await engine.SetSourceEnabledAsync(tnc.Id, false, Ct);
+        await WaitUntil(async () =>
+            (await StatusOf(engine, tnc.Id)) is { Enabled: false, State: ConnectionState.Disconnected }
+        );
+        Assert.False((await engine.GetSettingsAsync(Ct)).EffectiveToggles.IsSourceOn(tnc.Id)); // saved
+        Assert.Equal(0, await first.GetStream().ReadAsync(new byte[1], Ct)); // closed by the app
+
+        await engine.SetSourceEnabledAsync(tnc.Id, true, Ct);
+        using var second = await listener.AcceptTcpClientAsync(Ct);
+        await WaitUntil(async () =>
+            (await StatusOf(engine, tnc.Id)) is { Enabled: true, State: ConnectionState.Connected }
+        );
+
+        await engine.ReconnectSourceAsync(tnc.Id, Ct);
+        Assert.Equal(0, await second.GetStream().ReadAsync(new byte[1], Ct)); // dropped
+        using var third = await listener.AcceptTcpClientAsync(Ct); // and connected again straight away
+        await WaitUntil(async () => (await StatusOf(engine, tnc.Id))?.State == ConnectionState.Connected);
+
+        await cts.CancelAsync();
+        await run;
+    }
+
     private static async Task WaitUntil(Func<Task<bool>> condition)
     {
         for (var i = 0; i < 400; i++)
