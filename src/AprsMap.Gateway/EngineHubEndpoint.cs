@@ -33,6 +33,14 @@ internal sealed class EngineHubEndpoint(
     public IAsyncEnumerable<StationBatch> WatchStations(StationFilter? filter, CancellationToken cancellationToken) =>
         engine.WatchStationsAsync(filter, cancellationToken);
 
+    /// <summary>A toggle changes the station for every viewer, so it has the settings gate (F1.15 behavior 6).</summary>
+    [HubMethodName(EngineHub.SetToggle)]
+    public Task SetToggle(Toggle toggle, bool enabled)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.SetToggleAsync(toggle, enabled, Context.ConnectionAborted);
+    }
+
     [HubMethodName(EngineHub.GetViewFacets)]
     public Task<ViewFacets> GetViewFacets() => engine.GetViewFacetsAsync(Context.ConnectionAborted);
 

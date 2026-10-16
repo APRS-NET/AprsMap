@@ -54,6 +54,7 @@ public enum ConnectionState
 /// Each source the active profile uses, with its own connection state (F1.25 behavior 11). The top-level fields are the
 /// APRS-IS source's.
 /// </param>
+/// <param name="Toggles">The station's quick toggles (F1.15), for the status bar's markers.</param>
 /// <param name="Stations">How many stations, objects and items the store holds, for the View filter's chip (F1.9).</param>
 /// <param name="PacketHistory">
 /// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
@@ -75,7 +76,8 @@ public sealed record EngineStatus(
     IReadOnlyList<FilterArea>? FilterAreas = null,
     IReadOnlyList<SourceStatus>? Sources = null,
     int PacketHistory = 0,
-    int Stations = 0
+    int Stations = 0,
+    StationToggles? Toggles = null
 );
 
 /// <summary>One source's connection, for its status pill (F1.25 behavior 11).</summary>

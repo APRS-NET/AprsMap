@@ -197,9 +197,77 @@
                     Header="{l:T Status.Reconnect}"
                     Command="{Binding ReconnectCommand}"
                   />
+                  <Separator />
+                  <!-- Quick toggles (F1.15): the station's, so read-only for a gateway's viewers. -->
+                  <MenuItem
+                    x:Name="InternetToggle"
+                    Header="{l:T Toggles.Internet}"
+                    ToggleType="CheckBox"
+                    IsChecked="{Binding InternetOn, Mode=OneWay}"
+                    IsEnabled="{Binding CanToggle}"
+                    Command="{Binding ToggleCommand}"
+                    CommandParameter="{x:Static c:Toggle.Internet}"
+                  />
+                  <MenuItem
+                    x:Name="AprsIsToggle"
+                    Header="{l:T Toggles.AprsIs}"
+                    ToggleType="CheckBox"
+                    IsChecked="{Binding AprsIsOn, Mode=OneWay}"
+                    IsEnabled="{Binding CanToggleDependents}"
+                    Command="{Binding ToggleCommand}"
+                    CommandParameter="{x:Static c:Toggle.AprsIs}"
+                  />
+                  <MenuItem
+                    x:Name="TilesToggle"
+                    Header="{l:T Toggles.Tiles}"
+                    ToggleType="CheckBox"
+                    IsChecked="{Binding TilesOn, Mode=OneWay}"
+                    IsEnabled="{Binding CanToggleDependents}"
+                    Command="{Binding ToggleCommand}"
+                    CommandParameter="{x:Static c:Toggle.Tiles}"
+                  />
                 </MenuFlyout>
               </Button.Flyout>
             </Button>
+            <!-- A marker per toggle that is off, with its name, never colour alone (F1.15 behavior 4). -->
+            <ItemsControl x:Name="ToggleMarkers" ItemsSource="{Binding ToggleMarkers}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel ItemSpacing="8" LineSpacing="6" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Button
+                    Classes="toggle-marker"
+                    BorderBrush="{DynamicResource Brush.Warn}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    Padding="8,3"
+                    ToolTip.Tip="{l:T Toggles.Marker.Help}"
+                    AutomationProperties.Name="{Binding}"
+                  >
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <!-- A switch turned off, drawn for this app. -->
+                      <PathIcon
+                        Data="F0 M 7,7 L 17,7 A 5,5 0 0 1 17,17 L 7,17 A 5,5 0 0 1 7,7 Z M 7,9 A 3,3 0 1 0 7,15 A 3,3 0 1 0 7,9 Z"
+                        Width="{DynamicResource Icon.Size}"
+                        Height="{DynamicResource Icon.Size}"
+                      />
+                      <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock
+              x:Name="ToggleAnnouncement"
+              Text="{Binding ToggleAnnouncement}"
+              AutomationProperties.LiveSetting="Polite"
+              Width="0"
+              Height="0"
+              Opacity="0"
+            />
             <!-- One pill per source besides APRS-IS, with its own state (F1.25 behavior 11). -->
             <ItemsControl x:Name="SourcePills" ItemsSource="{Binding SourcePills}" VerticalAlignment="Center">
               <ItemsControl.ItemsPanel>

@@ -18,16 +18,18 @@ public static class TilesServiceCollectionExtensions
     {
         services.AddOptions<TilesOptions>();
         services.TryAddSingleton(TimeProvider.System);
-        services.AddHttpClient(
-            TileService.HttpClientName,
-            client =>
-            {
-                client.DefaultRequestVersion = HttpVersion.Version20;
-                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
-                client.Timeout = TimeSpan.FromSeconds(30);
-                client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent());
-            }
-        );
+        services
+            .AddHttpClient(
+                TileService.HttpClientName,
+                client =>
+                {
+                    client.DefaultRequestVersion = HttpVersion.Version20;
+                    client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                    client.Timeout = TimeSpan.FromSeconds(30);
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent());
+                }
+            )
+            .AddHttpMessageHandler(provider => new TileDownloadGate(provider.GetService<ITileDownloads>()));
         services.TryAddSingleton<ITileService, TileService>();
         return services;
     }

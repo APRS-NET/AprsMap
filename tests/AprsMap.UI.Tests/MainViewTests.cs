@@ -98,7 +98,9 @@ public class MainViewTests
         Assert.Equal("Server T2TEST · login verified · reconnected once", ToolTip.GetTip(button));
         var flyout = Assert.IsType<MenuFlyout>(button.Flyout);
         flyout.ShowAt(button);
-        var item = Assert.IsType<MenuItem>(Assert.Single(flyout.Items));
+        var items = flyout.Items.OfType<MenuItem>().ToList();
+        Assert.Equal(["ReconnectItem", "InternetToggle", "AprsIsToggle", "TilesToggle"], items.Select(i => i.Name));
+        var item = items[0];
         Assert.Same(vm.ReconnectCommand, item.Command);
         item.Command!.Execute(null);
         Assert.Equal(1, engine.Reconnects);

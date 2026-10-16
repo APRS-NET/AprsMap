@@ -20,6 +20,8 @@ public sealed partial class MainView : UserControl
         // Kept filled, never filled as it opens: on the desktop the menu is a window of its own, created as it opens,
         // and one emptied and refilled then showed nothing. It follows the layout and the language instead.
         Localization.Localizer.Instance.LanguageChanged += (_, _) => FillAppMenu();
+        // A toggle's marker opens the menu where it's changed (F1.15 behavior 4).
+        ToggleMarkers.AddHandler(Button.ClickEvent, (_, _) => OpenConnectionMenu());
         // Dock doesn't report splitter drags or floating-window resizes; a released pointer may have done either.
         ShellDock.AddHandler(
             PointerReleasedEvent,
@@ -193,8 +195,20 @@ public sealed partial class MainView : UserControl
                 Command = vm.OpenSettingsCommand,
             };
             _topLevel.KeyBindings.Add(_settingsKey);
+            // Ctrl+T opens the connection menu with the quick toggles (F1.15 behavior 1).
+            _togglesKey = new KeyBinding
+            {
+                Gesture = new KeyGesture(Key.T, command),
+                Command = new CommunityToolkit.Mvvm.Input.RelayCommand(OpenConnectionMenu),
+            };
+            _topLevel.KeyBindings.Add(_togglesKey);
         }
     }
+
+    private KeyBinding? _togglesKey;
+
+    /// <summary>The connection menu, from Ctrl+T or a toggle's marker.</summary>
+    private void OpenConnectionMenu() => ConnectionButton.Flyout?.ShowAt(ConnectionButton);
 
     private void UnbindSettingsKey()
     {
@@ -202,6 +216,11 @@ public sealed partial class MainView : UserControl
         {
             _topLevel.KeyBindings.Remove(_settingsKey);
         }
+        if (_topLevel is not null && _togglesKey is not null)
+        {
+            _topLevel.KeyBindings.Remove(_togglesKey);
+        }
         _settingsKey = null;
+        _togglesKey = null;
     }
 }

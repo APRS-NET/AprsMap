@@ -42,6 +42,13 @@ public interface IEngineService
     /// </summary>
     Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Turns a quick toggle on or off (docs/features/F1.15-quick-toggles.md) and saves it with the settings: APRS-IS
+    /// disconnects or connects at once, and tile downloads and address lookups stop or start.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default);
+
     /// <summary>How much each kind of Clear would clear now (docs/features/F1.19-housekeeping.md, behavior 1).</summary>
     Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default);
 

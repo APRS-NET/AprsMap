@@ -742,6 +742,94 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>The Internet master switch (F1.15).</summary>
+    [ObservableProperty]
+    public partial bool InternetOn { get; private set; } = true;
+
+    /// <summary>APRS-IS (F1.15).</summary>
+    [ObservableProperty]
+    public partial bool AprsIsOn { get; private set; } = true;
+
+    /// <summary>Map tile downloads (F1.15).</summary>
+    [ObservableProperty]
+    public partial bool TilesOn { get; private set; } = true;
+
+    /// <summary>Whether this viewer may change the toggles (F1.15 behavior 6).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanToggleDependents))]
+    public partial bool CanToggle { get; private set; }
+
+    /// <summary>Whether APRS-IS and Map tiles can be changed: Internet is on (behavior 2).</summary>
+    public bool CanToggleDependents => CanToggle && InternetOn;
+
+    /// <summary>"Internet off", "APRS-IS off": a marker in the status bar per toggle that is off (behavior 4).</summary>
+    public ObservableCollection<string> ToggleMarkers { get; } = [];
+
+    /// <summary>Said to screen readers when a toggle changes (behavior 5).</summary>
+    [ObservableProperty]
+    public partial string? ToggleAnnouncement { get; private set; }
+
+    /// <summary>Turns <paramref name="toggle"/> the other way (F1.15).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task ToggleAsync(Toggle toggle)
+    {
+        var on = toggle switch
+        {
+            Toggle.Internet => !InternetOn,
+            Toggle.AprsIs => !AprsIsOn,
+            _ => !TilesOn,
+        };
+        try
+        {
+            await engine.SetToggleAsync(toggle, on);
+            var toggles = (_status?.Toggles ?? StationToggles.AllOn) switch
+            {
+                var t when toggle == Toggle.Internet => t with { Internet = on },
+                var t when toggle == Toggle.AprsIs => t with { AprsIs = on },
+                var t => t with { Tiles = on },
+            };
+            ShowToggles(toggles);
+            ToggleAnnouncement = _text.Format(
+                "Toggles.Announce",
+                new Dictionary<string, object?> { ["name"] = _text[$"Toggles.{toggle}"], ["on"] = on ? "yes" : "no" }
+            );
+            ShowError(null);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException or ArgumentException)
+        {
+            ShowError(ex);
+        }
+    }
+
+    private void ShowToggles(StationToggles toggles)
+    {
+        InternetOn = toggles.Internet;
+        AprsIsOn = toggles.AprsIs;
+        TilesOn = toggles.Tiles;
+        OnPropertyChanged(nameof(CanToggleDependents));
+        var markers = new List<string>();
+        if (!toggles.Internet)
+        {
+            markers.Add(_text["Toggles.Marker.Internet"]);
+        }
+        if (!toggles.AprsIs)
+        {
+            markers.Add(_text["Toggles.Marker.AprsIs"]);
+        }
+        if (!toggles.Tiles)
+        {
+            markers.Add(_text["Toggles.Marker.Tiles"]);
+        }
+        if (!markers.SequenceEqual(ToggleMarkers))
+        {
+            ToggleMarkers.Clear();
+            foreach (var marker in markers)
+            {
+                ToggleMarkers.Add(marker);
+            }
+        }
+    }
+
     /// <summary>The View filter (F1.9), for the map and the station list.</summary>
     public Stations.ViewFilterViewModel ViewFilter { get; }
 
@@ -775,6 +863,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var couldClear = CanClearData;
         _settings = settings;
+        CanToggle = !settings.ReadOnly;
         if (CanClearData != couldClear)
         {
             OnPropertyChanged(nameof(CanClearData));
@@ -913,6 +1002,7 @@ public sealed partial class MainViewModel : ObservableObject
             PacketList.Clear(); // someone cleared the packet history (F1.19 behavior 3)
         }
         _status = status;
+        ShowToggles(status.Toggles ?? StationToggles.AllOn);
         _engineUnreachable = false;
         ShowConnection();
     }

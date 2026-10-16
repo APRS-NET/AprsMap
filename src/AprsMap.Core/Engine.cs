@@ -120,7 +120,8 @@ public sealed partial class Engine : IEngineService, IDisposable
                     FilterAreas: _filterAreas,
                     Sources: SourceStatuses(),
                     PacketHistory: _packetHistory,
-                    Stations: _stations.Count
+                    Stations: _stations.Count,
+                    Toggles: (_settings ?? AppSettings.Empty).EffectiveToggles
                 )
             );
         }
@@ -138,7 +139,8 @@ public sealed partial class Engine : IEngineService, IDisposable
         await _settingsLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            var before = Station.Of(await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false));
+            var old = await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false);
+            var before = Station.Of(old);
             await _settingsStore.SaveAsync(saved, cancellationToken).ConfigureAwait(false);
             lock (_gate)
             {
@@ -148,7 +150,12 @@ public sealed partial class Engine : IEngineService, IDisposable
             SignalSettingsChanged();
 
             var after = Station.Of(saved);
-            if (after is null ? before is not null : after.NeedsNewLogin(before))
+            if (old.EffectiveToggles.ConnectsAprsIs != saved.EffectiveToggles.ConnectsAprsIs)
+            {
+                LogToggled(saved.EffectiveToggles.ConnectsAprsIs ? "on" : "off");
+                SignalRestart(); // APRS-IS turned on or off (F1.15 behavior 1)
+            }
+            else if (after is null ? before is not null : after.NeedsNewLogin(before))
             {
                 LogProfileChanged(after?.Name ?? "(none)");
                 SignalRestart();
@@ -208,7 +215,17 @@ public sealed partial class Engine : IEngineService, IDisposable
         string query,
         string? language,
         CancellationToken cancellationToken = default
-    ) => _geocoder.GeocodeAsync(query, language, cancellationToken);
+    ) =>
+        InternetOn
+            ? _geocoder.GeocodeAsync(query, language, cancellationToken)
+            : Task.FromException<IReadOnlyList<GeocodeResult>>(
+                EngineErrors.ToException(
+                    new EngineError(
+                        EngineErrorCodes.GeocodingOffline,
+                        "The Internet switch is off, so nothing is looked up."
+                    )
+                )
+            );
 
     /// <inheritdoc />
     public Task<int> ComputePasscodeAsync(string callsign, CancellationToken cancellationToken = default)
@@ -562,6 +579,45 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <inheritdoc />
+    public async Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+        var toggles = settings.EffectiveToggles;
+        toggles = toggle switch
+        {
+            Toggle.Internet => toggles with { Internet = enabled },
+            Toggle.AprsIs => toggles with { AprsIs = enabled },
+            Toggle.Tiles => toggles with { Tiles = enabled },
+            _ => throw new ArgumentOutOfRangeException(nameof(toggle), toggle, "Not a toggle."),
+        };
+        await SaveSettingsAsync(settings with { Toggles = toggles }, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Whether map tiles may be downloaded now (F1.15): the Internet and Map tiles toggles are on.</summary>
+    public bool DownloadsTiles
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return (_settings ?? AppSettings.Empty).EffectiveToggles.DownloadsTiles;
+            }
+        }
+    }
+
+    /// <summary>Whether the Internet switch is on (F1.15), for address lookup.</summary>
+    private bool InternetOn
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return (_settings ?? AppSettings.Empty).EffectiveToggles.Internet;
+            }
+        }
+    }
+
+    /// <inheritdoc />
     public Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(_stations.Facets());
 
@@ -662,8 +718,14 @@ public sealed partial class Engine : IEngineService, IDisposable
             TimeSpan? retryIn = null; // null: wait for a restart
             try
             {
-                var profile = Station.Of(await LoadSettingsAsync(cancellationToken).ConfigureAwait(false));
-                if (profile is null)
+                var loaded = await LoadSettingsAsync(cancellationToken).ConfigureAwait(false);
+                var profile = Station.Of(loaded);
+                if (!loaded.EffectiveToggles.ConnectsAprsIs)
+                {
+                    // Turned off (F1.15): stay disconnected until a toggle or settings change restarts this.
+                    SetLink(new Link(ConnectionState.Disconnected));
+                }
+                else if (profile is null)
                 {
                     // Nothing to log in with: wait until settings supply a profile with an APRS-IS source.
                     SetLink(new Link(ConnectionState.NotConfigured));
@@ -1202,6 +1264,9 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Settings reset: every profile and setting was deleted")]
     private partial void LogReset();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "APRS-IS turned {State} by the quick toggles")]
+    private partial void LogToggled(string state);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Cleared {Count} ({Scope})")]
     private partial void LogCleared(ClearScope scope, int count);

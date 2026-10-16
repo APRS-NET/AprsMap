@@ -1699,6 +1699,34 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Filter.MicE.Custom6" xml:space="preserve">
     <value>Custom 6</value>
   </data>
+  <data name="Toggles.Internet" xml:space="preserve">
+    <value>Internet</value>
+    <comment>Quick toggle: the master switch for everything that uses the internet (APRS-IS, map tiles, address lookup).</comment>
+  </data>
+  <data name="Toggles.AprsIs" xml:space="preserve">
+    <value>APRS-IS</value>
+  </data>
+  <data name="Toggles.Tiles" xml:space="preserve">
+    <value>Download map tiles</value>
+  </data>
+  <data name="Toggles.Marker.Internet" xml:space="preserve">
+    <value>Internet off</value>
+  </data>
+  <data name="Toggles.Marker.AprsIs" xml:space="preserve">
+    <value>APRS-IS off</value>
+  </data>
+  <data name="Toggles.Marker.Tiles" xml:space="preserve">
+    <value>Map tiles off</value>
+  </data>
+  <data name="Toggles.Marker.Help" xml:space="preserve">
+    <value>Turned off from the connection menu (Ctrl+T). Click to change it.</value>
+  </data>
+  <data name="Toggles.Announce" xml:space="preserve">
+    <value>{name} {on, select, yes {on} other {off}}</value>
+  </data>
+  <data name="Error.geocoding.offline" xml:space="preserve">
+    <value>The Internet switch is off, so nothing is looked up. Turn it on from the connection menu.</value>
+  </data>
   <data name="Settings.Map.Tracks" xml:space="preserve">
     <value>Tracks</value>
     <comment>Settings › Map: which stations' recent routes are drawn as lines.</comment>

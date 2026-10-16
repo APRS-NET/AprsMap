@@ -81,6 +81,28 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task BrowsersCannotChangeTheStationsToggles()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var ex = await Assert.ThrowsAsync<EngineAccessException>(() => remote.SetToggleAsync(Toggle.AprsIs, false, Ct));
+
+        Assert.Equal(EngineErrorCodes.OperatorOnly, ex.EngineError.Code);
+    }
+
+    [Fact]
+    public async Task BrowsersCannotClearTheStation()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var ex = await Assert.ThrowsAsync<EngineAccessException>(() => remote.ClearAsync(ClearScope.Stations, Ct));
+
+        Assert.Equal(EngineErrorCodes.OperatorOnly, ex.EngineError.Code);
+    }
+
+    [Fact]
     public async Task AnyBrowserCanListServersAndReadLocators()
     {
         await using var remote = factory.CreateRemote();

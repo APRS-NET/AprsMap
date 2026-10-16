@@ -183,6 +183,25 @@ internal sealed class FakeEngine : IEngineService
 
     public int Reconnects { get; private set; }
 
+    /// <summary>The toggles <see cref="SetToggleAsync"/> set, in order.</summary>
+    public List<(Toggle Toggle, bool Enabled)> Toggled { get; } = [];
+
+    public Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default)
+    {
+        Toggled.Add((toggle, enabled));
+        var toggles = Settings.EffectiveToggles;
+        Settings = Settings with
+        {
+            Toggles = toggle switch
+            {
+                Toggle.Internet => toggles with { Internet = enabled },
+                Toggle.AprsIs => toggles with { AprsIs = enabled },
+                _ => toggles with { Tiles = enabled },
+            },
+        };
+        return Task.CompletedTask;
+    }
+
     /// <summary>What <see cref="GetClearCountsAsync"/> answers.</summary>
     public ClearCounts ClearCounts { get; set; } = new(0, 0, 0, 0);
 

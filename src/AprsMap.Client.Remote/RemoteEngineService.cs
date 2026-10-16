@@ -99,6 +99,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     ) => _connection.StreamAsync<StationBatch>(EngineHub.WatchStations, filter, cancellationToken);
 
     /// <inheritdoc />
+    public Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SetToggle, toggle, enabled, cancellationToken));
+
+    /// <inheritdoc />
     public Task<ViewFacets> GetViewFacetsAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<ViewFacets>(EngineHub.GetViewFacets, cancellationToken));
 
