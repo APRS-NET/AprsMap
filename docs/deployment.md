@@ -28,7 +28,10 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | First-run server | `Engine__Server` | `rotate.aprs2.net:14580` |
 | First-run server-side filter | `Engine__Filter` | none |
 | Let browsers change settings and switch profiles | `Gateway__AllowSettingsChanges` | `false` |
-| Packets kept for new viewers | `Engine__RecentPacketCapacity` | `500` |
+| Serve under a path, for a proxy that maps one to the gateway | `Gateway__PathBase` | none (the root) |
+| Proxies trusted for `X-Forwarded-For`/`-Proto`: addresses or networks | `Gateway__KnownProxies__0`, `__1`… | none (forwarded headers ignored) |
+| Who may show the app in a frame (CSP `frame-ancestors`) | `Gateway__FrameAncestors` | `'self'` |
+| Packets kept for new viewers | `Engine__RecentPacketCapacity` | `5000` |
 | Address lookup server (Nominatim); empty turns lookup off | `Geocoding__Endpoint` | `https://nominatim.openstreetmap.org` |
 | Map tile cache folder | `Tiles__CacheFolder` | `/data/tiles` in the image |
 | Tile cache size per provider, in MB (least recently used tiles go first) | `Tiles__MaxCacheMegabytes` | `512` |
@@ -52,7 +55,7 @@ Endpoints:
 
 | Path | Purpose |
 | --- | --- |
-| `/` | The web app |
+| `/` | The web app (all paths move under `Gateway__PathBase` when it's set) |
 | `/hubs/engine` | SignalR hub the web app uses |
 | `/tiles/providers`, `/tiles/{provider}/{z}/{x}/{y}` | Map tile providers and tiles for the web app, from the gateway's cache |
 | `/healthz` | Health check for orchestrators (the chiseled image has no shell, so probe it over HTTP) |
@@ -62,6 +65,43 @@ The image is based on `mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled`: no 
 the non-root `app` user. Put a reverse proxy with TLS in front of it for anything beyond a LAN, and pass WebSocket
 upgrades through for `/hubs/engine`. Operator sign-in for transmitting (scope F2.9) is not built yet, so the current
 gateway is receive-only and should not be given a passcode.
+
+### Behind a reverse proxy
+
+The gateway can sit behind a proxy at the root of a host or under a path. Under a path, set `Gateway__PathBase` and
+have the proxy pass the path through unchanged; the web app finds its hub under its own address, so it needs no
+setting. Name the proxy in `Gateway__KnownProxies` so the gateway sees viewers' real addresses and the original
+scheme; forwarded headers from anyone else are ignored. With Compose and Caddy (TLS from Let's Encrypt):
+
+```yaml
+services:
+  aprsmap:
+    image: ghcr.io/aprs-net/aprsmap:alpha
+    volumes: [aprsmap-settings:/data]
+    environment:
+      Engine__Callsign: YOURCALL-10
+      Gateway__PathBase: /aprs
+      Gateway__KnownProxies__0: 172.30.0.0/24
+    networks: [web]
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    command: >
+      sh -c "printf 'aprs.example.org {\n handle /aprs/* {\n  reverse_proxy aprsmap:8080\n }\n}\n' > /etc/caddy/Caddyfile
+      && caddy run --config /etc/caddy/Caddyfile"
+    networks: [web]
+networks:
+  web:
+    ipam: { config: [{ subnet: 172.30.0.0/24 }] }
+volumes:
+  aprsmap-settings:
+```
+
+Caddy passes WebSocket upgrades through by itself; other proxies need it set for `/hubs/engine`. Every response
+carries a Content-Security-Policy (the gateway's own origin only, with WebAssembly), `X-Content-Type-Options: nosniff`
+and `Referrer-Policy: same-origin`. The app's files are served Brotli- or gzip-compressed. Files named with their
+content hash are cached for a year, and the rest (`index.html`, the boot scripts) revalidate on every load, so an
+upgrade reaches browsers the next time they open the page.
 
 Tags: `X.Y.Z-alpha.N` for each release, and `alpha` for the newest. `latest` starts at 1.0.
 

@@ -16,14 +16,17 @@ internal static class Program
     /// <summary>How long to wait for the gateway before saying it can't be reached.</summary>
     private static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(15);
 
-    /// <summary>main.js passes the page URL; the gateway that served the page is the one we talk to.</summary>
+    /// <summary>
+    /// main.js passes the page URL; the gateway that served the page is the one we talk to, at the page's own path, so
+    /// a gateway under a path base (<c>/aprs/</c>) needs no setting (F1.14 behavior 1).
+    /// </summary>
     private static async Task Main(string[] args)
     {
         var pageUri =
             args.Length > 0 && Uri.TryCreate(args[0], UriKind.Absolute, out var uri)
                 ? uri
                 : new Uri("http://localhost:8080/");
-        var gateway = new Uri(pageUri.GetLeftPart(UriPartial.Authority));
+        var gateway = new Uri(pageUri, "./");
         // The viewer's appearance first, so even a startup error is in their chosen language (F0.6 behavior 19).
         var preferences = new BrowserPreferenceStore();
         var platform = new PlatformServices

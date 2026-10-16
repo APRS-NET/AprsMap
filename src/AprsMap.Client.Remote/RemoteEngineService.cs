@@ -26,12 +26,23 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     {
         ArgumentNullException.ThrowIfNull(gatewayBaseUri);
         var connection = new HubConnectionBuilder()
-            .WithUrl(new Uri(gatewayBaseUri, EngineHub.Path))
+            .WithUrl(HubUri(gatewayBaseUri))
             .WithAutomaticReconnect(new KeepTryingPolicy())
             // The browser app has no reflection-based JSON (WebAssembly publish turns it off).
             .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default))
             .Build();
         return new RemoteEngineService(connection);
+    }
+
+    /// <summary>
+    /// The hub's address under <paramref name="gatewayBaseUri"/>, keeping its path: <c>https://host/aprs/</c> gives
+    /// <c>https://host/aprs/hubs/engine</c>, for a gateway behind a proxy path.
+    /// </summary>
+    public static Uri HubUri(Uri gatewayBaseUri)
+    {
+        ArgumentNullException.ThrowIfNull(gatewayBaseUri);
+        var path = gatewayBaseUri.AbsolutePath.EndsWith('/') ? gatewayBaseUri : new Uri(gatewayBaseUri + "/");
+        return new Uri(path, EngineHub.Path.TrimStart('/'));
     }
 
     /// <summary>The underlying connection state.</summary>
