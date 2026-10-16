@@ -16,11 +16,20 @@ public class PanelTool : Tool
 /// <summary>The map: the shell's fixed centre. A document, so panels dock around it; it can't be closed or floated.</summary>
 public class MapDocument : Document;
 
+/// <summary>
+/// The dashboard (docs/features/F1.22-statistics.md, behavior 1): a tab beside the map in the centre. Unlike the map it
+/// can be closed (and shown again from the app menu) and floated.
+/// </summary>
+public class DashboardDocument : Document;
+
 /// <summary>The panels this version knows, and where each one goes in the default layout.</summary>
 public static class PanelKinds
 {
     /// <summary>The map, the fixed centre (<see cref="MapDocument"/>).</summary>
     public const string Map = "map";
+
+    /// <summary>The dashboard, a tab beside the map (<see cref="DashboardDocument"/>, F1.22).</summary>
+    public const string Dashboard = "dashboard";
 
     /// <summary>The station list (F1.7).</summary>
     public const string Stations = "stations";

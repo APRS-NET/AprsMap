@@ -26,6 +26,7 @@ using Dock.Serializer.SystemTextJson;
 [assembly: DockJsonSerializable(typeof(Dock.Model.Mvvm.Controls.WrapDock))]
 [assembly: DockJsonSerializable(typeof(AprsMap.UI.Shell.PanelTool))]
 [assembly: DockJsonSerializable(typeof(AprsMap.UI.Shell.MapDocument))]
+[assembly: DockJsonSerializable(typeof(AprsMap.UI.Shell.DashboardDocument))]
 
 namespace AprsMap.UI.Shell;
 

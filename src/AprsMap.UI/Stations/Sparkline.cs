@@ -22,7 +22,18 @@ public sealed class Sparkline : Control
         nameof(Stroke)
     );
 
-    static Sparkline() => AffectsRender<Sparkline>(ValuesProperty, StrokeProperty);
+    /// <summary>Whether the scale starts at zero (counts) rather than at the lowest value (telemetry).</summary>
+    public static readonly StyledProperty<bool> FromZeroProperty = AvaloniaProperty.Register<Sparkline, bool>(
+        nameof(FromZero)
+    );
+
+    static Sparkline() => AffectsRender<Sparkline>(ValuesProperty, StrokeProperty, FromZeroProperty);
+
+    public bool FromZero
+    {
+        get => GetValue(FromZeroProperty);
+        set => SetValue(FromZeroProperty, value);
+    }
 
     public IReadOnlyList<double?>? Values
     {
@@ -49,7 +60,7 @@ public sealed class Sparkline : Control
         {
             return;
         }
-        var (low, high) = (known.Min(), known.Max());
+        var (low, high) = (FromZero ? Math.Min(0, known.Min()) : known.Min(), known.Max());
         var span = high - low;
         var pen = new Pen(stroke, 1.5);
         var width = Bounds.Width - 2;

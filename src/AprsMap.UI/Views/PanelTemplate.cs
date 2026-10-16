@@ -16,7 +16,7 @@ namespace AprsMap.UI.Views;
 public sealed class PanelTemplate : IDataTemplate
 {
     /// <inheritdoc />
-    public bool Match(object? data) => data is PanelTool or MapDocument;
+    public bool Match(object? data) => data is PanelTool or MapDocument or DashboardDocument;
 
     /// <inheritdoc />
     public Control? Build(object? param) =>
@@ -31,6 +31,11 @@ public sealed class PanelTemplate : IDataTemplate
                 DataContext = context,
             },
             MapDocument => Placeholder(PanelKinds.Map),
+            DashboardDocument { Context: ViewModels.MainViewModel context } => new Statistics.DashboardPanel
+            {
+                DataContext = context.Dashboard,
+            },
+            DashboardDocument => Placeholder(PanelKinds.Dashboard),
             _ => null,
         };
 

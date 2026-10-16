@@ -58,6 +58,19 @@ public sealed partial class MainViewModel : ObservableObject
         _text = text ?? Localizer.Instance;
         SourceNames = new SourceNames(() => _settings);
         PacketList = new PacketListViewModel(engine, time, _text, SourceNames);
+        Dashboard = new Statistics.DashboardViewModel(
+            engine,
+            time,
+            _text,
+            () => _status,
+            SourceNames,
+            name => SelectedStation = name,
+            () =>
+            {
+                PacketList.IssuesOnly = true;
+                ShowPanel(PanelKinds.Packets);
+            }
+        );
         Details = new Stations.StationDetailsViewModel(
             engine,
             time,
@@ -187,6 +200,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The Packets panel (F1.8).</summary>
     public PacketListViewModel PacketList { get; }
+
+    /// <summary>The dashboard tab (F1.22).</summary>
+    public Statistics.DashboardViewModel Dashboard { get; }
 
     /// <summary>The packet list's rows, newest first.</summary>
     public PacketRows Packets => PacketList.Rows;

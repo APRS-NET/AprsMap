@@ -2181,4 +2181,179 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Map.StopFollowing" xml:space="preserve">
     <value>Stop following</value>
   </data>
+  <data name="Shell.Panel.dashboard" xml:space="preserve">
+    <value>Dashboard</value>
+    <comment>The dashboard's tab title, beside the Map tab.</comment>
+  </data>
+  <data name="Shell.NotYet.dashboard" xml:space="preserve">
+    <value>The dashboard shows once the app is connected to its engine.</value>
+  </data>
+  <data name="Dashboard.AsOf" xml:space="preserve">
+    <value>As of {time}</value>
+    <comment>When the dashboard's numbers were taken. time: a clock time.</comment>
+  </data>
+  <data name="Dashboard.CountingSince" xml:space="preserve">
+    <value>Counting since {time}: the app started, or packets were cleared, then.</value>
+    <comment>time: a clock time.</comment>
+  </data>
+  <data name="Dashboard.Range" xml:space="preserve">
+    <value>Range</value>
+    <comment>Label of the range buttons.</comment>
+  </data>
+  <data name="Dashboard.Range.Hour" xml:space="preserve">
+    <value>Last hour</value>
+  </data>
+  <data name="Dashboard.Range.SixHours" xml:space="preserve">
+    <value>6 hours</value>
+  </data>
+  <data name="Dashboard.Range.Day" xml:space="preserve">
+    <value>24 hours</value>
+  </data>
+  <data name="Dashboard.Waiting" xml:space="preserve">
+    <value>Waiting for packets. The numbers fill in as they arrive.</value>
+  </data>
+  <data name="Dashboard.Stations" xml:space="preserve">
+    <value>Stations heard</value>
+    <comment>Tile title.</comment>
+  </data>
+  <data name="Dashboard.Stations.Now" xml:space="preserve">
+    <value>{count, plural, one {# station on the map now} other {# stations on the map now}}</value>
+  </data>
+  <data name="Dashboard.NewStations" xml:space="preserve">
+    <value>New stations</value>
+    <comment>Tile title: stations not heard in the 24 hours before.</comment>
+  </data>
+  <data name="Dashboard.NewStations.Help" xml:space="preserve">
+    <value>Not heard in the 24 hours before. The newest:</value>
+  </data>
+  <data name="Dashboard.Packets" xml:space="preserve">
+    <value>Packets received</value>
+    <comment>Tile title.</comment>
+  </data>
+  <data name="Dashboard.Packets.Rate" xml:space="preserve">
+    <value>{rate__formatted} a minute now</value>
+    <comment>rate: packets a minute over the last 5 minutes.</comment>
+  </data>
+  <data name="Dashboard.Arrivals" xml:space="preserve">
+    <value>Heard on RF</value>
+    <comment>Tile title: the share of packets heard on radio rather than only on the internet.</comment>
+  </data>
+  <data name="Dashboard.Arrivals.Rf" xml:space="preserve">
+    <value>{percent} % of packets heard on RF, directly or through digipeaters</value>
+  </data>
+  <data name="Dashboard.Arrival.Direct" xml:space="preserve">
+    <value>Heard directly</value>
+  </data>
+  <data name="Dashboard.Arrival.Digipeated" xml:space="preserve">
+    <value>Through digipeaters</value>
+  </data>
+  <data name="Dashboard.Arrival.Internet" xml:space="preserve">
+    <value>Internet only</value>
+  </data>
+  <data name="Dashboard.Arrival.Unknown" xml:space="preserve">
+    <value>Path not given</value>
+  </data>
+  <data name="Dashboard.Kinds" xml:space="preserve">
+    <value>Packet types</value>
+    <comment>Tile title.</comment>
+  </data>
+  <data name="Dashboard.Kind.Other" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="Dashboard.Kind.Position" xml:space="preserve">
+    <value>Positions</value>
+  </data>
+  <data name="Dashboard.Kind.MicE" xml:space="preserve">
+    <value>Mic-E positions</value>
+  </data>
+  <data name="Dashboard.Kind.ObjectOrItem" xml:space="preserve">
+    <value>Objects and items</value>
+  </data>
+  <data name="Dashboard.Kind.Message" xml:space="preserve">
+    <value>Messages</value>
+  </data>
+  <data name="Dashboard.Kind.Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Dashboard.Kind.Weather" xml:space="preserve">
+    <value>Weather</value>
+  </data>
+  <data name="Dashboard.Kind.Telemetry" xml:space="preserve">
+    <value>Telemetry</value>
+  </data>
+  <data name="Dashboard.Problems" xml:space="preserve">
+    <value>Problems</value>
+    <comment>Tile title: invalid packets and lines that couldn't be read.</comment>
+  </data>
+  <data name="Dashboard.Problems.Help" xml:space="preserve">
+    <value>Invalid packets and lines that couldn't be read.</value>
+  </data>
+  <data name="Dashboard.Problems.Show" xml:space="preserve">
+    <value>Show in the packet list</value>
+    <comment>Button: opens the packet list with Issues only on.</comment>
+  </data>
+  <data name="Dashboard.Connection" xml:space="preserve">
+    <value>Connection</value>
+    <comment>Tile title.</comment>
+  </data>
+  <data name="Dashboard.State.Disconnected" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="Dashboard.State.Connecting" xml:space="preserve">
+    <value>Connecting</value>
+  </data>
+  <data name="Dashboard.State.Connected" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="Dashboard.State.Reconnecting" xml:space="preserve">
+    <value>Reconnecting</value>
+  </data>
+  <data name="Dashboard.State.NotConfigured" xml:space="preserve">
+    <value>Not set up</value>
+  </data>
+  <data name="Dashboard.Source.Last" xml:space="preserve">
+    <value>Last packet at {time}</value>
+    <comment>time: a clock time.</comment>
+  </data>
+  <data name="Dashboard.Source.Quiet" xml:space="preserve">
+    <value>Quiet: no packet since {time}</value>
+    <comment>A connected source that has sent nothing for over 2 minutes. time: a clock time.</comment>
+  </data>
+  <data name="Dashboard.Source.NoPackets" xml:space="preserve">
+    <value>Quiet: no packets yet</value>
+  </data>
+  <data name="Dashboard.Source.Unnamed" xml:space="preserve">
+    <value>This feed</value>
+    <comment>A source without a name.</comment>
+  </data>
+  <data name="Dashboard.Reconnects" xml:space="preserve">
+    <value>{count, plural, =0 {No reconnects since the app started} one {Reconnected once since the app started} other {Reconnected # times since the app started}}</value>
+  </data>
+  <data name="Dashboard.BusiestStations" xml:space="preserve">
+    <value>Busiest stations</value>
+    <comment>Tile title.</comment>
+  </data>
+  <data name="Dashboard.BusiestRelays" xml:space="preserve">
+    <value>Busiest digipeaters and IGates</value>
+    <comment>Tile title.</comment>
+  </data>
+  <data name="Dashboard.None" xml:space="preserve">
+    <value>None in this range</value>
+  </data>
+  <data name="Dashboard.Count" xml:space="preserve">
+    <value>{count, plural, one {# packet} other {# packets}}</value>
+  </data>
+  <data name="Dashboard.Share" xml:space="preserve">
+    <value>{count__formatted} · {percent} %</value>
+  </data>
+  <data name="Dashboard.Percent" xml:space="preserve">
+    <value>{percent} %</value>
+  </data>
+  <data name="Dashboard.Number" xml:space="preserve">
+    <value>{count__formatted}</value>
+  </data>
+  <data name="Dashboard.Spoken" xml:space="preserve">
+    <value>{title}, {range}: {number}. {detail}</value>
+    <comment>A tile read by a screen reader.</comment>
+  </data>
 </root>

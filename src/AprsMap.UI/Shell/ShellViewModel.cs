@@ -92,7 +92,11 @@ public sealed partial class ShellViewModel : ObservableObject
     public string Save(MainWindowPlacement? mainWindow = null)
     {
         SyncOpenWindows(Layout);
-        return new LayoutFile([.. PanelKinds.All.Select(p => p.Kind)], mainWindow, Layout).Write();
+        return new LayoutFile(
+            [.. PanelKinds.All.Select(p => p.Kind), PanelKinds.Dashboard],
+            mainWindow,
+            Layout
+        ).Write();
     }
 
     /// <summary>Back to the default layout (behavior 10).</summary>
@@ -129,9 +133,10 @@ public sealed partial class ShellViewModel : ObservableObject
         }
     }
 
-    /// <summary>The panels that are closed, so the app menu can show them again (behavior 4).</summary>
+    /// <summary>The panels that are closed, the dashboard first, so the app menu can show them again (behavior 4).</summary>
     public IReadOnlyList<string> ClosedPanels =>
         [
+            .. Dockables(Layout).OfType<DashboardDocument>().Any() ? [] : new[] { PanelKinds.Dashboard },
             .. PanelKinds
                 .All.Select(p => p.Kind)
                 .Where(kind => !Dockables(Layout).OfType<PanelTool>().Any(p => p.Kind == kind)),
@@ -161,6 +166,11 @@ public sealed partial class ShellViewModel : ObservableObject
     /// <summary>Shows a closed panel again, in its default dock (behavior 4).</summary>
     public void Show(string kind)
     {
+        if (kind == PanelKinds.Dashboard)
+        {
+            ShowDashboard();
+            return;
+        }
         if (Dockables(Layout).OfType<PanelTool>().FirstOrDefault(p => p.Kind == kind) is { } open)
         {
             if (open.Owner is IDock owner)
@@ -178,6 +188,26 @@ public sealed partial class ShellViewModel : ObservableObject
         Retitle();
         OnChanged();
     }
+
+    /// <summary>The dashboard shown and brought to the front, as a tab beside the map if it was closed (F1.22 behavior 1).</summary>
+    private void ShowDashboard()
+    {
+        if (Dockables(Layout).OfType<DashboardDocument>().FirstOrDefault() is not { } dashboard)
+        {
+            dashboard = ShellFactory.CreateDashboard();
+            Factory.AddDockable(Centre(Layout), dashboard);
+            Factory.InitLayout(Layout);
+            Retitle();
+        }
+        if (dashboard.Owner is IDock owner)
+        {
+            owner.ActiveDockable = dashboard;
+        }
+        OnChanged();
+    }
+
+    private static IDock Centre(IDockable layout) =>
+        Dockables(layout).OfType<IDock>().First(d => d.Id == ShellFactory.CentreDock);
 
     /// <summary>
     /// Moves every floating window onto <paramref name="screen"/>, the main window's screen (behavior 14). A window
@@ -297,6 +327,12 @@ public sealed partial class ShellViewModel : ObservableObject
             Factory.RemoveDockable(unknown, collapse: false);
         }
 
+        // The dashboard, new since a layout saved before it, joins the map as a tab behind it.
+        if (!all.OfType<DashboardDocument>().Any() && !file.Panels.Contains(PanelKinds.Dashboard))
+        {
+            Factory.AddDockable(Centre(layout), ShellFactory.CreateDashboard());
+        }
+
         // Panels added since the layout was saved go to their default dock, if it is still there.
         var present = Dockables(layout).OfType<PanelTool>().Select(p => p.Kind).ToHashSet(StringComparer.Ordinal);
         foreach (var (kind, dockId) in PanelKinds.All)
@@ -336,6 +372,9 @@ public sealed partial class ShellViewModel : ObservableObject
                     break;
                 case MapDocument map:
                     map.Title = _text[PanelKinds.TitleKey(PanelKinds.Map)];
+                    break;
+                case DashboardDocument dashboard:
+                    dashboard.Title = _text[PanelKinds.TitleKey(PanelKinds.Dashboard)];
                     break;
             }
         }

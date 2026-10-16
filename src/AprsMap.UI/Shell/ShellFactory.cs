@@ -56,7 +56,7 @@ public sealed class ShellFactory(object context, bool managedWindows) : Factory
             Id = CentreDock,
             IsCollapsable = false,
             CanCreateDocument = false,
-            VisibleDockables = CreateList<IDockable>(map),
+            VisibleDockables = CreateList<IDockable>(map, CreateDashboard()),
             ActiveDockable = map,
         };
         var left = Side(LeftDock, Alignment.Left, 0.2);
@@ -133,6 +133,16 @@ public sealed class ShellFactory(object context, bool managedWindows) : Factory
             Id = PanelKinds.Map,
             CanClose = false,
             CanFloat = false,
+            CanPin = false,
+        };
+
+    /// <summary>The dashboard, a tab beside the map that can be closed and floated (F1.22 behavior 1).</summary>
+    public static DashboardDocument CreateDashboard() =>
+        new()
+        {
+            Id = PanelKinds.Dashboard,
+            CanClose = true,
+            CanFloat = true,
             CanPin = false,
         };
 
