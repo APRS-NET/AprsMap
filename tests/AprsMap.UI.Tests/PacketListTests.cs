@@ -206,9 +206,16 @@ public class PacketListTests
         Assert.Equal($"N1>APRS:>hi{Environment.NewLine}N2>APRS:>hi", PacketListViewModel.CopyText(list.Rows));
         Assert.Equal(
             $"1970-01-01T00:00:01.000Z N1>APRS:>hi{Environment.NewLine}1970-01-01T00:00:02.000Z N2>APRS:>hi{Environment.NewLine}",
-            list.SaveText()
+            list.SaveText(new AprsMap.UI.Packets.Export.TextPacketExporter())
         );
-        Assert.Matches(@"^packets-\d{8}-\d{6}\.txt$", list.SaveName());
+        Assert.Matches(
+            @"^packets-\d{8}-\d{6}\.txt$",
+            list.SaveName(new AprsMap.UI.Packets.Export.TextPacketExporter())
+        );
+        Assert.Matches(
+            @"^packets-\d{8}-\d{6}\.yaml$",
+            list.SaveName(new AprsMap.UI.Packets.Export.YamlPacketExporter())
+        );
     }
 
     [Fact]

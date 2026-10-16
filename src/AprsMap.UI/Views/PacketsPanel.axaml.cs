@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.UI.Localization;
 using AprsMap.UI.Packets;
+using AprsMap.UI.Packets.Export;
 using AprsMap.UI.ViewModels;
 using Avalonia;
 using Avalonia.Controls;
@@ -28,7 +29,13 @@ public sealed partial class PacketsPanel : UserControl
         PacketList.TemplateApplied += (_, _) => WatchScrolling();
         CopyItem.Click += (_, _) => _ = CopyAsync();
         OnlyStationItem.Click += (_, _) => OnlyStation();
-        SaveButton.Click += (_, _) => _ = SaveAsync();
+        if (SaveButton.Flyout is MenuFlyout formats)
+        {
+            // Kept filled, never filled as it opens: on the desktop the menu is a window of its own, created as it
+            // opens, and one refilled then closed at once. It follows the language instead.
+            FillSaveMenu(formats);
+            Localizer.Instance.LanguageChanged += (_, _) => FillSaveMenu(formats);
+        }
     }
 
     private MainViewModel? Main => DataContext as MainViewModel;
@@ -108,8 +115,24 @@ public sealed partial class PacketsPanel : UserControl
         }
     }
 
-    /// <summary>Saves the rows shown as a text file where the viewer picks: a save dialog, or a download (behavior 10).</summary>
-    private async Task SaveAsync()
+    /// <summary>The Save menu: a format a line, named in the viewer's language.</summary>
+    private void FillSaveMenu(MenuFlyout menu)
+    {
+        menu.Items.Clear();
+        var text = Localizer.Instance;
+        foreach (var exporter in PacketExporter.All)
+        {
+            var item = new MenuItem { Header = text[exporter.NameKey] };
+            item.Click += (_, _) => _ = SaveAsync(exporter);
+            menu.Items.Add(item);
+        }
+    }
+
+    /// <summary>
+    /// Saves the rows shown in <paramref name="exporter"/>'s format where the viewer picks: a save dialog, or a download
+    /// (behavior 10).
+    /// </summary>
+    private async Task SaveAsync(PacketExporter exporter)
     {
         if (List is not { } list || TopLevel.GetTopLevel(this)?.StorageProvider is not { CanSave: true } storage)
         {
@@ -123,9 +146,16 @@ public sealed partial class PacketsPanel : UserControl
                 new FilePickerSaveOptions
                 {
                     Title = text["Packets.SaveTitle"],
-                    SuggestedFileName = list.SaveName(),
-                    DefaultExtension = "txt",
-                    FileTypeChoices = [FilePickerFileTypes.TextPlain],
+                    SuggestedFileName = list.SaveName(exporter),
+                    DefaultExtension = exporter.Extension,
+                    FileTypeChoices =
+                    [
+                        new FilePickerFileType(text[exporter.NameKey])
+                        {
+                            Patterns = ["*." + exporter.Extension],
+                            MimeTypes = [exporter.MediaType],
+                        },
+                    ],
                 }
             );
             if (file is null)
@@ -134,7 +164,7 @@ public sealed partial class PacketsPanel : UserControl
             }
             await using var stream = await file.OpenWriteAsync();
             await using var writer = new StreamWriter(stream);
-            await writer.WriteAsync(list.SaveText());
+            await writer.WriteAsync(list.SaveText(exporter));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
         {

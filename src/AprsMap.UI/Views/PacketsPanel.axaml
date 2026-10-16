@@ -61,7 +61,12 @@
         Content="{Binding PauseText}"
         Classes.accent="{Binding IsPaused}"
       />
-      <Button x:Name="SaveButton" Content="{l:T Packets.Save}" />
+      <!-- Save offers a menu of formats (F1.8 behavior 10), filled in code from the exporters. -->
+      <Button x:Name="SaveButton" Content="{l:T Packets.Save}">
+        <Button.Flyout>
+          <MenuFlyout Placement="BottomEdgeAlignedLeft" />
+        </Button.Flyout>
+      </Button>
     </WrapPanel>
     <TextBlock
       DockPanel.Dock="Top"
