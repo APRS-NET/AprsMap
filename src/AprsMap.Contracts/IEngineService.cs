@@ -65,6 +65,12 @@ public interface IEngineService
     /// </summary>
     Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The dashboard's numbers over <paramref name="range"/> (docs/features/F1.22-statistics.md, behaviors 3, 4): the
+    /// whole feed, from counters the engine keeps for 24 hours, the same for every viewer.
+    /// </summary>
+    Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default);
+
     /// <summary>A station's held telemetry reports (F1.11); null when it has sent none.</summary>
     Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default);
 

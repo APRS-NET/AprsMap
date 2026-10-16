@@ -224,6 +224,46 @@ internal sealed class FakeEngine : IEngineService
         return Task.FromResult(1);
     }
 
+    /// <summary>What <see cref="GetDashboardAsync"/> answers; an empty hour by default.</summary>
+    public Dashboard? Dashboard { get; set; }
+
+    /// <summary>The ranges <see cref="GetDashboardAsync"/> was asked for, in order.</summary>
+    public List<DashboardRange> DashboardRanges { get; } = [];
+
+    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default)
+    {
+        DashboardRanges.Add(range);
+        return Task.FromResult(Dashboard ?? EmptyDashboard(range));
+    }
+
+    /// <summary>A dashboard with nothing counted: 60 zero points a minute from the epoch.</summary>
+    public static Dashboard EmptyDashboard(DashboardRange range = DashboardRange.Hour)
+    {
+        int[] zeros = [.. Enumerable.Repeat(0, 60)];
+        return new Dashboard(
+            DateTimeOffset.UnixEpoch.AddHours(1),
+            range,
+            DateTimeOffset.UnixEpoch,
+            TimeSpan.FromMinutes(1),
+            DateTimeOffset.UnixEpoch,
+            zeros,
+            0,
+            [],
+            zeros,
+            0,
+            zeros,
+            0,
+            [],
+            [],
+            [],
+            zeros,
+            0,
+            [],
+            [],
+            []
+        );
+    }
+
     /// <summary>What <see cref="GetNetworkLinksAsync"/> answers.</summary>
     public List<NetworkLink> Links { get; } = [];
 
