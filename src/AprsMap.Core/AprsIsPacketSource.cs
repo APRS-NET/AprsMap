@@ -64,9 +64,9 @@ internal sealed class AprsIsPacketSourceFactory(
     TimeProvider timeProvider
 ) : IPacketSourceFactory
 {
-    public IPacketSource Create(StationProfile profile, string filter)
+    public IPacketSource Create(StationProfile profile, SourceSettings source, string filter)
     {
-        var clientOptions = ClientOptions(profile, filter, timeProvider);
+        var clientOptions = ClientOptions(profile, source.Server ?? string.Empty, filter, timeProvider);
         clientOptions.ReconnectDelay = options.Value.InitialRetryDelay;
         clientOptions.MaxReconnectDelay = options.Value.MaxRetryDelay;
         return new AprsIsPacketSource(
@@ -79,9 +79,14 @@ internal sealed class AprsIsPacketSourceFactory(
     /// </summary>
     /// <exception cref="AprsNet.Packets.AprsValidationException">The server, callsign or filter is not usable; it has a code.</exception>
     /// <exception cref="ArgumentException">Another setting is not usable.</exception>
-    internal static AprsIsClientOptions ClientOptions(StationProfile profile, string filter, TimeProvider timeProvider)
+    internal static AprsIsClientOptions ClientOptions(
+        StationProfile profile,
+        string server,
+        string filter,
+        TimeProvider timeProvider
+    )
     {
-        var endpoint = AprsIsEndpoint.Parse(profile.Server);
+        var endpoint = AprsIsEndpoint.Parse(server);
         var clientOptions = new AprsIsClientOptions
         {
             Callsign = profile.Callsign,

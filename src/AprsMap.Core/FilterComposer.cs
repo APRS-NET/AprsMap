@@ -7,7 +7,8 @@ namespace AprsMap.Core;
 
 /// <summary>
 /// Builds the APRS-IS filter from its parts (docs/features/F1.2-automatic-filter.md, behavior 1), with APRS.NET's typed
-/// filter terms: my range, the map views that show somewhere else, followed stations, and the profile's own text.
+/// filter terms: my range, the map views that show somewhere else, followed stations, and the APRS-IS source's own
+/// text (F1.25).
 /// </summary>
 internal static class FilterComposer
 {
@@ -26,8 +27,8 @@ internal static class FilterComposer
     /// <see cref="MaxViewKm"/>. With no part at all and a range, the filter is my range around my last position on
     /// APRS-IS (<c>m/</c>, behavior 2).
     /// </summary>
-    public static string Compose(StationProfile profile, IReadOnlyList<MapViewReport> views) =>
-        ComposeParts(profile, views, _ => null).Text;
+    public static string Compose(StationProfile profile, string? ownFilter, IReadOnlyList<MapViewReport> views) =>
+        ComposeParts(profile, ownFilter, views, _ => null).Text;
 
     /// <summary>
     /// The filter text and its range parts as circles (behavior 6); a followed station's circle is centred on its last
@@ -35,6 +36,7 @@ internal static class FilterComposer
     /// </summary>
     public static (string Text, IReadOnlyList<FilterArea> Areas) ComposeParts(
         StationProfile profile,
+        string? ownFilter,
         IReadOnlyList<MapViewReport> views,
         Func<string, (double Latitude, double Longitude)?> positionOf
     )
@@ -85,7 +87,7 @@ internal static class FilterComposer
             }
         }
 
-        var own = string.IsNullOrWhiteSpace(profile.Filter) ? null : profile.Filter.Trim();
+        var own = string.IsNullOrWhiteSpace(ownFilter) ? null : ownFilter.Trim();
         if (terms.Count == 0 && own is null && range > 0)
         {
             terms.Add(AprsFilterTerm.MyRange(range)); // around my last position on APRS-IS

@@ -27,6 +27,15 @@ public static class EngineErrorCodes
     /// </summary>
     public const string AprsParsePrefix = "aprs.parse.";
 
+    /// <summary>Two sources share an id, or a source has no name.</summary>
+    public const string SourceInvalid = "settings.source.invalid";
+
+    /// <summary>A profile uses a source that isn't in the list.</summary>
+    public const string SourceUnknown = "settings.profile.source-unknown";
+
+    /// <summary>A profile uses more than one APRS-IS source (F1.25 behavior 3).</summary>
+    public const string ProfileTwoAprsIs = "settings.profile.two-aprs-is";
+
     /// <summary>Settings were sent without profiles or units.</summary>
     public const string SettingsIncomplete = "settings.incomplete";
 

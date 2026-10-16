@@ -13,14 +13,28 @@ namespace AprsMap.Contracts;
 /// hidden (sent as -1) when it is set. Ignored on save.
 /// </param>
 /// <param name="Aging">When stations fade and leave (F1.3 behaviors 7–9); null means the defaults.</param>
+/// <param name="Sources">
+/// Where traffic comes from (docs/features/F1.25-sources.md): the master list profiles pick from. Null only in settings
+/// stored before sources existed, which the engine converts on load.
+/// </param>
 public sealed record AppSettings(
     IReadOnlyList<StationProfile> Profiles,
     string? ActiveProfileId,
     UnitSettings Units,
     bool ReadOnly = false,
-    StationAging? Aging = null
+    StationAging? Aging = null,
+    IReadOnlyList<SourceSettings>? Sources = null
 )
 {
+    /// <summary>The sources, or none.</summary>
+    public IReadOnlyList<SourceSettings> SourceList => Sources ?? [];
+
+    /// <summary>The APRS-IS source <paramref name="profile"/> uses, or null when it uses none (F1.25 behavior 3).</summary>
+    public SourceSettings? AprsIsSourceOf(StationProfile? profile) =>
+        profile is null
+            ? null
+            : SourceList.FirstOrDefault(s => s.Kind == SourceKind.AprsIs && profile.SourceIds.Contains(s.Id));
+
     /// <summary>The aging in effect: <see cref="Aging"/>, or the defaults.</summary>
     public StationAging EffectiveAging => Aging ?? StationAging.Default;
 
@@ -51,8 +65,9 @@ public sealed record StationAging(int StaleAfterMinutes, int? RemoveAfterMinutes
 /// <param name="Name">What the user calls it.</param>
 /// <param name="Callsign">The APRS-IS login and station callsign, with SSID (for example <c>N0CALL-9</c>).</param>
 /// <param name="Passcode">The APRS-IS passcode, or -1 to log in receive-only.</param>
-/// <param name="Server">APRS-IS server as <c>host</c> or <c>host:port</c>.</param>
-/// <param name="Filter">The server-side filter sent at login, or null for none.</param>
+/// <param name="SourceIds">
+/// The sources this profile uses (F1.25 behavior 4), by <see cref="SourceSettings.Id"/>: at most one APRS-IS source.
+/// </param>
 /// <param name="Latitude">The station's latitude in degrees, when set.</param>
 /// <param name="Longitude">The station's longitude in degrees, when set.</param>
 /// <param name="RangeKm">
@@ -63,8 +78,7 @@ public sealed record StationProfile(
     string Name,
     string Callsign,
     int Passcode,
-    string Server,
-    string? Filter,
+    IReadOnlyList<string> SourceIds,
     double? Latitude,
     double? Longitude,
     int RangeKm = StationProfile.DefaultRangeKm
@@ -73,24 +87,24 @@ public sealed record StationProfile(
     /// <summary>The range a new profile gets: 150 km.</summary>
     public const int DefaultRangeKm = 150;
 
-    /// <summary>Whether a change from <paramref name="other"/> to this profile needs a new APRS-IS login.</summary>
-    public bool NeedsNewLogin(StationProfile? other) =>
-        other is null
-        || Id != other.Id
-        || Callsign != other.Callsign
-        || Passcode != other.Passcode
-        || Server != other.Server;
+    /// <summary>Equal when every field is, comparing the source ids in order.</summary>
+    public bool Equals(StationProfile? other) =>
+        other is not null
+        && Id == other.Id
+        && Name == other.Name
+        && Callsign == other.Callsign
+        && Passcode == other.Passcode
+        && SourceIds.SequenceEqual(other.SourceIds)
+        && Latitude == other.Latitude
+        && Longitude == other.Longitude
+        && RangeKm == other.RangeKm;
 
-    /// <summary>
-    /// Whether a change from <paramref name="other"/> to this profile changes the APRS-IS filter, which the live
-    /// connection can take without a new login: its own filter text, its range or its location (F1.2).
-    /// </summary>
-    public bool NeedsNewFilter(StationProfile? other) =>
-        other is null
-        || Filter != other.Filter
-        || RangeKm != other.RangeKm
-        || Latitude != other.Latitude
-        || Longitude != other.Longitude;
+    /// <inheritdoc />
+    public override int GetHashCode() =>
+        HashCode.Combine(Id, Name, Callsign, Passcode, string.Join(',', SourceIds), Latitude, Longitude, RangeKm);
+
+    /// <summary>Whether this profile uses <paramref name="source"/>.</summary>
+    public bool Uses(SourceSettings source) => source is not null && SourceIds.Contains(source.Id);
 }
 
 /// <summary>Display units, chosen per quantity.</summary>

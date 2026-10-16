@@ -316,7 +316,12 @@ public class EngineTests
         var profile = Assert.Single(settings.Profiles);
         Assert.Equal("N0CALL-9", profile.Callsign);
         Assert.Equal("N0CALL-9", profile.Name);
-        Assert.Equal("r/40/-105/50", profile.Filter);
+        var source = Assert.Single(settings.SourceList);
+        Assert.Equal(
+            (SourceKind.AprsIs, "rotate.aprs2.net", "r/40/-105/50"),
+            (source.Kind, source.Name, source.Filter)
+        );
+        Assert.Equal([source.Id], profile.SourceIds);
         Assert.Equal(profile.Id, settings.ActiveProfileId);
         Assert.Same(settings, store.Stored);
         Assert.Same(settings, await engine.GetSettingsAsync(Ct)); // loaded once
@@ -346,7 +351,10 @@ public class EngineTests
         Assert.Equal(0, sources.Attempts);
 
         var profile = InMemorySettingsStore.Profile("N0NEW");
-        await engine.SaveSettingsAsync(new AppSettings([profile], profile.Id, UnitSettings.Metric), Ct);
+        await engine.SaveSettingsAsync(
+            new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [InMemorySettingsStore.Rotate]),
+            Ct
+        );
         await session.Connected.Task.WaitAsync(Ct);
 
         var status = await engine.GetStatusAsync(Ct);
@@ -361,8 +369,16 @@ public class EngineTests
     public async Task SwitchingProfilesReconnectsWithTheNewLogin()
     {
         var home = InMemorySettingsStore.Profile("N0HOME");
-        var away = InMemorySettingsStore.Profile("N0AWAY") with { Filter = "r/1/2/3" };
-        var store = new InMemorySettingsStore(new AppSettings([home, away], home.Id, UnitSettings.Metric));
+        var awaySource = InMemorySettingsStore.Rotate with { Id = "away", Name = "away", Filter = "r/1/2/3" };
+        var away = InMemorySettingsStore.Profile("N0AWAY") with { SourceIds = [awaySource.Id] };
+        var store = new InMemorySettingsStore(
+            new AppSettings(
+                [home, away],
+                home.Id,
+                UnitSettings.Metric,
+                Sources: [InMemorySettingsStore.Rotate, awaySource]
+            )
+        );
         var sources = new FakeSourceFactory();
         var first = sources.Enqueue("T2HOME");
         var second = sources.Enqueue("T2AWAY");
@@ -383,7 +399,7 @@ public class EngineTests
 
         Assert.True(first.Disposed);
         Assert.Equal(["N0HOME", "N0AWAY"], sources.Profiles.Select(p => p.Callsign));
-        Assert.Equal("r/1/2/3", sources.Profiles.Last().Filter);
+        Assert.EndsWith("r/1/2/3", sources.LoginFilters.Last(), StringComparison.Ordinal);
         Assert.Equal(away.Id, store.Stored!.ActiveProfileId);
         Assert.Equal(UnitSettings.Metric, store.Stored.Units);
         await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Server == "T2AWAY");
@@ -407,7 +423,7 @@ public class EngineTests
         await engine.SaveSettingsAsync(
             settings with
             {
-                Profiles = [settings.Profiles[0] with { Server = "noam.aprs2.net:14580" }],
+                Sources = [InMemorySettingsStore.Rotate with { Server = "noam.aprs2.net:14580" }],
             },
             Ct
         );
@@ -670,7 +686,7 @@ public class EngineTests
         await engine.SaveSettingsAsync(
             settings with
             {
-                Profiles = [settings.Profiles[0] with { Filter = null, Latitude = 40, Longitude = -105 }],
+                Profiles = [settings.Profiles[0] with { Latitude = 40, Longitude = -105 }],
             },
             Ct
         );
@@ -712,8 +728,13 @@ public class EngineTests
         await session.Connected.Task.WaitAsync(Ct);
         await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).Connection == ConnectionState.Connected);
         var settings = await engine.GetSettingsAsync(Ct);
-        var filtered = settings.Profiles[0] with { Filter = "r/40/-105/50" };
-        await engine.SaveSettingsAsync(settings with { Profiles = [filtered] }, Ct);
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Sources = [InMemorySettingsStore.Rotate with { Filter = "r/40/-105/50" }],
+            },
+            Ct
+        );
 
         Assert.EndsWith("r/40/-105/50", Assert.Single(session.Filters), StringComparison.Ordinal);
         Assert.Equal(1, sources.Attempts);
@@ -1031,7 +1052,7 @@ public class EngineTests
         /// <summary>The filter each login was made with.</summary>
         public System.Collections.Concurrent.ConcurrentQueue<string> LoginFilters { get; } = new();
 
-        public IPacketSource Create(StationProfile profile, string filter)
+        public IPacketSource Create(StationProfile profile, SourceSettings source, string filter)
         {
             Profiles.Enqueue(profile);
             LoginFilters.Enqueue(filter);

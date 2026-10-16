@@ -10,21 +10,20 @@ public sealed class FilterComposerTests
     {
         Latitude = 40,
         Longitude = -105,
-        Filter = null,
     };
 
     [Fact]
     public void MyRangeComesFirstAndTheProfilesTextLast()
     {
-        Assert.Equal("r/40/-105/150", FilterComposer.Compose(Home, []));
-        Assert.Equal("r/40/-105/150 t/m", FilterComposer.Compose(Home with { Filter = "t/m" }, []));
-        Assert.Equal("t/m", FilterComposer.Compose(Home with { Filter = "t/m", RangeKm = 0 }, []));
-        Assert.Equal(string.Empty, FilterComposer.Compose(Home with { RangeKm = 0 }, []));
+        Assert.Equal("r/40/-105/150", FilterComposer.Compose(Home, null, []));
+        Assert.Equal("r/40/-105/150 t/m", FilterComposer.Compose(Home, "t/m", []));
+        Assert.Equal("t/m", FilterComposer.Compose(Home with { RangeKm = 0 }, "t/m", []));
+        Assert.Equal(string.Empty, FilterComposer.Compose(Home with { RangeKm = 0 }, null, []));
     }
 
     [Fact]
     public void WithoutALocationItIsMyLastPositionOnAprsIs() =>
-        Assert.Equal("m/150", FilterComposer.Compose(Home with { Latitude = null, Longitude = null }, []));
+        Assert.Equal("m/150", FilterComposer.Compose(Home with { Latitude = null, Longitude = null }, null, []));
 
     [Fact]
     public void AMapViewOutsideMyRangeAddsARangeAroundIt()
@@ -33,9 +32,9 @@ public sealed class FilterComposerTests
         var kansasCity = new MapViewReport(39.1, -94.58, 80);
         var continent = new MapViewReport(39, -98, 1_500);
 
-        Assert.Equal("r/40/-105/150", FilterComposer.Compose(Home, [denver]));
-        Assert.Equal("r/40/-105/150 r/39.1/-94.58/80", FilterComposer.Compose(Home, [kansasCity]));
-        Assert.Equal("r/40/-105/150", FilterComposer.Compose(Home, [continent])); // wider than 1,000 km: none
+        Assert.Equal("r/40/-105/150", FilterComposer.Compose(Home, null, [denver]));
+        Assert.Equal("r/40/-105/150 r/39.1/-94.58/80", FilterComposer.Compose(Home, null, [kansasCity]));
+        Assert.Equal("r/40/-105/150", FilterComposer.Compose(Home, null, [continent])); // wider than 1,000 km: none
     }
 
     [Fact]
@@ -43,7 +42,7 @@ public sealed class FilterComposerTests
     {
         Assert.Equal(
             "r/40/-105/150 f/W1AW-9/150",
-            FilterComposer.Compose(Home, [new MapViewReport(null, null, 0, "W1AW-9")])
+            FilterComposer.Compose(Home, null, [new MapViewReport(null, null, 0, "W1AW-9")])
         );
         Assert.Equal(
             "f/W1AW-9/150",
@@ -52,6 +51,7 @@ public sealed class FilterComposerTests
                 {
                     RangeKm = 0,
                 },
+                null,
                 [new MapViewReport(null, null, 0, "w1aw-9"), new MapViewReport(null, null, 0, "W1AW-9")]
             )
         );
@@ -62,7 +62,7 @@ public sealed class FilterComposerTests
     {
         var views = Enumerable.Range(0, 12).Select(i => new MapViewReport(10 + i, 20, 50)).ToArray();
 
-        var filter = FilterComposer.Compose(Home, views);
+        var filter = FilterComposer.Compose(Home, null, views);
 
         Assert.Equal(9, filter.Split(' ').Count(t => t.StartsWith("r/", StringComparison.Ordinal)));
         Assert.Contains("r/10/20/50", filter, StringComparison.Ordinal); // the most recent first

@@ -44,9 +44,26 @@ public class ProfilesTests
         return (section, engine, time, opened, saved);
     }
 
+    /// <summary>The portable profile's source: a server that isn't a preset.</summary>
+    private static readonly SourceSettings T2Test = new(
+        "t2test",
+        "t2test.example",
+        SourceKind.AprsIs,
+        "t2test.example:10152"
+    );
+
+    /// <summary>Rotate with filter text of its own.</summary>
+    private static readonly SourceSettings Filtered = FakeEngine.Rotate with
+    {
+        Id = "filtered",
+        Name = "rotate (filtered)",
+        Filter = "r/40/-105/50",
+    };
+
     private static AppSettings WithLocation() =>
         FakeEngine.TwoProfiles() with
         {
+            Sources = [FakeEngine.Rotate, T2Test, Filtered],
             Profiles =
             [
                 FakeEngine.TwoProfiles().Profiles[0] with
@@ -56,7 +73,7 @@ public class ProfilesTests
                 },
                 FakeEngine.TwoProfiles().Profiles[1] with
                 {
-                    Server = "t2test.example:10152",
+                    SourceIds = [T2Test.Id],
                 },
             ],
         };
@@ -227,7 +244,11 @@ public class ProfilesTests
         var saved = Assert.Single(engine.Saved);
         Assert.Equal(["Home", "Portable", "Hiking"], saved.Profiles.Select(p => p.Name));
         var added = saved.Profiles[2];
-        Assert.Equal(("AB1CD-9", "b/AB1CD*"), (added.Callsign, added.Filter));
+        Assert.Equal("AB1CD-9", added.Callsign);
+        // Rotate has no filter text, so the profile gets a source of its own for it (F1.25 behavior 7).
+        var source = saved.AprsIsSourceOf(added)!;
+        Assert.Equal(("rotate.aprs2.net:14580", "b/AB1CD*"), (source.Server, source.Filter));
+        Assert.Equal(2, saved.SourceList.Count);
         Assert.Equal("home", saved.ActiveProfileId); // not switched without the tick
         Assert.Equal(FakeEngine.TwoProfiles().Units, saved.Units);
     }
@@ -245,7 +266,7 @@ public class ProfilesTests
 
         var saved = Assert.Single(engine.Saved);
         Assert.Equal(saved.Profiles[2].Id, saved.ActiveProfileId);
-        Assert.Null(saved.Profiles[2].Filter);
+        Assert.Equal([FakeEngine.Rotate.Id], saved.Profiles[2].SourceIds); // the same server: the same source
     }
 
     [Fact]
@@ -261,7 +282,7 @@ public class ProfilesTests
                     {
                         Callsign = "AB1CD", // the wizard refuses the N0CALL placeholder
                         Passcode = 12345,
-                        Filter = "r/40/-105/50",
+                        SourceIds = [Filtered.Id],
                         RangeKm = 50,
                     },
                     WithLocation().Profiles[1],
@@ -287,10 +308,9 @@ public class ProfilesTests
 
         var saved = Assert.Single(engine.Saved);
         Assert.Equal(["Base", "Portable"], saved.Profiles.Select(p => p.Name));
-        Assert.Equal(
-            ("home", 12345, "r/40/-105/50"),
-            (saved.Profiles[0].Id, saved.Profiles[0].Passcode, saved.Profiles[0].Filter)
-        );
+        Assert.Equal(("home", 12345), (saved.Profiles[0].Id, saved.Profiles[0].Passcode));
+        Assert.Equal([Filtered.Id], saved.Profiles[0].SourceIds); // its source, unchanged
+        Assert.Equal(3, saved.SourceList.Count);
         Assert.Equal("home", saved.ActiveProfileId);
         Assert.Equal(0, saved.Profiles[0].RangeKm);
     }

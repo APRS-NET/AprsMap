@@ -81,6 +81,18 @@
   <data name="Error.gateway.outdated" xml:space="preserve">
     <value>A new version of the app is available. Reload the page to use it.</value>
   </data>
+  <data name="Settings.Profiles.NoSource" xml:space="preserve">
+    <value>No APRS-IS source</value>
+  </data>
+  <data name="Error.settings.source.invalid" xml:space="preserve">
+    <value>Every source needs its own id and a name.</value>
+  </data>
+  <data name="Error.settings.profile.source-unknown" xml:space="preserve">
+    <value>Profile {profile} uses a source that isn't in the list.</value>
+  </data>
+  <data name="Error.settings.profile.two-aprs-is" xml:space="preserve">
+    <value>Profile {profile} uses more than one APRS-IS source; a station logs in to one at a time.</value>
+  </data>
   <data name="Settings.Profiles.Filter" xml:space="preserve">
     <value>The active profile's filter now: {filter}</value>
     <comment>Under the profile list. filter: the APRS-IS filter as sent (not translated).</comment>

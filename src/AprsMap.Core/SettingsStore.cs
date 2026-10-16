@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using AprsMap.Contracts;
 
@@ -29,6 +30,9 @@ public sealed class FileSettingsStore(string folder) : ISettingsStore
     /// <summary>The settings file's name inside the folder.</summary>
     public const string FileName = "settings.json";
 
+    /// <summary>What a settings file from before sources is kept as, beside the converted one.</summary>
+    public const string VersionOneSuffix = ".v1";
+
     /// <summary>The settings file's full path.</summary>
     public string FilePath { get; } = Path.Combine(folder, FileName);
 
@@ -41,19 +45,21 @@ public sealed class FileSettingsStore(string folder) : ISettingsStore
         }
 
         AppSettings? settings;
-        var stream = File.OpenRead(FilePath);
-        await using (stream.ConfigureAwait(false))
+        var migrated = false;
+        try
         {
-            try
+            var text = await File.ReadAllTextAsync(FilePath, cancellationToken).ConfigureAwait(false);
+            var root = JsonNode.Parse(text) as JsonObject;
+            if (root is not null && SettingsMigration.IsBeforeSources(root))
             {
-                settings = await JsonSerializer
-                    .DeserializeAsync(stream, SettingsJsonContext.Default.AppSettings, cancellationToken)
-                    .ConfigureAwait(false);
+                SettingsMigration.ToSources(root); // F1.25: servers and filters move to sources
+                migrated = true;
             }
-            catch (JsonException)
-            {
-                settings = null;
-            }
+            settings = root?.Deserialize(SettingsJsonContext.Default.AppSettings);
+        }
+        catch (JsonException)
+        {
+            settings = null;
         }
 
         if (settings?.Profiles is null || settings.Units is null)
@@ -61,13 +67,22 @@ public sealed class FileSettingsStore(string folder) : ISettingsStore
             File.Move(FilePath, FilePath + ".invalid", overwrite: true);
             return null;
         }
+        if (migrated)
+        {
+            // The old file is kept beside the new one, once (F1.25 acceptance test 1).
+            if (!File.Exists(FilePath + VersionOneSuffix))
+            {
+                File.Copy(FilePath, FilePath + VersionOneSuffix);
+            }
+            await SaveAsync(settings, cancellationToken).ConfigureAwait(false);
+        }
         return settings;
     }
 
     /// <inheritdoc />
     public Task DeleteAsync(CancellationToken cancellationToken)
     {
-        foreach (var path in new[] { FilePath, FilePath + ".invalid", FilePath + ".tmp" })
+        foreach (var path in new[] { FilePath, FilePath + ".invalid", FilePath + ".tmp", FilePath + VersionOneSuffix })
         {
             File.Delete(path); // no error when it doesn't exist
         }

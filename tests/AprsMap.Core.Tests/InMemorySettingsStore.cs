@@ -26,13 +26,17 @@ internal sealed class InMemorySettingsStore(AppSettings? initial = null) : ISett
         return Task.CompletedTask;
     }
 
+    /// <summary>The APRS-IS source the test profiles use.</summary>
+    public static SourceSettings Rotate { get; } =
+        new("rotate", "rotate.aprs2.net", SourceKind.AprsIs, "rotate.aprs2.net:14580");
+
     public static StationProfile Profile(string callsign, string? id = null) =>
-        new(id ?? callsign, callsign, callsign, -1, "rotate.aprs2.net:14580", null, null, null);
+        new(id ?? callsign, callsign, callsign, -1, [Rotate.Id], null, null);
 
     /// <summary>One active profile, as after first-run setup.</summary>
     public static InMemorySettingsStore WithProfile(string callsign = "N0TEST")
     {
         var profile = Profile(callsign);
-        return new(new AppSettings([profile], profile.Id, UnitSettings.Metric));
+        return new(new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [Rotate]));
     }
 }
