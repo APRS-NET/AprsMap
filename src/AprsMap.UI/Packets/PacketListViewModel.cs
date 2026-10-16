@@ -251,13 +251,21 @@ public sealed partial class PacketListViewModel : ObservableObject
 
     private void SetPaused(bool paused)
     {
+        var resuming = IsPaused && !paused;
         IsPaused = paused;
         if (!paused)
         {
             NewWhilePaused = 0;
             Flush();
         }
+        if (resuming)
+        {
+            Resumed?.Invoke(this, EventArgs.Empty);
+        }
     }
+
+    /// <summary>Raised when the list resumes: the panel scrolls back to the newest packets (F1.8 behavior 6).</summary>
+    public event EventHandler? Resumed;
 
     /// <summary>The filter changed: the list empties and the engine sends its matching history again.</summary>
     private void Restart()
