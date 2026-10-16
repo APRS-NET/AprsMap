@@ -9,8 +9,10 @@ APRSIS32 exactly. "Needs" lists the APRS.NET gaps ([aprsnet/gaps.md](aprsnet/gap
 Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) → `building` → `done`.
 
 Work is tracked on GitHub: each feature planned for a release is an issue labelled `feature` in that release's
-milestone (first: [0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1)), and PRs close it (`Closes #N`) or
-reference it (`Part of #N`). This table stays the full inventory; the milestone shows what's in flight.
+milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), done; now
+[0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/2)), and PRs close it (`Closes #N`) or reference it
+(`Part of #N`). This table stays the full inventory; the milestone shows what's in flight, and a status of the form
+"spec'd (0.4.0)" names the milestone a feature is planned for.
 
 ## Non-goals
 
@@ -26,7 +28,7 @@ reference it (`Part of #N`). This table stays the full inventory; the milestone 
 | F0.2 | `IEngineService` contracts, in-process and SignalR implementations, round-trip tests | App | — | done |
 | F0.3 | Spikes: Mapsui in WASM, SignalR streaming in WASM, symbol atlas, tile cache ([architecture.md](architecture.md#spikes-before-phase-1-each-one-is-a-timeboxed-throwaway), write-ups in [spikes](spikes/)) | App | — | done |
 | F0.4 | Settings model and persistence in per-user storage ([below](#settings-storage-and-profiles)); gateway: server-side store; units chosen per quantity (altitude, distance, pressure, rain, temperature, wind) | App | — | done |
-| F0.5 | First-run wizard ([spec](features/F0.5-first-run-wizard.md)): callsign → location → server → optional passcode ([ux](ux/README.md#key-flows)). Location by Maidenhead locator, street address, ZIP/postal code, GPS coordinates, or a map picker with a crosshair ([below](#settings-storage-and-profiles)) Built: the four steps (locator, address lookup and coordinates for the location), the passcode calculator, keyboard use, and the read-only gateway note; still to build: the map picker (with F1.4) and adding profiles from Settings (F0.8) | App | G08 | building |
+| F0.5 | First-run wizard ([spec](features/F0.5-first-run-wizard.md)): callsign → location → server → optional passcode ([ux](ux/README.md#key-flows)). Location by Maidenhead locator, street address, ZIP/postal code, GPS coordinates, or a map picker with a crosshair ([below](#settings-storage-and-profiles)). Built: all but the map picker, which is [#130](https://github.com/APRS-NET/AprsMap/issues/130) | App | G08 | building (map picker: 0.4.0) |
 | F0.6 | Settings screen and appearance ([spec](features/F0.6-appearance.md)): theme (light/dark/auto), palettes (standard, high contrast, colour-vision-safe), text and icon size, map symbol size, corner style, density, reduced motion; token-based so it applies live ([ux](ux/README.md#appearance-and-accessibility)) | App | — | done |
 | F0.7 | Rebrandable ([spec](features/F0.7-rebranding.md)): product identity in `build/Branding.props`, `Brand` accessor, rename script ([branding.md](branding.md)) | App | — | done |
 | F0.8 | Settings profiles ([spec](features/F0.8-profiles.md)): after first run, several named profiles (callsign, filters, location…); switching profiles disconnects from APRS-IS and reconnects with the new one ([below](#settings-storage-and-profiles)). Built: model, storage, switching from the status bar and from Settings, and adding, editing, copying and deleting profiles in Settings | App | — | done |
@@ -57,7 +59,8 @@ reference it (`Part of #N`). This table stays the full inventory; the milestone 
   - a map picker: a modal map with a fixed crosshair in the centre that the user pans under. It reuses the F1.4 map,
     so until that lands the wizard offers the other ways only.
 - **Profiles (F0.8).** The first-run answers become the first profile. After that the user can add, rename, copy and
-  delete profiles; each holds its own callsign-SSID, passcode, APRS-IS server and filters, and location (for example,
+  delete profiles; each holds its own callsign-SSID, passcode, location and the sources it uses (its APRS-IS server
+  and filter text, and later TNCs, from the master list in [F1.25](features/F1.25-sources.md)) (for example,
   home and portable, or a club callsign). Settings that describe the person or the machine (appearance, units, tile
   cache) are shared, not per profile. Switching profiles:
   - disconnects from APRS-IS and reconnects with the new profile's login and filter, with the connection status
@@ -73,30 +76,30 @@ reference it (`Part of #N`). This table stays the full inventory; the milestone 
 | --- | --- | --- | --- | --- | --- |
 | F1.0 | Shell and docking ([spec](features/F1.0-shell-and-docking.md)): map in the centre with dockable, tabbed, floatable panels; layout saved per viewer; floating windows kept on a screen that exists | — (maintainer request) | App | — | done |
 | F1.1 | APRS-IS connection ([spec](features/F1.1-aprs-is-connection.md)): server pick, login (receive-only without a passcode), status, auto-reconnect | Passcode | App | G03 | done |
-| F1.2 | Automatic filter ([spec](features/F1.2-automatic-filter.md)): range filter around the map viewport, updated on pan and zoom, plus tracked and buddy stations. Until then, a profile without a filter gets 150 km around its location (`r/`), or `m/150` without one | Automatic Filters | App | G04 | spec'd |
-| F1.3 | Station store ([spec](features/F1.3-station-store.md)): latest state per station, object and item ownership, kill handling, aging and expiry, duplicate drop | No Visible Stations | App | G05, G06 | building |
-| F1.4 | Map ([spec](features/F1.4-map.md)): OSM-style tiles, symbols with overlays, labels, selectable tile providers, transparency, map dimming, symbol size, wind barbs, auto-zoom-to-fit | Screen Elements, Transparency | App | — | building |
-| F1.5 | Tracks / trails ([spec](features/F1.5-tracks.md)) for moving stations, with configurable history length | — (core feature list) | App | G08, G24 | spec'd |
-| F1.6 | Station info panel ([spec](features/F1.6-station-details.md)): last packet, path, comment, speed/course/altitude, distance and bearing from me, device | Station Info | App | G07, G08, G20 | spec'd |
-| F1.7 | Station list ([spec](features/F1.7-station-list.md)): sortable and searchable; center on, track (keep centered) | — | App | G08 | spec'd |
-| F1.8 | Raw packet scroller ([spec](features/F1.8-packet-list.md)) with filters, plus parse-issue display for debugging | Debug Logs | App | G05, G06, G20 | spec'd |
-| F1.9 | View filters ([spec](features/F1.9-view-filters.md)): RF only, message-capable, weather, objects, by symbol category, by age, by platform, by Mic-E status, by `!shriek!` and `#hashtag` tags | (View menu) | App | G07, G20 | spec'd |
-| F1.10 | Weather station display ([spec](features/F1.10-weather.md)): current readings, units preference | Weather Stations | App | G08 | spec'd |
-| F1.11 | Telemetry ([spec](features/F1.11-telemetry.md)): latest values with PARM/UNIT/EQNS applied | Telemetry | App | G09 | spec'd |
-| F1.12 | Area objects and signposts ([spec](features/F1.12-area-objects.md)) drawn as shapes | — | App | — | spec'd |
-| F1.13 | My location ([spec](features/F1.13-my-location.md)): fixed position (set by map click or coordinates), used for distance and the default filter | Set Location | App | G08 | spec'd |
-| F1.14 | Gateway ([spec](features/F1.14-gateway.md)): hosts the engine, browser bundle, anonymous read-only viewing | — | App | — | spec'd |
-| F1.15 | Quick toggles ([spec](features/F1.15-quick-toggles.md)): APRS-IS, internet-access master switch (gates tiles too), GPS, beaconing, sound, tile fetching | (Enables menu) | App | — | spec'd |
+| F1.2 | Automatic filter ([spec](features/F1.2-automatic-filter.md)): range filter around my location and the map viewport, updated on pan and zoom, plus followed stations and the source's own filter text; optional filter circles on the map | Automatic Filters | App | G04 | done |
+| F1.3 | Station store ([spec](features/F1.3-station-store.md)): latest state per station, object and item ownership, kill handling, aging and expiry, duplicate drop | No Visible Stations | App | G05, G06 | done |
+| F1.4 | Map ([spec](features/F1.4-map.md)): OSM-style tiles, symbols with overlays, labels, selectable tile providers, transparency, map dimming, symbol size, wind barbs, auto-zoom-to-fit | Screen Elements, Transparency | App | — | done |
+| F1.5 | Tracks / trails ([spec](features/F1.5-tracks.md)) for moving stations, with configurable history length | — (core feature list) | App | G08, G24 | spec'd (0.4.0) |
+| F1.6 | Station info panel ([spec](features/F1.6-station-details.md)): last packet, path, comment, speed/course/altitude, distance and bearing from me, device | Station Info | App | G07, G08, G20 | done |
+| F1.7 | Station list ([spec](features/F1.7-station-list.md)): sortable and searchable; center on, track (keep centered) | — | App | G08 | done |
+| F1.8 | Raw packet scroller ([spec](features/F1.8-packet-list.md)) with filters, plus parse-issue display for debugging | Debug Logs | App | G05, G06, G20 | done |
+| F1.9 | View filters ([spec](features/F1.9-view-filters.md)): RF only, message-capable, weather, objects, by symbol category, by age, by platform, by Mic-E status, by `!shriek!` and `#hashtag` tags | (View menu) | App | G07, G20 | spec'd (0.4.0) |
+| F1.10 | Weather station display ([spec](features/F1.10-weather.md)): current readings, units preference | Weather Stations | App | G08 | spec'd (0.4.0) |
+| F1.11 | Telemetry ([spec](features/F1.11-telemetry.md)): latest values with PARM/UNIT/EQNS applied | Telemetry | App | G09 | spec'd (0.4.0) |
+| F1.12 | Area objects and signposts ([spec](features/F1.12-area-objects.md)) drawn as shapes | — | App | — | spec'd (0.4.0) |
+| F1.13 | My location ([spec](features/F1.13-my-location.md)): fixed position (set by map click or coordinates), used for distance and the default filter | Set Location | App | G08 | done |
+| F1.14 | Gateway ([spec](features/F1.14-gateway.md)): hosts the engine, browser bundle, anonymous read-only viewing | — | App | — | done |
+| F1.15 | Quick toggles ([spec](features/F1.15-quick-toggles.md)): APRS-IS, internet-access master switch (gates tiles too), GPS, beaconing, sound, tile fetching | (Enables menu) | App | — | spec'd (0.4.0) |
 | F1.16 | Extra map views following one station each (split view; desktop tear-off windows), auto-added to the server filter ([spec](features/F1.16-extra-map-views.md)) | Station Info, Automatic Filters | App | G04 | spec'd |
 | F1.17 | Dead-reckoned positions for moving stations, with a freshness indicator ([spec](features/F1.17-dead-reckoning.md)) | (Screen menu) | App | G08, G11 | spec'd |
 | F1.18 | Set destination: distance and bearing to a chosen point ([spec](features/F1.18-destination.md)) | Station Info | App | G08 | spec'd |
-| F1.19 | Data housekeeping: clear stations, tracks, messages, bulletins, telemetry, saved texts ([spec](features/F1.19-housekeeping.md)) | (Clear menu) | App | — | spec'd |
-| F1.20 | Packet and station anomaly flags (duplicate positions, impossible speed, sub-second repeats, invalid) ([spec](features/F1.20-anomalies.md)) | Scroller | App | G24 | spec'd |
-| F1.21 | RF path visualization: per-packet digipeater paths, digipeater-to-digipeater network links, local-RF-only mode ([spec](features/F1.21-rf-paths.md)) | (observed) | App | G20 | spec'd |
+| F1.19 | Data housekeeping: clear stations, tracks, messages, bulletins, telemetry, saved texts ([spec](features/F1.19-housekeeping.md)) | (Clear menu) | App | — | spec'd (0.4.0) |
+| F1.20 | Packet and station anomaly flags (duplicate positions, impossible speed, sub-second repeats, invalid) ([spec](features/F1.20-anomalies.md)) | Scroller | App | G24 | spec'd (0.4.0) |
+| F1.21 | RF path visualization: per-packet digipeater paths, digipeater-to-digipeater network links, local-RF-only mode ([spec](features/F1.21-rf-paths.md)) | (observed) | App | G20 | spec'd (0.4.0) |
 | F1.22 | Statistics: heard platforms (device families) and symbols with counts and percentages ([spec](features/F1.22-statistics.md)) | (observed) | App | G07, G20 | spec'd |
 | F1.23 | Saved layouts ([spec](features/F1.23-saved-layouts.md)): named layouts, and the layout last used with a monitor setup offered when monitors change | — (maintainer request) | App | — | spec'd |
 | F1.24 | Web pop-out panels: a panel in its own browser tab or window (a second app instance on the same gateway), with selection kept in sync; after F1.14's viewer limits account for it | — (maintainer request) | App | — | scoped |
-| F1.25 | Sources ([spec](features/F1.25-sources.md)): a master list of sources (APRS-IS now; KISS over TCP and serial, and GPS, later) that profiles pick from, at most one APRS-IS; each packet records its source, with Seen on for duplicates | — (maintainer request) | App | G05, G29 | spec'd |
+| F1.25 | Sources ([spec](features/F1.25-sources.md)): a master list of sources (APRS-IS now; KISS over TCP and serial, and GPS, later) that profiles pick from, at most one APRS-IS; each packet records its source, with Seen on for duplicates | — (maintainer request) | App | G05, G29 | done for APRS-IS; KISS with F3.1 (0.4.0) |
 
 ## Phase 2: Transmit via APRS-IS
 
@@ -119,7 +122,7 @@ reference it (`Part of #N`). This table stays the full inventory; the milestone 
 
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
-| F3.1 | RF ports: KISS over serial, Bluetooth serial and TCP (Direwolf, soundmodem), several at once, as [F1.25](features/F1.25-sources.md) sources. Receive first, planned for 0.4.0 when the test bed is ready (Direwolf on Windows, MFJ TNC-X, later NinoTNC) | Compatible Hardware/Software | App | G12, G13 | scoped |
+| F3.1 | RF ports: KISS over serial, Bluetooth serial and TCP (Direwolf, soundmodem), several at once, as [F1.25](features/F1.25-sources.md) sources. Receive only in 0.4.0 ([#120](https://github.com/APRS-NET/AprsMap/issues/120)); the test bed is Direwolf on Windows, MFJ TNC-X, later NinoTNC | Compatible Hardware/Software | App | G12, G13 | scoped (0.4.0) |
 | F3.2 | Text-mode and Kenwood built-in TNCs, open and close command scripts | Open/Close Commands | App | G14 | scoped |
 | F3.3 | Per-port RF beacon paths, RF versus IS source attribution on the map, heard-direct indication | — | App | G20 | scoped |
 | F3.4 | IGate: RF→IS, IS→RF for messages to local stations, objects; configurable rules | (core feature list), Receive-Only IGates Break Messaging | App | G16 | scoped |
@@ -152,7 +155,11 @@ reference it (`Part of #N`). This table stays the full inventory; the milestone 
 
 ## Order of work
 
-1. Phase 0 completely, including spikes; their results may change architecture.md.
-2. Write the Phase 1 feature specs (`docs/features/1xx-*.md`) and get them reviewed before coding.
-3. In parallel, APRS.NET picks up the Phase 1 gaps (G03–G09, G20, G24). Phase 1 needs no encoder, so it can ship before
-   any transmit work lands in APRS.NET.
+1. Phase 0 completely, including spikes (done).
+2. The Phase 1 specs, reviewed before coding (written; each spec's decisions are settled when its milestone starts).
+3. 0.3.0-alpha.1, the first map (done), then 0.4.0-alpha.1: KISS receive (F3.1) and the rest of the map features
+   above marked 0.4.0. The F1 features left after that, then Phase 2.
+4. In parallel, APRS.NET picks up the gaps each milestone is blocked by: for 0.4.0, G09
+   ([APRS.NET#153](https://github.com/APRS-NET/APRS.NET/issues/153)), G13's serial connection
+   ([APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126)) and G24
+   ([APRS.NET#154](https://github.com/APRS-NET/APRS.NET/issues/154)). Phase 1 needs no transmit work in APRS.NET.
