@@ -180,6 +180,23 @@
           />
           <SelectableTextBlock x:Name="ArrivalValue" Grid.Column="1" Text="{Binding ArrivalText}" TextWrapping="Wrap" />
         </Grid>
+        <Grid IsVisible="{Binding HeardViaText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.HeardVia}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock
+            x:Name="HeardViaValue"
+            Grid.Column="1"
+            Text="{Binding HeardViaText}"
+            TextWrapping="Wrap"
+          />
+        </Grid>
         <Grid IsVisible="{Binding DeviceText, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />

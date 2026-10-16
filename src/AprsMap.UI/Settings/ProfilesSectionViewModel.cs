@@ -199,7 +199,7 @@ public sealed partial class ProfilesSectionViewModel : ObservableObject, IDispos
         Retranslate();
     }
 
-    private AppSettings Current => _settings ?? AppSettings.Empty;
+    internal AppSettings Current => _settings ?? AppSettings.Empty;
 
     private bool CanAdd() => !IsReadOnly;
 

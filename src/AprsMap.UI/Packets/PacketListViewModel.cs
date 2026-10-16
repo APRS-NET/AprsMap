@@ -24,6 +24,7 @@ public sealed partial class PacketListViewModel : ObservableObject
     private readonly IEngineService _engine;
     private readonly TimeProvider _time;
     private readonly Localizer _text;
+    private readonly ViewModels.SourceNames? _sources;
     private readonly List<PacketView> _pending = [];
     private CancellationTokenSource? _restart;
     private CancellationTokenSource? _typing;
@@ -32,8 +33,14 @@ public sealed partial class PacketListViewModel : ObservableObject
     private bool _clearOnFirst;
     private bool _pausedByScrolling;
 
-    internal PacketListViewModel(IEngineService engine, TimeProvider time, Localizer text)
+    internal PacketListViewModel(
+        IEngineService engine,
+        TimeProvider time,
+        Localizer text,
+        ViewModels.SourceNames? sources = null
+    )
     {
+        _sources = sources;
         _engine = engine;
         _time = time;
         _text = text;
@@ -309,7 +316,7 @@ public sealed partial class PacketListViewModel : ObservableObject
             return;
         }
         var zone = _time.LocalTimeZone;
-        Rows.AddNewest([.. _pending.Select(p => new PacketRow(p, _text, zone))], MaxRows);
+        Rows.AddNewest([.. _pending.Select(p => new PacketRow(p, _text, zone, _sources))], MaxRows);
         _pending.Clear();
         UpdateEmpty();
     }

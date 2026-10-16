@@ -182,6 +182,26 @@
                 </MenuFlyout>
               </Button.Flyout>
             </Button>
+            <!-- One pill per source besides APRS-IS, with its own state (F1.25 behavior 11). -->
+            <ItemsControl x:Name="SourcePills" ItemsSource="{Binding SourcePills}" VerticalAlignment="Center">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel ItemSpacing="8" LineSpacing="6" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Border
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    Padding="10,4"
+                  >
+                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
             <TextBlock
               x:Name="PacketCountLabel"
               Text="{Binding PacketCountText}"

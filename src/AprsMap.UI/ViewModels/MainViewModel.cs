@@ -54,12 +54,14 @@ public sealed partial class MainViewModel : ObservableObject
         _appearance = appearance ?? new AppearanceService();
         _showPseudoLanguage = showPseudoLanguage;
         _text = text ?? Localizer.Instance;
-        PacketList = new PacketListViewModel(engine, time, _text);
+        SourceNames = new SourceNames(() => _settings);
+        PacketList = new PacketListViewModel(engine, time, _text, SourceNames);
         Details = new Stations.StationDetailsViewModel(
             engine,
             time,
             _text,
-            () => _settings?.Units ?? UnitSettings.Metric
+            () => _settings?.Units ?? UnitSettings.Metric,
+            SourceNames
         );
         Details.CloseRequested += (_, _) => SelectedStation = null;
         Details.PropertyChanged += (_, e) =>
@@ -275,7 +277,17 @@ public sealed partial class MainViewModel : ObservableObject
                     ? (() => _settings?.EffectiveAging ?? StationAging.Default, SaveAging)
                     : null
             );
-        var settings = new SettingsViewModel(_appearance, time, _text, _showPseudoLanguage, profiles, data, mapItems);
+        var sources = new SourcesSectionViewModel(engine, _text, Show);
+        var settings = new SettingsViewModel(
+            _appearance,
+            time,
+            _text,
+            _showPseudoLanguage,
+            profiles,
+            data,
+            mapItems,
+            sources
+        );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
         GeocodingInfo? geocoding = null;
@@ -290,6 +302,7 @@ public sealed partial class MainViewModel : ObservableObject
         settings.Show(_status, geocoding);
         if (_settings is { } current)
         {
+            sources.Show(current);
             await profiles.ShowAsync(current);
         }
     }
@@ -509,6 +522,43 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    /// <summary>Sources by name, for the lists and details (F1.25).</summary>
+    public SourceNames SourceNames { get; }
+
+    /// <summary>A pill per source besides APRS-IS, with its own state (F1.25 behavior 11); empty with one source.</summary>
+    public ObservableCollection<string> SourcePills { get; } = [];
+
+    private void ShowSourcePills(EngineStatus status)
+    {
+        var pills = (status.Sources ?? [])
+            .Where(s => s.Kind != SourceKind.AprsIs)
+            .Select(s =>
+                s.Error is { } error && s.State is not ConnectionState.Connected
+                    ? _text.Format(
+                        "Status.Source.Error",
+                        new Dictionary<string, object?> { ["source"] = s.Name, ["error"] = _text.Format(error) }
+                    )
+                    : _text.Format(
+                        s.State switch
+                        {
+                            ConnectionState.Connected => "Status.Source.Connected",
+                            ConnectionState.Reconnecting => "Status.Source.Reconnecting",
+                            _ => "Status.Source.Connecting",
+                        },
+                        new Dictionary<string, object?> { ["source"] = s.Name }
+                    )
+            )
+            .ToList();
+        if (!pills.SequenceEqual(SourcePills))
+        {
+            SourcePills.Clear();
+            foreach (var pill in pills)
+            {
+                SourcePills.Add(pill);
+            }
+        }
+    }
+
     /// <summary>How long after the map stops moving its view is reported for the filter (F1.2 behavior 4).</summary>
     public static readonly TimeSpan MapReportDelay = TimeSpan.FromSeconds(2);
 
@@ -601,6 +651,15 @@ public sealed partial class MainViewModel : ObservableObject
 
         var active = settings.GetActiveProfile();
         CanSetMyLocation = active is not null && !settings.ReadOnly;
+        // Sources and profiles each show the other's names (F1.25 behavior 2): both follow a change from either.
+        if (Settings is { } open && !ReferenceEquals(open.Sources?.Current, settings))
+        {
+            open.Sources?.Show(settings);
+            if (open.Profiles is { } profilesSection && !ReferenceEquals(profilesSection.Current, settings))
+            {
+                _ = profilesSection.ShowAsync(settings);
+            }
+        }
         if (Map is not null)
         {
             // Home is the active profile's location (behavior 3), drawn as a house with its callsign (F1.13).
@@ -698,6 +757,7 @@ public sealed partial class MainViewModel : ObservableObject
     internal void Show(EngineStatus status)
     {
         FilterAreas = status.FilterAreas;
+        ShowSourcePills(status);
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();
         PacketCount = status.PacketsReceived;

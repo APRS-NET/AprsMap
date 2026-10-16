@@ -182,6 +182,162 @@
           </StackPanel>
 
           <!-- Appearance -->
+          <!-- Sources (F1.25): the master list profiles pick from, with Add a source. -->
+          <StackPanel x:Name="SourcesSection" IsVisible="{Binding IsSourcesSection}" Spacing="12">
+            <TextBlock
+              Text="{l:T Settings.Sources.Intro}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Text="{l:T Settings.Profiles.ReadOnly}"
+              IsVisible="{Binding Sources.IsReadOnly}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <ItemsControl x:Name="SourceList" ItemsSource="{Binding Sources.Rows}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="8" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="s:SourceRow">
+                  <Border
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    Padding="12,8"
+                  >
+                    <StackPanel Spacing="6">
+                      <WrapPanel ItemSpacing="10">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding KindText}" Foreground="{DynamicResource Brush.TextMuted}" />
+                      </WrapPanel>
+                      <WrapPanel ItemSpacing="10">
+                        <TextBlock Text="{Binding Server}" FontFamily="{DynamicResource Font.Mono}" />
+                        <TextBlock
+                          Text="{Binding Filter}"
+                          IsVisible="{Binding Filter, Converter={x:Static ObjectConverters.IsNotNull}}"
+                          FontFamily="{DynamicResource Font.Mono}"
+                          Foreground="{DynamicResource Brush.TextMuted}"
+                        />
+                      </WrapPanel>
+                      <TextBlock
+                        Text="{Binding UsedByText}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        TextWrapping="Wrap"
+                      />
+                      <WrapPanel
+                        ItemSpacing="8"
+                        LineSpacing="6"
+                        IsVisible="{Binding !$parent[UserControl].((s:SettingsViewModel)DataContext).Sources.IsReadOnly}"
+                      >
+                        <Button
+                          Content="{l:T Settings.Profiles.Edit}"
+                          Command="{Binding EditCommand}"
+                          AutomationProperties.Name="{Binding EditName}"
+                        />
+                        <Button
+                          Content="{l:T Settings.Profiles.Delete}"
+                          Command="{Binding DeleteCommand}"
+                          AutomationProperties.Name="{Binding DeleteName}"
+                        />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- Deleting a source profiles use asks first (behavior 2). -->
+            <StackPanel Spacing="8" IsVisible="{Binding Sources.IsConfirmingDelete}">
+              <TextBlock Text="{Binding Sources.PendingDeleteText}" TextWrapping="Wrap" />
+              <WrapPanel ItemSpacing="8">
+                <Button
+                  x:Name="ConfirmDeleteSourceButton"
+                  Content="{l:T Settings.Sources.DeleteAnyway}"
+                  Command="{Binding Sources.ConfirmDeleteCommand}"
+                />
+                <Button Content="{l:T Settings.Sources.Keep}" Command="{Binding Sources.CancelDeleteCommand}" />
+              </WrapPanel>
+            </StackPanel>
+            <Button
+              x:Name="AddSourceButton"
+              Content="{l:T Settings.Sources.Add}"
+              Command="{Binding Sources.AddCommand}"
+              IsVisible="{Binding !Sources.IsReadOnly}"
+            />
+            <!-- Add or edit: the kind (others are coming), then the details and a name (behavior 2). -->
+            <Border
+              x:Name="SourceForm"
+              IsVisible="{Binding Sources.IsEditing}"
+              Background="{DynamicResource Brush.Surface}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Control}"
+              Padding="12"
+            >
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Sources.EditTitle}" FontWeight="SemiBold" />
+                <ItemsControl ItemsSource="{Binding Sources.Kinds}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="s:SourceKindChoice">
+                      <RadioButton
+                        GroupName="SourceKind"
+                        Content="{Binding Name}"
+                        IsEnabled="{Binding IsAvailable}"
+                        IsChecked="{Binding IsAvailable, Mode=OneWay}"
+                      />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{l:T Settings.Sources.Server}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="SourceServerBox"
+                  Text="{Binding Sources.EditServer}"
+                  PlaceholderText="{l:T Settings.Sources.ServerExample}"
+                  AutomationProperties.Name="{l:T Settings.Sources.Server}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                />
+                <TextBlock Text="{l:T Settings.Sources.Filter}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="SourceFilterBox"
+                  Text="{Binding Sources.EditFilter}"
+                  AutomationProperties.Name="{l:T Settings.Sources.Filter}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                />
+                <TextBlock Text="{l:T Settings.Sources.Name}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="SourceNameBox"
+                  Text="{Binding Sources.EditName}"
+                  PlaceholderText="{l:T Settings.Sources.NameDefault}"
+                  AutomationProperties.Name="{l:T Settings.Sources.Name}"
+                />
+                <TextBlock
+                  Text="{Binding Sources.EditUsedBy}"
+                  IsVisible="{Binding Sources.EditUsedBy, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+                <TextBlock
+                  Text="{Binding Sources.Error}"
+                  IsVisible="{Binding Sources.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  Foreground="{DynamicResource Brush.Warn}"
+                  TextWrapping="Wrap"
+                />
+                <WrapPanel ItemSpacing="8">
+                  <Button
+                    x:Name="SaveSourceButton"
+                    Classes="accent"
+                    Content="{l:T Settings.Sources.Save}"
+                    Command="{Binding Sources.SaveCommand}"
+                  />
+                  <Button Content="{l:T Settings.Sources.Cancel}" Command="{Binding Sources.CancelCommand}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
           <StackPanel x:Name="AppearanceSection" IsVisible="{Binding IsAppearanceSection}" Spacing="20">
             <ItemsControl x:Name="AppearanceOptions" ItemsSource="{Binding AppearanceItems}">
               <ItemsControl.ItemsPanel>

@@ -40,12 +40,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         bool showPseudoLanguage = false,
         ProfilesSectionViewModel? profiles = null,
         DataSectionViewModel? data = null,
-        IReadOnlyList<SettingItem>? mapItems = null
+        IReadOnlyList<SettingItem>? mapItems = null,
+        SourcesSectionViewModel? sources = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
         _appearance = appearance;
         Profiles = profiles;
+        Sources = sources;
         Data = data;
         _time = time;
         _text = text ?? Localizer.Instance;
@@ -71,6 +73,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsAppearanceSection),
         nameof(IsAboutSection),
         nameof(IsProfilesSection),
+        nameof(IsSourcesSection),
         nameof(IsDataSection),
         nameof(IsMapSection)
     )]
@@ -81,6 +84,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>The Profiles section (F0.8), when the app manages profiles here.</summary>
     public ProfilesSectionViewModel? Profiles { get; }
+
+    /// <summary>Whether Sources is showing.</summary>
+    public bool IsSourcesSection => SelectedSection?.Id == "sources";
+
+    /// <summary>The Sources section (F1.25), when the app manages sources here.</summary>
+    public SourcesSectionViewModel? Sources { get; }
 
     /// <summary>Whether Appearance is showing.</summary>
     public bool IsAppearanceSection => SelectedSection?.Id == "appearance";
@@ -194,6 +203,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("profiles", _text["Settings.Profiles"]));
         }
+        if (Sources is not null)
+        {
+            Sections.Add(new SettingsSection("sources", _text["Settings.Sources"]));
+        }
         Sections.Add(new SettingsSection("appearance", _text["Settings.Appearance"]));
         if (MapItems.Count > 0)
         {
@@ -211,6 +224,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
         About.Retranslate();
         Profiles?.Retranslate();
+        Sources?.Retranslate();
         Data?.Retranslate();
     }
 }

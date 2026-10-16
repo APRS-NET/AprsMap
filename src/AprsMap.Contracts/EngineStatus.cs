@@ -50,6 +50,10 @@ public enum ConnectionState
 /// <param name="Viewers">How many browsers are connected to the gateway (F1.14 behavior 11); null on desktop.</param>
 /// <param name="Filter">The APRS-IS filter in use (F1.2 behavior 7); null before the first login.</param>
 /// <param name="FilterAreas">The filter's range parts as circles, for the map (F1.2 behavior 6).</param>
+/// <param name="Sources">
+/// Each source the active profile uses, with its own connection state (F1.25 behavior 11). The top-level fields are the
+/// APRS-IS source's.
+/// </param>
 public sealed record EngineStatus(
     ConnectionState Connection,
     string? Server,
@@ -64,7 +68,24 @@ public sealed record EngineStatus(
     EngineError? ConnectionError = null,
     int? Viewers = null,
     string? Filter = null,
-    IReadOnlyList<FilterArea>? FilterAreas = null
+    IReadOnlyList<FilterArea>? FilterAreas = null,
+    IReadOnlyList<SourceStatus>? Sources = null
+);
+
+/// <summary>One source's connection, for its status pill (F1.25 behavior 11).</summary>
+/// <param name="Id">The source's id.</param>
+/// <param name="Name">The source's name.</param>
+/// <param name="Kind">What it is.</param>
+/// <param name="State">Its connection state, as F1.1 defines it.</param>
+/// <param name="Server">What it is connected to (the APRS-IS server's name), when connected.</param>
+/// <param name="Error">Why it is reconnecting or stopped.</param>
+public sealed record SourceStatus(
+    string Id,
+    string Name,
+    SourceKind Kind,
+    ConnectionState State,
+    string? Server = null,
+    EngineError? Error = null
 );
 
 /// <summary>One range part of the APRS-IS filter, drawn on the map as a circle (F1.2 behavior 6).</summary>

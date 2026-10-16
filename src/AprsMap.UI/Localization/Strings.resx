@@ -84,6 +84,9 @@
   <data name="Settings.Profiles.NoSource" xml:space="preserve">
     <value>No APRS-IS source</value>
   </data>
+  <data name="Error.source.kind-not-built" xml:space="preserve">
+    <value>This kind of source isn't built yet.</value>
+  </data>
   <data name="Error.settings.source.invalid" xml:space="preserve">
     <value>Every source needs its own id and a name.</value>
   </data>
@@ -93,9 +96,97 @@
   <data name="Error.settings.profile.two-aprs-is" xml:space="preserve">
     <value>Profile {profile} uses more than one APRS-IS source; a station logs in to one at a time.</value>
   </data>
+  <data name="Settings.Sources" xml:space="preserve">
+    <value>Sources</value>
+  </data>
+  <data name="Settings.Sources.Intro" xml:space="preserve">
+    <value>Where traffic comes from. Each profile picks its sources in its editor; a station logs in to one APRS-IS source at a time.</value>
+  </data>
+  <data name="Settings.Sources.Kind.AprsIs" xml:space="preserve">
+    <value>APRS-IS</value>
+  </data>
+  <data name="Settings.Sources.Kind.KissTcp" xml:space="preserve">
+    <value>KISS over TCP</value>
+  </data>
+  <data name="Settings.Sources.Kind.KissSerial" xml:space="preserve">
+    <value>KISS over serial</value>
+  </data>
+  <data name="Settings.Sources.Kind.Gps" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="Settings.Sources.Coming" xml:space="preserve">
+    <value>{kind} · coming</value>
+    <comment>A kind of source that isn't built yet, shown so the feature's shape is visible.</comment>
+  </data>
+  <data name="Settings.Sources.UsedBy" xml:space="preserve">
+    <value>Used by: {profiles}</value>
+    <comment>profiles: profile names, comma-separated.</comment>
+  </data>
+  <data name="Settings.Sources.Unused" xml:space="preserve">
+    <value>Not used by any profile</value>
+  </data>
+  <data name="Settings.Sources.EditNamed" xml:space="preserve">
+    <value>Edit {source}</value>
+  </data>
+  <data name="Settings.Sources.DeleteNamed" xml:space="preserve">
+    <value>Delete {source}</value>
+  </data>
+  <data name="Settings.Sources.Add" xml:space="preserve">
+    <value>Add a source</value>
+  </data>
+  <data name="Settings.Sources.Server" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="Settings.Sources.ServerExample" xml:space="preserve">
+    <value>rotate.aprs2.net:14580</value>
+    <comment>An example server, shown in the empty box. Keep it as it is.</comment>
+  </data>
+  <data name="Settings.Sources.Filter" xml:space="preserve">
+    <value>Filter text added to the automatic filter</value>
+  </data>
+  <data name="Settings.Sources.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Settings.Sources.NameDefault" xml:space="preserve">
+    <value>The server's name</value>
+  </data>
+  <data name="Settings.Sources.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Settings.Sources.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Settings.Sources.ConfirmDelete" xml:space="preserve">
+    <value>{source} is used by {profiles}. Delete it and untick it there?</value>
+  </data>
+  <data name="Settings.Sources.DeleteAnyway" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Settings.Sources.Keep" xml:space="preserve">
+    <value>Keep it</value>
+  </data>
   <data name="Settings.Profiles.Filter" xml:space="preserve">
     <value>The active profile's filter now: {filter}</value>
     <comment>Under the profile list. filter: the APRS-IS filter as sent (not translated).</comment>
+  </data>
+  <data name="Sources.SeenAlso" xml:space="preserve">
+    <value>{source} · also {others}</value>
+    <comment>Where a packet arrived first, then the other sources it was heard on.</comment>
+  </data>
+  <data name="Details.Label.HeardVia" xml:space="preserve">
+    <value>Heard via</value>
+  </data>
+  <data name="Status.Source.Connected" xml:space="preserve">
+    <value>{source} connected</value>
+  </data>
+  <data name="Status.Source.Connecting" xml:space="preserve">
+    <value>{source} connecting…</value>
+  </data>
+  <data name="Status.Source.Reconnecting" xml:space="preserve">
+    <value>{source} reconnecting…</value>
+  </data>
+  <data name="Status.Source.Error" xml:space="preserve">
+    <value>{source}: {error}</value>
   </data>
   <data name="Status.Filter" xml:space="preserve">
     <value>Filter: {filter}</value>
@@ -106,6 +197,15 @@
   </data>
   <data name="Settings.Map.FilterCircles.Help" xml:space="preserve">
     <value>Dashed circles show where APRS-IS sends stations from: around your location, the map and any station you follow.</value>
+  </data>
+  <data name="Wizard.Source" xml:space="preserve">
+    <value>APRS-IS source</value>
+  </data>
+  <data name="Wizard.Source.New" xml:space="preserve">
+    <value>A new server…</value>
+  </data>
+  <data name="Wizard.Source.None" xml:space="preserve">
+    <value>None (no APRS-IS)</value>
   </data>
   <data name="Wizard.Range" xml:space="preserve">
     <value>Range around the station</value>

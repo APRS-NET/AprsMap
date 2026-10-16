@@ -28,6 +28,9 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     private readonly List<StationWatcher> _watchers = [];
     private AprsPosition? _home;
 
+    // The source of the packet being applied, under the lock.
+    private string? _sourceId;
+
     public int Count
     {
         get
@@ -44,7 +47,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
     /// updates its station's entry, positioned objects and items their own, and a kill removes one. A third-party packet
     /// updates the station inside it, not the gateway that wrapped it.
     /// </summary>
-    public void Apply(AprsPacket packet, DateTimeOffset receivedAt)
+    public void Apply(AprsPacket packet, DateTimeOffset receivedAt, string? sourceId = null)
     {
         var raw = packet.Raw.ToArray(); // as received, third-party wrapper and all
         if (packet.Payload is ThirdPartyPayload { Packet: { HasHeader: true } inner })
@@ -58,6 +61,7 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
 
         lock (_gate)
         {
+            _sourceId = sourceId; // several sources apply at once: only under the lock
             switch (packet.Payload)
             {
                 case ObjectReport report:
@@ -147,6 +151,31 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         lock (_gate)
         {
             return _entries.TryGetValue(name, out var entry) ? entry.ToDetail(_home) : null;
+        }
+    }
+
+    /// <summary>
+    /// <paramref name="packet"/>, a duplicate of a report first heard on another source, was heard on
+    /// <paramref name="sourceId"/> too: its station's Seen on gains it (F1.25 behavior 9).
+    /// </summary>
+    public void SeenOn(AprsPacket packet, string sourceId)
+    {
+        if (packet.Payload is ThirdPartyPayload { Packet: { HasHeader: true } inner })
+        {
+            packet = inner;
+        }
+        var name = packet.Payload switch
+        {
+            ObjectReport report => report.Name,
+            ItemReport report => report.Name,
+            _ => packet.Source?.Value,
+        };
+        lock (_gate)
+        {
+            if (name is not null && _entries.TryGetValue(name, out var entry) && entry.FirstHeardVia != sourceId)
+            {
+                entry.SeenOn.Add(sourceId);
+            }
         }
     }
 
@@ -334,6 +363,8 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
         entry.Packets++;
         entry.Path = packet.Path is { } path ? string.Join(',', path.Select(p => p.ToString())) : null;
         entry.LastPacket = raw;
+        entry.FirstHeardVia = _sourceId; // a new report: seen on its source alone, so far (F1.25 behavior 9)
+        entry.SeenOn.Clear();
         return entry;
     }
 
@@ -403,6 +434,12 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
 
         /// <summary>The last packet's bytes as received; the details work out its device and route from them.</summary>
         public byte[]? LastPacket { get; set; }
+
+        /// <summary>The source the latest report arrived on first.</summary>
+        public string? FirstHeardVia { get; set; }
+
+        /// <summary>Other sources the latest report was heard on.</summary>
+        public SortedSet<string> SeenOn { get; } = new(StringComparer.Ordinal);
 
         public bool HasPosition => Latitude is not null && Longitude is not null;
 
@@ -480,7 +517,9 @@ internal sealed class StationStore(int maxEntries = StationStore.DefaultMaxEntri
                 HasPosition ? MaidenheadLocator.FromPosition(Latitude!.Value, Longitude!.Value, 6).Value : null,
                 device,
                 arrival,
-                text
+                text,
+                FirstHeardVia,
+                SeenOn.Count == 0 ? null : [.. SeenOn]
             );
         }
 

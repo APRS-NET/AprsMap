@@ -674,6 +674,136 @@ public class EngineTests
         await run;
     }
 
+    private static readonly SourceSettings Tnc = new("tnc", "Direwolf", SourceKind.KissTcp);
+
+    [Fact]
+    public async Task APacketOnTwoSourcesIsListedOnceAndSeenOnTheSecond()
+    {
+        var sources = new FakeSourceFactory();
+        var aprsIs = sources.Enqueue("T2TEST");
+        var tnc = sources.EnqueueFor(Tnc.Id, "DIREWOLF");
+        var profile = InMemorySettingsStore.Profile("N0TEST") with
+        {
+            SourceIds = [InMemorySettingsStore.Rotate.Id, Tnc.Id],
+        };
+        var store = new InMemorySettingsStore(
+            new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [InMemorySettingsStore.Rotate, Tnc])
+        );
+        var engine = CreateEngine(new FakeTimeProvider(), sources, settings: store);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await aprsIs.Connected.Task.WaitAsync(Ct);
+        await tnc.Connected.Task.WaitAsync(Ct);
+        await WaitUntil(async () =>
+            (await engine.GetStatusAsync(Ct)).Sources is { Count: 2 } all
+            && all.All(s => s.State == ConnectionState.Connected)
+        );
+
+        const string Line = "N0RF-9>APRS,WIDE1-1:!4903.50N/07201.75W>Heard on RF";
+        await tnc.Write(Line);
+        await WaitUntil(async () => (await engine.GetStationAsync("N0RF-9", Ct)) is not null);
+        await aprsIs.Write("N0RF-9>APRS,WIDE1-1,qAR,N1GATE:!4903.50N/07201.75W>Heard on RF");
+        await WaitUntil(async () => (await engine.GetStationAsync("N0RF-9", Ct))?.SeenOn is { Count: 1 });
+
+        var station = (await engine.GetStationAsync("N0RF-9", Ct))!;
+        Assert.Equal(("tnc", "rotate"), (station.FirstHeardVia, Assert.Single(station.SeenOn!)));
+        Assert.Equal(1, station.Packets); // not counted twice
+        await using var watch = engine.WatchPacketsAsync(null, cts.Token).GetAsyncEnumerator(cts.Token);
+        Assert.True(await watch.MoveNextAsync());
+        Assert.Equal(("tnc", "rotate"), (watch.Current.SourceId, Assert.Single(watch.Current.SeenOn!)));
+        Assert.Equal(1, (await engine.GetStatusAsync(Ct)).PacketsReceived); // listed once
+
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task SwitchingBetweenProfilesThatShareASourceKeepsItOpen()
+    {
+        var sources = new FakeSourceFactory();
+        sources.Enqueue("T2HOME");
+        var away = sources.Enqueue("T2AWAY");
+        var tnc = sources.EnqueueFor(Tnc.Id, "DIREWOLF");
+        var home = InMemorySettingsStore.Profile("N0HOME") with
+        {
+            SourceIds = [InMemorySettingsStore.Rotate.Id, Tnc.Id],
+        };
+        var portable = InMemorySettingsStore.Profile("N0AWAY") with
+        {
+            SourceIds = [InMemorySettingsStore.Rotate.Id, Tnc.Id],
+        };
+        var store = new InMemorySettingsStore(
+            new AppSettings(
+                [home, portable],
+                home.Id,
+                UnitSettings.Metric,
+                Sources: [InMemorySettingsStore.Rotate, Tnc]
+            )
+        );
+        var engine = CreateEngine(new FakeTimeProvider(), sources, settings: store);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await tnc.Connected.Task.WaitAsync(Ct);
+        var settings = await engine.GetSettingsAsync(Ct);
+        await engine.SaveSettingsAsync(settings with { ActiveProfileId = portable.Id }, Ct);
+        await away.Connected.Task.WaitAsync(Ct); // APRS-IS logs in again, as the other callsign
+
+        Assert.Equal(1, sources.Opens[Tnc.Id]); // the TNC stayed open
+        Assert.False(tnc.Disposed);
+
+        // A profile without it closes it.
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                ActiveProfileId = portable.Id,
+                Profiles = [home, portable with { SourceIds = [InMemorySettingsStore.Rotate.Id] }],
+            },
+            Ct
+        );
+        await WaitUntil(() => Task.FromResult(tnc.Disposed));
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task AKindNotBuiltYetSaysSoAndIsNotRetried()
+    {
+        var profile = InMemorySettingsStore.Profile("N0TEST") with
+        {
+            SourceIds = [InMemorySettingsStore.Rotate.Id, Tnc.Id],
+        };
+        var engine = new Engine(
+            Options.Create(new EngineOptions()),
+            new AprsIsPacketSourceFactory(
+                Options.Create(new EngineOptions()),
+                NullLoggerFactory.Instance,
+                TimeProvider.System
+            ),
+            new InMemorySettingsStore(
+                new AppSettings(
+                    [profile],
+                    profile.Id,
+                    UnitSettings.Metric,
+                    Sources: [InMemorySettingsStore.Rotate with { Server = "127.0.0.1:1" }, Tnc]
+                )
+            ),
+            new FakeTimeProvider(),
+            NullLogger<Engine>.Instance
+        );
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+
+        var run = engine.RunAsync(cts.Token);
+        await WaitUntil(async () =>
+            (await engine.GetStatusAsync(Ct)).Sources?.FirstOrDefault(s => s.Id == Tnc.Id) is { } tnc
+            && tnc.Error?.Code == EngineErrorCodes.SourceKindNotBuilt
+        );
+
+        await cts.CancelAsync();
+        await run;
+    }
+
     [Fact]
     public async Task MapViewsChangeTheFilterAtMostOnceInTheIntervalWithoutANewLogin()
     {
@@ -1052,8 +1182,22 @@ public class EngineTests
         /// <summary>The filter each login was made with.</summary>
         public System.Collections.Concurrent.ConcurrentQueue<string> LoginFilters { get; } = new();
 
+        /// <summary>The connection each non-APRS-IS source opens, by source id.</summary>
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, FakeSource> _others = new();
+
+        /// <summary>How many times each source was opened, by source id.</summary>
+        public System.Collections.Concurrent.ConcurrentDictionary<string, int> Opens { get; } = new();
+
+        /// <summary>The connection a TNC-like source with <paramref name="sourceId"/> opens.</summary>
+        public FakeSource EnqueueFor(string sourceId, string server) => _others[sourceId] = new FakeSource(server);
+
         public IPacketSource Create(StationProfile profile, SourceSettings source, string filter)
         {
+            Opens.AddOrUpdate(source.Id, 1, (_, n) => n + 1);
+            if (source.Kind != SourceKind.AprsIs)
+            {
+                return _others.TryGetValue(source.Id, out var other) ? other : new FakeSource(server: null);
+            }
             Profiles.Enqueue(profile);
             LoginFilters.Enqueue(filter);
             Interlocked.Increment(ref _attempts);

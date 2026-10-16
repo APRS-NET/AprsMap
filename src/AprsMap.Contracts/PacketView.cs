@@ -22,6 +22,8 @@ namespace AprsMap.Contracts;
 /// </param>
 /// <param name="Markers">How the packet reached APRS-IS (F1.8 behavior 2).</param>
 /// <param name="Symbol">The symbol as its two APRS characters (table, code), when the packet carries one.</param>
+/// <param name="SourceId">The source it arrived on (F1.25 behavior 8), by <see cref="SourceSettings.Id"/>.</param>
+/// <param name="SeenOn">Other sources it was heard on within the duplicate window (F1.25 behavior 9).</param>
 /// <param name="Hops">How many digipeaters repeated it, for <see cref="PacketMarkers.Digipeated"/>; 0 otherwise.</param>
 public sealed record PacketView(
     DateTimeOffset ReceivedAt,
@@ -38,7 +40,9 @@ public sealed record PacketView(
     IReadOnlyList<EngineError>? Issues = null,
     PacketMarkers Markers = PacketMarkers.None,
     string? Symbol = null,
-    int Hops = 0
+    int Hops = 0,
+    string? SourceId = null,
+    IReadOnlyList<string>? SeenOn = null
 )
 {
     /// <summary>Whether APRS.NET reported any issue with the packet.</summary>

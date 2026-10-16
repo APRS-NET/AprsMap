@@ -207,13 +207,19 @@
                 VerticalAlignment="Center"
                 Margin="4,0,16,0"
               />
-              <TextBlock
-                Grid.Column="5"
-                Text="{Binding Summary}"
-                Classes.duplicate="{Binding IsDuplicate}"
-                TextTrimming="CharacterEllipsis"
-                VerticalAlignment="Center"
-              />
+              <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <!-- Where it arrived, with several sources in use (F1.25 behavior 8). -->
+                <TextBlock
+                  Text="{Binding SourceText}"
+                  IsVisible="{Binding SourceText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  Foreground="{DynamicResource Brush.Accent}"
+                />
+                <TextBlock
+                  Text="{Binding Summary}"
+                  Classes.duplicate="{Binding IsDuplicate}"
+                  TextTrimming="CharacterEllipsis"
+                />
+              </StackPanel>
               <!-- The raw text, with the part at fault marked. -->
               <p:RawText
                 Grid.Row="1"
