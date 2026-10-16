@@ -80,12 +80,14 @@ public sealed partial class MapPanel : UserControl, IDisposable
         {
             _main.StationsChanged -= OnStationsChanged;
             _main.PropertyChanged -= OnMainChanged;
+            _main.Details.CentreRequested -= OnCentreRequested;
         }
         _main = DataContext as MainViewModel;
         if (_main is not null)
         {
             _main.StationsChanged += OnStationsChanged;
             _main.PropertyChanged += OnMainChanged;
+            _main.Details.CentreRequested += OnCentreRequested;
             _map.SetStations(_main.Stations);
             _map.Select(_main.SelectedStation);
         }
@@ -218,6 +220,15 @@ public sealed partial class MapPanel : UserControl, IDisposable
         _menuAt = _map.PlaceAt(at);
         MapMenu.Open(_map);
         e.Handled = true;
+    }
+
+    /// <summary>Centre and Follow in the Details panel (F1.6 behavior 4): the map moves, keeping its zoom.</summary>
+    private void OnCentreRequested(object? sender, (double Latitude, double Longitude) at)
+    {
+        if (_map.View is var (_, _, resolution))
+        {
+            _map.GoTo(at.Latitude, at.Longitude, resolution);
+        }
     }
 
     private void OnStationsChanged(object? sender, StationBatch batch)

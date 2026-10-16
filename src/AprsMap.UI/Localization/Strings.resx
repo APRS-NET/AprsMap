@@ -1230,4 +1230,135 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Packets.Raw" xml:space="preserve">
     <value>Raw</value>
   </data>
+  <data name="Details.Empty" xml:space="preserve">
+    <value>Select a station on the map or in a list to see its details.</value>
+  </data>
+  <data name="Details.Kind.Station" xml:space="preserve">
+    <value>Station</value>
+  </data>
+  <data name="Details.Kind.Object" xml:space="preserve">
+    <value>Object</value>
+  </data>
+  <data name="Details.Kind.Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Details.OwnedBy" xml:space="preserve">
+    <value>{kind} from {owner}</value>
+    <comment>An object or item and the station that sent it last.</comment>
+  </data>
+  <data name="Details.OwnedByBefore" xml:space="preserve">
+    <value>{kind} from {owner}, before {previous}</value>
+    <comment>An object or item that changed hands: its owner, then the owner before.</comment>
+  </data>
+  <data name="Details.Heard" xml:space="preserve">
+    <value>Heard {minutes, plural, =0 {just now} one {# minute ago} other {# minutes ago}} · {packets, plural, one {# packet} other {# packets}}</value>
+  </data>
+  <data name="Details.Position" xml:space="preserve">
+    <value>{latitude}° {ns}, {longitude}° {ew}</value>
+    <comment>Latitude and longitude in degrees with hemispheres, for example 49.0583° N, 72.0292° W.</comment>
+  </data>
+  <data name="Details.North" xml:space="preserve">
+    <value>N</value>
+    <comment>Hemisphere letter.</comment>
+  </data>
+  <data name="Details.South" xml:space="preserve">
+    <value>S</value>
+    <comment>Hemisphere letter.</comment>
+  </data>
+  <data name="Details.East" xml:space="preserve">
+    <value>E</value>
+    <comment>Hemisphere letter.</comment>
+  </data>
+  <data name="Details.West" xml:space="preserve">
+    <value>W</value>
+    <comment>Hemisphere letter.</comment>
+  </data>
+  <data name="Details.LocatorAmbiguous" xml:space="preserve">
+    <value>{locator} · {digits, plural, one {# digit} other {# digits}} left out</value>
+    <comment>The locator, and how many digits of the position the station left out (position ambiguity).</comment>
+  </data>
+  <data name="Details.Speed.KilometresPerHour" xml:space="preserve">
+    <value>{value} km/h</value>
+  </data>
+  <data name="Details.Speed.MilesPerHour" xml:space="preserve">
+    <value>{value} mph</value>
+  </data>
+  <data name="Details.Speed.Knots" xml:space="preserve">
+    <value>{value} kn</value>
+  </data>
+  <data name="Details.Speed.MetresPerSecond" xml:space="preserve">
+    <value>{value} m/s</value>
+  </data>
+  <data name="Details.Course" xml:space="preserve">
+    <value>course {value}°</value>
+  </data>
+  <data name="Details.Altitude.Metres" xml:space="preserve">
+    <value>{value} m altitude</value>
+  </data>
+  <data name="Details.Altitude.Feet" xml:space="preserve">
+    <value>{value} ft altitude</value>
+  </data>
+  <data name="Details.Arrival.Direct" xml:space="preserve">
+    <value>Heard directly on RF</value>
+  </data>
+  <data name="Details.Arrival.DirectVia" xml:space="preserve">
+    <value>Heard directly on RF by {gateway}</value>
+    <comment>gateway: the IGate's callsign.</comment>
+  </data>
+  <data name="Details.Arrival.Digipeated" xml:space="preserve">
+    <value>{count, plural, =0 {Via digipeaters} one {Via digipeater {digipeaters}} other {Via digipeaters {digipeaters}}}, gated by {gateway}</value>
+    <comment>digipeaters: callsigns in order, comma-separated. gateway: the IGate's callsign.</comment>
+  </data>
+  <data name="Details.Arrival.Internet" xml:space="preserve">
+    <value>From the internet, through {gateway}</value>
+    <comment>gateway: the APRS-IS server the sender connected to.</comment>
+  </data>
+  <data name="Details.Label.Position" xml:space="preserve">
+    <value>Position</value>
+  </data>
+  <data name="Details.Label.Locator" xml:space="preserve">
+    <value>Locator</value>
+  </data>
+  <data name="Details.Label.Range" xml:space="preserve">
+    <value>From me</value>
+  </data>
+  <data name="Details.Label.Motion" xml:space="preserve">
+    <value>Motion</value>
+  </data>
+  <data name="Details.Label.Comment" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+  <data name="Details.Label.Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Details.Label.Arrival" xml:space="preserve">
+    <value>Arrived</value>
+  </data>
+  <data name="Details.Label.Path" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  <data name="Details.Label.Device" xml:space="preserve">
+    <value>Device</value>
+  </data>
+  <data name="Details.Label.LastPacket" xml:space="preserve">
+    <value>Last packet</value>
+  </data>
+  <data name="Details.Gone" xml:space="preserve">
+    <value>No longer heard</value>
+  </data>
+  <data name="Details.Centre" xml:space="preserve">
+    <value>Centre</value>
+  </data>
+  <data name="Details.Follow" xml:space="preserve">
+    <value>Follow</value>
+  </data>
+  <data name="Details.CopyPosition" xml:space="preserve">
+    <value>Copy position</value>
+  </data>
+  <data name="Details.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Details.ShowPath" xml:space="preserve">
+    <value>Show path</value>
+  </data>
 </root>

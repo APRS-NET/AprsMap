@@ -72,8 +72,15 @@ public sealed class AccessibilityRenderTests : IDisposable
             }
         );
         vm.ShowError(EngineErrors.Create(EngineErrorCodes.OperatorOnly, "English"));
+        engine.Details["N0CALL-15"] = FakeEngine.Detail("N0CALL-15", DateTimeOffset.UnixEpoch);
         var window = Show(vm);
         Check(window, "main view", failures);
+        vm.SelectedStation = "N0CALL-15";
+        for (var i = 0; i < 50 && vm.Details.LastPacket is null; i++)
+        {
+            await Task.Yield();
+        }
+        Check(window, "details", failures);
 
         // Settings, both sections.
         await vm.OpenSettingsCommand.ExecuteAsync(null);

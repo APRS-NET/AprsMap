@@ -1,0 +1,215 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The Details panel (F1.6): the selected station in full, each line only when known, with its actions. Its
+     DataContext is the main view model; everything inside works on its Details. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:s="using:AprsMap.UI.Stations"
+  xmlns:p="using:AprsMap.UI.Packets"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Views.DetailsPanel"
+  x:DataType="vm:MainViewModel"
+>
+  <Panel
+    DataContext="{Binding Details}"
+    x:DataType="s:StationDetailsViewModel"
+    Background="{DynamicResource Brush.Surface}"
+  >
+    <TextBlock
+      x:Name="EmptyNote"
+      Text="{l:T Details.Empty}"
+      IsVisible="{Binding IsEmpty}"
+      Foreground="{DynamicResource Brush.TextMuted}"
+      TextWrapping="Wrap"
+      TextAlignment="Center"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Center"
+      Margin="16"
+    />
+    <ScrollViewer IsVisible="{Binding HasStation}" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="12" Spacing="10" Grid.IsSharedSizeScope="True">
+        <!-- Heading: symbol, name, kind and owner (behavior 2.1), and Close. -->
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Image
+            Source="{Binding Symbol, Converter={x:Static p:SymbolIcons.Instance}}"
+            Width="{DynamicResource Icon.Size}"
+            Height="{DynamicResource Icon.Size}"
+            VerticalAlignment="Center"
+            Margin="0,0,10,0"
+          />
+          <StackPanel Grid.Column="1">
+            <SelectableTextBlock
+              x:Name="StationName"
+              Text="{Binding Name}"
+              FontFamily="{DynamicResource Font.Mono}"
+              FontSize="{DynamicResource Text.Title}"
+              FontWeight="SemiBold"
+            />
+            <TextBlock Text="{Binding KindText}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+          </StackPanel>
+          <Button
+            x:Name="CloseButton"
+            Grid.Column="2"
+            Command="{Binding CloseCommand}"
+            ToolTip.Tip="{l:T Details.Close}"
+            AutomationProperties.Name="{l:T Details.Close}"
+            VerticalAlignment="Top"
+            Background="{x:Null}"
+            BorderThickness="0"
+          >
+            <PathIcon
+              Data="M 6.4,5 L 12,10.6 L 17.6,5 L 19,6.4 L 13.4,12 L 19,17.6 L 17.6,19 L 12,13.4 L 6.4,19 L 5,17.6 L 10.6,12 L 5,6.4 Z"
+              Width="{DynamicResource Icon.Size}"
+              Height="{DynamicResource Icon.Size}"
+            />
+          </Button>
+        </Grid>
+        <TextBlock
+          x:Name="GoneNote"
+          Text="{l:T Details.Gone}"
+          IsVisible="{Binding IsGone}"
+          Foreground="{DynamicResource Brush.Warn}"
+          FontWeight="SemiBold"
+        />
+        <TextBlock
+          x:Name="HeardLine"
+          Text="{Binding HeardText}"
+          ToolTip.Tip="{Binding HeardTime}"
+          Foreground="{DynamicResource Brush.TextMuted}"
+          TextWrapping="Wrap"
+        />
+        <!-- Actions (behavior 4): each a button with an accessible name. -->
+        <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" IsEnabled="{Binding HasPosition}">
+          <Button x:Name="CentreButton" Content="{l:T Details.Centre}" Command="{Binding CentreCommand}" />
+          <ToggleButton x:Name="FollowButton" Content="{l:T Details.Follow}" IsChecked="{Binding IsFollowing}" />
+          <Button x:Name="CopyPositionButton" Content="{l:T Details.CopyPosition}" />
+        </WrapPanel>
+        <Grid IsVisible="{Binding PositionText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Position}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock
+            x:Name="PositionValue"
+            Grid.Column="1"
+            Text="{Binding PositionText}"
+            TextWrapping="Wrap"
+          />
+        </Grid>
+        <Grid IsVisible="{Binding LocatorText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Locator}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock
+            x:Name="LocatorValue"
+            Grid.Column="1"
+            Text="{Binding LocatorText}"
+            TextWrapping="Wrap"
+            FontFamily="{DynamicResource Font.Mono}"
+          />
+        </Grid>
+        <Grid IsVisible="{Binding RangeText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Range}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock x:Name="RangeValue" Grid.Column="1" Text="{Binding RangeText}" TextWrapping="Wrap" />
+        </Grid>
+        <Grid IsVisible="{Binding MotionText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Motion}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock x:Name="MotionValue" Grid.Column="1" Text="{Binding MotionText}" TextWrapping="Wrap" />
+        </Grid>
+        <Grid IsVisible="{Binding Comment, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Comment}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock x:Name="CommentValue" Grid.Column="1" Text="{Binding Comment}" TextWrapping="Wrap" />
+        </Grid>
+        <Grid IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Status}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock x:Name="StatusValue" Grid.Column="1" Text="{Binding Status}" TextWrapping="Wrap" />
+        </Grid>
+        <Grid IsVisible="{Binding ArrivalText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Arrival}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock x:Name="ArrivalValue" Grid.Column="1" Text="{Binding ArrivalText}" TextWrapping="Wrap" />
+        </Grid>
+        <Grid IsVisible="{Binding DeviceText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Device}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock x:Name="DeviceValue" Grid.Column="1" Text="{Binding DeviceText}" TextWrapping="Wrap" />
+        </Grid>
+        <Expander
+          x:Name="PathExpander"
+          Header="{l:T Details.ShowPath}"
+          IsVisible="{Binding Path, Converter={x:Static ObjectConverters.IsNotNull}}"
+          HorizontalAlignment="Stretch"
+        >
+          <SelectableTextBlock Text="{Binding Path}" FontFamily="{DynamicResource Font.Mono}" TextWrapping="Wrap" />
+        </Expander>
+        <StackPanel Spacing="4" IsVisible="{Binding LastPacket, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TextBlock Text="{l:T Details.Label.LastPacket}" Foreground="{DynamicResource Brush.TextMuted}" />
+          <SelectableTextBlock
+            x:Name="LastPacketValue"
+            Text="{Binding LastPacket}"
+            FontFamily="{DynamicResource Font.Mono}"
+            TextWrapping="Wrap"
+          />
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </Panel>
+</UserControl>

@@ -54,6 +54,13 @@ public sealed partial class MainViewModel : ObservableObject
         _showPseudoLanguage = showPseudoLanguage;
         _text = text ?? Localizer.Instance;
         PacketList = new PacketListViewModel(engine, time, _text);
+        Details = new Stations.StationDetailsViewModel(
+            engine,
+            time,
+            _text,
+            () => _settings?.Units ?? UnitSettings.Metric
+        );
+        Details.CloseRequested += (_, _) => SelectedStation = null;
         Shell = new ShellViewModel(this, _text, managedWindows);
         _text.LanguageChanged += (_, _) => Retranslate();
         Retranslate();
@@ -428,6 +435,7 @@ public sealed partial class MainViewModel : ObservableObject
         }
         StationCount = _stations.Count;
         StationsChanged?.Invoke(this, batch);
+        Details.Changed(batch);
     }
 
     /// <summary>Every station on the map, by name, as the station stream has them.</summary>
@@ -445,6 +453,11 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The station selected on the map or in a list, for the Details panel (F1.6); null for none.</summary>
     [ObservableProperty]
     public partial string? SelectedStation { get; set; }
+
+    /// <summary>The Details panel (F1.6): the selected station, in full.</summary>
+    public Stations.StationDetailsViewModel Details { get; }
+
+    partial void OnSelectedStationChanged(string? value) => _ = Details.ShowAsync(value);
 
     /// <summary>Shows freshly loaded settings without treating them as the user's choice.</summary>
     internal void Show(AppSettings settings)
@@ -564,6 +577,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     internal void Show(EngineStatus status)
     {
+        Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         PacketCount = status.PacketsReceived;
         _status = status;
         _engineUnreachable = false;
