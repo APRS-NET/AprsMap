@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.3...v0.4.0-alpha.4) (2026-10-17)
+
+
+### Features
+
+* **beacons:** position and status beacons (F2.2) ([8e74f56](https://github.com/APRS-NET/AprsMap/commit/8e74f563889d07ff60a5891d6779d420813cf5e3))
+
 ## [0.4.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.2...v0.4.0-alpha.3) (2026-10-17)
 
 
