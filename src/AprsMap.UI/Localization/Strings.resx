@@ -1041,6 +1041,106 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Details</value>
     <comment>Panel title: details of the selected station.</comment>
   </data>
+  <data name="Shell.Panel.messages" xml:space="preserve">
+    <value>Messages</value>
+    <comment>Panel title: conversations with other stations.</comment>
+  </data>
+  <data name="Messages.NewCallsign" xml:space="preserve">
+    <value>Message a callsign</value>
+  </data>
+  <data name="Messages.Start" xml:space="preserve">
+    <value>Start</value>
+    <comment>Opens a conversation with the callsign typed.</comment>
+  </data>
+  <data name="Messages.Conversations" xml:space="preserve">
+    <value>Conversations</value>
+  </data>
+  <data name="Messages.NoMessagesYet" xml:space="preserve">
+    <value>No messages yet</value>
+  </data>
+  <data name="Messages.ConversationSpoken" xml:space="preserve">
+    <value>{station}, {unread, plural, =0 {no unread messages} one {# unread} other {# unread}}: {last}</value>
+  </data>
+  <data name="Messages.Compose" xml:space="preserve">
+    <value>Write a message</value>
+  </data>
+  <data name="Messages.ComposeCount" xml:space="preserve">
+    <value>{messages, plural, one {# message} other {# messages}} · {length} of 300</value>
+  </data>
+  <data name="Messages.Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Messages.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Stops sending a message.</comment>
+  </data>
+  <data name="Messages.SendAgain" xml:space="preserve">
+    <value>Send again</value>
+  </data>
+  <data name="Messages.Route" xml:space="preserve">
+    <value>Send via {sources}</value>
+    <comment>sources: where the next message goes, such as "Direwolf" or "rotate.aprs2.net".</comment>
+  </data>
+  <data name="Messages.RouteNone" xml:space="preserve">
+    <value>Send via: nothing can send now, so messages wait</value>
+  </data>
+  <data name="Messages.Automatic" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="Messages.Automatic.Help" xml:space="preserve">
+    <value>Over RF to a station your TNC heard in the last 30 minutes, over APRS-IS otherwise, and once more over APRS-IS if RF goes unanswered.</value>
+  </data>
+  <data name="Messages.RetriesLabel" xml:space="preserve">
+    <value>Retries</value>
+  </data>
+  <data name="Messages.Retries.Automatic" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="Messages.Retries.Default" xml:space="preserve">
+    <value>RF (6 tries over 23 minutes)</value>
+  </data>
+  <data name="Messages.Retries.AprsIs" xml:space="preserve">
+    <value>APRS-IS (4 tries over 13 minutes)</value>
+  </data>
+  <data name="Messages.Retries.SlowHf" xml:space="preserve">
+    <value>Slow HF modem (5 tries over 46 minutes)</value>
+  </data>
+  <data name="Messages.Retries.None" xml:space="preserve">
+    <value>Send once</value>
+  </data>
+  <data name="Messages.State.Received" xml:space="preserve">
+    <value>Received</value>
+  </data>
+  <data name="Messages.State.NotAcknowledged" xml:space="preserve">
+    <value>Not acknowledged: transmitting is off</value>
+  </data>
+  <data name="Messages.State.Queued" xml:space="preserve">
+    <value>Waiting to send</value>
+  </data>
+  <data name="Messages.State.Sent" xml:space="preserve">
+    <value>Sent</value>
+  </data>
+  <data name="Messages.State.Retrying" xml:space="preserve">
+    <value>Sent again, try {try} of {of}</value>
+  </data>
+  <data name="Messages.State.Delivered" xml:space="preserve">
+    <value>Delivered</value>
+  </data>
+  <data name="Messages.State.Rejected" xml:space="preserve">
+    <value>Rejected by the station</value>
+  </data>
+  <data name="Messages.State.Failed" xml:space="preserve">
+    <value>Not delivered</value>
+  </data>
+  <data name="Messages.State.Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="Messages.UnreadMarker" xml:space="preserve">
+    <value>{count, plural, one {# new message} other {# new messages}}</value>
+  </data>
+  <data name="Details.SendMessage" xml:space="preserve">
+    <value>Send message</value>
+  </data>
   <data name="Shell.Panel.packets" xml:space="preserve">
     <value>Packets</value>
     <comment>Panel title: the live list of received packets.</comment>

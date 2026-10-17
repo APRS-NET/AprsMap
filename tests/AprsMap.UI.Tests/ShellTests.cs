@@ -24,7 +24,7 @@ public sealed class ShellTests
         var shell = NewShell();
 
         Assert.Equal("Stations", Dock(shell, ShellFactory.LeftDock).Single().Title);
-        Assert.Equal("Details", Dock(shell, ShellFactory.RightDock).Single().Title);
+        Assert.Equal(["Details", "Messages"], Dock(shell, ShellFactory.RightDock).Select(p => p.Title)); // tabs (F2.4)
         Assert.Equal("Packets", Dock(shell, ShellFactory.BottomDock).Single().Title);
         var map = Assert.IsType<MapDocument>(Find(shell.Layout, PanelKinds.Map));
         Assert.Equal("Map", map.Title);
@@ -168,11 +168,13 @@ public sealed class ShellTests
     {
         var shell = NewShell();
         var details = Find(shell.Layout, PanelKinds.Details);
+        var messages = Find(shell.Layout, PanelKinds.Messages);
 
         shell.Factory.MoveToBottom.Execute(details);
+        shell.Factory.MoveToBottom.Execute(messages);
 
         Assert.Equal(ShellFactory.BottomDock, details.Owner!.Id);
-        Assert.Same(details, ((IDock)details.Owner).ActiveDockable);
+        Assert.Same(messages, ((IDock)messages.Owner!).ActiveDockable);
         Assert.DoesNotContain(
             ShellViewModel.Dockables(shell.Layout).OfType<IToolDock>(),
             d => d.Id == ShellFactory.RightDock && d.VisibleDockables!.Count > 0

@@ -68,6 +68,7 @@ public sealed partial class MainViewModel : ObservableObject
             name => _settings is { ReadOnly: false } && _tracks.TryGetValue(name, out var track) && track.Count > 1
         );
         Details.CloseRequested += (_, _) => SelectedStation = null;
+        Details.MessageRequested += (_, name) => OpenConversation(name);
         Details.SelectRequested += (_, name) => SelectedStation = name;
         Details.PropertyChanged += (_, e) =>
         {
@@ -215,6 +216,27 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The dashboard tab (F1.22).</summary>
     public Statistics.DashboardViewModel Dashboard { get; }
+
+    /// <summary>The Messages panel (docs/features/F2.4-messaging.md).</summary>
+    public Messages.MessagesViewModel Messages =>
+        _messagesPanel ??= new Messages.MessagesViewModel(engine, _text, time, () => _status);
+
+    private Messages.MessagesViewModel? _messagesPanel;
+
+    /// <summary>Opens the Messages panel on the conversation with <paramref name="correspondent"/> (behavior 3).</summary>
+    internal void OpenConversation(string correspondent)
+    {
+        Messages.Open(correspondent);
+        ShowPanel(PanelKinds.Messages);
+    }
+
+    /// <summary>"2 new messages" in the status bar while any are unread (behavior 4); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? UnreadText { get; private set; }
+
+    /// <summary>Opens the Messages panel, from the unread marker.</summary>
+    [RelayCommand]
+    private void ShowMessages() => ShowPanel(PanelKinds.Messages);
 
     /// <summary>The packet list's rows, newest first.</summary>
     public PacketRows Packets => PacketList.Rows;
@@ -594,7 +616,8 @@ public sealed partial class MainViewModel : ObservableObject
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);
         var countdown = KeepAsync(CountDownAsync, cancellationToken);
-        await Task.WhenAll(packets, stations, status, countdown);
+        var messages = KeepAsync(Messages.WatchAsync, cancellationToken);
+        await Task.WhenAll(packets, stations, status, countdown, messages);
     }
 
     /// <summary>Applies one batch from the station stream.</summary>
@@ -1187,6 +1210,13 @@ public sealed partial class MainViewModel : ObservableObject
         _engineUnreachable = false;
         ShowConnection();
         ShowSourcePills(status); // after the transmit state, which their Send position now follows
+        UnreadText =
+            status.UnreadMessages > 0
+                ? _text.Format(
+                    "Messages.UnreadMarker",
+                    new Dictionary<string, object?> { ["count"] = status.UnreadMessages }
+                )
+                : null;
     }
 
     /// <summary>Runs <paramref name="run"/> until cancelled, retrying after failures and after the stream ends.</summary>

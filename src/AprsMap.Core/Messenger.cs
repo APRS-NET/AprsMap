@@ -207,6 +207,24 @@ internal sealed class Messenger : IDisposable
                         );
                     })
                     .OrderByDescending(c => c.Last?.At),
+                // Started, with Send via or retries chosen, before the first message.
+                .. _conversations
+                    .Keys.Where(k =>
+                        !_messages.Any(m => string.Equals(m.Correspondent, k, StringComparison.OrdinalIgnoreCase))
+                    )
+                    .Select(k =>
+                    {
+                        var (via, retries) = Settings(k);
+                        var route = PlanRoute(k, via);
+                        return new Conversation(
+                            k,
+                            0,
+                            null,
+                            via,
+                            retries,
+                            route is null ? null : string.Join(", ", route.SourceIds.Select(NameOf))
+                        );
+                    }),
             ];
         }
     }
