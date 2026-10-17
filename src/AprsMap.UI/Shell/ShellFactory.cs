@@ -38,6 +38,19 @@ public sealed class ShellFactory(object context, bool managedWindows) : Factory
     /// <summary>Moves a panel to the bottom dock.</summary>
     public IRelayCommand<IDockable?> MoveToBottom => field ??= MoveCommand(BottomDock);
 
+    /// <summary>Set by the shell: puts the floating dashboard back beside the map.</summary>
+    internal Action<IDockable>? Returner { get; set; }
+
+    /// <summary>Docks the floating dashboard beside the map again (its tab menu, F1.22 behavior 1).</summary>
+    public IRelayCommand<IDockable?> DockBesideMap =>
+        field ??= new RelayCommand<IDockable?>(dashboard =>
+        {
+            if (dashboard is DashboardDocument)
+            {
+                Returner?.Invoke(dashboard);
+            }
+        });
+
     private RelayCommand<IDockable?> MoveCommand(string dockId) =>
         new(panel =>
         {

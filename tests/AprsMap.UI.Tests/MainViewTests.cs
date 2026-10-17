@@ -58,6 +58,36 @@ public class MainViewTests
     }
 
     [AvaloniaFact]
+    public void AFloatingPanelOrDashboardShowsItsViewInItsOwnWindow()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
+        var window = new Window
+        {
+            Content = new MainView { DataContext = vm },
+            Width = 1200,
+            Height = 800,
+        };
+        window.Show();
+        var all = Shell.ShellViewModel.Dockables(vm.Shell.Layout).ToList();
+
+        vm.Shell.Factory.FloatDockable(all.First(d => d.Id == Shell.PanelKinds.Stations));
+        vm.Shell.Factory.FloatDockable(all.First(d => d.Id == Shell.PanelKinds.Dashboard));
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+
+        var shown = vm
+            .Shell.Layout.Windows!.Select(w => (Window)w.Host!)
+            .SelectMany(host => host.GetVisualDescendants())
+            .Select(v => v.GetType())
+            .ToList();
+        Assert.Contains(typeof(StationsPanel), shown);
+        Assert.Contains(typeof(Statistics.DashboardPanel), shown);
+        foreach (var host in vm.Shell.Layout.Windows!.Select(w => (Window)w.Host!).ToList())
+        {
+            host.Close();
+        }
+    }
+
+    [AvaloniaFact]
     public void ADuplicateRowIsMuted()
     {
         var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());

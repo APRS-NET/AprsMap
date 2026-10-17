@@ -403,11 +403,7 @@
           Factory="{Binding Shell.Factory}"
           InitializeLayout="False"
           InitializeFactory="False"
-        >
-          <DockControl.DataTemplates>
-            <views:PanelTemplate />
-          </DockControl.DataTemplates>
-        </DockControl>
+        />
       </Panel>
     </DockPanel>
     <views:SettingsView

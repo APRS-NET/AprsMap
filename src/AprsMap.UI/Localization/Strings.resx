@@ -1079,6 +1079,10 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Move to _bottom</value>
     <comment>Panel menu. The underscore marks the access key.</comment>
   </data>
+  <data name="Shell.DockBesideMap" xml:space="preserve">
+    <value>_Dock beside the map</value>
+    <comment>The dashboard's tab menu when it's in its own window: puts it back as a tab beside the map. The underscore marks the access key.</comment>
+  </data>
   <data name="Shell.Menu" xml:space="preserve">
     <value>Menu</value>
     <comment>The app menu button's name and tooltip.</comment>

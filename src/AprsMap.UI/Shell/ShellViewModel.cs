@@ -50,6 +50,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Factory.WindowMoveDragEnd += (_, _) => OnChanged();
         Factory.WindowOpened += (_, _) => OnChanged();
         Factory.Mover = MoveTo;
+        Factory.Returner = DockBesideMap;
         Layout = Factory.CreateLayout();
         Factory.InitLayout(Layout);
         _text.LanguageChanged += (_, _) => Retitle();
@@ -212,6 +213,20 @@ public sealed partial class ShellViewModel : ObservableObject
         {
             owner.ActiveDockable = dashboard;
         }
+        OnChanged();
+    }
+
+    /// <summary>Puts <paramref name="dashboard"/> back as a tab beside the map, from a floating window.</summary>
+    public void DockBesideMap(IDockable dashboard)
+    {
+        ArgumentNullException.ThrowIfNull(dashboard);
+        var centre = Centre(Layout);
+        if (dashboard.Owner is IDock from && !ReferenceEquals(from, centre))
+        {
+            Factory.MoveDockable(from, centre, dashboard, null);
+        }
+        centre.ActiveDockable = dashboard;
+        Factory.InitLayout(Layout);
         OnChanged();
     }
 

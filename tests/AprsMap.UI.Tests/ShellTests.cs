@@ -206,6 +206,37 @@ public sealed class ShellTests
     }
 
     [AvaloniaFact]
+    public void TheFloatingDashboardCanBeDockedBesideTheMapAgainFromItsTabMenu()
+    {
+        var shell = NewShell();
+        var dashboard = Find(shell.Layout, PanelKinds.Dashboard);
+        Assert.True(
+            (bool)ShellConverters.IsDocked.Convert(dashboard, typeof(bool), null, CultureInfo.InvariantCulture)!
+        );
+        shell.Factory.FloatDockable(dashboard);
+        Assert.True(
+            (bool)ShellConverters.IsFloating.Convert(dashboard, typeof(bool), null, CultureInfo.InvariantCulture)!
+        );
+        var changed = 0;
+        shell.Changed += (_, _) => changed++;
+
+        shell.Factory.DockBesideMap.Execute(dashboard);
+
+        var centre = (IDock)Find(shell.Layout, ShellFactory.CentreDock);
+        Assert.Same(centre, dashboard.Owner);
+        Assert.Same(dashboard, centre.ActiveDockable);
+        Assert.Contains(centre.VisibleDockables!, d => d.Id == PanelKinds.Map);
+        Assert.False(
+            (bool)ShellConverters.IsFloating.Convert(dashboard, typeof(bool), null, CultureInfo.InvariantCulture)!
+        );
+        Assert.DoesNotContain(
+            shell.Layout.Windows ?? [],
+            w => ShellViewModel.Dockables(w.Layout!).Any(d => d.Id == PanelKinds.Dashboard)
+        );
+        Assert.NotEqual(0, changed);
+    }
+
+    [AvaloniaFact]
     public void AnAutoHiddenPanelCanBeMoved()
     {
         var shell = NewShell();
