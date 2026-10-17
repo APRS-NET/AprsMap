@@ -47,6 +47,17 @@ internal static class SettingsValidator
             }
         }
 
+        foreach (var source in settings.SourceList.Where(s => s.Kind != SourceKind.AprsIs && s.TxPath is not null))
+        {
+            if (!IsTxPath(source.EffectiveTxPath))
+            {
+                throw Fail(
+                    EngineErrorCodes.SourceTxPathInvalid,
+                    $"Source '{source.Name}': a TX path is up to 8 digipeater aliases or callsigns, separated by commas."
+                );
+            }
+        }
+
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var profile in settings.Profiles)
@@ -170,6 +181,21 @@ internal static class SettingsValidator
     /// <summary>Whether <paramref name="comment"/> fits a position report (F2.1 behavior 2).</summary>
     internal static bool IsSendableComment(string comment) =>
         comment.Length <= StationProfile.MaxCommentLength && comment.All(c => c is >= ' ' and <= '~');
+
+    /// <summary>Whether <paramref name="path"/> is a path APRS.NET can send on RF (F2.1 behavior 5.2).</summary>
+    internal static bool IsTxPath(string path)
+    {
+        try
+        {
+            var entries = path.Split(',', StringSplitOptions.TrimEntries);
+            _ = PacketAddress.Parse("N0CALL", "APZ000", entries);
+            return entries.Length <= 8;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Whether <paramref name="symbol"/> is a table or overlay character and a code APRS.NET accepts.</summary>
     internal static bool IsSymbol(string symbol) =>

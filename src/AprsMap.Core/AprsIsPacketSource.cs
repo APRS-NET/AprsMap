@@ -73,7 +73,7 @@ internal sealed class AprsIsPacketSourceFactory(
     {
         if (source.Kind == SourceKind.KissTcp)
         {
-            // F3.1: receive only. Nothing here sends; transmitting through a TNC is Phase 2, behind a verified login.
+            // Sends only what the engine lets through: TX enabled, a licensed profile, the Transmit switch (F2.1).
             return new KissPacketSource(
                 new KissTcpConnection(
                     new KissTcpOptions

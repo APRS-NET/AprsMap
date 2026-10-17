@@ -16,7 +16,7 @@ public sealed class GatewayTransmitTests(TrustedGatewayFactory trusted, GatewayF
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task BrowsersCannotTurnTransmitOnOrSend(bool allowSettingsChanges)
+    public async Task BrowsersCannotTurnTransmitOnSendOrTestSend(bool allowSettingsChanges)
     {
         await using var remote = (allowSettingsChanges ? trusted : locked).CreateRemote();
         await remote.StartAsync(Ct);
@@ -24,10 +24,12 @@ public sealed class GatewayTransmitTests(TrustedGatewayFactory trusted, GatewayF
         var turn = await Assert.ThrowsAsync<EngineAccessException>(() =>
             remote.SetToggleAsync(Toggle.Transmit, true, Ct)
         );
-        var send = await Assert.ThrowsAsync<EngineAccessException>(() => remote.SendPositionAsync(Ct));
+        var send = await Assert.ThrowsAsync<EngineAccessException>(() => remote.SendPositionAsync(null, Ct));
+        var test = await Assert.ThrowsAsync<EngineAccessException>(() => remote.TestSendAsync("rotate", Ct));
 
         Assert.Equal(EngineErrorCodes.OperatorOnly, turn.EngineError.Code);
         Assert.Equal(EngineErrorCodes.OperatorOnly, send.EngineError.Code);
+        Assert.Equal(EngineErrorCodes.OperatorOnly, test.EngineError.Code);
         Assert.False((await remote.GetSettingsAsync(Ct)).EffectiveToggles.Transmit);
     }
 

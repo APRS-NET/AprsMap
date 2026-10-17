@@ -53,13 +53,30 @@ public interface IEngineService
 
     /// <summary>
     /// Sends the active profile's position once, by hand (docs/features/F2.1-own-station.md, behaviors 10–13): its
-    /// location, symbol and comment, to APRS-IS. The packet is listed marked <see cref="PacketMarkers.Sent"/>, and the
-    /// profile is marked <see cref="StationProfile.PositionConfirmed"/>.
+    /// location, symbol and comment, on every source that can send now, or on <paramref name="sourceId"/> alone. Each
+    /// copy is listed marked <see cref="PacketMarkers.Sent"/>, and the profile is marked
+    /// <see cref="StationProfile.PositionConfirmed"/>.
     /// </summary>
-    /// <returns>The packet sent.</returns>
-    /// <exception cref="InvalidOperationException">It can't be sent now; the error's <c>transmit.*</c> code says why.</exception>
+    /// <param name="sourceId">The one source to send on, or null for every source that can.</param>
+    /// <param name="cancellationToken">Cancels the send.</param>
+    /// <returns>The copies sent, one per source.</returns>
+    /// <exception cref="InvalidOperationException">Nothing could be sent; the error's <c>transmit.*</c> code says why.</exception>
     /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
-    Task<PacketView> SendPositionAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PacketView>> SendPositionAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// Sends one status report on <paramref name="sourceId"/> alone, then listens for 30 seconds for it coming back
+    /// through a digipeater or an IGate (docs/features/F2.1-own-station.md, behavior 9).
+    /// </summary>
+    /// <exception cref="InvalidOperationException">It can't be sent; the error's <c>transmit.*</c> code says why.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task<TestSendResult> TestSendAsync(string sourceId, CancellationToken cancellationToken = default);
+
+    /// <summary>A new listener ID for an unlicensed user's profile (docs/features/F2.1-own-station.md, behavior 4).</summary>
+    Task<string> NewListenerIdAsync(CancellationToken cancellationToken = default);
 
     /// <summary>How much each kind of Clear would clear now (docs/features/F1.19-housekeeping.md, behavior 1).</summary>
     Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default);

@@ -106,6 +106,11 @@ public sealed record TransmitStatus(
 /// <param name="Error">Why it is reconnecting or stopped.</param>
 /// <param name="Enabled">Whether it's switched on (F3.1 behavior 6); a source switched off is listed, disconnected.</param>
 /// <param name="RetryAt">When the next attempt is, while it is reconnecting.</param>
+/// <param name="TransmitEnabled">The source is TX enabled (docs/features/F2.1-own-station.md, behavior 5).</param>
+/// <param name="TransmitBlocked">
+/// Why the station couldn't send on it now (a <c>transmit.*</c> code), or null when it can; null too when it isn't TX
+/// enabled.
+/// </param>
 public sealed record SourceStatus(
     string Id,
     string Name,
@@ -114,8 +119,23 @@ public sealed record SourceStatus(
     string? Server = null,
     EngineError? Error = null,
     bool Enabled = true,
-    DateTimeOffset? RetryAt = null
-);
+    DateTimeOffset? RetryAt = null,
+    bool TransmitEnabled = false,
+    EngineError? TransmitBlocked = null
+)
+{
+    /// <summary>Whether the station can send on this source now.</summary>
+    public bool CanTransmit => TransmitEnabled && TransmitBlocked is null;
+}
+
+/// <summary>What a Test send did (docs/features/F2.1-own-station.md, behavior 9).</summary>
+/// <param name="Sent">The packet sent.</param>
+/// <param name="HeardThrough">
+/// Who it was heard back through within 30 seconds: the digipeater that repeated it on RF, or the IGate that gated it to
+/// APRS-IS; null when it wasn't heard back.
+/// </param>
+/// <param name="ByIgate">Whether <paramref name="HeardThrough"/> is an IGate rather than a digipeater.</param>
+public sealed record TestSendResult(PacketView Sent, string? HeardThrough = null, bool ByIgate = false);
 
 /// <summary>One range part of the APRS-IS filter, drawn on the map as a circle (F1.2 behavior 6).</summary>
 /// <param name="Latitude">The centre.</param>

@@ -14,7 +14,7 @@ public static class EngineHub
     /// app sends it with its connection (<see cref="ContractQuery"/>), and a gateway on another version refuses it with
     /// <see cref="EngineErrorCodes.GatewayOutdated"/> (F1.14 behavior 8).
     /// </summary>
-    public const int ContractVersion = 1;
+    public const int ContractVersion = 2;
 
     /// <summary>The query value the app's contract version travels in, on the hub's address.</summary>
     public const string ContractQuery = "contract";
@@ -72,6 +72,12 @@ public static class EngineHub
 
     /// <summary>Hub method for <see cref="IEngineService.SendPositionAsync"/>.</summary>
     public const string SendPosition = "SendPosition";
+
+    /// <summary>Hub method for <see cref="IEngineService.TestSendAsync"/>.</summary>
+    public const string TestSend = "TestSend";
+
+    /// <summary>Hub method for <see cref="IEngineService.NewListenerIdAsync"/>.</summary>
+    public const string NewListenerId = "NewListenerId";
 
     /// <summary>Hub method for <see cref="IEngineService.ClearTrackAsync"/>.</summary>
     public const string ClearTrack = "ClearTrack";

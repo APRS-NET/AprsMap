@@ -2661,6 +2661,22 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.transmit.no-position" xml:space="preserve">
     <value>Set the station's location first.</value>
   </data>
+  <data name="Error.transmit.profile-disabled" xml:space="preserve">
+    <value>This profile has Disable TX ticked. Untick it in the profile to transmit.</value>
+  </data>
+  <data name="Error.transmit.not-licensed" xml:space="preserve">
+    <value>This profile only listens: confirm you're a licensed amateur in the profile to transmit.</value>
+  </data>
+  <data name="Error.transmit.source-disabled" xml:space="preserve">
+    <value>This source isn't TX enabled. Tick TX enabled on it in Settings.</value>
+  </data>
+  <data name="Error.transmit.no-source" xml:space="preserve">
+    <value>None of this profile's sources is TX enabled. Tick TX enabled on one in Settings.</value>
+  </data>
+  <data name="Error.settings.source.tx-path-invalid" xml:space="preserve">
+    <value>A TX path is up to 8 digipeater aliases or callsigns, separated by commas, such as WIDE1-1,WIDE2-1.</value>
+    <comment>WIDE1-1,WIDE2-1 is an APRS path: don't translate it.</comment>
+  </data>
   <data name="Error.transmit.failed" xml:space="preserve">
     <value>The packet couldn't be sent.</value>
   </data>
