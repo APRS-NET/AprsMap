@@ -23,6 +23,13 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     public partial string? TransmitText { get; private set; }
 
+    /// <summary>
+    /// The marker's tooltip: what it is, and when the next beacon is due and why (docs/features/F2.2-beacons.md,
+    /// behavior 10).
+    /// </summary>
+    [ObservableProperty]
+    public partial string? TransmitTip { get; private set; }
+
     /// <summary>Transmit is on but held (behavior 8): the marker takes the warning colour, and says so in words.</summary>
     [ObservableProperty]
     public partial bool IsTransmitHeld { get; private set; }
@@ -85,6 +92,48 @@ public sealed partial class MainViewModel
         }
     }
 
+    /// <summary>"Transmitting · next beacon in 12 min", or "Transmitting" with no beacon on.</summary>
+    private string BeaconText(TransmitStatus? transmit)
+    {
+        if (transmit?.BeaconHeld is not null)
+        {
+            return _text["Transmit.BeaconsWaiting"];
+        }
+        if (transmit?.NextBeacon is not { } next)
+        {
+            return _text["Transmit.On"];
+        }
+        var minutes = (int)Math.Ceiling((next.At - time.GetUtcNow()).TotalMinutes);
+        return minutes <= 1
+            ? _text["Transmit.NextBeaconSoon"]
+            : _text.Format("Transmit.NextBeacon", new Dictionary<string, object?> { ["minutes"] = minutes });
+    }
+
+    /// <summary>Why beacons wait, or which beacon is next and why then (behavior 10).</summary>
+    private string BeaconTip(TransmitStatus? transmit)
+    {
+        if (transmit?.BeaconHeld is { } held)
+        {
+            return _text.Format(
+                "Transmit.BeaconsWaitingTip",
+                new Dictionary<string, object?> { ["reason"] = _text.Format(held) }
+            );
+        }
+        if (transmit?.NextBeacon is not { } next)
+        {
+            return _text["Transmit.Marker.Help"];
+        }
+        var source = _status?.Sources?.FirstOrDefault(s => s.Id == next.SourceId)?.Name ?? next.SourceId;
+        return _text.Format(
+            next.Kind == BeaconKind.Position ? "Transmit.NextPositionTip" : "Transmit.NextStatusTip",
+            new Dictionary<string, object?>
+            {
+                ["source"] = source,
+                ["reason"] = _text[$"Transmit.BeaconReason.{next.Reason}"],
+            }
+        );
+    }
+
     /// <summary>Shows <see cref="EngineStatus.Transmit"/>, from the status and the toggles.</summary>
     private void ShowTransmit()
     {
@@ -100,7 +149,8 @@ public sealed partial class MainViewModel
                     "Transmit.Held",
                     new Dictionary<string, object?> { ["reason"] = _text.Format(transmit!.Blocked!) }
                 )
-            : _text["Transmit.On"];
+            : BeaconText(transmit);
+        TransmitTip = TransmitOn && !held ? BeaconTip(transmit) : _text["Transmit.Marker.Help"];
         CanSendPosition = TransmitOn && !held && !_engineUnreachable && CanTransmit;
         var aprsIs = _status?.Sources?.FirstOrDefault(s => s.Kind == SourceKind.AprsIs);
         IsAprsIsTransmitEnabled = CanTransmit && aprsIs is { TransmitEnabled: true };

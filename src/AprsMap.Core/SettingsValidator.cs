@@ -103,6 +103,7 @@ internal static class SettingsValidator
                     profile.Name
                 );
             }
+            ValidateBeacons(profile);
             if (profile.Symbol is { Length: > 0 } symbol && !IsSymbol(symbol))
             {
                 throw Fail(
@@ -181,6 +182,74 @@ internal static class SettingsValidator
     /// <summary>Whether <paramref name="comment"/> fits a position report (F2.1 behavior 2).</summary>
     internal static bool IsSendableComment(string comment) =>
         comment.Length <= StationProfile.MaxCommentLength && comment.All(c => c is >= ' ' and <= '~');
+
+    /// <summary>The beacons' settings (docs/features/F2.2-beacons.md, behaviors 1, 3).</summary>
+    private static void ValidateBeacons(StationProfile profile)
+    {
+        var position = profile.EffectivePositionBeacon;
+        var status = profile.EffectiveStatusBeacon;
+        if (!IsInterval(position.IntervalMinutes) || !IsInterval(status.IntervalMinutes))
+        {
+            throw Fail(
+                EngineErrorCodes.ProfileBeaconIntervalInvalid,
+                $"Profile '{profile.Name}': a beacon interval is {BeaconSettings.MinIntervalMinutes} minutes to 24 hours.",
+                profile.Name
+            );
+        }
+        if (!IsSendableStatus(status.Text))
+        {
+            throw Fail(
+                EngineErrorCodes.ProfileStatusInvalid,
+                $"Profile '{profile.Name}': a status has at most {StatusBeaconSettings.MaxTextLength} characters of "
+                    + "printable ASCII.",
+                profile.Name
+            );
+        }
+        if (position.Phg is { } phg && (position.Compressed || !IsPhg(phg)))
+        {
+            throw Fail(
+                EngineErrorCodes.ProfilePhgInvalid,
+                $"Profile '{profile.Name}': PHG takes the values the format carries, and only with an uncompressed "
+                    + "position.",
+                profile.Name
+            );
+        }
+    }
+
+    private static bool IsInterval(int minutes) =>
+        minutes is >= BeaconSettings.MinIntervalMinutes and <= BeaconSettings.MaxIntervalMinutes;
+
+    /// <summary>Whether <paramref name="text"/> fits a status report without a timestamp (F2.2 behavior 3).</summary>
+    internal static bool IsSendableStatus(string text) =>
+        text.Length <= StatusBeaconSettings.MaxTextLength && text.All(c => c is >= ' ' and <= '~');
+
+    /// <summary>
+    /// Whether APRS.NET sends <paramref name="phg"/> exactly: it rounds what the format can't carry, so the value is
+    /// written and read back, and must come back the same.
+    /// </summary>
+    internal static bool IsPhg(PhgSettings phg)
+    {
+        try
+        {
+            var chosen = Beaconer.PowerHeightGain(phg);
+            var packet = PacketAddress
+                .Parse("N0CALL", "APZ000", [])
+                .Create(
+                    new PositionReport
+                    {
+                        Position = new AprsPosition(0, 0),
+                        Symbol = new AprsSymbol('/', '-'),
+                        PowerHeightGain = chosen,
+                    }
+                );
+            return AprsPacket.Parse(packet.ToString()).Payload is PositionedPayload { PowerHeightGain: { } back }
+                && back == chosen;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Whether <paramref name="path"/> is a path APRS.NET can send on RF (F2.1 behavior 5.2).</summary>
     internal static bool IsTxPath(string path)

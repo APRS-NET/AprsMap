@@ -2844,6 +2844,21 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.transmit.no-source" xml:space="preserve">
     <value>None of this profile's sources is TX enabled. Tick TX enabled on one in Settings.</value>
   </data>
+  <data name="Error.transmit.position-unconfirmed" xml:space="preserve">
+    <value>Send your position once by hand to start beaconing.</value>
+  </data>
+  <data name="Error.settings.profile.beacon-interval-invalid" xml:space="preserve">
+    <value>Profile “{profile}”: a beacon interval is 10 minutes to 24 hours.</value>
+    <comment>profile: the profile's name.</comment>
+  </data>
+  <data name="Error.settings.profile.status-invalid" xml:space="preserve">
+    <value>Profile “{profile}”: a status can have up to 62 letters, digits and plain punctuation, without accents.</value>
+    <comment>profile: the profile's name. 62 is the most a status report carries.</comment>
+  </data>
+  <data name="Error.settings.profile.phg-invalid" xml:space="preserve">
+    <value>Profile “{profile}”: choose PHG values from the lists, and send the position uncompressed to include PHG.</value>
+    <comment>profile: the profile's name. PHG: power, height, gain (APRS term, not translated).</comment>
+  </data>
   <data name="Error.settings.source.tx-path-invalid" xml:space="preserve">
     <value>A TX path is up to 8 digipeater aliases or callsigns, separated by commas, such as WIDE1-1,WIDE2-1.</value>
     <comment>WIDE1-1,WIDE2-1 is an APRS path: don't translate it.</comment>
@@ -2908,5 +2923,142 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Details.Me.ThroughDigipeaters" xml:space="preserve">
     <value>Through digipeaters</value>
+  </data>
+  <data name="Settings.Beacons" xml:space="preserve">
+    <value>Beacons</value>
+  </data>
+  <data name="Beacons.Heading" xml:space="preserve">
+    <value>Beacons for {profile}</value>
+    <comment>profile: the active profile's name.</comment>
+  </data>
+  <data name="Beacons.Intro" xml:space="preserve">
+    <value>Your station can send its position and a status on its own. Beacons go out only while Transmit is on, and only once you've sent your position by hand.</value>
+  </data>
+  <data name="Beacons.ListensOnly" xml:space="preserve">
+    <value>This profile only listens, so it doesn't beacon.</value>
+  </data>
+  <data name="Beacons.DisableTx" xml:space="preserve">
+    <value>This profile has Disable TX ticked, so it doesn't beacon.</value>
+  </data>
+  <data name="Beacons.NoSources" xml:space="preserve">
+    <value>None of this profile's sources is TX enabled. Tick TX enabled on one in Settings › Sources to beacon on it.</value>
+  </data>
+  <data name="Beacons.Unconfirmed" xml:space="preserve">
+    <value>Send your position once by hand to start beaconing.</value>
+  </data>
+  <data name="Beacons.PositionOn" xml:space="preserve">
+    <value>Beacon my position</value>
+  </data>
+  <data name="Beacons.Schedule" xml:space="preserve">
+    <value>When</value>
+  </data>
+  <data name="Beacons.Schedule.Decay" xml:space="preserve">
+    <value>Soon after a change, then less often</value>
+  </data>
+  <data name="Beacons.Schedule.Fixed" xml:space="preserve">
+    <value>Every interval</value>
+  </data>
+  <data name="Beacons.Schedule.Moving" xml:space="preserve">
+    <value>By speed and turns</value>
+  </data>
+  <data name="Beacons.Schedule.Help" xml:space="preserve">
+    <value>After a change, the next beacons follow at 30 seconds, 1, 2, 4, 8 and 16 minutes on APRS-IS, then settle at the interval. A TNC never gets positions less than 10 minutes apart. Beaconing by speed and turns comes with GPS.</value>
+  </data>
+  <data name="Beacons.Interval" xml:space="preserve">
+    <value>Interval</value>
+  </data>
+  <data name="Beacons.SendVia" xml:space="preserve">
+    <value>Send via</value>
+  </data>
+  <data name="Beacons.Compressed" xml:space="preserve">
+    <value>Compressed (shorter on air)</value>
+  </data>
+  <data name="Beacons.Phg" xml:space="preserve">
+    <value>Include power, height and gain (PHG)</value>
+    <comment>PHG: APRS's name for this data, kept as is.</comment>
+  </data>
+  <data name="Beacons.Phg.Power" xml:space="preserve">
+    <value>Power</value>
+  </data>
+  <data name="Beacons.Phg.Height" xml:space="preserve">
+    <value>Antenna height above average terrain</value>
+  </data>
+  <data name="Beacons.Phg.Gain" xml:space="preserve">
+    <value>Antenna gain</value>
+  </data>
+  <data name="Beacons.Phg.Direction" xml:space="preserve">
+    <value>Strongest direction</value>
+  </data>
+  <data name="Beacons.Phg.Watts" xml:space="preserve">
+    <value>{value} W</value>
+    <comment>value: transmitter power in watts.</comment>
+  </data>
+  <data name="Beacons.Phg.Feet" xml:space="preserve">
+    <value>{value} ft</value>
+    <comment>value: antenna height in feet, as APRS sends it.</comment>
+  </data>
+  <data name="Beacons.Phg.Db" xml:space="preserve">
+    <value>{value} dB</value>
+    <comment>value: antenna gain in decibels.</comment>
+  </data>
+  <data name="Beacons.Phg.Omni" xml:space="preserve">
+    <value>All directions</value>
+  </data>
+  <data name="Beacons.Phg.Degrees" xml:space="preserve">
+    <value>{degrees}°</value>
+    <comment>degrees: compass direction of the strongest gain.</comment>
+  </data>
+  <data name="Beacons.StatusOn" xml:space="preserve">
+    <value>Beacon a status</value>
+  </data>
+  <data name="Beacons.StatusText" xml:space="preserve">
+    <value>Status (up to 62 characters)</value>
+  </data>
+  <data name="Beacons.Save" xml:space="preserve">
+    <value>Save beacons</value>
+  </data>
+  <data name="Beacons.Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="Beacons.Minutes" xml:space="preserve">
+    <value>{count, plural, one {# minute} other {# minutes}}</value>
+  </data>
+  <data name="Beacons.Hours" xml:space="preserve">
+    <value>{count, plural, one {# hour} other {# hours}}</value>
+  </data>
+  <data name="Transmit.BeaconsWaiting" xml:space="preserve">
+    <value>Transmitting · beacons waiting</value>
+    <comment>Status bar marker: Transmit is on but beacons wait; the tooltip says why.</comment>
+  </data>
+  <data name="Transmit.NextBeacon" xml:space="preserve">
+    <value>Transmitting · next beacon in {minutes} min</value>
+    <comment>minutes: whole minutes until the next beacon.</comment>
+  </data>
+  <data name="Transmit.NextBeaconSoon" xml:space="preserve">
+    <value>Transmitting · next beacon within a minute</value>
+  </data>
+  <data name="Transmit.BeaconsWaitingTip" xml:space="preserve">
+    <value>Beacons are waiting: {reason}</value>
+    <comment>reason: a sentence saying why.</comment>
+  </data>
+  <data name="Transmit.NextPositionTip" xml:space="preserve">
+    <value>Next: your position on {source}, {reason}.</value>
+    <comment>source: a source's name. reason: one of the Transmit.BeaconReason texts.</comment>
+  </data>
+  <data name="Transmit.NextStatusTip" xml:space="preserve">
+    <value>Next: your status on {source}, {reason}.</value>
+    <comment>source: a source's name. reason: one of the Transmit.BeaconReason texts.</comment>
+  </data>
+  <data name="Transmit.BeaconReason.Start" xml:space="preserve">
+    <value>the first one, after a short random wait</value>
+  </data>
+  <data name="Transmit.BeaconReason.Interval" xml:space="preserve">
+    <value>when its interval is up</value>
+  </data>
+  <data name="Transmit.BeaconReason.Decay" xml:space="preserve">
+    <value>the next step after a change</value>
+  </data>
+  <data name="Transmit.BeaconReason.Spacing" xml:space="preserve">
+    <value>held back to keep beacons spaced out on this source</value>
   </data>
 </root>

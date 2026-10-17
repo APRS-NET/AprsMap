@@ -164,6 +164,8 @@ public sealed record StationAging(
 /// profile. A listener ID (<see cref="ListenerId"/>) is never licensed.
 /// </param>
 /// <param name="DisableTransmit">Disable TX: a receive-only profile, even with a licensed operator (F2.1 behavior 4.2).</param>
+/// <param name="PositionBeacon">The position beacon (docs/features/F2.2-beacons.md, behavior 1); null is off.</param>
+/// <param name="StatusBeacon">The status beacon (F2.2 behavior 3); null is off.</param>
 /// <param name="PositionConfirmed">
 /// Whether a position has been sent by hand since the callsign, symbol, comment or location last changed (F2.1 behavior
 /// 12): automatic transmissions wait for it. Set by the engine; ignored on save.
@@ -181,7 +183,9 @@ public sealed record StationProfile(
     string? Comment = null,
     bool PositionConfirmed = false,
     bool Licensed = false,
-    bool DisableTransmit = false
+    bool DisableTransmit = false,
+    PositionBeaconSettings? PositionBeacon = null,
+    StatusBeaconSettings? StatusBeacon = null
 )
 {
     /// <summary>The range a new profile gets: 150 km.</summary>
@@ -196,6 +200,12 @@ public sealed record StationProfile(
     /// <summary>The symbol in effect: <see cref="Symbol"/>, or <see cref="DefaultSymbol"/>.</summary>
     public string EffectiveSymbol => string.IsNullOrEmpty(Symbol) ? DefaultSymbol : Symbol;
 
+    /// <summary>The position beacon's settings, off when there are none.</summary>
+    public PositionBeaconSettings EffectivePositionBeacon => PositionBeacon ?? PositionBeaconSettings.Off;
+
+    /// <summary>The status beacon's settings, off when there are none.</summary>
+    public StatusBeaconSettings EffectiveStatusBeacon => StatusBeacon ?? StatusBeaconSettings.Off;
+
     /// <summary>
     /// Whether going from <paramref name="before"/> to this changes what a position report says, which needs a new
     /// manual send before automatic ones (F2.1 behavior 12).
@@ -206,7 +216,9 @@ public sealed record StationProfile(
         || EffectiveSymbol != before.EffectiveSymbol
         || (Comment ?? string.Empty) != (before.Comment ?? string.Empty)
         || Latitude != before.Latitude
-        || Longitude != before.Longitude;
+        || Longitude != before.Longitude
+        || EffectivePositionBeacon.Compressed != before.EffectivePositionBeacon.Compressed
+        || EffectivePositionBeacon.Phg != before.EffectivePositionBeacon.Phg;
 
     /// <summary>Equal when every field is, comparing the source ids in order.</summary>
     public bool Equals(StationProfile? other) =>
@@ -223,7 +235,9 @@ public sealed record StationProfile(
         && Comment == other.Comment
         && PositionConfirmed == other.PositionConfirmed
         && Licensed == other.Licensed
-        && DisableTransmit == other.DisableTransmit;
+        && DisableTransmit == other.DisableTransmit
+        && EffectivePositionBeacon == other.EffectivePositionBeacon
+        && EffectiveStatusBeacon == other.EffectiveStatusBeacon;
 
     /// <inheritdoc />
     public override int GetHashCode() =>
@@ -233,7 +247,8 @@ public sealed record StationProfile(
             Comment,
             PositionConfirmed,
             Licensed,
-            DisableTransmit
+            DisableTransmit,
+            HashCode.Combine(EffectivePositionBeacon, EffectiveStatusBeacon)
         );
 
     /// <summary>Whether this profile uses <paramref name="source"/>.</summary>

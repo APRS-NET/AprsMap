@@ -98,7 +98,7 @@ the same window as the desktop app, live.
 | A public receive-only console: viewer and operator ports, location privacy | F1.26, spec in review |
 | Recording unexpected packets for the developer, exported anonymized for the test corpus | F1.27, spec in review |
 | Extra map views, dead reckoning, destination, saved layouts, web pop-out panels | Phase 1, later |
-| Sending anything (beacons, messages, objects) and operator sign-in on the gateway | Phase 2 |
+| Objects, bulletins and operator sign-in on the gateway | Phase 2 |
 | GPS, IGate, digipeater | Phase 3 |
 | Translations | F0.9 groundwork is done (English only); translations come from contributors |
 

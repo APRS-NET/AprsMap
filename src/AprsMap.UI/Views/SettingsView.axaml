@@ -430,6 +430,192 @@
               </StackPanel>
             </Border>
           </StackPanel>
+          <!-- Beacons (F2.2): the active profile's position and status beacons, each with its Send via checkmarks. -->
+          <StackPanel x:Name="BeaconsSection" IsVisible="{Binding IsBeaconsSection}" Spacing="12">
+            <TextBlock Text="{Binding Beacons.Heading}" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{l:T Beacons.Intro}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+            <TextBlock
+              Text="{l:T Settings.Profiles.ReadOnly}"
+              IsVisible="{Binding Beacons.IsReadOnly}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Text="{Binding Beacons.ListensOnlyText}"
+              IsVisible="{Binding Beacons.ListensOnlyText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Text="{Binding Beacons.NoSourcesText}"
+              IsVisible="{Binding Beacons.NoSourcesText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              x:Name="BeaconsUnconfirmed"
+              Text="{Binding Beacons.UnconfirmedText}"
+              IsVisible="{Binding Beacons.UnconfirmedText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+            <StackPanel Spacing="12" IsEnabled="{Binding Beacons.CanEdit}">
+              <!-- The position beacon (behaviors 1, 2). -->
+              <Border
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="{DynamicResource Thickness.Border}"
+                CornerRadius="{DynamicResource Radius.Control}"
+                Padding="12,8"
+              >
+                <StackPanel Spacing="8">
+                  <CheckBox
+                    x:Name="PositionBeaconBox"
+                    Content="{l:T Beacons.PositionOn}"
+                    IsChecked="{Binding Beacons.PositionOn}"
+                    FontWeight="SemiBold"
+                  />
+                  <StackPanel Spacing="8" IsEnabled="{Binding Beacons.PositionOn}">
+                    <TextBlock Text="{l:T Beacons.Schedule}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox
+                      x:Name="ScheduleBox"
+                      ItemsSource="{Binding Beacons.Schedules}"
+                      SelectedItem="{Binding Beacons.SelectedSchedule}"
+                      AutomationProperties.Name="{l:T Beacons.Schedule}"
+                      MinWidth="260"
+                    />
+                    <TextBlock
+                      Text="{l:T Beacons.Schedule.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                    <TextBlock Text="{l:T Beacons.Interval}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox
+                      x:Name="PositionIntervalBox"
+                      ItemsSource="{Binding Beacons.PositionIntervals}"
+                      SelectedItem="{Binding Beacons.SelectedPositionInterval}"
+                      AutomationProperties.Name="{l:T Beacons.Interval}"
+                      MinWidth="260"
+                    />
+                    <TextBlock Text="{l:T Beacons.SendVia}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ItemsControl x:Name="PositionViaList" ItemsSource="{Binding Beacons.PositionVia}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="s:ViaChoice">
+                          <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <CheckBox
+                      x:Name="CompressedBox"
+                      Content="{l:T Beacons.Compressed}"
+                      IsChecked="{Binding Beacons.Compressed}"
+                    />
+                    <CheckBox
+                      x:Name="PhgBox"
+                      Content="{l:T Beacons.Phg}"
+                      IsChecked="{Binding Beacons.IncludePhg}"
+                      IsEnabled="{Binding Beacons.CanIncludePhg}"
+                    />
+                    <WrapPanel ItemSpacing="8" LineSpacing="8" IsVisible="{Binding Beacons.IncludePhg}">
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="{l:T Beacons.Phg.Power}" Foreground="{DynamicResource Brush.TextMuted}" />
+                        <ComboBox
+                          ItemsSource="{Binding Beacons.Powers}"
+                          SelectedItem="{Binding Beacons.SelectedPower}"
+                          AutomationProperties.Name="{l:T Beacons.Phg.Power}"
+                        />
+                      </StackPanel>
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="{l:T Beacons.Phg.Height}" Foreground="{DynamicResource Brush.TextMuted}" />
+                        <ComboBox
+                          ItemsSource="{Binding Beacons.Heights}"
+                          SelectedItem="{Binding Beacons.SelectedHeight}"
+                          AutomationProperties.Name="{l:T Beacons.Phg.Height}"
+                        />
+                      </StackPanel>
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="{l:T Beacons.Phg.Gain}" Foreground="{DynamicResource Brush.TextMuted}" />
+                        <ComboBox
+                          ItemsSource="{Binding Beacons.Gains}"
+                          SelectedItem="{Binding Beacons.SelectedGain}"
+                          AutomationProperties.Name="{l:T Beacons.Phg.Gain}"
+                        />
+                      </StackPanel>
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="{l:T Beacons.Phg.Direction}" Foreground="{DynamicResource Brush.TextMuted}" />
+                        <ComboBox
+                          ItemsSource="{Binding Beacons.Directions}"
+                          SelectedItem="{Binding Beacons.SelectedDirection}"
+                          AutomationProperties.Name="{l:T Beacons.Phg.Direction}"
+                        />
+                      </StackPanel>
+                    </WrapPanel>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <!-- The status beacon (behavior 3). -->
+              <Border
+                Background="{DynamicResource Brush.Surface}"
+                BorderBrush="{DynamicResource Brush.Border}"
+                BorderThickness="{DynamicResource Thickness.Border}"
+                CornerRadius="{DynamicResource Radius.Control}"
+                Padding="12,8"
+              >
+                <StackPanel Spacing="8">
+                  <CheckBox
+                    x:Name="StatusBeaconBox"
+                    Content="{l:T Beacons.StatusOn}"
+                    IsChecked="{Binding Beacons.StatusOn}"
+                    FontWeight="SemiBold"
+                  />
+                  <StackPanel Spacing="8" IsEnabled="{Binding Beacons.StatusOn}">
+                    <TextBlock Text="{l:T Beacons.StatusText}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBox
+                      x:Name="StatusTextBox"
+                      Text="{Binding Beacons.StatusText}"
+                      MaxLength="{Binding Beacons.MaxStatusLength}"
+                      AutomationProperties.Name="{l:T Beacons.StatusText}"
+                    />
+                    <TextBlock Text="{l:T Beacons.Interval}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox
+                      x:Name="StatusIntervalBox"
+                      ItemsSource="{Binding Beacons.StatusIntervals}"
+                      SelectedItem="{Binding Beacons.SelectedStatusInterval}"
+                      AutomationProperties.Name="{l:T Beacons.Interval}"
+                      MinWidth="260"
+                    />
+                    <TextBlock Text="{l:T Beacons.SendVia}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ItemsControl x:Name="StatusViaList" ItemsSource="{Binding Beacons.StatusVia}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="s:ViaChoice">
+                          <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+              <TextBlock
+                Text="{Binding Beacons.Error}"
+                IsVisible="{Binding Beacons.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+              <WrapPanel ItemSpacing="10">
+                <Button
+                  x:Name="SaveBeaconsButton"
+                  Classes="accent"
+                  Content="{l:T Beacons.Save}"
+                  Command="{Binding Beacons.SaveCommand}"
+                />
+                <TextBlock
+                  Text="{Binding Beacons.SavedText}"
+                  VerticalAlignment="Center"
+                  AutomationProperties.LiveSetting="Polite"
+                />
+              </WrapPanel>
+            </StackPanel>
+          </StackPanel>
           <StackPanel x:Name="AppearanceSection" IsVisible="{Binding IsAppearanceSection}" Spacing="20">
             <ItemsControl x:Name="AppearanceOptions" ItemsSource="{Binding AppearanceItems}">
               <ItemsControl.ItemsPanel>

@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <PackageReference Include="AprsNet.AprsIsTcpClient" />
+    <PackageReference Include="AprsNet.Beacons" />
     <PackageReference Include="AprsNet.DeviceId" />
     <PackageReference Include="AprsNet.Filters" />
     <PackageReference Include="AprsNet.Kiss" />

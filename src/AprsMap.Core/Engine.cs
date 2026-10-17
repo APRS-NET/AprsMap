@@ -18,7 +18,7 @@ namespace AprsMap.Core;
 /// position of every station for <see cref="WatchStationsAsync"/>. It logs in with the active station profile from
 /// <see cref="ISettingsStore"/>, waits while there is none, and reconnects when the profile changes.
 /// </summary>
-public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
+public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost, IBeaconHost
 {
     private readonly EngineOptions _options;
     private readonly IPacketSourceFactory _sources;
@@ -66,6 +66,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     private readonly Dictionary<string, IPacketSender> _senders = new(StringComparer.Ordinal);
     private readonly List<EchoWatch> _echoes = [];
     private readonly Messenger _messenger;
+    private readonly Beaconer _beaconer;
     private int _packetHistory;
     private AppSettings? _settings;
 
@@ -95,12 +96,14 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _dashboard = new DashboardCounters(time.GetUtcNow());
         _logger = logger;
         _messenger = new Messenger(this, messages ?? new InMemoryMessageStore(), time);
+        _beaconer = new Beaconer(this, time);
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
         _messenger.Dispose();
+        _beaconer.Dispose();
         _settingsLock.Dispose();
         lock (_gate)
         {
@@ -118,7 +121,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     /// <inheritdoc />
     public Task<EngineStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
-        var unread = _messenger.Unread; // outside the gate: the messenger asks the engine things under its own lock
+        // Outside the gate: the messenger and the beaconer ask the engine things under their own locks.
+        var unread = _messenger.Unread;
+        var (nextBeacon, beaconHeld) = _beaconer.Status;
         lock (_gate)
         {
             var profile = _settings?.GetActiveProfile();
@@ -145,7 +150,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                         (_settings ?? AppSettings.Empty).EffectiveToggles.Transmit,
                         TransmitBlock(_settings ?? AppSettings.Empty),
                         _lastSent,
-                        _options.ReceiveOnly
+                        _options.ReceiveOnly,
+                        nextBeacon,
+                        beaconHeld
                     ),
                     UnreadMessages: unread
                 )
@@ -1025,20 +1032,13 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     )
     {
         var (_, profile, targets) = await TargetsAsync(sourceId, cancellationToken).ConfigureAwait(false);
-        if (profile is not { Latitude: { } lat, Longitude: { } lon })
+        if (profile is not { Latitude: not null, Longitude: not null })
         {
             throw EngineErrors.ToException(
                 new EngineError(EngineErrorCodes.TransmitNoPosition, "Set the station's location first.")
             );
         }
-        var symbol = profile.EffectiveSymbol;
-        var report = new PositionReport
-        {
-            Position = new AprsPosition(lat, lon),
-            Symbol = new AprsSymbol(symbol[0], symbol[1]),
-            Comment = profile.Comment ?? string.Empty,
-            IsMessagingCapable = true, // it answers messages now (F2.4 behavior 15)
-        };
+        var report = Beaconer.PositionReport(profile); // what a beacon sends, PHG and format included (F2.2 behavior 2)
         var sent = new List<PacketView>();
         Exception? failure = null;
         foreach (var (source, sender) in targets)
@@ -1055,6 +1055,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             throw SendFailed(failure!);
         }
+        _beaconer.SentByHand(sent.Select(v => v.SourceId!).Where(id => id is not null)); // F2.2 behavior 11
 
         // The interlock (behavior 12): automatic sends may start once the user has seen this go out.
         if (!profile.PositionConfirmed)
@@ -1222,11 +1223,43 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
     }
 
-    async Task<bool> IMessengerHost.SendAsync(
-        string sourceId,
-        MessagePayload payload,
-        CancellationToken cancellationToken
-    )
+    Task<bool> IMessengerHost.SendAsync(string sourceId, MessagePayload payload, CancellationToken cancellationToken) =>
+        SendPayloadAsync(sourceId, payload, cancellationToken);
+
+    (
+        StationProfile? Profile,
+        EngineError? Held,
+        IReadOnlyList<(string Id, bool IsRf)> Sources
+    ) IBeaconHost.BeaconState()
+    {
+        lock (_gate)
+        {
+            var settings = _settings ?? AppSettings.Empty;
+            var profile = settings.GetActiveProfile();
+            var held = !settings.EffectiveToggles.Transmit
+                ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
+                : ProfileBlock(settings)
+                    ?? (
+                        profile is not { Latitude: not null, Longitude: not null }
+                            ? new EngineError(EngineErrorCodes.TransmitNoPosition, "Set the station's location first.")
+                        : !profile.PositionConfirmed
+                            ? new EngineError(
+                                EngineErrorCodes.TransmitPositionUnconfirmed,
+                                "Send your position once by hand to start beaconing."
+                            )
+                        : null
+                    );
+            return (profile, held, [.. TransmitSources(settings).Select(s => (s.Id, s.Kind != SourceKind.AprsIs))]);
+        }
+    }
+
+    bool IBeaconHost.CanSendOn(string sourceId) => ((IMessengerHost)this).CanSendOn(sourceId);
+
+    Task<bool> IBeaconHost.SendAsync(string sourceId, AprsPayload payload, CancellationToken cancellationToken) =>
+        SendPayloadAsync(sourceId, payload, cancellationToken);
+
+    /// <summary>Sends <paramref name="payload"/> from the active profile on <paramref name="sourceId"/>; false when it failed.</summary>
+    private async Task<bool> SendPayloadAsync(string sourceId, AprsPayload payload, CancellationToken cancellationToken)
     {
         StationProfile? profile;
         SourceSettings? source;
@@ -1916,6 +1949,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         var profile = settings.GetActiveProfile();
         await _messenger.UseAsync(profile?.Id, profile?.Callsign, cancellationToken).ConfigureAwait(false);
         _messenger.Pump(); // the Transmit switch or a source may have changed
+        _beaconer.Poke(); // and beacons with them (F2.2 behavior 4)
     }
 
     /// <summary>Distances and bearings are from the active profile's location (F1.13 behavior 4).</summary>
