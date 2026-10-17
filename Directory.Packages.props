@@ -3,13 +3,13 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup Label="APRS.NET (pre-release until its 1.0; Dependabot proposes each new alpha)">
-    <PackageVersion Include="AprsNet.AprsIsTcpClient" Version="0.4.0-alpha.2" />
-    <PackageVersion Include="AprsNet.DeviceId" Version="0.4.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Filters" Version="0.4.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Kiss" Version="0.4.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Messaging" Version="0.4.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Packets" Version="0.4.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Symbols" Version="0.4.0-alpha.2" />
+    <PackageVersion Include="AprsNet.AprsIsTcpClient" Version="0.4.0-alpha.3" />
+    <PackageVersion Include="AprsNet.DeviceId" Version="0.4.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Filters" Version="0.4.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Kiss" Version="0.4.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Messaging" Version="0.4.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Packets" Version="0.4.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Symbols" Version="0.4.0-alpha.3" />
   </ItemGroup>
   <ItemGroup Label="Build">
     <PackageVersion Include="MinVer" Version="8.0.0" />

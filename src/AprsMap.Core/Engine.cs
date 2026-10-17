@@ -850,7 +850,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     EngineErrorCodes.TransmitPlaceholderCallsign,
                     "N0CALL and NOCALL are placeholders: set your own callsign to transmit."
                 )
-            : !profile.Licensed || ListenerId.Is(profile.Callsign)
+            : !profile.Licensed || AprsIsLogin.IsListenerId(profile.Callsign)
                 ? new EngineError(
                     EngineErrorCodes.TransmitNotLicensed,
                     "This profile isn't confirmed as a licensed amateur's, so it only listens."
@@ -1248,13 +1248,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
 
     /// <inheritdoc />
     public Task<string> NewListenerIdAsync(CancellationToken cancellationToken = default) =>
-        // SHIM: G02 — APRS.NET#227 will make listener IDs; until then, SWL and six random digits.
-        Task.FromResult(
-            ListenerId.Prefix
-                + System
-                    .Security.Cryptography.RandomNumberGenerator.GetInt32(1_000_000)
-                    .ToString("D6", CultureInfo.InvariantCulture)
-        );
+        Task.FromResult(AprsIsLogin.NewListenerId());
 
     /// <summary>A Test send listening for its packet coming back (behavior 9.3).</summary>
     private sealed record EchoWatch(

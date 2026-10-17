@@ -118,6 +118,8 @@ internal sealed class AprsIsPacketSourceFactory(
         {
             Callsign = profile.Callsign,
             Passcode = profile.Passcode,
+            // A listener ID logs in with -1 and APRS.NET refuses to send on it (F2.1 behavior 4).
+            ListenOnly = AprsIsLogin.IsListenerId(profile.Callsign),
             Filter = filter,
             Endpoint = endpoint,
             SoftwareName = SoftwareToken(Brand.DisplayName),
