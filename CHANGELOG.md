@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.2...v0.4.0-alpha.3) (2026-10-17)
+
+
+### Features
+
+* **engine:** own station and the Transmit switch, with Send position now ([1e2725c](https://github.com/APRS-NET/AprsMap/commit/1e2725ccd8b05aea765b02093f21d68ed7a84eeb))
+* **engine:** transmit per source, with Disable TX, the licence on the profile, Test send and listener IDs ([e0c449c](https://github.com/APRS-NET/AprsMap/commit/e0c449c827625258a14e5881e4c716d140c16772))
+* **ui:** one licensed checkbox on the profile: unticked listens with a listener ID, ticked shows the callsign and Disable TX ([be698c6](https://github.com/APRS-NET/AprsMap/commit/be698c6797d4492e1796a97884fe758569a3e8e3))
+* **ui:** Transmit and Send position now in the connection menu, the station's symbol and comment ([4bd8034](https://github.com/APRS-NET/AprsMap/commit/4bd803483abfe633d017969784a5e8affeb64570))
+* **ui:** Transmit and Send position now, the station's symbol and comment ([ddd8040](https://github.com/APRS-NET/AprsMap/commit/ddd8040e6a0439f69b278bdc51bbe1b5901d6b82))
+* **ui:** TX enabled, TX path and Test send per source, listen only and the licence on the profile, Send position now per pill ([c93bfe2](https://github.com/APRS-NET/AprsMap/commit/c93bfe22275b4a0bbf8de16b1ea1a0393fce97a1))
+* **ui:** TX per source, listen only and the licence on the profile, Send position now per pill ([92d1017](https://github.com/APRS-NET/AprsMap/commit/92d10179a1573a59b63ea533106c51a67a13f914))
+
 ## [0.4.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.1...v0.4.0-alpha.2) (2026-10-17)
 
 
