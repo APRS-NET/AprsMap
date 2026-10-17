@@ -153,6 +153,7 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | F4.12 | Overlays: GPX and UI-View POS files, waypoint → object, drive a route to prefetch tiles | Overlays | App | — | scoped |
 | F4.13 | Logging exports: GPX track auto-save, beacon-trigger CSV | (Enables menu) | App | — | scoped |
 | F4.14 | Digital-mode activity objects (FT8 / JS8Call / JT65); semantics pending maintainer observation | (observed) | App | G01 | scoped |
+| F4.15 | Updates ([spec](features/F4.15-updates.md)): a daily check of the GitHub releases with a quiet notice, in-app install on desktop with Velopack, an operator-only notice on the gateway; store packages later | — (maintainer request) | App | — | spec'd (0.5.0, [#186](https://github.com/APRS-NET/AprsMap/issues/186)) |
 
 ## Order of work
 
