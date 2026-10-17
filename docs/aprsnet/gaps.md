@@ -48,7 +48,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G29 | Source merge: which source a packet came from, and duplicates reported with their source (delivered) | Packets | 1 | [APRS.NET#125](https://github.com/APRS-NET/APRS.NET/issues/125) |
 | G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
-| G32 | A typed reason when an APRS-IS login reaches a KISS TNC | AprsIsTcpClient | 3 | — (proposed) |
+| G32 | A typed reason when an APRS-IS login reaches a KISS TNC | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
 
 ---
 
@@ -519,3 +519,6 @@ rather than "That's a KISS TNC: add it as a TNC source".
 `KissTncLoginException`) or a reason property on `LoginException`.
 
 **Acceptance.** The existing test for a login that reaches a KISS TNC asserts the type or the reason, not the message.
+
+**Filed** as [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) for `0.5.0-alpha.1`: a `LoginException`
+subclass, as `LoginRejectedException` is. AprsMap waits for it rather than matching the message.
