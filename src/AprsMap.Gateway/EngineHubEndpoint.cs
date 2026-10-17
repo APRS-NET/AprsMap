@@ -71,6 +71,59 @@ internal sealed class EngineHubEndpoint(
         return engine.TestSendAsync(sourceId, Context.ConnectionAborted);
     }
 
+    /// <summary>
+    /// The station's conversations are its operator's: until F2.9's sign-in, browsers can neither read nor send them
+    /// (docs/features/F2.4-messaging.md, behavior 16).
+    /// </summary>
+    [HubMethodName(EngineHub.GetConversations)]
+    public Task<IReadOnlyList<Conversation>> GetConversations()
+    {
+        RefuseTransmit();
+        return engine.GetConversationsAsync(Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.WatchMessages)]
+    public IAsyncEnumerable<ChatMessage> WatchMessages(CancellationToken cancellationToken)
+    {
+        RefuseTransmit();
+        return engine.WatchMessagesAsync(cancellationToken);
+    }
+
+    [HubMethodName(EngineHub.SendMessage)]
+    public Task<IReadOnlyList<ChatMessage>> SendMessage(string correspondent, string text)
+    {
+        RefuseTransmit();
+        return engine.SendMessageAsync(correspondent, text, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.CancelMessage)]
+    public Task CancelMessage(string id)
+    {
+        RefuseTransmit();
+        return engine.CancelMessageAsync(id, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.ResendMessage)]
+    public Task ResendMessage(string id)
+    {
+        RefuseTransmit();
+        return engine.ResendMessageAsync(id, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.MarkRead)]
+    public Task MarkRead(string correspondent)
+    {
+        RefuseTransmit();
+        return engine.MarkReadAsync(correspondent, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.SetConversation)]
+    public Task SetConversation(string correspondent, SendVia sendVia, MessageRetries retries)
+    {
+        RefuseTransmit();
+        return engine.SetConversationAsync(correspondent, sendVia, retries, Context.ConnectionAborted);
+    }
+
     /// <summary>A listener ID changes nothing until it's saved, which has the settings gate.</summary>
     [HubMethodName(EngineHub.NewListenerId)]
     public Task<string> NewListenerId() => engine.NewListenerIdAsync(Context.ConnectionAborted);

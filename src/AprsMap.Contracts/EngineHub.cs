@@ -73,6 +73,27 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.SendPositionAsync"/>.</summary>
     public const string SendPosition = "SendPosition";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetConversationsAsync"/>.</summary>
+    public const string GetConversations = "GetConversations";
+
+    /// <summary>Hub streaming method for <see cref="IEngineService.WatchMessagesAsync"/>.</summary>
+    public const string WatchMessages = "WatchMessages";
+
+    /// <summary>Hub method for <see cref="IEngineService.SendMessageAsync"/>.</summary>
+    public const string SendMessage = "SendMessage";
+
+    /// <summary>Hub method for <see cref="IEngineService.CancelMessageAsync"/>.</summary>
+    public const string CancelMessage = "CancelMessage";
+
+    /// <summary>Hub method for <see cref="IEngineService.ResendMessageAsync"/>.</summary>
+    public const string ResendMessage = "ResendMessage";
+
+    /// <summary>Hub method for <see cref="IEngineService.MarkReadAsync"/>.</summary>
+    public const string MarkRead = "MarkRead";
+
+    /// <summary>Hub method for <see cref="IEngineService.SetConversationAsync"/>.</summary>
+    public const string SetConversation = "SetConversation";
+
     /// <summary>Hub method for <see cref="IEngineService.TestSendAsync"/>.</summary>
     public const string TestSend = "TestSend";
 

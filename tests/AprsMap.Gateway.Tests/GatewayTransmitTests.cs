@@ -33,6 +33,21 @@ public sealed class GatewayTransmitTests(TrustedGatewayFactory trusted, GatewayF
         Assert.False((await remote.GetSettingsAsync(Ct)).EffectiveToggles.Transmit);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task BrowsersCanNeitherReadNorSendMessages(bool allowSettingsChanges)
+    {
+        await using var remote = (allowSettingsChanges ? trusted : locked).CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var read = await Assert.ThrowsAsync<EngineAccessException>(() => remote.GetConversationsAsync(Ct));
+        var send = await Assert.ThrowsAsync<EngineAccessException>(() => remote.SendMessageAsync("N1ABC", "Hi", Ct));
+        var mark = await Assert.ThrowsAsync<EngineAccessException>(() => remote.MarkReadAsync("N1ABC", Ct));
+
+        Assert.All(new[] { read, send, mark }, e => Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code));
+    }
+
     [Fact]
     public async Task ATrustedBrowserCantTurnTransmitOnBySavingSettings()
     {

@@ -75,6 +75,52 @@ public interface IEngineService
     /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
     Task<TestSendResult> TestSendAsync(string sourceId, CancellationToken cancellationToken = default);
 
+    /// <summary>The active profile's conversations, newest activity first (docs/features/F2.4-messaging.md, behavior 1).</summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not read messages (a gateway without operator sign-in).</exception>
+    Task<IReadOnlyList<Conversation>> GetConversationsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Streams the active profile's messages: first the ones kept, then each one added or changed (its state, its tries,
+    /// read), keyed by <see cref="ChatMessage.Id"/> (behaviors 1, 7). A profile switch starts a new stream.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not read messages (a gateway without operator sign-in).</exception>
+    IAsyncEnumerable<ChatMessage> WatchMessagesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends <paramref name="text"/> to <paramref name="correspondent"/>, split into messages of at most 67 characters (behavior 6);
+    /// they wait, queued, while nothing can send (behavior 10).
+    /// </summary>
+    /// <returns>The messages it made.</returns>
+    /// <exception cref="ArgumentException">The callsign or text can't be sent; the error's <c>messages.*</c> code says why.</exception>
+    /// <exception cref="InvalidOperationException">This profile may not transmit; the <c>transmit.*</c> code says why.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not send (a gateway without operator sign-in).</exception>
+    Task<IReadOnlyList<ChatMessage>> SendMessageAsync(
+        string correspondent,
+        string text,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>Stops sending a queued or retrying message (behavior 7). Does nothing to one that has finished.</summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not send (a gateway without operator sign-in).</exception>
+    Task CancelMessageAsync(string id, CancellationToken cancellationToken = default);
+
+    /// <summary>Sends a failed, rejected or cancelled message again, as a new message (behavior 7).</summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not send (a gateway without operator sign-in).</exception>
+    Task ResendMessageAsync(string id, CancellationToken cancellationToken = default);
+
+    /// <summary>Marks every message from <paramref name="correspondent"/> read (behavior 4).</summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not read messages (a gateway without operator sign-in).</exception>
+    Task MarkReadAsync(string correspondent, CancellationToken cancellationToken = default);
+
+    /// <summary>Sets which way a conversation's messages go and how they're retried (behaviors 8, 9).</summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not send (a gateway without operator sign-in).</exception>
+    Task SetConversationAsync(
+        string correspondent,
+        SendVia sendVia,
+        MessageRetries retries,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>A new listener ID for an unlicensed user's profile (docs/features/F2.1-own-station.md, behavior 4).</summary>
     Task<string> NewListenerIdAsync(CancellationToken cancellationToken = default);
 
