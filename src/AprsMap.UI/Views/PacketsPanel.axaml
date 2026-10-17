@@ -179,6 +179,16 @@
                   AutomationProperties.Name="{Binding AnomalyText}"
                   Focusable="False"
                 />
+                <!-- Sent by this station (F2.1 behavior 13): an arrow leaving a box. -->
+                <PathIcon
+                  IsVisible="{Binding IsSent}"
+                  Data="M 13,3 L 21,3 L 21,11 L 19,11 L 19,6.4 L 10.7,14.7 L 9.3,13.3 L 17.6,5 L 13,5 Z M 3,5 L 11,5 L 11,7 L 5,7 L 5,19 L 17,19 L 17,13 L 19,13 L 19,21 L 3,21 Z"
+                  Foreground="{DynamicResource Brush.Accent}"
+                  Width="{DynamicResource Icon.Size}"
+                  Height="{DynamicResource Icon.Size}"
+                  ToolTip.Tip="{l:T Packets.Sent}"
+                  AutomationProperties.Name="{l:T Packets.Sent}"
+                />
                 <PathIcon
                   IsVisible="{Binding IsDirect}"
                   Data="F0 M 12,2 A 10,10 0 1 1 12,22 A 10,10 0 1 1 12,2 Z M 12,5 A 7,7 0 1 0 12,19 A 7,7 0 1 0 12,5 Z M 12,9 A 3,3 0 1 1 12,15 A 3,3 0 1 1 12,9 Z"

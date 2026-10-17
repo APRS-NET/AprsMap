@@ -134,6 +134,9 @@ public enum PacketMarkers
     /// <see cref="Digipeated"/> saying how.
     /// </summary>
     HeardHere = 16,
+
+    /// <summary>Sent by this station (docs/features/F2.1-own-station.md, behavior 13).</summary>
+    Sent = 32,
 }
 
 /// <summary>

@@ -83,6 +83,23 @@ internal static class SettingsValidator
                     profile.Name
                 );
             }
+            if (profile.Comment is { } comment && !IsSendableComment(comment))
+            {
+                throw Fail(
+                    EngineErrorCodes.ProfileCommentInvalid,
+                    $"Profile '{profile.Name}': a comment has at most {StationProfile.MaxCommentLength} characters of "
+                        + "printable ASCII.",
+                    profile.Name
+                );
+            }
+            if (profile.Symbol is { Length: > 0 } symbol && !IsSymbol(symbol))
+            {
+                throw Fail(
+                    EngineErrorCodes.ProfileSymbolInvalid,
+                    $"Profile '{profile.Name}': a symbol is a table or overlay character and a symbol code.",
+                    profile.Name
+                );
+            }
 
             if (profile.SourceIds.FirstOrDefault(id => !sources.ContainsKey(id)) is { } unknown)
             {
@@ -149,6 +166,14 @@ internal static class SettingsValidator
             throw Fail(EngineErrorCodes.ActiveProfileMissing, "The active profile must be one of the profiles.");
         }
     }
+
+    /// <summary>Whether <paramref name="comment"/> fits a position report (F2.1 behavior 2).</summary>
+    internal static bool IsSendableComment(string comment) =>
+        comment.Length <= StationProfile.MaxCommentLength && comment.All(c => c is >= ' ' and <= '~');
+
+    /// <summary>Whether <paramref name="symbol"/> is a table or overlay character and a code APRS.NET accepts.</summary>
+    internal static bool IsSymbol(string symbol) =>
+        symbol.Length == 2 && AprsSymbol.TryCreate(symbol[0], symbol[1], out _);
 
     private static EngineArgumentException Fail(
         string code,

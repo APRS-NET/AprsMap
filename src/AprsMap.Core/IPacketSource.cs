@@ -29,6 +29,14 @@ public interface IPacketSource : IAsyncDisposable
     ValueTask SetFilterAsync(string filter, CancellationToken cancellationToken);
 }
 
+/// <summary>A source that can send: APRS-IS (docs/features/F2.1-own-station.md, behavior 10).</summary>
+public interface IPacketSender
+{
+    /// <summary>Sends <paramref name="packet"/> on the current connection.</summary>
+    /// <exception cref="InvalidOperationException">Not connected, or the login isn't verified.</exception>
+    ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken);
+}
+
 /// <summary>A server's answer to a login.</summary>
 /// <param name="Server">The name it reported, or empty.</param>
 /// <param name="Verified">Whether it accepted the passcode.</param>

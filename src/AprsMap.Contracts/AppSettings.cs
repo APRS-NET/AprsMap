@@ -60,14 +60,19 @@ public sealed record AppSettings(
 /// The ids of the other sources switched off (KISS TNCs, docs/features/F3.1-kiss-sources.md behavior 6); null or
 /// empty when all are on. The Internet switch doesn't turn them off: a TNC is local equipment.
 /// </param>
+/// <param name="Transmit">
+/// Transmitting (docs/features/F2.1-own-station.md, behaviors 4–8): off until the user turns it on and the engine has
+/// checked the station may; saving settings never turns it on.
+/// </param>
 public sealed record StationToggles(
     bool Internet = true,
     bool AprsIs = true,
     bool Tiles = true,
-    IReadOnlyList<string>? SourcesOff = null
+    IReadOnlyList<string>? SourcesOff = null,
+    bool Transmit = false
 )
 {
-    /// <summary>Everything on.</summary>
+    /// <summary>Every receiving toggle on, and transmitting off.</summary>
     public static StationToggles AllOn { get; } = new();
 
     /// <summary>Whether the source with <paramref name="id"/> is switched on.</summary>
@@ -100,6 +105,9 @@ public enum Toggle
 
     /// <summary>Map tile downloads.</summary>
     Tiles,
+
+    /// <summary>Transmitting (docs/features/F2.1-own-station.md, behavior 4).</summary>
+    Transmit,
 }
 
 /// <summary>
@@ -146,6 +154,15 @@ public sealed record StationAging(
 /// <param name="RangeKm">
 /// How far around the station APRS-IS sends packets, in km (F1.2 behavior 1); 0 sends no range part, as an IGate wants.
 /// </param>
+/// <param name="Symbol">
+/// The station's APRS symbol, table or overlay then code (docs/features/F2.1-own-station.md, behavior 1); null means
+/// <see cref="DefaultSymbol"/>.
+/// </param>
+/// <param name="Comment">The comment sent with the station's positions (F2.1 behavior 2), or null for none.</param>
+/// <param name="PositionConfirmed">
+/// Whether a position has been sent by hand since the callsign, symbol, comment or location last changed (F2.1 behavior
+/// 12): automatic transmissions wait for it. Set by the engine; ignored on save.
+/// </param>
 public sealed record StationProfile(
     string Id,
     string Name,
@@ -154,11 +171,35 @@ public sealed record StationProfile(
     IReadOnlyList<string> SourceIds,
     double? Latitude,
     double? Longitude,
-    int RangeKm = StationProfile.DefaultRangeKm
+    int RangeKm = StationProfile.DefaultRangeKm,
+    string? Symbol = null,
+    string? Comment = null,
+    bool PositionConfirmed = false
 )
 {
     /// <summary>The range a new profile gets: 150 km.</summary>
     public const int DefaultRangeKm = 150;
+
+    /// <summary>The symbol a profile without one has: a house, <c>/-</c>.</summary>
+    public const string DefaultSymbol = "/-";
+
+    /// <summary>The most characters a comment may have (F2.1 behavior 2).</summary>
+    public const int MaxCommentLength = 43;
+
+    /// <summary>The symbol in effect: <see cref="Symbol"/>, or <see cref="DefaultSymbol"/>.</summary>
+    public string EffectiveSymbol => string.IsNullOrEmpty(Symbol) ? DefaultSymbol : Symbol;
+
+    /// <summary>
+    /// Whether going from <paramref name="before"/> to this changes what a position report says, which needs a new
+    /// manual send before automatic ones (F2.1 behavior 12).
+    /// </summary>
+    public bool ChangesWhatIsSent(StationProfile? before) =>
+        before is null
+        || Callsign != before.Callsign
+        || EffectiveSymbol != before.EffectiveSymbol
+        || (Comment ?? string.Empty) != (before.Comment ?? string.Empty)
+        || Latitude != before.Latitude
+        || Longitude != before.Longitude;
 
     /// <summary>Equal when every field is, comparing the source ids in order.</summary>
     public bool Equals(StationProfile? other) =>
@@ -170,11 +211,19 @@ public sealed record StationProfile(
         && SourceIds.SequenceEqual(other.SourceIds)
         && Latitude == other.Latitude
         && Longitude == other.Longitude
-        && RangeKm == other.RangeKm;
+        && RangeKm == other.RangeKm
+        && Symbol == other.Symbol
+        && Comment == other.Comment
+        && PositionConfirmed == other.PositionConfirmed;
 
     /// <inheritdoc />
     public override int GetHashCode() =>
-        HashCode.Combine(Id, Name, Callsign, Passcode, string.Join(',', SourceIds), Latitude, Longitude, RangeKm);
+        HashCode.Combine(
+            HashCode.Combine(Id, Name, Callsign, Passcode, string.Join(',', SourceIds), Latitude, Longitude, RangeKm),
+            Symbol,
+            Comment,
+            PositionConfirmed
+        );
 
     /// <summary>Whether this profile uses <paramref name="source"/>.</summary>
     public bool Uses(SourceSettings source) => source is not null && SourceIds.Contains(source.Id);

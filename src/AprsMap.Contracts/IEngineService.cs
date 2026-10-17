@@ -44,10 +44,22 @@ public interface IEngineService
 
     /// <summary>
     /// Turns a quick toggle on or off (docs/features/F1.15-quick-toggles.md) and saves it with the settings: APRS-IS
-    /// disconnects or connects at once, and tile downloads and address lookups stop or start.
+    /// disconnects or connects at once, and tile downloads and address lookups stop or start. Turning
+    /// <see cref="Toggle.Transmit"/> on is checked first (docs/features/F2.1-own-station.md, behavior 5).
     /// </summary>
+    /// <exception cref="InvalidOperationException">Transmit can't be turned on; the error's <c>transmit.*</c> code says why.</exception>
     /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
     Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends the active profile's position once, by hand (docs/features/F2.1-own-station.md, behaviors 10–13): its
+    /// location, symbol and comment, to APRS-IS. The packet is listed marked <see cref="PacketMarkers.Sent"/>, and the
+    /// profile is marked <see cref="StationProfile.PositionConfirmed"/>.
+    /// </summary>
+    /// <returns>The packet sent.</returns>
+    /// <exception cref="InvalidOperationException">It can't be sent now; the error's <c>transmit.*</c> code says why.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task<PacketView> SendPositionAsync(CancellationToken cancellationToken = default);
 
     /// <summary>How much each kind of Clear would clear now (docs/features/F1.19-housekeeping.md, behavior 1).</summary>
     Task<ClearCounts> GetClearCountsAsync(CancellationToken cancellationToken = default);

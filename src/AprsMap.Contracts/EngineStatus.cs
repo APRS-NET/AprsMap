@@ -55,6 +55,7 @@ public enum ConnectionState
 /// APRS-IS source's.
 /// </param>
 /// <param name="Toggles">The station's quick toggles (F1.15), for the status bar's markers.</param>
+/// <param name="Transmit">Whether the station transmits, and what holds it (docs/features/F2.1-own-station.md).</param>
 /// <param name="Stations">How many stations, objects and items the store holds, for the View filter's chip (F1.9).</param>
 /// <param name="PacketHistory">
 /// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
@@ -77,7 +78,23 @@ public sealed record EngineStatus(
     IReadOnlyList<SourceStatus>? Sources = null,
     int PacketHistory = 0,
     int Stations = 0,
-    StationToggles? Toggles = null
+    StationToggles? Toggles = null,
+    TransmitStatus? Transmit = null
+);
+
+/// <summary>Transmitting, for the status bar (docs/features/F2.1-own-station.md, behaviors 4–13).</summary>
+/// <param name="On">Whether the Transmit switch is on.</param>
+/// <param name="Blocked">
+/// Why the station couldn't send now: one of the <c>transmit.*</c> codes in <see cref="EngineErrorCodes"/> (with the
+/// switch off, why it couldn't be turned on), or null when it can.
+/// </param>
+/// <param name="LastSent">When the station last sent a packet.</param>
+/// <param name="ReceiveOnly">The engine was started receive-only (<c>Engine:ReceiveOnly</c>), which nothing here can change.</param>
+public sealed record TransmitStatus(
+    bool On,
+    EngineError? Blocked = null,
+    DateTimeOffset? LastSent = null,
+    bool ReceiveOnly = false
 );
 
 /// <summary>One source's connection, for its status pill (F1.25 behavior 11).</summary>

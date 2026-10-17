@@ -28,6 +28,13 @@ public sealed class EngineOptions
     /// <summary>First-run default: APRS-IS server as <c>host</c> or <c>host:port</c>.</summary>
     public string Server { get; set; } = "rotate.aprs2.net:14580";
 
+    /// <summary>
+    /// Receive only, whatever the settings (docs/features/F1.26-public-console.md behavior 7): turning Transmit on and
+    /// every send are refused with <c>transmit.receive-only</c> (docs/features/F2.1-own-station.md, behavior 5.1). Set
+    /// only where the engine starts.
+    /// </summary>
+    public bool ReceiveOnly { get; set; }
+
     /// <summary>First-run default: the server-side filter sent at login.</summary>
     public string? Filter { get; set; }
 

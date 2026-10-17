@@ -33,13 +33,41 @@ internal sealed class EngineHubEndpoint(
     public IAsyncEnumerable<StationBatch> WatchStations(StationFilter? filter, CancellationToken cancellationToken) =>
         engine.WatchStationsAsync(filter, cancellationToken);
 
-    /// <summary>A toggle changes the station for every viewer, so it has the settings gate (F1.15 behavior 6).</summary>
+    /// <summary>
+    /// A toggle changes the station for every viewer, so it has the settings gate (F1.15 behavior 6). Turning Transmit
+    /// on needs a signed-in operator, which doesn't exist yet, so it's refused for everyone (F2.1 behavior 9).
+    /// </summary>
     [HubMethodName(EngineHub.SetToggle)]
-    public Task SetToggle(Toggle toggle, bool enabled)
+    public async Task SetToggle(Toggle toggle, bool enabled)
     {
+        if (toggle == Toggle.Transmit && enabled)
+        {
+            RefuseTransmit();
+        }
         Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
-        return engine.SetToggleAsync(toggle, enabled, Context.ConnectionAborted);
+        try
+        {
+            await engine.SetToggleAsync(toggle, enabled, Context.ConnectionAborted).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ToHubException(ex) is { } hub)
+        {
+            throw hub;
+        }
     }
+
+    /// <summary>Sending needs a signed-in operator, which doesn't exist yet: refused for everyone (F2.1 behavior 9).</summary>
+    [HubMethodName(EngineHub.SendPosition)]
+    public Task<PacketView> SendPosition()
+    {
+        RefuseTransmit();
+        return engine.SendPositionAsync(Context.ConnectionAborted);
+    }
+
+    /// <summary>Transmitting from a browser waits for F2.9's operator sign-in, whatever <c>AllowSettingsChanges</c> says.</summary>
+    private static void RefuseTransmit() =>
+        throw new HubException(
+            EngineHub.EncodeError(new EngineError(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage))
+        );
 
     [HubMethodName(EngineHub.GetViewFacets)]
     public Task<ViewFacets> GetViewFacets() => engine.GetViewFacetsAsync(Context.ConnectionAborted);

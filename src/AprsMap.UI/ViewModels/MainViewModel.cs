@@ -568,6 +568,7 @@ public sealed partial class MainViewModel : ObservableObject
         IsConnected = !_engineUnreachable && _status?.Connection == ConnectionState.Connected;
         IsReceiveOnly = IsConnected && _status is { Verified: false };
         IsEngineAway = _engineUnreachable;
+        ShowTransmit();
         CanReconnect =
             !_engineUnreachable
             && _status is { Connection: not (ConnectionState.NotConfigured or ConnectionState.Disconnected) }
@@ -938,7 +939,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnInternetOnChanged(bool value) => AprsIsSwitch.Show(AprsIsOn, CanToggleDependents);
 
-    partial void OnCanToggleChanged(bool value) => AprsIsSwitch.Show(AprsIsOn, CanToggleDependents);
+    partial void OnCanToggleChanged(bool value)
+    {
+        AprsIsSwitch.Show(AprsIsOn, CanToggleDependents);
+        ShowTransmit();
+    }
 
     /// <summary>Turns <paramref name="toggle"/> the other way (F1.15).</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand]
@@ -948,6 +953,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             Toggle.Internet => !InternetOn,
             Toggle.AprsIs => !AprsIsOn,
+            Toggle.Transmit => !TransmitOn,
             _ => !TilesOn,
         };
         try
@@ -957,6 +963,7 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 var t when toggle == Toggle.Internet => t with { Internet = on },
                 var t when toggle == Toggle.AprsIs => t with { AprsIs = on },
+                var t when toggle == Toggle.Transmit => t with { Transmit = on },
                 var t => t with { Tiles = on },
             };
             ShowToggles(toggles);

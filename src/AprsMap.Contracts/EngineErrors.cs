@@ -54,6 +54,12 @@ public static class EngineErrorCodes
     /// <summary>A profile's location is off the globe.</summary>
     public const string ProfilePositionOffGlobe = "settings.profile.position-off-globe";
 
+    /// <summary>A profile's comment is too long or has characters other than printable ASCII (F2.1 behavior 2).</summary>
+    public const string ProfileCommentInvalid = "settings.profile.comment-invalid";
+
+    /// <summary>A profile's symbol isn't a table or overlay character and a symbol code (F2.1 behavior 1).</summary>
+    public const string ProfileSymbolInvalid = "settings.profile.symbol-invalid";
+
     /// <summary>A profile has a latitude without a longitude, or the other way round.</summary>
     public const string ProfilePositionIncomplete = "settings.profile.position-incomplete";
 
@@ -144,6 +150,30 @@ public static class EngineErrorCodes
     /// <summary>A KISS source's host, port or TNC port isn't usable.</summary>
     public const string KissSourceInvalid = "settings.source.kiss-invalid";
 
+    /// <summary>The Transmit switch is off (docs/features/F2.1-own-station.md, behavior 11).</summary>
+    public const string TransmitOff = "transmit.off";
+
+    /// <summary>The engine was started receive-only (F2.1 behavior 5.1).</summary>
+    public const string TransmitReceiveOnly = "transmit.receive-only";
+
+    /// <summary>The callsign is a placeholder such as N0CALL (F2.1 behavior 5.2).</summary>
+    public const string TransmitPlaceholderCallsign = "transmit.placeholder-callsign";
+
+    /// <summary>The active profile has no APRS-IS source, or APRS-IS is switched off (F2.1 behavior 5.3).</summary>
+    public const string TransmitNoAprsIs = "transmit.no-aprs-is";
+
+    /// <summary>APRS-IS isn't connected (F2.1 behavior 5.4).</summary>
+    public const string TransmitNotConnected = "transmit.not-connected";
+
+    /// <summary>The APRS-IS server didn't verify the login: no passcode, or not the callsign's (F2.1 behavior 5.4).</summary>
+    public const string TransmitNotVerified = "transmit.not-verified";
+
+    /// <summary>The active profile has no location to send (F2.1 behavior 11).</summary>
+    public const string TransmitNoPosition = "transmit.no-position";
+
+    /// <summary>The connection failed while sending (F2.1 behavior 11).</summary>
+    public const string TransmitFailed = "transmit.failed";
+
     /// <summary>The kind of failure a code stands for, which decides the exception type that carries it.</summary>
     public static EngineErrorKind KindOf(string code)
     {
@@ -151,6 +181,7 @@ public static class EngineErrorCodes
         return code.StartsWith("gateway.", StringComparison.Ordinal) ? EngineErrorKind.Access
             : code.StartsWith("geocoding.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("aprs-is.", StringComparison.Ordinal) ? EngineErrorKind.Operation
+            : code.StartsWith("transmit.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : EngineErrorKind.Argument;
     }
 }

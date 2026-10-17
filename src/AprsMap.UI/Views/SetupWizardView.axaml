@@ -8,6 +8,7 @@
   xmlns:vm="using:AprsMap.UI.ViewModels"
   xmlns:c="using:AprsMap.Contracts"
   xmlns:l="using:AprsMap.UI.Localization"
+  xmlns:p="using:AprsMap.UI.Packets"
   x:Class="AprsMap.UI.Views.SetupWizardView"
   x:DataType="vm:SetupWizardViewModel"
 >
@@ -151,6 +152,51 @@
                 Content="{l:T Wizard.Callsign.SsidLink}"
                 NavigateUri="{x:Static vm:SetupWizardViewModel.SsidHelpUri}"
                 Padding="0"
+              />
+              <!-- What the station sends with its position (F2.1 behaviors 1, 2). -->
+              <TextBlock Text="{l:T Wizard.Symbol}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,8,0,0" />
+              <ComboBox
+                x:Name="SymbolBox"
+                ItemsSource="{x:Static vm:SetupWizardViewModel.Symbols}"
+                SelectedItem="{Binding SelectedSymbol}"
+                IsTextSearchEnabled="True"
+                MaxDropDownHeight="320"
+                HorizontalAlignment="Stretch"
+                AutomationProperties.Name="{l:T Wizard.Symbol}"
+              >
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SymbolChoice">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <Image
+                        Source="{Binding Symbol, Converter={x:Static p:SymbolIcons.Instance}}"
+                        Width="{DynamicResource Icon.Size}"
+                        Height="{DynamicResource Icon.Size}"
+                      />
+                      <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock Text="{l:T Wizard.Comment}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBox
+                x:Name="CommentBox"
+                Text="{Binding Comment}"
+                MaxLength="{x:Static vm:SetupWizardViewModel.MaxCommentLength}"
+                PlaceholderText="{l:T Wizard.Comment.Watermark}"
+                AutomationProperties.Name="{l:T Wizard.Comment}"
+                AutomationProperties.HelpText="{l:T Wizard.Comment.Help}"
+              />
+              <TextBlock
+                Text="{l:T Wizard.Comment.Help}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <TextBlock
+                x:Name="CommentErrorLabel"
+                Text="{Binding CommentError}"
+                IsVisible="{Binding CommentError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
               />
             </StackPanel>
 

@@ -59,6 +59,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     private int _reconnects;
     private IPacketSource? _source;
     private long _packets;
+    private DateTimeOffset? _lastSent;
     private int _packetHistory;
     private AppSettings? _settings;
 
@@ -129,7 +130,13 @@ public sealed partial class Engine : IEngineService, IDisposable
                     Sources: SourceStatuses(),
                     PacketHistory: _packetHistory,
                     Stations: _stations.Count,
-                    Toggles: (_settings ?? AppSettings.Empty).EffectiveToggles
+                    Toggles: (_settings ?? AppSettings.Empty).EffectiveToggles,
+                    Transmit: new TransmitStatus(
+                        (_settings ?? AppSettings.Empty).EffectiveToggles.Transmit,
+                        TransmitBlock(_settings ?? AppSettings.Empty),
+                        _lastSent,
+                        _options.ReceiveOnly
+                    )
                 )
             );
         }
@@ -140,14 +147,23 @@ public sealed partial class Engine : IEngineService, IDisposable
         await LoadSettingsAsync(cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc />
-    public async Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default)
+    public Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default) =>
+        SaveAsync(settings, trusted: false, cancellationToken);
+
+    /// <summary>
+    /// Validates and stores <paramref name="settings"/>. Unless <paramref name="trusted"/> (the engine's own change),
+    /// saving never turns Transmit on or marks a position confirmed (docs/features/F2.1-own-station.md, behaviors 4,
+    /// 12): those keep what they were, and a change to what a profile sends clears its confirmation. Switching the
+    /// active profile turns Transmit off (behavior 7).
+    /// </summary>
+    private async Task SaveAsync(AppSettings settings, bool trusted, CancellationToken cancellationToken)
     {
         SettingsValidator.Validate(settings, _time);
-        var saved = settings with { ReadOnly = false };
         await _settingsLock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             var old = await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false);
+            var saved = trusted ? settings with { ReadOnly = false } : KeepTransmitState(settings, old);
             var before = Station.Of(old);
             await _settingsStore.SaveAsync(saved, cancellationToken).ConfigureAwait(false);
             lock (_gate)
@@ -177,6 +193,32 @@ public sealed partial class Engine : IEngineService, IDisposable
         {
             _settingsLock.Release();
         }
+    }
+
+    private static AppSettings KeepTransmitState(AppSettings settings, AppSettings old)
+    {
+        var oldProfiles = old.Profiles.ToDictionary(p => p.Id, StringComparer.Ordinal);
+        var profiles = settings
+            .Profiles.Select(p =>
+                p with
+                {
+                    PositionConfirmed =
+                        oldProfiles.TryGetValue(p.Id, out var was)
+                        && was.PositionConfirmed
+                        && !p.ChangesWhatIsSent(was),
+                }
+            )
+            .ToList();
+        var transmit =
+            settings.EffectiveToggles.Transmit
+            && old.EffectiveToggles.Transmit
+            && settings.ActiveProfileId == old.ActiveProfileId;
+        return settings with
+        {
+            ReadOnly = false,
+            Profiles = profiles,
+            Toggles = settings.EffectiveToggles with { Transmit = transmit },
+        };
     }
 
     /// <inheritdoc />
@@ -699,9 +741,154 @@ public sealed partial class Engine : IEngineService, IDisposable
             Toggle.Internet => toggles with { Internet = enabled },
             Toggle.AprsIs => toggles with { AprsIs = enabled },
             Toggle.Tiles => toggles with { Tiles = enabled },
+            Toggle.Transmit => toggles with { Transmit = enabled },
             _ => throw new ArgumentOutOfRangeException(nameof(toggle), toggle, "Not a toggle."),
         };
-        await SaveSettingsAsync(settings with { Toggles = toggles }, cancellationToken).ConfigureAwait(false);
+        if (toggle == Toggle.Transmit && enabled)
+        {
+            // Turning it on is the one change that's checked first (F2.1 behavior 5); off always works (behavior 6).
+            EngineError? blocked;
+            lock (_gate)
+            {
+                blocked = TransmitBlock(settings);
+            }
+            if (blocked is not null)
+            {
+                throw EngineErrors.ToException(blocked);
+            }
+            LogTransmit("on");
+        }
+        else if (toggle == Toggle.Transmit)
+        {
+            LogTransmit("off");
+        }
+        await SaveAsync(settings with { Toggles = toggles }, trusted: toggle == Toggle.Transmit, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Why the station couldn't transmit now, leaving the switch aside (docs/features/F2.1-own-station.md, behavior 5),
+    /// or null when it can. Call under <see cref="_gate"/>.
+    /// </summary>
+    private EngineError? TransmitBlock(AppSettings settings)
+    {
+        var profile = settings.GetActiveProfile();
+        return _options.ReceiveOnly
+                ? new EngineError(
+                    EngineErrorCodes.TransmitReceiveOnly,
+                    "This station was started receive only, so it doesn't transmit."
+                )
+            : profile is null || IsPlaceholder(profile.Callsign)
+                ? new EngineError(
+                    EngineErrorCodes.TransmitPlaceholderCallsign,
+                    "N0CALL and NOCALL are placeholders: set your own callsign to transmit."
+                )
+            : settings.AprsIsSourceOf(profile) is null || !settings.EffectiveToggles.ConnectsAprsIs
+                ? new EngineError(
+                    EngineErrorCodes.TransmitNoAprsIs,
+                    "Transmitting goes through APRS-IS, and this station isn't using it."
+                )
+            : _link.State != ConnectionState.Connected
+                ? new EngineError(EngineErrorCodes.TransmitNotConnected, "APRS-IS isn't connected.")
+            : !_link.Verified
+                ? new EngineError(
+                    EngineErrorCodes.TransmitNotVerified,
+                    "The APRS-IS server didn't verify the login: check the passcode for this callsign."
+                )
+            : null;
+    }
+
+    /// <summary>Whether <paramref name="callsign"/>'s base call is a placeholder, N0CALL or NOCALL (F2.1 behavior 5.2).</summary>
+    internal static bool IsPlaceholder(string callsign)
+    {
+        var dash = callsign.IndexOf('-', StringComparison.Ordinal);
+        var call = dash < 0 ? callsign : callsign[..dash];
+        return call.Equals("N0CALL", StringComparison.OrdinalIgnoreCase)
+            || call.Equals("NOCALL", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <inheritdoc />
+    public async Task<PacketView> SendPositionAsync(CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+        EngineError? blocked;
+        IPacketSender? sender;
+        string? sourceId;
+        lock (_gate)
+        {
+            blocked = settings.EffectiveToggles.Transmit
+                ? TransmitBlock(settings)
+                : new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.");
+            sender = _source as IPacketSender;
+            sourceId = Station.Of(settings)?.Source.Id;
+        }
+        var profile = settings.GetActiveProfile();
+        if (blocked is null && sender is null)
+        {
+            blocked = new EngineError(EngineErrorCodes.TransmitNotConnected, "APRS-IS isn't connected.");
+        }
+        if (blocked is null && profile is not { Latitude: { } lat, Longitude: { } lon })
+        {
+            blocked = new EngineError(EngineErrorCodes.TransmitNoPosition, "Set the station's location first.");
+        }
+        if (blocked is not null)
+        {
+            throw EngineErrors.ToException(blocked);
+        }
+
+        var symbol = profile!.EffectiveSymbol;
+        var packet = PacketAddress
+            .Parse(profile.Callsign, Brand.Tocall, [])
+            .Create(
+                new PositionReport
+                {
+                    Position = new AprsPosition(profile.Latitude!.Value, profile.Longitude!.Value),
+                    Symbol = new AprsSymbol(symbol[0], symbol[1]),
+                    Comment = profile.Comment ?? string.Empty,
+                }
+            );
+        try
+        {
+            await sender!.SendAsync(packet, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or ObjectDisposedException)
+        {
+            LogSendFailed(ex);
+            throw EngineErrors.ToException(
+                new EngineError(EngineErrorCodes.TransmitFailed, "The packet couldn't be sent: " + ex.Message),
+                ex
+            );
+        }
+        LogSent(packet);
+        lock (_gate)
+        {
+            _lastSent = _time.GetUtcNow();
+        }
+        var view = Accept(packet, sourceId, sent: true)!;
+
+        // The interlock (behavior 12): automatic sends may start once the user has seen this go out.
+        if (!profile.PositionConfirmed)
+        {
+            var now = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+            if (now.GetActiveProfile() is { } current && !current.ChangesWhatIsSent(profile))
+            {
+                await SaveAsync(
+                        now with
+                        {
+                            Profiles =
+                            [
+                                .. now.Profiles.Select(p =>
+                                    p.Id == current.Id ? p with { PositionConfirmed = true } : p
+                                ),
+                            ],
+                        },
+                        trusted: true,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
+        }
+        return view;
     }
 
     /// <summary>Whether map tiles may be downloaded now (F1.15): the Internet and Map tiles toggles are on.</summary>
@@ -955,11 +1142,15 @@ public sealed partial class Engine : IEngineService, IDisposable
     /// first on another source isn't listed or counted again: the first stands, and its Seen on gains this source
     /// (F1.25 behavior 9). A copy on the same source (another IGate on APRS-IS) is listed, marked (F1.8 behavior 2).
     /// </summary>
-    private void Accept(AprsPacket packet, string? sourceId = null)
+    /// <param name="packet">The packet.</param>
+    /// <param name="sourceId">Where it came from, or the source it was sent on.</param>
+    /// <param name="sent">This station sent it (F2.1 behavior 13): listed marked <see cref="PacketMarkers.Sent"/>.</param>
+    /// <returns>The packet as listed, or null when it wasn't.</returns>
+    private PacketView? Accept(AprsPacket packet, string? sourceId = null, bool sent = false)
     {
         if (!packet.HasHeader)
         {
-            return; // server comments and noise
+            return null; // server comments and noise
         }
 
         var now = _time.GetUtcNow();
@@ -969,11 +1160,15 @@ public sealed partial class Engine : IEngineService, IDisposable
             AddSeenOn(check.Identity, sourceId);
             _stations.SeenOn(packet, sourceId);
             _dashboard.RecordSource(sourceId, now); // still delivering, though another source was first
-            return;
+            return null;
         }
         var duplicate = check.IsDuplicate;
         var heardHere = IsOwnReceiver(sourceId); // a TNC: heard on RF by this station (F3.1 behavior 8)
         var view = PacketSummarizer.Summarize(packet, now, duplicate, heardHere) with { SourceId = sourceId };
+        if (sent)
+        {
+            view = view with { Markers = PacketMarkers.Sent }; // not heard from anywhere: ours
+        }
         if (!duplicate)
         {
             // F1.3 behavior 11: a duplicate is listed, not applied again. The track analysis marks the packet (F1.20).
@@ -1004,6 +1199,7 @@ public sealed partial class Engine : IEngineService, IDisposable
                 }
             }
         }
+        return view;
     }
 
     /// <summary>Whether <paramref name="sourceId"/> is this station's own receiver: a KISS TNC (F3.1 behavior 8).</summary>
@@ -1469,6 +1665,15 @@ public sealed partial class Engine : IEngineService, IDisposable
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Reconnect requested; reconnecting now")]
     private partial void LogReconnectRequested();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Transmit turned {State}.")]
+    private partial void LogTransmit(string state);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Sent {Packet}")]
+    private partial void LogSent(AprsPacket packet);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A packet couldn't be sent.")]
+    private partial void LogSendFailed(Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Source {Source} failed; trying again in {Delay}")]
     private partial void LogSourceFailed(Exception exception, string source, TimeSpan delay);

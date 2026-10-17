@@ -321,6 +321,31 @@ internal sealed class FakeEngine : IEngineService
         return Task.FromResult(Routes.GetValueOrDefault(query.Name));
     }
 
+    /// <summary>How many times <see cref="SendPositionAsync"/> was called.</summary>
+    public int PositionsSent { get; private set; }
+
+    /// <summary>When set, <see cref="SendPositionAsync"/> throws it.</summary>
+    public Exception? SendFailure { get; set; }
+
+    public Task<PacketView> SendPositionAsync(CancellationToken cancellationToken = default)
+    {
+        if (SendFailure is { } failure)
+        {
+            return Task.FromException<PacketView>(failure);
+        }
+        PositionsSent++;
+        return Task.FromResult(
+            new PacketView(
+                DateTimeOffset.UnixEpoch,
+                "N0TEST",
+                "Position",
+                "Position",
+                "N0TEST>APZAMP:!",
+                Markers: PacketMarkers.Sent
+            )
+        );
+    }
+
     /// <summary>The stations whose track <see cref="ClearTrackAsync"/> cleared, in order.</summary>
     public List<string> ClearedTracks { get; } = [];
 
