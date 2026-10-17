@@ -114,6 +114,9 @@ public sealed partial class PacketRow : ObservableObject
     /// <summary>Whether it was carried inside another station's packet (the third-party marker).</summary>
     public bool IsThirdParty => Packet.Markers.HasFlag(PacketMarkers.ThirdParty);
 
+    /// <summary>Whether this station sent it (the sent marker, docs/features/F2.1-own-station.md behavior 13).</summary>
+    public bool IsSent => Packet.Markers.HasFlag(PacketMarkers.Sent);
+
     /// <summary>Whether an IGate heard it on RF straight from the sender (the direct marker).</summary>
     public bool IsDirect => Packet.Markers.HasFlag(PacketMarkers.Direct);
 

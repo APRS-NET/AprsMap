@@ -506,6 +506,20 @@
   <data name="Wizard.Callsign.Help" xml:space="preserve">
     <value>The SSID after the hyphen tells your stations apart: -9 is common for a car, -7 for a handheld.</value>
   </data>
+  <data name="Wizard.Symbol" xml:space="preserve">
+    <value>Symbol</value>
+    <comment>The APRS symbol the station shows on maps and sends with its position.</comment>
+  </data>
+  <data name="Wizard.Comment" xml:space="preserve">
+    <value>Comment</value>
+    <comment>Text sent with the station's position.</comment>
+  </data>
+  <data name="Wizard.Comment.Watermark" xml:space="preserve">
+    <value>Optional, for example your name or a club</value>
+  </data>
+  <data name="Wizard.Comment.Help" xml:space="preserve">
+    <value>Sent with your position once you transmit. Up to 43 characters, without accents.</value>
+  </data>
   <data name="Wizard.Callsign.SsidLink" xml:space="preserve">
     <value>SSID conventions</value>
     <comment>Link to the APRS SSID recommendations.</comment>
@@ -1733,6 +1747,33 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Toggles.Tiles" xml:space="preserve">
     <value>Download map tiles</value>
+  </data>
+  <data name="Toggles.Transmit" xml:space="preserve">
+    <value>Transmit</value>
+    <comment>Quick toggle: whether this station sends packets. Off until the user turns it on.</comment>
+  </data>
+  <data name="Transmit.SendPosition" xml:space="preserve">
+    <value>Send position now</value>
+    <comment>Sends the station's position once, by hand.</comment>
+  </data>
+  <data name="Transmit.On" xml:space="preserve">
+    <value>Transmitting</value>
+    <comment>Status bar marker while the Transmit switch is on.</comment>
+  </data>
+  <data name="Transmit.Held" xml:space="preserve">
+    <value>Transmit held: {reason}</value>
+    <comment>Status bar marker while Transmit is on but nothing can be sent. reason: why, for example "APRS-IS isn't connected."</comment>
+  </data>
+  <data name="Transmit.Sent" xml:space="preserve">
+    <value>Position sent</value>
+    <comment>Said to screen readers after Send position now.</comment>
+  </data>
+  <data name="Packets.Sent" xml:space="preserve">
+    <value>Sent by this station</value>
+    <comment>Packet list marker on a packet this app transmitted.</comment>
+  </data>
+  <data name="Transmit.Marker.Help" xml:space="preserve">
+    <value>Turn Transmit off, or send your position, from the connection menu (Ctrl+T).</value>
   </data>
   <data name="Toggles.Marker.Internet" xml:space="preserve">
     <value>Internet off</value>

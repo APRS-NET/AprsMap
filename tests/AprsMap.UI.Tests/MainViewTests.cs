@@ -129,7 +129,10 @@ public class MainViewTests
         var flyout = Assert.IsType<MenuFlyout>(button.Flyout);
         flyout.ShowAt(button);
         var items = flyout.Items.OfType<MenuItem>().ToList();
-        Assert.Equal(["ReconnectItem", "InternetToggle", "AprsIsToggle", "TilesToggle"], items.Select(i => i.Name));
+        Assert.Equal(
+            ["ReconnectItem", "InternetToggle", "AprsIsToggle", "TilesToggle", "TransmitToggle", "SendPositionItem"],
+            items.Select(i => i.Name)
+        );
         var item = items[0];
         Assert.Same(vm.ReconnectCommand, item.Command);
         item.Command!.Execute(null);

@@ -60,6 +60,16 @@
     <Style Selector="Border#ConnectionPill.warn TextBlock#ConnectionLabel">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
     </Style>
+    <!-- Transmitting (F2.1): a quiet outline while it's on; the warning colour while it's held. -->
+    <Style Selector="Button#TransmitMarker">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+    </Style>
+    <Style Selector="Button#TransmitMarker.warn">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Warn}" />
+    </Style>
+    <Style Selector="Button#TransmitMarker.warn TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
   </UserControl.Styles>
   <Panel>
     <DockPanel>
@@ -267,6 +277,24 @@
                         Command="{Binding ToggleCommand}"
                         CommandParameter="{x:Static c:Toggle.Tiles}"
                       />
+                      <!-- Transmitting (F2.1): never from a gateway's browser until operator sign-in (behavior 9). -->
+                      <Separator IsVisible="{Binding !SharedStation}" />
+                      <MenuItem
+                        x:Name="TransmitToggle"
+                        Header="{l:T Toggles.Transmit}"
+                        ToggleType="CheckBox"
+                        IsVisible="{Binding !SharedStation}"
+                        IsChecked="{Binding TransmitOn, Mode=OneWay}"
+                        IsEnabled="{Binding CanTransmit}"
+                        Command="{Binding ToggleCommand}"
+                        CommandParameter="{x:Static c:Toggle.Transmit}"
+                      />
+                      <MenuItem
+                        x:Name="SendPositionItem"
+                        Header="{l:T Transmit.SendPosition}"
+                        IsVisible="{Binding !SharedStation}"
+                        Command="{Binding SendPositionCommand}"
+                      />
                     </MenuFlyout>
                   </Button.Flyout>
                 </Button>
@@ -303,6 +331,29 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <!-- Transmitting (F2.1 behaviors 4, 8): said in words, the warning colour only while it's held. -->
+            <Button
+              x:Name="TransmitMarker"
+              Classes="toggle-marker"
+              Classes.warn="{Binding IsTransmitHeld}"
+              IsVisible="{Binding TransmitText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Control}"
+              Padding="8,3"
+              VerticalAlignment="Center"
+              ToolTip.Tip="{l:T Transmit.Marker.Help}"
+              AutomationProperties.Name="{Binding TransmitText}"
+            >
+              <TextBlock Text="{Binding TransmitText}" TextWrapping="Wrap" />
+            </Button>
+            <TextBlock
+              x:Name="TransmitAnnouncement"
+              Text="{Binding TransmitAnnouncement}"
+              AutomationProperties.LiveSetting="Polite"
+              Width="0"
+              Height="0"
+              Opacity="0"
+            />
             <TextBlock
               x:Name="ToggleAnnouncement"
               Text="{Binding ToggleAnnouncement}"

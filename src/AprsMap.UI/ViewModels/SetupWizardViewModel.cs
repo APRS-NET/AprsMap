@@ -340,6 +340,26 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// <summary>The callsign without its SSID, as the passcode calculator shows it.</summary>
     public string BaseCallsign => Callsign.Split('-')[0];
 
+    /// <summary>The symbols to choose from (docs/features/F2.1-own-station.md, behavior 1).</summary>
+    public static IReadOnlyList<SymbolChoice> Symbols => SymbolChoice.All;
+
+    /// <summary>The station's symbol: a house until the user picks another (F2.1 behavior 1).</summary>
+    [ObservableProperty]
+    public partial SymbolChoice? SelectedSymbol { get; set; } = SymbolChoice.For(StationProfile.DefaultSymbol);
+
+    /// <summary>The comment sent with the station's positions (F2.1 behavior 2); the engine checks what it may hold.</summary>
+    [ObservableProperty]
+    public partial string Comment { get; set; } = string.Empty;
+
+    /// <summary>Why the comment or symbol can't be sent, or null.</summary>
+    [ObservableProperty]
+    public partial string? CommentError { get; set; }
+
+    partial void OnCommentChanged(string value) => CommentError = null;
+
+    /// <summary>The most characters <see cref="Comment"/> may have.</summary>
+    public static int MaxCommentLength => StationProfile.MaxCommentLength;
+
     // ── Step 2: location ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The way the user is giving the location.</summary>
@@ -640,6 +660,8 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     private async Task FillFromAsync(StationProfile profile)
     {
         Callsign = profile.Callsign;
+        SelectedSymbol = SymbolChoice.For(profile.EffectiveSymbol);
+        Comment = profile.Comment ?? string.Empty;
         _settingName = true;
         ProfileName = profile.Name;
         _settingName = false;
@@ -673,6 +695,8 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         string.Join(
             '\u001F',
             Callsign,
+            SelectedSymbol?.Symbol ?? "",
+            Comment,
             ProfileName,
             Filter,
             SelectedSource?.Name ?? "",
@@ -1085,7 +1109,10 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             [.. others.Where(id => id != source?.Id), .. source is null ? Array.Empty<string>() : [source.Id]],
             Latitude,
             Longitude,
-            IsProfileMode ? RangeKm : StationProfile.DefaultRangeKm
+            IsProfileMode ? RangeKm : StationProfile.DefaultRangeKm,
+            Symbol: SelectedSymbol?.Symbol,
+            Comment: Comment.Trim().Length > 0 ? Comment.Trim() : null,
+            PositionConfirmed: _editing?.PositionConfirmed ?? false // the engine clears it when what's sent changed
         );
         IsBusy = true;
         try
@@ -1184,6 +1211,11 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         {
             Step = SetupStep.Callsign;
             NameError = message;
+        }
+        else if (code is EngineErrorCodes.ProfileCommentInvalid or EngineErrorCodes.ProfileSymbolInvalid)
+        {
+            Step = SetupStep.Callsign;
+            CommentError = message;
         }
         else if (code == EngineErrorCodes.KissSourceInvalid && UseTnc)
         {

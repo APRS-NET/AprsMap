@@ -106,7 +106,7 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
-| F2.1 | Own station ([spec](features/F2.1-own-station.md)): callsign, SSID guidance, symbol, comment, passcode, transmit enable and safety interlocks, Send position now | SSID, Passcode, Why Won't APRSIS Transmit | App | G01, G02 | engine built, UI next (0.5.0, [#190](https://github.com/APRS-NET/AprsMap/issues/190)) |
+| F2.1 | Own station ([spec](features/F2.1-own-station.md)): callsign, SSID guidance, symbol, comment, passcode, transmit enable and safety interlocks, Send position now | SSID, Passcode, Why Won't APRSIS Transmit | App | G01, G02 | built (0.5.0, [#190](https://github.com/APRS-NET/AprsMap/issues/190)) |
 | F2.2 | Fixed and SmartBeaconing-style position beacons, status beacons, PHG | PHG | App | G01, G11 | scoped (0.6.0, [#196](https://github.com/APRS-NET/AprsMap/issues/196)) |
 | F2.3 | Predictive beaconing indicator: show where others last saw you versus where you are (our own name for the feature) | Red Dot | App | G11 | scoped (0.6.0, [#197](https://github.com/APRS-NET/AprsMap/issues/197)) |
 | F2.4 | Messaging: chat per correspondent, ack/retry status, reply-ack, rejects, offline queue, selectable retry profiles (default, APRS-IS, none, slow HF modem), optional double-ack on RF | APRS Messaging Explained | App | G01, G10 | scoped (0.5.0, [#192](https://github.com/APRS-NET/AprsMap/issues/192)) |
