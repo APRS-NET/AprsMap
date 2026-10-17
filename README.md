@@ -10,10 +10,12 @@ macOS, and a web app served by a Docker gateway, both running the same UI on the
 from [APRS.NET](https://github.com/APRS-NET/APRS.NET). The feature set is a clean-room reimplementation of the
 functionality of APRSIS32, redesigned with a modern UI (see [docs/clean-room.md](docs/clean-room.md)).
 
-Status: `0.4.0-alpha.1`, receive-only, from APRS-IS and from your own TNC. The app connects to APRS-IS and to KISS TNCs
-over TCP (Direwolf, soundmodem) and shows the stations on a live map with their tracks and RF paths, with station and
-packet lists, station details (weather, telemetry, anomalies) and a dashboard of live numbers, on the desktop and in the
-browser; it doesn't transmit yet. Next are hardware TNCs over USB serial. See [docs/status.md](docs/status.md) for what
+Status: `0.5.0-alpha.1` in progress. The app connects to APRS-IS and to KISS TNCs over TCP (Direwolf, soundmodem)
+and shows the stations on a live map with their tracks and RF paths, with station and packet lists, station details
+(weather, telemetry, anomalies) and a dashboard of live numbers, on the desktop and in the browser. It now transmits, for
+licensed operators who turn it on: your position by hand through APRS-IS and your TNC, and a test send per source;
+unlicensed users listen with a generated listener ID. Next are beacons, messaging and operator sign-in on the gateway.
+See [docs/status.md](docs/status.md) for what
 to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 
 > [!WARNING]
