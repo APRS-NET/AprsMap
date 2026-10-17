@@ -10,8 +10,8 @@ namespace AprsMap.UI.Shell;
 /// </summary>
 public static class DockStrings
 {
-    // Dock's resource key → our string key. Dock's document-tab and MDI strings aren't listed: the map is the only
-    // document and has no tab menu.
+    // Dock's resource key → our string key. Dock's document-tab and MDI strings aren't listed: the dashboard's tab menu
+    // is our own (Themes/DockMenus.axaml).
     private static readonly (string Dock, string Ours)[] Map =
     [
         ("ToolChromeControlFloatString", "Dock.Float"),

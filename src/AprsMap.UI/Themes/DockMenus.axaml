@@ -1,5 +1,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
-<!-- The panel menu (F1.0 behavior 4): Dock's tool chrome menu with Move to left, right and bottom added, and without
+<!-- The dashboard's tab menu (F1.22 behavior 1): Float, or Dock beside the map when it's in its own window, and Close.
+     Our own, in place of Dock's document tab menu, whose Close all tabs and layout modes don't fit a map and one tab.
+     The panel menu (F1.0 behavior 4): Dock's tool chrome menu with Move to left, right and bottom added, and without
      "Dock as tabbed document" (a panel never takes the map's place). Defined under Dock's own key, so Dock's controls
      use it. The Float, Dock, Auto hide and Close items are copied from Dock's Fluent theme
      (https://github.com/wieslawsoltes/Dock, src/Dock.Avalonia.Themes.Fluent/Controls/ToolChromeControl.axaml, MIT
@@ -38,6 +40,32 @@
   x:DataType="controls:IToolDock"
   x:CompileBindings="True"
 >
+  <ContextMenu x:Key="DocumentTabStripItemContextMenu" x:DataType="core:IDockable">
+    <MenuItem
+      Header="{l:T Dock.Float}"
+      Command="{Binding Owner.Factory.FloatDockable, FallbackValue={x:Null}}"
+      CommandParameter="{Binding}"
+    >
+      <MenuItem.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <Binding Path="CanFloat" />
+          <Binding Converter="{x:Static shell:ShellConverters.IsDocked}" />
+        </MultiBinding>
+      </MenuItem.IsVisible>
+    </MenuItem>
+    <MenuItem
+      Header="{l:T Shell.DockBesideMap}"
+      Command="{Binding ((shell:ShellFactory)Factory).DockBesideMap, FallbackValue={x:Null}}"
+      CommandParameter="{Binding}"
+      IsVisible="{Binding Converter={x:Static shell:ShellConverters.IsFloating}}"
+    />
+    <MenuItem
+      Header="{l:T Dock.Close}"
+      Command="{Binding Owner.Factory.CloseDockable, FallbackValue={x:Null}}"
+      CommandParameter="{Binding}"
+      IsVisible="{Binding CanClose}"
+    />
+  </ContextMenu>
   <MenuFlyout x:Key="ToolChromeControlContextMenu">
     <MenuItem
       Header="{l:T Shell.MoveToLeft}"
