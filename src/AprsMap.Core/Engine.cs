@@ -18,7 +18,7 @@ namespace AprsMap.Core;
 /// position of every station for <see cref="WatchStationsAsync"/>. It logs in with the active station profile from
 /// <see cref="ISettingsStore"/>, waits while there is none, and reconnects when the profile changes.
 /// </summary>
-public sealed partial class Engine : IEngineService, IDisposable
+public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
 {
     private readonly EngineOptions _options;
     private readonly IPacketSourceFactory _sources;
@@ -65,6 +65,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     // The open connections of the other sources that can send (KISS TNCs), by source id (F2.1 behavior 5).
     private readonly Dictionary<string, IPacketSender> _senders = new(StringComparer.Ordinal);
     private readonly List<EchoWatch> _echoes = [];
+    private readonly Messenger _messenger;
     private int _packetHistory;
     private AppSettings? _settings;
 
@@ -79,7 +80,8 @@ public sealed partial class Engine : IEngineService, IDisposable
         ISettingsStore settingsStore,
         TimeProvider time,
         ILogger<Engine> logger,
-        IGeocoder? geocoder = null
+        IGeocoder? geocoder = null,
+        IMessageStore? messages = null
     )
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -92,11 +94,13 @@ public sealed partial class Engine : IEngineService, IDisposable
         _duplicates = new DuplicateFilter(timeProvider: time);
         _dashboard = new DashboardCounters(time.GetUtcNow());
         _logger = logger;
+        _messenger = new Messenger(this, messages ?? new InMemoryMessageStore(), time);
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
+        _messenger.Dispose();
         _settingsLock.Dispose();
         lock (_gate)
         {
@@ -114,6 +118,7 @@ public sealed partial class Engine : IEngineService, IDisposable
     /// <inheritdoc />
     public Task<EngineStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
+        var unread = _messenger.Unread; // outside the gate: the messenger asks the engine things under its own lock
         lock (_gate)
         {
             var profile = _settings?.GetActiveProfile();
@@ -141,7 +146,8 @@ public sealed partial class Engine : IEngineService, IDisposable
                         TransmitBlock(_settings ?? AppSettings.Empty),
                         _lastSent,
                         _options.ReceiveOnly
-                    )
+                    ),
+                    UnreadMessages: unread
                 )
             );
         }
@@ -176,6 +182,7 @@ public sealed partial class Engine : IEngineService, IDisposable
                 _settings = saved;
             }
             MeasureFrom(saved);
+            await UseMessengerAsync(saved, cancellationToken).ConfigureAwait(false);
             SignalSettingsChanged();
 
             var after = Station.Of(saved);
@@ -244,6 +251,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             }
             _stations.Clear();
             MeasureFrom(AppSettings.Empty);
+            await UseMessengerAsync(AppSettings.Empty, cancellationToken).ConfigureAwait(false);
             SignalSettingsChanged();
             LogReset();
             SignalRestart();
@@ -1029,6 +1037,7 @@ public sealed partial class Engine : IEngineService, IDisposable
             Position = new AprsPosition(lat, lon),
             Symbol = new AprsSymbol(symbol[0], symbol[1]),
             Comment = profile.Comment ?? string.Empty,
+            IsMessagingCapable = true, // it answers messages now (F2.4 behavior 15)
         };
         var sent = new List<PacketView>();
         Exception? failure = null;
@@ -1118,6 +1127,123 @@ public sealed partial class Engine : IEngineService, IDisposable
                 _echoes.Remove(watch);
             }
         }
+    }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<Conversation>> GetConversationsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_messenger.Conversations());
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<ChatMessage> WatchMessagesAsync(CancellationToken cancellationToken = default) =>
+        _messenger.WatchAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<ChatMessage>> SendMessageAsync(
+        string correspondent,
+        string text,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(correspondent);
+        ArgumentNullException.ThrowIfNull(text);
+        await LoadSettingsAsync(cancellationToken).ConfigureAwait(false);
+        return _messenger.Send(correspondent, text);
+    }
+
+    /// <inheritdoc />
+    public Task CancelMessageAsync(string id, CancellationToken cancellationToken = default)
+    {
+        _messenger.Cancel(id);
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task ResendMessageAsync(string id, CancellationToken cancellationToken = default)
+    {
+        _messenger.Resend(id);
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task MarkReadAsync(string correspondent, CancellationToken cancellationToken = default)
+    {
+        _messenger.MarkRead(correspondent);
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc />
+    public Task SetConversationAsync(
+        string correspondent,
+        SendVia sendVia,
+        MessageRetries retries,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(correspondent);
+        ArgumentNullException.ThrowIfNull(sendVia);
+        _messenger.SetConversation(correspondent, sendVia, retries);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Saves the conversations now, for tests.</summary>
+    internal Task FlushMessagesAsync() => _messenger.FlushAsync();
+
+    EngineError? IMessengerHost.ProfileBlock()
+    {
+        lock (_gate)
+        {
+            return ProfileBlock(_settings ?? AppSettings.Empty);
+        }
+    }
+
+    bool IMessengerHost.CanSendOn(string sourceId)
+    {
+        lock (_gate)
+        {
+            var settings = _settings ?? AppSettings.Empty;
+            return settings.EffectiveToggles.Transmit
+                && ProfileBlock(settings) is null
+                && settings.GetActiveProfile() is { } profile
+                && settings.SourceList.FirstOrDefault(s => s.Id == sourceId) is { } source
+                && profile.Uses(source)
+                && SourceBlock(settings, source) is null;
+        }
+    }
+
+    IReadOnlyList<(string Id, string Name, bool IsRf)> IMessengerHost.TransmitSources()
+    {
+        lock (_gate)
+        {
+            return
+            [
+                .. TransmitSources(_settings ?? AppSettings.Empty)
+                    .Select(s => (s.Id, s.Name, s.Kind != SourceKind.AprsIs)),
+            ];
+        }
+    }
+
+    async Task<bool> IMessengerHost.SendAsync(
+        string sourceId,
+        MessagePayload payload,
+        CancellationToken cancellationToken
+    )
+    {
+        StationProfile? profile;
+        SourceSettings? source;
+        IPacketSender? sender;
+        lock (_gate)
+        {
+            profile = _settings?.GetActiveProfile();
+            source = _settings?.SourceList.FirstOrDefault(s => s.Id == sourceId);
+            sender = source is null ? null : SenderFor(source);
+        }
+        if (profile is null || source is null || sender is null)
+        {
+            return false;
+        }
+        var (view, _) = await SendOnAsync(source, sender, Build(profile, source, payload), cancellationToken)
+            .ConfigureAwait(false);
+        return view is not null;
     }
 
     /// <inheritdoc />
@@ -1438,6 +1564,7 @@ public sealed partial class Engine : IEngineService, IDisposable
         if (!sent)
         {
             CheckEchoes(packet);
+            _messenger.Receive(packet, sourceId, IsOwnReceiver(sourceId)); // messages, acks, and who was heard where
         }
         var now = _time.GetUtcNow();
         var check = _duplicates.Check(packet, sourceId);
@@ -1785,7 +1912,16 @@ public sealed partial class Engine : IEngineService, IDisposable
             _settings = settings;
         }
         MeasureFrom(settings);
+        await UseMessengerAsync(settings, cancellationToken).ConfigureAwait(false);
         return settings;
+    }
+
+    /// <summary>The messenger takes up the active profile's conversations (docs/features/F2.4-messaging.md, behavior 5).</summary>
+    private async Task UseMessengerAsync(AppSettings settings, CancellationToken cancellationToken)
+    {
+        var profile = settings.GetActiveProfile();
+        await _messenger.UseAsync(profile?.Id, profile?.Callsign, cancellationToken).ConfigureAwait(false);
+        _messenger.Pump(); // the Transmit switch or a source may have changed
     }
 
     /// <summary>Distances and bearings are from the active profile's location (F1.13 behavior 4).</summary>

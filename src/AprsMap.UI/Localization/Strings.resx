@@ -2748,6 +2748,16 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>A TX path is up to 8 digipeater aliases or callsigns, separated by commas, such as WIDE1-1,WIDE2-1.</value>
     <comment>WIDE1-1,WIDE2-1 is an APRS path: don't translate it.</comment>
   </data>
+  <data name="Error.messages.text-invalid" xml:space="preserve">
+    <value>A message can only have plain letters, digits and punctuation: no accents, and no vertical bar, tilde or opening curly brace.</value>
+  </data>
+  <data name="Error.messages.too-long" xml:space="preserve">
+    <value>A message has 1 to 300 characters.</value>
+  </data>
+  <data name="Error.messages.callsign-invalid" xml:space="preserve">
+    <value>“{value}” isn't a callsign a message can go to.</value>
+    <comment>value: what was typed.</comment>
+  </data>
   <data name="Error.transmit.failed" xml:space="preserve">
     <value>The packet couldn't be sent.</value>
   </data>

@@ -29,6 +29,9 @@ public static class EngineServiceCollectionExtensions
         services.TryAddSingleton<ISettingsStore>(sp =>
             SettingsLocation.CreateStore(sp.GetRequiredService<IOptions<EngineOptions>>().Value)
         );
+        services.TryAddSingleton<IMessageStore>(sp => new FileMessageStore(
+            SettingsLocation.Folder(sp.GetRequiredService<IOptions<EngineOptions>>().Value)
+        ));
         services.TryAddSingleton<Engine>();
         services.TryAddSingleton<IEngineService>(sp => sp.GetRequiredService<Engine>());
         services.AddHostedService<EngineHostedService>();

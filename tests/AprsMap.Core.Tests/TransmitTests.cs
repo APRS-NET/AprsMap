@@ -132,8 +132,8 @@ public sealed class TransmitTests
 
             var sent = await station.Engine.SendPositionAsync(null, Ct);
 
-            Assert.Equal($"N0TEST>{Brand.Tocall}:!4903.50N/07201.75W-Home", Assert.Single(aprsIs.Sent));
-            Assert.Equal($"N0TEST>{Brand.Tocall},WIDE1-1,WIDE2-1:!4903.50N/07201.75W-Home", Assert.Single(tnc.Sent));
+            Assert.Equal($"N0TEST>{Brand.Tocall}:=4903.50N/07201.75W-Home", Assert.Single(aprsIs.Sent));
+            Assert.Equal($"N0TEST>{Brand.Tocall},WIDE1-1,WIDE2-1:=4903.50N/07201.75W-Home", Assert.Single(tnc.Sent));
             Assert.Equal([AprsIs.Id, Tnc.Id], sent.Select(p => p.SourceId));
             Assert.All(sent, p => Assert.Equal(PacketMarkers.Sent, p.Markers));
             Assert.NotNull(await station.Engine.GetStationAsync("N0TEST", Ct));
