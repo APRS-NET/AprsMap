@@ -130,7 +130,15 @@ public class MainViewTests
         flyout.ShowAt(button);
         var items = flyout.Items.OfType<MenuItem>().ToList();
         Assert.Equal(
-            ["ReconnectItem", "InternetToggle", "AprsIsToggle", "TilesToggle", "TransmitToggle", "SendPositionItem"],
+            [
+                "ReconnectItem",
+                "InternetToggle",
+                "AprsIsToggle",
+                "TilesToggle",
+                "TransmitToggle",
+                "SendPositionItem",
+                "SendPositionOnAprsIsItem",
+            ],
             items.Select(i => i.Name)
         );
         var item = items[0];

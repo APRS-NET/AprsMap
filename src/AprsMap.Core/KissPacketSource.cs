@@ -12,7 +12,7 @@ namespace AprsMap.Core;
 /// TNC that can't be reached at all falls back on the engine's own backoff; after it, the connection's state changes
 /// (reconnecting with the reason and the wait) are passed on. Frames that aren't APRS are dropped by APRS.NET.
 /// </summary>
-internal sealed class KissPacketSource(KissConnection connection, string endpoint) : IPacketSource
+internal sealed class KissPacketSource(KissConnection connection, string endpoint) : IPacketSource, IPacketSender
 {
     // The read loop runs ahead of the engine; a slow engine loses the oldest packets rather than stalling the TNC.
     private readonly Channel<AprsPacket> _packets = Channel.CreateBounded<AprsPacket>(
@@ -109,6 +109,10 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
         e.Error is null ? new EngineError(EngineErrorCodes.KissClosed, "The TNC closed the connection.")
         : _wasConnected ? new EngineError(EngineErrorCodes.KissLinkFailed, e.Error.Message)
         : new EngineError(EngineErrorCodes.KissUnreachable, e.Error.Message);
+
+    /// <summary>Sends <paramref name="packet"/> to the TNC as a KISS data frame (docs/features/F2.1-own-station.md, behavior 5.2).</summary>
+    public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken) =>
+        connection.SendAsync(packet, cancellationToken);
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()

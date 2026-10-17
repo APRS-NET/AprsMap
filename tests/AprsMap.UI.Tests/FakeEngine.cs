@@ -327,24 +327,52 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>When set, <see cref="SendPositionAsync"/> throws it.</summary>
     public Exception? SendFailure { get; set; }
 
-    public Task<PacketView> SendPositionAsync(CancellationToken cancellationToken = default)
+    /// <summary>The source each <see cref="SendPositionAsync"/> was asked for (null for all), in order.</summary>
+    public List<string?> PositionSources { get; } = [];
+
+    public Task<IReadOnlyList<PacketView>> SendPositionAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    )
     {
         if (SendFailure is { } failure)
         {
-            return Task.FromException<PacketView>(failure);
+            return Task.FromException<IReadOnlyList<PacketView>>(failure);
         }
         PositionsSent++;
-        return Task.FromResult(
-            new PacketView(
-                DateTimeOffset.UnixEpoch,
-                "N0TEST",
-                "Position",
-                "Position",
-                "N0TEST>APZAMP:!",
-                Markers: PacketMarkers.Sent
-            )
-        );
+        PositionSources.Add(sourceId);
+        return Task.FromResult<IReadOnlyList<PacketView>>([SentPacket(sourceId)]);
     }
+
+    private static PacketView SentPacket(string? sourceId) =>
+        new(
+            DateTimeOffset.UnixEpoch,
+            "N0TEST",
+            "Position",
+            "Position",
+            "N0TEST>APZAMP:!",
+            Markers: PacketMarkers.Sent,
+            SourceId: sourceId
+        );
+
+    /// <summary>What <see cref="TestSendAsync"/> answers: heard back through this station, or not.</summary>
+    public string? TestHeardThrough { get; set; }
+
+    /// <summary>The sources <see cref="TestSendAsync"/> sent on, in order.</summary>
+    public List<string> TestSends { get; } = [];
+
+    public Task<TestSendResult> TestSendAsync(string sourceId, CancellationToken cancellationToken = default)
+    {
+        if (SendFailure is { } failure)
+        {
+            return Task.FromException<TestSendResult>(failure);
+        }
+        TestSends.Add(sourceId);
+        return Task.FromResult(new TestSendResult(SentPacket(sourceId), TestHeardThrough));
+    }
+
+    public Task<string> NewListenerIdAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult("SWL123456");
 
     /// <summary>The stations whose track <see cref="ClearTrackAsync"/> cleared, in order.</summary>
     public List<string> ClearedTracks { get; } = [];

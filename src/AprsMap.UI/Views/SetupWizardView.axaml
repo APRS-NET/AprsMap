@@ -111,9 +111,26 @@
             <!-- 1. Callsign -->
             <StackPanel x:Name="CallsignStep" IsVisible="{Binding IsCallsignStep}" Spacing="8">
               <TextBlock Text="{l:T Wizard.Callsign.Title}" FontWeight="SemiBold" />
-              <TextBlock Text="{l:T Wizard.Callsign.Label}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <!-- Licensed: a callsign and, if wanted, Disable TX. Unlicensed (the default): a generated listener ID that
+                   never transmits (F2.1 behavior 4). -->
+              <CheckBox x:Name="LicensedOperatorBox" IsChecked="{Binding IsLicensedOperator}">
+                <TextBlock Text="{l:T Wizard.Licensed}" TextWrapping="Wrap" />
+              </CheckBox>
+              <TextBlock
+                x:Name="ListeningAsLabel"
+                Text="{Binding ListeningAsText}"
+                IsVisible="{Binding ListenOnly}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <TextBlock
+                Text="{l:T Wizard.Callsign.Label}"
+                IsVisible="{Binding !ListenOnly}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
               <TextBox
                 x:Name="CallsignBox"
+                IsVisible="{Binding !ListenOnly}"
                 Text="{Binding Callsign}"
                 PlaceholderText="{l:T Wizard.Callsign.Watermark}"
                 AutomationProperties.Name="{l:T Wizard.Callsign.Label}"
@@ -145,13 +162,23 @@
               />
               <TextBlock
                 Text="{l:T Wizard.Callsign.Help}"
+                IsVisible="{Binding !ListenOnly}"
                 Foreground="{DynamicResource Brush.TextMuted}"
                 TextWrapping="Wrap"
               />
               <HyperlinkButton
+                IsVisible="{Binding !ListenOnly}"
                 Content="{l:T Wizard.Callsign.SsidLink}"
                 NavigateUri="{x:Static vm:SetupWizardViewModel.SsidHelpUri}"
                 Padding="0"
+              />
+              <CheckBox
+                x:Name="DisableTxBox"
+                IsVisible="{Binding IsLicensedOperator}"
+                Content="{l:T Wizard.DisableTx}"
+                IsChecked="{Binding DisableTransmit}"
+                ToolTip.Tip="{l:T Wizard.DisableTx.Help}"
+                AutomationProperties.HelpText="{l:T Wizard.DisableTx.Help}"
               />
               <!-- What the station sends with its position (F2.1 behaviors 1, 2). -->
               <TextBlock Text="{l:T Wizard.Symbol}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,8,0,0" />

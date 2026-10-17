@@ -57,11 +57,23 @@ internal sealed class EngineHubEndpoint(
 
     /// <summary>Sending needs a signed-in operator, which doesn't exist yet: refused for everyone (F2.1 behavior 9).</summary>
     [HubMethodName(EngineHub.SendPosition)]
-    public Task<PacketView> SendPosition()
+    public Task<IReadOnlyList<PacketView>> SendPosition(string? sourceId)
     {
         RefuseTransmit();
-        return engine.SendPositionAsync(Context.ConnectionAborted);
+        return engine.SendPositionAsync(sourceId, Context.ConnectionAborted);
     }
+
+    /// <summary>Test send transmits too: refused for everyone until operator sign-in (F2.1 behavior 8).</summary>
+    [HubMethodName(EngineHub.TestSend)]
+    public Task<TestSendResult> TestSend(string sourceId)
+    {
+        RefuseTransmit();
+        return engine.TestSendAsync(sourceId, Context.ConnectionAborted);
+    }
+
+    /// <summary>A listener ID changes nothing until it's saved, which has the settings gate.</summary>
+    [HubMethodName(EngineHub.NewListenerId)]
+    public Task<string> NewListenerId() => engine.NewListenerIdAsync(Context.ConnectionAborted);
 
     /// <summary>Transmitting from a browser waits for F2.9's operator sign-in, whatever <c>AllowSettingsChanges</c> says.</summary>
     private static void RefuseTransmit() =>

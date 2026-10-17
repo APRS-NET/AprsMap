@@ -36,14 +36,47 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     public partial string? TransmitAnnouncement { get; private set; }
 
-    /// <summary>Sends the station's position once (behaviors 10–13); a refusal shows in the error line.</summary>
+    /// <summary>Sends the station's position once on every source that can (behaviors 10–13).</summary>
     [RelayCommand(CanExecute = nameof(CanSendPosition))]
-    private async Task SendPositionAsync()
+    private Task SendPositionAsync() => SendPositionOnAsync(null);
+
+    /// <summary>Sends the position on APRS-IS alone, from its pill's menu (behavior 10).</summary>
+    [RelayCommand(CanExecute = nameof(CanSendPositionOnAprsIs))]
+    private Task SendPositionOnAprsIsAsync() =>
+        _status?.Sources?.FirstOrDefault(s => s.Kind == SourceKind.AprsIs) is { } aprsIs
+            ? SendPositionOnAsync(aprsIs.Id)
+            : Task.CompletedTask;
+
+    /// <summary>Whether the APRS-IS pill's menu has Send position on APRS-IS: it's TX enabled.</summary>
+    [ObservableProperty]
+    public partial bool IsAprsIsTransmitEnabled { get; private set; }
+
+    /// <summary>Whether Send position on APRS-IS can be used: Transmit is on and APRS-IS can send now.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SendPositionOnAprsIsCommand))]
+    public partial bool CanSendPositionOnAprsIs { get; private set; }
+
+    /// <summary>
+    /// Sends the position on <paramref name="sourceId"/>, or on every source that can when null; says where it went,
+    /// and shows a refusal in the error line.
+    /// </summary>
+    private async Task SendPositionOnAsync(string? sourceId)
     {
         try
         {
-            await engine.SendPositionAsync();
-            TransmitAnnouncement = _text["Transmit.Sent"];
+            var sent = await engine.SendPositionAsync(sourceId);
+            TransmitAnnouncement = _text.Format(
+                "Transmit.SentOn",
+                new Dictionary<string, object?>
+                {
+                    ["sources"] = string.Join(
+                        ", ",
+                        sent.Select(p =>
+                            _status?.Sources?.FirstOrDefault(s => s.Id == p.SourceId)?.Name ?? p.SourceId ?? "?"
+                        )
+                    ),
+                }
+            );
             ShowError(null);
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
@@ -69,5 +102,8 @@ public sealed partial class MainViewModel
                 )
             : _text["Transmit.On"];
         CanSendPosition = TransmitOn && !held && !_engineUnreachable && CanTransmit;
+        var aprsIs = _status?.Sources?.FirstOrDefault(s => s.Kind == SourceKind.AprsIs);
+        IsAprsIsTransmitEnabled = CanTransmit && aprsIs is { TransmitEnabled: true };
+        CanSendPositionOnAprsIs = CanSendPosition && aprsIs is { CanTransmit: true };
     }
 }

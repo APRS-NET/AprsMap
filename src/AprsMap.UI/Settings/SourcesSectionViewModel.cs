@@ -66,6 +66,17 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     /// </summary>
     public ObservableCollection<ProfileChoice> EditProfiles { get; } = [];
 
+    /// <summary>TX enabled (docs/features/F2.1-own-station.md, behavior 5): the station may send on this source.</summary>
+    [ObservableProperty]
+    public partial bool EditTransmit { get; set; }
+
+    /// <summary>A TNC's TX path; empty for the default, <c>WIDE1-1,WIDE2-1</c> (behavior 5.2).</summary>
+    [ObservableProperty]
+    public partial string EditTxPath { get; set; } = string.Empty;
+
+    /// <summary>The default TX path, shown as the field's placeholder.</summary>
+    public static string DefaultTxPath => SourceSettings.DefaultTxPath;
+
     partial void OnEditKindChanged(SourceKind value)
     {
         foreach (var kind in Kinds)
@@ -162,6 +173,17 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 "Settings.Sources.EditNamed",
                 new Dictionary<string, object?> { ["source"] = row.Name }
             );
+            row.TransmitText =
+                !row.Source.Transmit ? _text["Settings.Sources.ReceiveOnly"]
+                : row.Source.Kind == SourceKind.AprsIs ? _text["Settings.Sources.TxEnabled"]
+                : _text.Format(
+                    "Settings.Sources.TxEnabledPath",
+                    new Dictionary<string, object?> { ["path"] = row.Source.EffectiveTxPath }
+                );
+            row.TestSendName = _text.Format(
+                "Settings.Sources.TestSendNamed",
+                new Dictionary<string, object?> { ["source"] = row.Name }
+            );
             row.DeleteName = _text.Format(
                 "Settings.Sources.DeleteNamed",
                 new Dictionary<string, object?> { ["source"] = row.Name }
@@ -178,6 +200,8 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditName = EditServer = EditFilter = EditHost = EditPort = EditTncPort = string.Empty;
         EditKind = SourceKind.AprsIs;
         CanPickKind = true;
+        EditTransmit = false;
+        EditTxPath = string.Empty;
         FillProfiles(id => id == _settings.ActiveProfileId);
         EditUsedBy = null;
         Error = null;
@@ -199,6 +223,8 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditHost = row.Source.Host ?? string.Empty;
         EditPort = row.Source.Port?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         EditTncPort = row.Source.TncPort?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        EditTransmit = row.Source.Transmit;
+        EditTxPath = row.Source.TxPath ?? string.Empty;
         FillProfiles(id => _settings.Profiles.Any(p => p.Id == id && p.Uses(row.Source)));
         EditUsedBy = row.UsedByText;
         Error = null;
@@ -223,10 +249,12 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 Name = name,
                 Server = server,
                 Filter = filter,
+                Transmit = EditTransmit,
             }
             : SourceSettings.AprsIsFor(server, filter) with
             {
                 Name = name,
+                Transmit = EditTransmit,
             };
         var sources = _editingId is null
             ? [.. _settings.SourceList, source]
@@ -247,6 +275,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         int? port = EditPort.Trim().Length == 0 ? null : Number(EditPort);
         int? tncPort = EditTncPort.Trim().Length == 0 ? null : Number(EditTncPort);
         var name = EditName.Trim().Length > 0 ? EditName.Trim() : host;
+        var txPath = EditTxPath.Trim().Length > 0 ? EditTxPath.Trim().ToUpperInvariant() : null;
         var source = _editingId is { } id
             ? _settings.SourceList.Single(s => s.Id == id) with
             {
@@ -254,10 +283,14 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 Host = host,
                 Port = port,
                 TncPort = tncPort,
+                Transmit = EditTransmit,
+                TxPath = txPath,
             }
             : SourceSettings.KissTcpFor(host, port, tncPort) with
             {
                 Name = name,
+                Transmit = EditTransmit,
+                TxPath = txPath,
             };
         var ticked = EditProfiles.Where(p => p.IsChecked).Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
         var settings = _settings with
@@ -303,6 +336,29 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     {
         IsEditing = false;
         Error = null;
+    }
+
+    /// <summary>
+    /// Test send on <paramref name="row"/>'s source (docs/features/F2.1-own-station.md, behavior 9): says it's sending
+    /// and listening, then who repeated it, that it wasn't heard back, or why it couldn't be sent.
+    /// </summary>
+    internal async Task TestSendAsync(SourceRow row)
+    {
+        row.TestResult = _text["Settings.Sources.TestSending"];
+        try
+        {
+            var result = await _engine.TestSendAsync(row.Source.Id);
+            row.TestResult = result.HeardThrough is { } through
+                ? _text.Format(
+                    result.ByIgate ? "Settings.Sources.TestGated" : "Settings.Sources.TestRepeated",
+                    new Dictionary<string, object?> { ["station"] = through }
+                )
+                : _text["Settings.Sources.TestNotHeard"];
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
+        {
+            row.TestResult = _text.Describe(ex);
+        }
     }
 
     /// <summary>Deletes at once when no profile uses it; otherwise asks first (behavior 2).</summary>
@@ -407,6 +463,25 @@ public sealed partial class SourceRow(SourceSettings source, SourcesSectionViewM
 
     [RelayCommand]
     private Task DeleteAsync() => section.DeleteAsync(this);
+
+    /// <summary>"TX enabled · WIDE1-1,WIDE2-1", or "Receive only" (docs/features/F2.1-own-station.md, behavior 5).</summary>
+    [ObservableProperty]
+    public partial string TransmitText { get; set; } = string.Empty;
+
+    /// <summary>Whether Test send is offered: the source is TX enabled (behavior 9).</summary>
+    public bool CanTestSend => Source.Transmit;
+
+    /// <summary>What the last Test send did: sending, heard back through whom, or why it couldn't.</summary>
+    [ObservableProperty]
+    public partial string? TestResult { get; set; }
+
+    /// <summary>Test send's accessible name: "Test send on Direwolf".</summary>
+    [ObservableProperty]
+    public partial string TestSendName { get; set; } = string.Empty;
+
+    /// <summary>Sends one status report on this source and listens for it coming back (behavior 9).</summary>
+    [RelayCommand(AllowConcurrentExecutions = false)]
+    private Task TestSendAsync() => section.TestSendAsync(this);
 }
 
 /// <summary>A kind Add a source offers, with "coming" for those not built yet.</summary>

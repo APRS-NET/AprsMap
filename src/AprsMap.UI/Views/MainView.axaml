@@ -295,6 +295,12 @@
                         IsVisible="{Binding !SharedStation}"
                         Command="{Binding SendPositionCommand}"
                       />
+                      <MenuItem
+                        x:Name="SendPositionOnAprsIsItem"
+                        Header="{l:T Transmit.SendPositionOnAprsIs}"
+                        IsVisible="{Binding IsAprsIsTransmitEnabled}"
+                        Command="{Binding SendPositionOnAprsIsCommand}"
+                      />
                     </MenuFlyout>
                   </Button.Flyout>
                 </Button>
@@ -405,6 +411,12 @@
                         <Button.Flyout>
                           <MenuFlyout>
                             <MenuItem Header="{l:T Status.Reconnect}" Command="{Binding ReconnectCommand}" />
+                            <!-- On this source alone (F2.1 behavior 10), when it's TX enabled. -->
+                            <MenuItem
+                              Header="{l:T Transmit.SendPositionHere}"
+                              IsVisible="{Binding IsTransmitEnabled}"
+                              Command="{Binding SendPositionCommand}"
+                            />
                           </MenuFlyout>
                         </Button.Flyout>
                       </Button>

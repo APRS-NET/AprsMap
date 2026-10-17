@@ -57,6 +57,9 @@ public static class EngineErrorCodes
     /// <summary>A profile's comment is too long or has characters other than printable ASCII (F2.1 behavior 2).</summary>
     public const string ProfileCommentInvalid = "settings.profile.comment-invalid";
 
+    /// <summary>A TNC's TX path isn't a list of digipeater aliases or callsigns APRS.NET can send (F2.1 behavior 5.2).</summary>
+    public const string SourceTxPathInvalid = "settings.source.tx-path-invalid";
+
     /// <summary>A profile's symbol isn't a table or overlay character and a symbol code (F2.1 behavior 1).</summary>
     public const string ProfileSymbolInvalid = "settings.profile.symbol-invalid";
 
@@ -152,6 +155,18 @@ public static class EngineErrorCodes
 
     /// <summary>The Transmit switch is off (docs/features/F2.1-own-station.md, behavior 11).</summary>
     public const string TransmitOff = "transmit.off";
+
+    /// <summary>The profile has Disable TX ticked (F2.1 behavior 4.2).</summary>
+    public const string TransmitProfileDisabled = "transmit.profile-disabled";
+
+    /// <summary>The profile's licence isn't confirmed, or it listens with a listener ID (F2.1 behavior 4.1).</summary>
+    public const string TransmitNotLicensed = "transmit.not-licensed";
+
+    /// <summary>The source isn't TX enabled (F2.1 behavior 5).</summary>
+    public const string TransmitSourceDisabled = "transmit.source-disabled";
+
+    /// <summary>None of the profile's sources is TX enabled (F2.1 behavior 6.1).</summary>
+    public const string TransmitNoSource = "transmit.no-source";
 
     /// <summary>The engine was started receive-only (F2.1 behavior 5.1).</summary>
     public const string TransmitReceiveOnly = "transmit.receive-only";

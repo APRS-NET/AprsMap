@@ -794,11 +794,12 @@ public sealed partial class MainViewModel : ObservableObject
                     source.Id,
                     _text,
                     on => SwitchSourceAsync(source.Id, on),
-                    () => ReconnectSourceAsync(source.Id)
+                    () => ReconnectSourceAsync(source.Id),
+                    () => SendPositionOnAsync(source.Id)
                 );
                 SourcePills.Insert(Math.Min(i, SourcePills.Count), pill);
             }
-            pill.Show(source, CanToggle);
+            pill.Show(source, CanTransmit, TransmitOn && CanTransmit);
         }
     }
 
@@ -1174,7 +1175,6 @@ public sealed partial class MainViewModel : ObservableObject
     internal void Show(EngineStatus status)
     {
         FilterAreas = status.FilterAreas;
-        ShowSourcePills(status);
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();
         PacketCount = status.PacketsReceived;
@@ -1186,6 +1186,7 @@ public sealed partial class MainViewModel : ObservableObject
         ShowToggles(status.Toggles ?? StationToggles.AllOn);
         _engineUnreachable = false;
         ShowConnection();
+        ShowSourcePills(status); // after the transmit state, which their Send position now follows
     }
 
     /// <summary>Runs <paramref name="run"/> until cancelled, retrying after failures and after the stream ends.</summary>

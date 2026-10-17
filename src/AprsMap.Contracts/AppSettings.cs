@@ -159,6 +159,11 @@ public sealed record StationAging(
 /// <see cref="DefaultSymbol"/>.
 /// </param>
 /// <param name="Comment">The comment sent with the station's positions (F2.1 behavior 2), or null for none.</param>
+/// <param name="Licensed">
+/// The user confirmed they're a licensed amateur who may transmit with this callsign (F2.1 behavior 4.1); asked once per
+/// profile. A listener ID (<see cref="ListenerId"/>) is never licensed.
+/// </param>
+/// <param name="DisableTransmit">Disable TX: a receive-only profile, even with a licensed operator (F2.1 behavior 4.2).</param>
 /// <param name="PositionConfirmed">
 /// Whether a position has been sent by hand since the callsign, symbol, comment or location last changed (F2.1 behavior
 /// 12): automatic transmissions wait for it. Set by the engine; ignored on save.
@@ -174,7 +179,9 @@ public sealed record StationProfile(
     int RangeKm = StationProfile.DefaultRangeKm,
     string? Symbol = null,
     string? Comment = null,
-    bool PositionConfirmed = false
+    bool PositionConfirmed = false,
+    bool Licensed = false,
+    bool DisableTransmit = false
 )
 {
     /// <summary>The range a new profile gets: 150 km.</summary>
@@ -214,7 +221,9 @@ public sealed record StationProfile(
         && RangeKm == other.RangeKm
         && Symbol == other.Symbol
         && Comment == other.Comment
-        && PositionConfirmed == other.PositionConfirmed;
+        && PositionConfirmed == other.PositionConfirmed
+        && Licensed == other.Licensed
+        && DisableTransmit == other.DisableTransmit;
 
     /// <inheritdoc />
     public override int GetHashCode() =>
@@ -222,7 +231,9 @@ public sealed record StationProfile(
             HashCode.Combine(Id, Name, Callsign, Passcode, string.Join(',', SourceIds), Latitude, Longitude, RangeKm),
             Symbol,
             Comment,
-            PositionConfirmed
+            PositionConfirmed,
+            Licensed,
+            DisableTransmit
         );
 
     /// <summary>Whether this profile uses <paramref name="source"/>.</summary>

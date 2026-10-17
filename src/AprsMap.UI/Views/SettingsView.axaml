@@ -229,6 +229,19 @@
                         Foreground="{DynamicResource Brush.TextMuted}"
                         TextWrapping="Wrap"
                       />
+                      <!-- Transmitting (F2.1 behaviors 5, 9): whether it may send, and Test send with what came of it. -->
+                      <TextBlock
+                        Text="{Binding TransmitText}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        TextWrapping="Wrap"
+                      />
+                      <TextBlock
+                        Text="{Binding TestResult}"
+                        IsVisible="{Binding TestResult, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        TextWrapping="Wrap"
+                        AutomationProperties.LiveSetting="Polite"
+                      />
                       <WrapPanel
                         ItemSpacing="8"
                         LineSpacing="6"
@@ -243,6 +256,13 @@
                           Content="{l:T Settings.Profiles.Delete}"
                           Command="{Binding DeleteCommand}"
                           AutomationProperties.Name="{Binding DeleteName}"
+                        />
+                        <Button
+                          Content="{l:T Settings.Sources.TestSend}"
+                          Command="{Binding TestSendCommand}"
+                          IsVisible="{Binding CanTestSend}"
+                          ToolTip.Tip="{l:T Settings.Sources.TestSend.Help}"
+                          AutomationProperties.Name="{Binding TestSendName}"
                         />
                       </WrapPanel>
                     </StackPanel>
@@ -344,6 +364,21 @@
                       />
                     </StackPanel>
                   </WrapPanel>
+                  <TextBlock Text="{l:T Settings.Sources.TxPath}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="TxPathBox"
+                    Text="{Binding Sources.EditTxPath}"
+                    PlaceholderText="{x:Static s:SourcesSectionViewModel.DefaultTxPath}"
+                    IsEnabled="{Binding Sources.EditTransmit}"
+                    AutomationProperties.Name="{l:T Settings.Sources.TxPath}"
+                    AutomationProperties.HelpText="{l:T Settings.Sources.TxPath.Help}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                  />
+                  <TextBlock
+                    Text="{l:T Settings.Sources.TxPath.Help}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    TextWrapping="Wrap"
+                  />
                   <TextBlock Text="{l:T Settings.Sources.UseWith}" Foreground="{DynamicResource Brush.TextMuted}" />
                   <ItemsControl ItemsSource="{Binding Sources.EditProfiles}">
                     <ItemsControl.ItemTemplate>
@@ -353,6 +388,17 @@
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
                 </StackPanel>
+                <!-- TX enabled (F2.1 behavior 5): off unless ticked; a source left unticked is never sent on. -->
+                <CheckBox
+                  x:Name="TxEnabledBox"
+                  Content="{l:T Settings.Sources.TxEnabledBox}"
+                  IsChecked="{Binding Sources.EditTransmit}"
+                />
+                <TextBlock
+                  Text="{l:T Settings.Sources.TxEnabledBox.Help}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
                 <TextBlock Text="{l:T Settings.Sources.Name}" Foreground="{DynamicResource Brush.TextMuted}" />
                 <TextBox
                   x:Name="SourceNameBox"

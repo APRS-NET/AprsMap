@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
@@ -60,6 +61,10 @@ public sealed partial class Engine : IEngineService, IDisposable
     private IPacketSource? _source;
     private long _packets;
     private DateTimeOffset? _lastSent;
+
+    // The open connections of the other sources that can send (KISS TNCs), by source id (F2.1 behavior 5).
+    private readonly Dictionary<string, IPacketSender> _senders = new(StringComparer.Ordinal);
+    private readonly List<EchoWatch> _echoes = [];
     private int _packetHistory;
     private AppSettings? _settings;
 
@@ -572,6 +577,13 @@ public sealed partial class Engine : IEngineService, IDisposable
                         )
                         .ConfigureAwait(false);
                     SetSourceLink(source, new Link(ConnectionState.Connected, opened.Server, opened.Verified));
+                    if (connection is IPacketSender sender)
+                    {
+                        lock (_gate)
+                        {
+                            _senders[source.Id] = sender;
+                        }
+                    }
                     delay = _options.InitialRetryDelay;
                     await foreach (var packet in connection.ReadPacketsAsync(attempt.Token).ConfigureAwait(false))
                     {
@@ -599,6 +611,13 @@ public sealed partial class Engine : IEngineService, IDisposable
                         )
                     );
                     LogSourceFailed(ex, source.Name, delay);
+                }
+                finally
+                {
+                    lock (_gate)
+                    {
+                        _senders.Remove(source.Id); // closed: nothing sends on it until it's open again
+                    }
                 }
             }
             if (kicked)
@@ -691,7 +710,9 @@ public sealed partial class Engine : IEngineService, IDisposable
                     SourceKind.AprsIs,
                     _link.State,
                     _link.Server,
-                    _link.Error
+                    _link.Error,
+                    TransmitEnabled: station.Source.Transmit,
+                    TransmitBlocked: station.Source.Transmit ? SourceBlock(_settings!, station.Source) : null
                 )
             );
         }
@@ -703,7 +724,9 @@ public sealed partial class Engine : IEngineService, IDisposable
                 v.Link.State,
                 v.Link.Server,
                 v.Link.Error,
-                RetryAt: v.Link.RetryAt
+                RetryAt: v.Link.RetryAt,
+                TransmitEnabled: v.Source.Transmit,
+                TransmitBlocked: v.Source.Transmit && _settings is not null ? SourceBlock(_settings, v.Source) : null
             ))
         );
         // A source switched off stays listed, so its pill can switch it on again (F3.1 behavior 6).
@@ -718,7 +741,15 @@ public sealed partial class Engine : IEngineService, IDisposable
                         && !toggles.IsSourceOn(s.Id)
                         && !_sourceLinks.ContainsKey(s.Id)
                     )
-                    .Select(s => new SourceStatus(s.Id, s.Name, s.Kind, ConnectionState.Disconnected, Enabled: false))
+                    .Select(s => new SourceStatus(
+                        s.Id,
+                        s.Name,
+                        s.Kind,
+                        ConnectionState.Disconnected,
+                        Enabled: false,
+                        TransmitEnabled: s.Transmit,
+                        TransmitBlocked: s.Transmit ? SourceBlock(_settings, s) : null
+                    ))
             );
         }
         return list;
@@ -767,10 +798,38 @@ public sealed partial class Engine : IEngineService, IDisposable
     }
 
     /// <summary>
-    /// Why the station couldn't transmit now, leaving the switch aside (docs/features/F2.1-own-station.md, behavior 5),
-    /// or null when it can. Call under <see cref="_gate"/>.
+    /// Why the station couldn't transmit now, leaving the switch aside (docs/features/F2.1-own-station.md, behavior
+    /// 6.1): the engine, the profile, then its sources; null when at least one of them can send. Call under
+    /// <see cref="_gate"/>.
     /// </summary>
     private EngineError? TransmitBlock(AppSettings settings)
+    {
+        if (ProfileBlock(settings) is { } profileBlock)
+        {
+            return profileBlock;
+        }
+        var sources = TransmitSources(settings);
+        if (sources.Count == 0)
+        {
+            return new EngineError(
+                EngineErrorCodes.TransmitNoSource,
+                "None of this profile's sources is TX enabled. Tick TX enabled on one in Settings."
+            );
+        }
+        EngineError? first = null;
+        foreach (var source in sources)
+        {
+            if (SourceBlock(settings, source) is not { } block)
+            {
+                return null;
+            }
+            first ??= block;
+        }
+        return first;
+    }
+
+    /// <summary>Why the active profile may not transmit (behavior 4), or null. Call under <see cref="_gate"/>.</summary>
+    private EngineError? ProfileBlock(AppSettings settings)
     {
         var profile = settings.GetActiveProfile();
         return _options.ReceiveOnly
@@ -783,20 +842,61 @@ public sealed partial class Engine : IEngineService, IDisposable
                     EngineErrorCodes.TransmitPlaceholderCallsign,
                     "N0CALL and NOCALL are placeholders: set your own callsign to transmit."
                 )
-            : settings.AprsIsSourceOf(profile) is null || !settings.EffectiveToggles.ConnectsAprsIs
+            : !profile.Licensed || ListenerId.Is(profile.Callsign)
                 ? new EngineError(
-                    EngineErrorCodes.TransmitNoAprsIs,
-                    "Transmitting goes through APRS-IS, and this station isn't using it."
+                    EngineErrorCodes.TransmitNotLicensed,
+                    "This profile isn't confirmed as a licensed amateur's, so it only listens."
                 )
-            : _link.State != ConnectionState.Connected
-                ? new EngineError(EngineErrorCodes.TransmitNotConnected, "APRS-IS isn't connected.")
-            : !_link.Verified
-                ? new EngineError(
-                    EngineErrorCodes.TransmitNotVerified,
-                    "The APRS-IS server didn't verify the login: check the passcode for this callsign."
-                )
+            : profile.DisableTransmit
+                ? new EngineError(EngineErrorCodes.TransmitProfileDisabled, "This profile has Disable TX ticked.")
             : null;
     }
+
+    /// <summary>The active profile's sources that are TX enabled, in the list's order.</summary>
+    private static List<SourceSettings> TransmitSources(AppSettings settings) =>
+        settings.GetActiveProfile() is { } profile
+            ? [.. settings.SourceList.Where(s => s.Transmit && profile.Uses(s))]
+            : [];
+
+    /// <summary>
+    /// Why the station couldn't send on <paramref name="source"/> now (behavior 5), or null when it can. Call under
+    /// <see cref="_gate"/>.
+    /// </summary>
+    private EngineError? SourceBlock(AppSettings settings, SourceSettings source)
+    {
+        var notConnected = new EngineError(
+            EngineErrorCodes.TransmitNotConnected,
+            source.Kind == SourceKind.AprsIs ? "APRS-IS isn't connected." : $"{source.Name} isn't connected."
+        );
+        if (!source.Transmit)
+        {
+            return new EngineError(
+                EngineErrorCodes.TransmitSourceDisabled,
+                $"{source.Name} isn't TX enabled. Tick TX enabled on it in Settings."
+            );
+        }
+        if (source.Kind == SourceKind.AprsIs)
+        {
+            return !settings.EffectiveToggles.ConnectsAprsIs || _link.State != ConnectionState.Connected ? notConnected
+                : !_link.Verified
+                    ? new EngineError(
+                        EngineErrorCodes.TransmitNotVerified,
+                        "The APRS-IS server didn't verify the login: check the passcode for this callsign."
+                    )
+                : _source is not IPacketSender ? notConnected
+                : null;
+        }
+        return
+            _senders.ContainsKey(source.Id)
+            && _sourceLinks.TryGetValue(source.Id, out var link)
+            && link.Link.State == ConnectionState.Connected
+            ? null
+            : notConnected;
+    }
+
+    /// <summary>The connection that sends on <paramref name="source"/>. Call under <see cref="_gate"/>.</summary>
+    private IPacketSender? SenderFor(SourceSettings source) =>
+        source.Kind == SourceKind.AprsIs ? _source as IPacketSender : _senders.GetValueOrDefault(source.Id);
 
     /// <summary>Whether <paramref name="callsign"/>'s base call is a placeholder, N0CALL or NOCALL (F2.1 behavior 5.2).</summary>
     internal static bool IsPlaceholder(string callsign)
@@ -807,64 +907,145 @@ public sealed partial class Engine : IEngineService, IDisposable
             || call.Equals("NOCALL", StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <inheritdoc />
-    public async Task<PacketView> SendPositionAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// The packet for <paramref name="payload"/> from the profile, on <paramref name="source"/>: no path to APRS-IS,
+    /// the source's TX path on a TNC (behavior 10.1).
+    /// </summary>
+    private static AprsPacket Build(StationProfile profile, SourceSettings source, AprsPayload payload) =>
+        PacketAddress
+            .Parse(
+                profile.Callsign,
+                Brand.Tocall,
+                source.Kind == SourceKind.AprsIs
+                    ? []
+                    : source.EffectiveTxPath.Split(',', StringSplitOptions.TrimEntries)
+            )
+            .Create(payload);
+
+    /// <summary>
+    /// Checks what every send checks (behaviors 6–8) and returns the sources to send on: <paramref name="sourceId"/>
+    /// alone, or every source that can send now. Throws the reason when there's none.
+    /// </summary>
+    private async Task<(
+        AppSettings Settings,
+        StationProfile Profile,
+        List<(SourceSettings Source, IPacketSender Sender)> Targets
+    )> TargetsAsync(string? sourceId, CancellationToken cancellationToken)
     {
         var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+        var targets = new List<(SourceSettings, IPacketSender)>();
         EngineError? blocked;
-        IPacketSender? sender;
-        string? sourceId;
         lock (_gate)
         {
-            blocked = settings.EffectiveToggles.Transmit
-                ? TransmitBlock(settings)
-                : new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.");
-            sender = _source as IPacketSender;
-            sourceId = Station.Of(settings)?.Source.Id;
-        }
-        var profile = settings.GetActiveProfile();
-        if (blocked is null && sender is null)
-        {
-            blocked = new EngineError(EngineErrorCodes.TransmitNotConnected, "APRS-IS isn't connected.");
-        }
-        if (blocked is null && profile is not { Latitude: { } lat, Longitude: { } lon })
-        {
-            blocked = new EngineError(EngineErrorCodes.TransmitNoPosition, "Set the station's location first.");
+            blocked = !settings.EffectiveToggles.Transmit
+                ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
+                : ProfileBlock(settings);
+            if (blocked is null)
+            {
+                var profile = settings.GetActiveProfile()!;
+                var candidates = sourceId is null
+                    ? TransmitSources(settings)
+                    : [.. settings.SourceList.Where(s => s.Id == sourceId && profile.Uses(s))];
+                if (candidates.Count == 0)
+                {
+                    blocked = sourceId is null
+                        ? new EngineError(
+                            EngineErrorCodes.TransmitNoSource,
+                            "None of this profile's sources is TX enabled. Tick TX enabled on one in Settings."
+                        )
+                        : new EngineError(
+                            EngineErrorCodes.TransmitSourceDisabled,
+                            "That source isn't one this profile uses."
+                        );
+                }
+                foreach (var source in candidates)
+                {
+                    if (SourceBlock(settings, source) is { } block)
+                    {
+                        blocked ??= block;
+                    }
+                    else if (SenderFor(source) is { } sender)
+                    {
+                        targets.Add((source, sender));
+                    }
+                }
+                if (targets.Count > 0)
+                {
+                    blocked = null; // the ones that can, send; the others are skipped (behavior 7)
+                }
+            }
         }
         if (blocked is not null)
         {
             throw EngineErrors.ToException(blocked);
         }
+        return (settings, settings.GetActiveProfile()!, targets);
+    }
 
-        var symbol = profile!.EffectiveSymbol;
-        var packet = PacketAddress
-            .Parse(profile.Callsign, Brand.Tocall, [])
-            .Create(
-                new PositionReport
-                {
-                    Position = new AprsPosition(profile.Latitude!.Value, profile.Longitude!.Value),
-                    Symbol = new AprsSymbol(symbol[0], symbol[1]),
-                    Comment = profile.Comment ?? string.Empty,
-                }
-            );
+    /// <summary>Sends <paramref name="packet"/> on one source and lists it as ours (behavior 13); null when it failed.</summary>
+    private async Task<(PacketView? View, Exception? Error)> SendOnAsync(
+        SourceSettings source,
+        IPacketSender sender,
+        AprsPacket packet,
+        CancellationToken cancellationToken
+    )
+    {
         try
         {
-            await sender!.SendAsync(packet, cancellationToken).ConfigureAwait(false);
+            await sender.SendAsync(packet, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or ObjectDisposedException)
         {
-            LogSendFailed(ex);
-            throw EngineErrors.ToException(
-                new EngineError(EngineErrorCodes.TransmitFailed, "The packet couldn't be sent: " + ex.Message),
-                ex
-            );
+            LogSendFailed(ex, source.Name);
+            return (null, ex);
         }
-        LogSent(packet);
+        LogSent(packet, source.Name);
         lock (_gate)
         {
             _lastSent = _time.GetUtcNow();
         }
-        var view = Accept(packet, sourceId, sent: true)!;
+        return (Accept(packet, source.Id, sent: true), null);
+    }
+
+    private static EngineOperationException SendFailed(Exception error) =>
+        new(new EngineError(EngineErrorCodes.TransmitFailed, "The packet couldn't be sent: " + error.Message), error);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<PacketView>> SendPositionAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var (_, profile, targets) = await TargetsAsync(sourceId, cancellationToken).ConfigureAwait(false);
+        if (profile is not { Latitude: { } lat, Longitude: { } lon })
+        {
+            throw EngineErrors.ToException(
+                new EngineError(EngineErrorCodes.TransmitNoPosition, "Set the station's location first.")
+            );
+        }
+        var symbol = profile.EffectiveSymbol;
+        var report = new PositionReport
+        {
+            Position = new AprsPosition(lat, lon),
+            Symbol = new AprsSymbol(symbol[0], symbol[1]),
+            Comment = profile.Comment ?? string.Empty,
+        };
+        var sent = new List<PacketView>();
+        Exception? failure = null;
+        foreach (var (source, sender) in targets)
+        {
+            var (view, error) = await SendOnAsync(source, sender, Build(profile, source, report), cancellationToken)
+                .ConfigureAwait(false);
+            if (view is not null)
+            {
+                sent.Add(view);
+            }
+            failure ??= error;
+        }
+        if (sent.Count == 0)
+        {
+            throw SendFailed(failure!);
+        }
 
         // The interlock (behavior 12): automatic sends may start once the user has seen this go out.
         if (!profile.PositionConfirmed)
@@ -888,7 +1069,108 @@ public sealed partial class Engine : IEngineService, IDisposable
                     .ConfigureAwait(false);
             }
         }
-        return view;
+        return sent;
+    }
+
+    /// <summary>How long Test send listens for its packet coming back (behavior 9.3).</summary>
+    internal static readonly TimeSpan TestListenTime = TimeSpan.FromSeconds(30);
+
+    /// <inheritdoc />
+    public async Task<TestSendResult> TestSendAsync(string sourceId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(sourceId);
+        var (_, profile, targets) = await TargetsAsync(sourceId, cancellationToken).ConfigureAwait(false);
+        var (source, sender) = targets[0];
+        var packet = Build(profile, source, new StatusReport { Text = $"{Brand.DisplayName} test" });
+
+        // Listen before sending, so a fast digipeater isn't missed.
+        var heard = new TaskCompletionSource<(string Through, bool ByIgate)>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        var watch = new EchoWatch(profile.Callsign, packet.Information.ToArray(), heard);
+        lock (_gate)
+        {
+            _echoes.Add(watch);
+        }
+        try
+        {
+            var (view, error) = await SendOnAsync(source, sender, packet, cancellationToken).ConfigureAwait(false);
+            if (view is null)
+            {
+                throw SendFailed(error!);
+            }
+            try
+            {
+                var (through, byIgate) = await heard
+                    .Task.WaitAsync(TestListenTime, _time, cancellationToken)
+                    .ConfigureAwait(false);
+                return new TestSendResult(view, through, byIgate);
+            }
+            catch (TimeoutException)
+            {
+                return new TestSendResult(view);
+            }
+        }
+        finally
+        {
+            lock (_gate)
+            {
+                _echoes.Remove(watch);
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<string> NewListenerIdAsync(CancellationToken cancellationToken = default) =>
+        // SHIM: G02 — APRS.NET#227 will make listener IDs; until then, SWL and six random digits.
+        Task.FromResult(
+            ListenerId.Prefix
+                + System
+                    .Security.Cryptography.RandomNumberGenerator.GetInt32(1_000_000)
+                    .ToString("D6", CultureInfo.InvariantCulture)
+        );
+
+    /// <summary>A Test send listening for its packet coming back (behavior 9.3).</summary>
+    private sealed record EchoWatch(
+        string Callsign,
+        byte[] Information,
+        TaskCompletionSource<(string Through, bool ByIgate)> Heard
+    );
+
+    /// <summary>
+    /// Tells a Test send that <paramref name="packet"/>, just received, is its packet come back: repeated by a
+    /// digipeater, or gated to APRS-IS by an IGate.
+    /// </summary>
+    private void CheckEchoes(AprsPacket packet)
+    {
+        List<EchoWatch> watches;
+        lock (_gate)
+        {
+            if (_echoes.Count == 0)
+            {
+                return;
+            }
+            watches = [.. _echoes];
+        }
+        foreach (var watch in watches)
+        {
+            if (
+                !string.Equals(packet.Source?.Value, watch.Callsign, StringComparison.OrdinalIgnoreCase)
+                || !packet.Information.Span.SequenceEqual(watch.Information)
+            )
+            {
+                continue;
+            }
+            var route = PathAnalysis.FromPacket(packet);
+            if (route.IsGatedFromRadio && route.EntryStation is { } igate)
+            {
+                watch.Heard.TrySetResult((igate.Value, true));
+            }
+            else if (route.Digipeaters.Count > 0)
+            {
+                watch.Heard.TrySetResult((route.Digipeaters[^1].Value, false));
+            }
+        }
     }
 
     /// <summary>Whether map tiles may be downloaded now (F1.15): the Internet and Map tiles toggles are on.</summary>
@@ -1153,9 +1435,19 @@ public sealed partial class Engine : IEngineService, IDisposable
             return null; // server comments and noise
         }
 
+        if (!sent)
+        {
+            CheckEchoes(packet);
+        }
         var now = _time.GetUtcNow();
         var check = _duplicates.Check(packet, sourceId);
-        if (check.IsDuplicate && sourceId is not null && check.FirstSource is { } first && first != sourceId)
+        if (
+            !sent // each copy we send is listed with its own source (F2.1 behavior 13)
+            && check.IsDuplicate
+            && sourceId is not null
+            && check.FirstSource is { } first
+            && first != sourceId
+        )
         {
             AddSeenOn(check.Identity, sourceId);
             _stations.SeenOn(packet, sourceId);
@@ -1669,11 +1961,11 @@ public sealed partial class Engine : IEngineService, IDisposable
     [LoggerMessage(Level = LogLevel.Information, Message = "Transmit turned {State}.")]
     private partial void LogTransmit(string state);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Sent {Packet}")]
-    private partial void LogSent(AprsPacket packet);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Sent {Packet} on {Source}")]
+    private partial void LogSent(AprsPacket packet, string source);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "A packet couldn't be sent.")]
-    private partial void LogSendFailed(Exception exception);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "A packet couldn't be sent on {Source}.")]
+    private partial void LogSendFailed(Exception exception, string source);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Source {Source} failed; trying again in {Delay}")]
     private partial void LogSourceFailed(Exception exception, string source, TimeSpan delay);

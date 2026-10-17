@@ -13,6 +13,13 @@ namespace AprsMap.Contracts;
 /// <param name="Host">For KISS over TCP: the TNC's host name or address (docs/features/F3.1-kiss-sources.md).</param>
 /// <param name="Port">For KISS over TCP: the TNC's port; null for <see cref="DefaultKissPort"/>.</param>
 /// <param name="TncPort">For KISS: the TNC's radio port, 0 to 15, for multi-port TNCs; null for 0.</param>
+/// <param name="Transmit">
+/// TX enabled (docs/features/F2.1-own-station.md, behavior 5): the station may send on this source. Off unless the user
+/// ticks it.
+/// </param>
+/// <param name="TxPath">
+/// For a TNC: the path packets are sent with, such as <c>WIDE1-1,WIDE2-1</c>; null for <see cref="DefaultTxPath"/>.
+/// </param>
 public sealed record SourceSettings(
     string Id,
     string Name,
@@ -21,9 +28,17 @@ public sealed record SourceSettings(
     string? Filter = null,
     string? Host = null,
     int? Port = null,
-    int? TncPort = null
+    int? TncPort = null,
+    bool Transmit = false,
+    string? TxPath = null
 )
 {
+    /// <summary>The path a TNC sends with unless it has its own: <c>WIDE1-1,WIDE2-1</c> (F2.1 behavior 5.2).</summary>
+    public const string DefaultTxPath = "WIDE1-1,WIDE2-1";
+
+    /// <summary>The TX path in effect for a TNC: <see cref="TxPath"/>, or <see cref="DefaultTxPath"/>.</summary>
+    public string EffectiveTxPath => string.IsNullOrWhiteSpace(TxPath) ? DefaultTxPath : TxPath.Trim();
+
     /// <summary>Direwolf's and soundmodem's KISS over TCP port (F3.1 decision 4).</summary>
     public const int DefaultKissPort = 8001;
 

@@ -15,13 +15,32 @@ public sealed partial class SourcePill : ObservableObject
 {
     private readonly Localizer _text;
 
-    internal SourcePill(string id, Localizer text, Func<bool, Task> turn, Func<Task> reconnect)
+    internal SourcePill(
+        string id,
+        Localizer text,
+        Func<bool, Task> turn,
+        Func<Task> reconnect,
+        Func<Task>? sendPosition = null
+    )
     {
         Id = id;
         _text = text;
         Switch = new SourceSwitch(turn);
         ReconnectCommand = new AsyncRelayCommand(reconnect, () => CanReconnect);
+        SendPositionCommand = new AsyncRelayCommand(sendPosition ?? (() => Task.CompletedTask), () => CanSendPosition);
     }
+
+    /// <summary>Sends the station's position on this source alone (docs/features/F2.1-own-station.md, behavior 10).</summary>
+    public IAsyncRelayCommand SendPositionCommand { get; }
+
+    /// <summary>Whether the menu has Send position now: the source is TX enabled and this app may transmit.</summary>
+    [ObservableProperty]
+    public partial bool IsTransmitEnabled { get; private set; }
+
+    /// <summary>Whether Send position now can be used: Transmit is on and the source can send now.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SendPositionCommand))]
+    public partial bool CanSendPosition { get; private set; }
 
     /// <summary>The source's id.</summary>
     public string Id { get; }
@@ -53,9 +72,14 @@ public sealed partial class SourcePill : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ReconnectCommand))]
     public partial bool CanReconnect { get; private set; }
 
-    /// <summary>Shows <paramref name="status"/>; <paramref name="canChange"/> says whether this viewer may switch it.</summary>
-    internal void Show(SourceStatus status, bool canChange)
+    /// <summary>
+    /// Shows <paramref name="status"/>; <paramref name="canChange"/> says whether this viewer may switch it, and
+    /// <paramref name="transmitting"/> whether the station transmits and this app may send (F2.1).
+    /// </summary>
+    internal void Show(SourceStatus status, bool canChange, bool transmitting = false)
     {
+        IsTransmitEnabled = status.TransmitEnabled && canChange;
+        CanSendPosition = transmitting && status.CanTransmit;
         var name = new Dictionary<string, object?> { ["source"] = status.Name };
         Text =
             !status.Enabled ? _text.Format("Status.Source.Off", name)

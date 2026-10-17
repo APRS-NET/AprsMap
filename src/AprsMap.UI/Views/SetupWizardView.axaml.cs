@@ -173,6 +173,13 @@ public sealed partial class SetupWizardView : UserControl, IDisposable
 
     private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (
+            e.PropertyName == nameof(SetupWizardViewModel.IsLicensedOperator)
+            && _viewModel is { IsLicensedOperator: true, Step: SetupStep.Callsign }
+        )
+        {
+            Focus("CallsignBox"); // ticked: the callsign is next to type
+        }
         if (e.PropertyName is nameof(SetupWizardViewModel.Step) or nameof(SetupWizardViewModel.Method))
         {
             FocusStep();
@@ -203,7 +210,7 @@ public sealed partial class SetupWizardView : UserControl, IDisposable
         Focus(
             _viewModel.Step switch
             {
-                SetupStep.Callsign => "CallsignBox",
+                SetupStep.Callsign => _viewModel.IsLicensedOperator ? "CallsignBox" : "LicensedOperatorBox",
                 SetupStep.Location => _viewModel.Method switch
                 {
                     LocationMethod.Address => "AddressBox",

@@ -7,9 +7,9 @@ namespace AprsMap.Gateway.Tests;
 public class RemoteEngineServiceTests
 {
     [Theory]
-    [InlineData("http://host:8080/", "http://host:8080/hubs/engine?contract=1")]
-    [InlineData("https://host/aprs/", "https://host/aprs/hubs/engine?contract=1")]
-    [InlineData("https://host/aprs", "https://host/aprs/hubs/engine?contract=1")]
+    [InlineData("http://host:8080/", "http://host:8080/hubs/engine?contract=2")]
+    [InlineData("https://host/aprs/", "https://host/aprs/hubs/engine?contract=2")]
+    [InlineData("https://host/aprs", "https://host/aprs/hubs/engine?contract=2")]
     public void TheHubIsFoundUnderTheGatewaysOwnPathWithTheContractVersion(string gateway, string hub) =>
         Assert.Equal(new Uri(hub), RemoteEngineService.HubUri(new Uri(gateway)));
 
