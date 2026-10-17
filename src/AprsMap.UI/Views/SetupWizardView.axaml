@@ -111,8 +111,11 @@
             <!-- 1. Callsign -->
             <StackPanel x:Name="CallsignStep" IsVisible="{Binding IsCallsignStep}" Spacing="8">
               <TextBlock Text="{l:T Wizard.Callsign.Title}" FontWeight="SemiBold" />
-              <!-- An unlicensed user listens with a generated ID, never a callsign they type (F2.1 behavior 4). -->
-              <CheckBox x:Name="ListenOnlyBox" Content="{l:T Wizard.ListenOnly}" IsChecked="{Binding ListenOnly}" />
+              <!-- Licensed: a callsign and, if wanted, Disable TX. Unlicensed (the default): a generated listener ID that
+                   never transmits (F2.1 behavior 4). -->
+              <CheckBox x:Name="LicensedOperatorBox" IsChecked="{Binding IsLicensedOperator}">
+                <TextBlock Text="{l:T Wizard.Licensed}" TextWrapping="Wrap" />
+              </CheckBox>
               <TextBlock
                 x:Name="ListeningAsLabel"
                 Text="{Binding ListeningAsText}"
@@ -169,6 +172,14 @@
                 NavigateUri="{x:Static vm:SetupWizardViewModel.SsidHelpUri}"
                 Padding="0"
               />
+              <CheckBox
+                x:Name="DisableTxBox"
+                IsVisible="{Binding IsLicensedOperator}"
+                Content="{l:T Wizard.DisableTx}"
+                IsChecked="{Binding DisableTransmit}"
+                ToolTip.Tip="{l:T Wizard.DisableTx.Help}"
+                AutomationProperties.HelpText="{l:T Wizard.DisableTx.Help}"
+              />
               <!-- What the station sends with its position (F2.1 behaviors 1, 2). -->
               <TextBlock Text="{l:T Wizard.Symbol}" Foreground="{DynamicResource Brush.TextMuted}" Margin="0,8,0,0" />
               <ComboBox
@@ -214,22 +225,6 @@
                 Foreground="{DynamicResource Brush.Warn}"
                 TextWrapping="Wrap"
               />
-              <!-- Transmitting (F2.1 behavior 4): the licence, asked once per profile, and Disable TX. -->
-              <StackPanel IsVisible="{Binding !ListenOnly}" Spacing="4" Margin="0,8,0,0">
-                <CheckBox x:Name="TransmitLicensedBox" IsChecked="{Binding IsLicensed}">
-                  <TextBlock Text="{l:T Wizard.Licensed}" TextWrapping="Wrap" />
-                </CheckBox>
-                <CheckBox
-                  x:Name="DisableTxBox"
-                  Content="{l:T Wizard.DisableTx}"
-                  IsChecked="{Binding DisableTransmit}"
-                />
-                <TextBlock
-                  Text="{l:T Wizard.DisableTx.Help}"
-                  Foreground="{DynamicResource Brush.TextMuted}"
-                  TextWrapping="Wrap"
-                />
-              </StackPanel>
             </StackPanel>
 
             <!-- 2. Location -->

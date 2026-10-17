@@ -177,53 +177,69 @@ public sealed class PerSourceTransmitUiTests
     private static Localizer English() => new(CultureInfo.GetCultureInfo("en-US"));
 
     [Fact]
-    public async Task ListenOnlyGivesAListenerIdSkipsThePasscodeAndNeverMarksLicensed()
+    public async Task ANewProfileListensWithAListenerIdUntilTheLicensedBoxIsTicked()
     {
         var engine = new FakeEngine { Settings = AppSettings.Empty };
         var wizard = new SetupWizardViewModel(engine, English());
         await wizard.LoadAsync(TestContext.Current.CancellationToken);
-        wizard.Callsign = "AB1CD-9";
-        wizard.IsLicensed = true;
 
-        wizard.ListenOnly = true;
-
+        Assert.False(wizard.IsLicensedOperator); // unlicensed by default
+        Assert.True(wizard.ListenOnly);
         Assert.Equal("SWL123456", wizard.Callsign);
-        Assert.False(wizard.IsLicensed);
         Assert.Equal(3, wizard.StepCount); // no passcode step
         Assert.Equal(
             "You'll listen as SWL123456, an ID made for listeners: it isn't a callsign and never transmits.",
             wizard.ListeningAsText
         );
+        Assert.False(wizard.HasInput); // nothing typed yet
 
-        wizard.ListenOnly = false;
+        wizard.IsLicensedOperator = true;
+        Assert.Equal(string.Empty, wizard.Callsign); // now the callsign is theirs to type
+        Assert.Equal(4, wizard.StepCount);
+        wizard.Callsign = "AB1CD-9";
+        wizard.DisableTransmit = true;
+
+        wizard.IsLicensedOperator = false;
+        Assert.Equal("SWL123456", wizard.Callsign);
+        Assert.False(wizard.DisableTransmit); // only for a licensed operator's profile
+        wizard.IsLicensedOperator = true;
         Assert.Equal("AB1CD-9", wizard.Callsign); // what they typed comes back
     }
 
     [Fact]
-    public async Task TheLicenceIsClearedWhenTheBaseCallChangesAndSavedWithDisableTx()
+    public async Task AnExistingCallsignOpensLicensedAndSavesTheLicenceWithDisableTx()
     {
         var two = FakeEngine.TwoProfiles();
-        var settings = two with
-        {
-            Profiles = [two.Profiles[0] with { Callsign = "AB1CD-9", Licensed = true }, two.Profiles[1]],
-        };
+        var settings = two with { Profiles = [two.Profiles[0] with { Callsign = "AB1CD-9" }, two.Profiles[1]] };
         var engine = new FakeEngine { Settings = settings };
         var wizard = new SetupWizardViewModel(engine, English(), null, WizardMode.Edit, settings, settings.Profiles[0]);
         await wizard.LoadAsync(TestContext.Current.CancellationToken);
-        Assert.True(wizard.IsLicensed);
+        Assert.True(wizard.IsLicensedOperator); // it has a callsign
+        Assert.Equal("AB1CD-9", wizard.Callsign);
 
-        wizard.Callsign = "AB1CD-7"; // same base call: still confirmed
-        Assert.True(wizard.IsLicensed);
-        wizard.Callsign = "AB2EF";
-        Assert.False(wizard.IsLicensed); // another call: asked again
-
-        wizard.IsLicensed = true;
         wizard.DisableTransmit = true;
         await wizard.FinishCommand.ExecuteAsync(null);
 
         var profile = Assert.Single(engine.Saved).Profiles.Single(p => p.Id == settings.Profiles[0].Id);
         Assert.True(profile.Licensed);
         Assert.True(profile.DisableTransmit);
+    }
+
+    [Fact]
+    public async Task AListenersProfileKeepsItsIdAndSavesUnlicensedWithoutAPasscode()
+    {
+        var two = FakeEngine.TwoProfiles();
+        var settings = two with { Profiles = [two.Profiles[0] with { Callsign = "SWL999000" }, two.Profiles[1]] };
+        var engine = new FakeEngine { Settings = settings };
+        var wizard = new SetupWizardViewModel(engine, English(), null, WizardMode.Edit, settings, settings.Profiles[0]);
+        await wizard.LoadAsync(TestContext.Current.CancellationToken);
+        Assert.False(wizard.IsLicensedOperator);
+        Assert.Equal("SWL999000", wizard.Callsign);
+
+        await wizard.FinishCommand.ExecuteAsync(null);
+
+        var profile = Assert.Single(engine.Saved).Profiles.Single(p => p.Id == settings.Profiles[0].Id);
+        Assert.Equal(("SWL999000", -1, false), (profile.Callsign, profile.Passcode, profile.Licensed));
     }
 
     [Fact]

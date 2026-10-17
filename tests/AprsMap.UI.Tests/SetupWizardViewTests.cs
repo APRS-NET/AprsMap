@@ -66,7 +66,8 @@ public class SetupWizardViewTests
         Assert.True(wizard.IsVisible);
         Assert.True(Find<StackPanel>(window, "CallsignStep").IsEffectivelyVisible);
         Assert.False(Find<StackPanel>(window, "LocationStep").IsEffectivelyVisible);
-        Assert.Equal("Step 1 of 4", Find<TextBlock>(window, "StepLabel").Text);
+        Assert.Equal("Step 1 of 3", Find<TextBlock>(window, "StepLabel").Text); // listens until the licensed box is ticked
+        Assert.False(Find<TextBox>(window, "CallsignBox").IsEffectivelyVisible);
         Assert.False(Find<RadioButton>(window, "DeviceChoice").IsVisible); // no device location on this platform
         Assert.False(vm.CanOpenSetup);
         window.Close();
@@ -76,6 +77,9 @@ public class SetupWizardViewTests
     public async Task TheWholeWizardWorksFromTheKeyboard()
     {
         var (window, vm, engine) = await ShowNotSetUp();
+        Assert.True(Find<CheckBox>(window, "LicensedOperatorBox").IsFocused);
+        await Press(window, PhysicalKey.Space); // I'm a licensed amateur radio operator
+        Dispatcher.UIThread.RunJobs();
         Assert.True(Find<TextBox>(window, "CallsignBox").IsFocused);
 
         Type(window, "ab1cd-9");
@@ -104,6 +108,8 @@ public class SetupWizardViewTests
     public async Task TheCallsignFieldShowsUpperCaseAsItIsTyped()
     {
         var (window, vm, _) = await ShowNotSetUp();
+        vm.Setup!.IsLicensedOperator = true;
+        Dispatcher.UIThread.RunJobs();
 
         Type(window, "ab1 cd-9");
 
@@ -117,6 +123,8 @@ public class SetupWizardViewTests
     public async Task EscapeAsksBeforeDroppingWhatWasTyped()
     {
         var (window, vm, _) = await ShowNotSetUp();
+        vm.Setup!.IsLicensedOperator = true;
+        Dispatcher.UIThread.RunJobs();
         Type(window, "AB1CD");
 
         await Press(window, PhysicalKey.Escape);

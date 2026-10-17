@@ -506,18 +506,16 @@
   <data name="Wizard.Callsign.Help" xml:space="preserve">
     <value>The SSID after the hyphen tells your stations apart: -9 is common for a car, -7 for a handheld.</value>
   </data>
-  <data name="Wizard.ListenOnly" xml:space="preserve">
-    <value>I'm not a licensed amateur (listen only)</value>
-  </data>
   <data name="Wizard.ListenOnly.As" xml:space="preserve">
     <value>You'll listen as {id}, an ID made for listeners: it isn't a callsign and never transmits.</value>
     <comment>id: the generated listener ID, such as SWL482913.</comment>
   </data>
   <data name="Wizard.Licensed" xml:space="preserve">
-    <value>I'm a licensed amateur and may transmit with this callsign</value>
+    <value>I'm a licensed amateur radio operator</value>
+    <comment>Ticked: the profile uses the operator's callsign and may transmit. Unticked: it listens only, with a generated ID.</comment>
   </data>
   <data name="Wizard.DisableTx" xml:space="preserve">
-    <value>Disable TX</value>
+    <value>Disable TX on this profile</value>
     <comment>Checkbox: this profile never transmits.</comment>
   </data>
   <data name="Wizard.DisableTx.Help" xml:space="preserve">

@@ -317,6 +317,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// <summary>The callsign, trimmed and upper-cased as the user types (behavior 5).</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(NextCommand))]
+    [NotifyPropertyChangedFor(nameof(BaseCallsign))]
     public partial string Callsign { get; set; } = string.Empty;
 
     /// <summary>Why the callsign can't be used, or null.</summary>
@@ -332,9 +333,9 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             return;
         }
         CallsignError = null;
-        if (IsLicensed && _licensedBase is not null && BaseCallsign != _licensedBase)
+        if (!_switchingLogin && !IsLicensedOperator && value.Length > 0 && !ListenerId.Is(value))
         {
-            IsLicensed = false; // the confirmation was for the other call (F2.1 behavior 4.1)
+            IsLicensedOperator = true; // a callsign is only typed with the box ticked
         }
         if (!_nameChosen)
         {
@@ -350,37 +351,52 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     // ── Transmitting (docs/features/F2.1-own-station.md, behavior 4) ──────────────────────────────────────────
 
     private string? _listenerId;
-    private string _callsignBeforeListening = string.Empty;
-    private string? _licensedBase;
+    private string _typedCallsign = string.Empty;
+    private bool _switchingLogin;
 
     /// <summary>
-    /// "I'm not a licensed amateur (listen only)": the profile gets a generated listener ID instead of a callsign, logs
-    /// in without a passcode and never transmits.
+    /// "I'm a licensed amateur radio operator": stored on the profile as <see cref="StationProfile.Licensed"/>. Ticked,
+    /// the profile has the callsign typed; unticked (a new profile's default), it listens with a generated listener ID,
+    /// logs in without a passcode and never transmits.
     /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SkipsPasscode), nameof(IsLastStep), nameof(StepCount), nameof(ListeningAsText))]
-    public partial bool ListenOnly { get; set; }
+    [NotifyPropertyChangedFor(
+        nameof(ListenOnly),
+        nameof(SkipsPasscode),
+        nameof(IsLastStep),
+        nameof(StepCount),
+        nameof(ListeningAsText)
+    )]
+    public partial bool IsLicensedOperator { get; set; }
+
+    /// <summary>The profile only listens, with a listener ID: the licensed box is unticked.</summary>
+    public bool ListenOnly => !IsLicensedOperator;
 
     /// <summary>"You'll listen as SWL482913."</summary>
     public string? ListeningAsText =>
         ListenOnly ? _text.Format("Wizard.ListenOnly.As", new Dictionary<string, object?> { ["id"] = Callsign }) : null;
 
-    partial void OnListenOnlyChanged(bool value)
+    partial void OnIsLicensedOperatorChanged(bool value)
     {
+        _switchingLogin = true;
         if (value)
+        {
+            if (ListenerId.Is(Callsign))
+            {
+                Callsign = _typedCallsign;
+            }
+        }
+        else
         {
             if (!ListenerId.Is(Callsign))
             {
-                _callsignBeforeListening = Callsign;
+                _typedCallsign = Callsign;
             }
             Callsign = _listenerId ?? Callsign;
-            IsLicensed = false;
+            DisableTransmit = false;
             ReceiveOnly = true;
         }
-        else if (ListenerId.Is(Callsign))
-        {
-            Callsign = _callsignBeforeListening;
-        }
+        _switchingLogin = false;
         CallsignError = null;
         OnPropertyChanged(nameof(ListeningAsText));
         OnStepChanged(Step); // "Step 1 of 3"
@@ -663,11 +679,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsCalculatorOpen { get; set; }
 
-    /// <summary>
-    /// "I'm a licensed amateur and may transmit with this callsign": stored on the profile as
-    /// <see cref="StationProfile.Licensed"/> (F2.1 behavior 4.1), and what unlocks the passcode calculator. Cleared when
-    /// the base call changes.
-    /// </summary>
+    /// <summary>"I'm a licensed amateur radio operator and this is my own callsign." Asked every time; never stored.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CalculateCommand))]
     public partial bool IsLicensed { get; set; }
@@ -686,7 +698,6 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 
     partial void OnIsLicensedChanged(bool value)
     {
-        _licensedBase = value ? BaseCallsign : null;
         CalculatedPasscode = null;
         CalculatorError = null;
     }
@@ -708,6 +719,13 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         {
             await FillFromAsync(profile);
         }
+        else if (Callsign.Length == 0) // not typed into already
+        {
+            _switchingLogin = true;
+            Callsign = _listenerId; // unlicensed until the box is ticked (F2.1 behavior 4)
+            _switchingLogin = false;
+            OnPropertyChanged(nameof(ListeningAsText));
+        }
         Step = SetupStep.Callsign;
         _initialState = State();
     }
@@ -718,11 +736,14 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         if (ListenerId.Is(profile.Callsign))
         {
             _listenerId = profile.Callsign; // keeps its ID
-            ListenOnly = true;
         }
+        _switchingLogin = true;
         Callsign = profile.Callsign;
-        IsLicensed = profile.Licensed && !ListenOnly;
+        _switchingLogin = false;
+        // A profile with a callsign was made by a licensed operator: before this box, the editor only took callsigns.
+        IsLicensedOperator = !ListenerId.Is(profile.Callsign);
         DisableTransmit = profile.DisableTransmit;
+        OnPropertyChanged(nameof(ListeningAsText));
         SelectedSymbol = SymbolChoice.For(profile.EffectiveSymbol);
         Comment = profile.Comment ?? string.Empty;
         _settingName = true;
@@ -758,8 +779,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         string.Join(
             '\u001F',
             Callsign,
-            ListenOnly ? "listen" : "",
-            IsLicensed ? "licensed" : "",
+            IsLicensedOperator ? "licensed" : "",
             DisableTransmit ? "no-tx" : "",
             SelectedSymbol?.Symbol ?? "",
             Comment,
@@ -781,7 +801,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     public bool HasInput =>
         Mode == WizardMode.Edit
             ? State() != _initialState
-            : Callsign.Length > 0
+            : (IsLicensedOperator && Callsign.Length > 0)
                 || HasLocation
                 || LocatorText.Length > 0
                 || CoordinatesText.Length > 0
@@ -1183,8 +1203,8 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Symbol: SelectedSymbol?.Symbol,
             Comment: Comment.Trim().Length > 0 ? Comment.Trim() : null,
             PositionConfirmed: _editing?.PositionConfirmed ?? false, // the engine clears it when what's sent changed
-            Licensed: IsLicensed && !ListenOnly,
-            DisableTransmit: DisableTransmit
+            Licensed: IsLicensedOperator,
+            DisableTransmit: DisableTransmit && IsLicensedOperator
         );
         IsBusy = true;
         try

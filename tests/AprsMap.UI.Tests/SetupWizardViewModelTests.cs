@@ -39,7 +39,8 @@ public class SetupWizardViewModelTests
         var (wizard, _, _) = await Start();
 
         Assert.Equal(SetupStep.Callsign, wizard.Step);
-        Assert.Equal("Step 1 of 4", wizard.StepText);
+        Assert.Equal("Step 1 of 3", wizard.StepText); // unlicensed by default: no passcode step
+        Assert.False(wizard.IsLicensedOperator);
         Assert.Equal("Set up " + Brand.DisplayName, wizard.Title);
         Assert.Equal("rotate", wizard.SelectedServer?.Key);
         Assert.True(wizard.ReceiveOnly);
@@ -64,6 +65,7 @@ public class SetupWizardViewModelTests
     public async Task ThePlaceholderCallsignsAreRefused(string callsign)
     {
         var (wizard, _, text) = await Start();
+        wizard.IsLicensedOperator = true;
         Assert.False(wizard.NextCommand.CanExecute(null)); // nothing typed yet
 
         wizard.Callsign = callsign;
