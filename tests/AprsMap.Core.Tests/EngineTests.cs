@@ -1215,9 +1215,9 @@ public class EngineTests
         /// <summary>The profile of every connection attempt, in order.</summary>
         public System.Collections.Concurrent.ConcurrentQueue<StationProfile> Profiles { get; } = new();
 
-        public FakeSource Enqueue(string server)
+        public FakeSource Enqueue(string server, bool verified = false)
         {
-            var source = new FakeSource(server);
+            var source = new FakeSource(server, verified: verified);
             _script.Enqueue(source);
             return source;
         }
@@ -1252,8 +1252,19 @@ public class EngineTests
         }
     }
 
-    internal sealed class FakeSource(string? server, bool refuse = false, bool verified = false) : IPacketSource
+    internal sealed class FakeSource(string? server, bool refuse = false, bool verified = false)
+        : IPacketSource,
+            IPacketSender
     {
+        /// <summary>The packets sent, as text.</summary>
+        public System.Collections.Concurrent.ConcurrentQueue<string> Sent { get; } = new();
+
+        public ValueTask SendAsync(AprsNet.Packets.AprsPacket packet, CancellationToken cancellationToken)
+        {
+            Sent.Enqueue(packet.ToString());
+            return ValueTask.CompletedTask;
+        }
+
         private readonly Channel<string> _lines = Channel.CreateUnbounded<string>();
         private Action<PacketSourceEvent>? _stateChanged;
 

@@ -2589,6 +2589,40 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.kiss.link-failed" xml:space="preserve">
     <value>Link to the TNC failed</value>
   </data>
+  <data name="Error.settings.profile.comment-invalid" xml:space="preserve">
+    <value>Profile “{profile}”: a comment can have up to 43 letters, digits and plain punctuation, without accents.</value>
+    <comment>profile: the profile's name. 43 is the most a position report carries.</comment>
+  </data>
+  <data name="Error.settings.profile.symbol-invalid" xml:space="preserve">
+    <value>Profile “{profile}”: choose a symbol from the list.</value>
+    <comment>profile: the profile's name.</comment>
+  </data>
+  <data name="Error.transmit.off" xml:space="preserve">
+    <value>Transmit is off. Turn it on first.</value>
+  </data>
+  <data name="Error.transmit.receive-only" xml:space="preserve">
+    <value>This station was started receive only, so it doesn't transmit.</value>
+    <comment>Set where the app or gateway starts, not in Settings.</comment>
+  </data>
+  <data name="Error.transmit.placeholder-callsign" xml:space="preserve">
+    <value>N0CALL and NOCALL are placeholders. Set your own callsign to transmit.</value>
+    <comment>N0CALL and NOCALL are callsigns: don't translate them.</comment>
+  </data>
+  <data name="Error.transmit.no-aprs-is" xml:space="preserve">
+    <value>Transmitting goes through APRS-IS, and it's off or this profile doesn't use it.</value>
+  </data>
+  <data name="Error.transmit.not-connected" xml:space="preserve">
+    <value>APRS-IS isn't connected.</value>
+  </data>
+  <data name="Error.transmit.not-verified" xml:space="preserve">
+    <value>The APRS-IS server didn't verify the login. Check the passcode for this callsign.</value>
+  </data>
+  <data name="Error.transmit.no-position" xml:space="preserve">
+    <value>Set the station's location first.</value>
+  </data>
+  <data name="Error.transmit.failed" xml:space="preserve">
+    <value>The packet couldn't be sent.</value>
+  </data>
   <data name="Error.settings.source.kiss-invalid" xml:space="preserve">
     <value>A KISS source needs a host, a port from 1 to 65535, and a TNC port from 0 to 15.</value>
   </data>

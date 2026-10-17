@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 namespace AprsMap.Core;
 
 /// <summary>An APRS-IS session kept up by APRS.NET's <see cref="AprsIsConnection"/>.</summary>
-internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketSource
+internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketSource, IPacketSender
 {
     public async Task<PacketSourceLogin> StartAsync(
         Action<PacketSourceEvent> stateChanged,
@@ -51,6 +51,9 @@ internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketS
 
     public ValueTask SetFilterAsync(string filter, CancellationToken cancellationToken) =>
         connection.SetFilterAsync(filter, cancellationToken);
+
+    public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken) =>
+        connection.SendAsync(packet, cancellationToken);
 
     public ValueTask DisposeAsync() => connection.DisposeAsync();
 
