@@ -49,6 +49,11 @@ release job's log).
 
 To start a new milestone later, use the same footer, for example `Release-As: 0.2.0-alpha.1`.
 
+release-please walks `main` back by commit date and stops at the last release's commit, so the footer must also be on
+a commit made after that release. A commit written before the open release PR was merged, and merged after it, is
+older than the release and is never read (as happened with `0.3.0-alpha.4`): merge the footer's PR first, or put the
+footer on a new commit.
+
 ## APRS.NET
 
 AprsMap uses the APRS.NET packages from nuget.org, including pre-releases, with versions pinned in
