@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.1...v0.4.0-alpha.2) (2026-10-17)
+
+
+### Bug Fixes
+
+* **ui:** a floating panel or dashboard shows its view, and the dashboard docks beside the map again from its tab menu ([3f30f4e](https://github.com/APRS-NET/AprsMap/commit/3f30f4eccdd88c9503fa863be98f6fc00f27b7f2))
+* **ui:** floating panels show their view; the dashboard docks beside the map again ([45ceed4](https://github.com/APRS-NET/AprsMap/commit/45ceed4b9e633b0d6280a418b5e9f1ccb321ecaf))
+
 ## [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.3.0-alpha.4...v0.4.0-alpha.1) (2026-10-17)
 
 
