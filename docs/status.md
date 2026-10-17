@@ -10,7 +10,7 @@ anything yet.
 
 **Next:** [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/3): transmitting through APRS-IS and KISS
 TNCs (your station's transmit switch, TX enabled and Test send per source, Disable TX per profile), beacons, messaging
-and bulletins, operator sign-in on the gateway, the public receive-only console (F1.26) and update checks. Then
+and bulletins, operator sign-in on the gateway, the public receive-only console (F1.26), capturing unexpected packets for the test corpus (F1.27) and update checks. Then
 [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) (hardware TNCs over USB serial, objects, GPS, a receive-only
 IGate) and
 [0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5) (a digipeater and a two-way IGate).
@@ -96,6 +96,7 @@ the same window as the desktop app, live.
 | RF: hardware TNCs over USB serial (MFJ TNC-X, NinoTNC) | F3.1, [0.6.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/4) |
 | Dashboard extras: sparkline values on hover and by keyboard, My view, Copy on the tiles | F1.22, [#176](https://github.com/APRS-NET/AprsMap/issues/176) |
 | A public receive-only console: viewer and operator ports, location privacy | F1.26, spec in review |
+| Recording unexpected packets for the developer, exported anonymized for the test corpus | F1.27, spec in review |
 | Extra map views, dead reckoning, destination, saved layouts, web pop-out panels | Phase 1, later |
 | Sending anything (beacons, messages, objects) and operator sign-in on the gateway | Phase 2 |
 | GPS, IGate, digipeater | Phase 3 |

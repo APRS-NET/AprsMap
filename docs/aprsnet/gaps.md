@@ -47,6 +47,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G27 | Validation errors with stable codes (delivered) | AprsIsTcpClient, Packets | 0 | — |
 | G29 | Source merge: which source a packet came from, and duplicates reported with their source (delivered) | Packets | 1 | [APRS.NET#125](https://github.com/APRS-NET/APRS.NET/issues/125) |
 | G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
+| G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet | Packets (or a small new package) | 2 | — |
 
 ---
 
@@ -477,4 +478,24 @@ reports (time, position, speed, course, altitude, fix mode) into a position fix 
 reconnect like the other connections. No device access in the library beyond the socket.
 
 **Acceptance.** Recorded gpsd JSON sessions; no fix, 2D and 3D fixes; reconnect after the daemon restarts.
+
+## G31: Corpus capture helpers
+
+**Need.** AprsMap F1.27 (0.5.0): the app records packets it couldn't make sense of and exports them for
+`tests/corpus`, so what the corpus accepts has to be produced by the library, not re-implemented in the app.
+
+**Scope.**
+
+1. **The anonymizer as an API**: what `tools/corpus/Anonymize.cs` does today (same-length Q-prefixed callsigns,
+   X-names, masked e-mail addresses; positions, TOCALLs, Mic-E destinations, generic path aliases and server names kept
+   byte for byte; every line the same length), over lines in memory, with the pseudonym map passed in and returned so
+   later exports reuse it. The script becomes a thin wrapper over it.
+2. **The corpus line format**: write and read `<UTC timestamp> <raw line>` in Latin-1, so a caller can't get the
+   timestamp format or the encoding wrong.
+3. **Unrecognised parts of a decoded packet**: a list on `AprsPacket` of what parsed but wasn't understood (an unknown
+   data extension, an unknown path element, data left after the known comment fields, a `{` that isn't a known
+   user-defined format), each with a stable code and its span, next to `Issues`. Parsing still never throws.
+
+**Acceptance.** The anonymizer API's output for the existing captures matches the script's byte for byte; a Mic-E line
+that isn't valid UTF-8 writes and reads back unchanged; each unrecognised-part code has a corpus line that shows it.
 
