@@ -42,13 +42,15 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         DataSectionViewModel? data = null,
         IReadOnlyList<SettingItem>? mapItems = null,
         SourcesSectionViewModel? sources = null,
-        IReadOnlyList<SettingItem>? unitItems = null
+        IReadOnlyList<SettingItem>? unitItems = null,
+        BeaconsSectionViewModel? beacons = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
         _appearance = appearance;
         Profiles = profiles;
         Sources = sources;
+        Beacons = beacons;
         Data = data;
         _time = time;
         _text = text ?? Localizer.Instance;
@@ -76,6 +78,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsAboutSection),
         nameof(IsProfilesSection),
         nameof(IsSourcesSection),
+        nameof(IsBeaconsSection),
         nameof(IsDataSection),
         nameof(IsMapSection),
         nameof(IsUnitsSection)
@@ -93,6 +96,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>The Sources section (F1.25), when the app manages sources here.</summary>
     public SourcesSectionViewModel? Sources { get; }
+
+    /// <summary>Whether Beacons is showing.</summary>
+    public bool IsBeaconsSection => SelectedSection?.Id == "beacons";
+
+    /// <summary>The Beacons section (F2.2), when the app manages profiles here.</summary>
+    public BeaconsSectionViewModel? Beacons { get; }
 
     /// <summary>Whether Appearance is showing.</summary>
     public bool IsAppearanceSection => SelectedSection?.Id == "appearance";
@@ -228,6 +237,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("sources", _text["Settings.Sources"]));
         }
+        if (Beacons is not null)
+        {
+            Sections.Add(new SettingsSection("beacons", _text["Settings.Beacons"]));
+        }
         Sections.Add(new SettingsSection("appearance", _text["Settings.Appearance"]));
         if (MapItems.Count > 0)
         {
@@ -250,6 +263,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         About.Retranslate();
         Profiles?.Retranslate();
         Sources?.Retranslate();
+        Beacons?.Retranslate();
         Data?.Retranslate();
     }
 }

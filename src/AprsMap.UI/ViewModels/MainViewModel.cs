@@ -337,6 +337,7 @@ public sealed partial class MainViewModel : ObservableObject
                     : null
             );
         var sources = new SourcesSectionViewModel(engine, _text, Show);
+        var beacons = new BeaconsSectionViewModel(engine, _text, Show);
         var unitItems = _settings is { ReadOnly: false }
             ? SettingsRegistry.Units(_text, () => _settings?.Units ?? UnitSettings.Metric, SaveUnits)
             : null;
@@ -349,7 +350,8 @@ public sealed partial class MainViewModel : ObservableObject
             data,
             mapItems,
             sources,
-            unitItems
+            unitItems,
+            beacons
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
@@ -366,6 +368,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (_settings is { } current)
         {
             sources.Show(current);
+            beacons.Show(current);
             await profiles.ShowAsync(current);
         }
     }
@@ -1068,6 +1071,7 @@ public sealed partial class MainViewModel : ObservableObject
         var couldClear = CanClearData;
         _settings = settings;
         PacketList.ShowSources(settings);
+        Settings?.Beacons?.Show(settings); // a source's TX enabled changes what beacons can go out on
         CanToggle = !settings.ReadOnly;
         if (CanClearData != couldClear)
         {

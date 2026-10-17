@@ -92,11 +92,18 @@ public sealed record EngineStatus(
 /// </param>
 /// <param name="LastSent">When the station last sent a packet.</param>
 /// <param name="ReceiveOnly">The engine was started receive-only (<c>Engine:ReceiveOnly</c>), which nothing here can change.</param>
+/// <param name="NextBeacon">The next beacon due (docs/features/F2.2-beacons.md, behavior 10), or null when none is on.</param>
+/// <param name="BeaconHeld">
+/// Why beacons are waiting (behaviors 4, 5): a <c>transmit.*</c> code, <c>transmit.position-unconfirmed</c> included;
+/// null when they go out as due.
+/// </param>
 public sealed record TransmitStatus(
     bool On,
     EngineError? Blocked = null,
     DateTimeOffset? LastSent = null,
-    bool ReceiveOnly = false
+    bool ReceiveOnly = false,
+    NextBeacon? NextBeacon = null,
+    EngineError? BeaconHeld = null
 );
 
 /// <summary>One source's connection, for its status pill (F1.25 behavior 11).</summary>

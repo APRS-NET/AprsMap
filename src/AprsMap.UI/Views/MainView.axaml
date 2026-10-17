@@ -363,8 +363,9 @@
               CornerRadius="{DynamicResource Radius.Control}"
               Padding="8,3"
               VerticalAlignment="Center"
-              ToolTip.Tip="{l:T Transmit.Marker.Help}"
+              ToolTip.Tip="{Binding TransmitTip}"
               AutomationProperties.Name="{Binding TransmitText}"
+              AutomationProperties.HelpText="{Binding TransmitTip}"
             >
               <TextBlock Text="{Binding TransmitText}" TextWrapping="Wrap" />
             </Button>

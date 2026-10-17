@@ -60,6 +60,15 @@ public static class EngineErrorCodes
     /// <summary>A TNC's TX path isn't a list of digipeater aliases or callsigns APRS.NET can send (F2.1 behavior 5.2).</summary>
     public const string SourceTxPathInvalid = "settings.source.tx-path-invalid";
 
+    /// <summary>A beacon's interval is outside 10 minutes to 24 hours (docs/features/F2.2-beacons.md, behaviors 1, 3).</summary>
+    public const string ProfileBeaconIntervalInvalid = "settings.profile.beacon-interval-invalid";
+
+    /// <summary>The status beacon's text is longer than 62 characters or not printable ASCII (F2.2 behavior 3).</summary>
+    public const string ProfileStatusInvalid = "settings.profile.status-invalid";
+
+    /// <summary>The PHG isn't values the format carries, or comes with a compressed position (F2.2 behavior 1.4).</summary>
+    public const string ProfilePhgInvalid = "settings.profile.phg-invalid";
+
     /// <summary>A profile's symbol isn't a table or overlay character and a symbol code (F2.1 behavior 1).</summary>
     public const string ProfileSymbolInvalid = "settings.profile.symbol-invalid";
 
@@ -167,6 +176,11 @@ public static class EngineErrorCodes
 
     /// <summary>None of the profile's sources is TX enabled (F2.1 behavior 6.1).</summary>
     public const string TransmitNoSource = "transmit.no-source";
+
+    /// <summary>
+    /// Beacons wait for a position sent by hand since what's sent last changed (docs/features/F2.2-beacons.md, behavior 5).
+    /// </summary>
+    public const string TransmitPositionUnconfirmed = "transmit.position-unconfirmed";
 
     /// <summary>The engine was started receive-only (F2.1 behavior 5.1).</summary>
     public const string TransmitReceiveOnly = "transmit.receive-only";

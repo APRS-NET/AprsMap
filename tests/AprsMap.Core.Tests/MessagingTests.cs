@@ -98,7 +98,9 @@ public sealed class MessagingTests
         using (cts)
         {
             await aprsIs.Write("N1ABC>APRS,TCPIP*,qAC,T2TEST::N0TEST   :Hello{42");
+            await WaitUntil(async () => (await station.Engine.GetConversationsAsync(Ct)).Count == 1); // first here
             await tnc.Write("N1ABC>APRS,WIDE1-1::N0TEST   :Hello{42");
+            await WaitUntil(async () => (await station.Engine.GetStatusAsync(Ct)).PacketsReceived >= 2); // the copy is in
 
             await WaitUntil(() => Task.FromResult(!aprsIs.Sent.IsEmpty));
             Assert.Equal($"N0TEST>{Brand.Tocall}::N1ABC    :ack42", Assert.Single(aprsIs.Sent));
