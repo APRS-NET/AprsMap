@@ -32,7 +32,7 @@ public sealed partial class PacketListViewModel : ObservableObject
     private DateTimeOffset _lastFlush = DateTimeOffset.MinValue;
     private bool _flushScheduled;
     private bool _clearOnFirst;
-    private bool _pausedByScrolling;
+    private bool _pausedByReading;
 
     internal PacketListViewModel(
         IEngineService engine,
@@ -193,25 +193,39 @@ public sealed partial class PacketListViewModel : ObservableObject
     [RelayCommand]
     public void TogglePause()
     {
-        _pausedByScrolling = false;
+        _pausedByReading = false;
         SetPaused(!IsPaused);
     }
 
     /// <summary>
-    /// The list was scrolled (F1.8 behavior 6): away from the newest packets pauses it, and back to them resumes it, unless
-    /// the viewer paused it with the button.
+    /// The viewer scrolled the list (F1.8 behavior 6): away from the newest packets pauses it, and back to them resumes
+    /// it, unless the viewer paused it with the button.
     /// </summary>
     internal void Scrolled(bool atTop)
     {
-        if (!atTop && !IsPaused)
+        if (!atTop)
         {
-            _pausedByScrolling = true;
-            SetPaused(true);
+            PauseByReading();
         }
-        else if (atTop && IsPaused && _pausedByScrolling)
+        else if (IsPaused && _pausedByReading)
         {
-            _pausedByScrolling = false;
+            _pausedByReading = false;
             SetPaused(false);
+        }
+    }
+
+    /// <summary>
+    /// The viewer selected a row (F1.8 behavior 6): the list pauses so the row stays put, and resumes like a list paused
+    /// by scrolling.
+    /// </summary>
+    internal void RowSelected() => PauseByReading();
+
+    private void PauseByReading()
+    {
+        if (!IsPaused)
+        {
+            _pausedByReading = true;
+            SetPaused(true);
         }
     }
 

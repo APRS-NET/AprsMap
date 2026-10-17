@@ -65,6 +65,24 @@ public class PacketListTests
     }
 
     [Fact]
+    public void SelectingARowPausesLikeScrollingAndTheTopResumes()
+    {
+        var list = Create();
+
+        list.RowSelected();
+        Assert.True(list.IsPaused);
+        list.RowSelected(); // another row: still paused
+        Assert.True(list.IsPaused);
+        list.Scrolled(atTop: true);
+        Assert.False(list.IsPaused);
+
+        list.TogglePause(); // paused by the viewer: selecting and the top leave it paused
+        list.RowSelected();
+        list.Scrolled(atTop: true);
+        Assert.True(list.IsPaused);
+    }
+
+    [Fact]
     public void ResumingRaisesResumedSoThePanelGoesBackToTheTop()
     {
         var list = Create();

@@ -74,9 +74,9 @@ public sealed class ShellViewTests
         var list = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "PacketList");
         var scroller = Assert.IsType<ScrollViewer>(list.Scroll);
 
-        scroller.Offset = new Vector(0, 400);
-        Dispatcher.UIThread.RunJobs();
+        Wheel(window, list, -10);
         Assert.True(vm.PacketList.IsPaused); // scrolled away from the newest
+        Assert.True(scroller.Offset.Y > 1);
 
         vm.PacketList.TogglePause();
         Dispatcher.UIThread.RunJobs();
@@ -84,6 +84,63 @@ public sealed class ShellViewTests
         Assert.False(vm.PacketList.IsPaused);
         Assert.Equal(0, scroller.Offset.Y);
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void ThePacketListMovingByItselfStaysLiveAtTheTop()
+    {
+        var (window, vm) = ShowPackets();
+        var list = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "PacketList");
+        var scroller = Assert.IsType<ScrollViewer>(list.Scroll);
+
+        // Not the viewer: rows going in above a focused row, or the window losing focus, move the list.
+        scroller.Offset = new Vector(0, 400);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(vm.PacketList.IsPaused);
+        Assert.Equal(0, scroller.Offset.Y);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void ClickingAPacketPausesTheListAndScrollingBackToTheTopResumesIt()
+    {
+        var (window, vm) = ShowPackets();
+        var list = window.GetVisualDescendants().OfType<ListBox>().Single(l => l.Name == "PacketList");
+        var row = list.GetVisualDescendants().OfType<ListBoxItem>().First();
+        var centre = row.TranslatePoint(new Avalonia.Point(row.Bounds.Width / 2, row.Bounds.Height / 2), window)!.Value;
+
+        window.MouseDown(centre, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(centre, Avalonia.Input.MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(vm.PacketList.IsPaused);
+
+        Wheel(window, list, -10);
+        Wheel(window, list, 50);
+        Assert.False(vm.PacketList.IsPaused);
+        window.Close();
+    }
+
+    private static (Window Window, MainViewModel Vm) ShowPackets()
+    {
+        var (window, vm) = Show();
+        for (var i = 0; i < 200; i++)
+        {
+            vm.PacketList.Receive(FakeEngine.Packet($"N{i}"));
+        }
+        vm.PacketList.Flush();
+        Dispatcher.UIThread.RunJobs();
+        return (window, vm);
+    }
+
+    private static void Wheel(Window window, Control over, double notches)
+    {
+        var centre = over.TranslatePoint(
+            new Avalonia.Point(over.Bounds.Width / 2, over.Bounds.Height / 2),
+            window
+        )!.Value;
+        window.MouseWheel(centre, new Vector(0, notches));
+        Dispatcher.UIThread.RunJobs();
     }
 
     [AvaloniaFact]
