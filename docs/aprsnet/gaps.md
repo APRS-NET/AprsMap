@@ -13,7 +13,9 @@ NuGet yet (2026-10-15).
 
 Gaps an AprsMap milestone needs become APRS.NET issues, as sub-issues of a `capability` issue in APRS.NET's matching
 milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for AprsMap 0.3.0), labelled
-`blocks: AprsMap`, and block the AprsMap feature issues that need them. Later gaps get an issue when their phase is planned.
+`blocks: AprsMap`, and block the AprsMap feature issues that need them. Phases 2 and 3 are planned (2026-10-16):
+AprsMap 0.5.0–0.7.0 match APRS.NET's milestones of the same numbers, and the Issue column below names each gap's
+capability issue. G14, G18, G21, G22 and G25 get an issue when their features are planned.
 
 | ID | Title | Package | AprsMap phase | Issue |
 | --- | --- | --- | --- | --- |
@@ -27,15 +29,15 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs (delivered) | Packets | 1 | [APRS.NET#121](https://github.com/APRS-NET/APRS.NET/issues/121) |
 | G01 | `Callsign.Parse` and a packet encoder (partly delivered) | Packets | 2 | — |
 | G02 | Transmit through APRS-IS, and passcode generation (delivered) | AprsIsTcpClient | 2 | — |
-| G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | — |
-| G11 | Beacon scheduling algorithms | new: AprsNet.Beaconing | 2 | — |
-| G19 | Query and response handling | Packets + Messaging | 2 | — |
+| G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | [APRS.NET#189](https://github.com/APRS-NET/APRS.NET/issues/189) |
+| G11 | Beacon scheduling algorithms | new: AprsNet.Beaconing | 2 | [APRS.NET#195](https://github.com/APRS-NET/APRS.NET/issues/195) |
+| G19 | Query and response handling | Packets + Messaging | 2 | [APRS.NET#200](https://github.com/APRS-NET/APRS.NET/issues/200) |
 | G12 | AX.25 UI frame codec (delivered) | new: AprsNet.Ax25 | 3 | — |
-| G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial published in `0.3.0-alpha.2` as `AprsNet.Kiss.Serial`, issue open for hardware testing) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126) |
+| G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial published in `0.3.0-alpha.2` as `AprsNet.Kiss.Serial`, issue open for hardware testing) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), [APRS.NET#160](https://github.com/APRS-NET/APRS.NET/issues/160) |
 | G14 | Text-mode and Kenwood TNC support | new: AprsNet.Tnc | 3 | — |
-| G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | — |
-| G16 | IGate engine | new: AprsNet.IGate | 3 | — |
-| G17 | NMEA sentence parsing and `$` packets | Packets | 3 | — |
+| G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | [APRS.NET#209](https://github.com/APRS-NET/APRS.NET/issues/209) |
+| G16 | IGate engine | new: AprsNet.IGate | 3 | [APRS.NET#206](https://github.com/APRS-NET/APRS.NET/issues/206), [APRS.NET#212](https://github.com/APRS-NET/APRS.NET/issues/212) |
+| G17 | NMEA sentence parsing and `$` packets | Packets | 3 | [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G18 | Raw weather station data and storm objects | Packets | 4 | — |
 | G21 | APRS-IS server side: client logins, passcode check, filter evaluation (filters delivered; server in source, not on NuGet) | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |
 | G22 | AGWPE TCP transport | new: AprsNet.Agw | 3 | — |
@@ -44,7 +46,7 @@ milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for A
 | G26 | APRS-IS server presets a UI can list (delivered) | AprsIsTcpClient | 0 | — |
 | G27 | Validation errors with stable codes (delivered) | AprsIsTcpClient, Packets | 0 | — |
 | G29 | Source merge: which source a packet came from, and duplicates reported with their source (delivered) | Packets | 1 | [APRS.NET#125](https://github.com/APRS-NET/APRS.NET/issues/125) |
-| G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127) |
+| G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 
 ---
 
