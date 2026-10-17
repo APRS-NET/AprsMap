@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.3.0-alpha.4...v0.4.0-alpha.1) (2026-10-17)
+
+
+### Documentation
+
+* a milestone's Release-As footer goes on a new commit ([53cdc99](https://github.com/APRS-NET/AprsMap/commit/53cdc994208f7deba92062923218630ace8339c9))
+
 ## [0.3.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.3.0-alpha.3...v0.3.0-alpha.4) (2026-10-16)
 
 
