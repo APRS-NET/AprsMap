@@ -182,6 +182,22 @@ public class SourcesShownTests
         Assert.True(pill.IsWarning);
         Assert.False(pill.IsConnected);
 
+        // Connected, but the TNC isn't in KISS mode (F3.1 behavior 13).
+        vm.Show(
+            WithTnc(
+                new(
+                    "tnc",
+                    "Direwolf",
+                    SourceKind.KissTcp,
+                    ConnectionState.Connected,
+                    Warning: new EngineError(EngineErrorCodes.KissTextNotKiss, "text")
+                )
+            )
+        );
+        Assert.Equal("Direwolf: TNC isn't in KISS mode", pill.Text);
+        Assert.True(pill.IsWarning);
+        Assert.False(pill.IsConnected);
+
         vm.Show(WithTnc(new("tnc", "Direwolf", SourceKind.KissTcp, ConnectionState.Disconnected, Enabled: false)));
         Assert.Same(pill, Assert.Single(vm.SourcePills)); // the same pill, so its switch doesn't flicker
         Assert.Equal("Direwolf off", pill.Text);

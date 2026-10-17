@@ -47,11 +47,16 @@ public sealed record PacketSourceLogin(string Server, bool Verified);
 /// <param name="Login">The new login, when <paramref name="State"/> is <see cref="ConnectionState.Connected"/>.</param>
 /// <param name="RetryIn">The wait before the next attempt, when it is <see cref="ConnectionState.Reconnecting"/>.</param>
 /// <param name="Error">Why it is <see cref="ConnectionState.Reconnecting"/> or <see cref="ConnectionState.Refused"/>.</param>
+/// <param name="Warning">
+/// Something wrong with what the other end sends while the connection is up, such as a TNC not in KISS mode; it lasts
+/// across reconnects until it's over, so each event carries the one in force.
+/// </param>
 public sealed record PacketSourceEvent(
     ConnectionState State,
     PacketSourceLogin? Login = null,
     TimeSpan? RetryIn = null,
-    EngineError? Error = null
+    EngineError? Error = null,
+    EngineError? Warning = null
 );
 
 /// <summary>Creates a <see cref="IPacketSource"/> for each profile the engine logs in with.</summary>

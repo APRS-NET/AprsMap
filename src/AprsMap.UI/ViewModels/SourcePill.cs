@@ -51,7 +51,9 @@ public sealed partial class SourcePill : ObservableObject
     /// <summary>Drops the source's connection or wait and connects again now (F3.1 behavior 5).</summary>
     public IAsyncRelayCommand ReconnectCommand { get; }
 
-    /// <summary>"Direwolf connected", "Direwolf: TNC not reachable", "Direwolf off".</summary>
+    /// <summary>
+    /// "Direwolf connected", "Direwolf: TNC not reachable", "Direwolf: TNC isn't in KISS mode", "Direwolf off".
+    /// </summary>
     [ObservableProperty]
     public partial string Text { get; private set; } = string.Empty;
 
@@ -63,7 +65,9 @@ public sealed partial class SourcePill : ObservableObject
     [ObservableProperty]
     public partial bool IsConnected { get; private set; }
 
-    /// <summary>Reconnecting after an error: the warning colour, said in words too.</summary>
+    /// <summary>
+    /// Reconnecting after an error, or connected with a warning: the warning colour, said in words too.
+    /// </summary>
     [ObservableProperty]
     public partial bool IsWarning { get; private set; }
 
@@ -83,7 +87,7 @@ public sealed partial class SourcePill : ObservableObject
         var name = new Dictionary<string, object?> { ["source"] = status.Name };
         Text =
             !status.Enabled ? _text.Format("Status.Source.Off", name)
-            : status.Error is { } error && status.State is not ConnectionState.Connected
+            : (status.State is ConnectionState.Connected ? status.Warning : status.Error) is { } error
                 ? _text.Format(
                     "Status.Source.Error",
                     new Dictionary<string, object?> { ["source"] = status.Name, ["error"] = _text.Format(error) }
@@ -98,8 +102,11 @@ public sealed partial class SourcePill : ObservableObject
                 name
             );
         SwitchName = _text.Format("Toggles.Switch.Source", name);
-        IsConnected = status.Enabled && status.State == ConnectionState.Connected;
-        IsWarning = status.Enabled && status.State == ConnectionState.Reconnecting && status.Error is not null;
+        // Connected with a warning, such as a TNC not in KISS mode, takes the warning colour (F3.1 behavior 13).
+        var warned = status.State == ConnectionState.Connected && status.Warning is not null;
+        IsConnected = status.Enabled && status.State == ConnectionState.Connected && !warned;
+        IsWarning =
+            status.Enabled && (warned || status.State == ConnectionState.Reconnecting && status.Error is not null);
         CanReconnect = status.Enabled && canChange;
         Switch.Show(status.Enabled, canChange);
     }

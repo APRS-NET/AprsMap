@@ -10,7 +10,8 @@ namespace AprsMap.Core;
 /// A KISS TNC as a source (docs/features/F3.1-kiss-sources.md, behaviors 4, 5, 7), receive only, over APRS.NET's
 /// <see cref="KissConnection"/>, which reconnects by itself after the TNC drops. The first connection is waited for, so a
 /// TNC that can't be reached at all falls back on the engine's own backoff; after it, the connection's state changes
-/// (reconnecting with the reason and the wait) are passed on. Frames that aren't APRS are dropped by APRS.NET.
+/// (reconnecting with the reason and the wait) are passed on, with any warning the connection raises (behavior 13).
+/// Frames that aren't APRS are dropped by APRS.NET.
 /// </summary>
 internal sealed class KissPacketSource(KissConnection connection, string endpoint) : IPacketSource, IPacketSender
 {
@@ -22,9 +23,12 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
     private readonly TaskCompletionSource<PacketSourceLogin> _first = new(
         TaskCreationOptions.RunContinuationsAsynchronously
     );
+    private readonly Lock _lock = new();
+    private readonly HashSet<KissWarning> _warnings = [];
     private Action<PacketSourceEvent>? _changed;
     private Task? _pump;
     private bool _wasConnected;
+    private PacketSourceEvent? _last;
 
     /// <inheritdoc />
     public async Task<PacketSourceLogin> StartAsync(
@@ -34,6 +38,7 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
     {
         _changed = stateChanged;
         connection.StateChanged += OnStateChanged;
+        connection.Warning += OnWarning;
         _pump = PumpAsync(_stop.Token);
         return await _first.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -94,7 +99,7 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
             KissConnectionState.Reconnecting => ConnectionState.Reconnecting,
             _ => ConnectionState.Disconnected,
         };
-        _changed?.Invoke(
+        Report(
             new PacketSourceEvent(
                 state,
                 state == ConnectionState.Connected ? new PacketSourceLogin(endpoint, Verified: false) : null,
@@ -103,6 +108,46 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
             )
         );
     }
+
+    /// <summary>
+    /// A warning started or ended. APRS.NET keeps one across reconnects until it's over, so it's added to the last
+    /// state and to every later one.
+    /// </summary>
+    private void OnWarning(object? sender, KissWarningEventArgs e)
+    {
+        PacketSourceEvent? last;
+        lock (_lock)
+        {
+            if (e.IsActive ? !_warnings.Add(e.Warning) : !_warnings.Remove(e.Warning))
+            {
+                return;
+            }
+            last = _last;
+        }
+        // Before the first connection the engine hasn't a state to add it to; the connected one will carry it.
+        Report(last ?? new PacketSourceEvent(ConnectionState.Connected, new PacketSourceLogin(endpoint, false)));
+    }
+
+    private void Report(PacketSourceEvent e)
+    {
+        lock (_lock)
+        {
+            e = e with { Warning = WarningNow() };
+            _last = e;
+        }
+        if (_first.Task.IsCompleted)
+        {
+            _changed?.Invoke(e);
+        }
+    }
+
+    /// <summary>The warning to show: not in KISS mode before quiet, since a TNC sending text isn't quiet.</summary>
+    private EngineError? WarningNow() =>
+        _warnings.Contains(KissWarning.TextNotKiss)
+            ? new EngineError(EngineErrorCodes.KissTextNotKiss, "The TNC is sending text, not KISS frames.")
+        : _warnings.Contains(KissWarning.Quiet)
+            ? new EngineError(EngineErrorCodes.KissQuiet, "The TNC has sent nothing for a while.")
+        : null;
 
     /// <summary>Why the connection ended, as a code the UI words: closed, unreachable, or the link failed.</summary>
     private EngineError ErrorOf(KissConnectionStateChangedEventArgs e) =>
@@ -118,6 +163,7 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
     public async ValueTask DisposeAsync()
     {
         connection.StateChanged -= OnStateChanged;
+        connection.Warning -= OnWarning;
         await _stop.CancelAsync().ConfigureAwait(false);
         await connection.DisposeAsync().ConfigureAwait(false);
         if (_pump is { } pump)

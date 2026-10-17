@@ -159,6 +159,15 @@ public static class EngineErrorCodes
     /// <summary>The link to a KISS TNC failed, or it went silent and was given up as gone.</summary>
     public const string KissLinkFailed = "kiss.link-failed";
 
+    /// <summary>
+    /// A KISS TNC is connected but sends text lines, not KISS frames: it isn't in KISS mode. A warning, shown while the
+    /// source stays connected.
+    /// </summary>
+    public const string KissTextNotKiss = "kiss.text-not-kiss";
+
+    /// <summary>A KISS TNC is connected but has sent nothing for a while: it may be switched off. A warning.</summary>
+    public const string KissQuiet = "kiss.quiet";
+
     /// <summary>A KISS source's host, port or TNC port isn't usable.</summary>
     public const string KissSourceInvalid = "settings.source.kiss-invalid";
 
