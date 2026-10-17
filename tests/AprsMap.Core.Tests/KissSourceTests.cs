@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 
 namespace AprsMap.Core.Tests;
 
-/// <summary>KISS over TCP sources (docs/features/F3.1-kiss-sources.md, acceptance tests 1, 2).</summary>
+/// <summary>KISS over TCP sources (docs/features/F3.1-kiss-sources.md, acceptance tests 1, 2, and behavior 13).</summary>
 public sealed class KissSourceTests
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -136,6 +136,36 @@ public sealed class KissSourceTests
         await WaitUntil(async () =>
             (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Reconnecting } s
             && s.Error?.Code == EngineErrorCodes.KissUnreachable
+        );
+
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task ATncSendingTextInsteadOfKissFramesWarnsUntilFramesCome()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var (engine, tnc) = Create(((IPEndPoint)listener.LocalEndpoint).Port);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var run = engine.RunAsync(cts.Token);
+        using var client = await listener.AcceptTcpClientAsync(Ct);
+        var stream = client.GetStream();
+
+        // A radio's built-in TNC left in its APRS mode prints what it hears as text.
+        var text = string.Concat(
+            Enumerable.Repeat("N0CAR-9>APRS,WIDE1-1:!4903.50N/07201.75W>Mobile on the highway\r\n", 4)
+        );
+        await stream.WriteAsync(System.Text.Encoding.ASCII.GetBytes(text), Ct);
+        await WaitUntil(async () =>
+            (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Connected } s
+            && s.Warning?.Code == EngineErrorCodes.KissTextNotKiss
+        );
+
+        await stream.WriteAsync(Frame("N0CAR-9>APRS,WIDE1-1:!4903.50N/07201.75W>"), Ct); // switched to KISS
+        await WaitUntil(async () =>
+            (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Connected, Warning: null }
         );
 
         await cts.CancelAsync();

@@ -120,6 +120,10 @@ public sealed record TransmitStatus(
 /// Why the station couldn't send on it now (a <c>transmit.*</c> code), or null when it can; null too when it isn't TX
 /// enabled.
 /// </param>
+/// <param name="Warning">
+/// Something wrong while it is connected, such as a TNC that isn't in KISS mode (a <c>kiss.*</c> code;
+/// docs/features/F3.1-kiss-sources.md, behavior 13), or null.
+/// </param>
 public sealed record SourceStatus(
     string Id,
     string Name,
@@ -130,7 +134,8 @@ public sealed record SourceStatus(
     bool Enabled = true,
     DateTimeOffset? RetryAt = null,
     bool TransmitEnabled = false,
-    EngineError? TransmitBlocked = null
+    EngineError? TransmitBlocked = null,
+    EngineError? Warning = null
 )
 {
     /// <summary>Whether the station can send on this source now.</summary>

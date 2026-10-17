@@ -48,6 +48,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G29 | Source merge: which source a packet came from, and duplicates reported with their source (delivered) | Packets | 1 | [APRS.NET#125](https://github.com/APRS-NET/APRS.NET/issues/125) |
 | G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
+| G32 | A typed reason when an APRS-IS login reaches a KISS TNC | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
 
 ---
 
@@ -306,6 +307,9 @@ reports `StateChanged` and metrics as APRS-IS does, and limits the transmit rate
 several KISS apps. Still open, needed by AprsMap 0.4.0 (F1.25):
 a serial connection that reopens the port after a USB unplug and replug (as `KissTcpConnection` reconnects), with the
 connection states F1.1 uses, and a list of the serial ports present. ([APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126))
+`0.4.0-alpha.4` takes an unplugged serial TNC for a lost link (tested with a TH-D72A on USB serial) and adds
+`KissConnection.Warning`: a TNC sending text instead of KISS frames, and, with `QuietWarning` set, one that has sent
+nothing for that long. AprsMap shows both on the source's pill (F3.1 behavior 13).
 
 ## G14: Text-mode and Kenwood TNC support
 
@@ -504,3 +508,17 @@ reconnect like the other connections. No device access in the library beyond the
 **Acceptance.** The anonymizer API's output for the existing captures matches the script's byte for byte; a Mic-E line
 that isn't valid UTF-8 writes and reads back unchanged; each unrecognised-part code has a corpus line that shows it.
 
+## G32: A typed reason when an APRS-IS login reaches a KISS TNC
+
+**Need.** AprsMap F1.1: since `0.4.0-alpha.4` a login that gets KISS frames back (an APRS-IS source given Dire Wolf's
+KISS port by mistake) fails at once with a `LoginException`, instead of waiting out the login timeout. The app can only
+tell that case from any other unreachable server by the exception's English message, so it says "Server unreachable"
+rather than "That's a KISS TNC: add it as a TNC source".
+
+**Scope.** A way to tell the case apart without reading the message: a `LoginException` subclass (say
+`KissTncLoginException`) or a reason property on `LoginException`.
+
+**Acceptance.** The existing test for a login that reaches a KISS TNC asserts the type or the reason, not the message.
+
+**Filed** as [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) for `0.5.0-alpha.1`: a `LoginException`
+subclass, as `LoginRejectedException` is. AprsMap waits for it rather than matching the message.

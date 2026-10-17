@@ -2801,6 +2801,14 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.kiss.link-failed" xml:space="preserve">
     <value>Link to the TNC failed</value>
   </data>
+  <data name="Error.kiss.text-not-kiss" xml:space="preserve">
+    <value>TNC isn't in KISS mode</value>
+    <comment>A warning while connected: the TNC sends text lines instead of KISS frames, so nothing it hears can be read.</comment>
+  </data>
+  <data name="Error.kiss.quiet" xml:space="preserve">
+    <value>TNC silent, is it switched on?</value>
+    <comment>A warning while connected: the TNC has sent nothing at all for a while.</comment>
+  </data>
   <data name="Error.settings.profile.comment-invalid" xml:space="preserve">
     <value>Profile “{profile}”: a comment can have up to 43 letters, digits and plain punctuation, without accents.</value>
     <comment>profile: the profile's name. 43 is the most a position report carries.</comment>

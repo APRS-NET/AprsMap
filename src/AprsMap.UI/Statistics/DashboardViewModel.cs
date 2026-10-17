@@ -707,18 +707,21 @@ public sealed record SourceRow(
         SourceSwitch? onOff = null
     )
     {
-        var state = text[
-            !source.Enabled
-                ? "Dashboard.State.Off"
-                : source.State switch
-                {
-                    ConnectionState.Connecting => "Dashboard.State.Connecting",
-                    ConnectionState.Connected => "Dashboard.State.Connected",
-                    ConnectionState.Reconnecting => "Dashboard.State.Reconnecting",
-                    ConnectionState.NotConfigured => "Dashboard.State.NotConfigured",
-                    _ => "Dashboard.State.Disconnected",
-                }
-        ];
+        // Connected with a warning, such as a TNC not in KISS mode, says the warning (F3.1 behavior 13).
+        var state = source is { Enabled: true, State: ConnectionState.Connected, Warning: { } warning }
+            ? text.Format(warning)
+            : text[
+                !source.Enabled
+                    ? "Dashboard.State.Off"
+                    : source.State switch
+                    {
+                        ConnectionState.Connecting => "Dashboard.State.Connecting",
+                        ConnectionState.Connected => "Dashboard.State.Connected",
+                        ConnectionState.Reconnecting => "Dashboard.State.Reconnecting",
+                        ConnectionState.NotConfigured => "Dashboard.State.NotConfigured",
+                        _ => "Dashboard.State.Disconnected",
+                    }
+            ];
         var quiet =
             source.Enabled
             && source.State == ConnectionState.Connected

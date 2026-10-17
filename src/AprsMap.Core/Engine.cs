@@ -585,13 +585,17 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                                         e.State,
                                         e.Login?.Server,
                                         RetryAt: e.RetryIn is { } wait ? _time.GetUtcNow() + wait : null,
-                                        Error: e.Error
+                                        Error: e.Error,
+                                        Warning: e.Warning
                                     )
                                 ),
                             attempt.Token
                         )
                         .ConfigureAwait(false);
-                    SetSourceLink(source, new Link(ConnectionState.Connected, opened.Server, opened.Verified));
+                    SetSourceLink(
+                        source,
+                        new Link(ConnectionState.Connected, opened.Server, opened.Verified, Warning: WarningOf(source))
+                    );
                     if (connection is IPacketSender sender)
                     {
                         lock (_gate)
@@ -712,6 +716,17 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
     }
 
+    /// <summary>A warning the source reported while connected, kept when the engine records the first connection.</summary>
+    private EngineError? WarningOf(SourceSettings source)
+    {
+        lock (_gate)
+        {
+            return _sourceLinks.TryGetValue(source.Id, out var v) && v.Link.State == ConnectionState.Connected
+                ? v.Link.Warning
+                : null;
+        }
+    }
+
     /// <summary>Each source in use with its state: APRS-IS from the session, the others from their runners.</summary>
     private List<SourceStatus> SourceStatuses()
     {
@@ -740,6 +755,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 v.Link.Server,
                 v.Link.Error,
                 RetryAt: v.Link.RetryAt,
+                Warning: v.Link.Warning,
                 TransmitEnabled: v.Source.Transmit,
                 TransmitBlocked: v.Source.Transmit && _settings is not null ? SourceBlock(_settings, v.Source) : null
             ))
@@ -2089,7 +2105,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         string? Server = null,
         bool Verified = false,
         DateTimeOffset? RetryAt = null,
-        EngineError? Error = null
+        EngineError? Error = null,
+        EngineError? Warning = null
     );
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Connected to APRS-IS server {Server}")]
