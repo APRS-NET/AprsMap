@@ -106,11 +106,11 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
-| F2.1 | Own station ([spec](features/F2.1-own-station.md)): callsign, SSID guidance, symbol, comment, passcode, transmit enable and safety interlocks, Send position now | SSID, Passcode, Why Won't APRSIS Transmit | App | G01, G02 | built (0.5.0, [#190](https://github.com/APRS-NET/AprsMap/issues/190)) |
-| F2.2 | Fixed and SmartBeaconing-style position beacons, status beacons, PHG | PHG | App | G01, G11 | scoped (0.6.0, [#196](https://github.com/APRS-NET/AprsMap/issues/196)) |
+| F2.1 | Own station ([spec](features/F2.1-own-station.md)): callsign, SSID guidance, symbol, comment, passcode, transmit enable and safety interlocks, Send position now; Disable TX per profile, TX enabled and Test send per source, RF through KISS TNCs | SSID, Passcode, Why Won't APRSIS Transmit | App | G01, G02, G13 | built through APRS-IS; per-source transmit to build (0.5.0, [#190](https://github.com/APRS-NET/AprsMap/issues/190)) |
+| F2.2 | Fixed and SmartBeaconing-style position beacons, status beacons, PHG; **Send via** checkmarks per beacon over the sources that may transmit (F2.1), all ticked by default | PHG | App | G01, G11 | scoped (0.5.0, [#196](https://github.com/APRS-NET/AprsMap/issues/196)) |
 | F2.3 | Predictive beaconing indicator: show where others last saw you versus where you are (our own name for the feature) | Red Dot | App | G11 | scoped (0.6.0, [#197](https://github.com/APRS-NET/AprsMap/issues/197)) |
-| F2.4 | Messaging: chat per correspondent, ack/retry status, reply-ack, rejects, offline queue, selectable retry profiles (default, APRS-IS, none, slow HF modem), optional double-ack on RF | APRS Messaging Explained | App | G01, G10 | scoped (0.5.0, [#192](https://github.com/APRS-NET/AprsMap/issues/192)) |
-| F2.5 | Bulletins and announcements, group bulletins; ANSRVR group join and leave | ANSRVR | App | G10 | scoped (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)) |
+| F2.4 | Messaging: chat per correspondent, ack/retry status, reply-ack, rejects, offline queue, selectable retry profiles (default, APRS-IS, none, slow HF modem), optional double-ack on RF; **Send via** per thread: Automatic (RF to a correspondent heard on a TNC recently, APRS-IS otherwise, falling back to APRS-IS when RF retries go unacked), or chosen sources; acks go back on the source the message came in on | APRS Messaging Explained | App | G01, G10 | scoped (0.5.0, [#192](https://github.com/APRS-NET/AprsMap/issues/192)) |
+| F2.5 | Bulletins and announcements, group bulletins; ANSRVR group join and leave; Send via checkmarks as for beacons | ANSRVR | App | G10 | scoped (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)) |
 | F2.6 | Email via the APRS email gateway, and the QRU/query service helpers | Email, QRU | App | G10 | scoped (0.6.0, [#201](https://github.com/APRS-NET/AprsMap/issues/201)) |
 | F2.7 | Objects and items: create, move, re-beacon with decay, kill; multiline objects | Multiline | App | G01, G11 | scoped (0.6.0, [#199](https://github.com/APRS-NET/AprsMap/issues/199)) |
 | F2.8 | Respond to directed queries (?APRSP, ?APRSS…) | — | App | G19 | scoped (0.6.0, [#200](https://github.com/APRS-NET/AprsMap/issues/200)) |
@@ -123,9 +123,9 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
-| F3.1 | RF ports: KISS over serial, Bluetooth serial and TCP (Direwolf, soundmodem), several at once, as [F1.25](features/F1.25-sources.md) sources. Receive only in 0.4.0 ([#120](https://github.com/APRS-NET/AprsMap/issues/120)); the test bed is Direwolf on Windows, MFJ TNC-X, later NinoTNC | Compatible Hardware/Software | App | G12, G13 | TCP done (0.4.0); serial in 0.5.0 ([#177](https://github.com/APRS-NET/AprsMap/issues/177)) |
+| F3.1 | RF ports: KISS over serial, Bluetooth serial and TCP (Direwolf, soundmodem), several at once, as [F1.25](features/F1.25-sources.md) sources. Receive only in 0.4.0 ([#120](https://github.com/APRS-NET/AprsMap/issues/120)); the test bed is Direwolf on Windows, MFJ TNC-X, later NinoTNC | Compatible Hardware/Software | App | G12, G13 | TCP done (0.4.0), transmitting through it with F2.1 (0.5.0); serial in 0.6.0 ([#177](https://github.com/APRS-NET/AprsMap/issues/177)), with a hardware TNC to test on |
 | F3.2 | Text-mode and Kenwood built-in TNCs, open and close command scripts | Open/Close Commands | App | G14 | scoped |
-| F3.3 | Per-port RF beacon paths, RF versus IS source attribution on the map, heard-direct indication | — | App | G20 | scoped (0.7.0, [#210](https://github.com/APRS-NET/AprsMap/issues/210)) |
+| F3.3 | Per-port RF beacon paths, RF versus IS source attribution on the map, heard-direct indication | — | App | G20 | scoped (0.5.0, [#210](https://github.com/APRS-NET/AprsMap/issues/210)) |
 | F3.4 | IGate: RF→IS, IS→RF for messages to local stations, objects; configurable rules | (core feature list), Receive-Only IGates Break Messaging | App | G16 | scoped (receive only in 0.6.0, [#206](https://github.com/APRS-NET/AprsMap/issues/206); two-way in 0.7.0, [#208](https://github.com/APRS-NET/AprsMap/issues/208)) |
 | F3.5 | Digipeater: WIDEn-N, fill-in, own-call digipeat | Digipeating | App | G15 | scoped (0.7.0, [#209](https://github.com/APRS-NET/AprsMap/issues/209)) |
 | F3.6 | GPS: NMEA from serial or TCP, gpsd, the OS location API on desktop, browser geolocation sent to the gateway; as [F1.25](features/F1.25-sources.md) sources with **Position for** my station or a tracked position. Planned with beaconing (F2.2) | Android GPS | App | G17, G30 | scoped (0.6.0, [#205](https://github.com/APRS-NET/AprsMap/issues/205)) |
@@ -167,10 +167,10 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
    ([APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), `AprsNet.Kiss.Serial`, open until tested on
    hardware). Phase 1 needs no transmit work in APRS.NET.
 5. 0.5.0-alpha.1 to 0.7.0-alpha.1 follow APRS.NET's milestones of the same numbers, each feature issue blocked by
-   the APRS.NET capability it needs: 0.5.0 serial TNCs, messaging and the first transmitting through APRS-IS (F2.1,
-   F2.9 and F1.26 before anything sends; APRS.NET [#160](https://github.com/APRS-NET/APRS.NET/issues/160), [#189](https://github.com/APRS-NET/APRS.NET/issues/189)); 0.6.0
-   beacons, objects, queries, GPS and a receive-only IGate ([#195](https://github.com/APRS-NET/APRS.NET/issues/195), [#200](https://github.com/APRS-NET/APRS.NET/issues/200),
-   [#203](https://github.com/APRS-NET/APRS.NET/issues/203), [#206](https://github.com/APRS-NET/APRS.NET/issues/206)); 0.7.0 the digipeater, the two-way IGate and RF paths
+   the APRS.NET capability it needs: 0.5.0 transmitting through APRS-IS and KISS TNCs, beacons and
+   messaging (F2.1, F2.9 and F1.26 before anything sends; APRS.NET [#189](https://github.com/APRS-NET/APRS.NET/issues/189), [#195](https://github.com/APRS-NET/APRS.NET/issues/195)); 0.6.0
+   serial TNCs, objects, queries, GPS and a receive-only IGate ([#160](https://github.com/APRS-NET/APRS.NET/issues/160), [#200](https://github.com/APRS-NET/APRS.NET/issues/200),
+   [#203](https://github.com/APRS-NET/APRS.NET/issues/203), [#206](https://github.com/APRS-NET/APRS.NET/issues/206)); 0.7.0 the digipeater and the two-way IGate
    ([#209](https://github.com/APRS-NET/APRS.NET/issues/209), [#212](https://github.com/APRS-NET/APRS.NET/issues/212)), with the registered TOCALL first. The milestones:
    [0.5.0](https://github.com/APRS-NET/AprsMap/milestone/3), [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4),
    [0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5).
