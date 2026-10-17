@@ -28,7 +28,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G09 | Telemetry definitions applied to reports (delivered, `0.3.0-alpha.2`: `TelemetryProfile`) | Packets | 1 | [APRS.NET#153](https://github.com/APRS-NET/APRS.NET/issues/153) |
 | G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs (delivered) | Packets | 1 | [APRS.NET#121](https://github.com/APRS-NET/APRS.NET/issues/121) |
 | G01 | `Callsign.Parse` and a packet encoder (partly delivered) | Packets | 2 | — |
-| G02 | Transmit through APRS-IS, and passcode generation (delivered); listen-only mode with a generated listener ID (open) | AprsIsTcpClient | 2 | [APRS.NET#227](https://github.com/APRS-NET/APRS.NET/issues/227) |
+| G02 | Transmit through APRS-IS, and passcode generation (delivered); listen-only mode with a generated listener ID (delivered, `0.4.0-alpha.3`) | AprsIsTcpClient | 2 | [APRS.NET#227](https://github.com/APRS-NET/APRS.NET/issues/227) |
 | G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | [APRS.NET#189](https://github.com/APRS-NET/APRS.NET/issues/189) |
 | G11 | Beacon scheduling algorithms | new: AprsNet.Beaconing | 2 | [APRS.NET#195](https://github.com/APRS-NET/APRS.NET/issues/195) |
 | G19 | Query and response handling | Packets + Messaging | 2 | [APRS.NET#200](https://github.com/APRS-NET/APRS.NET/issues/200) |
@@ -230,10 +230,11 @@ widely documented, and needed for setup UX).
 **Delivered**: `AprsIsPasscode.Compute(callsign)` (`0.1.0-alpha.10`), and sending on a verified login,
 `AprsIsClient.SendAsync` (`0.1.0-alpha.16`).
 
-**Open (2026-10-17)**: a **listen-only mode** for unlicensed users (F2.1 behavior 4): a generated listener ID, `SWL` and
+**Delivered** (`0.4.0-alpha.3`, APRS.NET#242): `AprsIsLogin.NewListenerId`, `AprsIsLogin.IsListenerId` and
+`AprsIsClientOptions.ListenOnly`, which AprsMap uses; the shim is gone. Asked for (2026-10-17): a **listen-only mode** for unlicensed users (F2.1 behavior 4): a generated listener ID, `SWL` and
 six random digits (nine characters, never an amateur callsign), with passcode -1 forced, `SendAsync` refusing locally
 with a clear reason, and a way to tell a listener ID from a callsign ([APRS.NET#227](https://github.com/APRS-NET/APRS.NET/issues/227)); until it
-ships, AprsMap makes the ID itself behind `// SHIM: G02`.
+shipped, AprsMap made the ID itself behind `// SHIM: G02`.
 
 ## G10: Messaging session engine (ack, retry, reply-ack, dupes)
 

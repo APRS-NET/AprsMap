@@ -454,6 +454,7 @@ internal sealed class Messenger : IDisposable
     {
         _inFlight[outgoing] = id;
         outgoing.StateChanged += (_, _) => OnStateChanged(outgoing);
+        outgoing.Attempted += (_, _) => OnStateChanged(outgoing); // a retry keeps its state; its tries and next time move
         OnStateChanged(outgoing);
     }
 
@@ -546,7 +547,6 @@ internal sealed class Messenger : IDisposable
             await foreach (var packet in station.ReadOutgoingAsync(cancellationToken).ConfigureAwait(false))
             {
                 IReadOnlyList<string> targets;
-                OutgoingMessage? message = null;
                 if (packet.Payload.Kind is MessageKind.Acknowledgement or MessageKind.Rejection)
                 {
                     var back = packet.Source ?? _host.TransmitSources().FirstOrDefault(s => !s.IsRf).Id;
@@ -560,7 +560,6 @@ internal sealed class Messenger : IDisposable
                             string.Equals(p.Key.To.Value, packet.To.Value, StringComparison.OrdinalIgnoreCase)
                             && p.Key.MessageId == packet.Payload.MessageId
                         );
-                        message = match.Key;
                         var id = match.Value;
                         targets =
                             id is not null && _routes.TryGetValue(id, out var route)
@@ -571,10 +570,6 @@ internal sealed class Messenger : IDisposable
                 foreach (var target in targets)
                 {
                     await _host.SendAsync(target, packet.Payload, cancellationToken).ConfigureAwait(false);
-                }
-                if (message is not null)
-                {
-                    OnStateChanged(message); // a retry keeps its state, so its tries and next time are read here
                 }
             }
         }

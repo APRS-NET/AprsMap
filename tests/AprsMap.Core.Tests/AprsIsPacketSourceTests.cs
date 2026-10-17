@@ -25,6 +25,30 @@ public class AprsIsPacketSourceTests
     }
 
     [Fact]
+    public void AListenerIdLogsInListenOnlyAndACallsignDoesNot()
+    {
+        var listener = new StationProfile("l", "Listening", "SWL482913", 12345, [], null, null);
+        var licensed = new StationProfile("h", "Home", "N0TEST", 12345, [], null, null, Licensed: true);
+
+        var listening = AprsIsPacketSourceFactory.ClientOptions(
+            listener,
+            "rotate.aprs2.net:14580",
+            "",
+            TimeProvider.System
+        );
+        var sending = AprsIsPacketSourceFactory.ClientOptions(
+            licensed,
+            "rotate.aprs2.net:14580",
+            "",
+            TimeProvider.System
+        );
+
+        Assert.True(listening.ListenOnly);
+        Assert.True(listening.IsReadOnly); // APRS.NET logs in with -1 whatever the profile holds
+        Assert.False(sending.ListenOnly);
+    }
+
+    [Fact]
     public async Task LogsInThenYieldsParsedPackets()
     {
         var transport = ScriptedTransport.LoggedIn("T2TEST");
