@@ -287,10 +287,13 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     public bool IsFirstStep => Step == SetupStep.Callsign;
 
     /// <summary>Whether Next is Finish: on the passcode step, or on the server step with a TNC (no APRS-IS login).</summary>
-    public bool IsLastStep => Step == SetupStep.Passcode || (Step == SetupStep.Server && UseTnc);
+    public bool IsLastStep => Step == SetupStep.Passcode || (Step == SetupStep.Server && SkipsPasscode);
+
+    /// <summary>No passcode step: a TNC-only profile, or a listener's (F2.1 behavior 4), which never logs in verified.</summary>
+    public bool SkipsPasscode => UseTnc || ListenOnly;
 
     /// <summary>How many steps there are: 4, or 3 with a TNC, which needs no passcode.</summary>
-    public int StepCount => UseTnc ? 3 : 4;
+    public int StepCount => SkipsPasscode ? 3 : 4;
 
     /// <summary>"Step 2 of 4", in the viewer's language.</summary>
     [ObservableProperty]
@@ -329,6 +332,10 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             return;
         }
         CallsignError = null;
+        if (IsLicensed && _licensedBase is not null && BaseCallsign != _licensedBase)
+        {
+            IsLicensed = false; // the confirmation was for the other call (F2.1 behavior 4.1)
+        }
         if (!_nameChosen)
         {
             _settingName = true;
@@ -339,6 +346,49 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 
     /// <summary>The callsign without its SSID, as the passcode calculator shows it.</summary>
     public string BaseCallsign => Callsign.Split('-')[0];
+
+    // ── Transmitting (docs/features/F2.1-own-station.md, behavior 4) ──────────────────────────────────────────
+
+    private string? _listenerId;
+    private string _callsignBeforeListening = string.Empty;
+    private string? _licensedBase;
+
+    /// <summary>
+    /// "I'm not a licensed amateur (listen only)": the profile gets a generated listener ID instead of a callsign, logs
+    /// in without a passcode and never transmits.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SkipsPasscode), nameof(IsLastStep), nameof(StepCount), nameof(ListeningAsText))]
+    public partial bool ListenOnly { get; set; }
+
+    /// <summary>"You'll listen as SWL482913."</summary>
+    public string? ListeningAsText =>
+        ListenOnly ? _text.Format("Wizard.ListenOnly.As", new Dictionary<string, object?> { ["id"] = Callsign }) : null;
+
+    partial void OnListenOnlyChanged(bool value)
+    {
+        if (value)
+        {
+            if (!ListenerId.Is(Callsign))
+            {
+                _callsignBeforeListening = Callsign;
+            }
+            Callsign = _listenerId ?? Callsign;
+            IsLicensed = false;
+            ReceiveOnly = true;
+        }
+        else if (ListenerId.Is(Callsign))
+        {
+            Callsign = _callsignBeforeListening;
+        }
+        CallsignError = null;
+        OnPropertyChanged(nameof(ListeningAsText));
+        OnStepChanged(Step); // "Step 1 of 3"
+    }
+
+    /// <summary>Disable TX: a receive-only profile, even with a licensed operator (behavior 4.2).</summary>
+    [ObservableProperty]
+    public partial bool DisableTransmit { get; set; }
 
     /// <summary>The symbols to choose from (docs/features/F2.1-own-station.md, behavior 1).</summary>
     public static IReadOnlyList<SymbolChoice> Symbols => SymbolChoice.All;
@@ -613,7 +663,11 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsCalculatorOpen { get; set; }
 
-    /// <summary>"I'm a licensed amateur radio operator and this is my own callsign." Asked every time; never stored.</summary>
+    /// <summary>
+    /// "I'm a licensed amateur and may transmit with this callsign": stored on the profile as
+    /// <see cref="StationProfile.Licensed"/> (F2.1 behavior 4.1), and what unlocks the passcode calculator. Cleared when
+    /// the base call changes.
+    /// </summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CalculateCommand))]
     public partial bool IsLicensed { get; set; }
@@ -632,6 +686,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 
     partial void OnIsLicensedChanged(bool value)
     {
+        _licensedBase = value ? BaseCallsign : null;
         CalculatedPasscode = null;
         CalculatorError = null;
     }
@@ -648,6 +703,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         LookupPolicyUri = Uri.TryCreate(geocoding.UsagePolicyUrl, UriKind.Absolute, out var policy) ? policy : null;
         Retranslate();
         SelectedServer = Servers.FirstOrDefault();
+        _listenerId = await _engine.NewListenerIdAsync(cancellationToken);
         if (_editing is { } profile)
         {
             await FillFromAsync(profile);
@@ -659,7 +715,14 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// <summary>Fills the steps in from a profile being edited (F0.8 behavior 6).</summary>
     private async Task FillFromAsync(StationProfile profile)
     {
+        if (ListenerId.Is(profile.Callsign))
+        {
+            _listenerId = profile.Callsign; // keeps its ID
+            ListenOnly = true;
+        }
         Callsign = profile.Callsign;
+        IsLicensed = profile.Licensed && !ListenOnly;
+        DisableTransmit = profile.DisableTransmit;
         SelectedSymbol = SymbolChoice.For(profile.EffectiveSymbol);
         Comment = profile.Comment ?? string.Empty;
         _settingName = true;
@@ -695,6 +758,9 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         string.Join(
             '\u001F',
             Callsign,
+            ListenOnly ? "listen" : "",
+            IsLicensed ? "licensed" : "",
+            DisableTransmit ? "no-tx" : "",
             SelectedSymbol?.Symbol ?? "",
             Comment,
             ProfileName,
@@ -740,7 +806,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             case SetupStep.Location when await ConfirmPendingAsync():
                 Step = SetupStep.Server;
                 break;
-            case SetupStep.Server when CheckServer() && UseTnc:
+            case SetupStep.Server when CheckServer() && SkipsPasscode:
                 await FinishAsync();
                 break;
             case SetupStep.Server when CheckServer():
@@ -1083,7 +1149,11 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             return;
         }
         var passcode = -1;
-        if (UseTnc)
+        if (ListenOnly)
+        {
+            passcode = -1; // a listener logs in without one (F2.1 behavior 4)
+        }
+        else if (UseTnc)
         {
             passcode = _editing?.Passcode ?? -1; // no APRS-IS login to use it; kept for when one's added
         }
@@ -1112,7 +1182,9 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             IsProfileMode ? RangeKm : StationProfile.DefaultRangeKm,
             Symbol: SelectedSymbol?.Symbol,
             Comment: Comment.Trim().Length > 0 ? Comment.Trim() : null,
-            PositionConfirmed: _editing?.PositionConfirmed ?? false // the engine clears it when what's sent changed
+            PositionConfirmed: _editing?.PositionConfirmed ?? false, // the engine clears it when what's sent changed
+            Licensed: IsLicensed && !ListenOnly,
+            DisableTransmit: DisableTransmit
         );
         IsBusy = true;
         try

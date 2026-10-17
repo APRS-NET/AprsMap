@@ -506,6 +506,23 @@
   <data name="Wizard.Callsign.Help" xml:space="preserve">
     <value>The SSID after the hyphen tells your stations apart: -9 is common for a car, -7 for a handheld.</value>
   </data>
+  <data name="Wizard.ListenOnly" xml:space="preserve">
+    <value>I'm not a licensed amateur (listen only)</value>
+  </data>
+  <data name="Wizard.ListenOnly.As" xml:space="preserve">
+    <value>You'll listen as {id}, an ID made for listeners: it isn't a callsign and never transmits.</value>
+    <comment>id: the generated listener ID, such as SWL482913.</comment>
+  </data>
+  <data name="Wizard.Licensed" xml:space="preserve">
+    <value>I'm a licensed amateur and may transmit with this callsign</value>
+  </data>
+  <data name="Wizard.DisableTx" xml:space="preserve">
+    <value>Disable TX</value>
+    <comment>Checkbox: this profile never transmits.</comment>
+  </data>
+  <data name="Wizard.DisableTx.Help" xml:space="preserve">
+    <value>This profile only listens, whatever the Transmit switch says.</value>
+  </data>
   <data name="Wizard.Symbol" xml:space="preserve">
     <value>Symbol</value>
     <comment>The APRS symbol the station shows on maps and sends with its position.</comment>
@@ -1748,6 +1765,55 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Toggles.Tiles" xml:space="preserve">
     <value>Download map tiles</value>
   </data>
+  <data name="Settings.Sources.TxEnabledBox" xml:space="preserve">
+    <value>TX enabled</value>
+    <comment>Checkbox on a source: the station may send through it.</comment>
+  </data>
+  <data name="Settings.Sources.TxEnabledBox.Help" xml:space="preserve">
+    <value>Leave it unticked for a source that only receives, such as a TNC without a radio set up to transmit.</value>
+  </data>
+  <data name="Settings.Sources.TxPath" xml:space="preserve">
+    <value>TX path</value>
+    <comment>The digipeater path packets are sent with on RF.</comment>
+  </data>
+  <data name="Settings.Sources.TxPath.Help" xml:space="preserve">
+    <value>Digipeater aliases or callsigns, separated by commas. Leave it empty for WIDE1-1,WIDE2-1.</value>
+    <comment>WIDE1-1,WIDE2-1 is an APRS path: don't translate it.</comment>
+  </data>
+  <data name="Settings.Sources.ReceiveOnly" xml:space="preserve">
+    <value>Receive only</value>
+    <comment>A source that isn't TX enabled.</comment>
+  </data>
+  <data name="Settings.Sources.TxEnabled" xml:space="preserve">
+    <value>TX enabled</value>
+  </data>
+  <data name="Settings.Sources.TxEnabledPath" xml:space="preserve">
+    <value>TX enabled · {path}</value>
+    <comment>path: the TX path, such as WIDE1-1,WIDE2-1.</comment>
+  </data>
+  <data name="Settings.Sources.TestSend" xml:space="preserve">
+    <value>Test send</value>
+  </data>
+  <data name="Settings.Sources.TestSend.Help" xml:space="preserve">
+    <value>Sends one short status packet on this source only, then listens 30 seconds for a digipeater or IGate repeating it. Needs Transmit on.</value>
+  </data>
+  <data name="Settings.Sources.TestSendNamed" xml:space="preserve">
+    <value>Test send on {source}</value>
+  </data>
+  <data name="Settings.Sources.TestSending" xml:space="preserve">
+    <value>Sending, then listening for it for 30 seconds…</value>
+  </data>
+  <data name="Settings.Sources.TestRepeated" xml:space="preserve">
+    <value>Sent, and heard back through {station}.</value>
+    <comment>station: the digipeater that repeated it, such as K0HQ-1.</comment>
+  </data>
+  <data name="Settings.Sources.TestGated" xml:space="preserve">
+    <value>Sent, and gated to APRS-IS by {station}.</value>
+    <comment>station: the IGate that gated it.</comment>
+  </data>
+  <data name="Settings.Sources.TestNotHeard" xml:space="preserve">
+    <value>Sent, but not heard back. That's expected without a digipeater or IGate in range.</value>
+  </data>
   <data name="Toggles.Transmit" xml:space="preserve">
     <value>Transmit</value>
     <comment>Quick toggle: whether this station sends packets. Off until the user turns it on.</comment>
@@ -1764,9 +1830,16 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Transmit held: {reason}</value>
     <comment>Status bar marker while Transmit is on but nothing can be sent. reason: why, for example "APRS-IS isn't connected."</comment>
   </data>
-  <data name="Transmit.Sent" xml:space="preserve">
-    <value>Position sent</value>
-    <comment>Said to screen readers after Send position now.</comment>
+  <data name="Transmit.SentOn" xml:space="preserve">
+    <value>Position sent on {sources}</value>
+    <comment>Said to screen readers after Send position now. sources: where it went, such as "rotate.aprs2.net, Direwolf".</comment>
+  </data>
+  <data name="Transmit.SendPositionOnAprsIs" xml:space="preserve">
+    <value>Send position on APRS-IS only</value>
+  </data>
+  <data name="Transmit.SendPositionHere" xml:space="preserve">
+    <value>Send position now</value>
+    <comment>In a source's menu: sends the station's position on that source only.</comment>
   </data>
   <data name="Packets.Sent" xml:space="preserve">
     <value>Sent by this station</value>

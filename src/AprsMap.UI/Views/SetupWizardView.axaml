@@ -111,9 +111,23 @@
             <!-- 1. Callsign -->
             <StackPanel x:Name="CallsignStep" IsVisible="{Binding IsCallsignStep}" Spacing="8">
               <TextBlock Text="{l:T Wizard.Callsign.Title}" FontWeight="SemiBold" />
-              <TextBlock Text="{l:T Wizard.Callsign.Label}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <!-- An unlicensed user listens with a generated ID, never a callsign they type (F2.1 behavior 4). -->
+              <CheckBox x:Name="ListenOnlyBox" Content="{l:T Wizard.ListenOnly}" IsChecked="{Binding ListenOnly}" />
+              <TextBlock
+                x:Name="ListeningAsLabel"
+                Text="{Binding ListeningAsText}"
+                IsVisible="{Binding ListenOnly}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <TextBlock
+                Text="{l:T Wizard.Callsign.Label}"
+                IsVisible="{Binding !ListenOnly}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
               <TextBox
                 x:Name="CallsignBox"
+                IsVisible="{Binding !ListenOnly}"
                 Text="{Binding Callsign}"
                 PlaceholderText="{l:T Wizard.Callsign.Watermark}"
                 AutomationProperties.Name="{l:T Wizard.Callsign.Label}"
@@ -145,10 +159,12 @@
               />
               <TextBlock
                 Text="{l:T Wizard.Callsign.Help}"
+                IsVisible="{Binding !ListenOnly}"
                 Foreground="{DynamicResource Brush.TextMuted}"
                 TextWrapping="Wrap"
               />
               <HyperlinkButton
+                IsVisible="{Binding !ListenOnly}"
                 Content="{l:T Wizard.Callsign.SsidLink}"
                 NavigateUri="{x:Static vm:SetupWizardViewModel.SsidHelpUri}"
                 Padding="0"
@@ -198,6 +214,22 @@
                 Foreground="{DynamicResource Brush.Warn}"
                 TextWrapping="Wrap"
               />
+              <!-- Transmitting (F2.1 behavior 4): the licence, asked once per profile, and Disable TX. -->
+              <StackPanel IsVisible="{Binding !ListenOnly}" Spacing="4" Margin="0,8,0,0">
+                <CheckBox x:Name="TransmitLicensedBox" IsChecked="{Binding IsLicensed}">
+                  <TextBlock Text="{l:T Wizard.Licensed}" TextWrapping="Wrap" />
+                </CheckBox>
+                <CheckBox
+                  x:Name="DisableTxBox"
+                  Content="{l:T Wizard.DisableTx}"
+                  IsChecked="{Binding DisableTransmit}"
+                />
+                <TextBlock
+                  Text="{l:T Wizard.DisableTx.Help}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
             </StackPanel>
 
             <!-- 2. Location -->
