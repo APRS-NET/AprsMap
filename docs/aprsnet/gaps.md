@@ -29,11 +29,11 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G20 | Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs (delivered) | Packets | 1 | [APRS.NET#121](https://github.com/APRS-NET/APRS.NET/issues/121) |
 | G01 | `Callsign.Parse` and a packet encoder (partly delivered) | Packets | 2 | — |
 | G02 | Transmit through APRS-IS, and passcode generation (delivered); listen-only mode with a generated listener ID (delivered, `0.4.0-alpha.3`) | AprsIsTcpClient | 2 | [APRS.NET#227](https://github.com/APRS-NET/APRS.NET/issues/227) |
-| G10 | Messaging session engine (ack, retry, reply-ack, dupes) | new: AprsNet.Messaging | 2 | [APRS.NET#189](https://github.com/APRS-NET/APRS.NET/issues/189) |
+| G10 | Messaging session engine (ack, retry, reply-ack, dupes) (delivered, `0.4.0-alpha.2`; retries reported in `0.4.0-alpha.3`) | new: AprsNet.Messaging | 2 | [APRS.NET#189](https://github.com/APRS-NET/APRS.NET/issues/189) |
 | G11 | Beacon scheduling algorithms (fixed and decay delivered, `0.4.0-alpha.3`) | AprsNet.Beacons | 2 | [APRS.NET#195](https://github.com/APRS-NET/APRS.NET/issues/195) |
 | G19 | Query and response handling | Packets + Messaging | 2 | [APRS.NET#200](https://github.com/APRS-NET/APRS.NET/issues/200) |
 | G12 | AX.25 UI frame codec (delivered) | new: AprsNet.Ax25 | 3 | — |
-| G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial published in `0.3.0-alpha.2` as `AprsNet.Kiss.Serial`, issue open for hardware testing) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), [APRS.NET#160](https://github.com/APRS-NET/APRS.NET/issues/160) |
+| G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial published in `0.3.0-alpha.2` as `AprsNet.Kiss.Serial`, unplug and warnings in `0.4.0-alpha.4`, issue open for hardware testing) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), [APRS.NET#160](https://github.com/APRS-NET/APRS.NET/issues/160) |
 | G14 | Text-mode and Kenwood TNC support | new: AprsNet.Tnc | 3 | — |
 | G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | [APRS.NET#209](https://github.com/APRS-NET/APRS.NET/issues/209) |
 | G16 | IGate engine | new: AprsNet.IGate | 3 | [APRS.NET#206](https://github.com/APRS-NET/APRS.NET/issues/206), [APRS.NET#212](https://github.com/APRS-NET/APRS.NET/issues/212) |
@@ -249,6 +249,10 @@ retries, rejects for unsupported content. Bulletins: track by ID and sender, rep
 
 **Acceptance.** `FakeTimeProvider` scenarios: ack after 2 retries, reply-ack piggyback, duplicate retries delivered
 once, restart keeps message ID sequence.
+
+**Delivered** (`0.4.0-alpha.2`, package `AprsNet.Messaging`, APRS.NET#189): `MessagingStation` with outgoing retries,
+acks, rejects, reply-acks and duplicate suppression; `0.4.0-alpha.3` adds `OutgoingMessage.Attempted` for each retry.
+AprsMap's messaging (F2.4) is built on it; bulletins (F2.5), the email and QRU helpers (F2.6) and auto-reply (F2.10) are no longer blocked.
 
 ## G11: Beacon scheduling algorithms
 
