@@ -7,6 +7,7 @@
     <PackageVersion Include="AprsNet.DeviceId" Version="0.4.0-alpha.2" />
     <PackageVersion Include="AprsNet.Filters" Version="0.4.0-alpha.2" />
     <PackageVersion Include="AprsNet.Kiss" Version="0.4.0-alpha.2" />
+    <PackageVersion Include="AprsNet.Messaging" Version="0.4.0-alpha.2" />
     <PackageVersion Include="AprsNet.Packets" Version="0.4.0-alpha.2" />
     <PackageVersion Include="AprsNet.Symbols" Version="0.4.0-alpha.2" />
   </ItemGroup>

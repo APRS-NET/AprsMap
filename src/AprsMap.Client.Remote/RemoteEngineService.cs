@@ -197,6 +197,54 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         );
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<Conversation>> GetConversationsAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<Conversation>>(EngineHub.GetConversations, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<ChatMessage> WatchMessagesAsync(CancellationToken cancellationToken = default) =>
+        _connection.StreamAsync<ChatMessage>(EngineHub.WatchMessages, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<ChatMessage>> SendMessageAsync(
+        string correspondent,
+        string text,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<ChatMessage>>(
+                EngineHub.SendMessage,
+                correspondent,
+                text,
+                cancellationToken
+            )
+        );
+
+    /// <inheritdoc />
+    public Task CancelMessageAsync(string id, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.CancelMessage, id, cancellationToken));
+
+    /// <inheritdoc />
+    public Task ResendMessageAsync(string id, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ResendMessage, id, cancellationToken));
+
+    /// <inheritdoc />
+    public Task MarkReadAsync(string correspondent, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.MarkRead, correspondent, cancellationToken));
+
+    /// <inheritdoc />
+    public Task SetConversationAsync(
+        string correspondent,
+        SendVia sendVia,
+        MessageRetries retries,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync(EngineHub.SetConversation, correspondent, sendVia, retries, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<string> NewListenerIdAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<string>(EngineHub.NewListenerId, cancellationToken));
 

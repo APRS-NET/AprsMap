@@ -189,6 +189,15 @@ public static class EngineErrorCodes
     /// <summary>The connection failed while sending (F2.1 behavior 11).</summary>
     public const string TransmitFailed = "transmit.failed";
 
+    /// <summary>A message's text has characters that can't be sent: <c>|</c>, <c>~</c>, <c>{</c> or non-ASCII (F2.4 behavior 6).</summary>
+    public const string MessageTextInvalid = "messages.text-invalid";
+
+    /// <summary>A message is empty or over 300 characters (F2.4 behavior 6).</summary>
+    public const string MessageTooLong = "messages.too-long";
+
+    /// <summary>A message's addressee isn't a callsign it can go to (F2.4 behavior 3).</summary>
+    public const string MessageCallsignInvalid = "messages.callsign-invalid";
+
     /// <summary>The kind of failure a code stands for, which decides the exception type that carries it.</summary>
     public static EngineErrorKind KindOf(string code)
     {

@@ -374,6 +374,93 @@ internal sealed class FakeEngine : IEngineService
     public Task<string> NewListenerIdAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult("SWL123456");
 
+    /// <summary>What <see cref="GetConversationsAsync"/> answers.</summary>
+    public List<Conversation> Conversations { get; } = [];
+
+    private Channel<ChatMessage> _messages = Channel.CreateUnbounded<ChatMessage>();
+
+    /// <summary>Streams <paramref name="message"/> to the UI, as the engine would.</summary>
+    public void Push(ChatMessage message) => _messages.Writer.TryWrite(message);
+
+    /// <summary>The messages <see cref="SendMessageAsync"/> was asked to send, in order.</summary>
+    public List<(string To, string Text)> SentMessages { get; } = [];
+
+    /// <summary>The conversations marked read, in order.</summary>
+    public List<string> MarkedRead { get; } = [];
+
+    /// <summary>The settings each <see cref="SetConversationAsync"/> made.</summary>
+    public List<(string Correspondent, SendVia Via, MessageRetries Retries)> ConversationSettings { get; } = [];
+
+    /// <summary>The ids cancelled and resent.</summary>
+    public List<string> Cancelled { get; } = [];
+
+    public List<string> Resent { get; } = [];
+
+    public Task<IReadOnlyList<Conversation>> GetConversationsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Conversation>>([.. Conversations]);
+
+    public async IAsyncEnumerable<ChatMessage> WatchMessagesAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        await foreach (var message in _messages.Reader.ReadAllAsync(cancellationToken))
+        {
+            yield return message;
+        }
+    }
+
+    public Task<IReadOnlyList<ChatMessage>> SendMessageAsync(
+        string correspondent,
+        string text,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (SendFailure is { } failure)
+        {
+            return Task.FromException<IReadOnlyList<ChatMessage>>(failure);
+        }
+        SentMessages.Add((correspondent, text));
+        var message = new ChatMessage(
+            $"m{SentMessages.Count}",
+            correspondent,
+            Outgoing: true,
+            text,
+            DateTimeOffset.UnixEpoch,
+            ChatMessageState.Queued
+        );
+        Push(message);
+        return Task.FromResult<IReadOnlyList<ChatMessage>>([message]);
+    }
+
+    public Task CancelMessageAsync(string id, CancellationToken cancellationToken = default)
+    {
+        Cancelled.Add(id);
+        return Task.CompletedTask;
+    }
+
+    public Task ResendMessageAsync(string id, CancellationToken cancellationToken = default)
+    {
+        Resent.Add(id);
+        return Task.CompletedTask;
+    }
+
+    public Task MarkReadAsync(string correspondent, CancellationToken cancellationToken = default)
+    {
+        MarkedRead.Add(correspondent);
+        return Task.CompletedTask;
+    }
+
+    public Task SetConversationAsync(
+        string correspondent,
+        SendVia sendVia,
+        MessageRetries retries,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ConversationSettings.Add((correspondent, sendVia, retries));
+        return Task.CompletedTask;
+    }
+
     /// <summary>The stations whose track <see cref="ClearTrackAsync"/> cleared, in order.</summary>
     public List<string> ClearedTracks { get; } = [];
 
