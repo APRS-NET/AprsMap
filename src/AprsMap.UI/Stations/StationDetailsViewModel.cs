@@ -529,6 +529,19 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Opens a conversation with the station in the Messages panel (docs/features/F2.4-messaging.md, behavior 3).</summary>
+    [RelayCommand]
+    private void SendMessage()
+    {
+        if (Name is { } name)
+        {
+            MessageRequested?.Invoke(this, name);
+        }
+    }
+
+    /// <summary>Asks for a conversation with the station named.</summary>
+    public event EventHandler<string>? MessageRequested;
+
     /// <summary>Clears the selection.</summary>
     [RelayCommand]
     private void Close() => CloseRequested?.Invoke(this, EventArgs.Empty);

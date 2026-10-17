@@ -337,6 +337,22 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <!-- Unread messages (F2.4 behavior 4): opens the Messages panel. -->
+            <Button
+              x:Name="UnreadMarker"
+              Classes="toggle-marker"
+              IsVisible="{Binding UnreadText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              BorderBrush="{DynamicResource Brush.Accent}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Control}"
+              Padding="8,3"
+              VerticalAlignment="Center"
+              Command="{Binding ShowMessagesCommand}"
+              AutomationProperties.Name="{Binding UnreadText}"
+              AutomationProperties.LiveSetting="Polite"
+            >
+              <TextBlock Text="{Binding UnreadText}" TextWrapping="Wrap" />
+            </Button>
             <!-- Transmitting (F2.1 behaviors 4, 8): said in words, the warning colour only while it's held. -->
             <Button
               x:Name="TransmitMarker"
