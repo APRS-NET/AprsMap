@@ -90,34 +90,34 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | F1.13 | My location ([spec](features/F1.13-my-location.md)): fixed position (set by map click or coordinates), used for distance and the default filter | Set Location | App | G08 | done |
 | F1.14 | Gateway ([spec](features/F1.14-gateway.md)): hosts the engine, browser bundle, anonymous read-only viewing | — | App | — | done |
 | F1.15 | Quick toggles ([spec](features/F1.15-quick-toggles.md)): APRS-IS, internet-access master switch (gates tiles too), GPS, beaconing, sound, tile fetching | (Enables menu) | App | — | spec'd (0.4.0) |
-| F1.16 | Extra map views following one station each (split view; desktop tear-off windows), auto-added to the server filter ([spec](features/F1.16-extra-map-views.md)) | Station Info, Automatic Filters | App | G04 | spec'd |
-| F1.17 | Dead-reckoned positions for moving stations, with a freshness indicator ([spec](features/F1.17-dead-reckoning.md)) | (Screen menu) | App | G08, G11 | spec'd |
-| F1.18 | Set destination: distance and bearing to a chosen point ([spec](features/F1.18-destination.md)) | Station Info | App | G08 | spec'd |
+| F1.16 | Extra map views following one station each (split view; desktop tear-off windows), auto-added to the server filter ([spec](features/F1.16-extra-map-views.md)) | Station Info, Automatic Filters | App | G04 | spec'd (0.6.0, [#207](https://github.com/APRS-NET/AprsMap/issues/207)) |
+| F1.17 | Dead-reckoned positions for moving stations, with a freshness indicator ([spec](features/F1.17-dead-reckoning.md)) | (Screen menu) | App | G08, G11 | spec'd (0.6.0, [#198](https://github.com/APRS-NET/AprsMap/issues/198)) |
+| F1.18 | Set destination: distance and bearing to a chosen point ([spec](features/F1.18-destination.md)) | Station Info | App | G08 | spec'd (0.5.0, [#194](https://github.com/APRS-NET/AprsMap/issues/194)) |
 | F1.19 | Data housekeeping: clear stations, tracks, messages, bulletins, telemetry, saved texts ([spec](features/F1.19-housekeeping.md)) | (Clear menu) | App | — | spec'd (0.4.0) |
 | F1.20 | Packet and station anomaly flags (duplicate positions, impossible speed, sub-second repeats, invalid) ([spec](features/F1.20-anomalies.md)) | Scroller | App | G24 | spec'd (0.4.0) |
 | F1.21 | RF path visualization: per-packet digipeater paths, digipeater-to-digipeater network links, local-RF-only mode ([spec](features/F1.21-rf-paths.md)) | (observed) | App | G20 | spec'd (0.4.0) |
 | F1.22 | Statistics and dashboard ([spec](features/F1.22-statistics.md)): a Dashboard tab beside the map with live tiles and sparklines (stations heard, new stations, packets received, arrival, types, problems, connection, busiest stations and digipeaters), and tables of platforms and symbols | (observed) | App | G07, G20 | done (0.4.0); extras in [#176](https://github.com/APRS-NET/AprsMap/issues/176) |
-| F1.23 | Saved layouts ([spec](features/F1.23-saved-layouts.md)): named layouts, and the layout last used with a monitor setup offered when monitors change | — (maintainer request) | App | — | spec'd |
-| F1.24 | Web pop-out panels: a panel in its own browser tab or window (a second app instance on the same gateway), with selection kept in sync; after F1.14's viewer limits account for it | — (maintainer request) | App | — | scoped |
+| F1.23 | Saved layouts ([spec](features/F1.23-saved-layouts.md)): named layouts, and the layout last used with a monitor setup offered when monitors change | — (maintainer request) | App | — | spec'd (0.5.0, [#195](https://github.com/APRS-NET/AprsMap/issues/195)) |
+| F1.24 | Web pop-out panels: a panel in its own browser tab or window (a second app instance on the same gateway), with selection kept in sync; after F1.14's viewer limits account for it | — (maintainer request) | App | — | scoped (0.7.0, [#212](https://github.com/APRS-NET/AprsMap/issues/212)) |
 | F1.25 | Sources ([spec](features/F1.25-sources.md)): a master list of sources (APRS-IS now; KISS over TCP and serial, and GPS, later) that profiles pick from, at most one APRS-IS; each packet records its source, with Seen on for duplicates | — (maintainer request) | App | G05, G29 | done for APRS-IS; KISS with F3.1 (0.4.0) |
-| F1.26 | Public receive-only console ([spec](features/F1.26-public-console.md)): a viewer port and a private operator port on the gateway, a receive-only switch that holds after Phase 2, location privacy for viewers, a page title, a first-run KISS source from the environment, and the Unraid + Raspberry Pi deployment | — (maintainer request) | App | — | spec'd |
+| F1.26 | Public receive-only console ([spec](features/F1.26-public-console.md)): a viewer port and a private operator port on the gateway, a receive-only switch that holds after Phase 2, location privacy for viewers, a page title, a first-run KISS source from the environment, and the Unraid + Raspberry Pi deployment | — (maintainer request) | App | — | spec'd (0.5.0, [#174](https://github.com/APRS-NET/AprsMap/issues/174)) |
 
 ## Phase 2: Transmit via APRS-IS
 
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
-| F2.1 | Own station: callsign, SSID guidance, symbol, comment, passcode, transmit enable and safety interlocks | SSID, Passcode, Why Won't APRSIS Transmit | App | G01, G02 | scoped |
-| F2.2 | Fixed and SmartBeaconing-style position beacons, status beacons, PHG | PHG | App | G01, G11 | scoped |
-| F2.3 | Predictive beaconing indicator: show where others last saw you versus where you are (our own name for the feature) | Red Dot | App | G11 | scoped |
-| F2.4 | Messaging: chat per correspondent, ack/retry status, reply-ack, rejects, offline queue, selectable retry profiles (default, APRS-IS, none, slow HF modem), optional double-ack on RF | APRS Messaging Explained | App | G01, G10 | scoped |
-| F2.5 | Bulletins and announcements, group bulletins; ANSRVR group join and leave | ANSRVR | App | G10 | scoped |
-| F2.6 | Email via the APRS email gateway, and the QRU/query service helpers | Email, QRU | App | G10 | scoped |
-| F2.7 | Objects and items: create, move, re-beacon with decay, kill; multiline objects | Multiline | App | G01, G11 | scoped |
-| F2.8 | Respond to directed queries (?APRSP, ?APRSS…) | — | App | G19 | scoped |
-| F2.9 | Gateway auth: transmit features require a signed-in operator | — | App | — | scoped |
-| F2.10 | Auto-reply with delay and rate limits | Auto-Reply | App | G10 | scoped |
-| F2.11 | Status reports with saved alternatives | (Configure › Status Report) | App | G01 | scoped |
-| F2.12 | Mic-E status codes: choose the status to send; per-code filtering and alert styles for received ones, with emergency handling | (observed) | App | G01 | scoped |
+| F2.1 | Own station: callsign, SSID guidance, symbol, comment, passcode, transmit enable and safety interlocks | SSID, Passcode, Why Won't APRSIS Transmit | App | G01, G02 | scoped (0.5.0, [#190](https://github.com/APRS-NET/AprsMap/issues/190)) |
+| F2.2 | Fixed and SmartBeaconing-style position beacons, status beacons, PHG | PHG | App | G01, G11 | scoped (0.6.0, [#196](https://github.com/APRS-NET/AprsMap/issues/196)) |
+| F2.3 | Predictive beaconing indicator: show where others last saw you versus where you are (our own name for the feature) | Red Dot | App | G11 | scoped (0.6.0, [#197](https://github.com/APRS-NET/AprsMap/issues/197)) |
+| F2.4 | Messaging: chat per correspondent, ack/retry status, reply-ack, rejects, offline queue, selectable retry profiles (default, APRS-IS, none, slow HF modem), optional double-ack on RF | APRS Messaging Explained | App | G01, G10 | scoped (0.5.0, [#192](https://github.com/APRS-NET/AprsMap/issues/192)) |
+| F2.5 | Bulletins and announcements, group bulletins; ANSRVR group join and leave | ANSRVR | App | G10 | scoped (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)) |
+| F2.6 | Email via the APRS email gateway, and the QRU/query service helpers | Email, QRU | App | G10 | scoped (0.6.0, [#201](https://github.com/APRS-NET/AprsMap/issues/201)) |
+| F2.7 | Objects and items: create, move, re-beacon with decay, kill; multiline objects | Multiline | App | G01, G11 | scoped (0.6.0, [#199](https://github.com/APRS-NET/AprsMap/issues/199)) |
+| F2.8 | Respond to directed queries (?APRSP, ?APRSS…) | — | App | G19 | scoped (0.6.0, [#200](https://github.com/APRS-NET/AprsMap/issues/200)) |
+| F2.9 | Gateway auth: transmit features require a signed-in operator | — | App | — | scoped (0.5.0, [#191](https://github.com/APRS-NET/AprsMap/issues/191)) |
+| F2.10 | Auto-reply with delay and rate limits | Auto-Reply | App | G10 | scoped (0.6.0, [#202](https://github.com/APRS-NET/AprsMap/issues/202)) |
+| F2.11 | Status reports with saved alternatives | (Configure › Status Report) | App | G01 | scoped (0.6.0, [#203](https://github.com/APRS-NET/AprsMap/issues/203)) |
+| F2.12 | Mic-E status codes: choose the status to send; per-code filtering and alert styles for received ones, with emergency handling | (observed) | App | G01 | scoped (0.6.0, [#204](https://github.com/APRS-NET/AprsMap/issues/204)) |
 
 ## Phase 3: RF, GPS, IGate, digipeater
 
@@ -125,10 +125,10 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | --- | --- | --- | --- | --- | --- |
 | F3.1 | RF ports: KISS over serial, Bluetooth serial and TCP (Direwolf, soundmodem), several at once, as [F1.25](features/F1.25-sources.md) sources. Receive only in 0.4.0 ([#120](https://github.com/APRS-NET/AprsMap/issues/120)); the test bed is Direwolf on Windows, MFJ TNC-X, later NinoTNC | Compatible Hardware/Software | App | G12, G13 | TCP done (0.4.0); serial in 0.5.0 ([#177](https://github.com/APRS-NET/AprsMap/issues/177)) |
 | F3.2 | Text-mode and Kenwood built-in TNCs, open and close command scripts | Open/Close Commands | App | G14 | scoped |
-| F3.3 | Per-port RF beacon paths, RF versus IS source attribution on the map, heard-direct indication | — | App | G20 | scoped |
-| F3.4 | IGate: RF→IS, IS→RF for messages to local stations, objects; configurable rules | (core feature list), Receive-Only IGates Break Messaging | App | G16 | scoped |
-| F3.5 | Digipeater: WIDEn-N, fill-in, own-call digipeat | Digipeating | App | G15 | scoped |
-| F3.6 | GPS: NMEA from serial or TCP, gpsd, the OS location API on desktop, browser geolocation sent to the gateway; as [F1.25](features/F1.25-sources.md) sources with **Position for** my station or a tracked position. Planned with beaconing (F2.2) | Android GPS | App | G17, G30 | scoped |
+| F3.3 | Per-port RF beacon paths, RF versus IS source attribution on the map, heard-direct indication | — | App | G20 | scoped (0.7.0, [#210](https://github.com/APRS-NET/AprsMap/issues/210)) |
+| F3.4 | IGate: RF→IS, IS→RF for messages to local stations, objects; configurable rules | (core feature list), Receive-Only IGates Break Messaging | App | G16 | scoped (receive only in 0.6.0, [#206](https://github.com/APRS-NET/AprsMap/issues/206); two-way in 0.7.0, [#208](https://github.com/APRS-NET/AprsMap/issues/208)) |
+| F3.5 | Digipeater: WIDEn-N, fill-in, own-call digipeat | Digipeating | App | G15 | scoped (0.7.0, [#209](https://github.com/APRS-NET/AprsMap/issues/209)) |
+| F3.6 | GPS: NMEA from serial or TCP, gpsd, the OS location API on desktop, browser geolocation sent to the gateway; as [F1.25](features/F1.25-sources.md) sources with **Position for** my station or a tracked position. Planned with beaconing (F2.2) | Android GPS | App | G17, G30 | scoped (0.6.0, [#205](https://github.com/APRS-NET/AprsMap/issues/205)) |
 | F3.7 | Frequency objects and radio tune format in comments | Frequencies, Radio Tune Format | App | G01 | scoped |
 | F3.8 | AGWPE over TCP as an RF port | Port Configuration | App | G22 | scoped |
 | F3.9 | CWOP weather feed port (unfiltered; filtered locally) | CWOP | App | G21 | scoped |
@@ -166,3 +166,11 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
    G24 ([APRS.NET#154](https://github.com/APRS-NET/APRS.NET/issues/154), `TrackAnalysis`) and G13's serial connection
    ([APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), `AprsNet.Kiss.Serial`, open until tested on
    hardware). Phase 1 needs no transmit work in APRS.NET.
+5. 0.5.0-alpha.1 to 0.7.0-alpha.1 follow APRS.NET's milestones of the same numbers, each feature issue blocked by
+   the APRS.NET capability it needs: 0.5.0 serial TNCs, messaging and the first transmitting through APRS-IS (F2.1,
+   F2.9 and F1.26 before anything sends; APRS.NET [#160](https://github.com/APRS-NET/APRS.NET/issues/160), [#189](https://github.com/APRS-NET/APRS.NET/issues/189)); 0.6.0
+   beacons, objects, queries, GPS and a receive-only IGate ([#195](https://github.com/APRS-NET/APRS.NET/issues/195), [#200](https://github.com/APRS-NET/APRS.NET/issues/200),
+   [#203](https://github.com/APRS-NET/APRS.NET/issues/203), [#206](https://github.com/APRS-NET/APRS.NET/issues/206)); 0.7.0 the digipeater, the two-way IGate and RF paths
+   ([#209](https://github.com/APRS-NET/APRS.NET/issues/209), [#212](https://github.com/APRS-NET/APRS.NET/issues/212)), with the registered TOCALL first. The milestones:
+   [0.5.0](https://github.com/APRS-NET/AprsMap/milestone/3), [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4),
+   [0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5).

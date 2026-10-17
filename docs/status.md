@@ -3,13 +3,16 @@
 What you should expect to see when you run AprsMap today, and what isn't there yet. Per-feature status lives in
 [scope.md](scope.md); this page is the short version for someone trying the app.
 
-As of 2026-10-16 (`main`, toward `0.4.0-alpha.1`): **receive-only, from APRS-IS and from your own TNC.** The app
+As of 2026-10-16 (`main`, `0.4.0-alpha.1`): **receive-only, from APRS-IS and from your own TNC.** The app
 connects to APRS-IS and to KISS TNCs over TCP (Direwolf, soundmodem), draws the stations on a live map with their
 tracks and RF paths, lists them and their packets, and has a dashboard of live numbers beside the map. It doesn't send
-anything yet. The last release, `0.3.0-alpha.3`, has the first map only.
+anything yet.
 
 **Next:** [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/3): hardware TNCs over USB serial (MFJ TNC-X,
-NinoTNC), the dashboard's extras, and the public receive-only console (F1.26, spec in review).
+NinoTNC), the public receive-only console (F1.26), update checks, and the first transmitting: your own station's
+transmit switch, operator sign-in on the gateway, and messaging and bulletins through APRS-IS. Then
+[0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) (beacons, objects, GPS, a receive-only IGate) and
+[0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5) (a digipeater and a two-way IGate).
 
 ## What you'll see
 
