@@ -50,6 +50,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet (delivered, `0.4.0-alpha.5`: `AprsNet.Corpus`, `AprsPacket.Unrecognized`) | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
 | G32 | A typed reason when an APRS-IS login reaches a KISS TNC (delivered, `0.4.0-alpha.5`: `KissTncLoginException`) | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
 | G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console (delivered: KISS `0.4.0-alpha.6`, APRS-IS `0.4.0-alpha.7`) | Kiss, AprsIsTcpClient | 2 | [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) |
+| G34 | Bulletin repeat schedule, and ANSRVR group helpers | Messaging | 2 | — (proposed) |
 
 ---
 
@@ -323,7 +324,7 @@ source, starting with the Kenwood TH-D72A.
 
 **Scope** ([APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249), rescoped 2026-10-18, part of #160):
 
-1. **KISS mode** (APRS.NET#257, #258, in review): `TncScript`, `TncSetup` with `TncSetup.KenwoodThD72` built in, and
+1. **KISS mode** (APRS.NET#257, #258, merged): `TncScript`, `TncSetup` with `TncSetup.KenwoodThD72` built in, and
    `KissSerialOptions.Setup`. The connection switches the radio into KISS each time it opens the port, again when the
    radio sends text after a power cut, and out of KISS when it closes. A failed setup reconnects with an
    `IOException` carrying a hint ("Switch the radio's TNC to packet mode (PACKET12) first"). `TncSetup.Known` and
@@ -577,3 +578,18 @@ was dropped is protocol knowledge, so it belongs in the library.
 **Acceptance.** A fake TNC raises one entry of each kind, text as lines; a sent packet raises `Sent`; setup steps raise
 `Setup*`, a failed expect `SetupFailed`; the APRS-IS login never carries the passcode; nothing extra is allocated with
 no subscriber; a throwing handler doesn't stop reading.
+
+## G34: Bulletin repeat schedule and ANSRVR group helpers
+
+**Need.** AprsMap F2.5 (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)): posting bulletins and
+announcements, and joining announcement groups through ANSRVR.
+
+**Scope.**
+
+1. **A bulletin repeat schedule**: when to send a bulletin or announcement again (often at first, then less often) and
+   for how long, as `AprsNet.Beacons` answers for beacons, following APRS101's guidance on bulletin repetition.
+2. **ANSRVR helpers**: the join, leave, post and keep-alive messages to ANSRVR for a group, and recognising a message
+   ANSRVR relays from a group (with the group and the original sender), so apps don't hard-code its forms.
+
+**Acceptance.** A schedule's send times over a bulletin's life; each ANSRVR message form round-trips; a relayed group
+message from a recorded transcript is recognised with its group and sender.
