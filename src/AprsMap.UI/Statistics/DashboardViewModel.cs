@@ -334,6 +334,11 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         );
 
         Problems.Set(_text, "Dashboard.Problems", dashboard.ProblemsTotal, null, dashboard.Problems, range);
+        // Each sparkline point's value and time, for hovering and the keyboard, and each tile's Copy (behaviors 6, 8).
+        foreach (var tile in new[] { Stations, NewStations, Packets, Arrivals, Problems })
+        {
+            tile.Times(_text, dashboard.Start, dashboard.Step, Clock);
+        }
 
         var status = _status();
         var lastBySource = dashboard.Sources.ToDictionary(s => s.Key, s => s.At);
@@ -640,6 +645,50 @@ public sealed partial class Tile : ObservableObject
     /// <summary>The tile in words, for a screen reader.</summary>
     [ObservableProperty]
     public partial string Spoken { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Each sparkline point in words, "12 at 14:05", for its tooltip and the keyboard
+    /// (docs/features/F1.22-statistics.md, behavior 6).
+    /// </summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<string> PointLabels { get; private set; } = [];
+
+    private IReadOnlyList<string> _times = [];
+
+    /// <summary>Gives the sparkline's points their times: the first at <paramref name="start"/>, one each <paramref name="step"/>.</summary>
+    internal void Times(Localizer text, DateTimeOffset start, TimeSpan step, Func<DateTimeOffset, string> clock)
+    {
+        _times = [.. Series.Select((_, i) => clock(start + (step * i)))];
+        PointLabels =
+        [
+            .. Series.Select(
+                (value, i) =>
+                    text.Format(
+                        "Dashboard.Point",
+                        new Dictionary<string, object?>
+                        {
+                            ["value"] = value is { } v ? v.ToString("#,0", text.Culture) : "–",
+                            ["time"] = _times[i],
+                        }
+                    )
+            ),
+        ];
+    }
+
+    /// <summary>The tile as tab-separated text: its title and number, then each point's time and value (behavior 8).</summary>
+    public string CopyText()
+    {
+        var copy = new System.Text.StringBuilder();
+        copy.Append(Title).Append('\t').Append(Number).Append('\n');
+        for (var i = 0; i < Series.Count && i < _times.Count; i++)
+        {
+            copy.Append(_times[i])
+                .Append('\t')
+                .Append(Series[i]?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)
+                .Append('\n');
+        }
+        return copy.ToString();
+    }
 
     internal void Set(
         Localizer text,

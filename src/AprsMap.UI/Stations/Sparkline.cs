@@ -27,7 +27,109 @@ public sealed class Sparkline : Control
         nameof(FromZero)
     );
 
-    static Sparkline() => AffectsRender<Sparkline>(ValuesProperty, StrokeProperty, FromZeroProperty);
+    /// <summary>
+    /// Each point in words, "12 at 14:05" (docs/features/F1.22-statistics.md, behavior 6); with them the line can be
+    /// hovered and focused, and Left and Right step through the points.
+    /// </summary>
+    public static readonly StyledProperty<IReadOnlyList<string>?> LabelsProperty = AvaloniaProperty.Register<
+        Sparkline,
+        IReadOnlyList<string>?
+    >(nameof(Labels));
+
+    static Sparkline()
+    {
+        AffectsRender<Sparkline>(ValuesProperty, StrokeProperty, FromZeroProperty, LabelsProperty);
+        LabelsProperty.Changed.AddClassHandler<Sparkline>((s, _) => s.Focusable = s.Labels is { Count: > 0 });
+    }
+
+    public IReadOnlyList<string>? Labels
+    {
+        get => GetValue(LabelsProperty);
+        set => SetValue(LabelsProperty, value);
+    }
+
+    /// <summary>The point picked by the pointer or the keyboard, or null.</summary>
+    internal int? Point { get; private set; }
+
+    /// <summary>Picks the point nearest <paramref name="x"/> and says it.</summary>
+    protected override void OnPointerMoved(Avalonia.Input.PointerEventArgs e)
+    {
+        base.OnPointerMoved(e);
+        if (Values is { Count: > 1 } values)
+        {
+            var x = e.GetPosition(this).X;
+            Pick((int)Math.Round((x - 1) / Math.Max(1, Bounds.Width - 2) * (values.Count - 1)));
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnPointerExited(Avalonia.Input.PointerEventArgs e)
+    {
+        base.OnPointerExited(e);
+        if (!IsFocused)
+        {
+            Unpick();
+        }
+    }
+
+    /// <inheritdoc />
+    protected override void OnGotFocus(Avalonia.Input.FocusChangedEventArgs e)
+    {
+        base.OnGotFocus(e);
+        Pick(Point ?? (Values?.Count ?? 1) - 1); // the newest first
+    }
+
+    /// <inheritdoc />
+    protected override void OnLostFocus(Avalonia.Input.FocusChangedEventArgs e)
+    {
+        base.OnLostFocus(e);
+        Unpick();
+    }
+
+    /// <summary>Left and Right step through the points (behavior 6); Home and End go to the first and last.</summary>
+    protected override void OnKeyDown(Avalonia.Input.KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+        if (Values is not { Count: > 0 } values || Labels is null)
+        {
+            return;
+        }
+        var at = Point ?? values.Count - 1;
+        int? next = e.Key switch
+        {
+            Avalonia.Input.Key.Left => Math.Max(0, at - 1),
+            Avalonia.Input.Key.Right => Math.Min(values.Count - 1, at + 1),
+            Avalonia.Input.Key.Home => 0,
+            Avalonia.Input.Key.End => values.Count - 1,
+            _ => null,
+        };
+        if (next is { } index)
+        {
+            Pick(index);
+            e.Handled = true;
+        }
+    }
+
+    private void Pick(int index)
+    {
+        if (Labels is not { Count: > 0 } labels)
+        {
+            return;
+        }
+        index = Math.Clamp(index, 0, labels.Count - 1);
+        Point = index;
+        ToolTip.SetTip(this, labels[index]);
+        ToolTip.SetIsOpen(this, true);
+        Avalonia.Automation.AutomationProperties.SetName(this, labels[index]);
+        InvalidateVisual();
+    }
+
+    private void Unpick()
+    {
+        Point = null;
+        ToolTip.SetIsOpen(this, false);
+        InvalidateVisual();
+    }
 
     public bool FromZero
     {
@@ -80,6 +182,10 @@ public sealed class Sparkline : Control
             if (last is { } from)
             {
                 context.DrawLine(pen, from, at);
+            }
+            if (i == Point)
+            {
+                context.DrawEllipse(stroke, null, at, 3, 3); // the point picked (behavior 6)
             }
             last = at;
         }

@@ -154,7 +154,15 @@
             <TextBlock Classes="title" Text="{Binding Stations.Title}" />
             <TextBlock Classes="number" Text="{Binding Stations.Number}" />
             <TextBlock Classes="detail" Text="{Binding Stations.Detail}" />
-            <s:Sparkline Values="{Binding Stations.Series}" />
+            <s:Sparkline Values="{Binding Stations.Series}" Labels="{Binding Stations.PointLabels}" />
+            <Button
+              Classes="copy-tile"
+              DataContext="{Binding Stations}"
+              Content="{l:T Dashboard.Table.Copy}"
+              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+              HorizontalAlignment="Left"
+              Padding="6,2"
+            />
           </StackPanel>
         </Border>
 
@@ -163,7 +171,15 @@
           <StackPanel>
             <TextBlock Classes="title" Text="{Binding NewStations.Title}" />
             <TextBlock Classes="number" Text="{Binding NewStations.Number}" />
-            <s:Sparkline Values="{Binding NewStations.Series}" />
+            <s:Sparkline Values="{Binding NewStations.Series}" Labels="{Binding NewStations.PointLabels}" />
+            <Button
+              Classes="copy-tile"
+              DataContext="{Binding NewStations}"
+              Content="{l:T Dashboard.Table.Copy}"
+              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+              HorizontalAlignment="Left"
+              Padding="6,2"
+            />
             <TextBlock Classes="detail" Text="{l:T Dashboard.NewStations.Help}" />
             <ItemsControl ItemsSource="{Binding Newest}" />
           </StackPanel>
@@ -175,7 +191,15 @@
             <TextBlock Classes="title" Text="{Binding Packets.Title}" />
             <TextBlock Classes="number" Text="{Binding Packets.Number}" />
             <TextBlock Classes="detail" Text="{Binding Packets.Detail}" />
-            <s:Sparkline Values="{Binding Packets.Series}" />
+            <s:Sparkline Values="{Binding Packets.Series}" Labels="{Binding Packets.PointLabels}" />
+            <Button
+              Classes="copy-tile"
+              DataContext="{Binding Packets}"
+              Content="{l:T Dashboard.Table.Copy}"
+              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+              HorizontalAlignment="Left"
+              Padding="6,2"
+            />
             <ItemsControl ItemsSource="{Binding BySource}" />
           </StackPanel>
         </Border>
@@ -186,7 +210,15 @@
             <TextBlock Classes="title" Text="{Binding Arrivals.Title}" />
             <TextBlock Classes="number" Text="{Binding Arrivals.Number}" />
             <TextBlock Classes="detail" Text="{Binding Arrivals.Detail}" />
-            <s:Sparkline Values="{Binding Arrivals.Series}" />
+            <s:Sparkline Values="{Binding Arrivals.Series}" Labels="{Binding Arrivals.PointLabels}" />
+            <Button
+              Classes="copy-tile"
+              DataContext="{Binding Arrivals}"
+              Content="{l:T Dashboard.Table.Copy}"
+              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+              HorizontalAlignment="Left"
+              Padding="6,2"
+            />
             <ItemsControl ItemsSource="{Binding ArrivalRows}" />
           </StackPanel>
         </Border>
@@ -205,7 +237,15 @@
             <TextBlock Classes="title" Text="{Binding Problems.Title}" />
             <TextBlock Classes="number" Text="{Binding Problems.Number}" />
             <TextBlock Classes="detail" Text="{l:T Dashboard.Problems.Help}" />
-            <s:Sparkline Values="{Binding Problems.Series}" />
+            <s:Sparkline Values="{Binding Problems.Series}" Labels="{Binding Problems.PointLabels}" />
+            <Button
+              Classes="copy-tile"
+              DataContext="{Binding Problems}"
+              Content="{l:T Dashboard.Table.Copy}"
+              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+              HorizontalAlignment="Left"
+              Padding="6,2"
+            />
             <Button
               x:Name="ShowProblems"
               Content="{l:T Dashboard.Problems.Show}"
