@@ -34,7 +34,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G19 | Query and response handling | Packets + Messaging | 2 | [APRS.NET#200](https://github.com/APRS-NET/APRS.NET/issues/200) |
 | G12 | AX.25 UI frame codec (delivered) | new: AprsNet.Ax25 | 3 | — |
 | G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial published in `0.3.0-alpha.2` as `AprsNet.Kiss.Serial`, unplug and warnings in `0.4.0-alpha.4`, issue open for hardware testing) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), [APRS.NET#160](https://github.com/APRS-NET/APRS.NET/issues/160) |
-| G14 | Text-mode and Kenwood TNC support | new: AprsNet.Tnc | 2 | [APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249) |
+| G14 | Radios' built-in TNCs: KISS setup (in review), and reading a radio in APRS mode | Kiss.Serial | 2 | [APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249) |
 | G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | [APRS.NET#209](https://github.com/APRS-NET/APRS.NET/issues/209) |
 | G16 | IGate engine | new: AprsNet.IGate | 3 | [APRS.NET#206](https://github.com/APRS-NET/APRS.NET/issues/206), [APRS.NET#212](https://github.com/APRS-NET/APRS.NET/issues/212) |
 | G17 | NMEA sentence parsing and `$` packets | Packets | 3 | [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
@@ -49,6 +49,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
 | G32 | A typed reason when an APRS-IS login reaches a KISS TNC | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
+| G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console | Kiss, AprsIsTcpClient | 2 | [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) |
 
 ---
 
@@ -315,20 +316,29 @@ connection states F1.1 uses, and a list of the serial ports present. ([APRS.NET#
 `KissConnection.Warning`: a TNC sending text instead of KISS frames, and, with `QuietWarning` set, one that has sent
 nothing for that long. AprsMap shows both on the source's pill (F3.1 behavior 13).
 
-## G14: Text-mode and Kenwood TNC support
+## G14: Radios' built-in TNCs: KISS setup, and reading a radio in APRS mode
 
-**Need.** F3.2 (AprsMap 0.5.0, [#242](https://github.com/APRS-NET/AprsMap/issues/242)): first, switching a TH-D72A's
-built-in TNC into KISS when its source opens, after a power cut, and back when it closes.
+**Need.** F3.2 (AprsMap 0.5.0, [#242](https://github.com/APRS-NET/AprsMap/issues/242)): a radio's built-in TNC as a
+source, starting with the Kenwood TH-D72A.
 
-**Scope.** Drive TNCs in text (monitor) mode: configurable open and close command scripts with prompt waits, parse
-monitor lines (TNC2 and common variants such as Kenwood's) into `AprsPacket`, transmit via the TNC's unproto/beacon
-commands, and enter/exit KISS mode sequences for radios such as the TM-D710 and TH-D72/D74.
+**Scope** ([APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249), rescoped 2026-10-18, part of #160):
 
-**Acceptance.** Recorded transcripts for at least two TNC families.
+1. **KISS mode** (APRS.NET#257, #258, in review): `TncScript`, `TncSetup` with `TncSetup.KenwoodThD72` built in, and
+   `KissSerialOptions.Setup`. The connection switches the radio into KISS each time it opens the port, again when the
+   radio sends text after a power cut, and out of KISS when it closes. A failed setup reconnects with an
+   `IOException` carrying a hint ("Switch the radio's TNC to packet mode (PACKET12) first"). `TncSetup.Known` and
+   `TncSetup.Find` feed a TNC type picker; a custom TNC is a `TncSetup` with its own scripts. `TncTerminal` is a console
+   for setting a TNC up by hand, opened only while no connection holds the port.
+2. **A radio in APRS mode, receive only**: a serial reader for the TNC-2 text lines the radio prints, with no setup; the
+   radio keeps working as an APRS station. NMEA sentences and damaged lines are skipped and counted. Same reconnects,
+   port handling, DTR/RTS and quiet warning as KISS over serial. Nothing can be sent this way.
 
-**Filed** as [APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249) for `0.5.0-alpha.1` (part of #160), in this
-order: KISS on and off for each radio family, run on open, on reconnect and on a `TextNotKiss` warning; open and close
-scripts; text mode. Only the TH-D72A is on hand, so the second family needs another radio or someone's transcript.
+Not planned: switching the radio's TNC mode from the computer, sending through a TNC's own commands (sending uses KISS),
+and a second TNC family's transcript (no other radio on hand).
+
+**Acceptance.** Checked on the maintainer's TH-D72A: KISS 1.7 s after opening, back in KISS after a power cycle with no
+one stepping in, out of KISS on close. A recorded APRS-mode transcript, GPS sentences replaced, parses into the expected
+packets with the cut lines dropped.
 
 ## G15: Digipeater engine
 
@@ -531,3 +541,28 @@ rather than "That's a KISS TNC: add it as a TNC source".
 
 **Filed** as [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) for `0.5.0-alpha.1`: a `LoginException`
 subclass, as `LoginRejectedException` is. AprsMap waits for it rather than matching the message.
+
+## G33: A traffic event for a troubleshooting console
+
+**Need.** AprsMap F1.28 Source console (0.5.0, [#246](https://github.com/APRS-NET/AprsMap/issues/246)): a source's live
+traffic, mostly what never becomes a packet. `ReadPacketsAsync` and `ReadFramesAsync` each have one reader and yield only
+good frames, so the app can't watch them without taking packets away, and what's dropped is only counted. Why something
+was dropped is protocol knowledge, so it belongs in the library.
+
+**Scope** ([APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262), two PRs, KISS first):
+
+- **KISS:** `event EventHandler<KissTrafficEventArgs>? Traffic` on `KissStreamClient`, `KissTcpClient` and
+  `KissConnection` (kept across reconnects). Each entry has `At`, `Direction`, `Kind`, a copy of the `Bytes`, `Port`,
+  `Command`, and `Packet` when it decoded as APRS. `Kind` is a stable enum with `Describe()`: `Frame`, `NotAprs`,
+  `OtherPort`, `Command`, `DroppedFrame` (with why), `Unframed` (lines split at CR/LF, with `LooksLikeText`), `Sent`,
+  and `SetupSent`, `SetupReceived`, `SetupFailed` for a `TncSetup` script's steps.
+- **APRS-IS:** its own `AprsIsTrafficEventArgs` on `AprsIsClient` and `AprsIsConnection`, one entry per line in or out
+  (login with the passcode masked by the library, login response, server comments and keepalives, packets, `#filter`
+  commands, sent packets).
+- **Behaviour:** no work without a subscriber; entries come on the reading, sending or opening thread, so a UI must
+  marshal; a handler that throws doesn't break reading; no history, so the engine subscribes when a source starts and
+  keeps its own ring buffer.
+
+**Acceptance.** A fake TNC raises one entry of each kind, text as lines; a sent packet raises `Sent`; setup steps raise
+`Setup*`, a failed expect `SetupFailed`; the APRS-IS login never carries the passcode; nothing extra is allocated with
+no subscriber; a throwing handler doesn't stop reading.
