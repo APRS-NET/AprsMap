@@ -444,9 +444,17 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>The ranges <see cref="GetDashboardAsync"/> was asked for, in order.</summary>
     public List<DashboardRange> DashboardRanges { get; } = [];
 
-    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default)
+    /// <summary>The filters <see cref="GetDashboardAsync"/> was asked with, in order: null for the whole feed.</summary>
+    public List<StationFilter?> DashboardFilters { get; } = [];
+
+    public Task<Dashboard> GetDashboardAsync(
+        DashboardRange range,
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    )
     {
         DashboardRanges.Add(range);
+        DashboardFilters.Add(filter);
         return Task.FromResult(Dashboard ?? EmptyDashboard(range));
     }
 
