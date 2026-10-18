@@ -27,6 +27,11 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | First-run passcode (`-1` = receive-only) | `Engine__Passcode` | `-1` |
 | First-run server | `Engine__Server` | `rotate.aprs2.net:14580` |
 | First-run server-side filter | `Engine__Filter` | none |
+| First-run KISS over TCP source: host, port, radio port, name (with `Engine__Server` empty, a TNC-only station) | `Engine__Kiss__Host`, `__Port`, `__TncPort`, `__Name` | none |
+| Receive only for good: nothing is sent, and APRS-IS logs in unverified | `Engine__ReceiveOnly` | `false` |
+| A second port where an operator signs in; the main port then never offers sign-in | `Gateway__OperatorPort` | none |
+| How much of the station's location viewers learn: `Exact`, `Grid` (its 4-character square) or `Hidden` | `Gateway__HomePrivacy` | `Grid` with an operator port, `Exact` without |
+| The page's title, beside the product name and on the browser tab | `Gateway__Title` | none |
 | Let browsers change settings and switch profiles, with no operator set up | `Gateway__AllowSettingsChanges` | `false` |
 | Operators set up in configuration: a name and a hash from `operator add` | `Gateway__Operators__0__Name`, `…__PasswordHash` | none (use `operators.json`) |
 | Other sites whose pages may use the hub and sign-in | `Gateway__AllowedOrigins__0`, `__1`… | none (the gateway's own only) |
@@ -148,6 +153,75 @@ content hash are cached for a year, and the rest (`index.html`, the boot scripts
 upgrade reaches browsers the next time they open the page.
 
 Tags: `X.Y.Z-alpha.N` for each release, and `alpha` for the newest. `latest` starts at 1.0.
+
+### A public page of what your TNC hears
+
+A gateway can be an always-on public page of what your TNC hears, safe to share, with the station's settings changed
+privately (docs/features/F1.26-public-console.md). The pieces:
+
+- **Two ports.** The main port (8080) is for everyone: they watch and can't change or transmit anything, and they don't
+  see the controls that would. `Gateway__OperatorPort` (8081) is where you sign in as the operator (above). Publish it on
+  the host's loopback only and reach it over SSH (`ssh -L 8081:127.0.0.1:8081 yourserver`, then open
+  `http://localhost:8081`; signing in over the tunnel counts as the host's own) or over a VPN such as Tailscale. A
+  session from the operator port isn't honoured on the public one, and nothing a browser or proxy sends can move
+  sign-in there: the gateway goes by the port the connection arrived on.
+- **Receive only.** `Engine__ReceiveOnly=true` refuses every send whatever the settings, and logs in to APRS-IS with
+  passcode `-1`, which a server won't take packets from.
+- **Your location.** With an operator port, viewers get `Gateway__HomePrivacy=Grid` unless you set it: the house is
+  drawn at the centre of your 4-character Maidenhead square (about 110 × 220 km), and every distance, bearing, filter
+  circle and route end is measured from there, so it can't be worked back to your door. `Hidden` shows no location at
+  all. You, signed in, see it exactly. A position you beacon is public on APRS-IS anyway.
+- **A title.** `Gateway__Title`, such as "What YOURCALL's TNC hears", heads the page and the browser tab.
+- **Map tiles.** The gateway fetches and caches tiles for every viewer. OpenStreetMap's tile servers allow light use
+  only, so a busy public page should use a provider whose terms allow its traffic, with your own key, or a tile server
+  you run: set `Tiles__Providers__<key>__…` (above).
+- **No setup screen needed.** On an empty `/data`, `Engine__Callsign` with `Engine__Kiss__Host` and an empty
+  `Engine__Server` starts a TNC-only station. After the first start the stored settings win; change them on the operator
+  port.
+
+On a home server such as Unraid, with `/data` in appdata (owned by the image's `app` user, UID 1654):
+
+```yaml
+services:
+  aprsmap:
+    image: ghcr.io/aprs-net/aprsmap:alpha
+    restart: unless-stopped
+    ports:
+      - "8080:8080"             # the public page, behind your TLS proxy
+      - "127.0.0.1:8081:8081"   # the operator port: this host only
+    volumes:
+      - /mnt/user/appdata/aprsmap:/data
+    environment:
+      Engine__Callsign: YOURCALL-10
+      Engine__Server: ""                 # no APRS-IS: what the TNC hears
+      Engine__Kiss__Host: 192.168.1.50   # the Raspberry Pi below
+      Engine__Kiss__Port: "8001"
+      Engine__Kiss__Name: Pi TNC
+      Engine__ReceiveOnly: "true"
+      Gateway__OperatorPort: "8081"
+      Gateway__Title: What YOURCALL's TNC hears
+      Gateway__KnownProxies__0: 192.168.1.2    # your reverse proxy
+      Gateway__MaxViewers: "50"
+      Gateway__MaxViewersPerAddress: "3"
+```
+
+Put Nginx Proxy Manager, SWAG, Caddy or a Cloudflare Tunnel in front of port 8080 for TLS, name it in
+`Gateway__KnownProxies`, and pass WebSocket upgrades for `/hubs/engine` (see "Behind a reverse proxy").
+
+**The TNC on another computer.** A Raspberry Pi with the TNC (a TNC-X or NinoTNC) on USB can serve it as KISS over TCP,
+and the gateway connects to it as a KISS over TCP source, so what it hears is heard by this station (F3.1 behavior 8).
+No USB device is passed into the container. On the Pi, `ser2net` bridges the serial port to a TCP port as raw bytes,
+which is KISS over TCP; in `/etc/ser2net.yaml`:
+
+```yaml
+connection: &tnc
+  accepter: tcp,8001
+  connector: serialdev,/dev/ttyUSB0,9600n81,local
+  options:
+    kickolduser: true
+```
+
+To pass a USB TNC into the container instead, see "A TNC on a serial port".
 
 ## Desktop app
 
