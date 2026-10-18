@@ -157,6 +157,13 @@ public interface IEngineService
     Task<PacketRoute?> GetRouteAsync(RouteQuery query, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// How this station's last position got out (docs/features/F3.3-rf-paths.md, behavior 3): one route per copy heard
+    /// back, from where it was sent through the digipeaters that repeated it to the IGate that gated it. Empty with no
+    /// position sent, or none heard back over RF.
+    /// </summary>
+    Task<IReadOnlyList<PacketRoute>> GetRoutesOutAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Empties a station's track except its latest point (docs/features/F1.5-tracks.md, behavior 10); the change streams
     /// to every viewer. Nothing happens when there's no such track.
     /// </summary>

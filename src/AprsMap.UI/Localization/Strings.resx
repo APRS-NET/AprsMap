@@ -1467,6 +1467,9 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="HeardBack.NotOnRf" xml:space="preserve">
     <value>not heard back on RF</value>
   </data>
+  <data name="HeardBack.Legend" xml:space="preserve">
+    <value>On the map: a solid line with an arrow is a repeat on RF; a dotted line is the IGate that put it on APRS-IS.</value>
+  </data>
   <data name="HeardBack.Tip" xml:space="preserve">
     <value>Last position heard back via {by}, {minutes} min ago</value>
   </data>

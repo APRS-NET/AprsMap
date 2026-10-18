@@ -135,6 +135,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _map.SetStations(_main.Stations);
             _map.SetTracks(_main.Tracks);
             _map.Route = _main.PickedRoute;
+            _map.RoutesOut = _main.RoutesOut;
             _map.SetFilterAreas(_main.FilterAreas);
             ShowFollowed();
             _map.Select(_main.SelectedStation);
@@ -337,6 +338,10 @@ public sealed partial class MapPanel : UserControl, IDisposable
         else if (e.PropertyName == nameof(MainViewModel.PickedRoute) && _main is not null)
         {
             _map.Route = _main.PickedRoute;
+        }
+        else if (e.PropertyName == nameof(MainViewModel.RoutesOut) && _main is not null)
+        {
+            _map.RoutesOut = _main.RoutesOut;
         }
         else if (e.PropertyName == nameof(MainViewModel.FilterAreas) && _main is not null)
         {

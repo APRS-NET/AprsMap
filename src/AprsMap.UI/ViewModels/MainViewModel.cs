@@ -805,6 +805,13 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial PacketRoute? PickedRoute { get; private set; }
 
+    /// <summary>
+    /// The selected station's last position's routes out, when it's this station (docs/features/F3.3-rf-paths.md,
+    /// behavior 3); empty otherwise.
+    /// </summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<PacketRoute> RoutesOut { get; private set; } = [];
+
     private RouteQuery? _routeQuery;
     private int _routeLoads;
 
@@ -880,9 +887,24 @@ public sealed partial class MainViewModel : ObservableObject
                 route = null; // the engine went away; the next selection asks again
             }
         }
+        IReadOnlyList<PacketRoute> routesOut = [];
+        if (query is { Path: null, TrackPoint: null })
+        {
+            try
+            {
+                // Only this station's routes come back, named for it: another station selected gets none.
+                routesOut = [.. (await engine.GetRoutesOutAsync()).Where(r => r.Name == query.Name)];
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
+            {
+                routesOut = [];
+            }
+        }
         if (load == _routeLoads)
         {
             Route = route;
+            RoutesOut = routesOut;
+            Details.ShowRoutesOut(routesOut);
             PickedRoute = query is { Path: null, TrackPoint: null } ? null : route;
             Details.ShowRoute(route);
         }

@@ -281,6 +281,12 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync<PacketRoute?>(EngineHub.GetRoute, query, cancellationToken));
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<PacketRoute>> GetRoutesOutAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<PacketRoute>>(EngineHub.GetRoutesOut, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<PacketView>> SendPositionAsync(
         string? sourceId = null,
         CancellationToken cancellationToken = default
