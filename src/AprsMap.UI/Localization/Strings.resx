@@ -428,6 +428,10 @@
     <value>Server unreachable</value>
     <comment>Why the APRS-IS connection is retrying: the server couldn't be reached or didn't answer the login.</comment>
   </data>
+  <data name="Error.aprs-is.kiss-tnc" xml:space="preserve">
+    <value>That's a KISS TNC, not an APRS-IS server: add it as a TNC source</value>
+    <comment>The server address answered with KISS frames, such as Direwolf's port 8001.</comment>
+  </data>
   <data name="Error.aprs-is.login-refused" xml:space="preserve">
     <value>Login refused: {reason}</value>
     <comment>reason: what the server said, in its own words (not translated).</comment>

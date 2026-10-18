@@ -129,6 +129,8 @@ public class AprsIsPacketSourceTests
     [InlineData("io", true, EngineErrorCodes.AprsIsLinkFailed)]
     [InlineData("io", false, EngineErrorCodes.AprsIsUnreachable)]
     [InlineData("login", false, EngineErrorCodes.AprsIsUnreachable)]
+    [InlineData("kiss", false, EngineErrorCodes.AprsIsKissTnc)]
+    [InlineData("kiss", true, EngineErrorCodes.AprsIsKissTnc)]
     public void EachEndOfAConnectionHasItsCode(string? error, bool wasConnected, string code)
     {
         Exception? exception = error switch
@@ -136,6 +138,7 @@ public class AprsIsPacketSourceTests
             "timeout" => new TimeoutException("silent"),
             "io" => new IOException("reset"),
             "login" => new LoginException("No login response within 15s."),
+            "kiss" => new KissTncLoginException(),
             _ => null,
         };
 

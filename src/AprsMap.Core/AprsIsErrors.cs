@@ -17,6 +17,7 @@ internal static class AprsIsErrors
                 rejected.Message,
                 new Dictionary<string, string> { [EngineErrorArgs.Reason] = rejected.ServerMessage }
             ),
+            KissTncLoginException tnc => new EngineError(EngineErrorCodes.AprsIsKissTnc, tnc.Message),
             _ when !wasConnected => new EngineError(
                 EngineErrorCodes.AprsIsUnreachable,
                 error?.Message ?? "The APRS-IS server couldn't be reached."
