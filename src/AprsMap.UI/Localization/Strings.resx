@@ -1406,6 +1406,72 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Bulletins</value>
     <comment>Panel title: bulletins and announcements heard.</comment>
   </data>
+  <data name="Bulletins.NewBulletin" xml:space="preserve">
+    <value>New bulletin…</value>
+  </data>
+  <data name="Bulletins.Post.Kind" xml:space="preserve">
+    <value>Kind</value>
+  </data>
+  <data name="Bulletins.Post.Id" xml:space="preserve">
+    <value>Id</value>
+  </data>
+  <data name="Bulletins.Post.IdHelp" xml:space="preserve">
+    <value>A bulletin's id is a digit, 0 to 9; an announcement's is a letter, A to Z. Posting again with the same id and group replaces it.</value>
+  </data>
+  <data name="Bulletins.Post.Group" xml:space="preserve">
+    <value>Group (optional)</value>
+  </data>
+  <data name="Bulletins.Post.Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="Bulletins.Post.Via" xml:space="preserve">
+    <value>Send via</value>
+  </data>
+  <data name="Bulletins.Post.Post" xml:space="preserve">
+    <value>Post</value>
+  </data>
+  <data name="Bulletins.Post.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Bulletins.MineNext" xml:space="preserve">
+    <value>Yours · next send {time}</value>
+    <comment>time: a local time of day.</comment>
+  </data>
+  <data name="Bulletins.MineDone" xml:space="preserve">
+    <value>Yours · no longer repeated</value>
+  </data>
+  <data name="Bulletins.Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Bulletins.Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Bulletins.Groups" xml:space="preserve">
+    <value>ANSRVR groups</value>
+    <comment>ANSRVR is the APRS announcement server's callsign: don't translate it.</comment>
+  </data>
+  <data name="Bulletins.Groups.Help" xml:space="preserve">
+    <value>Join a group to hear what its members post through ANSRVR, the announcement server. Groups you join are kept alive every 8 hours.</value>
+    <comment>ANSRVR: don't translate.</comment>
+  </data>
+  <data name="Bulletins.Groups.JoinName" xml:space="preserve">
+    <value>Group to join</value>
+  </data>
+  <data name="Bulletins.Groups.Join" xml:space="preserve">
+    <value>Join</value>
+  </data>
+  <data name="Bulletins.Groups.Leave" xml:space="preserve">
+    <value>Leave</value>
+  </data>
+  <data name="Bulletins.Groups.PostTo" xml:space="preserve">
+    <value>Group to post to</value>
+  </data>
+  <data name="Bulletins.Groups.Text" xml:space="preserve">
+    <value>Message to the group</value>
+  </data>
+  <data name="Bulletins.Groups.Post" xml:space="preserve">
+    <value>Post</value>
+  </data>
   <data name="Bulletins.Filter" xml:space="preserve">
     <value>Show</value>
   </data>
@@ -3396,6 +3462,15 @@ pause 1s</value>
   <data name="Error.messages.callsign-invalid" xml:space="preserve">
     <value>“{value}” isn't a callsign a message can go to.</value>
     <comment>value: what was typed.</comment>
+  </data>
+  <data name="Error.bulletins.id-invalid" xml:space="preserve">
+    <value>A bulletin's id is one digit, 0 to 9; an announcement's is one letter, A to Z.</value>
+  </data>
+  <data name="Error.bulletins.text-invalid" xml:space="preserve">
+    <value>A bulletin has 1 to 67 plain letters, digits and punctuation: no accents, and no vertical bar, tilde or opening curly brace.</value>
+  </data>
+  <data name="Error.bulletins.group-invalid" xml:space="preserve">
+    <value>A bulletin's group is 1 to 5 letters and digits. An ANSRVR group has no spaces, and with its text fits in one message.</value>
   </data>
   <data name="Error.transmit.failed" xml:space="preserve">
     <value>The packet couldn't be sent.</value>

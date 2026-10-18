@@ -121,6 +121,24 @@ public static class EngineHub
     /// <summary>Hub streaming method for <see cref="IEngineService.WatchBulletinsAsync"/>.</summary>
     public const string WatchBulletins = "WatchBulletins";
 
+    /// <summary>Hub method for <see cref="IEngineService.PostBulletinAsync"/>.</summary>
+    public const string PostBulletin = "PostBulletin";
+
+    /// <summary>Hub method for <see cref="IEngineService.StopBulletinAsync"/>.</summary>
+    public const string StopBulletin = "StopBulletin";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetGroupsAsync"/>.</summary>
+    public const string GetGroups = "GetGroups";
+
+    /// <summary>Hub method for <see cref="IEngineService.JoinGroupAsync"/>.</summary>
+    public const string JoinGroup = "JoinGroup";
+
+    /// <summary>Hub method for <see cref="IEngineService.LeaveGroupAsync"/>.</summary>
+    public const string LeaveGroup = "LeaveGroup";
+
+    /// <summary>Hub method for <see cref="IEngineService.PostToGroupAsync"/>.</summary>
+    public const string PostToGroup = "PostToGroup";
+
     /// <summary>Hub method for <see cref="IEngineService.GetDestinationAsync"/>.</summary>
     public const string GetDestination = "GetDestination";
 
