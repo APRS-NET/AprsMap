@@ -232,6 +232,36 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         _connection.StreamAsync<BulletinView>(EngineHub.WatchBulletins, cancellationToken);
 
     /// <inheritdoc />
+    public Task<BulletinView> PostBulletinAsync(BulletinPost post, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<BulletinView>(EngineHub.PostBulletin, post, cancellationToken));
+
+    /// <inheritdoc />
+    public Task StopBulletinAsync(string addressee, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.StopBulletin, addressee, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> GetGroupsAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<IReadOnlyList<string>>(EngineHub.GetGroups, cancellationToken));
+
+    /// <inheritdoc />
+    public Task JoinGroupAsync(string group, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.JoinGroup, group, cancellationToken));
+
+    /// <inheritdoc />
+    public Task LeaveGroupAsync(string group, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.LeaveGroup, group, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<ChatMessage>> PostToGroupAsync(
+        string group,
+        string text,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<ChatMessage>>(EngineHub.PostToGroup, group, text, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<DestinationInfo> GetDestinationAsync(
         double latitude,
         double longitude,

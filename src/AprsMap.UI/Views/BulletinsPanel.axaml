@@ -1,11 +1,14 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 <!-- The Bulletins panel (F2.5 behaviors 1–4): what's heard, newest first, by kind or group and text; new ones marked
-     until seen; a group can be muted. Its DataContext is the main view model; inside, its Bulletins. -->
+     until seen; a group can be muted. With transmitting allowed, a New bulletin form, Edit and Stop on ours
+     (behaviors 5–7), and ANSRVR groups (behaviors 8–10). Its DataContext is the main view model; inside, its
+     Bulletins. -->
 <UserControl
   xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:AprsMap.UI.ViewModels"
   xmlns:b="using:AprsMap.UI.Bulletins"
+  xmlns:s="using:AprsMap.UI.Settings"
   xmlns:l="using:AprsMap.UI.Localization"
   x:Class="AprsMap.UI.Views.BulletinsPanel"
   x:DataType="vm:MainViewModel"
@@ -30,7 +33,145 @@
         AutomationProperties.Name="{l:T Bulletins.Search}"
         MinWidth="160"
       />
+      <Button
+        x:Name="NewBulletinButton"
+        Content="{l:T Bulletins.NewBulletin}"
+        Command="{Binding NewBulletinCommand}"
+        IsVisible="{Binding CanPost}"
+      />
     </WrapPanel>
+    <!-- New bulletin, or changing one of ours (behaviors 5, 6). -->
+    <Border
+      x:Name="BulletinForm"
+      DockPanel.Dock="Top"
+      IsVisible="{Binding IsComposing}"
+      Margin="8,0,8,6"
+      Padding="8"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="1"
+      CornerRadius="{DynamicResource Radius.Control}"
+    >
+      <StackPanel Spacing="6">
+        <WrapPanel ItemSpacing="8" LineSpacing="4">
+          <ComboBox
+            x:Name="BulletinKindBox"
+            ItemsSource="{Binding PostKinds}"
+            SelectedItem="{Binding PostKind}"
+            AutomationProperties.Name="{l:T Bulletins.Post.Kind}"
+          />
+          <TextBox
+            x:Name="BulletinIdBox"
+            Text="{Binding PostId}"
+            MaxLength="1"
+            Width="48"
+            AutomationProperties.Name="{l:T Bulletins.Post.Id}"
+            ToolTip.Tip="{l:T Bulletins.Post.IdHelp}"
+          />
+          <TextBox
+            x:Name="BulletinGroupBox"
+            Text="{Binding PostGroup}"
+            MaxLength="5"
+            MinWidth="90"
+            PlaceholderText="{l:T Bulletins.Post.Group}"
+            AutomationProperties.Name="{l:T Bulletins.Post.Group}"
+          />
+        </WrapPanel>
+        <TextBox
+          x:Name="BulletinTextBox"
+          Text="{Binding PostText}"
+          MaxLength="67"
+          PlaceholderText="{l:T Bulletins.Post.Text}"
+          AutomationProperties.Name="{l:T Bulletins.Post.Text}"
+        />
+        <TextBlock Text="{Binding PostCount}" Foreground="{DynamicResource Brush.TextMuted}" />
+        <WrapPanel ItemSpacing="8">
+          <TextBlock Text="{l:T Bulletins.Post.Via}" VerticalAlignment="Center" />
+          <ItemsControl ItemsSource="{Binding PostVia}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel ItemSpacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="s:ViaChoice">
+                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </WrapPanel>
+        <WrapPanel ItemSpacing="8">
+          <Button x:Name="PostBulletinButton" Content="{l:T Bulletins.Post.Post}" Command="{Binding PostCommand}" />
+          <Button Content="{l:T Bulletins.Post.Cancel}" Command="{Binding CancelPostCommand}" />
+        </WrapPanel>
+      </StackPanel>
+    </Border>
+    <TextBlock
+      x:Name="BulletinError"
+      DockPanel.Dock="Top"
+      Margin="8,0,8,6"
+      Text="{Binding PostError}"
+      IsVisible="{Binding PostError, Converter={x:Static ObjectConverters.IsNotNull}}"
+      Foreground="{DynamicResource Brush.Warn}"
+      TextWrapping="Wrap"
+    />
+    <!-- ANSRVR groups (behaviors 8–10). -->
+    <Expander
+      x:Name="GroupsSection"
+      DockPanel.Dock="Bottom"
+      Header="{l:T Bulletins.Groups}"
+      IsVisible="{Binding CanPost}"
+      HorizontalAlignment="Stretch"
+      Margin="8,6"
+    >
+      <StackPanel Spacing="6">
+        <TextBlock
+          Text="{l:T Bulletins.Groups.Help}"
+          TextWrapping="Wrap"
+          Foreground="{DynamicResource Brush.TextMuted}"
+        />
+        <ItemsControl ItemsSource="{Binding Groups}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate DataType="b:GroupRow">
+              <DockPanel Margin="0,1">
+                <Button
+                  DockPanel.Dock="Right"
+                  Content="{l:T Bulletins.Groups.Leave}"
+                  Command="{Binding LeaveCommand}"
+                  Padding="6,1"
+                />
+                <TextBlock Text="{Binding Name}" FontFamily="{DynamicResource Font.Mono}" VerticalAlignment="Center" />
+              </DockPanel>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <WrapPanel ItemSpacing="8" LineSpacing="4">
+          <TextBox
+            x:Name="JoinGroupBox"
+            Text="{Binding JoinName}"
+            MinWidth="140"
+            PlaceholderText="{l:T Bulletins.Groups.JoinName}"
+            AutomationProperties.Name="{l:T Bulletins.Groups.JoinName}"
+          />
+          <Button x:Name="JoinGroupButton" Content="{l:T Bulletins.Groups.Join}" Command="{Binding JoinCommand}" />
+        </WrapPanel>
+        <WrapPanel ItemSpacing="8" LineSpacing="4" IsVisible="{Binding HasGroups}">
+          <ComboBox
+            ItemsSource="{Binding Groups}"
+            SelectedItem="{Binding PostTo}"
+            AutomationProperties.Name="{l:T Bulletins.Groups.PostTo}"
+            MinWidth="110"
+          />
+          <TextBox
+            x:Name="GroupTextBox"
+            Text="{Binding GroupText}"
+            MinWidth="200"
+            PlaceholderText="{l:T Bulletins.Groups.Text}"
+            AutomationProperties.Name="{l:T Bulletins.Groups.Text}"
+          />
+          <Button Content="{l:T Bulletins.Groups.Post}" Command="{Binding PostToGroupCommand}" />
+        </WrapPanel>
+      </StackPanel>
+    </Expander>
     <DockPanel
       DockPanel.Dock="Top"
       Margin="8,0"
@@ -65,6 +206,16 @@
             </WrapPanel>
             <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" />
             <TextBlock Text="{Binding Heard}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+            <TextBlock
+              Text="{Binding MineText}"
+              IsVisible="{Binding MineText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <WrapPanel ItemSpacing="8" IsVisible="{Binding CanStop}">
+              <Button Content="{l:T Bulletins.Edit}" Command="{Binding EditCommand}" Padding="6,1" />
+              <Button Content="{l:T Bulletins.Stop}" Command="{Binding StopCommand}" Padding="6,1" />
+            </WrapPanel>
             <Button
               Content="{l:T Bulletins.MuteGroup}"
               IsVisible="{Binding HasGroup}"

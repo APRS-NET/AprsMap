@@ -323,6 +323,39 @@ public interface IEngineService
     IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Posts a bulletin or announcement (docs/features/F2.5-bulletins.md, behaviors 5–7): sent now, then repeated on
+    /// APRS.NET's bulletin schedule until it finishes or is stopped. Posting again to the same addressee replaces the
+    /// text and starts the schedule again. It shows in <see cref="WatchBulletinsAsync"/> as ours, with its next send.
+    /// </summary>
+    /// <exception cref="ArgumentException">The id, group or text can't be sent.</exception>
+    /// <exception cref="InvalidOperationException">Transmitting isn't allowed now (F2.1's <c>transmit.*</c> reasons).</exception>
+    Task<BulletinView> PostBulletinAsync(BulletinPost post, CancellationToken cancellationToken = default);
+
+    /// <summary>Stops repeating one of our bulletins, by addressee (behavior 6); nothing happens for one not ours.</summary>
+    Task StopBulletinAsync(string addressee, CancellationToken cancellationToken = default);
+
+    /// <summary>The ANSRVR groups the active profile has joined (behavior 10).</summary>
+    Task<IReadOnlyList<string>> GetGroupsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Joins an ANSRVR group (behavior 8): sends ANSRVR's join message through messaging and keeps the group alive
+    /// every 8 hours from then on.
+    /// </summary>
+    /// <exception cref="ArgumentException">The group name can't be sent.</exception>
+    Task JoinGroupAsync(string group, CancellationToken cancellationToken = default);
+
+    /// <summary>Leaves an ANSRVR group (behavior 9): sends ANSRVR's leave message and stops keeping it alive.</summary>
+    Task LeaveGroupAsync(string group, CancellationToken cancellationToken = default);
+
+    /// <summary>Posts to an ANSRVR group (behavior 9): ANSRVR's post message, which counts as keeping it alive.</summary>
+    /// <exception cref="ArgumentException">The group name or text can't be sent.</exception>
+    Task<IReadOnlyList<ChatMessage>> PostToGroupAsync(
+        string group,
+        string text,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
     /// The distance and bearing from the active profile's location to a destination, and the great-circle line to it
     /// (docs/features/F1.18-destination.md, behaviors 2, 3); <see cref="DestinationInfo.Unknown"/> without a location.
     /// </summary>

@@ -314,7 +314,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The Bulletins panel (docs/features/F2.5-bulletins.md).</summary>
     public Bulletins.BulletinsViewModel Bulletins =>
-        _bulletinsPanel ??= new Bulletins.BulletinsViewModel(engine, _text, time);
+        _bulletinsPanel ??= new Bulletins.BulletinsViewModel(engine, _text, time, () => _status);
 
     private Bulletins.BulletinsViewModel? _bulletinsPanel;
 

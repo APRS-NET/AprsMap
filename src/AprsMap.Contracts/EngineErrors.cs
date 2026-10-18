@@ -263,6 +263,15 @@ public static class EngineErrorCodes
     /// <summary>A message's addressee isn't a callsign it can go to (F2.4 behavior 3).</summary>
     public const string MessageCallsignInvalid = "messages.callsign-invalid";
 
+    /// <summary>A bulletin's id isn't a digit (bulletin) or a letter (announcement) (F2.5 behavior 5).</summary>
+    public const string BulletinIdInvalid = "bulletins.id-invalid";
+
+    /// <summary>A bulletin's text is empty, over 67 characters or has characters that can't be sent (F2.5 behavior 5).</summary>
+    public const string BulletinTextInvalid = "bulletins.text-invalid";
+
+    /// <summary>A bulletin or ANSRVR group name can't be sent (F2.5 behaviors 5, 8).</summary>
+    public const string BulletinGroupInvalid = "bulletins.group-invalid";
+
     /// <summary>The kind of failure a code stands for, which decides the exception type that carries it.</summary>
     public static EngineErrorKind KindOf(string code)
     {
