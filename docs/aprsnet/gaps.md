@@ -34,7 +34,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G19 | Query and response handling | Packets + Messaging | 2 | [APRS.NET#200](https://github.com/APRS-NET/APRS.NET/issues/200) |
 | G12 | AX.25 UI frame codec (delivered) | new: AprsNet.Ax25 | 3 | — |
 | G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial published in `0.3.0-alpha.2` as `AprsNet.Kiss.Serial`, unplug and warnings in `0.4.0-alpha.4`, issue open for hardware testing) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), [APRS.NET#160](https://github.com/APRS-NET/APRS.NET/issues/160) |
-| G14 | Text-mode and Kenwood TNC support | new: AprsNet.Tnc | 3 | — |
+| G14 | Text-mode and Kenwood TNC support | new: AprsNet.Tnc | 2 | [APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249) |
 | G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | [APRS.NET#209](https://github.com/APRS-NET/APRS.NET/issues/209) |
 | G16 | IGate engine | new: AprsNet.IGate | 3 | [APRS.NET#206](https://github.com/APRS-NET/APRS.NET/issues/206), [APRS.NET#212](https://github.com/APRS-NET/APRS.NET/issues/212) |
 | G17 | NMEA sentence parsing and `$` packets | Packets | 3 | [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
@@ -325,6 +325,10 @@ monitor lines (TNC2 and common variants such as Kenwood's) into `AprsPacket`, tr
 commands, and enter/exit KISS mode sequences for radios such as the TM-D710 and TH-D72/D74.
 
 **Acceptance.** Recorded transcripts for at least two TNC families.
+
+**Filed** as [APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249) for `0.5.0-alpha.1` (part of #160), in this
+order: KISS on and off for each radio family, run on open, on reconnect and on a `TextNotKiss` warning; open and close
+scripts; text mode. Only the TH-D72A is on hand, so the second family needs another radio or someone's transcript.
 
 ## G15: Digipeater engine
 
