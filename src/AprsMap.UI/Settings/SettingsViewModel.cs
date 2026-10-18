@@ -43,7 +43,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IReadOnlyList<SettingItem>? mapItems = null,
         SourcesSectionViewModel? sources = null,
         IReadOnlyList<SettingItem>? unitItems = null,
-        BeaconsSectionViewModel? beacons = null
+        BeaconsSectionViewModel? beacons = null,
+        Shell.SavedLayoutsViewModel? layouts = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
@@ -52,6 +53,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Sources = sources;
         Beacons = beacons;
         Data = data;
+        Layouts = layouts;
         _time = time;
         _text = text ?? Localizer.Instance;
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
@@ -81,7 +83,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsBeaconsSection),
         nameof(IsDataSection),
         nameof(IsMapSection),
-        nameof(IsUnitsSection)
+        nameof(IsUnitsSection),
+        nameof(IsLayoutSection)
     )]
     public partial SettingsSection? SelectedSection { get; set; }
 
@@ -117,6 +120,15 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Settings › Units (F1.10 behavior 6): the station's unit per quantity; empty where it can't be changed.</summary>
     public IReadOnlyList<SettingItem> UnitItems { get; }
+
+    /// <summary>Whether Layout is showing (docs/features/F1.23-saved-layouts.md).</summary>
+    public bool IsLayoutSection => SelectedSection?.Id == "layout";
+
+    /// <summary>The saved layouts (F1.23), when the app has a layout to save.</summary>
+    public Shell.SavedLayoutsViewModel? Layouts { get; }
+
+    /// <summary>Shows the Layout section (from the app menu's Save layout as…).</summary>
+    internal void ShowLayout() => SelectedSection = Sections.FirstOrDefault(s => s.Id == "layout") ?? SelectedSection;
 
     /// <summary>Whether Data is showing.</summary>
     public bool IsDataSection => SelectedSection?.Id == "data";
@@ -245,6 +257,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         if (MapItems.Count > 0)
         {
             Sections.Add(new SettingsSection("map", _text["Settings.Map"]));
+        }
+        if (Layouts is not null)
+        {
+            Sections.Add(new SettingsSection("layout", _text["Settings.Layout"]));
         }
         if (UnitItems.Count > 0)
         {

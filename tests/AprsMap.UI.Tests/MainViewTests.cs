@@ -132,6 +132,8 @@ public class MainViewTests
         Assert.Equal(
             [
                 "ReconnectItem",
+                "AprsIsConsoleItem",
+                "CaptureItem",
                 "InternetToggle",
                 "AprsIsToggle",
                 "TilesToggle",

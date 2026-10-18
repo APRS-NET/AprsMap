@@ -69,6 +69,7 @@ public sealed partial class MainViewModel : ObservableObject
         );
         Details.CloseRequested += (_, _) => SelectedStation = null;
         Details.MessageRequested += (_, name) => OpenConversation(name);
+        Details.DestinationRequested += (_, d) => _ = Destination.SetAsync(d.Latitude, d.Longitude, d.Name);
         Details.SelectRequested += (_, name) => SelectedStation = name;
         Details.PropertyChanged += (_, e) =>
         {
@@ -87,6 +88,7 @@ public sealed partial class MainViewModel : ObservableObject
         ViewFilter.Changed += (_, _) => OnViewFilterChanged();
         StationList.Filter = () => ViewFilter.Current;
         Shell = new ShellViewModel(this, _text, managedWindows);
+        Layouts = new SavedLayoutsViewModel(Shell, _text);
         Dashboard = new Statistics.DashboardViewModel(
             engine,
             time,
@@ -111,6 +113,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
         );
         _text.LanguageChanged += (_, _) => Retranslate();
+        _text.LanguageChanged += (_, _) => _destination?.Retranslate();
         Retranslate();
     }
 
@@ -195,6 +198,17 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The map and the panels around it (docs/features/F1.0-shell-and-docking.md).</summary>
     public ShellViewModel Shell { get; }
 
+    /// <summary>Saved layouts, and the question when the monitors change (docs/features/F1.23-saved-layouts.md).</summary>
+    public SavedLayoutsViewModel Layouts { get; }
+
+    /// <summary>Save layout as… in the app menu: Settings › Layout, where the name is typed (F1.23 behavior 1).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    internal async Task OpenLayoutSettingsAsync()
+    {
+        await OpenSettingsAsync();
+        Settings?.ShowLayout();
+    }
+
     /// <summary>Said once when the saved layout couldn't be read and the default is shown (F1.0 behavior 10); or null.</summary>
     [ObservableProperty]
     public partial string? LayoutNotice { get; set; }
@@ -233,6 +247,75 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>"2 new messages" in the status bar while any are unread (behavior 4); null otherwise.</summary>
     [ObservableProperty]
     public partial string? UnreadText { get; private set; }
+
+    /// <summary>My destination, in the map's chip and as a line on the map (docs/features/F1.18-destination.md).</summary>
+    public Map.DestinationViewModel Destination =>
+        _destination ??= new Map.DestinationViewModel(engine, _text, () => _settings?.Units ?? UnitSettings.Metric);
+
+    private Map.DestinationViewModel? _destination;
+
+    /// <summary>The Source console panel (docs/features/F1.28-source-console.md).</summary>
+    public Traffic.SourceConsoleViewModel Console => _consolePanel ??= CreateConsole();
+
+    private Traffic.SourceConsoleViewModel? _consolePanel;
+
+    private Traffic.SourceConsoleViewModel CreateConsole()
+    {
+        var console = new Traffic.SourceConsoleViewModel(engine, _text, time, () => _status);
+        if (_status?.Sources is { } sources)
+        {
+            console.ShowSources(sources);
+        }
+        return console;
+    }
+
+    /// <summary>
+    /// Opens the Source console on a source, from its pill (F1.28 behavior 1), with the command line open for TNC
+    /// commands (docs/features/F3.2-built-in-tncs.md, behavior 8).
+    /// </summary>
+    internal async Task OpenConsoleAsync(string sourceId, bool commandLine)
+    {
+        ShowPanel(PanelKinds.Console);
+        await Console.OpenAsync(sourceId, commandLine);
+    }
+
+    /// <summary>"Capturing unexpected packets: 37 today" while capture is on (F1.27 behavior 6); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? CaptureText { get; private set; }
+
+    /// <summary>The Captured packets panel (docs/features/F1.27-packet-capture.md, behavior 7).</summary>
+    public Capture.CapturedPacketsViewModel CapturedPackets =>
+        _capturedPanel ??= new Capture.CapturedPacketsViewModel(engine, _text, time, OpenStationPackets);
+
+    private Capture.CapturedPacketsViewModel? _capturedPanel;
+
+    /// <summary>Opens the Captured packets panel, from the status line (F1.27 behavior 6).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task OpenCapturedPacketsAsync()
+    {
+        ShowPanel(PanelKinds.Captured);
+        await CapturedPackets.LoadAsync();
+    }
+
+    /// <summary>Open in Packets: that station's packets in the Packets panel (F1.27 behavior 7).</summary>
+    private void OpenStationPackets(string station)
+    {
+        PacketList.OnlyStation(station);
+        ShowPanel(PanelKinds.Packets);
+    }
+
+    /// <summary>Opens the Source console on the APRS-IS source, from its pill (F1.28 behavior 1).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private Task OpenAprsIsConsoleAsync() =>
+        _status?.Sources?.FirstOrDefault(s => s.Kind == SourceKind.AprsIs) is { } aprsIs
+            ? OpenConsoleAsync(aprsIs.Id, commandLine: false)
+            : Task.CompletedTask;
+
+    /// <summary>The Bulletins panel (docs/features/F2.5-bulletins.md).</summary>
+    public Bulletins.BulletinsViewModel Bulletins =>
+        _bulletinsPanel ??= new Bulletins.BulletinsViewModel(engine, _text, time);
+
+    private Bulletins.BulletinsViewModel? _bulletinsPanel;
 
     /// <summary>Opens the Messages panel, from the unread marker.</summary>
     [RelayCommand]
@@ -325,7 +408,14 @@ public sealed partial class MainViewModel : ObservableObject
         )
         {
             Clear = _settings is { ReadOnly: false } ? new ClearDataViewModel(engine, _text) : null,
+            Capture = _settings is { ReadOnly: false }
+                ? new Capture.CaptureSettingsViewModel(engine, _text, Show)
+                : null,
         };
+        if (_settings is { } shown)
+        {
+            data.Capture?.Show(shown);
+        }
         var mapItems = Map is null
             ? null
             : SettingsRegistry.Map(
@@ -351,7 +441,8 @@ public sealed partial class MainViewModel : ObservableObject
             mapItems,
             sources,
             unitItems,
-            beacons
+            beacons,
+            Layouts
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
@@ -614,13 +705,18 @@ public sealed partial class MainViewModel : ObservableObject
             _appearance.Changed += (_, settings) => Map.UseProvider(settings.MapProvider);
         }
         await ViewFilter.LoadAsync(Preferences);
+        Destination.Preferences = Preferences;
+        await Destination.LoadAsync();
         await StationList.LoadAsync();
         var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);
         var countdown = KeepAsync(CountDownAsync, cancellationToken);
         var messages = KeepAsync(Messages.WatchAsync, cancellationToken);
-        await Task.WhenAll(packets, stations, status, countdown, messages);
+        Bulletins.Preferences = Preferences;
+        await Bulletins.LoadAsync();
+        var bulletins = KeepAsync(Bulletins.WatchAsync, cancellationToken);
+        await Task.WhenAll(packets, stations, status, countdown, messages, bulletins);
     }
 
     /// <summary>Applies one batch from the station stream.</summary>
@@ -657,6 +753,7 @@ public sealed partial class MainViewModel : ObservableObject
             _ = ShowRouteAsync(following); // the station's last packet changed
         }
         StationsChanged?.Invoke(this, batch);
+        _destination?.StationsChanged(batch);
         Details.Changed(batch);
         StationList.Changed();
     }
@@ -802,6 +899,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void ShowSourcePills(EngineStatus status)
     {
+        _consolePanel?.ShowSources(status.Sources ?? []);
         var sources = (status.Sources ?? []).Where(s => s.Kind != SourceKind.AprsIs).ToList();
         for (var i = SourcePills.Count - 1; i >= 0; i--)
         {
@@ -821,7 +919,8 @@ public sealed partial class MainViewModel : ObservableObject
                     _text,
                     on => SwitchSourceAsync(source.Id, on),
                     () => ReconnectSourceAsync(source.Id),
-                    () => SendPositionOnAsync(source.Id)
+                    () => SendPositionOnAsync(source.Id),
+                    commandLine => OpenConsoleAsync(source.Id, commandLine)
                 );
                 SourcePills.Insert(Math.Min(i, SourcePills.Count), pill);
             }
@@ -1072,6 +1171,11 @@ public sealed partial class MainViewModel : ObservableObject
         _settings = settings;
         PacketList.ShowSources(settings);
         Settings?.Beacons?.Show(settings); // a source's TX enabled changes what beacons can go out on
+        Settings?.Data?.Capture?.Show(settings);
+        if (_destination is { IsSet: true } destination)
+        {
+            _ = destination.RefreshAsync(); // my location or the units may have changed
+        }
         CanToggle = !settings.ReadOnly;
         if (CanClearData != couldClear)
         {
@@ -1210,6 +1314,9 @@ public sealed partial class MainViewModel : ObservableObject
             PacketList.Clear(); // someone cleared the packet history (F1.19 behavior 3)
         }
         _status = status;
+        CaptureText = status.CapturedToday is { } captured
+            ? _text.Format("Capture.Status", new Dictionary<string, object?> { ["count"] = captured })
+            : null;
         ShowToggles(status.Toggles ?? StationToggles.AllOn);
         _engineUnreachable = false;
         ShowConnection();

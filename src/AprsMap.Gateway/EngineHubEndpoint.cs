@@ -260,6 +260,89 @@ internal sealed class EngineHubEndpoint(
         return engine.ReconnectSourceAsync(sourceId, Context.ConnectionAborted);
     }
 
+    /// <summary>
+    /// The gateway host's serial ports are only listed where sources can be changed (F3.1 behavior 1.2, 12): the
+    /// settings gate.
+    /// </summary>
+    [HubMethodName(EngineHub.GetSerialPorts)]
+    public Task<IReadOnlyList<string>> GetSerialPorts()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetSerialPortsAsync(Context.ConnectionAborted);
+    }
+
+    /// <summary>
+    /// A source's traffic shows login lines, filters and what the radio sends: the operator's (F1.28 behavior 11).
+    /// </summary>
+    [HubMethodName(EngineHub.WatchSourceTraffic)]
+    public IAsyncEnumerable<TrafficEntry> WatchSourceTraffic(string sourceId, CancellationToken cancellationToken)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.WatchSourceTrafficAsync(sourceId, cancellationToken);
+    }
+
+    /// <summary>Manual mode is for typing to the TNC, which can key the radio: refused until F2.9 (F3.2 behavior 12).</summary>
+    [HubMethodName(EngineHub.SetTncManual)]
+    public Task SetTncManual(string sourceId, bool manual)
+    {
+        RefuseTransmit();
+        return engine.SetTncManualAsync(sourceId, manual, Context.ConnectionAborted);
+    }
+
+    /// <summary>
+    /// Switching a TNC into or out of KISS changes the station's source: the settings gate. A typed command can key the
+    /// radio, so it's refused until F2.9 (F3.2 behaviors 11, 12).
+    /// </summary>
+    [HubMethodName(EngineHub.SendTncCommand)]
+    public Task SendTncCommand(string sourceId, TncCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        if (command.Kind is TncCommandKind.Line or TncCommandKind.Bytes)
+        {
+            RefuseTransmit();
+        }
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.SendTncCommandAsync(sourceId, command, Context.ConnectionAborted);
+    }
+
+    /// <summary>Bulletins heard are public: every viewer may read them (F2.5 behavior 1).</summary>
+    [HubMethodName(EngineHub.WatchBulletins)]
+    public IAsyncEnumerable<BulletinView> WatchBulletins(CancellationToken cancellationToken) =>
+        engine.WatchBulletinsAsync(cancellationToken);
+
+    /// <summary>Distance and bearing from the station's location to a viewer's destination (F1.18): open to every viewer.</summary>
+    [HubMethodName(EngineHub.GetDestination)]
+    public Task<DestinationInfo> GetDestination(double latitude, double longitude) =>
+        engine.GetDestinationAsync(latitude, longitude, Context.ConnectionAborted);
+
+    /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
+    [HubMethodName(EngineHub.GetCapture)]
+    public Task<CaptureView> GetCapture(CaptureQuery query)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetCaptureAsync(query, Context.ConnectionAborted);
+    }
+
+    /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
+    [HubMethodName(EngineHub.ExportCapture)]
+    public Task<CaptureExportResult> ExportCapture(CaptureExport request)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ExportCaptureAsync(request, Context.ConnectionAborted);
+    }
+
+    /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
+    [HubMethodName(EngineHub.ClearCapture)]
+    public Task ClearCapture()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ClearCaptureAsync(Context.ConnectionAborted);
+    }
+
+    /// <summary>The TNC types APRS.NET knows: the same for every gateway, so anyone may list them (F3.2 behavior 4).</summary>
+    [HubMethodName(EngineHub.GetTncTypes)]
+    public Task<IReadOnlyList<TncTypeInfo>> GetTncTypes() => engine.GetTncTypesAsync(Context.ConnectionAborted);
+
     /// <summary>Address lookup is offered only where settings can be changed, so the gateway isn't an open proxy.</summary>
     [HubMethodName(EngineHub.GetGeocodingInfo)]
     public async Task<GeocodingInfo> GetGeocodingInfo() =>

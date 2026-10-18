@@ -333,6 +333,50 @@ public sealed class TransmitTests
     }
 
     [Fact]
+    public async Task MyLastPositionSaysHowItGotOutOnRfAndToAprsIs()
+    {
+        var station = Create(Home(sources: [AprsIs, Tnc]));
+        var (run, cts, aprsIs, tnc) = await Run(station);
+        using (cts)
+        {
+            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SendPositionAsync(null, Ct);
+            await WaitUntil(() => Task.FromResult(!tnc.Sent.IsEmpty && !aprsIs.Sent.IsEmpty));
+            var sent = tnc.Sent.First();
+            var information = sent[(sent.IndexOf(':') + 1)..];
+
+            var last = (await station.Engine.GetStatusAsync(Ct)).Transmit!.LastPosition!;
+            Assert.True(last.Following);
+            Assert.True(last.SentOnRf);
+            Assert.Equal(2, last.Sources.Count);
+            Assert.Equal([HeardBackKind.Direct], last.Heard.Select(h => h.Kind)); // sent to APRS-IS by this station
+
+            await tnc.Write($"N0TEST>{Brand.Tocall},K0HQ-1*,WIDE2-1:{information}"); // a digipeater's copy, on my TNC
+            await aprsIs.Write($"N0TEST>{Brand.Tocall},K0HQ-1*,WIDE2-1,qAR,N0IGT:{information}"); // gated by an IGate
+            await WaitUntil(async () =>
+                (await station.Engine.GetStatusAsync(Ct)).Transmit!.LastPosition!.Heard.Count == 3
+            );
+            last = (await station.Engine.GetStatusAsync(Ct)).Transmit!.LastPosition!;
+            Assert.Equal(
+                [
+                    (HeardBackKind.Direct, AprsIs.Name),
+                    (HeardBackKind.Repeated, "K0HQ-1"),
+                    (HeardBackKind.Gated, "N0IGT"),
+                ],
+                last.Heard.Select(h => (h.Kind, h.By))
+                    .OrderBy(h => h.Kind == HeardBackKind.Direct ? 0 : 1)
+                    .ThenBy(h => h.By)
+            ); // the two copies come on two sources, in either order
+
+            station.Time.Advance(Engine.FollowFor + TimeSpan.FromSeconds(1));
+            Assert.False((await station.Engine.GetStatusAsync(Ct)).Transmit!.LastPosition!.Following);
+
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
     public async Task TestSendGoesOutOnOneSourceAndSaysWhoRepeatedIt()
     {
         var station = Create(Home(sources: [AprsIs, Tnc]));

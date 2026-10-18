@@ -684,7 +684,7 @@ public class EngineTests
     private static readonly SourceSettings Tnc = new("tnc", "Direwolf", SourceKind.KissTcp, Host: "127.0.0.1");
 
     // KISS over serial isn't built yet (it waits for hardware testing of APRS.NET#126).
-    private static readonly SourceSettings SerialTnc = new("serial", "TNC-X", SourceKind.KissSerial);
+    private static readonly SourceSettings Gps = new("gps", "GPS", SourceKind.Gps);
 
     [Fact]
     public async Task APacketOnTwoSourcesIsListedOnceAndSeenOnTheSecond()
@@ -819,7 +819,7 @@ public class EngineTests
     {
         var profile = InMemorySettingsStore.Profile("N0TEST") with
         {
-            SourceIds = [InMemorySettingsStore.Rotate.Id, SerialTnc.Id],
+            SourceIds = [InMemorySettingsStore.Rotate.Id, Gps.Id],
         };
         var engine = new Engine(
             Options.Create(new EngineOptions()),
@@ -833,7 +833,7 @@ public class EngineTests
                     [profile],
                     profile.Id,
                     UnitSettings.Metric,
-                    Sources: [InMemorySettingsStore.Rotate with { Server = "127.0.0.1:1" }, SerialTnc]
+                    Sources: [InMemorySettingsStore.Rotate with { Server = "127.0.0.1:1" }, Gps]
                 )
             ),
             new FakeTimeProvider(),
@@ -843,7 +843,7 @@ public class EngineTests
 
         var run = engine.RunAsync(cts.Token);
         await WaitUntil(async () =>
-            (await engine.GetStatusAsync(Ct)).Sources?.FirstOrDefault(s => s.Id == SerialTnc.Id) is { } tnc
+            (await engine.GetStatusAsync(Ct)).Sources?.FirstOrDefault(s => s.Id == Gps.Id) is { } tnc
             && tnc.Error?.Code == EngineErrorCodes.SourceKindNotBuilt
         );
 
@@ -1205,6 +1205,43 @@ public class EngineTests
     }
 
     /// <summary>Hands out scripted sources in order; once the script runs out, every attempt fails.</summary>
+    [Fact]
+    public async Task ADestinationsDistanceBearingAndLineAreFromMyLocation()
+    {
+        var store = InMemorySettingsStore.WithProfile();
+        using var engine = new Engine(
+            Options.Create(new EngineOptions()),
+            new FakeSourceFactory(),
+            store,
+            TimeProvider.System,
+            NullLogger<Engine>.Instance
+        );
+        Assert.Equal(DestinationInfo.Unknown, await engine.GetDestinationAsync(39.74, -104.99, Ct)); // no location yet
+        var settings = await engine.GetSettingsAsync(Ct);
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Profiles = [settings.Profiles[0] with { Latitude = 40.015, Longitude = -105.27 }],
+            },
+            Ct
+        );
+
+        var denver = await engine.GetDestinationAsync(39.74, -104.99, Ct); // Boulder to Denver (F1.18)
+
+        Assert.InRange(denver.DistanceKm!.Value, 38, 40);
+        Assert.InRange(denver.Bearing!.Value, 135, 145); // south-east
+        Assert.Equal(Engine.DestinationSegments + 1, denver.Line.Count);
+        Assert.Equal(
+            (40.015, -105.27),
+            (Math.Round(denver.Line[0].Latitude, 6), Math.Round(denver.Line[0].Longitude, 6))
+        );
+        Assert.Equal(39.74, denver.Line[^1].Latitude, 6);
+
+        // A transatlantic line bends north of the straight one on the map (acceptance test 3).
+        var london = await engine.GetDestinationAsync(51.5, -0.12, Ct);
+        Assert.True(london.Line.Max(p => p.Latitude) > 51.5);
+    }
+
     internal sealed class FakeSourceFactory : IPacketSourceFactory
     {
         private readonly Queue<FakeSource?> _script = new();

@@ -30,6 +30,16 @@ public sealed partial class DashboardPanel : UserControl
             _ = clipboard.SetTextAsync(table.CopyText());
             e.Handled = true;
         }
+        // Each tile's Copy: its number and series (behavior 8).
+        else if (
+            e.Source is Button { Classes: var tileClasses, DataContext: Tile tile }
+            && tileClasses.Contains("copy-tile")
+            && TopLevel.GetTopLevel(this)?.Clipboard is { } tileClipboard
+        )
+        {
+            _ = tileClipboard.SetTextAsync(tile.CopyText());
+            e.Handled = true;
+        }
     }
 
     private DashboardViewModel? Model => DataContext as DashboardViewModel;

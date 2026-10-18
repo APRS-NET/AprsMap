@@ -20,11 +20,17 @@ public sealed partial class SourcePill : ObservableObject
         Localizer text,
         Func<bool, Task> turn,
         Func<Task> reconnect,
-        Func<Task>? sendPosition = null
+        Func<Task>? sendPosition = null,
+        Func<bool, Task>? openConsole = null
     )
     {
         Id = id;
         _text = text;
+        ConsoleCommand = new AsyncRelayCommand(() => openConsole?.Invoke(false) ?? Task.CompletedTask);
+        TncCommandsCommand = new AsyncRelayCommand(
+            () => openConsole?.Invoke(true) ?? Task.CompletedTask,
+            () => CanType
+        );
         Switch = new SourceSwitch(turn);
         ReconnectCommand = new AsyncRelayCommand(reconnect, () => CanReconnect);
         SendPositionCommand = new AsyncRelayCommand(sendPosition ?? (() => Task.CompletedTask), () => CanSendPosition);
@@ -41,6 +47,19 @@ public sealed partial class SourcePill : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendPositionCommand))]
     public partial bool CanSendPosition { get; private set; }
+
+    /// <summary>Opens the Source console on this source (docs/features/F1.28-source-console.md, behavior 1).</summary>
+    public IAsyncRelayCommand ConsoleCommand { get; }
+
+    /// <summary>
+    /// Opens the console with its command line, to type to the TNC (docs/features/F3.2-built-in-tncs.md, behavior 8).
+    /// </summary>
+    public IAsyncRelayCommand TncCommandsCommand { get; }
+
+    /// <summary>Whether TNC commands… is offered: a KISS over serial source.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TncCommandsCommand))]
+    public partial bool CanType { get; private set; }
 
     /// <summary>The source's id.</summary>
     public string Id { get; }
@@ -83,10 +102,12 @@ public sealed partial class SourcePill : ObservableObject
     internal void Show(SourceStatus status, bool canChange, bool transmitting = false)
     {
         IsTransmitEnabled = status.TransmitEnabled && canChange;
+        CanType = status.Kind == SourceKind.KissSerial && canChange;
         CanSendPosition = transmitting && status.CanTransmit;
         var name = new Dictionary<string, object?> { ["source"] = status.Name };
         Text =
             !status.Enabled ? _text.Format("Status.Source.Off", name)
+            : status is { Manual: true, State: ConnectionState.Connected } ? _text.Format("Status.Source.Manual", name)
             : (status.State is ConnectionState.Connected ? status.Warning : status.Error) is { } error
                 ? _text.Format(
                     "Status.Source.Error",

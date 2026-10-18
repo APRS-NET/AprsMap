@@ -62,6 +62,22 @@ internal sealed class MainWindowLayout
         }
     }
 
+    /// <summary>Moves the window where a saved layout had it, fitted to the screens there are (F1.23 behavior 1).</summary>
+    public void Apply(MainWindowPlacement placement)
+    {
+        var (position, size) = WindowPlacement.Fit(placement.Position, placement.Size, Screens());
+        Window.WindowState = WindowState.Normal;
+        Window.Position = position;
+        Window.Width = size.Width;
+        Window.Height = size.Height;
+        _position = position;
+        _size = size;
+        if (placement.Maximized)
+        {
+            Window.WindowState = WindowState.Maximized;
+        }
+    }
+
     /// <summary>Where the window is now, for saving.</summary>
     public MainWindowPlacement Placement() => new(_position, _size, Window.WindowState == WindowState.Maximized);
 

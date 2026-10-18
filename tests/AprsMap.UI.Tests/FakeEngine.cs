@@ -209,6 +209,117 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
+    /// <summary>The serial ports <see cref="GetSerialPortsAsync"/> gives.</summary>
+    public List<string> SerialPorts { get; } = ["/dev/ttyUSB0"];
+
+    public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<string>>(SerialPorts);
+
+    /// <summary>The traffic <see cref="WatchSourceTrafficAsync"/> gives, by source id; it then waits.</summary>
+    public Dictionary<string, List<TrafficEntry>> Traffic { get; } = [];
+
+    /// <summary>New traffic for a watcher, after what <see cref="Traffic"/> held.</summary>
+    public System.Threading.Channels.Channel<TrafficEntry> LiveTraffic { get; } =
+        System.Threading.Channels.Channel.CreateUnbounded<TrafficEntry>();
+
+    public async IAsyncEnumerable<TrafficEntry> WatchSourceTrafficAsync(
+        string sourceId,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        foreach (var entry in Traffic.GetValueOrDefault(sourceId) ?? [])
+        {
+            yield return entry;
+        }
+        await foreach (var entry in LiveTraffic.Reader.ReadAllAsync(cancellationToken))
+        {
+            if (entry.SourceId == sourceId)
+            {
+                yield return entry;
+            }
+        }
+    }
+
+    /// <summary>Manual mode as the console set it, by source id.</summary>
+    public Dictionary<string, bool> Manual { get; } = [];
+
+    public Task SetTncManualAsync(string sourceId, bool manual, CancellationToken cancellationToken = default)
+    {
+        Manual[sourceId] = manual;
+        return Task.CompletedTask;
+    }
+
+    /// <summary>The TNC commands sent, in order.</summary>
+    public List<(string SourceId, TncCommand Command)> TncCommands { get; } = [];
+
+    /// <summary>When set, <see cref="SendTncCommandAsync"/> throws it.</summary>
+    public Exception? TncCommandFailure { get; set; }
+
+    public Task SendTncCommandAsync(string sourceId, TncCommand command, CancellationToken cancellationToken = default)
+    {
+        if (TncCommandFailure is { } failure)
+        {
+            return Task.FromException(failure);
+        }
+        TncCommands.Add((sourceId, command));
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Bulletins for <see cref="WatchBulletinsAsync"/>: written here, read by the watcher.</summary>
+    public System.Threading.Channels.Channel<BulletinView> Bulletins { get; } =
+        System.Threading.Channels.Channel.CreateUnbounded<BulletinView>();
+
+    public IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default) =>
+        Bulletins.Reader.ReadAllAsync(cancellationToken);
+
+    /// <summary>What <see cref="GetDestinationAsync"/> gives, by destination; <see cref="DestinationInfo.Unknown"/> otherwise.</summary>
+    public Dictionary<(double, double), DestinationInfo> Destinations { get; } = [];
+
+    public Task<DestinationInfo> GetDestinationAsync(
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken = default
+    ) => Task.FromResult(Destinations.GetValueOrDefault((latitude, longitude)) ?? DestinationInfo.Unknown);
+
+    /// <summary>What <see cref="GetCaptureAsync"/> gives.</summary>
+    public CaptureView Capture { get; set; } = new([], [], []);
+
+    /// <summary>The queries asked, in order.</summary>
+    public List<CaptureQuery> CaptureQueries { get; } = [];
+
+    public Task<CaptureView> GetCaptureAsync(CaptureQuery query, CancellationToken cancellationToken = default)
+    {
+        CaptureQueries.Add(query);
+        return Task.FromResult(Capture);
+    }
+
+    /// <summary>The exports asked for, in order.</summary>
+    public List<CaptureExport> CaptureExports { get; } = [];
+
+    public Task<CaptureExportResult> ExportCaptureAsync(
+        CaptureExport request,
+        CancellationToken cancellationToken = default
+    )
+    {
+        CaptureExports.Add(request);
+        return Task.FromResult(
+            new CaptureExportResult("capture-2026-10-18.log", "2026-10-18T12:00:00.000Z Q0AAA>APRS:x\n", "note", 1)
+        );
+    }
+
+    /// <summary>How many times capture was cleared.</summary>
+    public int CaptureCleared { get; private set; }
+
+    public Task ClearCaptureAsync(CancellationToken cancellationToken = default)
+    {
+        CaptureCleared++;
+        Capture = new([], [], []);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<TncTypeInfo>>([new TncTypeInfo("th-d72", "Kenwood TH-D72")]);
+
     /// <summary>The toggles <see cref="SetToggleAsync"/> set, in order.</summary>
     public List<(Toggle Toggle, bool Enabled)> Toggled { get; } = [];
 

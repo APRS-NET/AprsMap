@@ -5,6 +5,7 @@
   xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:s="using:AprsMap.UI.Settings"
+  xmlns:sh="using:AprsMap.UI.Shell"
   xmlns:l="using:AprsMap.UI.Localization"
   x:Class="AprsMap.UI.Views.SettingsView"
   x:DataType="s:SettingsViewModel"
@@ -330,18 +331,61 @@
                     FontFamily="{DynamicResource Font.Mono}"
                   />
                 </StackPanel>
-                <!-- KISS over TCP (F3.1 behavior 1): the TNC's host and port, its radio port, and the profiles using it. -->
-                <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKiss}">
-                  <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
-                  <TextBox
-                    x:Name="SourceHostBox"
-                    Text="{Binding Sources.EditHost}"
-                    PlaceholderText="{l:T Settings.Sources.HostExample}"
-                    AutomationProperties.Name="{l:T Settings.Sources.Host}"
-                    FontFamily="{DynamicResource Font.Mono}"
+                <!-- KISS (F3.1 behavior 1): over TCP the TNC's host and port, on serial its port, speed and control
+                     lines; then its radio port, TX path and the profiles using it. -->
+                <StackPanel Spacing="8" IsVisible="{Binding Sources.IsTnc}">
+                  <TextBlock
+                    Text="{l:T Settings.Sources.AprsText.Help}"
+                    IsVisible="{Binding Sources.IsSerial}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    TextWrapping="Wrap"
                   />
+                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKissTcp}">
+                    <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBox
+                      x:Name="SourceHostBox"
+                      Text="{Binding Sources.EditHost}"
+                      PlaceholderText="{l:T Settings.Sources.HostExample}"
+                      AutomationProperties.Name="{l:T Settings.Sources.Host}"
+                      FontFamily="{DynamicResource Font.Mono}"
+                    />
+                  </StackPanel>
+                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsSerial}">
+                    <TextBlock
+                      Text="{l:T Settings.Sources.SerialPort}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                    />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <ComboBox
+                        x:Name="SerialPortBox"
+                        IsEditable="True"
+                        ItemsSource="{Binding Sources.SerialPorts}"
+                        Text="{Binding Sources.EditSerialPort}"
+                        PlaceholderText="{l:T Settings.Sources.SerialPortExample}"
+                        AutomationProperties.Name="{l:T Settings.Sources.SerialPort}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        HorizontalAlignment="Stretch"
+                      />
+                      <Button
+                        Grid.Column="1"
+                        Content="{l:T Settings.Sources.RefreshPorts}"
+                        Command="{Binding Sources.RefreshSerialPortsCommand}"
+                      />
+                    </Grid>
+                    <TextBlock
+                      Text="{Binding Sources.SerialPortsNote}"
+                      IsVisible="{Binding Sources.SerialPortsNote, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.SerialPort.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
                   <WrapPanel ItemSpacing="12">
-                    <StackPanel Spacing="4">
+                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKissTcp}">
                       <TextBlock Text="{l:T Settings.Sources.Port}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <TextBox
                         x:Name="SourcePortBox"
@@ -352,7 +396,20 @@
                         MinWidth="96"
                       />
                     </StackPanel>
-                    <StackPanel Spacing="4">
+                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsSerial}">
+                      <TextBlock Text="{l:T Settings.Sources.Baud}" Foreground="{DynamicResource Brush.TextMuted}" />
+                      <ComboBox
+                        x:Name="SerialBaudBox"
+                        IsEditable="True"
+                        ItemsSource="{x:Static s:SourcesSectionViewModel.Bauds}"
+                        Text="{Binding Sources.EditBaud}"
+                        PlaceholderText="9600"
+                        AutomationProperties.Name="{l:T Settings.Sources.Baud}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        MinWidth="128"
+                      />
+                    </StackPanel>
+                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKiss}">
                       <TextBlock Text="{l:T Settings.Sources.TncPort}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <TextBox
                         x:Name="SourceTncPortBox"
@@ -364,9 +421,83 @@
                       />
                     </StackPanel>
                   </WrapPanel>
-                  <TextBlock Text="{l:T Settings.Sources.TxPath}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <StackPanel Spacing="4" IsVisible="{Binding Sources.IsSerial}">
+                    <CheckBox
+                      x:Name="SerialDtrBox"
+                      Content="{l:T Settings.Sources.Dtr}"
+                      IsChecked="{Binding Sources.EditDtr}"
+                    />
+                    <CheckBox
+                      x:Name="SerialRtsBox"
+                      Content="{l:T Settings.Sources.Rts}"
+                      IsChecked="{Binding Sources.EditRts}"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.ControlLines.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
+                  <!-- TNC type (F3.2 behavior 4): how the TNC is switched into KISS when the port opens. -->
+                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKissSerial}">
+                    <TextBlock Text="{l:T Settings.Sources.TncType}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox
+                      x:Name="TncTypeBox"
+                      ItemsSource="{Binding Sources.TncTypes}"
+                      SelectedItem="{Binding Sources.SelectedTncType}"
+                      AutomationProperties.Name="{l:T Settings.Sources.TncType}"
+                      AutomationProperties.HelpText="{l:T Settings.Sources.TncType.Help}"
+                      MinWidth="240"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.TncType.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                    <StackPanel Spacing="8" IsVisible="{Binding Sources.IsCustomTnc}">
+                      <TextBlock
+                        Text="{l:T Settings.Sources.EnterScript}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                      />
+                      <TextBox
+                        x:Name="EnterScriptBox"
+                        Text="{Binding Sources.EditEnterScript}"
+                        AcceptsReturn="True"
+                        TextWrapping="NoWrap"
+                        MinHeight="96"
+                        PlaceholderText="{l:T Settings.Sources.ScriptExample}"
+                        AutomationProperties.Name="{l:T Settings.Sources.EnterScript}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                      />
+                      <TextBlock
+                        Text="{l:T Settings.Sources.LeaveScript}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                      />
+                      <TextBox
+                        x:Name="LeaveScriptBox"
+                        Text="{Binding Sources.EditLeaveScript}"
+                        AcceptsReturn="True"
+                        TextWrapping="NoWrap"
+                        MinHeight="64"
+                        PlaceholderText="{l:T Settings.Sources.LeaveScriptExample}"
+                        AutomationProperties.Name="{l:T Settings.Sources.LeaveScript}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                      />
+                      <TextBlock
+                        Text="{l:T Settings.Sources.Script.Help}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        TextWrapping="Wrap"
+                      />
+                    </StackPanel>
+                  </StackPanel>
+                  <TextBlock
+                    Text="{l:T Settings.Sources.TxPath}"
+                    IsVisible="{Binding Sources.IsKiss}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                  />
                   <TextBox
                     x:Name="TxPathBox"
+                    IsVisible="{Binding Sources.IsKiss}"
                     Text="{Binding Sources.EditTxPath}"
                     PlaceholderText="{x:Static s:SourcesSectionViewModel.DefaultTxPath}"
                     IsEnabled="{Binding Sources.EditTransmit}"
@@ -376,6 +507,7 @@
                   />
                   <TextBlock
                     Text="{l:T Settings.Sources.TxPath.Help}"
+                    IsVisible="{Binding Sources.IsKiss}"
                     Foreground="{DynamicResource Brush.TextMuted}"
                     TextWrapping="Wrap"
                   />
@@ -393,8 +525,10 @@
                   x:Name="TxEnabledBox"
                   Content="{l:T Settings.Sources.TxEnabledBox}"
                   IsChecked="{Binding Sources.EditTransmit}"
+                  IsVisible="{Binding Sources.CanTransmitKind}"
                 />
                 <TextBlock
+                  IsVisible="{Binding Sources.CanTransmitKind}"
                   Text="{l:T Settings.Sources.TxEnabledBox.Help}"
                   Foreground="{DynamicResource Brush.TextMuted}"
                   TextWrapping="Wrap"
@@ -681,6 +815,50 @@
           </StackPanel>
 
           <!-- Map (F1.4 behavior 21): the viewer's map preferences, and the station's aging where it may be changed. -->
+          <!-- Layout (F1.23): Save layout as, the saved layouts to use, update, rename or delete, and the question. -->
+          <StackPanel x:Name="LayoutSection" IsVisible="{Binding IsLayoutSection}" Spacing="12">
+            <TextBlock Text="{l:T Layouts.Description}" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBox
+                x:Name="LayoutNameBox"
+                Text="{Binding Layouts.NewName, FallbackValue=''}"
+                PlaceholderText="{l:T Layouts.NamePlaceholder}"
+                AutomationProperties.Name="{l:T Layouts.NamePlaceholder}"
+              />
+              <Button
+                x:Name="SaveLayoutAsButton"
+                Grid.Column="1"
+                Content="{l:T Layouts.SaveAsButton}"
+                Command="{Binding Layouts.SaveAsCommand}"
+              />
+            </Grid>
+            <TextBlock
+              Text="{Binding Layouts.Error}"
+              IsVisible="{Binding Layouts.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+            <ItemsControl x:Name="SavedLayoutRows" ItemsSource="{Binding Layouts.Layouts}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="sh:SavedLayoutRow">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,2">
+                    <TextBox Text="{Binding EditName}" AutomationProperties.Name="{l:T Layouts.NamePlaceholder}" />
+                    <WrapPanel Grid.Column="1" ItemSpacing="6" VerticalAlignment="Center">
+                      <Button Content="{l:T Layouts.ApplyButton}" Command="{Binding ApplyCommand}" />
+                      <Button Content="{l:T Layouts.UpdateButton}" Command="{Binding UpdateCommand}" />
+                      <Button Content="{l:T Layouts.RenameButton}" Command="{Binding RenameCommand}" />
+                      <Button Content="{l:T Layouts.DeleteButton}" Command="{Binding DeleteCommand}" />
+                    </WrapPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <CheckBox
+              x:Name="AskLayoutBox"
+              Content="{l:T Layouts.AskBox}"
+              IsChecked="{Binding Layouts.Ask, FallbackValue=False}"
+            />
+          </StackPanel>
           <StackPanel x:Name="MapSection" IsVisible="{Binding IsMapSection}" Spacing="20">
             <ItemsControl x:Name="MapOptions" ItemsSource="{Binding MapItems}">
               <ItemsControl.ItemsPanel>
@@ -772,6 +950,60 @@
 
           <!-- Data (F0.10): Reset the app, with a confirmation that says what goes. -->
           <StackPanel x:Name="DataSection" IsVisible="{Binding IsDataSection}" Spacing="12">
+            <!-- Packet capture (F1.27 behaviors 4, 5): off by default, with its limits. -->
+            <StackPanel
+              x:Name="CaptureSection"
+              Spacing="8"
+              IsVisible="{Binding Data.Capture, Converter={x:Static ObjectConverters.IsNotNull}}"
+            >
+              <TextBlock Text="{l:T Capture.Title}" FontWeight="SemiBold" />
+              <TextBlock Text="{l:T Capture.Description}" TextWrapping="Wrap" />
+              <ToggleSwitch
+                x:Name="CaptureSwitch"
+                IsChecked="{Binding Data.Capture.On, FallbackValue=False}"
+                OnContent="{l:T Capture.Switch}"
+                OffContent="{l:T Capture.Switch}"
+              />
+              <WrapPanel ItemSpacing="12" LineSpacing="8">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Capture.MaxMegabytes}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="CaptureMegabytesBox"
+                    Text="{Binding Data.Capture.MaxMegabytes, FallbackValue=''}"
+                    AutomationProperties.Name="{l:T Capture.MaxMegabytes}"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Capture.Days}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="CaptureDaysBox"
+                    Text="{Binding Data.Capture.Days, FallbackValue=''}"
+                    AutomationProperties.Name="{l:T Capture.Days}"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+              </WrapPanel>
+              <CheckBox
+                x:Name="CaptureUserDefinedBox"
+                Content="{l:T Capture.UserDefined}"
+                IsChecked="{Binding Data.Capture.UserDefined, FallbackValue=False}"
+              />
+              <WrapPanel ItemSpacing="8" LineSpacing="8">
+                <Button
+                  x:Name="CaptureSaveButton"
+                  Content="{l:T Capture.Save}"
+                  Command="{Binding Data.Capture.SaveCommand}"
+                />
+                <TextBlock Text="{Binding Data.Capture.SavedText}" VerticalAlignment="Center" />
+              </WrapPanel>
+              <TextBlock
+                Text="{Binding Data.Capture.Error}"
+                IsVisible="{Binding Data.Capture.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
             <!-- Clear (F1.19): what the station has collected, each with a count, confirmed before it goes. -->
             <StackPanel
               x:Name="ClearSection"

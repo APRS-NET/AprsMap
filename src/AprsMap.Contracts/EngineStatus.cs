@@ -57,6 +57,10 @@ public enum ConnectionState
 /// <param name="Toggles">The station's quick toggles (F1.15), for the status bar's markers.</param>
 /// <param name="Transmit">Whether the station transmits, and what holds it (docs/features/F2.1-own-station.md).</param>
 /// <param name="UnreadMessages">Unread messages to the active profile (docs/features/F2.4-messaging.md, behavior 4).</param>
+/// <param name="CapturedToday">
+/// While packet capture is on, how many packets it recorded today (docs/features/F1.27-packet-capture.md, behavior 6);
+/// null while it's off.
+/// </param>
 /// <param name="Stations">How many stations, objects and items the store holds, for the View filter's chip (F1.9).</param>
 /// <param name="PacketHistory">
 /// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
@@ -81,7 +85,8 @@ public sealed record EngineStatus(
     int Stations = 0,
     StationToggles? Toggles = null,
     TransmitStatus? Transmit = null,
-    int UnreadMessages = 0
+    int UnreadMessages = 0,
+    int? CapturedToday = null
 );
 
 /// <summary>Transmitting, for the status bar (docs/features/F2.1-own-station.md, behaviors 4–13).</summary>
@@ -97,13 +102,17 @@ public sealed record EngineStatus(
 /// Why beacons are waiting (behaviors 4, 5): a <c>transmit.*</c> code, <c>transmit.position-unconfirmed</c> included;
 /// null when they go out as due.
 /// </param>
+/// <param name="LastPosition">
+/// How the last position sent got out (docs/features/F3.3-rf-paths.md, behavior 4), or null before one was sent.
+/// </param>
 public sealed record TransmitStatus(
     bool On,
     EngineError? Blocked = null,
     DateTimeOffset? LastSent = null,
     bool ReceiveOnly = false,
     NextBeacon? NextBeacon = null,
-    EngineError? BeaconHeld = null
+    EngineError? BeaconHeld = null,
+    LastPositionHeard? LastPosition = null
 );
 
 /// <summary>One source's connection, for its status pill (F1.25 behavior 11).</summary>
@@ -120,6 +129,9 @@ public sealed record TransmitStatus(
 /// Why the station couldn't send on it now (a <c>transmit.*</c> code), or null when it can; null too when it isn't TX
 /// enabled.
 /// </param>
+/// <param name="Manual">
+/// Whether a serial TNC is in manual mode, taking typed commands (docs/features/F3.2-built-in-tncs.md, behavior 9).
+/// </param>
 /// <param name="Warning">
 /// Something wrong while it is connected, such as a TNC that isn't in KISS mode (a <c>kiss.*</c> code;
 /// docs/features/F3.1-kiss-sources.md, behavior 13), or null.
@@ -135,7 +147,8 @@ public sealed record SourceStatus(
     DateTimeOffset? RetryAt = null,
     bool TransmitEnabled = false,
     EngineError? TransmitBlocked = null,
-    EngineError? Warning = null
+    EngineError? Warning = null,
+    bool Manual = false
 )
 {
     /// <summary>Whether the station can send on this source now.</summary>

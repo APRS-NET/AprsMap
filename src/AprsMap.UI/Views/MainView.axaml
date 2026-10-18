@@ -131,6 +131,52 @@
               VerticalAlignment="Center"
             />
           </DockPanel>
+          <!-- The monitors changed to a setup a saved layout was used with: asked, never switched (F1.23 behavior 3). -->
+          <DockPanel
+            x:Name="LayoutPromptBar"
+            DockPanel.Dock="Bottom"
+            IsVisible="{Binding Layouts.IsAsking}"
+            Margin="0,6,0,0"
+          >
+            <WrapPanel DockPanel.Dock="Right" ItemSpacing="6" VerticalAlignment="Center">
+              <Button
+                x:Name="UseLayoutButton"
+                Classes="accent"
+                Content="{l:T Layouts.PromptUse}"
+                Command="{Binding Layouts.UsePromptedCommand}"
+              />
+              <Button
+                x:Name="KeepLayoutButton"
+                Content="{l:T Layouts.PromptKeep}"
+                Command="{Binding Layouts.KeepCurrentCommand}"
+              />
+              <Button
+                x:Name="DontAskLayoutButton"
+                Content="{l:T Layouts.PromptDontAsk}"
+                Command="{Binding Layouts.DontAskAgainCommand}"
+              />
+            </WrapPanel>
+            <TextBlock Text="{Binding Layouts.PromptText}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </DockPanel>
+          <DockPanel
+            x:Name="SavedLayoutsNoticeBar"
+            DockPanel.Dock="Bottom"
+            IsVisible="{Binding Layouts.Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Margin="0,6,0,0"
+          >
+            <Button
+              DockPanel.Dock="Right"
+              Content="{l:T Shell.Dismiss}"
+              Command="{Binding Layouts.DismissNoticeCommand}"
+              VerticalAlignment="Center"
+            />
+            <TextBlock
+              Text="{Binding Layouts.Notice}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+              VerticalAlignment="Center"
+            />
+          </DockPanel>
           <!-- Said once when the saved layout couldn't be read (F1.0 behavior 10). -->
           <DockPanel
             x:Name="LayoutNoticeBar"
@@ -247,6 +293,18 @@
                         x:Name="ReconnectItem"
                         Header="{l:T Status.Reconnect}"
                         Command="{Binding ReconnectCommand}"
+                      />
+                      <MenuItem
+                        x:Name="AprsIsConsoleItem"
+                        Header="{l:T Console.Open}"
+                        Command="{Binding OpenAprsIsConsoleCommand}"
+                      />
+                      <!-- Packet capture (F1.27 behavior 6): says so while it's on, and opens what it recorded. -->
+                      <MenuItem
+                        x:Name="CaptureItem"
+                        Header="{Binding CaptureText}"
+                        IsVisible="{Binding CaptureText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Command="{Binding OpenCapturedPacketsCommand}"
                       />
                       <Separator />
                       <!-- Quick toggles (F1.15): the station's, so read-only for a gateway's viewers. -->
@@ -428,6 +486,13 @@
                         <Button.Flyout>
                           <MenuFlyout>
                             <MenuItem Header="{l:T Status.Reconnect}" Command="{Binding ReconnectCommand}" />
+                            <!-- The Source console (F1.28 behavior 1), and typing to a serial TNC (F3.2 behavior 8). -->
+                            <MenuItem Header="{l:T Console.Open}" Command="{Binding ConsoleCommand}" />
+                            <MenuItem
+                              Header="{l:T Console.TncCommands}"
+                              IsVisible="{Binding CanType}"
+                              Command="{Binding TncCommandsCommand}"
+                            />
                             <!-- On this source alone (F2.1 behavior 10), when it's TX enabled. -->
                             <MenuItem
                               Header="{l:T Transmit.SendPositionHere}"

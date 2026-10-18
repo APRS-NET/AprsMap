@@ -42,6 +42,61 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task BrowsersCannotListTheGatewaysSerialPorts()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var ex = await Assert.ThrowsAsync<EngineAccessException>(() => remote.GetSerialPortsAsync(Ct));
+
+        Assert.Equal(EngineErrorCodes.OperatorOnly, ex.EngineError.Code); // F3.1 behavior 12
+    }
+
+    [Fact]
+    public async Task BrowsersCannotWatchASourcesTrafficOrTypeToItsTnc()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+        var source = (await remote.GetSettingsAsync(Ct)).SourceList[0].Id;
+
+        var watch = await Assert.ThrowsAsync<EngineAccessException>(async () =>
+        {
+            await foreach (var _ in remote.WatchSourceTrafficAsync(source, Ct)) { }
+        });
+        var manual = await Assert.ThrowsAsync<EngineAccessException>(() => remote.SetTncManualAsync(source, true, Ct));
+        var line = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.SendTncCommandAsync(source, new TncCommand(TncCommandKind.Line, "ID"), Ct)
+        );
+        var leave = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.SendTncCommandAsync(source, new TncCommand(TncCommandKind.LeaveKiss), Ct)
+        );
+
+        // F1.28 behavior 11, F3.2 behavior 12.
+        Assert.All(
+            new[] { watch, manual, line, leave },
+            e => Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code)
+        );
+    }
+
+    [Fact]
+    public async Task BrowsersCannotSeeExportOrClearCapturedPackets()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var read = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.GetCaptureAsync(new CaptureQuery(), Ct)
+        );
+        var export = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.ExportCaptureAsync(new CaptureExport(), Ct)
+        );
+        var clear = await Assert.ThrowsAsync<EngineAccessException>(() => remote.ClearCaptureAsync(Ct));
+
+        // F1.27 behavior 11.
+        Assert.All(new[] { read, export, clear }, e => Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code));
+    }
+
+    [Fact]
     public async Task BrowsersCannotUseAddressLookupOrThePasscodeCalculator()
     {
         await using var remote = factory.CreateRemote();

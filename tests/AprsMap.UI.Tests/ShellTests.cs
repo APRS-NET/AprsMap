@@ -24,8 +24,11 @@ public sealed class ShellTests
         var shell = NewShell();
 
         Assert.Equal("Stations", Dock(shell, ShellFactory.LeftDock).Single().Title);
-        Assert.Equal(["Details", "Messages"], Dock(shell, ShellFactory.RightDock).Select(p => p.Title)); // tabs (F2.4)
-        Assert.Equal("Packets", Dock(shell, ShellFactory.BottomDock).Single().Title);
+        Assert.Equal(["Details", "Messages", "Bulletins"], Dock(shell, ShellFactory.RightDock).Select(p => p.Title)); // tabs (F2.4, F2.5)
+        Assert.Equal(
+            ["Packets", "Console", "Captured packets"],
+            Dock(shell, ShellFactory.BottomDock).Select(d => d.Title)
+        ); // F1.28 and F1.27 behind Packets
         var map = Assert.IsType<MapDocument>(Find(shell.Layout, PanelKinds.Map));
         Assert.Equal("Map", map.Title);
         Assert.False(map.CanClose);
@@ -169,8 +172,10 @@ public sealed class ShellTests
         var shell = NewShell();
         var details = Find(shell.Layout, PanelKinds.Details);
         var messages = Find(shell.Layout, PanelKinds.Messages);
+        var bulletins = Find(shell.Layout, PanelKinds.Bulletins);
 
         shell.Factory.MoveToBottom.Execute(details);
+        shell.Factory.MoveToBottom.Execute(bulletins);
         shell.Factory.MoveToBottom.Execute(messages);
 
         Assert.Equal(ShellFactory.BottomDock, details.Owner!.Id);

@@ -166,6 +166,105 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ReconnectSource, sourceId, cancellationToken));
 
     /// <inheritdoc />
+    public IAsyncEnumerable<TrafficEntry> WatchSourceTrafficAsync(
+        string sourceId,
+        CancellationToken cancellationToken = default
+    ) =>
+        StreamWithEngineErrors(
+            _connection.StreamAsync<TrafficEntry>(EngineHub.WatchSourceTraffic, sourceId, cancellationToken),
+            cancellationToken
+        );
+
+    /// <summary>
+    /// A stream whose refusal arrives as an <see cref="EngineError"/> exception, as calls' do: a stream method's
+    /// <see cref="HubException"/> carries the error inside SignalR's own wording.
+    /// </summary>
+    private static async IAsyncEnumerable<T> StreamWithEngineErrors<T>(
+        IAsyncEnumerable<T> stream,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
+    {
+        var items = stream.WithCancellation(cancellationToken).ConfigureAwait(false).GetAsyncEnumerator();
+        try
+        {
+            while (true)
+            {
+                try
+                {
+                    if (!await items.MoveNextAsync())
+                    {
+                        yield break;
+                    }
+                }
+                catch (HubException ex) when (EngineHub.TryDecodeError(ex.Message, out var error))
+                {
+                    throw EngineErrors.ToException(error, ex);
+                }
+                yield return items.Current;
+            }
+        }
+        finally
+        {
+            await items.DisposeAsync();
+        }
+    }
+
+    /// <inheritdoc />
+    public Task SetTncManualAsync(string sourceId, bool manual, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SetTncManual, sourceId, manual, cancellationToken));
+
+    /// <inheritdoc />
+    public Task SendTncCommandAsync(
+        string sourceId,
+        TncCommand command,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SendTncCommand, sourceId, command, cancellationToken));
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default) =>
+        _connection.StreamAsync<BulletinView>(EngineHub.WatchBulletins, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<DestinationInfo> GetDestinationAsync(
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<DestinationInfo>(EngineHub.GetDestination, latitude, longitude, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task<CaptureView> GetCaptureAsync(CaptureQuery query, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<CaptureView>(EngineHub.GetCapture, query, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<CaptureExportResult> ExportCaptureAsync(
+        CaptureExport request,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<CaptureExportResult>(EngineHub.ExportCapture, request, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task ClearCaptureAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ClearCapture, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<TncTypeInfo>>(EngineHub.GetTncTypes, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<string>>(EngineHub.GetSerialPorts, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() =>
             _connection.InvokeAsync<IReadOnlyList<NetworkLink>>(EngineHub.GetNetworkLinks, cancellationToken)

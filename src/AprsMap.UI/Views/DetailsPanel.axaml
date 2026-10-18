@@ -83,6 +83,11 @@
         <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" IsEnabled="{Binding HasPosition}">
           <Button x:Name="CentreButton" Content="{l:T Details.Centre}" Command="{Binding CentreCommand}" />
           <ToggleButton x:Name="FollowButton" Content="{l:T Details.Follow}" IsChecked="{Binding IsFollowing}" />
+          <Button
+            x:Name="SetDestinationButton"
+            Content="{l:T Details.SetDestination}"
+            Command="{Binding SetDestinationCommand}"
+          />
           <Button x:Name="CopyPositionButton" Content="{l:T Details.CopyPosition}" />
           <Button
             x:Name="SendMessageButton"
@@ -241,6 +246,20 @@
             TextWrapping="Wrap"
             Foreground="{DynamicResource Brush.TextMuted}"
           />
+          <!-- How my last position got out (F3.3 behavior 2). -->
+          <StackPanel
+            x:Name="LastPositionSection"
+            Spacing="2"
+            IsVisible="{Binding LastPositionText, Converter={x:Static ObjectConverters.IsNotNull}}"
+          >
+            <TextBlock Text="{l:T HeardBack.Title}" Margin="0,4,0,0" />
+            <TextBlock
+              x:Name="LastPositionLine"
+              Text="{Binding LastPositionText}"
+              TextWrapping="Wrap"
+              Foreground="{DynamicResource Brush.TextMuted}"
+            />
+          </StackPanel>
           <TextBlock Text="{l:T Details.Me.Directly}" Margin="0,4,0,0" />
           <ItemsControl ItemsSource="{Binding HeardDirectly}">
             <ItemsControl.ItemTemplate>

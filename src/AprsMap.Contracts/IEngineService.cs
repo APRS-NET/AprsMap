@@ -206,6 +206,60 @@ public interface IEngineService
     Task ReconnectSourceAsync(string sourceId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The serial ports present on the engine's machine, for a KISS over serial source (docs/features/F3.1-kiss-sources.md,
+    /// behavior 1.2); on a gateway, the gateway's.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The TNC types a KISS over serial source can be switched into KISS with, such as the Kenwood TH-D72
+    /// (docs/features/F3.2-built-in-tncs.md, behavior 4).
+    /// </summary>
+    Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>The packets capture recorded, newest first (docs/features/F1.27-packet-capture.md, behavior 7).</summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task<CaptureView> GetCaptureAsync(CaptureQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Captured packets as one file for APRS.NET's test corpus, anonymized or as received, with a note (F1.27 behavior 8).
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task<CaptureExportResult> ExportCaptureAsync(CaptureExport request, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes the captured packets (F1.27 behavior 10).</summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task ClearCaptureAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// A source's traffic for the Source console (docs/features/F1.28-source-console.md, behaviors 2, 7): the entries
+    /// kept, then new ones as they come. A TNC's are kept from when it opens; APRS-IS's only while someone watches.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    IAsyncEnumerable<TrafficEntry> WatchSourceTrafficAsync(
+        string sourceId,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// Puts a serial KISS source in manual mode, or ends it (docs/features/F3.2-built-in-tncs.md, behavior 9): while on,
+    /// the automatic switching into KISS holds off. It ends by itself after 10 minutes with nothing sent.
+    /// </summary>
+    /// <exception cref="ArgumentException">The source isn't a serial KISS source that's open (<c>console.source-unknown</c>).</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task SetTncManualAsync(string sourceId, bool manual, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends <paramref name="command"/> to a serial KISS source's TNC over its open connection (F3.2 behaviors 10, 11).
+    /// The scripts need nothing more; a typed line or bytes need manual mode and a licensed profile that may transmit.
+    /// </summary>
+    /// <exception cref="ArgumentException">Not a serial KISS source that's open, or bytes that aren't hex.</exception>
+    /// <exception cref="InvalidOperationException">Not in manual mode, or the profile may not transmit.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task SendTncCommandAsync(string sourceId, TncCommand command, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Starts over (docs/features/F0.10-start-over.md): deletes every stored profile and setting, disconnects, and
     /// forgets the packets and stations received, so the next step is first-run setup. Defaults from configuration are
     /// not applied again until the engine restarts.
@@ -249,6 +303,22 @@ public interface IEngineService
     /// </summary>
     /// <exception cref="ArgumentException">It isn't a locator; the error's code says why and where.</exception>
     Task<LocatorInfo> ParseLocatorAsync(string locator, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The bulletins, announcements and NWS bulletins heard (docs/features/F2.5-bulletins.md, behaviors 1–3): those kept
+    /// now, then each new one, new version or removal as it happens.
+    /// </summary>
+    IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The distance and bearing from the active profile's location to a destination, and the great-circle line to it
+    /// (docs/features/F1.18-destination.md, behaviors 2, 3); <see cref="DestinationInfo.Unknown"/> without a location.
+    /// </summary>
+    Task<DestinationInfo> GetDestinationAsync(
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>The 6-character Maidenhead locator of a position, for showing next to coordinates.</summary>
     /// <exception cref="ArgumentException">The position is off the globe.</exception>

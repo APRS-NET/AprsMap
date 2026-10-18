@@ -446,23 +446,80 @@
                   Foreground="{DynamicResource Brush.TextMuted}"
                   TextWrapping="Wrap"
                 />
-                <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
-                <TextBox
-                  x:Name="TncHostBox"
-                  Text="{Binding TncHost}"
-                  PlaceholderText="{l:T Settings.Sources.HostExample}"
-                  AutomationProperties.Name="{l:T Settings.Sources.Host}"
-                  FontFamily="{DynamicResource Font.Mono}"
+                <!-- Over the network (Direwolf, soundmodem) or on a serial port (F3.1 behavior 1). -->
+                <RadioButton
+                  x:Name="TncNetworkRadio"
+                  GroupName="TncWhere"
+                  Content="{l:T Wizard.Tnc.Network}"
+                  IsChecked="{Binding TncOnNetwork, Mode=OneWay}"
                 />
-                <TextBlock Text="{l:T Settings.Sources.Port}" Foreground="{DynamicResource Brush.TextMuted}" />
-                <TextBox
-                  x:Name="TncPortBox"
-                  Text="{Binding TncPort}"
-                  AutomationProperties.Name="{l:T Settings.Sources.Port}"
-                  FontFamily="{DynamicResource Font.Mono}"
-                  HorizontalAlignment="Left"
-                  MinWidth="96"
+                <RadioButton
+                  x:Name="TncSerialRadio"
+                  GroupName="TncWhere"
+                  Content="{l:T Wizard.Tnc.Serial}"
+                  IsChecked="{Binding TncOnSerial}"
                 />
+                <StackPanel Spacing="8" IsVisible="{Binding TncOnNetwork}">
+                  <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="TncHostBox"
+                    Text="{Binding TncHost}"
+                    PlaceholderText="{l:T Settings.Sources.HostExample}"
+                    AutomationProperties.Name="{l:T Settings.Sources.Host}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                  />
+                  <TextBlock Text="{l:T Settings.Sources.Port}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="TncPortBox"
+                    Text="{Binding TncPort}"
+                    AutomationProperties.Name="{l:T Settings.Sources.Port}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                    HorizontalAlignment="Left"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+                <StackPanel Spacing="8" IsVisible="{Binding TncOnSerial}">
+                  <TextBlock Text="{l:T Settings.Sources.SerialPort}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <ComboBox
+                      x:Name="TncSerialPortBox"
+                      IsEditable="True"
+                      ItemsSource="{Binding TncSerialPorts}"
+                      Text="{Binding TncSerialPort}"
+                      PlaceholderText="{l:T Settings.Sources.SerialPortExample}"
+                      AutomationProperties.Name="{l:T Settings.Sources.SerialPort}"
+                      FontFamily="{DynamicResource Font.Mono}"
+                      HorizontalAlignment="Stretch"
+                    />
+                    <Button
+                      Grid.Column="1"
+                      Content="{l:T Settings.Sources.RefreshPorts}"
+                      Command="{Binding FillSerialCommand}"
+                    />
+                  </Grid>
+                  <WrapPanel ItemSpacing="12" LineSpacing="8">
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{l:T Settings.Sources.Baud}" Foreground="{DynamicResource Brush.TextMuted}" />
+                      <TextBox
+                        x:Name="TncBaudBox"
+                        Text="{Binding TncBaud}"
+                        AutomationProperties.Name="{l:T Settings.Sources.Baud}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        MinWidth="96"
+                      />
+                    </StackPanel>
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{l:T Settings.Sources.TncType}" Foreground="{DynamicResource Brush.TextMuted}" />
+                      <ComboBox
+                        x:Name="TncTypeBox"
+                        ItemsSource="{Binding TncTypes}"
+                        SelectedItem="{Binding SelectedTncType}"
+                        AutomationProperties.Name="{l:T Settings.Sources.TncType}"
+                        MinWidth="200"
+                      />
+                    </StackPanel>
+                  </WrapPanel>
+                </StackPanel>
                 <TextBlock
                   x:Name="TncErrorLabel"
                   Text="{Binding TncError}"

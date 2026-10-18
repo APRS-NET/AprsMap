@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using AprsMap.Contracts;
 using AprsNet.AprsIsTcpClient;
+using AprsNet.Kiss;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -97,6 +98,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _logger = logger;
         _messenger = new Messenger(this, messages ?? new InMemoryMessageStore(), time);
         _beaconer = new Beaconer(this, time);
+        _bulletins = new BulletinFeed(time);
+        _capture = _options.CaptureFolder is { } captureFolder ? new PacketCapture(captureFolder, time) : null;
     }
 
     /// <inheritdoc />
@@ -104,6 +107,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         _messenger.Dispose();
         _beaconer.Dispose();
+        _bulletins.Dispose();
+        _capture?.DisposeAsync().AsTask().GetAwaiter().GetResult(); // what's queued is written first
         _settingsLock.Dispose();
         lock (_gate)
         {
@@ -146,13 +151,15 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     PacketHistory: _packetHistory,
                     Stations: _stations.Count,
                     Toggles: (_settings ?? AppSettings.Empty).EffectiveToggles,
+                    CapturedToday: _capture?.CapturedToday,
                     Transmit: new TransmitStatus(
                         (_settings ?? AppSettings.Empty).EffectiveToggles.Transmit,
                         TransmitBlock(_settings ?? AppSettings.Empty),
                         _lastSent,
                         _options.ReceiveOnly,
                         nextBeacon,
-                        beaconHeld
+                        beaconHeld,
+                        LastPositionHeard()
                     ),
                     UnreadMessages: unread
                 )
@@ -189,6 +196,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 _settings = saved;
             }
             MeasureFrom(saved);
+            UseCapture(saved);
             await UseMessengerAsync(saved, cancellationToken).ConfigureAwait(false);
             SignalSettingsChanged();
 
@@ -250,6 +258,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             lock (_gate)
             {
                 _settings = AppSettings.Empty; // not the configured defaults: the point is to see first-run setup
+                UseCapture(AppSettings.Empty);
                 _recent.Clear();
                 _listed.Clear();
                 _listedOrder.Clear();
@@ -573,6 +582,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             }
             await using (connection.ConfigureAwait(false))
             {
+                AttachTraffic(source.Id, connection, always: true); // a TNC's traffic is kept from the start (F1.28)
                 try
                 {
                     SetSourceLink(source, new Link(ConnectionState.Connecting));
@@ -637,6 +647,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     {
                         _senders.Remove(source.Id); // closed: nothing sends on it until it's open again
                     }
+                    DetachTraffic(source.Id, connection);
                 }
             }
             if (kicked)
@@ -708,6 +719,14 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<string>>([.. KissSerialConnection.GetPortNames().Order(StringComparer.Ordinal)]);
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<TncTypeInfo>>([.. TncSetup.Known.Select(t => new TncTypeInfo(t.Id, t.Name))]);
+
     private void SetSourceLink(SourceSettings source, Link link)
     {
         lock (_gate)
@@ -756,6 +775,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 v.Link.Error,
                 RetryAt: v.Link.RetryAt,
                 Warning: v.Link.Warning,
+                Manual: IsManual(v.Source.Id),
                 TransmitEnabled: v.Source.Transmit,
                 TransmitBlocked: v.Source.Transmit && _settings is not null ? SourceBlock(_settings, v.Source) : null
             ))
@@ -790,7 +810,15 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     public Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(name);
-        return Task.FromResult(_stations.Get(name));
+        var detail = _stations.Get(name);
+        if (detail is { Me: { } me })
+        {
+            lock (_gate)
+            {
+                detail = detail with { Me = me with { LastPosition = LastPositionHeard() } }; // F3.3 behavior 2
+            }
+        }
+        return Task.FromResult(detail);
     }
 
     /// <inheritdoc />
@@ -1035,6 +1063,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             _lastSent = _time.GetUtcNow();
         }
+        FollowSent(packet, source); // to see how it gets out (F3.3)
         return (Accept(packet, source.Id, sent: true), null);
     }
 
@@ -1153,6 +1182,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     /// <inheritdoc />
     public IAsyncEnumerable<ChatMessage> WatchMessagesAsync(CancellationToken cancellationToken = default) =>
         _messenger.WatchAsync(cancellationToken);
+
+    private readonly BulletinFeed _bulletins;
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default) =>
+        _bulletins.WatchAsync(cancellationToken);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<ChatMessage>> SendMessageAsync(
@@ -1613,8 +1648,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
 
         if (!sent)
         {
+            _capture?.Consider(packet, sourceId); // unexpected packets, for the test corpus (F1.27)
             CheckEchoes(packet);
+            CheckHeardBack(packet, sourceId);
             _messenger.Receive(packet, sourceId, IsOwnReceiver(sourceId)); // messages, acks, and who was heard where
+            _bulletins.Receive(packet, sourceId); // bulletins and announcements (F2.5)
         }
         var now = _time.GetUtcNow();
         var check = _duplicates.Check(packet, sourceId);
@@ -1671,12 +1709,16 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         return view;
     }
 
-    /// <summary>Whether <paramref name="sourceId"/> is this station's own receiver: a KISS TNC (F3.1 behavior 8).</summary>
+    /// <summary>
+    /// Whether <paramref name="sourceId"/> is this station's own receiver: a KISS TNC (F3.1 behavior 8) or a radio read in
+    /// its APRS mode (F3.2 behavior 2).
+    /// </summary>
     private bool IsOwnReceiver(string? sourceId) =>
         sourceId is not null
         && _settings?.SourceList.FirstOrDefault(s => s.Id == sourceId)?.Kind
             is SourceKind.KissTcp
-                or SourceKind.KissSerial;
+                or SourceKind.KissSerial
+                or SourceKind.AprsTextSerial;
 
     /// <summary>Keeps <paramref name="node"/> findable by identity for one duplicate window.</summary>
     private void Remember(PacketIdentity identity, LinkedListNode<PacketView> node, DateTimeOffset now)
@@ -1962,6 +2004,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             _settings = settings;
         }
         MeasureFrom(settings);
+        UseCapture(settings);
         await UseMessengerAsync(settings, cancellationToken).ConfigureAwait(false);
         return settings;
     }
@@ -2034,6 +2077,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         var source = _sources.Create(profile.Profile, profile.Source, filter);
         await using (source.ConfigureAwait(false))
         {
+            AttachTraffic(profile.Source.Id, source, always: false); // kept only while watched (F1.28 behavior 7)
             // Disposing the source stops its callbacks, so a session never reports after the next one has started.
             void OnEvent(PacketSourceEvent e)
             {
@@ -2088,6 +2132,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                         _source = null;
                     }
                 }
+                DetachTraffic(profile.Source.Id, source);
             }
         }
         return refused;

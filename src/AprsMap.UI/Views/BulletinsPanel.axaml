@@ -1,0 +1,80 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The Bulletins panel (F2.5 behaviors 1–4): what's heard, newest first, by kind or group and text; new ones marked
+     until seen; a group can be muted. Its DataContext is the main view model; inside, its Bulletins. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:b="using:AprsMap.UI.Bulletins"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Views.BulletinsPanel"
+  x:DataType="vm:MainViewModel"
+>
+  <DockPanel
+    DataContext="{Binding Bulletins}"
+    x:DataType="b:BulletinsViewModel"
+    Background="{DynamicResource Brush.Surface}"
+  >
+    <WrapPanel DockPanel.Dock="Top" ItemSpacing="8" LineSpacing="4" Margin="8,6">
+      <ComboBox
+        x:Name="BulletinFilterBox"
+        ItemsSource="{Binding Filters}"
+        SelectedItem="{Binding SelectedFilter}"
+        AutomationProperties.Name="{l:T Bulletins.Filter}"
+        MinWidth="140"
+      />
+      <TextBox
+        x:Name="BulletinSearchBox"
+        Text="{Binding Search}"
+        PlaceholderText="{l:T Bulletins.Search}"
+        AutomationProperties.Name="{l:T Bulletins.Search}"
+        MinWidth="160"
+      />
+    </WrapPanel>
+    <DockPanel
+      DockPanel.Dock="Top"
+      Margin="8,0"
+      IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}"
+    >
+      <Button DockPanel.Dock="Right" Content="{l:T Bulletins.UnmuteAll}" Command="{Binding UnmuteAllCommand}" />
+      <TextBlock
+        Text="{Binding Note}"
+        Foreground="{DynamicResource Brush.TextMuted}"
+        TextWrapping="Wrap"
+        VerticalAlignment="Center"
+      />
+    </DockPanel>
+    <ListBox x:Name="BulletinList" ItemsSource="{Binding Rows}" AutomationProperties.Name="{l:T Shell.Panel.bulletins}">
+      <ListBox.ItemTemplate>
+        <DataTemplate DataType="b:BulletinRow">
+          <StackPanel Spacing="2">
+            <WrapPanel ItemSpacing="8">
+              <TextBlock Text="{Binding From}" FontWeight="SemiBold" />
+              <TextBlock
+                Text="{Binding Addressee}"
+                FontFamily="{DynamicResource Font.Mono}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
+              <TextBlock Text="{Binding KindText}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock
+                Text="{l:T Bulletins.New}"
+                IsVisible="{Binding IsNew}"
+                Foreground="{DynamicResource Brush.Accent}"
+                FontWeight="SemiBold"
+              />
+            </WrapPanel>
+            <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Heard}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+            <Button
+              Content="{l:T Bulletins.MuteGroup}"
+              IsVisible="{Binding HasGroup}"
+              Command="{Binding MuteGroupCommand}"
+              HorizontalAlignment="Left"
+              Padding="6,1"
+            />
+          </StackPanel>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </DockPanel>
+</UserControl>

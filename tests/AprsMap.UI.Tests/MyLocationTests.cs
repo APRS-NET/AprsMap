@@ -162,6 +162,43 @@ public class MyLocationTests
         window.Close();
     }
 
+    [AvaloniaFact]
+    public async Task RightClickSetsADestinationThereAndTheMapDrawsItsFlagAndLine()
+    {
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider())
+        {
+            Map = new MapViewModel(null, null, new FakeTimeProvider()),
+        };
+        await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
+        vm.Show(Located(engine.Settings, 40, -105));
+        using var panel = new MapPanel { DataContext = vm };
+        var window = new Window
+        {
+            Content = panel,
+            Width = 800,
+            Height = 600,
+        };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        var at = panel.View.ScreenPoint(40.5, -104.5);
+        var inWindow = panel.View.TranslatePoint(at, window)!.Value;
+
+        window.MouseDown(inWindow, MouseButton.Right);
+        window.MouseUp(inWindow, MouseButton.Right);
+        Dispatcher.UIThread.RunJobs();
+        var menu = (ContextMenu)panel.Resources["MapMenu"]!;
+        var item = menu.GetLogicalDescendants().OfType<MenuItem>().Single(i => i.Name == "SetDestinationItem");
+        item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        await WaitUntil(() => vm.Destination.IsSet);
+
+        Assert.Equal(40.5, vm.Destination.Point!.Latitude, 2);
+        Assert.Equal(-104.5, vm.Destination.Point.Longitude, 2);
+        Assert.Equal(vm.Destination.Point, panel.View.Destination.At); // the flag (F1.18 behavior 3)
+        Assert.Empty(engine.Saved); // the station's settings don't change (behavior 6)
+        window.Close();
+    }
+
     private static async Task WaitUntil(Func<bool> condition)
     {
         for (var i = 0; i < 200 && !condition(); i++)

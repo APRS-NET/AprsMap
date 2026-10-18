@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
+using AprsMap.UI.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -151,6 +152,10 @@ public sealed partial class MainViewModel
                 )
             : BeaconText(transmit);
         TransmitTip = TransmitOn && !held ? BeaconTip(transmit) : _text["Transmit.Marker.Help"];
+        if (TransmitOn && HeardBackText.Tip(transmit?.LastPosition, time.GetUtcNow(), _text) is { } heardBack)
+        {
+            TransmitTip += Environment.NewLine + heardBack; // F3.3 behavior 4
+        }
         CanSendPosition = TransmitOn && !held && !_engineUnreachable && CanTransmit;
         var aprsIs = _status?.Sources?.FirstOrDefault(s => s.Kind == SourceKind.AprsIs);
         IsAprsIsTransmitEnabled = CanTransmit && aprsIs is { TransmitEnabled: true };

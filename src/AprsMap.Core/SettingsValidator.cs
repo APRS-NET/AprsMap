@@ -45,6 +45,44 @@ internal static class SettingsValidator
                     "A KISS source needs a host, a port from 1 to 65535 and a TNC port from 0 to 15."
                 );
             }
+            if (
+                source.IsSerial
+                && (
+                    string.IsNullOrWhiteSpace(source.SerialPort) || source.Baud is <= 0 || source.TncPort is < 0 or > 15
+                )
+            )
+            {
+                throw Fail(
+                    EngineErrorCodes.KissSerialSourceInvalid,
+                    "A KISS over serial source needs a port, a speed above 0 and a TNC port from 0 to 15."
+                );
+            }
+        }
+
+        foreach (var source in settings.SourceList)
+        {
+            if (source.Transmit && !source.CanTransmit)
+            {
+                throw Fail(EngineErrorCodes.SourceReceiveOnly, $"Source '{source.Name}' can only receive.");
+            }
+            if (source.Kind == SourceKind.KissSerial && source.TncType is { Length: > 0 })
+            {
+                if (source.TncType == SourceSettings.CustomTncType && string.IsNullOrWhiteSpace(source.EnterScript))
+                {
+                    throw Fail(
+                        EngineErrorCodes.TncScriptInvalid,
+                        $"Source '{source.Name}': a custom TNC needs a script."
+                    );
+                }
+                try
+                {
+                    _ = AprsIsPacketSourceFactory.SetupOf(source);
+                }
+                catch (Exception ex) when (ex is FormatException or ArgumentException)
+                {
+                    throw Fail(EngineErrorCodes.TncScriptInvalid, $"Source '{source.Name}': {ex.Message}");
+                }
+            }
         }
 
         foreach (var source in settings.SourceList.Where(s => s.Kind != SourceKind.AprsIs && s.TxPath is not null))

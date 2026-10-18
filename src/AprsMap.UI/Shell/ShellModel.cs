@@ -43,13 +43,25 @@ public static class PanelKinds
     /// <summary>The conversations (docs/features/F2.4-messaging.md).</summary>
     public const string Messages = "messages";
 
+    /// <summary>The bulletins and announcements heard (docs/features/F2.5-bulletins.md).</summary>
+    public const string Bulletins = "bulletins";
+
+    /// <summary>A source's live traffic, for troubleshooting (docs/features/F1.28-source-console.md).</summary>
+    public const string Console = "console";
+
+    /// <summary>The packets capture recorded (docs/features/F1.27-packet-capture.md, behavior 7).</summary>
+    public const string Captured = "captured";
+
     /// <summary>Every panel, with the id of the dock it starts in (behavior 2).</summary>
     public static IReadOnlyList<(string Kind, string Dock)> All { get; } =
     [
         (Stations, ShellFactory.LeftDock),
         (Details, ShellFactory.RightDock),
         (Messages, ShellFactory.RightDock),
+        (Bulletins, ShellFactory.RightDock),
         (Packets, ShellFactory.BottomDock),
+        (Console, ShellFactory.BottomDock),
+        (Captured, ShellFactory.BottomDock),
     ];
 
     /// <summary>The resource key of a panel's title.</summary>

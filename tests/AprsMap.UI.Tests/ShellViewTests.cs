@@ -165,7 +165,7 @@ public sealed class ShellViewTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(menu.IsOpen);
         var headers = menu.Items.OfType<MenuItem>().Select(i => i.Header?.ToString()).ToList();
-        Assert.Equal(["Show Stations", "Reset layout"], headers); // no Gather outside the desktop app
+        Assert.Equal(["Show Stations", "Reset layout", "Save layout as…"], headers); // no Gather outside the desktop app
         var show = menu.Items.OfType<MenuItem>().First();
         show.Command!.Execute(show.CommandParameter);
         menu.Hide();
@@ -212,7 +212,17 @@ public sealed class ShellViewTests
         Assert.True(view.IsNarrow);
         var tabs = window.GetVisualDescendants().OfType<TabControl>().Single(t => t.Name == "NarrowShell");
         Assert.Equal(
-            ["Map", "Dashboard", "Stations", "Details", "Messages", "Packets"],
+            [
+                "Map",
+                "Dashboard",
+                "Stations",
+                "Details",
+                "Messages",
+                "Bulletins",
+                "Packets",
+                "Console",
+                "Captured packets",
+            ],
             tabs.Items.OfType<TabItem>().Select(t => t.Header?.ToString())
         );
 

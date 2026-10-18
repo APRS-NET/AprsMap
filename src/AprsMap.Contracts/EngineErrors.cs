@@ -174,6 +174,42 @@ public static class EngineErrorCodes
     /// <summary>A KISS TNC is connected but has sent nothing for a while: it may be switched off. A warning.</summary>
     public const string KissQuiet = "kiss.quiet";
 
+    /// <summary>
+    /// The TNC didn't switch into KISS when its port opened (docs/features/F3.2-built-in-tncs.md, behavior 6); the
+    /// <see cref="EngineErrorArgs.Reason"/> says why, with the type's hint.
+    /// </summary>
+    public const string KissSetupFailed = "kiss.setup-failed";
+
+    /// <summary>A captured packet APRS.NET read but whose data type it doesn't support (F1.27 behavior 1.2).</summary>
+    public const string CaptureUnsupported = "capture.unsupported";
+
+    /// <summary>A captured packet whose data type APRS.NET doesn't know (F1.27 behavior 1.2).</summary>
+    public const string CaptureUnknownType = "capture.unknown-type";
+
+    /// <summary>The prefix of a captured packet's unrecognised part (F1.27 behavior 1.3), such as <c>aprs.unrecognized.unknown-path-entry</c>.</summary>
+    public const string AprsUnrecognizedPrefix = "aprs.unrecognized.";
+
+    /// <summary>The capture files couldn't be written or read (F1.27).</summary>
+    public const string CaptureFailed = "capture.write-failed";
+
+    /// <summary>The console's source isn't one that's open, or can't take commands (F1.28, F3.2 behavior 8).</summary>
+    public const string ConsoleSourceUnknown = "console.source-unknown";
+
+    /// <summary>A typed command outside manual mode (F3.2 behavior 9).</summary>
+    public const string KissNotManual = "kiss.not-manual";
+
+    /// <summary>Bytes on the command line that aren't hex (F3.2 behavior 10).</summary>
+    public const string KissBytesInvalid = "kiss.bytes-invalid";
+
+    /// <summary>A serial source's TNC type isn't known, or a custom one's scripts can't be read (F3.2 behavior 4).</summary>
+    public const string TncScriptInvalid = "settings.source.tnc-script-invalid";
+
+    /// <summary>A source that can't send, such as a radio in APRS mode, was set TX enabled (F3.2 behavior 3).</summary>
+    public const string SourceReceiveOnly = "settings.source.receive-only";
+
+    /// <summary>A KISS over serial source's port, speed or TNC port isn't usable.</summary>
+    public const string KissSerialSourceInvalid = "settings.source.serial-invalid";
+
     /// <summary>A KISS source's host, port or TNC port isn't usable.</summary>
     public const string KissSourceInvalid = "settings.source.kiss-invalid";
 
@@ -235,6 +271,7 @@ public static class EngineErrorCodes
             : code.StartsWith("geocoding.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("aprs-is.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("transmit.", StringComparison.Ordinal) ? EngineErrorKind.Operation
+            : code == KissNotManual ? EngineErrorKind.Operation
             : EngineErrorKind.Argument;
     }
 }

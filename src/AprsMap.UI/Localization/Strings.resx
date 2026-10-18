@@ -628,7 +628,16 @@
     <value>TNC</value>
   </data>
   <data name="Wizard.Tnc.Help" xml:space="preserve">
-    <value>Direwolf, soundmodem or another TNC that serves KISS over TCP. The station receives on RF only: nothing is sent to APRS-IS, so no passcode is needed. In the web app the server connects to the TNC, so localhost means the server's computer.</value>
+    <value>A TNC over the network, such as Direwolf or soundmodem, or one on a serial port. The station uses RF only: nothing is sent to APRS-IS, so no passcode is needed. In the web app the server connects to the TNC, so localhost and the serial ports are the server's.</value>
+  </data>
+  <data name="Wizard.Tnc.Network" xml:space="preserve">
+    <value>Over the network (Direwolf, soundmodem)</value>
+  </data>
+  <data name="Wizard.Tnc.Serial" xml:space="preserve">
+    <value>On a serial port (a USB TNC, or a radio's built-in TNC in KISS mode)</value>
+  </data>
+  <data name="Wizard.Tnc.SerialPortEmpty" xml:space="preserve">
+    <value>Pick or type the serial port the TNC is on.</value>
   </data>
   <data name="Wizard.Tnc.HostEmpty" xml:space="preserve">
     <value>Type where the TNC is: a host name or address.</value>
@@ -1044,6 +1053,422 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Shell.Panel.details" xml:space="preserve">
     <value>Details</value>
     <comment>Panel title: details of the selected station.</comment>
+  </data>
+  <data name="Shell.Panel.console" xml:space="preserve">
+    <value>Console</value>
+    <comment>Panel title: a source's live traffic, for troubleshooting.</comment>
+  </data>
+  <data name="Console.Open" xml:space="preserve">
+    <value>Console…</value>
+    <comment>Source pill menu: opens the Source console on this source.</comment>
+  </data>
+  <data name="Console.TncCommands" xml:space="preserve">
+    <value>TNC commands…</value>
+    <comment>Source pill menu: opens the console with its command line, to type to the TNC.</comment>
+  </data>
+  <data name="Console.Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Console.Filter" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="Console.Filter.All" xml:space="preserve">
+    <value>Everything</value>
+  </data>
+  <data name="Console.Filter.Problems" xml:space="preserve">
+    <value>Problems only</value>
+  </data>
+  <data name="Console.Filter.Packets" xml:space="preserve">
+    <value>Packets only</value>
+  </data>
+  <data name="Console.FilterText" xml:space="preserve">
+    <value>Containing</value>
+  </data>
+  <data name="Console.Hex" xml:space="preserve">
+    <value>Hex</value>
+    <comment>Shows each line's bytes in hexadecimal.</comment>
+  </data>
+  <data name="Console.Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Console.NewLines" xml:space="preserve">
+    <value>{count} new · scroll to the bottom to see them</value>
+  </data>
+  <data name="Console.Empty" xml:space="preserve">
+    <value>Nothing yet. A TNC's traffic is kept from when it opens; APRS-IS's from when the console watches it.</value>
+  </data>
+  <data name="Console.In" xml:space="preserve">
+    <value>In</value>
+  </data>
+  <data name="Console.Out" xml:space="preserve">
+    <value>Out</value>
+  </data>
+  <data name="Console.Kind.Packet" xml:space="preserve">
+    <value>Packet</value>
+  </data>
+  <data name="Console.Kind.NotAprs" xml:space="preserve">
+    <value>Not APRS</value>
+  </data>
+  <data name="Console.Kind.OtherPort" xml:space="preserve">
+    <value>Other port</value>
+  </data>
+  <data name="Console.Kind.KissCommand" xml:space="preserve">
+    <value>KISS command</value>
+  </data>
+  <data name="Console.Kind.DroppedFrame" xml:space="preserve">
+    <value>Dropped</value>
+  </data>
+  <data name="Console.Kind.Unframed" xml:space="preserve">
+    <value>Text</value>
+    <comment>Bytes outside any KISS frame: text from a TNC not in KISS mode, or noise.</comment>
+  </data>
+  <data name="Console.Kind.Sent" xml:space="preserve">
+    <value>Sent</value>
+  </data>
+  <data name="Console.Kind.Typed" xml:space="preserve">
+    <value>Typed</value>
+  </data>
+  <data name="Console.Kind.SetupSent" xml:space="preserve">
+    <value>Setup</value>
+  </data>
+  <data name="Console.Kind.SetupReceived" xml:space="preserve">
+    <value>Setup reply</value>
+  </data>
+  <data name="Console.Kind.SetupFailed" xml:space="preserve">
+    <value>Setup failed</value>
+  </data>
+  <data name="Console.Kind.LoginSent" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="Console.Kind.LoginResponse" xml:space="preserve">
+    <value>Login reply</value>
+  </data>
+  <data name="Console.Kind.ServerComment" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="Console.Kind.FilterSent" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Console.Kind.CommandSent" xml:space="preserve">
+    <value>Command</value>
+  </data>
+  <data name="Console.CommandLine" xml:space="preserve">
+    <value>Command line</value>
+    <comment>Opens a line to type to the TNC; while open, the TNC isn't switched into KISS automatically.</comment>
+  </data>
+  <data name="Console.CloseCommandLine" xml:space="preserve">
+    <value>Close command line</value>
+  </data>
+  <data name="Console.EnterKiss" xml:space="preserve">
+    <value>Enter KISS</value>
+  </data>
+  <data name="Console.LeaveKiss" xml:space="preserve">
+    <value>Leave KISS</value>
+  </data>
+  <data name="Console.Command" xml:space="preserve">
+    <value>Command for the TNC</value>
+  </data>
+  <data name="Console.Bytes" xml:space="preserve">
+    <value>Bytes (hex)</value>
+  </data>
+  <data name="Console.Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Console.TransmitWarning" xml:space="preserve">
+    <value>Some commands make the radio transmit, such as ID, CONV or K at a TNC's prompt; in KISS mode, bytes sent go on the air. Typing needs a licensed profile.</value>
+  </data>
+  <data name="Console.ManualNote" xml:space="preserve">
+    <value>While the command line is open the TNC isn't switched into KISS automatically. It closes by itself after 10 minutes with nothing sent.</value>
+  </data>
+  <data name="Status.Source.Manual" xml:space="preserve">
+    <value>{source}: manual</value>
+    <comment>A serial TNC whose command line is open in the console.</comment>
+  </data>
+  <data name="Error.console.source-unknown" xml:space="preserve">
+    <value>That source isn't open, or can't take commands.</value>
+  </data>
+  <data name="Error.kiss.not-manual" xml:space="preserve">
+    <value>Open the command line before typing to the TNC.</value>
+  </data>
+  <data name="Error.kiss.bytes-invalid" xml:space="preserve">
+    <value>Bytes are pairs of hex digits, such as C0 FF C0.</value>
+  </data>
+  <data name="Shell.Panel.captured" xml:space="preserve">
+    <value>Captured packets</value>
+    <comment>Panel title: packets recorded for analysis because they weren't fully understood.</comment>
+  </data>
+  <data name="Capture.Title" xml:space="preserve">
+    <value>Capture unexpected packets</value>
+  </data>
+  <data name="Capture.Description" xml:space="preserve">
+    <value>Records the packets that couldn't be read or were only partly understood, exactly as received, so they can be sent to the developers to add to the test corpus. Off unless switched on.</value>
+  </data>
+  <data name="Capture.Switch" xml:space="preserve">
+    <value>Capture unexpected packets</value>
+  </data>
+  <data name="Capture.MaxMegabytes" xml:space="preserve">
+    <value>Keep at most (MB)</value>
+  </data>
+  <data name="Capture.Days" xml:space="preserve">
+    <value>Keep for (days)</value>
+  </data>
+  <data name="Capture.UserDefined" xml:space="preserve">
+    <value>Include user-defined packets, whose data is never decoded</value>
+  </data>
+  <data name="Capture.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Capture.Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="Capture.LimitsInvalid" xml:space="preserve">
+    <value>The limits are whole numbers above 0.</value>
+  </data>
+  <data name="Capture.Status" xml:space="preserve">
+    <value>Capturing unexpected packets: {count} today</value>
+  </data>
+  <data name="Capture.DayFilter" xml:space="preserve">
+    <value>Day</value>
+  </data>
+  <data name="Capture.ReasonFilter" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Capture.AllDays" xml:space="preserve">
+    <value>All days</value>
+  </data>
+  <data name="Capture.Day" xml:space="preserve">
+    <value>{day} ({count})</value>
+  </data>
+  <data name="Capture.AnyReason" xml:space="preserve">
+    <value>Any reason</value>
+  </data>
+  <data name="Capture.Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Capture.Anonymize" xml:space="preserve">
+    <value>Anonymize</value>
+    <comment>Export with callsigns, names and e-mail addresses replaced, ready for the test corpus.</comment>
+  </data>
+  <data name="Capture.Export" xml:space="preserve">
+    <value>Export for analysis…</value>
+  </data>
+  <data name="Capture.FileType" xml:space="preserve">
+    <value>Packet capture</value>
+  </data>
+  <data name="Capture.Report" xml:space="preserve">
+    <value>Report on GitHub…</value>
+  </data>
+  <data name="Capture.Clear" xml:space="preserve">
+    <value>Clear captured</value>
+  </data>
+  <data name="Capture.ClearConfirm" xml:space="preserve">
+    <value>Delete every captured packet?</value>
+  </data>
+  <data name="Capture.OpenInPackets" xml:space="preserve">
+    <value>Open in Packets</value>
+  </data>
+  <data name="Capture.Empty" xml:space="preserve">
+    <value>No packets captured yet. Switch capture on in Settings › Data.</value>
+  </data>
+  <data name="Capture.Repeats" xml:space="preserve">
+    <value>{count} repeats today were counted, not written again.</value>
+  </data>
+  <data name="Capture.Exported" xml:space="preserve">
+    <value>Saved {count} lines as {file}.</value>
+  </data>
+  <data name="Capture.ExportedCheck" xml:space="preserve">
+    <value>Saved {count} lines as {file}. The anonymizer found something that may still be a callsign or an address: check the file before sharing it.</value>
+  </data>
+  <data name="Capture.IssueTitle" xml:space="preserve">
+    <value>Captured packets for the test corpus</value>
+  </data>
+  <data name="Capture.IssueAttach" xml:space="preserve">
+    <value>(Attach the exported .log file here.)</value>
+  </data>
+  <data name="Error.capture.unsupported" xml:space="preserve">
+    <value>Data type not supported</value>
+  </data>
+  <data name="Error.capture.unknown-type" xml:space="preserve">
+    <value>Data type not known</value>
+  </data>
+  <data name="Error.capture.write-failed" xml:space="preserve">
+    <value>The capture files couldn't be written</value>
+  </data>
+  <data name="Error.aprs.unrecognized.unknown-data-extension" xml:space="preserve">
+    <value>Unknown data extension</value>
+  </data>
+  <data name="Error.aprs.unrecognized.unknown-path-entry" xml:space="preserve">
+    <value>Path entry no radio could have sent</value>
+  </data>
+  <data name="Error.aprs.unrecognized.unread-weather-field" xml:space="preserve">
+    <value>Weather reading not understood</value>
+  </data>
+  <data name="Error.aprs.unrecognized.user-defined-data" xml:space="preserve">
+    <value>User-defined data</value>
+  </data>
+  <data name="Map.SetDestination" xml:space="preserve">
+    <value>Set destination here</value>
+  </data>
+  <data name="Details.SetDestination" xml:space="preserve">
+    <value>Set as destination</value>
+  </data>
+  <data name="Destination.Text" xml:space="preserve">
+    <value>{name} · {range}</value>
+    <comment>The destination chip: its name and the distance and bearing from my location, such as "W1AW-9 · 42 km NE 038°".</comment>
+  </data>
+  <data name="Destination.NoLocation" xml:space="preserve">
+    <value>{name} · Set your location to see the distance</value>
+  </data>
+  <data name="Destination.Centre" xml:space="preserve">
+    <value>Centre the map on the destination</value>
+  </data>
+  <data name="Destination.Clear" xml:space="preserve">
+    <value>Clear the destination</value>
+  </data>
+  <data name="Destination.Placeholder" xml:space="preserve">
+    <value>Destination: coordinates or a locator</value>
+  </data>
+  <data name="Destination.Type" xml:space="preserve">
+    <value>Destination…</value>
+  </data>
+  <data name="Destination.Set" xml:space="preserve">
+    <value>Set destination</value>
+  </data>
+  <data name="Destination.TypedInvalid" xml:space="preserve">
+    <value>Type a latitude and longitude, such as 40.015, -105.27, or a locator such as DN70ka.</value>
+  </data>
+  <data name="Settings.Layout" xml:space="preserve">
+    <value>Layout</value>
+    <comment>Settings section: saved layouts of the panels and windows.</comment>
+  </data>
+  <data name="Layouts.Description" xml:space="preserve">
+    <value>Save the panels and windows as they are now under a name, such as Laptop or Desk, and use it again later. When the monitors change to a setup a layout was last used with, you're asked whether to use it.</value>
+  </data>
+  <data name="Layouts.NamePlaceholder" xml:space="preserve">
+    <value>Layout name</value>
+  </data>
+  <data name="Layouts.SaveAsButton" xml:space="preserve">
+    <value>Save layout as</value>
+  </data>
+  <data name="Layouts.SaveAs" xml:space="preserve">
+    <value>Save layout as…</value>
+    <comment>App menu.</comment>
+  </data>
+  <data name="Layouts.Use" xml:space="preserve">
+    <value>Use layout {layout}</value>
+    <comment>App menu: applies a saved layout.</comment>
+  </data>
+  <data name="Layouts.ApplyButton" xml:space="preserve">
+    <value>Use</value>
+  </data>
+  <data name="Layouts.UpdateButton" xml:space="preserve">
+    <value>Update</value>
+    <comment>Saves the current arrangement into this saved layout.</comment>
+  </data>
+  <data name="Layouts.RenameButton" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Layouts.DeleteButton" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Layouts.AskBox" xml:space="preserve">
+    <value>Ask to use a saved layout when the monitors change</value>
+  </data>
+  <data name="Layouts.NameNeeded" xml:space="preserve">
+    <value>Give the layout a name.</value>
+  </data>
+  <data name="Layouts.Prompt" xml:space="preserve">
+    <value>Monitors changed. Use layout {layout}?</value>
+  </data>
+  <data name="Layouts.PromptUse" xml:space="preserve">
+    <value>Use</value>
+  </data>
+  <data name="Layouts.PromptKeep" xml:space="preserve">
+    <value>Keep current</value>
+  </data>
+  <data name="Layouts.PromptDontAsk" xml:space="preserve">
+    <value>Don't ask again for these monitors</value>
+  </data>
+  <data name="Layouts.Unreadable" xml:space="preserve">
+    <value>The saved layouts couldn't be read, so they were set aside.</value>
+  </data>
+  <data name="Layouts.SomeUnreadable" xml:space="preserve">
+    <value>A saved layout couldn't be read and was left out.</value>
+  </data>
+  <data name="Dashboard.Point" xml:space="preserve">
+    <value>{value} at {time}</value>
+    <comment>A sparkline point's tooltip: its value and time.</comment>
+  </data>
+  <data name="Dashboard.CopyTile" xml:space="preserve">
+    <value>Copy this tile's numbers</value>
+  </data>
+  <data name="Shell.Panel.bulletins" xml:space="preserve">
+    <value>Bulletins</value>
+    <comment>Panel title: bulletins and announcements heard.</comment>
+  </data>
+  <data name="Bulletins.Filter" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="Bulletins.Filter.All" xml:space="preserve">
+    <value>Everything</value>
+  </data>
+  <data name="Bulletins.Kind.Bulletin" xml:space="preserve">
+    <value>Bulletin</value>
+  </data>
+  <data name="Bulletins.Kind.Announcement" xml:space="preserve">
+    <value>Announcement</value>
+  </data>
+  <data name="Bulletins.Kind.Nws" xml:space="preserve">
+    <value>NWS</value>
+    <comment>A National Weather Service bulletin.</comment>
+  </data>
+  <data name="Bulletins.Search" xml:space="preserve">
+    <value>Search bulletins</value>
+  </data>
+  <data name="Bulletins.Heard" xml:space="preserve">
+    <value>First heard {first} · last {last}</value>
+  </data>
+  <data name="Bulletins.HeardUpdated" xml:space="preserve">
+    <value>Updated {first} · last heard {last}</value>
+  </data>
+  <data name="Bulletins.New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Bulletins.MuteGroup" xml:space="preserve">
+    <value>Mute group</value>
+  </data>
+  <data name="Bulletins.UnmuteAll" xml:space="preserve">
+    <value>Unmute all</value>
+  </data>
+  <data name="Bulletins.Empty" xml:space="preserve">
+    <value>No bulletins heard yet. Bulletins and announcements stations send show here, the newest version of each, until they're not heard for a day.</value>
+  </data>
+  <data name="Bulletins.Muted" xml:space="preserve">
+    <value>Muted: {groups}</value>
+  </data>
+  <data name="HeardBack.Title" xml:space="preserve">
+    <value>My last position</value>
+  </data>
+  <data name="HeardBack.Sent" xml:space="preserve">
+    <value>Sent {time} on {sources}.</value>
+  </data>
+  <data name="HeardBack.Repeated" xml:space="preserve">
+    <value>repeated by {by} (RF)</value>
+  </data>
+  <data name="HeardBack.Gated" xml:space="preserve">
+    <value>gated by {by} (to APRS-IS)</value>
+  </data>
+  <data name="HeardBack.Direct" xml:space="preserve">
+    <value>sent to APRS-IS directly</value>
+  </data>
+  <data name="HeardBack.Listening" xml:space="preserve">
+    <value>listening for copies on RF</value>
+  </data>
+  <data name="HeardBack.NotOnRf" xml:space="preserve">
+    <value>not heard back on RF</value>
+  </data>
+  <data name="HeardBack.Tip" xml:space="preserve">
+    <value>Last position heard back via {by}, {minutes} min ago</value>
   </data>
   <data name="Shell.Panel.messages" xml:space="preserve">
     <value>Messages</value>
@@ -2794,6 +3219,90 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Sources.UseWith" xml:space="preserve">
     <value>Use with</value>
     <comment>The profiles that open this source.</comment>
+  </data>
+  <data name="Settings.Sources.SerialPort" xml:space="preserve">
+    <value>Serial port</value>
+    <comment>KISS over serial: the port the TNC is plugged into.</comment>
+  </data>
+  <data name="Settings.Sources.SerialPortExample" xml:space="preserve">
+    <value>/dev/ttyUSB0 or COM3</value>
+  </data>
+  <data name="Settings.Sources.SerialPort.Help" xml:space="preserve">
+    <value>The ports on this computer are listed; on Linux, a port under /dev/serial/by-id/ keeps its name when the TNC is plugged in again. In the web app the TNC plugs into the server.</value>
+  </data>
+  <data name="Settings.Sources.RefreshPorts" xml:space="preserve">
+    <value>Refresh</value>
+    <comment>Lists the serial ports again, after plugging a TNC in.</comment>
+  </data>
+  <data name="Settings.Sources.NoSerialPorts" xml:space="preserve">
+    <value>No serial ports found. Plug the TNC in and press Refresh, or type the port.</value>
+  </data>
+  <data name="Settings.Sources.Baud" xml:space="preserve">
+    <value>Speed (baud)</value>
+  </data>
+  <data name="Settings.Sources.Dtr" xml:space="preserve">
+    <value>Raise DTR</value>
+    <comment>A serial control line; keep the technical name.</comment>
+  </data>
+  <data name="Settings.Sources.Rts" xml:space="preserve">
+    <value>Raise RTS</value>
+    <comment>A serial control line; keep the technical name.</comment>
+  </data>
+  <data name="Settings.Sources.ControlLines.Help" xml:space="preserve">
+    <value>Most TNCs and radios need both raised; untick one only if the TNC's manual says so.</value>
+  </data>
+  <data name="Settings.Sources.Kind.AprsTextSerial" xml:space="preserve">
+    <value>Radio in APRS mode (receive only)</value>
+    <comment>A radio's built-in TNC read in its own APRS mode, such as a TH-D72A in APRS12.</comment>
+  </data>
+  <data name="Settings.Sources.AprsText.Help" xml:space="preserve">
+    <value>A radio with a TNC inside, such as a Kenwood TH-D72A on its USB cable: in its APRS mode it's read as it is and keeps working on its own, receive only; as KISS over serial it can send too.</value>
+  </data>
+  <data name="Settings.Sources.TncType" xml:space="preserve">
+    <value>TNC type</value>
+  </data>
+  <data name="Settings.Sources.TncType.Help" xml:space="preserve">
+    <value>Plain KISS for a TNC that's in KISS mode already. A radio's type switches its TNC into KISS whenever the port opens, again after a power cut, and back when it closes.</value>
+  </data>
+  <data name="Settings.Sources.TncType.Plain" xml:space="preserve">
+    <value>Plain KISS</value>
+  </data>
+  <data name="Settings.Sources.TncType.Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Settings.Sources.EnterScript" xml:space="preserve">
+    <value>Into KISS</value>
+    <comment>A custom TNC's script that switches it into KISS mode.</comment>
+  </data>
+  <data name="Settings.Sources.LeaveScript" xml:space="preserve">
+    <value>Out of KISS (optional)</value>
+  </data>
+  <data name="Settings.Sources.ScriptExample" xml:space="preserve">
+    <value>send KISS ON
+send RESTART
+pause 1s</value>
+    <comment>Script commands stay in English: they're what the TNC understands.</comment>
+  </data>
+  <data name="Settings.Sources.LeaveScriptExample" xml:space="preserve">
+    <value>bytes C0 FF C0</value>
+    <comment>The KISS exit frame in script form: don't translate.</comment>
+  </data>
+  <data name="Settings.Sources.Script.Help" xml:space="preserve">
+    <value>One step a line: send TEXT (with a carriage return), bytes HEX, expect 3s TEXT, pause 500ms, drain 500ms.</value>
+    <comment>The step words (send, bytes, expect, pause, drain) are the script language: don't translate them.</comment>
+  </data>
+  <data name="Error.kiss.setup-failed" xml:space="preserve">
+    <value>TNC didn't switch to KISS: {reason}</value>
+    <comment>reason: APRS.NET's explanation, with a hint such as "Switch the radio's TNC to packet mode (PACKET12) first" (not translated).</comment>
+  </data>
+  <data name="Error.settings.source.tnc-script-invalid" xml:space="preserve">
+    <value>A serial TNC's type isn't known, or its script can't be read: each line is send, bytes, expect, pause or drain.</value>
+  </data>
+  <data name="Error.settings.source.receive-only" xml:space="preserve">
+    <value>A radio in APRS mode only receives, so it can't be TX enabled.</value>
+  </data>
+  <data name="Error.settings.source.serial-invalid" xml:space="preserve">
+    <value>A KISS over serial source needs a port, a speed above 0, and a TNC port from 0 to 15.</value>
   </data>
   <data name="Error.kiss.unreachable" xml:space="preserve">
     <value>TNC not reachable</value>

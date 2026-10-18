@@ -91,6 +91,13 @@ public sealed class App : Application, IDisposable
         }
     }
 
+    /// <summary>Loads the saved layouts, then asks if one was used with the monitors there are now (F1.23 behavior 3).</summary>
+    private static async Task LoadLayoutsAsync(MainViewModel viewModel)
+    {
+        await viewModel.Layouts.LoadAsync();
+        viewModel.Layouts.ScreensChanged();
+    }
+
     /// <summary>
     /// Restores the saved layout before anything shows, and saves it after each change and on exit (F1.0 behaviors 8–15).
     /// </summary>
@@ -98,6 +105,14 @@ public sealed class App : Application, IDisposable
     {
         var screens = main?.Screens() ?? [];
         main?.Restore(screens);
+        // Saved layouts (F1.23): kept beside the layout, and offered when the monitors are a setup one was used with.
+        viewModel.Layouts.Attach(
+            _platform.Preferences,
+            () => main?.Screens() ?? [],
+            () => main?.Placement(),
+            main is null ? null : main.Apply
+        );
+        _ = LoadLayoutsAsync(viewModel);
         if (_platform.Preferences is not { } store)
         {
             viewModel.RestoreLayout(_platform.SavedLayout, screens);
@@ -129,7 +144,11 @@ public sealed class App : Application, IDisposable
                 var text = viewModel.Shell.Save(main.Placement());
                 _layout.Schedule(() => text); // written by SavePreferencesAsync on exit
             };
-            main.Window.Screens.Changed += (_, _) => viewModel.Shell.FitOpenWindows(main.Screens());
+            main.Window.Screens.Changed += (_, _) =>
+            {
+                viewModel.Shell.FitOpenWindows(main.Screens());
+                viewModel.Layouts.ScreensChanged();
+            };
         }
     }
 
