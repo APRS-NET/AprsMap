@@ -552,6 +552,18 @@
               Foreground="{DynamicResource Brush.TextMuted}"
               VerticalAlignment="Center"
             />
+            <!-- An update (F4.15 behavior 8): quiet, in the normal text colour, never a pop-up. -->
+            <Button
+              x:Name="UpdateNotice"
+              Content="{Binding Updates.NoticeText}"
+              IsVisible="{Binding Updates.NoticeText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Command="{Binding Updates.OpenCommand}"
+              AutomationProperties.LiveSetting="Polite"
+              Background="{x:Null}"
+              BorderThickness="0"
+              Padding="4,2"
+              VerticalAlignment="Center"
+            />
             <Button
               x:Name="OpenSetupButton"
               Content="{l:T Main.Setup.Open}"

@@ -9,6 +9,7 @@
   xmlns:s="using:AprsMap.UI.Settings"
   xmlns:sh="using:AprsMap.UI.Shell"
   xmlns:l="using:AprsMap.UI.Localization"
+  xmlns:u="using:AprsMap.UI.Updates"
   x:Class="AprsMap.UI.Views.DialogView"
   x:DataType="vm:DialogViewModel"
 >
@@ -202,6 +203,24 @@
                     IsVisible="{Binding ConnectionText, Converter={x:Static ObjectConverters.IsNotNull}}"
                     Foreground="{DynamicResource Brush.TextMuted}"
                   />
+                  <!-- Updates (F4.15 behavior 10). -->
+                  <WrapPanel
+                    ItemSpacing="8"
+                    IsVisible="{Binding UpdatesText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  >
+                    <TextBlock
+                      x:Name="UpdatesLabel"
+                      Text="{Binding UpdatesText}"
+                      TextWrapping="Wrap"
+                      VerticalAlignment="Center"
+                    />
+                    <Button
+                      x:Name="CheckUpdatesButton"
+                      Content="{l:T Updates.CheckNow}"
+                      Command="{Binding CheckUpdatesCommand}"
+                      IsVisible="{Binding CheckUpdatesCommand, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    />
+                  </WrapPanel>
                   <TextBlock Text="{Binding LicenceText}" TextWrapping="Wrap" />
                   <HyperlinkButton
                     x:Name="SourceLink"
@@ -234,6 +253,39 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
+              </DataTemplate>
+              <!-- An update (F4.15 behaviors 9, 16): the notes, then Download (or how to pull the image), Skip, Later. -->
+              <DataTemplate DataType="u:UpdateDialogViewModel">
+                <StackPanel x:Name="UpdateSection" Spacing="10">
+                  <TextBlock Text="{Binding Heading}" FontWeight="SemiBold" />
+                  <SelectableTextBlock
+                    Text="{Binding Notes}"
+                    TextWrapping="Wrap"
+                    FontFamily="{DynamicResource Font.Mono}"
+                  />
+                  <HyperlinkButton
+                    Content="{l:T Updates.ReleaseNotes}"
+                    Command="{Binding ReleaseNotesCommand}"
+                    IsVisible="{Binding MoreNotes}"
+                    Padding="0"
+                  />
+                  <SelectableTextBlock
+                    Text="{Binding PullText}"
+                    IsVisible="{Binding PullText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    TextWrapping="Wrap"
+                  />
+                  <WrapPanel ItemSpacing="8" LineSpacing="8" HorizontalAlignment="Right">
+                    <Button Content="{l:T Updates.Later}" Command="{Binding LaterCommand}" />
+                    <Button x:Name="SkipUpdateButton" Content="{l:T Updates.Skip}" Command="{Binding SkipCommand}" />
+                    <Button
+                      x:Name="DownloadUpdateButton"
+                      Classes="accent"
+                      Content="{l:T Updates.Download}"
+                      Command="{Binding DownloadCommand}"
+                      IsVisible="{Binding CanDownload}"
+                    />
+                  </WrapPanel>
+                </StackPanel>
               </DataTemplate>
               <!-- A question with one action, such as Reset layout's (behavior 14). -->
               <DataTemplate DataType="vm:ConfirmViewModel">

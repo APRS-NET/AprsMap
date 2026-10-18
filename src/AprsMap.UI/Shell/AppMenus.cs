@@ -519,6 +519,14 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
         return
         [
             Run("help.shortcuts", text["Menu.Help.Shortcuts"], () => vm.ShowShortcuts(Shortcuts())),
+            .. (
+                (!vm.SharedStation || vm.IsOperator) && vm.Updates.Status is not { CheckDisabled: true }
+                    ? new MenuEntry[]
+                    {
+                        new CommandEntry("help.check-updates", text["Menu.Help.CheckUpdates"], vm.Updates.CheckCommand),
+                    }
+                    : []
+            ),
             SeparatorEntry.Instance,
             RunAsync(
                 "help.docs",

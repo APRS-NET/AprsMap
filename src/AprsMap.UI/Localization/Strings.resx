@@ -3908,4 +3908,66 @@ pause 1s</value>
   <data name="Menu.Shortcuts.SwitchPanel" xml:space="preserve">
     <value>Switch between panels</value>
   </data>
+  <data name="Updates.Title" xml:space="preserve">
+    <value>Update</value>
+  </data>
+  <data name="Updates.Notice" xml:space="preserve">
+    <value>Update available: {version}</value>
+    <comment>version: a version such as 0.5.0-alpha.1.</comment>
+  </data>
+  <data name="Updates.ReleaseNotes" xml:space="preserve">
+    <value>Release notes</value>
+  </data>
+  <data name="Updates.Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
+  <data name="Updates.Skip" xml:space="preserve">
+    <value>Skip this version</value>
+  </data>
+  <data name="Updates.Later" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="Updates.CheckNow" xml:space="preserve">
+    <value>Check now</value>
+  </data>
+  <data name="Updates.Pull" xml:space="preserve">
+    <value>The image is {image}. Update with docker compose pull, then docker compose up -d; or Watchtower, or Unraid's Check for updates.</value>
+    <comment>image: the container image and tag. docker compose pull and docker compose up -d are commands: don't translate them.</comment>
+  </data>
+  <data name="Updates.Channel.PreReleases" xml:space="preserve">
+    <value>Pre-releases</value>
+  </data>
+  <data name="Updates.Channel.Stable" xml:space="preserve">
+    <value>Stable</value>
+  </data>
+  <data name="Updates.Never" xml:space="preserve">
+    <value>never</value>
+  </data>
+  <data name="Updates.UpToDate" xml:space="preserve">
+    <value>up to date</value>
+  </data>
+  <data name="Updates.Failed" xml:space="preserve">
+    <value>couldn't check: {reason}</value>
+    <comment>reason: why, in words.</comment>
+  </data>
+  <data name="Updates.Off" xml:space="preserve">
+    <value>Updates: {channel} · checking is off here</value>
+    <comment>channel: Pre-releases or Stable.</comment>
+  </data>
+  <data name="Updates.Summary" xml:space="preserve">
+    <value>Updates: {channel} · checked {when} · {result}</value>
+    <comment>channel: Pre-releases or Stable; when: a local date and time, or never; result: up to date, an update's notice or why it couldn't check.</comment>
+  </data>
+  <data name="Menu.Help.CheckUpdates" xml:space="preserve">
+    <value>Check for updates…</value>
+  </data>
+  <data name="Error.updates.unreachable" xml:space="preserve">
+    <value>The release list couldn't be reached.</value>
+  </data>
+  <data name="Error.updates.rate-limited" xml:space="preserve">
+    <value>GitHub's limit for checks was reached; the next check is at the usual time.</value>
+  </data>
+  <data name="Error.updates.unexpected-answer" xml:space="preserve">
+    <value>The release list's answer couldn't be read.</value>
+  </data>
 </root>

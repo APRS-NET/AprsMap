@@ -179,6 +179,7 @@ public sealed partial class MainView : UserControl
         if (_main is not null)
         {
             _main.PropertyChanged += OnMainChanged;
+            _main.OpenUri = ((IMenuActions)this).OpenUriAsync;
             _main.Layouts.Layouts.CollectionChanged += OnSavedLayoutsChanged;
             _main.SourcePills.CollectionChanged += OnSavedLayoutsChanged; // the lists the menus hold
             _main.Profiles.CollectionChanged += OnSavedLayoutsChanged;

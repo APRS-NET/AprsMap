@@ -83,9 +83,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         TimeProvider time,
         ILogger<Engine> logger,
         IGeocoder? geocoder = null,
-        IMessageStore? messages = null
+        IMessageStore? messages = null,
+        IHttpClientFactory? httpClients = null
     )
     {
+        _httpClients = httpClients;
         ArgumentNullException.ThrowIfNull(options);
         _options = options.Value;
         _stations = new StationStore(_options.MaxStations);
@@ -459,6 +461,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         var sweeping = SweepAsync(cancellationToken);
         var others = RunOtherSourcesAsync(cancellationToken);
+        var updates = RunUpdatesAsync(cancellationToken); // F4.15
         try
         {
             await RunConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -467,6 +470,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             await others.ConfigureAwait(false);
             await sweeping.ConfigureAwait(false);
+            await updates.ConfigureAwait(false);
         }
     }
 

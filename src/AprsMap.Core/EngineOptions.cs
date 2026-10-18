@@ -50,6 +50,9 @@ public sealed class EngineOptions
     /// </summary>
     public KissSeedOptions Kiss { get; set; } = new();
 
+    /// <summary>The update check (docs/features/F4.15-updates.md): whether it runs and what kind of install this is.</summary>
+    public UpdateOptions Updates { get; set; } = new();
+
     /// <summary>
     /// How many recent packets the engine keeps for clients that connect later, and for filtering after the fact
     /// (F1.8 behavior 9): a few minutes of a full APRS-IS feed, or hours of a filtered one.
@@ -89,4 +92,36 @@ public sealed class KissSeedOptions
 
     /// <summary>The source's name; null for the host and port.</summary>
     public string? Name { get; set; }
+}
+
+/// <summary>What kind of install the engine runs in, which decides what makes a release ready for it (F4.15 behavior 4).</summary>
+public enum InstallKind
+{
+    /// <summary>A desktop archive: ready when its archive for this runtime is attached.</summary>
+    Archive,
+
+    /// <summary>A desktop install that updates itself: ready when its installer feed is attached.</summary>
+    Installed,
+
+    /// <summary>A gateway: ready when the release says its container image is pushed.</summary>
+    Gateway,
+}
+
+/// <summary>The update check where the engine starts: <c>Engine:Updates:…</c>.</summary>
+public sealed class UpdateOptions
+{
+    /// <summary>
+    /// Whether the update check may run at all (behavior 6): false turns it off and hides Check now, for networks that
+    /// block the internet or for store packages that update themselves (behavior 17).
+    /// </summary>
+    public bool Check { get; set; } = true;
+
+    /// <summary>What kind of install this is; the host sets it.</summary>
+    public InstallKind Kind { get; set; } = InstallKind.Archive;
+
+    /// <summary>The runtime id (<c>linux-x64</c>…), for the archive or installer feed; the host sets it.</summary>
+    public string? RuntimeId { get; set; }
+
+    /// <summary>The GitHub API's address; another for tests.</summary>
+    public Uri ApiBase { get; set; } = new("https://api.github.com/");
 }

@@ -407,6 +407,35 @@ internal sealed class EngineHubEndpoint(
     }
 
     /// <summary>Bulletins heard are public: every viewer may read them (F2.5 behavior 1).</summary>
+    /// <summary>Only the operator hears about updates (F4.15 behavior 15); viewers' calls are refused.</summary>
+    [HubMethodName(EngineHub.GetUpdateStatus)]
+    public Task<UpdateStatus> GetUpdateStatus()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetUpdateStatusAsync(Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.CheckForUpdate)]
+    public Task<UpdateStatus> CheckForUpdate()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.CheckForUpdateAsync(Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.WatchUpdateStatus)]
+    public IAsyncEnumerable<UpdateStatus> WatchUpdateStatus(CancellationToken cancellationToken)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.WatchUpdateStatusAsync(cancellationToken);
+    }
+
+    [HubMethodName(EngineHub.SkipUpdate)]
+    public Task SkipUpdate(string version)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.SkipUpdateAsync(version, Context.ConnectionAborted);
+    }
+
     [HubMethodName(EngineHub.WatchBulletins)]
     public IAsyncEnumerable<BulletinView> WatchBulletins(CancellationToken cancellationToken) =>
         engine.WatchBulletinsAsync(cancellationToken);

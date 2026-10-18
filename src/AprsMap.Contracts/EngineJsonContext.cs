@@ -21,6 +21,7 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(TrafficEntry))]
 [JsonSerializable(typeof(DestinationInfo))]
 [JsonSerializable(typeof(BulletinView))]
+[JsonSerializable(typeof(UpdateStatus))]
 [JsonSerializable(typeof(BulletinPost))]
 [JsonSerializable(typeof(SignInRequest))]
 [JsonSerializable(typeof(AuthInfo))]

@@ -29,6 +29,12 @@ internal static class Program
             new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory }
         );
         builder.AddAprsMapEngine().AddAprsMapTiles().AddAprsMapTelemetry("desktop");
+        // An archive build: an update is ready when its archive for this runtime is attached (F4.15 behavior 4.1).
+        builder.Services.PostConfigure<AprsMap.Core.EngineOptions>(o =>
+        {
+            o.Updates.Kind = AprsMap.Core.InstallKind.Archive;
+            o.Updates.RuntimeId ??= System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
+        });
         s_host = builder.Build();
         var folder = SettingsLocation.Folder(s_host.Services.GetRequiredService<IOptions<EngineOptions>>().Value);
         var preferences = new FilePreferenceStore(folder);

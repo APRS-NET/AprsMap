@@ -323,6 +323,21 @@ public interface IEngineService
     IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Where the update check stands (docs/features/F4.15-updates.md, behavior 10): the running version, the channel, the
+    /// last check and its result, and the newest release ready for this install. Operator-only on a gateway.
+    /// </summary>
+    Task<UpdateStatus> GetUpdateStatusAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Checks for an update now (Check now, behavior 1), and says where it stands after.</summary>
+    Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>The update status now, then each change: a check starting, its result, a version skipped.</summary>
+    IAsyncEnumerable<UpdateStatus> WatchUpdateStatusAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Skip this version (behavior 9.3): not offered again, only a newer one.</summary>
+    Task SkipUpdateAsync(string version, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Posts a bulletin or announcement (docs/features/F2.5-bulletins.md, behaviors 5–7): sent now, then repeated on
     /// APRS.NET's bulletin schedule until it finishes or is stopped. Posting again to the same addressee replaces the
     /// text and starts the schedule again. It shows in <see cref="WatchBulletinsAsync"/> as ours, with its next send.
