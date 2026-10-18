@@ -500,6 +500,20 @@ public sealed class MapView : Control, IDisposable
         }
     }
 
+    /// <summary>
+    /// This station's last position's routes out, drawn while no packet's route is picked (F3.3 behavior 3): solid to
+    /// each digipeater that repeated it, dotted on to each IGate that gated it.
+    /// </summary>
+    public IReadOnlyList<PacketRoute> RoutesOut
+    {
+        get;
+        set
+        {
+            field = value;
+            InvalidateVisual();
+        }
+    } = [];
+
     /// <summary>Raised when a point of the selected station's track is clicked, with the station and the point's time.</summary>
     public event EventHandler<(string Name, DateTimeOffset Time)>? TrackPointPicked;
 
@@ -540,7 +554,7 @@ public sealed class MapView : Control, IDisposable
         Paths != MapPaths.SelectedStation
             ? null
             : RouteFrame.Build(
-                Route,
+                Route is { } picked ? [picked] : RoutesOut,
                 (x, y) => ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default)),
                 (float)(_symbolDip / 2),
                 _followedColour,

@@ -41,7 +41,11 @@ public sealed partial class Engine
             }
             else
             {
-                _followed = new Followed(callsign, information, now) { OnRf = source.Kind != SourceKind.AprsIs };
+                _followed = new Followed(callsign, information, now)
+                {
+                    OnRf = source.Kind != SourceKind.AprsIs,
+                    From = packet.Payload is PositionedPayload { IsPositionUnknown: false } sent ? sent.Position : null,
+                };
                 _followed.Sources.Add(source.Name);
             }
             if (source.Kind == SourceKind.AprsIs)
@@ -85,6 +89,13 @@ public sealed partial class Engine
             {
                 followed.Heard.Add(heard);
             }
+            if (packet.Path is { } path && string.Join(',', path.Select(p => p.ToString())) is var copy)
+            {
+                if (!followed.Paths.Contains(copy))
+                {
+                    followed.Paths.Add(copy);
+                }
+            }
         }
     }
 
@@ -97,12 +108,48 @@ public sealed partial class Engine
             }
             : null;
 
+    /// <inheritdoc />
+    public Task<IReadOnlyList<PacketRoute>> GetRoutesOutAsync(CancellationToken cancellationToken = default)
+    {
+        Followed? followed;
+        string[] paths;
+        lock (_gate)
+        {
+            followed = _followed;
+            paths = followed is null ? [] : [.. followed.Paths];
+        }
+        if (followed is null)
+        {
+            return Task.FromResult<IReadOnlyList<PacketRoute>>([]);
+        }
+        // Each copy's route from where it was sent, ending at the last digipeater for an RF copy (not back here) and at
+        // the IGate for a gated one (behavior 3).
+        IReadOnlyList<PacketRoute> routes =
+        [
+            .. paths
+                .Select(path =>
+                    _stations.Route(
+                        new RouteQuery(followed.Callsign, path, followed.From?.Latitude, followed.From?.Longitude)
+                    )
+                )
+                .OfType<PacketRoute>()
+                .Where(r => r.Hops.Count > 0),
+        ];
+        return Task.FromResult(routes);
+    }
+
     /// <summary>A position being followed.</summary>
     private sealed record Followed(string Callsign, byte[] Information, DateTimeOffset At)
     {
         public List<string> Sources { get; } = [];
 
         public List<HeardBack> Heard { get; } = [];
+
+        /// <summary>The paths of the copies heard back over RF or gated, each once.</summary>
+        public List<string> Paths { get; } = [];
+
+        /// <summary>Where it was sent from, when it says.</summary>
+        public AprsPosition? From { get; init; }
 
         public bool OnRf { get; set; }
     }

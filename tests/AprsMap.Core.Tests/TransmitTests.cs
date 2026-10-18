@@ -377,6 +377,43 @@ public sealed class TransmitTests
     }
 
     [Fact]
+    public async Task MyLastPositionsRoutesOutGoThroughTheDigipeaterToTheIGate()
+    {
+        var station = Create(Home(sources: [AprsIs, Tnc]));
+        var (run, cts, aprsIs, tnc) = await Run(station);
+        using (cts)
+        {
+            Assert.Empty(await station.Engine.GetRoutesOutAsync(Ct)); // nothing sent yet
+            await aprsIs.Write("K0HQ-1>APRS,TCPIP*,qAC,T2TEST:!4910.00N/07210.00W#digi");
+            await aprsIs.Write("N0IGT>APRS,TCPIP*,qAC,T2TEST:!4920.00N/07220.00W&igate");
+            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SendPositionAsync(null, Ct);
+            await WaitUntil(() => Task.FromResult(!tnc.Sent.IsEmpty && !aprsIs.Sent.IsEmpty));
+            Assert.Empty(await station.Engine.GetRoutesOutAsync(Ct)); // sent to APRS-IS directly: no route to draw
+            var sent = tnc.Sent.First();
+            var information = sent[(sent.IndexOf(':') + 1)..];
+
+            await tnc.Write($"N0TEST>{Brand.Tocall},K0HQ-1*,WIDE2-1:{information}");
+            await aprsIs.Write($"N0TEST>{Brand.Tocall},K0HQ-1*,WIDE2-1,qAR,N0IGT:{information}");
+            await WaitUntil(async () => (await station.Engine.GetRoutesOutAsync(Ct)).Count == 2);
+
+            var routes = await station.Engine.GetRoutesOutAsync(Ct);
+            Assert.All(routes, r => Assert.Equal("N0TEST", r.Name));
+            Assert.All(routes, r => Assert.NotNull(r.Latitude)); // from where it was sent
+            Assert.Equal(
+                ["K0HQ-1", "K0HQ-1 > N0IGT (IGate)"],
+                routes
+                    .Select(r => string.Join(" > ", r.Hops.Select(h => h.IsGateway ? $"{h.Name} (IGate)" : h.Name)))
+                    .Order(StringComparer.Ordinal)
+            ); // the RF copy ends at the digipeater, not back here
+            Assert.All(routes.SelectMany(r => r.Hops), h => Assert.NotNull(h.Latitude));
+
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
     public async Task TestSendGoesOutOnOneSourceAndSaysWhoRepeatedIt()
     {
         var station = Create(Home(sources: [AprsIs, Tnc]));

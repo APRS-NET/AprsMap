@@ -70,6 +70,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetRouteAsync"/>.</summary>
     public const string GetRoute = "GetRoute";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetRoutesOutAsync"/>.</summary>
+    public const string GetRoutesOut = "GetRoutesOut";
+
     /// <summary>Hub method for <see cref="IEngineService.SendPositionAsync"/>.</summary>
     public const string SendPosition = "SendPosition";
 

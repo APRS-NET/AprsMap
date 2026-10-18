@@ -161,6 +161,9 @@ internal sealed class EngineHubEndpoint(
     [HubMethodName(EngineHub.GetRoute)]
     public Task<PacketRoute?> GetRoute(RouteQuery query) => engine.GetRouteAsync(query, Context.ConnectionAborted);
 
+    [HubMethodName(EngineHub.GetRoutesOut)]
+    public Task<IReadOnlyList<PacketRoute>> GetRoutesOut() => engine.GetRoutesOutAsync(Context.ConnectionAborted);
+
     [HubMethodName(EngineHub.GetStation)]
     public Task<StationDetail?> GetStation(string name) => engine.GetStationAsync(name, Context.ConnectionAborted);
 

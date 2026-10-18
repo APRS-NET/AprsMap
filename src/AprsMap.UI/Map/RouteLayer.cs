@@ -45,27 +45,42 @@ internal sealed class RouteFrame : IDisposable
         float clearance,
         SKColor line,
         SKColor casing
+    ) => Build(route is null ? [] : [route], toScreen, clearance, line, casing);
+
+    /// <summary>
+    /// The frame for several routes at once, such as this station's routes out (docs/features/F3.3-rf-paths.md,
+    /// behavior 3), or null when there's nothing to draw.
+    /// </summary>
+    public static RouteFrame? Build(
+        IReadOnlyList<PacketRoute> routes,
+        Func<double, double, SKPoint> toScreen,
+        float clearance,
+        SKColor line,
+        SKColor casing
     )
     {
-        if (route is not { Latitude: { } lat, Longitude: { } lon } || route.Hops.Count == 0)
-        {
-            return null;
-        }
         var frame = new RouteFrame(line, casing);
-        var from = Project(lat, lon);
-        foreach (var hop in route.Hops)
+        foreach (var route in routes)
         {
-            if (hop is not { Latitude: { } hlat, Longitude: { } hlon })
+            if (route is not { Latitude: { } lat, Longitude: { } lon })
             {
-                break; // the line stops where positions run out
+                continue;
             }
-            var to = Project(hlat, hlon);
-            frame.Leg(from, to, dotted: hop.IsGateway, clearance);
-            if (hop.IsGateway && route.Kind == ArrivalKind.Direct && hop.DistanceKm is { } km)
+            var from = Project(lat, lon);
+            foreach (var hop in route.Hops)
             {
-                frame.DirectLabel = (new SKPoint((from.X + to.X) / 2, (from.Y + to.Y) / 2), km);
+                if (hop is not { Latitude: { } hlat, Longitude: { } hlon })
+                {
+                    break; // the line stops where positions run out
+                }
+                var to = Project(hlat, hlon);
+                frame.Leg(from, to, dotted: hop.IsGateway, clearance);
+                if (hop.IsGateway && route.Kind == ArrivalKind.Direct && hop.DistanceKm is { } km)
+                {
+                    frame.DirectLabel = (new SKPoint((from.X + to.X) / 2, (from.Y + to.Y) / 2), km);
+                }
+                from = to;
             }
-            from = to;
         }
         if (frame.Legs == (0, 0))
         {

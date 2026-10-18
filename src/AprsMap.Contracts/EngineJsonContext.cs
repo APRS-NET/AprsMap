@@ -46,6 +46,7 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(ViewFacets))]
 [JsonSerializable(typeof(ClearScope))]
 [JsonSerializable(typeof(PacketRoute))]
+[JsonSerializable(typeof(IReadOnlyList<PacketRoute>))]
 [JsonSerializable(typeof(StationQuery))]
 [JsonSerializable(typeof(MapViewReport))]
 [JsonSerializable(typeof(StationPage))]

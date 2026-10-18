@@ -259,6 +259,14 @@
               TextWrapping="Wrap"
               Foreground="{DynamicResource Brush.TextMuted}"
             />
+            <!-- Which line is which on the map, in words as well as line style (F3.3 behavior 3). -->
+            <TextBlock
+              x:Name="RoutesOutLegend"
+              Text="{l:T HeardBack.Legend}"
+              IsVisible="{Binding HasRoutesOut}"
+              TextWrapping="Wrap"
+              Foreground="{DynamicResource Brush.TextMuted}"
+            />
           </StackPanel>
           <TextBlock Text="{l:T Details.Me.Directly}" Margin="0,4,0,0" />
           <ItemsControl ItemsSource="{Binding HeardDirectly}">

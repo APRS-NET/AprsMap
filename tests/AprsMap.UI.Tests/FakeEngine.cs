@@ -432,6 +432,12 @@ internal sealed class FakeEngine : IEngineService
         return Task.FromResult(Routes.GetValueOrDefault(query.Name));
     }
 
+    /// <summary>What <see cref="GetRoutesOutAsync"/> answers; none by default.</summary>
+    public List<PacketRoute> RoutesOut { get; } = [];
+
+    public Task<IReadOnlyList<PacketRoute>> GetRoutesOutAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<PacketRoute>>([.. RoutesOut]);
+
     /// <summary>How many times <see cref="SendPositionAsync"/> was called.</summary>
     public int PositionsSent { get; private set; }
 

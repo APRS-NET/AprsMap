@@ -376,6 +376,13 @@ public sealed partial class StationDetailsViewModel : ObservableObject
 
     private PacketRoute? _route;
 
+    /// <summary>Whether the map draws this station's routes out, so the legend says which line is which (F3.3).</summary>
+    [ObservableProperty]
+    public partial bool HasRoutesOut { get; private set; }
+
+    /// <summary>Notes whether this station's routes out are drawn.</summary>
+    internal void ShowRoutesOut(IReadOnlyList<PacketRoute> routes) => HasRoutesOut = routes.Count > 0;
+
     /// <summary>Shows <paramref name="route"/> in words.</summary>
     internal void ShowRoute(PacketRoute? route)
     {

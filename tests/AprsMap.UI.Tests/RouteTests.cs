@@ -143,6 +143,60 @@ public sealed class RouteTests
         Assert.Equal(asked + 1, engine.RouteQueries.Count);
     }
 
+    private static readonly PacketRoute RepeatedOut = new(
+        "N0ME",
+        ArrivalKind.Digipeated,
+        49,
+        -72,
+        [new RouteHop("N0DIGI-1", false, 49, -71.8667, 9.7)]
+    );
+
+    private static readonly PacketRoute GatedOut = RepeatedOut with
+    {
+        Hops = [.. RepeatedOut.Hops, new RouteHop("N0GATE-1", true, 49.1667, -72, 21.2)],
+    };
+
+    [Fact]
+    public void RoutesOutDrawEachCopysLegsSolidToTheDigipeaterAndDottedToTheIGate()
+    {
+        using var frame = RouteFrame.Build([RepeatedOut, GatedOut], Screen, 2, SKColors.Blue, SKColors.White)!;
+
+        Assert.Equal((2, 1), frame.Legs); // the shared leg to the digipeater twice, then the IGate's dotted one
+    }
+
+    [AvaloniaFact]
+    public void TheMapDrawsRoutesOutUntilAPacketsRouteIsPicked()
+    {
+        using var view = new MapView { RoutesOut = [RepeatedOut, GatedOut] };
+        var viewport = new Mapsui.Viewport(-8_000_000, 6_300_000, 50, 0, 800, 600); // close enough for the short legs
+
+        using (var drawn = view.BuildRoute(viewport))
+        {
+            Assert.Equal((2, 1), drawn!.Legs);
+        }
+        view.Route = Direct;
+        using (var picked = view.BuildRoute(viewport))
+        {
+            Assert.Equal((0, 1), picked!.Legs);
+        }
+    }
+
+    [Fact]
+    public async Task SelectingThisStationShowsItsRoutesOutAndTheLegend()
+    {
+        var engine = new FakeEngine();
+        engine.RoutesOut.AddRange([RepeatedOut, GatedOut]);
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+
+        vm.SelectedStation = "N0ME";
+        await WaitUntil(() => vm.RoutesOut.Count == 2);
+        Assert.True(vm.Details.HasRoutesOut);
+
+        vm.SelectedStation = "N0CALL-9"; // another station: not its routes
+        await WaitUntil(() => vm.RoutesOut.Count == 0);
+        Assert.False(vm.Details.HasRoutesOut);
+    }
+
     [Fact]
     public async Task ClearingTheSelectionClearsTheRoute()
     {
