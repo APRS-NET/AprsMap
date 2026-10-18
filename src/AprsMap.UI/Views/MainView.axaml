@@ -131,6 +131,52 @@
               VerticalAlignment="Center"
             />
           </DockPanel>
+          <!-- The monitors changed to a setup a saved layout was used with: asked, never switched (F1.23 behavior 3). -->
+          <DockPanel
+            x:Name="LayoutPromptBar"
+            DockPanel.Dock="Bottom"
+            IsVisible="{Binding Layouts.IsAsking}"
+            Margin="0,6,0,0"
+          >
+            <WrapPanel DockPanel.Dock="Right" ItemSpacing="6" VerticalAlignment="Center">
+              <Button
+                x:Name="UseLayoutButton"
+                Classes="accent"
+                Content="{l:T Layouts.PromptUse}"
+                Command="{Binding Layouts.UsePromptedCommand}"
+              />
+              <Button
+                x:Name="KeepLayoutButton"
+                Content="{l:T Layouts.PromptKeep}"
+                Command="{Binding Layouts.KeepCurrentCommand}"
+              />
+              <Button
+                x:Name="DontAskLayoutButton"
+                Content="{l:T Layouts.PromptDontAsk}"
+                Command="{Binding Layouts.DontAskAgainCommand}"
+              />
+            </WrapPanel>
+            <TextBlock Text="{Binding Layouts.PromptText}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </DockPanel>
+          <DockPanel
+            x:Name="SavedLayoutsNoticeBar"
+            DockPanel.Dock="Bottom"
+            IsVisible="{Binding Layouts.Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Margin="0,6,0,0"
+          >
+            <Button
+              DockPanel.Dock="Right"
+              Content="{l:T Shell.Dismiss}"
+              Command="{Binding Layouts.DismissNoticeCommand}"
+              VerticalAlignment="Center"
+            />
+            <TextBlock
+              Text="{Binding Layouts.Notice}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+              VerticalAlignment="Center"
+            />
+          </DockPanel>
           <!-- Said once when the saved layout couldn't be read (F1.0 behavior 10). -->
           <DockPanel
             x:Name="LayoutNoticeBar"

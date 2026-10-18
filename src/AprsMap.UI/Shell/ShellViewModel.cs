@@ -89,6 +89,22 @@ public sealed partial class ShellViewModel : ObservableObject
         return LayoutRestore.Restored;
     }
 
+    /// <summary>
+    /// Puts a saved layout on screen now (docs/features/F1.23-saved-layouts.md, behavior 1): the floating windows open
+    /// close, and the saved one is restored as at start-up, fitted to <paramref name="screens"/>.
+    /// </summary>
+    public LayoutRestore Apply(string saved, IReadOnlyList<ScreenArea> screens)
+    {
+        if (LayoutFile.Read(saved) is null)
+        {
+            return LayoutRestore.Unreadable;
+        }
+        CloseWindows(Layout);
+        var result = Restore(saved, screens);
+        OnChanged();
+        return result;
+    }
+
     /// <summary>The stored form of the current layout, with the main window's place where there is one.</summary>
     public string Save(MainWindowPlacement? mainWindow = null)
     {

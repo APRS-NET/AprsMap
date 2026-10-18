@@ -165,7 +165,7 @@ public sealed class ShellViewTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(menu.IsOpen);
         var headers = menu.Items.OfType<MenuItem>().Select(i => i.Header?.ToString()).ToList();
-        Assert.Equal(["Show Stations", "Reset layout"], headers); // no Gather outside the desktop app
+        Assert.Equal(["Show Stations", "Reset layout", "Save layout as…"], headers); // no Gather outside the desktop app
         var show = menu.Items.OfType<MenuItem>().First();
         show.Command!.Execute(show.CommandParameter);
         menu.Hide();

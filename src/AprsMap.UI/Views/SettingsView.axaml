@@ -5,6 +5,7 @@
   xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:s="using:AprsMap.UI.Settings"
+  xmlns:sh="using:AprsMap.UI.Shell"
   xmlns:l="using:AprsMap.UI.Localization"
   x:Class="AprsMap.UI.Views.SettingsView"
   x:DataType="s:SettingsViewModel"
@@ -814,6 +815,50 @@
           </StackPanel>
 
           <!-- Map (F1.4 behavior 21): the viewer's map preferences, and the station's aging where it may be changed. -->
+          <!-- Layout (F1.23): Save layout as, the saved layouts to use, update, rename or delete, and the question. -->
+          <StackPanel x:Name="LayoutSection" IsVisible="{Binding IsLayoutSection}" Spacing="12">
+            <TextBlock Text="{l:T Layouts.Description}" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBox
+                x:Name="LayoutNameBox"
+                Text="{Binding Layouts.NewName, FallbackValue=''}"
+                PlaceholderText="{l:T Layouts.NamePlaceholder}"
+                AutomationProperties.Name="{l:T Layouts.NamePlaceholder}"
+              />
+              <Button
+                x:Name="SaveLayoutAsButton"
+                Grid.Column="1"
+                Content="{l:T Layouts.SaveAsButton}"
+                Command="{Binding Layouts.SaveAsCommand}"
+              />
+            </Grid>
+            <TextBlock
+              Text="{Binding Layouts.Error}"
+              IsVisible="{Binding Layouts.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+            <ItemsControl x:Name="SavedLayoutRows" ItemsSource="{Binding Layouts.Layouts}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="sh:SavedLayoutRow">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,2">
+                    <TextBox Text="{Binding EditName}" AutomationProperties.Name="{l:T Layouts.NamePlaceholder}" />
+                    <WrapPanel Grid.Column="1" ItemSpacing="6" VerticalAlignment="Center">
+                      <Button Content="{l:T Layouts.ApplyButton}" Command="{Binding ApplyCommand}" />
+                      <Button Content="{l:T Layouts.UpdateButton}" Command="{Binding UpdateCommand}" />
+                      <Button Content="{l:T Layouts.RenameButton}" Command="{Binding RenameCommand}" />
+                      <Button Content="{l:T Layouts.DeleteButton}" Command="{Binding DeleteCommand}" />
+                    </WrapPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <CheckBox
+              x:Name="AskLayoutBox"
+              Content="{l:T Layouts.AskBox}"
+              IsChecked="{Binding Layouts.Ask, FallbackValue=False}"
+            />
+          </StackPanel>
           <StackPanel x:Name="MapSection" IsVisible="{Binding IsMapSection}" Spacing="20">
             <ItemsControl x:Name="MapOptions" ItemsSource="{Binding MapItems}">
               <ItemsControl.ItemsPanel>

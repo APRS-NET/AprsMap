@@ -1328,6 +1328,64 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Destination.TypedInvalid" xml:space="preserve">
     <value>Type a latitude and longitude, such as 40.015, -105.27, or a locator such as DN70ka.</value>
   </data>
+  <data name="Settings.Layout" xml:space="preserve">
+    <value>Layout</value>
+    <comment>Settings section: saved layouts of the panels and windows.</comment>
+  </data>
+  <data name="Layouts.Description" xml:space="preserve">
+    <value>Save the panels and windows as they are now under a name, such as Laptop or Desk, and use it again later. When the monitors change to a setup a layout was last used with, you're asked whether to use it.</value>
+  </data>
+  <data name="Layouts.NamePlaceholder" xml:space="preserve">
+    <value>Layout name</value>
+  </data>
+  <data name="Layouts.SaveAsButton" xml:space="preserve">
+    <value>Save layout as</value>
+  </data>
+  <data name="Layouts.SaveAs" xml:space="preserve">
+    <value>Save layout as…</value>
+    <comment>App menu.</comment>
+  </data>
+  <data name="Layouts.Use" xml:space="preserve">
+    <value>Use layout {layout}</value>
+    <comment>App menu: applies a saved layout.</comment>
+  </data>
+  <data name="Layouts.ApplyButton" xml:space="preserve">
+    <value>Use</value>
+  </data>
+  <data name="Layouts.UpdateButton" xml:space="preserve">
+    <value>Update</value>
+    <comment>Saves the current arrangement into this saved layout.</comment>
+  </data>
+  <data name="Layouts.RenameButton" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="Layouts.DeleteButton" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Layouts.AskBox" xml:space="preserve">
+    <value>Ask to use a saved layout when the monitors change</value>
+  </data>
+  <data name="Layouts.NameNeeded" xml:space="preserve">
+    <value>Give the layout a name.</value>
+  </data>
+  <data name="Layouts.Prompt" xml:space="preserve">
+    <value>Monitors changed. Use layout {layout}?</value>
+  </data>
+  <data name="Layouts.PromptUse" xml:space="preserve">
+    <value>Use</value>
+  </data>
+  <data name="Layouts.PromptKeep" xml:space="preserve">
+    <value>Keep current</value>
+  </data>
+  <data name="Layouts.PromptDontAsk" xml:space="preserve">
+    <value>Don't ask again for these monitors</value>
+  </data>
+  <data name="Layouts.Unreadable" xml:space="preserve">
+    <value>The saved layouts couldn't be read, so they were set aside.</value>
+  </data>
+  <data name="Layouts.SomeUnreadable" xml:space="preserve">
+    <value>A saved layout couldn't be read and was left out.</value>
+  </data>
   <data name="Shell.Panel.messages" xml:space="preserve">
     <value>Messages</value>
     <comment>Panel title: conversations with other stations.</comment>

@@ -88,6 +88,7 @@ public sealed partial class MainViewModel : ObservableObject
         ViewFilter.Changed += (_, _) => OnViewFilterChanged();
         StationList.Filter = () => ViewFilter.Current;
         Shell = new ShellViewModel(this, _text, managedWindows);
+        Layouts = new SavedLayoutsViewModel(Shell, _text);
         Dashboard = new Statistics.DashboardViewModel(
             engine,
             time,
@@ -196,6 +197,17 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The map and the panels around it (docs/features/F1.0-shell-and-docking.md).</summary>
     public ShellViewModel Shell { get; }
+
+    /// <summary>Saved layouts, and the question when the monitors change (docs/features/F1.23-saved-layouts.md).</summary>
+    public SavedLayoutsViewModel Layouts { get; }
+
+    /// <summary>Save layout as… in the app menu: Settings › Layout, where the name is typed (F1.23 behavior 1).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    internal async Task OpenLayoutSettingsAsync()
+    {
+        await OpenSettingsAsync();
+        Settings?.ShowLayout();
+    }
 
     /// <summary>Said once when the saved layout couldn't be read and the default is shown (F1.0 behavior 10); or null.</summary>
     [ObservableProperty]
@@ -423,7 +435,8 @@ public sealed partial class MainViewModel : ObservableObject
             mapItems,
             sources,
             unitItems,
-            beacons
+            beacons,
+            Layouts
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;

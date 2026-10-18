@@ -88,6 +88,12 @@ public sealed partial class MainView : UserControl
         }
     }
 
+    /// <summary>A saved layout added, renamed or deleted: the app menu lists them (F1.23 behavior 1).</summary>
+    private void OnSavedLayoutsChanged(
+        object? sender,
+        System.Collections.Specialized.NotifyCollectionChangedEventArgs e
+    ) => FillAppMenu();
+
     /// <summary>
     /// The app menu's items, built as it opens because the closed panels change (F1.0 behaviors 4, 10, 14): Show for each
     /// closed panel, Reset layout, and on the desktop Gather floating windows.
@@ -116,6 +122,18 @@ public sealed partial class MainView : UserControl
             AppMenu.Items.Add(new Separator());
         }
         AppMenu.Items.Add(new MenuItem { Header = text["Shell.Menu.ResetLayout"], Command = vm.ResetLayoutCommand });
+        // Saved layouts (F1.23 behavior 1): each one to use, and Save layout as….
+        foreach (var saved in vm.Layouts.Layouts)
+        {
+            AppMenu.Items.Add(
+                new MenuItem
+                {
+                    Header = text.Format("Layouts.Use", new Dictionary<string, object?> { ["layout"] = saved.Name }),
+                    Command = saved.ApplyCommand,
+                }
+            );
+        }
+        AppMenu.Items.Add(new MenuItem { Header = text["Layouts.SaveAs"], Command = vm.OpenLayoutSettingsCommand });
         if (vm.CanClearData)
         {
             AppMenu.Items.Add(
@@ -154,6 +172,7 @@ public sealed partial class MainView : UserControl
         if (_main is not null)
         {
             _main.PropertyChanged -= OnMainChanged;
+            _main.Layouts.Layouts.CollectionChanged -= OnSavedLayoutsChanged;
         }
         _main = DataContext as MainViewModel;
         _shell = _main?.Shell;
@@ -164,6 +183,7 @@ public sealed partial class MainView : UserControl
         if (_main is not null)
         {
             _main.PropertyChanged += OnMainChanged;
+            _main.Layouts.Layouts.CollectionChanged += OnSavedLayoutsChanged;
         }
         FillAppMenu();
     }
