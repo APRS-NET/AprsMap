@@ -317,7 +317,8 @@ nothing for that long. AprsMap shows both on the source's pill (F3.1 behavior 13
 
 ## G14: Text-mode and Kenwood TNC support
 
-**Need.** F3.2.
+**Need.** F3.2 (AprsMap 0.5.0, [#242](https://github.com/APRS-NET/AprsMap/issues/242)): first, switching a TH-D72A's
+built-in TNC into KISS when its source opens, after a power cut, and back when it closes.
 
 **Scope.** Drive TNCs in text (monitor) mode: configurable open and close command scripts with prompt waits, parse
 monitor lines (TNC2 and common variants such as Kenwood's) into `AprsPacket`, transmit via the TNC's unproto/beacon

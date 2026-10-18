@@ -10,7 +10,7 @@ anything yet.
 
 **Next:** [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/3): transmitting through APRS-IS and KISS
 TNCs (your station's transmit switch, TX enabled and Test send per source, Disable TX per profile), beacons, messaging
-and bulletins, operator sign-in on the gateway, the public receive-only console (F1.26), capturing unexpected packets for the test corpus (F1.27), KISS TNCs on USB serial such as a TH-D72A's built-in TNC (F3.1) and update checks. Then
+and bulletins, operator sign-in on the gateway, the public receive-only console (F1.26), capturing unexpected packets for the test corpus (F1.27), KISS TNCs on USB serial such as a TH-D72A's built-in TNC (F3.1), switched into KISS by the app (F3.2) and update checks. Then
 [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) (objects, GPS, a receive-only IGate) and
 [0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5) (a digipeater and a two-way IGate).
 
