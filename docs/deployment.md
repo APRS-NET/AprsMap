@@ -269,7 +269,7 @@ where the operating system expects it:
   it. To set defaults for every user of a machine, such as `"Engine": { "Updates": { "Check": false } }`, an
   administrator puts an `appsettings.json` in the machine folder. It goes over the shipped file; environment
   variables and the command line still go over both.
-- **Removing everything:** Settings › Data › Reset the app (or `--reset-all`) deletes the settings and preferences.
+- **Removing everything:** Tools › Start over… (or `--reset-all`) deletes the settings and preferences.
   Uninstalling leaves all of these folders in place.
 
 Until the first-run wizard (scope F0.5) exists, set `Engine:Callsign` in `appsettings.json` (or the `Engine__Callsign`
