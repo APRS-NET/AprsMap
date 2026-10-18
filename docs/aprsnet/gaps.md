@@ -50,7 +50,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet (delivered, `0.4.0-alpha.5`: `AprsNet.Corpus`, `AprsPacket.Unrecognized`) | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
 | G32 | A typed reason when an APRS-IS login reaches a KISS TNC (delivered, `0.4.0-alpha.5`: `KissTncLoginException`) | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
 | G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console (delivered: KISS `0.4.0-alpha.6`, APRS-IS `0.4.0-alpha.7`) | Kiss, AprsIsTcpClient | 2 | [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) |
-| G34 | Bulletin repeat schedule, and ANSRVR group helpers | Messaging | 2 | — (proposed) |
+| G34 | Bulletin repeat schedule, and ANSRVR group helpers | Messaging | 2 | [APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272) |
 
 ---
 
@@ -584,7 +584,7 @@ no subscriber; a throwing handler doesn't stop reading.
 **Need.** AprsMap F2.5 (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)): posting bulletins and
 announcements, and joining announcement groups through ANSRVR.
 
-**Scope.**
+**Scope** ([APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272), APRS.NET 0.5.0).
 
 1. **A bulletin repeat schedule**: when to send a bulletin or announcement again (often at first, then less often) and
    for how long, as `AprsNet.Beacons` answers for beacons, following APRS101's guidance on bulletin repetition.
