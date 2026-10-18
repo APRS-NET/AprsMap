@@ -124,8 +124,8 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 
 | ID | Feature | Reference topic | Owner | Needs | Status |
 | --- | --- | --- | --- | --- | --- |
-| F3.1 | RF ports: KISS over serial, Bluetooth serial and TCP (Direwolf, soundmodem), several at once, as [F1.25](features/F1.25-sources.md) sources. Receive only in 0.4.0 ([#120](https://github.com/APRS-NET/AprsMap/issues/120)); the test bed is Direwolf on Windows, MFJ TNC-X, later NinoTNC | Compatible Hardware/Software | App | G12, G13 | TCP done (0.4.0), transmitting through it with F2.1 (0.5.0); serial in 0.6.0 ([#177](https://github.com/APRS-NET/AprsMap/issues/177)), with a hardware TNC to test on |
-| F3.2 | Text-mode and Kenwood built-in TNCs, open and close command scripts | Open/Close Commands | App | G14 | scoped |
+| F3.1 | RF ports: KISS over serial, Bluetooth serial and TCP (Direwolf, soundmodem), several at once, as [F1.25](features/F1.25-sources.md) sources. Receive only in 0.4.0 ([#120](https://github.com/APRS-NET/AprsMap/issues/120)); the test bed is Direwolf on Windows, MFJ TNC-X, later NinoTNC | Compatible Hardware/Software | App | G12, G13 | TCP done (0.4.0), transmitting through it with F2.1 (0.5.0); serial in 0.5.0 ([#177](https://github.com/APRS-NET/AprsMap/issues/177)), tested on a TH-D72A's built-in TNC |
+| F3.2 | Radios' built-in TNCs switched into KISS and back (TH-D72A first), open and close command scripts, text-mode TNCs | Open/Close Commands | App | G14 | scoped (0.5.0, [#242](https://github.com/APRS-NET/AprsMap/issues/242)) |
 | F3.3 | Per-port RF beacon paths, RF versus IS source attribution on the map, heard-direct indication | — | App | G20 | scoped (0.5.0, [#210](https://github.com/APRS-NET/AprsMap/issues/210)) |
 | F3.4 | IGate: RF→IS, IS→RF for messages to local stations, objects; configurable rules | (core feature list), Receive-Only IGates Break Messaging | App | G16 | scoped (receive only in 0.6.0, [#206](https://github.com/APRS-NET/AprsMap/issues/206); two-way in 0.7.0, [#208](https://github.com/APRS-NET/AprsMap/issues/208)) |
 | F3.5 | Digipeater: WIDEn-N, fill-in, own-call digipeat | Digipeating | App | G15 | scoped (0.7.0, [#209](https://github.com/APRS-NET/AprsMap/issues/209)) |
@@ -169,8 +169,8 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
    hardware). Phase 1 needs no transmit work in APRS.NET.
 5. 0.5.0-alpha.1 to 0.7.0-alpha.1 follow APRS.NET's milestones of the same numbers, each feature issue blocked by
    the APRS.NET capability it needs: 0.5.0 transmitting through APRS-IS and KISS TNCs, beacons and
-   messaging (F2.1, F2.9 and F1.26 before anything sends; APRS.NET [#189](https://github.com/APRS-NET/APRS.NET/issues/189), [#195](https://github.com/APRS-NET/APRS.NET/issues/195)); 0.6.0
-   serial TNCs, objects, queries, GPS and a receive-only IGate ([#160](https://github.com/APRS-NET/APRS.NET/issues/160), [#200](https://github.com/APRS-NET/APRS.NET/issues/200),
+   messaging (F2.1, F2.9 and F1.26 before anything sends; APRS.NET [#189](https://github.com/APRS-NET/APRS.NET/issues/189), [#196](https://github.com/APRS-NET/APRS.NET/issues/196)), and serial TNCs
+   ([#160](https://github.com/APRS-NET/APRS.NET/issues/160)); 0.6.0 objects, queries, GPS, moving-station beacons and a receive-only IGate ([#195](https://github.com/APRS-NET/APRS.NET/issues/195), [#200](https://github.com/APRS-NET/APRS.NET/issues/200),
    [#203](https://github.com/APRS-NET/APRS.NET/issues/203), [#206](https://github.com/APRS-NET/APRS.NET/issues/206)); 0.7.0 the digipeater and the two-way IGate
    ([#209](https://github.com/APRS-NET/APRS.NET/issues/209), [#212](https://github.com/APRS-NET/APRS.NET/issues/212)), with the registered TOCALL first. The milestones:
    [0.5.0](https://github.com/APRS-NET/AprsMap/milestone/3), [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4),
