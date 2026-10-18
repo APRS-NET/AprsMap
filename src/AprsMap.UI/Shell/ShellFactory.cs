@@ -38,6 +38,9 @@ public sealed class ShellFactory(object context, bool managedWindows) : Factory
     /// <summary>Moves a panel to the bottom dock.</summary>
     public IRelayCommand<IDockable?> MoveToBottom => field ??= MoveCommand(BottomDock);
 
+    /// <summary>Moves a panel to a tab beside the map (F1.0 behavior 16).</summary>
+    public IRelayCommand<IDockable?> MoveBesideMap => field ??= MoveCommand(CentreDock);
+
     /// <summary>Set by the shell: puts the floating dashboard back beside the map.</summary>
     internal Action<IDockable>? Returner { get; set; }
 
@@ -136,7 +139,7 @@ public sealed class ShellFactory(object context, bool managedWindows) : Factory
             CanClose = true,
             CanFloat = true,
             CanPin = true,
-            CanDockAsDocument = false, // a panel never takes the map's place
+            CanDockAsDocument = true, // a tab beside the map, never in its place (F1.0 behavior 16)
         };
 
     /// <summary>The map, which can't be closed, floated or pinned away.</summary>

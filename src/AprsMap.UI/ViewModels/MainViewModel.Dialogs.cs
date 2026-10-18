@@ -123,7 +123,6 @@ public sealed partial class MainViewModel
         Shell.Apply(before, MainScreen?.Invoke() is { } screen ? [screen] : []);
     }
 
-    private IReadOnlyList<string>? _closedBefore;
     private bool _closeNoteShown;
 
     /// <summary>
@@ -137,22 +136,21 @@ public sealed partial class MainViewModel
             _beforeReset = null;
             CanUndoResetLayout = false;
         }
-        var closed = Shell.ClosedPanels;
-        if (
-            !_closeNoteShown
-            && !_togglingPanel
-            && _closedBefore is { } before
-            && closed.FirstOrDefault(k => !before.Contains(k)) is { } newlyClosed
-        )
+    }
+
+    /// <summary>The first panel closed from its own × says where to get it back (behavior 15); a move isn't a close.</summary>
+    private void OnPanelClosed(object? sender, string kind)
+    {
+        if (_closeNoteShown || _togglingPanel)
         {
-            _closeNoteShown = true;
-            LayoutNotice = _text.Format(
-                "Menu.View.ClosedNote",
-                new Dictionary<string, object?> { ["panel"] = _text[PanelKinds.TitleKey(newlyClosed)] }
-            );
-            _ = Preferences?.SaveAsync(CloseNoteKey, "1");
+            return;
         }
-        _closedBefore = closed;
+        _closeNoteShown = true;
+        LayoutNotice = _text.Format(
+            "Menu.View.ClosedNote",
+            new Dictionary<string, object?> { ["panel"] = _text[PanelKinds.TitleKey(kind)] }
+        );
+        _ = Preferences?.SaveAsync(CloseNoteKey, "1");
     }
 
     private bool _togglingPanel;
@@ -160,7 +158,6 @@ public sealed partial class MainViewModel
     /// <summary>Loads whether the first-close note was shown already.</summary>
     internal async Task LoadCloseNoteAsync()
     {
-        _closedBefore = Shell.ClosedPanels;
         if (Preferences is not null && await Preferences.LoadAsync(CloseNoteKey) is { Length: > 0 })
         {
             _closeNoteShown = true;

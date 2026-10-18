@@ -91,6 +91,7 @@ public sealed partial class MainViewModel : ObservableObject
         Layouts = new SavedLayoutsViewModel(Shell, _text);
         Layouts.Saved += OnLayoutSaved;
         Shell.Changed += OnShellChangedForMenus;
+        Shell.PanelClosed += OnPanelClosed;
         Dashboard = new Statistics.DashboardViewModel(
             engine,
             time,

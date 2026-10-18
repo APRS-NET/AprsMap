@@ -238,6 +238,7 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
         List<MenuEntry> items =
         [
             new SubmenuEntry(text["Menu.View.Panels"], panels),
+            new SubmenuEntry(text["Menu.View.BesideMap"], BesideMap()),
             Run(
                 "view.show-all",
                 text["Menu.View.ShowAll"],
@@ -280,6 +281,25 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
             );
         }
         return items;
+    }
+
+    /// <summary>Each panel, ticked while it's a tab beside the map (F1.0 behavior 16).</summary>
+    private List<MenuEntry> BesideMap()
+    {
+        var beside = vm.Shell.BesideMap;
+        return
+        [
+            .. PanelKinds
+                .Ordered.Where(k => k is not PanelKinds.Map and not PanelKinds.Dashboard)
+                .Select(kind =>
+                    Run(
+                        "view.beside-map." + kind,
+                        text[PanelKinds.TitleKey(kind)],
+                        () => vm.Shell.SetBesideMap(kind, !beside.Contains(kind)),
+                        ticked: beside.Contains(kind)
+                    )
+                ),
+        ];
     }
 
     private List<MenuEntry> Station()

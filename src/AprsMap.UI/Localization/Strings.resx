@@ -1737,6 +1737,13 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Data.Confirm.Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
+  <data name="Shell.MoveBesideMap" xml:space="preserve">
+    <value>Move beside the _map</value>
+    <comment>Moves the panel to a tab next to the map. The underscore marks the access key.</comment>
+  </data>
+  <data name="Menu.View.BesideMap" xml:space="preserve">
+    <value>Beside the map</value>
+  </data>
   <data name="Shell.MoveToLeft" xml:space="preserve">
     <value>Move to _left</value>
     <comment>Panel menu. The underscore marks the access key.</comment>
