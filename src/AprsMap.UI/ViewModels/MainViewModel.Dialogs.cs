@@ -23,6 +23,23 @@ public sealed partial class MainViewModel
     private void OpenDialog(string titleKey, object content) =>
         Dialog = new DialogViewModel(_text[titleKey], content, () => Dialog = null);
 
+    /// <summary>An update's dialog shows in the dialog overlay (F4.15 behavior 9).</summary>
+    private void OnUpdatesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(AprsMap.UI.Updates.UpdatesViewModel.Dialog))
+        {
+            return;
+        }
+        if (Updates.Dialog is { } dialog)
+        {
+            Dialog = new DialogViewModel(_text["Updates.Title"], dialog, Updates.Close);
+        }
+        else if (Dialog?.Content is AprsMap.UI.Updates.UpdateDialogViewModel)
+        {
+            Dialog = null;
+        }
+    }
+
     /// <summary>Tools › Clear data… (F1.19): what the station has collected, each confirmed before it goes.</summary>
     internal void OpenClearData()
     {
@@ -77,6 +94,11 @@ public sealed partial class MainViewModel
             // About shows less without it; nothing else depends on it.
         }
         about.Show(_status, geocoding, Auth);
+        if (!SharedStation || IsOperator)
+        {
+            about.UpdatesText = Updates.Summary(time.LocalTimeZone);
+            about.CheckUpdatesCommand = Updates.Status is { CheckDisabled: true } ? null : Updates.CheckCommand;
+        }
         OpenDialog("Menu.Help.About.Title", about);
     }
 

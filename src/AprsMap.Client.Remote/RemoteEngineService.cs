@@ -232,6 +232,25 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         _connection.StreamAsync<BulletinView>(EngineHub.WatchBulletins, cancellationToken);
 
     /// <inheritdoc />
+    public Task<UpdateStatus> GetUpdateStatusAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<UpdateStatus>(EngineHub.GetUpdateStatus, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<UpdateStatus>(EngineHub.CheckForUpdate, cancellationToken));
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<UpdateStatus> WatchUpdateStatusAsync(CancellationToken cancellationToken = default) =>
+        StreamWithEngineErrors(
+            _connection.StreamAsync<UpdateStatus>(EngineHub.WatchUpdateStatus, cancellationToken),
+            cancellationToken
+        );
+
+    /// <inheritdoc />
+    public Task SkipUpdateAsync(string version, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SkipUpdate, version, cancellationToken));
+
+    /// <inheritdoc />
     public Task<BulletinView> PostBulletinAsync(BulletinPost post, CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<BulletinView>(EngineHub.PostBulletin, post, cancellationToken));
 

@@ -265,6 +265,39 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
+    /// <summary>What the update calls answer; nothing found by default.</summary>
+    public UpdateStatus UpdateStatus { get; set; } = new("0.4.0", UpdateChannel.PreReleases);
+
+    /// <summary>How many times Check now was pressed.</summary>
+    public int UpdateChecks { get; private set; }
+
+    /// <summary>The versions skipped, in order.</summary>
+    public List<string> SkippedVersions { get; } = [];
+
+    public Task<UpdateStatus> GetUpdateStatusAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(UpdateStatus);
+
+    public Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default)
+    {
+        UpdateChecks++;
+        return Task.FromResult(UpdateStatus);
+    }
+
+    public async IAsyncEnumerable<UpdateStatus> WatchUpdateStatusAsync(
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        yield return UpdateStatus;
+        await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task SkipUpdateAsync(string version, CancellationToken cancellationToken = default)
+    {
+        SkippedVersions.Add(version);
+        UpdateStatus = UpdateStatus with { Update = null };
+        return Task.CompletedTask;
+    }
+
     /// <summary>The bulletins <see cref="PostBulletinAsync"/> was asked to post, in order.</summary>
     public List<BulletinPost> PostedBulletins { get; } = [];
 

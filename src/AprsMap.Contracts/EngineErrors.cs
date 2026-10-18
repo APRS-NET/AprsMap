@@ -287,6 +287,15 @@ public static class EngineErrorCodes
     /// <summary>A bulletin or ANSRVR group name can't be sent (F2.5 behaviors 5, 8).</summary>
     public const string BulletinGroupInvalid = "bulletins.group-invalid";
 
+    /// <summary>The release list couldn't be reached: no network, or GitHub down (F4.15 behavior 7).</summary>
+    public const string UpdatesUnreachable = "updates.unreachable";
+
+    /// <summary>GitHub's limit for anonymous requests was reached; the next check is at the usual time.</summary>
+    public const string UpdatesRateLimited = "updates.rate-limited";
+
+    /// <summary>The release list's answer wasn't what was expected.</summary>
+    public const string UpdatesUnexpectedAnswer = "updates.unexpected-answer";
+
     /// <summary>The kind of failure a code stands for, which decides the exception type that carries it.</summary>
     public static EngineErrorKind KindOf(string code)
     {
@@ -296,6 +305,7 @@ public static class EngineErrorCodes
             : code.StartsWith("geocoding.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("aprs-is.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("transmit.", StringComparison.Ordinal) ? EngineErrorKind.Operation
+            : code.StartsWith("updates.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code == KissNotManual ? EngineErrorKind.Operation
             : EngineErrorKind.Argument;
     }

@@ -46,6 +46,9 @@ builder
     })
     .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default));
 builder.Services.AddOptions<GatewayOptions>().BindConfiguration(GatewayOptions.SectionName);
+
+// A gateway is told an update is ready when its image is pushed (F4.15 behavior 4.3).
+builder.Services.PostConfigure<AprsMap.Core.EngineOptions>(o => o.Updates.Kind = AprsMap.Core.InstallKind.Gateway);
 var gateway = GatewayHttp.Options(builder.Configuration);
 builder.Services.AddGatewayProxies(gateway);
 builder.Services.AddHealthChecks();

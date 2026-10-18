@@ -121,6 +121,18 @@ public static class EngineHub
     /// <summary>Hub streaming method for <see cref="IEngineService.WatchBulletinsAsync"/>.</summary>
     public const string WatchBulletins = "WatchBulletins";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetUpdateStatusAsync"/>.</summary>
+    public const string GetUpdateStatus = "GetUpdateStatus";
+
+    /// <summary>Hub method for <see cref="IEngineService.CheckForUpdateAsync"/>.</summary>
+    public const string CheckForUpdate = "CheckForUpdate";
+
+    /// <summary>Hub streaming method for <see cref="IEngineService.WatchUpdateStatusAsync"/>.</summary>
+    public const string WatchUpdateStatus = "WatchUpdateStatus";
+
+    /// <summary>Hub method for <see cref="IEngineService.SkipUpdateAsync"/>.</summary>
+    public const string SkipUpdate = "SkipUpdate";
+
     /// <summary>Hub method for <see cref="IEngineService.PostBulletinAsync"/>.</summary>
     public const string PostBulletin = "PostBulletin";
 

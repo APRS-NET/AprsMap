@@ -305,6 +305,13 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     [ObservableProperty]
     public partial string? ViewersText { get; set; }
 
+    /// <summary>"Pre-releases · checked 18/10 14:02 · up to date" (F4.15 behavior 10); null where updates aren't this viewer's.</summary>
+    [ObservableProperty]
+    public partial string? UpdatesText { get; set; }
+
+    /// <summary>Check now; null where it's hidden (behavior 6) or not this viewer's.</summary>
+    public CommunityToolkit.Mvvm.Input.IAsyncRelayCommand? CheckUpdatesCommand { get; set; }
+
     /// <summary>"No failed sign-ins in the last day", to a signed-in gateway operator (F2.9 behavior 10); null otherwise.</summary>
     [ObservableProperty]
     public partial string? SignInsText { get; set; }

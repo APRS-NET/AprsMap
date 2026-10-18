@@ -322,6 +322,24 @@ public sealed partial class MainViewModel : ObservableObject
             ? OpenConsoleAsync(aprsIs.Id, commandLine: false)
             : Task.CompletedTask;
 
+    /// <summary>Updates (docs/features/F4.15-updates.md): the notice, its dialog and Check now.</summary>
+    public Updates.UpdatesViewModel Updates => _updates ??= CreateUpdates();
+
+    private Updates.UpdatesViewModel CreateUpdates()
+    {
+        var updates = new Updates.UpdatesViewModel(engine, _text, uri => OpenUri?.Invoke(uri) ?? Task.CompletedTask)
+        {
+            Gateway = SharedStation,
+        };
+        updates.PropertyChanged += OnUpdatesChanged;
+        return updates;
+    }
+
+    private Updates.UpdatesViewModel? _updates;
+
+    /// <summary>Opens a page in the browser; set by the view, which has the launcher.</summary>
+    public Func<Uri, Task>? OpenUri { get; set; }
+
     /// <summary>The Bulletins panel (docs/features/F2.5-bulletins.md).</summary>
     public Bulletins.BulletinsViewModel Bulletins =>
         _bulletinsPanel ??= new Bulletins.BulletinsViewModel(engine, _text, time, () => _status);
@@ -726,7 +744,10 @@ public sealed partial class MainViewModel : ObservableObject
         Bulletins.Preferences = Preferences;
         await Bulletins.LoadAsync();
         var bulletins = KeepAsync(Bulletins.WatchAsync, cancellationToken);
-        await Task.WhenAll(packets, stations, status, countdown, messages, bulletins);
+        // Updates are the operator's (F4.15 behavior 15): the desktop's user, or a signed-in gateway operator.
+        var updates =
+            !SharedStation || IsOperator ? KeepAsync(Updates.WatchAsync, cancellationToken) : Task.CompletedTask;
+        await Task.WhenAll(packets, stations, status, countdown, messages, bulletins, updates);
     }
 
     /// <summary>Applies one batch from the station stream.</summary>
