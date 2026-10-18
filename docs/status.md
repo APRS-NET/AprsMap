@@ -3,23 +3,25 @@
 What you should expect to see when you run AprsMap today, and what isn't there yet. Per-feature status lives in
 [scope.md](scope.md); this page is the short version for someone trying the app.
 
-As of 2026-10-16 (`main`, `0.4.0-alpha.1`): **receive-only, from APRS-IS and from your own TNC.** The app
-connects to APRS-IS and to KISS TNCs over TCP (Direwolf, soundmodem), draws the stations on a live map with their
-tracks and RF paths, lists them and their packets, and has a dashboard of live numbers beside the map. It doesn't send
-anything yet.
+As of 2026-10-18 (`main`, everything planned for `0.5.0-alpha.1`): **receive and transmit, over APRS-IS and your own
+TNCs.** The app connects to APRS-IS and to KISS TNCs over TCP (Direwolf, soundmodem) and on serial ports (a TH-D72A's
+built-in TNC, TNC-X, NinoTNC), draws the stations on a live map with their tracks and RF paths, lists them and their
+packets, and has a dashboard of live numbers beside the map. Once you turn transmitting on, it sends your position and
+status beacons, messages with acks and retries, and bulletins, and joins ANSRVR groups. The gateway can run as a public,
+receive-only page with a private operator port, and only a signed-in operator can transmit there. The desktop app
+installs, and finds and installs its own updates.
 
-**Next:** [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/3): transmitting through APRS-IS and KISS
-TNCs (your station's transmit switch, TX enabled and Test send per source, Disable TX per profile), beacons, messaging
-and bulletins, operator sign-in on the gateway, the public receive-only console (F1.26), capturing unexpected packets for the test corpus (F1.27), KISS TNCs on USB serial such as a TH-D72A's built-in TNC (F3.1), switched into KISS by the app (F3.2) and update checks. Then
-[0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) (objects, GPS, a receive-only IGate) and
-[0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5) (a digipeater and a two-way IGate).
+**Next:** [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) (objects, GPS, a receive-only IGate, a conversation per
+ANSRVR group), then [0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5) (a digipeater and a two-way IGate).
 
 ## What you'll see
 
 ### Desktop app
 
-`dotnet run --project src/AprsMap.Desktop`, or a release archive. On Linux, `tools/install-linux-desktop.sh` adds the app
-to the app grid with its icon (GNOME shows the icon only through that entry).
+An installer from the release (Windows MSI, macOS pkg, Linux AppImage), a release archive, or
+`dotnet run --project src/AprsMap.Desktop`. The installed app checks for updates and offers **Update and restart**; the
+AppImage adds itself to the app grid, and for an archive `tools/install-linux-desktop.sh` does (GNOME shows the icon only
+through that entry). See [deployment.md](deployment.md#desktop-app) for where each system keeps the files.
 
 1. **First run:** the setup wizard covers the window. It asks for your callsign, an optional location (Maidenhead
    locator, address or postal code, coordinates, or a point on a map; in the browser also "this device's location"),
@@ -27,7 +29,9 @@ to the app grid with its icon (GNOME shows the icon only through that entry).
    Settings are saved in your user folder (`~/.config/aprsnet/aprsmap` on Linux, `%APPDATA%\aprsnet\aprsmap` on Windows,
    `~/Library/Application Support/aprsnet/aprsmap` on macOS).
 2. **The window:** the map in the centre, with panels around it that dock, tab, split, auto-hide and float. The layout
-   and the window's place are remembered; the menu (☰) brings back closed panels and resets the layout.
+   and the window's place are remembered. The menus (File, View, Station, Tools, Help) are hidden until Alt or F10 on
+   Windows and Linux, in the system menu bar on macOS, and under ☰ everywhere; View › Panels brings back closed panels,
+   View › Reset layout puts them back, and View › Layouts holds saved layouts.
    - **Status bar:** the product name, the profile picker (switching reconnects), the APRS-IS pill and one pill per
      TNC, packet and station counts, and a gear for Settings. Each pill has an on/off switch on its left, is light green
      when connected, and its menu offers Reconnect now; the APRS-IS pill shows an eye when the login isn't verified
@@ -60,12 +64,19 @@ to the app grid with its icon (GNOME shows the icon only through that entry).
    - **Appearance:** theme, standard, high-contrast or colour-vision-safe colours, text size up to 200 %, icon size,
      corners, density, motion, language; applied live, per viewer, with Reset and Undo.
    - **Profiles:** add, edit, copy, delete with Undo, switch.
-   - **Sources:** the APRS-IS servers and KISS over TCP TNCs profiles pick from (host, port, TNC port). KISS over
-     serial is listed as coming.
+   - **Sources:** the APRS-IS servers and TNCs profiles pick from: KISS over TCP (host, port, TNC port), KISS on a
+     serial port with the TNC's type so the app can switch it into KISS, or a radio in APRS mode (receive only). Each
+     has TX enabled and Test send.
+   - **Beacons:** position and status beacons, fixed, decaying or SmartBeaconing-style, and the path per source.
    - **Map:** tile provider, brightness, labels, symbol size, the filter circles, and when stations fade and go.
-   - **Data:** clear stations, stale stations, tracks or the packet history, and Reset the app (delete everything and
-     run first-run setup again; `--reset-all` at start-up).
-   - **About:** versions, the connection's details, licences, source link and credits.
+   - **Data:** packet capture on or off, and its limits.
+   - Actions are in the menus: **Tools › Clear data…** (stations, stale stations, tracks or the packet history),
+     **Tools › Start over…** (delete everything and run first-run setup again; `--reset-all` at start-up), and
+     **Help › About** (versions, the connection's details, licences, source link and credits).
+5. **Transmitting:** off until you turn on Station › Transmit (also in the connection menu, Ctrl+T) with a verified passcode or
+   a licensed callsign on RF. Beacons, **Messages** (conversations with ack and retry, unread in the status bar),
+   **Bulletins** (reading, posting, ANSRVR groups) and the Sent marker in the packet list. Each source's pill has
+   **Console…** to watch its raw traffic, and Station › Destination sets a point to show distance and bearing to.
 
 ### Web app
 
@@ -92,13 +103,10 @@ the same window as the desktop app, live.
 
 | What | Where it's planned |
 | --- | --- |
-| RF: TNCs over USB serial (a TH-D72A's built-in TNC in KISS mode, then MFJ TNC-X, NinoTNC) | F3.1, [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/3) ([#177](https://github.com/APRS-NET/AprsMap/issues/177)) |
-| Dashboard extras: sparkline values on hover and by keyboard, My view, Copy on the tiles | F1.22, [#176](https://github.com/APRS-NET/AprsMap/issues/176) |
-| A public receive-only console: viewer and operator ports, location privacy | F1.26, spec in review |
-| Recording unexpected packets for the developer, exported anonymized for the test corpus | F1.27, spec in review |
-| Extra map views, dead reckoning, destination, saved layouts, web pop-out panels | Phase 1, later |
-| Objects, bulletins and operator sign-in on the gateway | Phase 2 |
-| GPS, IGate, digipeater | Phase 3 |
+| A conversation per ANSRVR group | F2.5, [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) ([#285](https://github.com/APRS-NET/AprsMap/issues/285)) |
+| Objects and items, GPS, a receive-only IGate, dead reckoning, extra map views | [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) |
+| Digipeater, two-way IGate, web pop-out panels | [0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5) |
+| Signed installers (Windows SmartScreen and macOS warn on first install) | F4.15 behavior 14, when there's a signing provider |
 | Translations | F0.9 groundwork is done (English only); translations come from contributors |
 
 ## Known issues

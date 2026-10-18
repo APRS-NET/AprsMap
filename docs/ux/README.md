@@ -123,8 +123,8 @@ How it is built:
 | Screen → Follow (find, centre, me, lock) | Search box, map buttons (◎ me, 🔒 follow), station context menu |
 | View (category, platform, RF, transport, symbol, shriek filters) | **Filters** panel on the map: chips with counts. The station list and packet list share the same filter model, so "what you see" stays consistent |
 | Configure (20 submenus) | **Settings** pages, searchable: Station · Beaconing · Messaging · Connections · Map & tiles · Display · Objects & overlays · Weather & NWS · Alerts & sounds · Advanced (DX, AltNet, logging) · Data · About |
-| Clear | *Settings › Data*, grouped with confirmation (and Undo where possible); contextual "Clear track" on a station |
-| About | *Settings › About*, including the AGPL "Source" link required for the web gateway |
+| Clear | *Tools › Clear data…*, grouped with confirmation (and Undo where possible); contextual "Clear track" on a station |
+| About | *Help › About*, including the AGPL "Source" link required for the web gateway |
 | Exit | OS window close; the gateway keeps running headless |
 
 ## Key flows
