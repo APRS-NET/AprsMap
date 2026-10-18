@@ -10,8 +10,52 @@ using Microsoft.Extensions.Options;
 namespace AprsMap.Core;
 
 /// <summary>An APRS-IS session kept up by APRS.NET's <see cref="AprsIsConnection"/>.</summary>
-internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketSource, IPacketSender
+internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketSource, IPacketSender, ITrafficSource
 {
+    private readonly Lock _lock = new();
+    private Action<TrafficEntry>? _traffic;
+
+    /// <summary>
+    /// Watches the lines to and from the server only while a console wants them (docs/features/F1.28-source-console.md,
+    /// behavior 7): with no subscriber APRS.NET does no work for them.
+    /// </summary>
+    public void WatchTraffic(Action<TrafficEntry>? sink)
+    {
+        lock (_lock)
+        {
+            if (_traffic is null && sink is not null)
+            {
+                connection.Traffic += OnTraffic;
+            }
+            else if (_traffic is not null && sink is null)
+            {
+                connection.Traffic -= OnTraffic;
+            }
+            _traffic = sink;
+        }
+    }
+
+    private void OnTraffic(object? sender, AprsIsTrafficEventArgs e) => _traffic?.Invoke(EntryOf(e, string.Empty));
+
+    /// <summary>APRS.NET's line in the console's terms (F1.28 behaviors 2, 6); the login's passcode is masked already.</summary>
+    internal static TrafficEntry EntryOf(AprsIsTrafficEventArgs e, string sourceId) =>
+        new(
+            e.At,
+            sourceId,
+            e.Direction == AprsIsTrafficDirection.Sent ? TrafficDirection.Out : TrafficDirection.In,
+            e.Kind switch
+            {
+                AprsIsTrafficKind.LoginSent => TrafficKind.LoginSent,
+                AprsIsTrafficKind.LoginResponse => TrafficKind.LoginResponse,
+                AprsIsTrafficKind.ServerComment => TrafficKind.ServerComment,
+                AprsIsTrafficKind.Packet => TrafficKind.Packet,
+                AprsIsTrafficKind.FilterSent => TrafficKind.FilterSent,
+                AprsIsTrafficKind.PacketSent => TrafficKind.Sent,
+                _ => TrafficKind.CommandSent,
+            },
+            e.Line
+        );
+
     public async Task<PacketSourceLogin> StartAsync(
         Action<PacketSourceEvent> stateChanged,
         CancellationToken cancellationToken
@@ -58,7 +102,11 @@ internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketS
     public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken) =>
         connection.SendAsync(packet, cancellationToken);
 
-    public ValueTask DisposeAsync() => connection.DisposeAsync();
+    public ValueTask DisposeAsync()
+    {
+        WatchTraffic(null);
+        return connection.DisposeAsync();
+    }
 
     private static PacketSourceLogin ToLogin(LoginResult login) =>
         new(login.Server ?? string.Empty, login.Status == LoginStatus.Verified);
@@ -78,7 +126,8 @@ internal sealed class AprsIsPacketSourceFactory(
         {
             return new KissPacketSource(
                 new KissSerialConnection(SerialOptions(source, options.Value, timeProvider)),
-                source.SerialEndpoint ?? source.Name
+                source.SerialEndpoint ?? source.Name,
+                source.Kind == SourceKind.KissSerial ? SetupOf(source) : null
             );
         }
         if (source.Kind == SourceKind.KissTcp)

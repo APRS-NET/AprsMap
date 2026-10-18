@@ -219,6 +219,33 @@ public interface IEngineService
     Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// A source's traffic for the Source console (docs/features/F1.28-source-console.md, behaviors 2, 7): the entries
+    /// kept, then new ones as they come. A TNC's are kept from when it opens; APRS-IS's only while someone watches.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    IAsyncEnumerable<TrafficEntry> WatchSourceTrafficAsync(
+        string sourceId,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// Puts a serial KISS source in manual mode, or ends it (docs/features/F3.2-built-in-tncs.md, behavior 9): while on,
+    /// the automatic switching into KISS holds off. It ends by itself after 10 minutes with nothing sent.
+    /// </summary>
+    /// <exception cref="ArgumentException">The source isn't a serial KISS source that's open (<c>console.source-unknown</c>).</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task SetTncManualAsync(string sourceId, bool manual, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sends <paramref name="command"/> to a serial KISS source's TNC over its open connection (F3.2 behaviors 10, 11).
+    /// The scripts need nothing more; a typed line or bytes need manual mode and a licensed profile that may transmit.
+    /// </summary>
+    /// <exception cref="ArgumentException">Not a serial KISS source that's open, or bytes that aren't hex.</exception>
+    /// <exception cref="InvalidOperationException">Not in manual mode, or the profile may not transmit.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task SendTncCommandAsync(string sourceId, TncCommand command, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Starts over (docs/features/F0.10-start-over.md): deletes every stored profile and setting, disconnects, and
     /// forgets the packets and stations received, so the next step is first-run setup. Defaults from configuration are
     /// not applied again until the engine restarts.

@@ -212,7 +212,7 @@ public sealed class ShellViewTests
         Assert.True(view.IsNarrow);
         var tabs = window.GetVisualDescendants().OfType<TabControl>().Single(t => t.Name == "NarrowShell");
         Assert.Equal(
-            ["Map", "Dashboard", "Stations", "Details", "Messages", "Packets"],
+            ["Map", "Dashboard", "Stations", "Details", "Messages", "Packets", "Console"],
             tabs.Items.OfType<TabItem>().Select(t => t.Header?.ToString())
         );
 

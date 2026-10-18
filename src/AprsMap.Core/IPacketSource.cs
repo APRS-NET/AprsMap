@@ -37,6 +37,35 @@ public interface IPacketSender
     ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// A source whose traffic the Source console can watch (docs/features/F1.28-source-console.md): entries go to the sink
+/// while one is set, on APRS.NET's threads.
+/// </summary>
+internal interface ITrafficSource
+{
+    /// <summary>Starts handing entries to <paramref name="sink"/>, or stops with null.</summary>
+    void WatchTraffic(Action<TrafficEntry>? sink);
+}
+
+/// <summary>A serial TNC that takes typed commands over its open connection (docs/features/F3.2-built-in-tncs.md, 8–11).</summary>
+internal interface ITncConsole
+{
+    /// <summary>The TNC type's scripts, or null for Plain KISS.</summary>
+    AprsNet.Kiss.TncSetup? Setup { get; }
+
+    /// <summary>Starts manual mode, until the result is disposed.</summary>
+    IDisposable BeginManual();
+
+    /// <summary>Sends a line with a carriage return; manual mode only.</summary>
+    Task SendLineAsync(string line, CancellationToken cancellationToken);
+
+    /// <summary>Sends bytes as they are; manual mode only.</summary>
+    Task SendRawAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken);
+
+    /// <summary>Runs a script over the open connection; manual mode only.</summary>
+    Task RunScriptAsync(AprsNet.Kiss.TncScript script, CancellationToken cancellationToken);
+}
+
 /// <summary>A server's answer to a login.</summary>
 /// <param name="Server">The name it reported, or empty.</param>
 /// <param name="Verified">Whether it accepted the passcode.</param>

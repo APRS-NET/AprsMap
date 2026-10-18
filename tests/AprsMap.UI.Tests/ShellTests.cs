@@ -25,7 +25,7 @@ public sealed class ShellTests
 
         Assert.Equal("Stations", Dock(shell, ShellFactory.LeftDock).Single().Title);
         Assert.Equal(["Details", "Messages"], Dock(shell, ShellFactory.RightDock).Select(p => p.Title)); // tabs (F2.4)
-        Assert.Equal("Packets", Dock(shell, ShellFactory.BottomDock).Single().Title);
+        Assert.Equal(["Packets", "Console"], Dock(shell, ShellFactory.BottomDock).Select(d => d.Title)); // F1.28 behind Packets
         var map = Assert.IsType<MapDocument>(Find(shell.Layout, PanelKinds.Map));
         Assert.Equal("Map", map.Title);
         Assert.False(map.CanClose);

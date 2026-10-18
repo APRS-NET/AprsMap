@@ -115,6 +115,15 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetSerialPortsAsync"/>.</summary>
     public const string GetSerialPorts = "GetSerialPorts";
 
+    /// <summary>Hub streaming method for <see cref="IEngineService.WatchSourceTrafficAsync"/>.</summary>
+    public const string WatchSourceTraffic = "WatchSourceTraffic";
+
+    /// <summary>Hub method for <see cref="IEngineService.SetTncManualAsync"/>.</summary>
+    public const string SetTncManual = "SetTncManual";
+
+    /// <summary>Hub method for <see cref="IEngineService.SendTncCommandAsync"/>.</summary>
+    public const string SendTncCommand = "SendTncCommand";
+
     /// <summary>Hub method for <see cref="IEngineService.GetTncTypesAsync"/>.</summary>
     public const string GetTncTypes = "GetTncTypes";
 

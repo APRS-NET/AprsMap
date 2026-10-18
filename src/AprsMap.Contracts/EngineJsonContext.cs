@@ -18,6 +18,8 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<PacketView>))]
 [JsonSerializable(typeof(IReadOnlyList<string>))]
 [JsonSerializable(typeof(IReadOnlyList<TncTypeInfo>))]
+[JsonSerializable(typeof(TrafficEntry))]
+[JsonSerializable(typeof(TncCommand))]
 [JsonSerializable(typeof(TestSendResult))]
 [JsonSerializable(typeof(ChatMessage))]
 [JsonSerializable(typeof(IReadOnlyList<ChatMessage>))]

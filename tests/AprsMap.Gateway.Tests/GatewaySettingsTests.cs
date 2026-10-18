@@ -53,6 +53,32 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task BrowsersCannotWatchASourcesTrafficOrTypeToItsTnc()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+        var source = (await remote.GetSettingsAsync(Ct)).SourceList[0].Id;
+
+        var watch = await Assert.ThrowsAsync<EngineAccessException>(async () =>
+        {
+            await foreach (var _ in remote.WatchSourceTrafficAsync(source, Ct)) { }
+        });
+        var manual = await Assert.ThrowsAsync<EngineAccessException>(() => remote.SetTncManualAsync(source, true, Ct));
+        var line = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.SendTncCommandAsync(source, new TncCommand(TncCommandKind.Line, "ID"), Ct)
+        );
+        var leave = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.SendTncCommandAsync(source, new TncCommand(TncCommandKind.LeaveKiss), Ct)
+        );
+
+        // F1.28 behavior 11, F3.2 behavior 12.
+        Assert.All(
+            new[] { watch, manual, line, leave },
+            e => Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code)
+        );
+    }
+
+    [Fact]
     public async Task BrowsersCannotUseAddressLookupOrThePasscodeCalculator()
     {
         await using var remote = factory.CreateRemote();

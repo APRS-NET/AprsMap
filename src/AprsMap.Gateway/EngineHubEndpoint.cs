@@ -271,6 +271,40 @@ internal sealed class EngineHubEndpoint(
         return engine.GetSerialPortsAsync(Context.ConnectionAborted);
     }
 
+    /// <summary>
+    /// A source's traffic shows login lines, filters and what the radio sends: the operator's (F1.28 behavior 11).
+    /// </summary>
+    [HubMethodName(EngineHub.WatchSourceTraffic)]
+    public IAsyncEnumerable<TrafficEntry> WatchSourceTraffic(string sourceId, CancellationToken cancellationToken)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.WatchSourceTrafficAsync(sourceId, cancellationToken);
+    }
+
+    /// <summary>Manual mode is for typing to the TNC, which can key the radio: refused until F2.9 (F3.2 behavior 12).</summary>
+    [HubMethodName(EngineHub.SetTncManual)]
+    public Task SetTncManual(string sourceId, bool manual)
+    {
+        RefuseTransmit();
+        return engine.SetTncManualAsync(sourceId, manual, Context.ConnectionAborted);
+    }
+
+    /// <summary>
+    /// Switching a TNC into or out of KISS changes the station's source: the settings gate. A typed command can key the
+    /// radio, so it's refused until F2.9 (F3.2 behaviors 11, 12).
+    /// </summary>
+    [HubMethodName(EngineHub.SendTncCommand)]
+    public Task SendTncCommand(string sourceId, TncCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        if (command.Kind is TncCommandKind.Line or TncCommandKind.Bytes)
+        {
+            RefuseTransmit();
+        }
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.SendTncCommandAsync(sourceId, command, Context.ConnectionAborted);
+    }
+
     /// <summary>The TNC types APRS.NET knows: the same for every gateway, so anyone may list them (F3.2 behavior 4).</summary>
     [HubMethodName(EngineHub.GetTncTypes)]
     public Task<IReadOnlyList<TncTypeInfo>> GetTncTypes() => engine.GetTncTypesAsync(Context.ConnectionAborted);

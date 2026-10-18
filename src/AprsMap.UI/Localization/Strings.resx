@@ -1045,6 +1045,145 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Details</value>
     <comment>Panel title: details of the selected station.</comment>
   </data>
+  <data name="Shell.Panel.console" xml:space="preserve">
+    <value>Console</value>
+    <comment>Panel title: a source's live traffic, for troubleshooting.</comment>
+  </data>
+  <data name="Console.Open" xml:space="preserve">
+    <value>Console…</value>
+    <comment>Source pill menu: opens the Source console on this source.</comment>
+  </data>
+  <data name="Console.TncCommands" xml:space="preserve">
+    <value>TNC commands…</value>
+    <comment>Source pill menu: opens the console with its command line, to type to the TNC.</comment>
+  </data>
+  <data name="Console.Source" xml:space="preserve">
+    <value>Source</value>
+  </data>
+  <data name="Console.Filter" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="Console.Filter.All" xml:space="preserve">
+    <value>Everything</value>
+  </data>
+  <data name="Console.Filter.Problems" xml:space="preserve">
+    <value>Problems only</value>
+  </data>
+  <data name="Console.Filter.Packets" xml:space="preserve">
+    <value>Packets only</value>
+  </data>
+  <data name="Console.FilterText" xml:space="preserve">
+    <value>Containing</value>
+  </data>
+  <data name="Console.Hex" xml:space="preserve">
+    <value>Hex</value>
+    <comment>Shows each line's bytes in hexadecimal.</comment>
+  </data>
+  <data name="Console.Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="Console.NewLines" xml:space="preserve">
+    <value>{count} new · scroll to the bottom to see them</value>
+  </data>
+  <data name="Console.Empty" xml:space="preserve">
+    <value>Nothing yet. A TNC's traffic is kept from when it opens; APRS-IS's from when the console watches it.</value>
+  </data>
+  <data name="Console.In" xml:space="preserve">
+    <value>In</value>
+  </data>
+  <data name="Console.Out" xml:space="preserve">
+    <value>Out</value>
+  </data>
+  <data name="Console.Kind.Packet" xml:space="preserve">
+    <value>Packet</value>
+  </data>
+  <data name="Console.Kind.NotAprs" xml:space="preserve">
+    <value>Not APRS</value>
+  </data>
+  <data name="Console.Kind.OtherPort" xml:space="preserve">
+    <value>Other port</value>
+  </data>
+  <data name="Console.Kind.KissCommand" xml:space="preserve">
+    <value>KISS command</value>
+  </data>
+  <data name="Console.Kind.DroppedFrame" xml:space="preserve">
+    <value>Dropped</value>
+  </data>
+  <data name="Console.Kind.Unframed" xml:space="preserve">
+    <value>Text</value>
+    <comment>Bytes outside any KISS frame: text from a TNC not in KISS mode, or noise.</comment>
+  </data>
+  <data name="Console.Kind.Sent" xml:space="preserve">
+    <value>Sent</value>
+  </data>
+  <data name="Console.Kind.Typed" xml:space="preserve">
+    <value>Typed</value>
+  </data>
+  <data name="Console.Kind.SetupSent" xml:space="preserve">
+    <value>Setup</value>
+  </data>
+  <data name="Console.Kind.SetupReceived" xml:space="preserve">
+    <value>Setup reply</value>
+  </data>
+  <data name="Console.Kind.SetupFailed" xml:space="preserve">
+    <value>Setup failed</value>
+  </data>
+  <data name="Console.Kind.LoginSent" xml:space="preserve">
+    <value>Login</value>
+  </data>
+  <data name="Console.Kind.LoginResponse" xml:space="preserve">
+    <value>Login reply</value>
+  </data>
+  <data name="Console.Kind.ServerComment" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="Console.Kind.FilterSent" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Console.Kind.CommandSent" xml:space="preserve">
+    <value>Command</value>
+  </data>
+  <data name="Console.CommandLine" xml:space="preserve">
+    <value>Command line</value>
+    <comment>Opens a line to type to the TNC; while open, the TNC isn't switched into KISS automatically.</comment>
+  </data>
+  <data name="Console.CloseCommandLine" xml:space="preserve">
+    <value>Close command line</value>
+  </data>
+  <data name="Console.EnterKiss" xml:space="preserve">
+    <value>Enter KISS</value>
+  </data>
+  <data name="Console.LeaveKiss" xml:space="preserve">
+    <value>Leave KISS</value>
+  </data>
+  <data name="Console.Command" xml:space="preserve">
+    <value>Command for the TNC</value>
+  </data>
+  <data name="Console.Bytes" xml:space="preserve">
+    <value>Bytes (hex)</value>
+  </data>
+  <data name="Console.Send" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="Console.TransmitWarning" xml:space="preserve">
+    <value>Some commands make the radio transmit, such as ID, CONV or K at a TNC's prompt; in KISS mode, bytes sent go on the air. Typing needs a licensed profile.</value>
+  </data>
+  <data name="Console.ManualNote" xml:space="preserve">
+    <value>While the command line is open the TNC isn't switched into KISS automatically. It closes by itself after 10 minutes with nothing sent.</value>
+  </data>
+  <data name="Status.Source.Manual" xml:space="preserve">
+    <value>{source}: manual</value>
+    <comment>A serial TNC whose command line is open in the console.</comment>
+  </data>
+  <data name="Error.console.source-unknown" xml:space="preserve">
+    <value>That source isn't open, or can't take commands.</value>
+  </data>
+  <data name="Error.kiss.not-manual" xml:space="preserve">
+    <value>Open the command line before typing to the TNC.</value>
+  </data>
+  <data name="Error.kiss.bytes-invalid" xml:space="preserve">
+    <value>Bytes are pairs of hex digits, such as C0 FF C0.</value>
+  </data>
   <data name="Shell.Panel.messages" xml:space="preserve">
     <value>Messages</value>
     <comment>Panel title: conversations with other stations.</comment>

@@ -43,6 +43,9 @@ public static class PanelKinds
     /// <summary>The conversations (docs/features/F2.4-messaging.md).</summary>
     public const string Messages = "messages";
 
+    /// <summary>A source's live traffic, for troubleshooting (docs/features/F1.28-source-console.md).</summary>
+    public const string Console = "console";
+
     /// <summary>Every panel, with the id of the dock it starts in (behavior 2).</summary>
     public static IReadOnlyList<(string Kind, string Dock)> All { get; } =
     [
@@ -50,6 +53,7 @@ public static class PanelKinds
         (Details, ShellFactory.RightDock),
         (Messages, ShellFactory.RightDock),
         (Packets, ShellFactory.BottomDock),
+        (Console, ShellFactory.BottomDock),
     ];
 
     /// <summary>The resource key of a panel's title.</summary>

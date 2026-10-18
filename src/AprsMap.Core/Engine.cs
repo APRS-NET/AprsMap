@@ -574,6 +574,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             }
             await using (connection.ConfigureAwait(false))
             {
+                AttachTraffic(source.Id, connection, always: true); // a TNC's traffic is kept from the start (F1.28)
                 try
                 {
                     SetSourceLink(source, new Link(ConnectionState.Connecting));
@@ -638,6 +639,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     {
                         _senders.Remove(source.Id); // closed: nothing sends on it until it's open again
                     }
+                    DetachTraffic(source.Id, connection);
                 }
             }
             if (kicked)
@@ -765,6 +767,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 v.Link.Error,
                 RetryAt: v.Link.RetryAt,
                 Warning: v.Link.Warning,
+                Manual: IsManual(v.Source.Id),
                 TransmitEnabled: v.Source.Transmit,
                 TransmitBlocked: v.Source.Transmit && _settings is not null ? SourceBlock(_settings, v.Source) : null
             ))
@@ -2047,6 +2050,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         var source = _sources.Create(profile.Profile, profile.Source, filter);
         await using (source.ConfigureAwait(false))
         {
+            AttachTraffic(profile.Source.Id, source, always: false); // kept only while watched (F1.28 behavior 7)
             // Disposing the source stops its callbacks, so a session never reports after the next one has started.
             void OnEvent(PacketSourceEvent e)
             {
@@ -2101,6 +2105,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                         _source = null;
                     }
                 }
+                DetachTraffic(profile.Source.Id, source);
             }
         }
         return refused;

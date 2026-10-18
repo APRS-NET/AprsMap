@@ -234,6 +234,38 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial string? UnreadText { get; private set; }
 
+    /// <summary>The Source console panel (docs/features/F1.28-source-console.md).</summary>
+    public Traffic.SourceConsoleViewModel Console => _consolePanel ??= CreateConsole();
+
+    private Traffic.SourceConsoleViewModel? _consolePanel;
+
+    private Traffic.SourceConsoleViewModel CreateConsole()
+    {
+        var console = new Traffic.SourceConsoleViewModel(engine, _text, time, () => _status);
+        if (_status?.Sources is { } sources)
+        {
+            console.ShowSources(sources);
+        }
+        return console;
+    }
+
+    /// <summary>
+    /// Opens the Source console on a source, from its pill (F1.28 behavior 1), with the command line open for TNC
+    /// commands (docs/features/F3.2-built-in-tncs.md, behavior 8).
+    /// </summary>
+    internal async Task OpenConsoleAsync(string sourceId, bool commandLine)
+    {
+        ShowPanel(PanelKinds.Console);
+        await Console.OpenAsync(sourceId, commandLine);
+    }
+
+    /// <summary>Opens the Source console on the APRS-IS source, from its pill (F1.28 behavior 1).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private Task OpenAprsIsConsoleAsync() =>
+        _status?.Sources?.FirstOrDefault(s => s.Kind == SourceKind.AprsIs) is { } aprsIs
+            ? OpenConsoleAsync(aprsIs.Id, commandLine: false)
+            : Task.CompletedTask;
+
     /// <summary>Opens the Messages panel, from the unread marker.</summary>
     [RelayCommand]
     private void ShowMessages() => ShowPanel(PanelKinds.Messages);
@@ -802,6 +834,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void ShowSourcePills(EngineStatus status)
     {
+        _consolePanel?.ShowSources(status.Sources ?? []);
         var sources = (status.Sources ?? []).Where(s => s.Kind != SourceKind.AprsIs).ToList();
         for (var i = SourcePills.Count - 1; i >= 0; i--)
         {
@@ -821,7 +854,8 @@ public sealed partial class MainViewModel : ObservableObject
                     _text,
                     on => SwitchSourceAsync(source.Id, on),
                     () => ReconnectSourceAsync(source.Id),
-                    () => SendPositionOnAsync(source.Id)
+                    () => SendPositionOnAsync(source.Id),
+                    commandLine => OpenConsoleAsync(source.Id, commandLine)
                 );
                 SourcePills.Insert(Math.Min(i, SourcePills.Count), pill);
             }

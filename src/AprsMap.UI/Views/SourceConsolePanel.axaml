@@ -1,0 +1,185 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The Source console (F1.28): one source's traffic, newest at the bottom, with a filter, hex and Copy, and for a
+     serial TNC a command line (F3.2 behaviors 8–11). Its DataContext is the main view model; everything inside works on
+     its Console. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:t="using:AprsMap.UI.Traffic"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Views.SourceConsolePanel"
+  x:DataType="vm:MainViewModel"
+>
+  <UserControl.Styles>
+    <!-- Problems in the warning colour, and said by their kind in words too: never colour alone. -->
+    <Style Selector="TextBlock.kind.problem">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
+    <Style Selector="ListBox#LineList ListBoxItem">
+      <Setter Property="Padding" Value="8,1" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+    <Style Selector="SelectableTextBlock.content.out">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Accent}" />
+    </Style>
+  </UserControl.Styles>
+  <DockPanel
+    DataContext="{Binding Console}"
+    x:DataType="t:SourceConsoleViewModel"
+    Background="{DynamicResource Brush.Surface}"
+  >
+    <!-- The source, the filter, hex and Copy. -->
+    <WrapPanel DockPanel.Dock="Top" ItemSpacing="8" LineSpacing="4" Margin="8,6">
+      <ComboBox
+        x:Name="SourceBox"
+        ItemsSource="{Binding Sources}"
+        SelectedItem="{Binding SelectedSource}"
+        AutomationProperties.Name="{l:T Console.Source}"
+        MinWidth="160"
+      />
+      <ComboBox
+        x:Name="FilterBox"
+        ItemsSource="{Binding Filters}"
+        SelectedItem="{Binding SelectedFilter}"
+        AutomationProperties.Name="{l:T Console.Filter}"
+      />
+      <TextBox
+        x:Name="FilterTextBox"
+        Text="{Binding FilterText}"
+        PlaceholderText="{l:T Console.FilterText}"
+        AutomationProperties.Name="{l:T Console.FilterText}"
+        MinWidth="140"
+      />
+      <ToggleButton x:Name="HexToggle" Content="{l:T Console.Hex}" IsChecked="{Binding ShowHex}" />
+      <Button x:Name="CopyButton" Content="{l:T Console.Copy}" />
+      <ToggleButton
+        x:Name="CommandLineToggle"
+        IsVisible="{Binding CanType}"
+        IsChecked="{Binding IsCommandLineOpen, Mode=OneWay}"
+        Command="{Binding ToggleCommandLineCommand}"
+        Content="{l:T Console.CommandLine}"
+        ToolTip.Tip="{l:T Console.ManualNote}"
+        AutomationProperties.HelpText="{l:T Console.ManualNote}"
+      />
+    </WrapPanel>
+    <!-- The command line (F3.2 behaviors 9–11): the type's scripts, a line or bytes, and what it can do. -->
+    <Border
+      DockPanel.Dock="Bottom"
+      IsVisible="{Binding IsCommandLineOpen}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="0,1,0,0"
+      Padding="8,6"
+    >
+      <StackPanel Spacing="6">
+        <TextBlock Text="{l:T Console.TransmitWarning}" Foreground="{DynamicResource Brush.Warn}" TextWrapping="Wrap" />
+        <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+          <Button x:Name="EnterKissButton" Content="{l:T Console.EnterKiss}" Command="{Binding EnterKissCommand}" />
+          <Button
+            x:Name="LeaveKissButton"
+            Grid.Column="1"
+            Content="{l:T Console.LeaveKiss}"
+            Command="{Binding LeaveKissCommand}"
+          />
+          <CheckBox x:Name="BytesBox" Grid.Column="2" Content="{l:T Console.Bytes}" IsChecked="{Binding SendBytes}" />
+          <TextBox
+            x:Name="CommandBox"
+            Grid.Column="3"
+            Text="{Binding CommandText}"
+            AutomationProperties.Name="{l:T Console.Command}"
+            PlaceholderText="{l:T Console.Command}"
+            FontFamily="{DynamicResource Font.Mono}"
+          />
+          <Button
+            x:Name="SendCommandButton"
+            Grid.Column="4"
+            Content="{l:T Console.Send}"
+            Command="{Binding SendCommand}"
+            IsDefault="True"
+          />
+        </Grid>
+      </StackPanel>
+    </Border>
+    <TextBlock
+      DockPanel.Dock="Bottom"
+      Text="{Binding Error}"
+      IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+      Foreground="{DynamicResource Brush.Warn}"
+      TextWrapping="Wrap"
+      Margin="8,4"
+    />
+    <Button
+      x:Name="PausedButton"
+      DockPanel.Dock="Bottom"
+      IsVisible="{Binding IsPaused}"
+      Content="{Binding PausedText}"
+      HorizontalAlignment="Stretch"
+      Margin="8,2"
+    />
+    <Panel>
+      <TextBlock
+        x:Name="UnavailableNote"
+        Text="{Binding Unavailable}"
+        IsVisible="{Binding Unavailable, Converter={x:Static ObjectConverters.IsNotNull}}"
+        Foreground="{DynamicResource Brush.TextMuted}"
+        TextWrapping="Wrap"
+        TextAlignment="Center"
+        VerticalAlignment="Center"
+        Margin="16"
+      />
+      <ListBox
+        x:Name="LineList"
+        ItemsSource="{Binding Lines}"
+        SelectionMode="Multiple"
+        IsVisible="{Binding Unavailable, Converter={x:Static ObjectConverters.IsNull}}"
+        Background="{DynamicResource Brush.Surface}"
+        AutomationProperties.Name="{l:T Shell.Panel.console}"
+      >
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="t:ConsoleLine">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*" ColumnSpacing="10">
+              <TextBlock
+                Text="{Binding Time}"
+                FontFamily="{DynamicResource Font.Mono}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
+              <TextBlock
+                Grid.Column="1"
+                Text="{Binding DirectionText}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
+              <TextBlock
+                Grid.Column="2"
+                Classes="kind"
+                Classes.problem="{Binding IsProblem}"
+                Text="{Binding KindText}"
+                ToolTip.Tip="{Binding Detail}"
+              />
+              <StackPanel Grid.Column="3" Spacing="2">
+                <SelectableTextBlock
+                  Classes="content"
+                  Classes.out="{Binding IsOut}"
+                  Text="{Binding Content}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                  TextWrapping="Wrap"
+                />
+                <TextBlock
+                  Text="{Binding Hex}"
+                  IsVisible="{Binding ShowsHex}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+                <TextBlock
+                  Text="{Binding Detail}"
+                  IsVisible="{Binding Detail, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                />
+              </StackPanel>
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Panel>
+  </DockPanel>
+</UserControl>

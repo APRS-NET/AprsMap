@@ -180,6 +180,15 @@ public static class EngineErrorCodes
     /// </summary>
     public const string KissSetupFailed = "kiss.setup-failed";
 
+    /// <summary>The console's source isn't one that's open, or can't take commands (F1.28, F3.2 behavior 8).</summary>
+    public const string ConsoleSourceUnknown = "console.source-unknown";
+
+    /// <summary>A typed command outside manual mode (F3.2 behavior 9).</summary>
+    public const string KissNotManual = "kiss.not-manual";
+
+    /// <summary>Bytes on the command line that aren't hex (F3.2 behavior 10).</summary>
+    public const string KissBytesInvalid = "kiss.bytes-invalid";
+
     /// <summary>A serial source's TNC type isn't known, or a custom one's scripts can't be read (F3.2 behavior 4).</summary>
     public const string TncScriptInvalid = "settings.source.tnc-script-invalid";
 
@@ -250,6 +259,7 @@ public static class EngineErrorCodes
             : code.StartsWith("geocoding.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("aprs-is.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("transmit.", StringComparison.Ordinal) ? EngineErrorKind.Operation
+            : code == KissNotManual ? EngineErrorKind.Operation
             : EngineErrorKind.Argument;
     }
 }

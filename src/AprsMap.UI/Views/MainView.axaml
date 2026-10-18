@@ -248,6 +248,11 @@
                         Header="{l:T Status.Reconnect}"
                         Command="{Binding ReconnectCommand}"
                       />
+                      <MenuItem
+                        x:Name="AprsIsConsoleItem"
+                        Header="{l:T Console.Open}"
+                        Command="{Binding OpenAprsIsConsoleCommand}"
+                      />
                       <Separator />
                       <!-- Quick toggles (F1.15): the station's, so read-only for a gateway's viewers. -->
                       <MenuItem
@@ -428,6 +433,13 @@
                         <Button.Flyout>
                           <MenuFlyout>
                             <MenuItem Header="{l:T Status.Reconnect}" Command="{Binding ReconnectCommand}" />
+                            <!-- The Source console (F1.28 behavior 1), and typing to a serial TNC (F3.2 behavior 8). -->
+                            <MenuItem Header="{l:T Console.Open}" Command="{Binding ConsoleCommand}" />
+                            <MenuItem
+                              Header="{l:T Console.TncCommands}"
+                              IsVisible="{Binding CanType}"
+                              Command="{Binding TncCommandsCommand}"
+                            />
                             <!-- On this source alone (F2.1 behavior 10), when it's TX enabled. -->
                             <MenuItem
                               Header="{l:T Transmit.SendPositionHere}"

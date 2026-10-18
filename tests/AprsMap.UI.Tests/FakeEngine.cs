@@ -215,6 +215,56 @@ internal sealed class FakeEngine : IEngineService
     public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<string>>(SerialPorts);
 
+    /// <summary>The traffic <see cref="WatchSourceTrafficAsync"/> gives, by source id; it then waits.</summary>
+    public Dictionary<string, List<TrafficEntry>> Traffic { get; } = [];
+
+    /// <summary>New traffic for a watcher, after what <see cref="Traffic"/> held.</summary>
+    public System.Threading.Channels.Channel<TrafficEntry> LiveTraffic { get; } =
+        System.Threading.Channels.Channel.CreateUnbounded<TrafficEntry>();
+
+    public async IAsyncEnumerable<TrafficEntry> WatchSourceTrafficAsync(
+        string sourceId,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        foreach (var entry in Traffic.GetValueOrDefault(sourceId) ?? [])
+        {
+            yield return entry;
+        }
+        await foreach (var entry in LiveTraffic.Reader.ReadAllAsync(cancellationToken))
+        {
+            if (entry.SourceId == sourceId)
+            {
+                yield return entry;
+            }
+        }
+    }
+
+    /// <summary>Manual mode as the console set it, by source id.</summary>
+    public Dictionary<string, bool> Manual { get; } = [];
+
+    public Task SetTncManualAsync(string sourceId, bool manual, CancellationToken cancellationToken = default)
+    {
+        Manual[sourceId] = manual;
+        return Task.CompletedTask;
+    }
+
+    /// <summary>The TNC commands sent, in order.</summary>
+    public List<(string SourceId, TncCommand Command)> TncCommands { get; } = [];
+
+    /// <summary>When set, <see cref="SendTncCommandAsync"/> throws it.</summary>
+    public Exception? TncCommandFailure { get; set; }
+
+    public Task SendTncCommandAsync(string sourceId, TncCommand command, CancellationToken cancellationToken = default)
+    {
+        if (TncCommandFailure is { } failure)
+        {
+            return Task.FromException(failure);
+        }
+        TncCommands.Add((sourceId, command));
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<TncTypeInfo>>([new TncTypeInfo("th-d72", "Kenwood TH-D72")]);
 

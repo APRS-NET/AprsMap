@@ -13,7 +13,11 @@ namespace AprsMap.Core;
 /// (reconnecting with the reason and the wait) are passed on, with any warning the connection raises (behavior 13).
 /// Frames that aren't APRS are dropped by APRS.NET.
 /// </summary>
-internal sealed class KissPacketSource(KissConnection connection, string endpoint) : IPacketSource, IPacketSender
+internal sealed class KissPacketSource(KissConnection connection, string endpoint, TncSetup? setup = null)
+    : IPacketSource,
+        IPacketSender,
+        ITrafficSource,
+        ITncConsole
 {
     // The read loop runs ahead of the engine; a slow engine loses the oldest packets rather than stalling the TNC.
     private readonly Channel<AprsPacket> _packets = Channel.CreateBounded<AprsPacket>(
@@ -169,9 +173,84 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
     public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken) =>
         connection.SendAsync(packet, cancellationToken);
 
+    private Action<TrafficEntry>? _traffic;
+
+    /// <inheritdoc />
+    public void WatchTraffic(Action<TrafficEntry>? sink)
+    {
+        lock (_lock)
+        {
+            if (_traffic is null && sink is not null)
+            {
+                connection.Traffic += OnTraffic;
+            }
+            else if (_traffic is not null && sink is null)
+            {
+                connection.Traffic -= OnTraffic;
+            }
+            _traffic = sink;
+        }
+    }
+
+    private void OnTraffic(object? sender, KissTrafficEventArgs e) => _traffic?.Invoke(EntryOf(e, string.Empty));
+
+    /// <summary>
+    /// APRS.NET's traffic entry in the console's terms (F1.28 behavior 2): the packet's TNC-2 text, or the text that came,
+    /// and why a frame was dropped or which setup step it was. The source id is filled in by the engine.
+    /// </summary>
+    internal static TrafficEntry EntryOf(KissTrafficEventArgs e, string sourceId)
+    {
+        var bytes = e.Bytes.Length > TrafficEntry.MaxBytes ? e.Bytes[..TrafficEntry.MaxBytes] : e.Bytes;
+        return new TrafficEntry(
+            e.At,
+            sourceId,
+            e.Direction == KissTrafficDirection.Sent ? TrafficDirection.Out : TrafficDirection.In,
+            e.Kind switch
+            {
+                KissTrafficKind.Frame => TrafficKind.Packet,
+                KissTrafficKind.NotAprs => TrafficKind.NotAprs,
+                KissTrafficKind.OtherPort => TrafficKind.OtherPort,
+                KissTrafficKind.Command => TrafficKind.KissCommand,
+                KissTrafficKind.DroppedFrame => TrafficKind.DroppedFrame,
+                KissTrafficKind.Unframed => TrafficKind.Unframed,
+                KissTrafficKind.Sent => TrafficKind.Sent,
+                KissTrafficKind.RawSent => TrafficKind.Typed,
+                KissTrafficKind.SetupSent => TrafficKind.SetupSent,
+                KissTrafficKind.SetupReceived => TrafficKind.SetupReceived,
+                KissTrafficKind.SetupFailed => TrafficKind.SetupFailed,
+                _ => TrafficKind.Unframed,
+            },
+            e.Packet?.ToString() ?? (e.Text.Length > 0 ? e.Text : null),
+            bytes.ToArray(),
+            e.Port,
+            e.DropReason?.ToString() ?? e.SetupStep?.ToString(),
+            e.EndsLine || e.Kind != KissTrafficKind.Unframed,
+            e.Bytes.Length > TrafficEntry.MaxBytes
+        );
+    }
+
+    /// <inheritdoc />
+    public TncSetup? Setup => setup;
+
+    /// <inheritdoc />
+    public IDisposable BeginManual() => connection.BeginManual();
+
+    /// <inheritdoc />
+    public Task SendLineAsync(string line, CancellationToken cancellationToken) =>
+        connection.SendLineAsync(line, cancellationToken);
+
+    /// <inheritdoc />
+    public Task SendRawAsync(ReadOnlyMemory<byte> bytes, CancellationToken cancellationToken) =>
+        connection.SendRawAsync(bytes, cancellationToken);
+
+    /// <inheritdoc />
+    public Task RunScriptAsync(TncScript script, CancellationToken cancellationToken) =>
+        connection.RunScriptAsync(script, cancellationToken);
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        WatchTraffic(null);
         connection.StateChanged -= OnStateChanged;
         connection.Warning -= OnWarning;
         await _stop.CancelAsync().ConfigureAwait(false);
