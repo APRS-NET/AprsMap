@@ -1,0 +1,74 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The Sign in dialog (docs/features/F2.9-operator-sign-in.md, behaviors 4, 7, 8): over the main view, a scrim behind
+     one panel with the operator's name and password, or why sign-in needs HTTPS. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Views.SignInView"
+  x:DataType="vm:SignInViewModel"
+>
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}" />
+  </UserControl.KeyBindings>
+  <Border Background="{DynamicResource Brush.Scrim}">
+    <Border
+      x:Name="SignInPanel"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="{DynamicResource Thickness.Border}"
+      CornerRadius="{DynamicResource Radius.Panel}"
+      MaxWidth="420"
+      Margin="16"
+      Padding="24,20"
+      VerticalAlignment="Center"
+      HorizontalAlignment="Stretch"
+    >
+      <StackPanel Spacing="10">
+        <TextBlock Text="{l:T Auth.Title}" FontWeight="SemiBold" FontSize="{DynamicResource Text.Title}" />
+        <TextBlock Text="{l:T Auth.Help}" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextMuted}" />
+        <TextBlock
+          x:Name="NeedsHttpsText"
+          Text="{Binding NeedsHttpsText}"
+          IsVisible="{Binding NeedsHttps}"
+          TextWrapping="Wrap"
+          Foreground="{DynamicResource Brush.Warn}"
+        />
+        <StackPanel Spacing="10" IsVisible="{Binding CanSignIn}">
+          <TextBox
+            x:Name="SignInName"
+            Text="{Binding Name}"
+            PlaceholderText="{l:T Auth.Name}"
+            AutomationProperties.Name="{l:T Auth.Name}"
+          />
+          <TextBox
+            x:Name="SignInPassword"
+            Text="{Binding Password}"
+            PasswordChar="•"
+            PlaceholderText="{l:T Auth.Password}"
+            AutomationProperties.Name="{l:T Auth.Password}"
+          />
+        </StackPanel>
+        <TextBlock
+          x:Name="SignInError"
+          Text="{Binding Error}"
+          IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+          TextWrapping="Wrap"
+          Foreground="{DynamicResource Brush.Warn}"
+        />
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+          <Button Content="{l:T Auth.Cancel}" Command="{Binding CancelCommand}" />
+          <Button
+            x:Name="SignInButton"
+            Classes="accent"
+            IsDefault="True"
+            IsVisible="{Binding CanSignIn}"
+            Content="{l:T Auth.SignIn}"
+            Command="{Binding SignInCommand}"
+          />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Border>
+</UserControl>

@@ -140,7 +140,7 @@ public sealed partial class MainViewModel
     {
         var transmit = _status?.Transmit;
         TransmitOn = _status?.Toggles?.Transmit ?? false;
-        CanTransmit = CanToggle && !SharedStation && transmit is not { ReceiveOnly: true };
+        CanTransmit = CanToggle && IsOperator && transmit is not { ReceiveOnly: true };
         Bulletins.CanPost = CanTransmit; // posting and groups (F2.5 behavior 7)
         var held = TransmitOn && transmit?.Blocked is not null;
         IsTransmitHeld = held;

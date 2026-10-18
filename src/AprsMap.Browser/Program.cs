@@ -41,6 +41,7 @@ internal static class Program
             ManagedWindows = true,
             Tiles = new GatewayTileSource(new HttpClient { BaseAddress = gateway }),
             SharedStation = true,
+            OperatorSession = new BrowserOperatorSession(new HttpClient { BaseAddress = gateway }),
             Restart = BrowserPreferenceStore.ReloadPage,
             SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
             CoarsePointer = BrowserPreferenceStore.IsCoarsePointer(),

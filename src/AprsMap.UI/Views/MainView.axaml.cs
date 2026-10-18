@@ -144,6 +144,18 @@ public sealed partial class MainView : UserControl
         {
             AppMenu.Items.Add(new MenuItem { Header = text["Shell.Menu.Gather"], Command = vm.GatherWindowsCommand });
         }
+        // Operator sign-in on a gateway (F2.9 behaviors 4, 6).
+        if (vm.IsSignedIn)
+        {
+            AppMenu.Items.Add(new Separator());
+            AppMenu.Items.Add(new MenuItem { Header = vm.SignedInText, IsEnabled = false });
+            AppMenu.Items.Add(new MenuItem { Header = text["Auth.SignOut"], Command = vm.SignOutCommand });
+        }
+        else if (vm.CanSignIn)
+        {
+            AppMenu.Items.Add(new Separator());
+            AppMenu.Items.Add(new MenuItem { Header = text["Auth.SignInMenu"], Command = vm.OpenSignInCommand });
+        }
     }
 
     /// <inheritdoc />
@@ -194,7 +206,7 @@ public sealed partial class MainView : UserControl
     /// <summary>Clear data is offered once the settings say this viewer may change the station.</summary>
     private void OnMainChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.CanClearData))
+        if (e.PropertyName is nameof(MainViewModel.CanClearData) or nameof(MainViewModel.Auth))
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(FillAppMenu);
         }

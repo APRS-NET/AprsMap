@@ -561,5 +561,10 @@
       DataContext="{Binding Setup}"
       IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
     />
+    <views:SignInView
+      x:Name="SignInDialog"
+      DataContext="{Binding SignIn}"
+      IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+    />
   </Panel>
 </UserControl>

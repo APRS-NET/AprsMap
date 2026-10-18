@@ -333,7 +333,7 @@ public sealed class OperatorSignInTests
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal(EngineErrorCodes.AuthNeedsHttps, await CodeOf(response));
-        Assert.False((await Me(browser, null)).SignInOffered);
+        Assert.Equal(new AuthInfo(false, NeedsHttps: true), await Me(browser, null));
     }
 
     [Fact]

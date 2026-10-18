@@ -236,8 +236,9 @@ internal static partial class OperatorSignIn
     {
         var offered = operators.Any && IsSecureEnough(context);
         var session = SessionId(context.User) is { } id ? sessions.Use(id) : null;
+        var needsHttps = operators.Any && !IsSecureEnough(context);
         var info = session is null
-            ? new AuthInfo(false, SignInOffered: offered)
+            ? new AuthInfo(false, SignInOffered: offered, NeedsHttps: needsHttps)
             : new AuthInfo(true, session.Name, session.ExpiresAt, offered, limiter.FailedToday);
         return Results.Json(info, EngineJsonContext.Default.AuthInfo);
     }

@@ -1419,6 +1419,41 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Bulletins</value>
     <comment>Panel title: bulletins and announcements heard.</comment>
   </data>
+  <data name="Settings.About.FailedSignIns" xml:space="preserve">
+    <value>{count, plural, =0 {No failed sign-ins in the last day} one {# failed sign-in in the last day} other {# failed sign-ins in the last day}}</value>
+    <comment>count: failed operator sign-ins on this gateway in the last 24 hours.</comment>
+  </data>
+  <data name="Auth.SignInMenu" xml:space="preserve">
+    <value>Sign in…</value>
+  </data>
+  <data name="Auth.SignOut" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="Auth.SignedInAs" xml:space="preserve">
+    <value>Signed in as {name}</value>
+    <comment>name: the operator's name.</comment>
+  </data>
+  <data name="Auth.Title" xml:space="preserve">
+    <value>Sign in as this station's operator</value>
+  </data>
+  <data name="Auth.Help" xml:space="preserve">
+    <value>Signed in, you can transmit, change the station's settings and read its messages. Operators are set up on the gateway's computer.</value>
+  </data>
+  <data name="Auth.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Auth.Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Auth.SignIn" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Auth.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Auth.Unreachable" xml:space="preserve">
+    <value>The gateway can't be reached. Try again in a moment.</value>
+  </data>
   <data name="Bulletins.NewBulletin" xml:space="preserve">
     <value>New bulletin…</value>
   </data>

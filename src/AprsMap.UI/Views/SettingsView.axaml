@@ -1136,6 +1136,12 @@
               TextWrapping="Wrap"
               Text="{Binding About.ViewersText}"
               IsVisible="{Binding About.ViewersText, Converter={x:Static ObjectConverters.IsNotNull}}"
+            />
+            <TextBlock
+              x:Name="FailedSignInsLabel"
+              Text="{Binding About.SignInsText}"
+              IsVisible="{Binding About.SignInsText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              TextWrapping="Wrap"
               Foreground="{DynamicResource Brush.TextMuted}"
             />
             <TextBlock

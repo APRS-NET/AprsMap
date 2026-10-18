@@ -14,12 +14,17 @@ public sealed record SignInRequest(string Name, string Password);
 /// Whether this gateway offers sign-in here: it has an operator set up, and this address may sign in (behavior 8).
 /// </param>
 /// <param name="FailedSignIns">Failed sign-ins in the last day, shown to a signed-in operator (behavior 10).</param>
+/// <param name="NeedsHttps">
+/// An operator is set up but this page came over plain HTTP from another machine, so sign-in isn't offered: the dialog
+/// says why (behavior 8.1).
+/// </param>
 public sealed record AuthInfo(
     bool Operator,
     string? Name = null,
     DateTimeOffset? ExpiresAt = null,
     bool SignInOffered = false,
-    int FailedSignIns = 0
+    int FailedSignIns = 0,
+    bool NeedsHttps = false
 )
 {
     /// <summary>A viewer on a gateway that offers no sign-in.</summary>

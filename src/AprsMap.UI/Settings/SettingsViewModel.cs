@@ -199,9 +199,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     private void Close() => Closed?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Gives About the engine's details (versions, address lookup) when the page opens.</summary>
-    public void Show(EngineStatus? status, GeocodingInfo? geocoding)
+    public void Show(EngineStatus? status, GeocodingInfo? geocoding, AuthInfo? auth = null)
     {
-        About.Show(status, geocoding);
+        About.Show(status, geocoding, auth);
         Profiles?.ShowFilter(status?.Filter);
     }
 
@@ -289,6 +289,7 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
 {
     private EngineStatus? _status;
     private GeocodingInfo? _geocoding;
+    private AuthInfo? _auth;
 
     /// <summary>The product name.</summary>
     public static string ProductName => Brand.DisplayName;
@@ -310,6 +311,10 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     /// <summary>"3 viewers connected", on a gateway (F1.14 behavior 11); null on desktop.</summary>
     [ObservableProperty]
     public partial string? ViewersText { get; set; }
+
+    /// <summary>"No failed sign-ins in the last day", to a signed-in gateway operator (F2.9 behavior 10); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? SignInsText { get; set; }
 
     /// <summary>Whether the APRS-IS login is verified and how often it reconnected, while connected.</summary>
     [ObservableProperty]
@@ -335,10 +340,11 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
         return $"{version[..plus]} ({commit[..Math.Min(7, commit.Length)]})";
     }
 
-    internal void Show(EngineStatus? status, GeocodingInfo? geocoding)
+    internal void Show(EngineStatus? status, GeocodingInfo? geocoding, AuthInfo? auth = null)
     {
         _status = status;
         _geocoding = geocoding;
+        _auth = auth;
         Retranslate();
     }
 
@@ -362,6 +368,12 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
         ConnectionText = _status is null ? null : ViewModels.ConnectionText.Details(text, _status);
         ViewersText = _status?.Viewers is { } viewers
             ? text.Format("Settings.About.Viewers", new Dictionary<string, object?> { ["count"] = viewers })
+            : null;
+        SignInsText = _auth is { Operator: true } signedIn
+            ? text.Format(
+                "Settings.About.FailedSignIns",
+                new Dictionary<string, object?> { ["count"] = signedIn.FailedSignIns }
+            )
             : null;
         ShowLookupCredit = _geocoding?.Enabled == true;
     }

@@ -455,7 +455,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             // About shows less without it; nothing else depends on it.
         }
-        settings.Show(_status, geocoding);
+        settings.Show(_status, geocoding, Auth);
         if (_settings is { } current)
         {
             sources.Show(current);
@@ -708,6 +708,7 @@ public sealed partial class MainViewModel : ObservableObject
         Destination.Preferences = Preferences;
         await Destination.LoadAsync();
         await StationList.LoadAsync();
+        await LoadAuthAsync(); // signed in as the gateway's operator? (F2.9)
         var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);

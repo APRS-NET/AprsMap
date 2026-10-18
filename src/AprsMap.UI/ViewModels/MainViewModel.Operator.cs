@@ -1,0 +1,107 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+using AprsMap.Contracts;
+using AprsMap.UI.Platform;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+namespace AprsMap.UI.ViewModels;
+
+/// <summary>Operator sign-in on a gateway (docs/features/F2.9-operator-sign-in.md, behaviors 4–6).</summary>
+public sealed partial class MainViewModel
+{
+    /// <summary>The gateway's sign-in, in the browser; null on the desktop, whose user is always the operator.</summary>
+    public IOperatorSession? OperatorSession { get; init; }
+
+    /// <summary>Who this viewer is on the gateway; null before it's known, and on the desktop.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOperator), nameof(CanSignIn), nameof(IsSignedIn), nameof(SignedInText))]
+    public partial AuthInfo? Auth { get; private set; }
+
+    /// <summary>Whether this viewer acts for the station: the desktop's user, or a signed-in gateway operator.</summary>
+    public bool IsOperator => !SharedStation || Auth?.Operator == true;
+
+    /// <summary>Whether the app menu offers Sign in…: an operator is set up on this gateway.</summary>
+    public bool CanSignIn =>
+        OperatorSession is not null && Auth is { Operator: false } a && (a.SignInOffered || a.NeedsHttps);
+
+    /// <summary>Whether this browser is signed in as an operator.</summary>
+    public bool IsSignedIn => OperatorSession is not null && Auth?.Operator == true;
+
+    /// <summary>"Signed in as Derek", for the app menu; null when not signed in.</summary>
+    public string? SignedInText =>
+        IsSignedIn ? _text.Format("Auth.SignedInAs", new Dictionary<string, object?> { ["name"] = Auth!.Name }) : null;
+
+    /// <summary>The Sign in dialog while it's open.</summary>
+    [ObservableProperty]
+    public partial SignInViewModel? SignIn { get; private set; }
+
+    partial void OnAuthChanged(AuthInfo? value) => ShowTransmit();
+
+    /// <summary>Asks the gateway who this browser is.</summary>
+    internal async Task LoadAuthAsync()
+    {
+        if (OperatorSession is null)
+        {
+            return;
+        }
+        try
+        {
+            Auth = await OperatorSession.GetAsync();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
+        {
+            Auth = AuthInfo.Viewer;
+        }
+    }
+
+    /// <summary>Opens the Sign in dialog.</summary>
+    [RelayCommand]
+    private void OpenSignIn()
+    {
+        if (OperatorSession is null)
+        {
+            return;
+        }
+        SignIn = new SignInViewModel(OperatorSession, _text, Auth?.NeedsHttps == true, SignedIn, () => SignIn = null);
+    }
+
+    /// <summary>Signed in: the page starts again, so the hub connects with the session and the settings open up.</summary>
+    private void SignedIn()
+    {
+        SignIn = null;
+        if (Restart is { } restart)
+        {
+            restart();
+        }
+        else
+        {
+            _ = LoadAuthAsync();
+        }
+    }
+
+    /// <summary>Signs out on the gateway, then starts again as a viewer (behavior 6).</summary>
+    [RelayCommand]
+    private async Task SignOutAsync()
+    {
+        if (OperatorSession is null)
+        {
+            return;
+        }
+        try
+        {
+            await OperatorSession.SignOutAsync();
+        }
+        catch (HttpRequestException)
+        {
+            // The gateway ends the session anyway once it's unused; the page still starts again as a viewer.
+        }
+        if (Restart is { } restart)
+        {
+            restart();
+        }
+        else
+        {
+            await LoadAuthAsync();
+        }
+    }
+}
