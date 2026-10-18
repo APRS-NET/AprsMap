@@ -89,6 +89,8 @@ public sealed partial class MainViewModel : ObservableObject
         StationList.Filter = () => ViewFilter.Current;
         Shell = new ShellViewModel(this, _text, managedWindows);
         Layouts = new SavedLayoutsViewModel(Shell, _text);
+        Layouts.Saved += OnLayoutSaved;
+        Shell.Changed += OnShellChangedForMenus;
         Dashboard = new Statistics.DashboardViewModel(
             engine,
             time,
@@ -446,16 +448,7 @@ public sealed partial class MainViewModel : ObservableObject
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
-        GeocodingInfo? geocoding = null;
-        try
-        {
-            geocoding = await engine.GetGeocodingInfoAsync();
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // About shows less without it; nothing else depends on it.
-        }
-        settings.Show(_status, geocoding, Auth);
+        settings.Show(_status);
         if (_settings is { } current)
         {
             sources.Show(current);
@@ -543,10 +536,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The main menu's Clear data: Settings › Data, where Clear is (docs/features/F1.19-housekeeping.md).</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanOpenSettings))]
-    internal async Task OpenClearDataAsync()
+    internal Task OpenClearDataAsync()
     {
-        await OpenSettingsAsync();
-        Settings?.ShowData();
+        OpenClearData(); // a dialog of its own now (F1.29 behavior 9)
+        return Task.CompletedTask;
     }
 
     /// <summary>Whether this viewer may clear the station's data, for the main menu.</summary>
@@ -709,6 +702,7 @@ public sealed partial class MainViewModel : ObservableObject
         await Destination.LoadAsync();
         await StationList.LoadAsync();
         await LoadAuthAsync(); // signed in as the gateway's operator? (F2.9)
+        await LoadCloseNoteAsync();
         var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);

@@ -186,8 +186,9 @@ public sealed class SignInUiTests
         var (vm, _, _) = Browser(new AuthInfo(true, "Derek", FailedSignIns: 3), readOnly: false);
         await vm.LoadAuthAsync();
 
-        await vm.OpenSettingsAsync();
+        await vm.OpenAboutAsync();
 
-        Assert.Equal("3 failed sign-ins in the last day", vm.Settings!.About.SignInsText);
+        var about = Assert.IsType<AprsMap.UI.Settings.AboutViewModel>(vm.Dialog!.Content);
+        Assert.Equal("3 failed sign-ins in the last day", about.SignInsText);
     }
 }

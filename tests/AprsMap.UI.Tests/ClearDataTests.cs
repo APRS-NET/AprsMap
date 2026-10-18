@@ -5,7 +5,7 @@ using Microsoft.Extensions.Time.Testing;
 
 namespace AprsMap.UI.Tests;
 
-/// <summary>Settings › Data › Clear (docs/features/F1.19-housekeeping.md, behaviors 1–5).</summary>
+/// <summary>Tools › Clear data… (docs/features/F1.19-housekeeping.md, behaviors 1–5; F1.29 behavior 9).</summary>
 public sealed class ClearDataTests
 {
     [Fact]
@@ -16,8 +16,7 @@ public sealed class ClearDataTests
         vm.Show(engine.Settings);
 
         await vm.OpenClearDataAsync();
-        var clear = vm.Settings!.Data!.Clear!;
-        Assert.True(vm.Settings.IsDataSection);
+        var clear = Assert.IsType<AprsMap.UI.Settings.ClearDataViewModel>(vm.Dialog!.Content); // Tools › Clear data… (F1.29)
         await WaitUntil(() => clear.Rows[0].Text.Contains("2,140", StringComparison.Ordinal));
         Assert.Equal(
             [
@@ -48,7 +47,7 @@ public sealed class ClearDataTests
         var vm = new MainViewModel(engine, new FakeTimeProvider());
         vm.Show(engine.Settings);
         await vm.OpenClearDataAsync();
-        var clear = vm.Settings!.Data!.Clear!;
+        var clear = Assert.IsType<AprsMap.UI.Settings.ClearDataViewModel>(vm.Dialog!.Content);
 
         clear.Rows[3].ClearCommand.Execute(null);
         clear.CancelCommand.Execute(null);
@@ -68,7 +67,7 @@ public sealed class ClearDataTests
         var vm = new MainViewModel(engine, new FakeTimeProvider());
         vm.Show(engine.Settings);
         await vm.OpenClearDataAsync();
-        var clear = vm.Settings!.Data!.Clear!;
+        var clear = Assert.IsType<AprsMap.UI.Settings.ClearDataViewModel>(vm.Dialog!.Content);
 
         clear.Rows[2].ClearCommand.Execute(null);
         await clear.ConfirmCommand.ExecuteAsync(null);
@@ -87,6 +86,8 @@ public sealed class ClearDataTests
 
         Assert.False(vm.CanClearData);
         Assert.Null(vm.Settings!.Data!.Clear);
+        await vm.OpenClearDataAsync();
+        Assert.Null(vm.Dialog); // Tools › Clear data… opens nothing for a viewer
     }
 
     [Fact]

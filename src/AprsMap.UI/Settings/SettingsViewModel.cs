@@ -59,7 +59,6 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
         MapItems = [.. mapItems ?? []];
         UnitItems = [.. unitItems ?? []];
-        About = new AboutViewModel(_text);
         Sections = [];
         Retranslate();
         SelectedSection = Sections[0];
@@ -70,14 +69,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>Raised when the page should close (Back or Escape).</summary>
     public event EventHandler? Closed;
 
-    /// <summary>The sections, in order: Profiles, Appearance, Data, About.</summary>
+    /// <summary>The sections, in order; About is a dialog of its own (F1.29 behavior 10).</summary>
     public ObservableCollection<SettingsSection> Sections { get; }
 
     /// <summary>The section showing.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(
         nameof(IsAppearanceSection),
-        nameof(IsAboutSection),
         nameof(IsProfilesSection),
         nameof(IsSourcesSection),
         nameof(IsBeaconsSection),
@@ -139,14 +137,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>The Data section (F0.10), when the app offers Reset the app.</summary>
     public DataSectionViewModel? Data { get; }
 
-    /// <summary>Whether About is showing.</summary>
-    public bool IsAboutSection => SelectedSection?.Id == "about";
-
     /// <summary>The Appearance section's options, from the registry.</summary>
     public ObservableCollection<SettingItem> AppearanceItems { get; }
-
-    /// <summary>The About section.</summary>
-    public AboutViewModel About { get; }
 
     /// <summary>The page title, in the viewer's language.</summary>
     [ObservableProperty]
@@ -201,10 +193,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Close() => Closed?.Invoke(this, EventArgs.Empty);
 
-    /// <summary>Gives About the engine's details (versions, address lookup) when the page opens.</summary>
-    public void Show(EngineStatus? status, GeocodingInfo? geocoding, AuthInfo? auth = null)
+    /// <summary>Gives the profiles the station's filter when the page opens.</summary>
+    public void Show(EngineStatus? status)
     {
-        About.Show(status, geocoding, auth);
         Profiles?.ShowFilter(status?.Filter);
     }
 
@@ -269,17 +260,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("units", _text["Settings.Units"]));
         }
-        if (Data is not null)
+        if (Data?.Capture is not null)
         {
+            // Packet capture; Clear data and Start over are in the Tools menu (F1.29 behavior 9).
             Sections.Add(new SettingsSection("data", _text["Settings.Data"]));
         }
-        Sections.Add(new SettingsSection("about", _text["Settings.About"]));
         SelectedSection = Sections.FirstOrDefault(s => s.Id == selected) ?? (selected is null ? null : Sections[0]);
         foreach (var item in AppearanceItems.Concat(MapItems).Concat(UnitItems))
         {
             item.Retranslate();
         }
-        About.Retranslate();
         Profiles?.Retranslate();
         Sources?.Retranslate();
         Beacons?.Retranslate();
@@ -287,7 +277,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     }
 }
 
-/// <summary>The About section (behavior 15).</summary>
+/// <summary>About (behavior 15), now a dialog from Help › About (F1.29 behavior 10).</summary>
 public sealed partial class AboutViewModel(Localizer text) : ObservableObject
 {
     private EngineStatus? _status;

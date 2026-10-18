@@ -231,7 +231,7 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
         {
             layouts.Add(SeparatorEntry.Instance);
         }
-        layouts.Add(RunAsync("view.save-layout", text["Layouts.SaveAs"], () => vm.OpenLayoutSettingsAsync()));
+        layouts.Add(Run("view.save-layout", text["Layouts.SaveAs"], vm.OpenSaveLayoutAs));
         layouts.Add(
             RunAsync("view.manage-layouts", text["Menu.View.ManageLayouts"], () => vm.OpenLayoutSettingsAsync())
         );
@@ -244,9 +244,13 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                 vm.ShowAllPanels,
                 whyNot: closed.Count == 0 ? text["Menu.Why.AllShown"] : null
             ),
-            new CommandEntry("view.reset-layout", text["Shell.Menu.ResetLayout"], vm.ResetLayoutCommand),
+            Run("view.reset-layout", text["Shell.Menu.ResetLayout"] + "…", vm.AskResetLayout),
             new SubmenuEntry(text["Menu.View.Layouts"], layouts),
         ];
+        if (vm.CanUndoResetLayout)
+        {
+            items.Insert(3, Run("view.undo-reset", text["Menu.View.UndoReset"], vm.UndoResetLayout));
+        }
         if (vm.CanGatherWindows)
         {
             items.Add(new CommandEntry("view.gather", text["Shell.Menu.Gather"], vm.GatherWindowsCommand));
@@ -423,11 +427,11 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                 () => vm.TogglePanel(PanelKinds.Bulletins, show: true)
             ),
             SeparatorEntry.Instance,
-            new CommandEntry(
+            Run(
                 "tools.clear-data",
                 text["Shell.Menu.ClearData"],
-                vm.OpenClearDataCommand,
-                WhyNot: vm.CanClearData ? null : text["Menu.Why.ReadOnly"]
+                vm.OpenClearData,
+                whyNot: vm.CanClearData ? null : text["Menu.Why.ReadOnly"]
             ),
             new CommandEntry(
                 "tools.setup",
@@ -435,7 +439,7 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                 vm.OpenSetupCommand,
                 WhyNot: vm.CanClearData ? null : text["Menu.Why.ReadOnly"]
             ),
-            RunAsync("tools.start-over", text["Menu.Tools.StartOver"], () => vm.OpenSettingsSectionAsync("data")),
+            Run("tools.start-over", text["Menu.Tools.StartOver"], vm.OpenStartOver),
         ];
 
     private IReadOnlyList<MenuEntry> Help()
@@ -443,6 +447,8 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
         var source = new Uri(Brand.SourceUrl.TrimEnd('/') + "/");
         return
         [
+            Run("help.shortcuts", text["Menu.Help.Shortcuts"], () => vm.ShowShortcuts(Shortcuts())),
+            SeparatorEntry.Instance,
             RunAsync(
                 "help.docs",
                 text["Menu.Help.Docs"],
@@ -459,7 +465,56 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                 () => actions.OpenUriAsync(new Uri(Brand.SourceUrl))
             ),
             SeparatorEntry.Instance,
-            RunAsync("help.about", text["Menu.Help.About"], () => vm.OpenSettingsSectionAsync("about")),
+            RunAsync("help.about", text["Menu.Help.About"], vm.OpenAboutAsync),
         ];
     }
+
+    /// <summary>Every shortcut, menu by menu, from the same commands (behavior 17), and the few that aren't in a menu.</summary>
+    public IReadOnlyList<ShortcutRow> Shortcuts()
+    {
+        var rows = new List<ShortcutRow>();
+        foreach (var menu in Menus.Where(m => m.Id != "help"))
+        {
+            foreach (var command in WithGestures(menu.Items()))
+            {
+                rows.Add(new ShortcutRow(Plain(menu.Header), Plain(command.Header), Keys(command.Gesture!)));
+            }
+        }
+        var other = text["Menu.Shortcuts.Other"];
+        if (vm.MenuStyle == MenuStyle.InWindow)
+        {
+            rows.Add(new ShortcutRow(other, text["Menu.Shortcuts.ShowMenus"], "Alt, F10"));
+            rows.Add(new ShortcutRow(other, text["Menu.Shortcuts.OpenMenu"], text["Menu.Shortcuts.AltLetter"]));
+        }
+        rows.Add(new ShortcutRow(other, text["Menu.Shortcuts.Connection"], Keys(new KeyGesture(Key.T, CommandKey))));
+        rows.Add(
+            new ShortcutRow(
+                other,
+                text["Menu.Shortcuts.SwitchPanel"],
+                Keys(new KeyGesture(Key.Tab, KeyModifiers.Control))
+            )
+        );
+        return rows;
+    }
+
+    private static IEnumerable<CommandEntry> WithGestures(IEnumerable<MenuEntry> entries) =>
+        entries.SelectMany(e =>
+            e switch
+            {
+                CommandEntry { Gesture: not null } c => [c],
+                SubmenuEntry s => WithGestures(s.Items),
+                _ => Enumerable.Empty<CommandEntry>(),
+            }
+        );
+
+    private static string Keys(KeyGesture gesture) =>
+        gesture.ToString("p", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>A header as words: no access-key marks, no trailing ellipsis.</summary>
+    internal static string Plain(string header) =>
+        header
+            .Replace("__", "\u0001", StringComparison.Ordinal)
+            .Replace("_", string.Empty, StringComparison.Ordinal)
+            .Replace("\u0001", "_", StringComparison.Ordinal)
+            .TrimEnd('…');
 }

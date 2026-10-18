@@ -30,16 +30,14 @@ public class SettingsViewModelTests
         setting.Selected = setting.Options.Single(o => o.Label == label);
 
     [Fact]
-    public void ItOpensOnAppearanceWithAboutAlongside()
+    public void ItOpensOnAppearanceAndAboutIsNoLongerASection()
     {
         var (settings, _, _, _) = Create();
 
         Assert.Equal("Settings", settings.Title);
-        Assert.Equal(["Appearance", "About"], settings.Sections.Select(s => s.Title));
+        Assert.Equal(["Appearance"], settings.Sections.Select(s => s.Title)); // About is Help › About (F1.29)
         Assert.True(settings.IsAppearanceSection);
-        settings.SelectedSection = settings.Sections[1];
-        Assert.True(settings.IsAboutSection);
-        Assert.Equal("About", settings.SelectedSection.ToString());
+        Assert.Equal("Appearance", settings.SelectedSection!.ToString());
     }
 
     [Fact]
@@ -132,36 +130,38 @@ public class SettingsViewModelTests
     [Fact]
     public void AboutShowsTheVersionsAndCreditsLookupOnlyWhenItIsOn()
     {
-        var (settings, _, _, _) = Create();
-        Assert.Equal("Version " + AboutViewModel.ShortVersion(Brand.Version), settings.About.VersionText);
+        var (_, _, _, text) = Create();
+        var about = new AboutViewModel(text); // a dialog from Help › About (F1.29)
+        about.Show(null, null);
+        Assert.Equal("Version " + AboutViewModel.ShortVersion(Brand.Version), about.VersionText);
         Assert.Equal("0.1.0-alpha.10.3 (e86ba03)", AboutViewModel.ShortVersion("0.1.0-alpha.10.3+e86ba03a4f5f642f"));
         Assert.Equal("1.2.3", AboutViewModel.ShortVersion("1.2.3"));
-        Assert.Null(settings.About.EngineText);
-        Assert.Contains("AGPL-3.0", settings.About.LicenceText, StringComparison.Ordinal);
+        Assert.Null(about.EngineText);
+        Assert.Contains("AGPL-3.0", about.LicenceText, StringComparison.Ordinal);
         Assert.Equal(Brand.DisplayName, AboutViewModel.ProductName);
         Assert.Equal(new Uri(Brand.SourceUrl), AboutViewModel.SourceUri);
 
-        settings.Show(
+        about.Show(
             new EngineStatus(ConnectionState.Connected, "T2TEST", 1, "1.2.3", AprsNetVersion: "0.1.0-alpha.17"),
             new GeocodingInfo(true, "nominatim.openstreetmap.org", null)
         );
-        Assert.Equal("Engine 1.2.3 · APRS.NET 0.1.0-alpha.17", settings.About.EngineText);
-        Assert.True(settings.About.ShowLookupCredit);
+        Assert.Equal("Engine 1.2.3 · APRS.NET 0.1.0-alpha.17", about.EngineText);
+        Assert.True(about.ShowLookupCredit);
 
-        settings.Show(null, GeocodingInfo.Disabled);
-        Assert.False(settings.About.ShowLookupCredit);
+        about.Show(null, GeocodingInfo.Disabled);
+        Assert.False(about.ShowLookupCredit);
     }
 
     [Fact]
     public void ALanguageChangeRewordsThePageAndKeepsTheSection()
     {
         var (settings, _, _, text) = Create();
-        settings.SelectedSection = settings.Sections[1];
+        settings.SelectedSection = settings.Sections[0];
 
         text.SetLanguage(Localizer.PseudoLanguage);
 
         Assert.StartsWith("[Šéţţîñĝš", settings.Title, StringComparison.Ordinal);
-        Assert.Equal("about", settings.SelectedSection?.Id);
+        Assert.Equal("appearance", settings.SelectedSection?.Id);
         Assert.All(settings.AppearanceItems, i => Assert.StartsWith("[", i.Label, StringComparison.Ordinal));
         Assert.StartsWith(
             "[",

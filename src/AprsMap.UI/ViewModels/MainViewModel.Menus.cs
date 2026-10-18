@@ -38,7 +38,15 @@ public sealed partial class MainViewModel
         }
         else if (shown)
         {
-            Shell.Close(kind);
+            _togglingPanel = true; // closed from the menu: it knows where to get it back
+            try
+            {
+                Shell.Close(kind);
+            }
+            finally
+            {
+                _togglingPanel = false;
+            }
         }
     }
 

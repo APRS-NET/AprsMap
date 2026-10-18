@@ -37,6 +37,7 @@ public sealed partial class MainView : IMenuActions
         nameof(MainViewModel.Auth),
         nameof(MainViewModel.CanClearData),
         nameof(MainViewModel.AlwaysShowMenuBar),
+        nameof(MainViewModel.CanUndoResetLayout),
     ];
 
     private AppMenus? _menus;

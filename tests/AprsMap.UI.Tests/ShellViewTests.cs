@@ -170,7 +170,7 @@ public sealed class ShellViewTests
         var panels = view.Items.OfType<MenuItem>().Single(i => i.Header?.ToString() == "Panels");
         var show = panels.Items.OfType<MenuItem>().Single(i => i.Header?.ToString() == "Stations");
         Assert.False(show.IsChecked); // closed: unticked
-        Assert.Contains(view.Items.OfType<MenuItem>(), i => i.Header?.ToString() == "Reset layout");
+        Assert.Contains(view.Items.OfType<MenuItem>(), i => i.Header?.ToString() == "Reset layout…"); // it asks first (F1.29)
         Assert.DoesNotContain(view.Items.OfType<MenuItem>(), i => i.Header?.ToString() == "Gather windows"); // desktop only
         show.Command!.Execute(show.CommandParameter);
         menu.Hide();

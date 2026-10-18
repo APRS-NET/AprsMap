@@ -817,10 +817,6 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Appearance</value>
     <comment>Section.</comment>
   </data>
-  <data name="Settings.About" xml:space="preserve">
-    <value>About</value>
-    <comment>Section.</comment>
-  </data>
   <data name="Settings.Appearance.Theme" xml:space="preserve">
     <value>Theme</value>
   </data>
@@ -1715,19 +1711,11 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Data</value>
     <comment>Settings section: data kept by the app, and Reset the app.</comment>
   </data>
-  <data name="Settings.Data.Reset.Title" xml:space="preserve">
-    <value>Start over</value>
-    <comment>Heading in Settings › Data.</comment>
-  </data>
   <data name="Settings.Data.Description.Desktop" xml:space="preserve">
     <value>Deletes every station profile, your appearance and panel layout, and what has been received, then opens first-run setup. Use it to try setup again from scratch.</value>
   </data>
   <data name="Settings.Data.Description.Browser" xml:space="preserve">
     <value>Deletes what this browser keeps for this app (appearance and panel layout) and reloads the page. The gateway's station profiles stay unless you choose to delete them too.</value>
-  </data>
-  <data name="Settings.Data.Reset" xml:space="preserve">
-    <value>Reset the app…</value>
-    <comment>Button; it asks for confirmation before deleting anything.</comment>
   </data>
   <data name="Settings.Data.Confirm" xml:space="preserve">
     <value>This can't be undone. Delete it all?</value>
@@ -2077,9 +2065,6 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Shell.Menu.ClearData" xml:space="preserve">
     <value>Clear data…</value>
     <comment>Main menu: opens Settings › Data, where stations, tracks and packets can be cleared.</comment>
-  </data>
-  <data name="Settings.Data.Clear.Title" xml:space="preserve">
-    <value>Clear</value>
   </data>
   <data name="Settings.Data.Clear.Description" xml:space="preserve">
     <value>Start fresh without restarting: clear what the station has collected. Settings, profiles and preferences stay. New packets fill it again as they arrive.</value>
@@ -3844,5 +3829,51 @@ pause 1s</value>
   </data>
   <data name="Settings.Appearance.AlwaysShowMenuBar" xml:space="preserve">
     <value>Always show the menu bar (otherwise press Alt)</value>
+  </data>
+  <data name="Dialog.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Menu.Tools.StartOver.Title" xml:space="preserve">
+    <value>Start over</value>
+  </data>
+  <data name="Layouts.SaveAs.Title" xml:space="preserve">
+    <value>Save layout as</value>
+  </data>
+  <data name="Menu.Help.About.Title" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Menu.Help.Shortcuts" xml:space="preserve">
+    <value>Keyboard shortcuts</value>
+  </data>
+  <data name="Menu.Help.Shortcuts.Title" xml:space="preserve">
+    <value>Keyboard shortcuts</value>
+  </data>
+  <data name="Menu.View.ResetQuestion" xml:space="preserve">
+    <value>Put every panel back where it started? Your saved layouts aren't changed, and View › Undo reset layout puts this one back.</value>
+  </data>
+  <data name="Menu.View.UndoReset" xml:space="preserve">
+    <value>Undo reset layout</value>
+  </data>
+  <data name="Menu.View.ClosedNote" xml:space="preserve">
+    <value>Closed {panel}. Show it again from View › Panels.</value>
+    <comment>panel: the panel's name, such as Packets.</comment>
+  </data>
+  <data name="Menu.Shortcuts.Other" xml:space="preserve">
+    <value>Anywhere</value>
+  </data>
+  <data name="Menu.Shortcuts.ShowMenus" xml:space="preserve">
+    <value>Show the menu bar</value>
+  </data>
+  <data name="Menu.Shortcuts.OpenMenu" xml:space="preserve">
+    <value>Open a menu</value>
+  </data>
+  <data name="Menu.Shortcuts.AltLetter" xml:space="preserve">
+    <value>Alt + its underlined letter</value>
+  </data>
+  <data name="Menu.Shortcuts.Connection" xml:space="preserve">
+    <value>Open the connection menu</value>
+  </data>
+  <data name="Menu.Shortcuts.SwitchPanel" xml:space="preserve">
+    <value>Switch between panels</value>
   </data>
 </root>
