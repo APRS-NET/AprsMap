@@ -222,6 +222,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SendTncCommand, sourceId, command, cancellationToken));
 
     /// <inheritdoc />
+    public IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default) =>
+        _connection.StreamAsync<BulletinView>(EngineHub.WatchBulletins, cancellationToken);
+
+    /// <inheritdoc />
     public Task<DestinationInfo> GetDestinationAsync(
         double latitude,
         double longitude,

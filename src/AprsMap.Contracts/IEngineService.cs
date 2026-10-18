@@ -305,6 +305,12 @@ public interface IEngineService
     Task<LocatorInfo> ParseLocatorAsync(string locator, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The bulletins, announcements and NWS bulletins heard (docs/features/F2.5-bulletins.md, behaviors 1–3): those kept
+    /// now, then each new one, new version or removal as it happens.
+    /// </summary>
+    IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The distance and bearing from the active profile's location to a destination, and the great-circle line to it
     /// (docs/features/F1.18-destination.md, behaviors 2, 3); <see cref="DestinationInfo.Unknown"/> without a location.
     /// </summary>

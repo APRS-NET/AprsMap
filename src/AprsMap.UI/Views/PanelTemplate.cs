@@ -26,6 +26,7 @@ public sealed class PanelTemplate : IDataTemplate
             PanelTool { Kind: PanelKinds.Details } panel => new DetailsPanel { DataContext = panel.Context },
             PanelTool { Kind: PanelKinds.Stations } panel => new StationsPanel { DataContext = panel.Context },
             PanelTool { Kind: PanelKinds.Messages } panel => new MessagesPanel { DataContext = panel.Context },
+            PanelTool { Kind: PanelKinds.Bulletins } panel => new BulletinsPanel { DataContext = panel.Context },
             PanelTool { Kind: PanelKinds.Console } panel => new SourceConsolePanel { DataContext = panel.Context },
             PanelTool { Kind: PanelKinds.Captured } panel => new CapturedPacketsPanel { DataContext = panel.Context },
             PanelTool panel => Placeholder(panel.Kind),

@@ -20,6 +20,7 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(IReadOnlyList<TncTypeInfo>))]
 [JsonSerializable(typeof(TrafficEntry))]
 [JsonSerializable(typeof(DestinationInfo))]
+[JsonSerializable(typeof(BulletinView))]
 [JsonSerializable(typeof(CaptureQuery))]
 [JsonSerializable(typeof(CaptureView))]
 [JsonSerializable(typeof(CaptureExport))]

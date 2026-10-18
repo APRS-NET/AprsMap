@@ -305,6 +305,11 @@ internal sealed class EngineHubEndpoint(
         return engine.SendTncCommandAsync(sourceId, command, Context.ConnectionAborted);
     }
 
+    /// <summary>Bulletins heard are public: every viewer may read them (F2.5 behavior 1).</summary>
+    [HubMethodName(EngineHub.WatchBulletins)]
+    public IAsyncEnumerable<BulletinView> WatchBulletins(CancellationToken cancellationToken) =>
+        engine.WatchBulletinsAsync(cancellationToken);
+
     /// <summary>Distance and bearing from the station's location to a viewer's destination (F1.18): open to every viewer.</summary>
     [HubMethodName(EngineHub.GetDestination)]
     public Task<DestinationInfo> GetDestination(double latitude, double longitude) =>

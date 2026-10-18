@@ -98,6 +98,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _logger = logger;
         _messenger = new Messenger(this, messages ?? new InMemoryMessageStore(), time);
         _beaconer = new Beaconer(this, time);
+        _bulletins = new BulletinFeed(time);
         _capture = _options.CaptureFolder is { } captureFolder ? new PacketCapture(captureFolder, time) : null;
     }
 
@@ -106,6 +107,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         _messenger.Dispose();
         _beaconer.Dispose();
+        _bulletins.Dispose();
         _capture?.DisposeAsync().AsTask().GetAwaiter().GetResult(); // what's queued is written first
         _settingsLock.Dispose();
         lock (_gate)
@@ -1171,6 +1173,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     public IAsyncEnumerable<ChatMessage> WatchMessagesAsync(CancellationToken cancellationToken = default) =>
         _messenger.WatchAsync(cancellationToken);
 
+    private readonly BulletinFeed _bulletins;
+
+    /// <inheritdoc />
+    public IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default) =>
+        _bulletins.WatchAsync(cancellationToken);
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<ChatMessage>> SendMessageAsync(
         string correspondent,
@@ -1633,6 +1641,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             _capture?.Consider(packet, sourceId); // unexpected packets, for the test corpus (F1.27)
             CheckEchoes(packet);
             _messenger.Receive(packet, sourceId, IsOwnReceiver(sourceId)); // messages, acks, and who was heard where
+            _bulletins.Receive(packet, sourceId); // bulletins and announcements (F2.5)
         }
         var now = _time.GetUtcNow();
         var check = _duplicates.Check(packet, sourceId);

@@ -311,6 +311,12 @@ public sealed partial class MainViewModel : ObservableObject
             ? OpenConsoleAsync(aprsIs.Id, commandLine: false)
             : Task.CompletedTask;
 
+    /// <summary>The Bulletins panel (docs/features/F2.5-bulletins.md).</summary>
+    public Bulletins.BulletinsViewModel Bulletins =>
+        _bulletinsPanel ??= new Bulletins.BulletinsViewModel(engine, _text, time);
+
+    private Bulletins.BulletinsViewModel? _bulletinsPanel;
+
     /// <summary>Opens the Messages panel, from the unread marker.</summary>
     [RelayCommand]
     private void ShowMessages() => ShowPanel(PanelKinds.Messages);
@@ -707,7 +713,10 @@ public sealed partial class MainViewModel : ObservableObject
         var status = KeepAsync(PollStatusAsync, cancellationToken);
         var countdown = KeepAsync(CountDownAsync, cancellationToken);
         var messages = KeepAsync(Messages.WatchAsync, cancellationToken);
-        await Task.WhenAll(packets, stations, status, countdown, messages);
+        Bulletins.Preferences = Preferences;
+        await Bulletins.LoadAsync();
+        var bulletins = KeepAsync(Bulletins.WatchAsync, cancellationToken);
+        await Task.WhenAll(packets, stations, status, countdown, messages, bulletins);
     }
 
     /// <summary>Applies one batch from the station stream.</summary>

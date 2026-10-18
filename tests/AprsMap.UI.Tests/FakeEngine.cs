@@ -265,6 +265,13 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
+    /// <summary>Bulletins for <see cref="WatchBulletinsAsync"/>: written here, read by the watcher.</summary>
+    public System.Threading.Channels.Channel<BulletinView> Bulletins { get; } =
+        System.Threading.Channels.Channel.CreateUnbounded<BulletinView>();
+
+    public IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default) =>
+        Bulletins.Reader.ReadAllAsync(cancellationToken);
+
     /// <summary>What <see cref="GetDestinationAsync"/> gives, by destination; <see cref="DestinationInfo.Unknown"/> otherwise.</summary>
     public Dictionary<(double, double), DestinationInfo> Destinations { get; } = [];
 

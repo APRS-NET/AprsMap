@@ -1402,6 +1402,50 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Dashboard.CopyTile" xml:space="preserve">
     <value>Copy this tile's numbers</value>
   </data>
+  <data name="Shell.Panel.bulletins" xml:space="preserve">
+    <value>Bulletins</value>
+    <comment>Panel title: bulletins and announcements heard.</comment>
+  </data>
+  <data name="Bulletins.Filter" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="Bulletins.Filter.All" xml:space="preserve">
+    <value>Everything</value>
+  </data>
+  <data name="Bulletins.Kind.Bulletin" xml:space="preserve">
+    <value>Bulletin</value>
+  </data>
+  <data name="Bulletins.Kind.Announcement" xml:space="preserve">
+    <value>Announcement</value>
+  </data>
+  <data name="Bulletins.Kind.Nws" xml:space="preserve">
+    <value>NWS</value>
+    <comment>A National Weather Service bulletin.</comment>
+  </data>
+  <data name="Bulletins.Search" xml:space="preserve">
+    <value>Search bulletins</value>
+  </data>
+  <data name="Bulletins.Heard" xml:space="preserve">
+    <value>First heard {first} · last {last}</value>
+  </data>
+  <data name="Bulletins.HeardUpdated" xml:space="preserve">
+    <value>Updated {first} · last heard {last}</value>
+  </data>
+  <data name="Bulletins.New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="Bulletins.MuteGroup" xml:space="preserve">
+    <value>Mute group</value>
+  </data>
+  <data name="Bulletins.UnmuteAll" xml:space="preserve">
+    <value>Unmute all</value>
+  </data>
+  <data name="Bulletins.Empty" xml:space="preserve">
+    <value>No bulletins heard yet. Bulletins and announcements stations send show here, the newest version of each, until they're not heard for a day.</value>
+  </data>
+  <data name="Bulletins.Muted" xml:space="preserve">
+    <value>Muted: {groups}</value>
+  </data>
   <data name="Shell.Panel.messages" xml:space="preserve">
     <value>Messages</value>
     <comment>Panel title: conversations with other stations.</comment>

@@ -43,6 +43,9 @@ public static class PanelKinds
     /// <summary>The conversations (docs/features/F2.4-messaging.md).</summary>
     public const string Messages = "messages";
 
+    /// <summary>The bulletins and announcements heard (docs/features/F2.5-bulletins.md).</summary>
+    public const string Bulletins = "bulletins";
+
     /// <summary>A source's live traffic, for troubleshooting (docs/features/F1.28-source-console.md).</summary>
     public const string Console = "console";
 
@@ -55,6 +58,7 @@ public static class PanelKinds
         (Stations, ShellFactory.LeftDock),
         (Details, ShellFactory.RightDock),
         (Messages, ShellFactory.RightDock),
+        (Bulletins, ShellFactory.RightDock),
         (Packets, ShellFactory.BottomDock),
         (Console, ShellFactory.BottomDock),
         (Captured, ShellFactory.BottomDock),
