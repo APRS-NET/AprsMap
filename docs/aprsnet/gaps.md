@@ -49,7 +49,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
 | G32 | A typed reason when an APRS-IS login reaches a KISS TNC | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
-| G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console | Kiss, AprsIsTcpClient | 2 | — (requested) |
+| G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console | Kiss, AprsIsTcpClient | 2 | [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) |
 
 ---
 
@@ -549,3 +549,6 @@ APRS-IS, one entry per line in or out, with the passcode masked in the login lin
 
 **Acceptance.** A fake TNC sending text, a corrupt frame, a non-APRS frame and a good frame raises one entry of each
 kind with the right note; a sent packet raises a sent entry; the APRS-IS login line never carries the passcode.
+
+**Filed** as [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) for `0.5.0-alpha.1`, with one more
+acceptance item: no extra work while nothing is subscribed.
