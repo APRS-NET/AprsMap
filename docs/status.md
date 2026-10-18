@@ -10,9 +10,8 @@ anything yet.
 
 **Next:** [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/3): transmitting through APRS-IS and KISS
 TNCs (your station's transmit switch, TX enabled and Test send per source, Disable TX per profile), beacons, messaging
-and bulletins, operator sign-in on the gateway, the public receive-only console (F1.26), capturing unexpected packets for the test corpus (F1.27) and update checks. Then
-[0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) (hardware TNCs over USB serial, objects, GPS, a receive-only
-IGate) and
+and bulletins, operator sign-in on the gateway, the public receive-only console (F1.26), capturing unexpected packets for the test corpus (F1.27), KISS TNCs on USB serial such as a TH-D72A's built-in TNC (F3.1) and update checks. Then
+[0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) (objects, GPS, a receive-only IGate) and
 [0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5) (a digipeater and a two-way IGate).
 
 ## What you'll see
@@ -93,7 +92,7 @@ the same window as the desktop app, live.
 
 | What | Where it's planned |
 | --- | --- |
-| RF: hardware TNCs over USB serial (MFJ TNC-X, NinoTNC) | F3.1, [0.6.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/4) |
+| RF: TNCs over USB serial (a TH-D72A's built-in TNC in KISS mode, then MFJ TNC-X, NinoTNC) | F3.1, [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/3) ([#177](https://github.com/APRS-NET/AprsMap/issues/177)) |
 | Dashboard extras: sparkline values on hover and by keyboard, My view, Copy on the tiles | F1.22, [#176](https://github.com/APRS-NET/AprsMap/issues/176) |
 | A public receive-only console: viewer and operator ports, location privacy | F1.26, spec in review |
 | Recording unexpected packets for the developer, exported anonymized for the test corpus | F1.27, spec in review |
