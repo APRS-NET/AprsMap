@@ -8,11 +8,24 @@ internal sealed class GatewayOptions
     public const string SectionName = "Gateway";
 
     /// <summary>
-    /// Lets any browser change the station's settings and switch profiles, and see its passcodes. Off by default:
-    /// there is no operator sign-in yet (scope F2.9), and a profile switch changes the station for every viewer. Turn
-    /// it on only on a network where everyone may act as the station's operator.
+    /// Lets any browser change the station's settings and switch profiles, and see its passcodes, on a gateway with no
+    /// operator set up. Off by default: a profile switch changes the station for every viewer. Turn it on only on a
+    /// network where everyone may act as the station's operator. Once an operator is set up it's ignored: signing in
+    /// decides (docs/features/F2.9-operator-sign-in.md, behavior 17).
     /// </summary>
     public bool AllowSettingsChanges { get; set; }
+
+    /// <summary>
+    /// Operators set up in configuration, each a name and a password hash from <c>operator add</c> (F2.9 behavior 1).
+    /// Most gateways keep them in <c>operators.json</c> in the data folder instead.
+    /// </summary>
+    public IList<OperatorOptions> Operators { get; } = [];
+
+    /// <summary>
+    /// Other origins whose pages may call the hub and <c>/auth</c> (F2.9 behavior 16), such as
+    /// <c>https://aprs.example.org</c>; the gateway's own origin always may.
+    /// </summary>
+    public IList<string> AllowedOrigins { get; } = [];
 
     /// <summary>
     /// A path the gateway is served under, such as <c>/aprs</c>, for a reverse proxy that maps a path to it (F1.14

@@ -27,7 +27,9 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | First-run passcode (`-1` = receive-only) | `Engine__Passcode` | `-1` |
 | First-run server | `Engine__Server` | `rotate.aprs2.net:14580` |
 | First-run server-side filter | `Engine__Filter` | none |
-| Let browsers change settings and switch profiles | `Gateway__AllowSettingsChanges` | `false` |
+| Let browsers change settings and switch profiles, with no operator set up | `Gateway__AllowSettingsChanges` | `false` |
+| Operators set up in configuration: a name and a hash from `operator add` | `Gateway__Operators__0__Name`, `…__PasswordHash` | none (use `operators.json`) |
+| Other sites whose pages may use the hub and sign-in | `Gateway__AllowedOrigins__0`, `__1`… | none (the gateway's own only) |
 | Serve under a path, for a proxy that maps one to the gateway | `Gateway__PathBase` | none (the root) |
 | Proxies trusted for `X-Forwarded-For`/`-Proto`: addresses or networks | `Gateway__KnownProxies__0`, `__1`… | none (forwarded headers ignored) |
 | Who may show the app in a frame (CSP `frame-ancestors`) | `Gateway__FrameAncestors` | `'self'` |
@@ -41,9 +43,10 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | That server's usage policy, linked in the setup wizard | `Geocoding__UsagePolicyUrl` | the OSMF policy for the public server |
 | OpenTelemetry export | `OTEL_EXPORTER_OTLP_ENDPOINT` (+ standard `OTEL_*`) | off |
 
-Browsers see the gateway's settings read-only, with passcodes hidden. A profile switch changes the station for every
-viewer, so it is an operator action; until operator sign-in exists (scope F2.9), `Gateway__AllowSettingsChanges=true`
-lets *any* browser do it and see passcodes. Set it only on a network where everyone may operate the station. The
+Browsers see the gateway's settings read-only, with passcodes hidden, until an operator signs in (below). A profile
+switch changes the station for every viewer, so it is an operator action. On a gateway with no operator set up,
+`Gateway__AllowSettingsChanges=true` lets *any* browser do it and see passcodes; set it only on a network where everyone
+may operate the station. Once an operator is set up it's ignored, with a warning at start: signing in decides. The
 same switch gates address lookup and the passcode calculator in the setup wizard, so a public gateway is not an open
 geocoding proxy. Lookups go through the gateway, at most one a second, with results cached in memory; a gateway with
 many users should point `Geocoding__Endpoint` at its own Nominatim, as the public server's usage policy asks.
@@ -53,6 +56,26 @@ cache serves every viewer, the gateway identifies the app to the tile server, an
 tile coordinates are served. The cache follows the OpenStreetMap tile usage policy (no prefetching, caching and
 revalidation as the server says). A busy public map should use a tile provider whose terms allow its traffic.
 
+### Operators: signing in to transmit
+
+Only a signed-in operator may transmit, change the station's settings, read its messages or type to its TNC from a
+browser (docs/features/F2.9-operator-sign-in.md). Operators are set up on the host, never from a browser:
+
+```sh
+docker exec -it aprsmap aprsmap-gateway operator add NAME       # asks for the password twice
+docker exec -it aprsmap aprsmap-gateway operator password NAME  # changes it, ending NAME's sessions
+docker exec -it aprsmap aprsmap-gateway operator remove NAME
+docker exec -it aprsmap aprsmap-gateway operator list
+```
+
+Passwords have at least 12 characters and are stored in `/data/operators.json` as salted PBKDF2-SHA256 hashes; the
+gateway reads the file again when it changes. Sign in from the web app's menu. Sign-in is offered over HTTPS only (or
+from the gateway's own host), so put the gateway behind a TLS proxy and list it in `Gateway__KnownProxies`. A session
+lasts 12 hours from its last use and 7 days at most, in a `__Host-` cookie signed with keys kept in `/data/keys`;
+sessions are kept in memory, so restarting the gateway signs everyone out. After 5 failed sign-ins from one address in
+15 minutes that address waits 15 minutes; after 10 for one name in an hour that name waits an hour. Sign-ins, failures,
+waits, sign-outs and every transmitting call are logged with the operator's name and address, never the password.
+
 Endpoints:
 
 | Path | Purpose |
@@ -60,13 +83,14 @@ Endpoints:
 | `/` | The web app (all paths move under `Gateway__PathBase` when it's set) |
 | `/hubs/engine` | SignalR hub the web app uses |
 | `/tiles/providers`, `/tiles/{provider}/{z}/{x}/{y}` | Map tile providers and tiles for the web app, from the gateway's cache |
+| `/auth/sign-in`, `/auth/sign-out`, `/auth/me` | Operator sign-in (F2.9) |
 | `/healthz` | Health check for orchestrators (the chiseled image has no shell, so probe it over HTTP) |
 | `/source` | Redirects to the source code, the AGPL-3.0 network-use offer |
 
 The image is based on `mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled`: no shell or package manager, running as
 the non-root `app` user. Put a reverse proxy with TLS in front of it for anything beyond a LAN, and pass WebSocket
-upgrades through for `/hubs/engine`. Operator sign-in for transmitting (scope F2.9) is not built yet, so the current
-gateway is receive-only and should not be given a passcode.
+upgrades through for `/hubs/engine`. Give the station a passcode only once an operator is set up: until then nobody can
+transmit from a browser anyway.
 
 ### A TNC on a serial port
 

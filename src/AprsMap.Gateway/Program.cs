@@ -6,6 +6,17 @@ using Microsoft.AspNetCore.SignalR;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
+// aprsmap-gateway operator add|password|remove|list NAME: sets up who may sign in (F2.9 behavior 1), then exits.
+if (args is ["operator", .. var command])
+{
+    var configuration = new ConfigurationBuilder()
+        .SetBasePath(AppContext.BaseDirectory)
+        .AddJsonFile("appsettings.json", optional: true)
+        .AddEnvironmentVariables()
+        .Build();
+    return OperatorCommand.Run(command, GatewayData.Folder(configuration), OperatorCommand.AskPassword, Console.Out);
+}
+
 var builder = WebApplication.CreateBuilder(args);
 builder
     .AddAprsMapEngine()
@@ -21,6 +32,7 @@ builder
     .Services.AddSignalR(o =>
     {
         o.AddFilter<ViewerFilter>();
+        o.AddFilter<OperatorFilter>();
         o.MaximumReceiveMessageSize = 64 * 1024; // settings are the largest call (F1.14 behavior 5)
     })
     .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default));
@@ -28,15 +40,18 @@ builder.Services.AddOptions<GatewayOptions>().BindConfiguration(GatewayOptions.S
 var gateway = GatewayHttp.Options(builder.Configuration);
 builder.Services.AddGatewayProxies(gateway);
 builder.Services.AddHealthChecks();
+builder.Services.AddOperatorSignIn(GatewayData.Folder(builder.Configuration));
 
 var app = builder.Build();
 app.UseGatewayFront(gateway);
+app.UseOperatorSignIn();
 app.UseViewerGate();
 
 // The browser app (AprsMap.Browser's publish output) is copied into wwwroot by the Dockerfile.
 app.UseBrowserApp();
 
 app.MapHub<EngineHubEndpoint>(EngineHub.Path);
+app.MapOperatorSignIn();
 app.MapTiles();
 app.MapHealthChecks("/healthz");
 
@@ -44,6 +59,7 @@ app.MapHealthChecks("/healthz");
 app.MapGet("/source", () => Results.Redirect(Brand.SourceUrl));
 
 app.Run();
+return 0;
 
 /// <summary>Entry point; public so integration tests can host the gateway in memory.</summary>
 public partial class Program;

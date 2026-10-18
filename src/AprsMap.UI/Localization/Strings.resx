@@ -272,8 +272,21 @@
   <data name="Error.gateway.rate-limited" xml:space="preserve">
     <value>Too many requests to the gateway at once; slowing down.</value>
   </data>
+  <data name="Error.auth.wrong-credentials" xml:space="preserve">
+    <value>That name and password don't match.</value>
+  </data>
+  <data name="Error.auth.too-many-tries" xml:space="preserve">
+    <value>Too many tries. Wait {minutes} min and try again.</value>
+    <comment>minutes: a whole number of minutes.</comment>
+  </data>
+  <data name="Error.auth.needs-https" xml:space="preserve">
+    <value>Signing in needs a secure (https://) address, so the password can't be read on the way. Open the gateway over HTTPS, or from its own computer.</value>
+  </data>
+  <data name="Error.auth.not-offered-here" xml:space="preserve">
+    <value>This gateway doesn't offer signing in here.</value>
+  </data>
   <data name="Error.gateway.operator-only" xml:space="preserve">
-    <value>Only this gateway's operator can do that, and operator sign-in isn't available yet.</value>
+    <value>Only this gateway's operator can do that. An operator signs in from the app menu.</value>
   </data>
   <data name="Error.geocoding.disabled" xml:space="preserve">
     <value>Address lookup is turned off.</value>

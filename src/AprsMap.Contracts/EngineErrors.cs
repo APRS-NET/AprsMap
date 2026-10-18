@@ -105,6 +105,21 @@ public static class EngineErrorCodes
     /// <summary>Only the gateway's operator may do this (address lookup, the passcode calculator).</summary>
     public const string OperatorOnly = "gateway.operator-only";
 
+    /// <summary>A sign-in's name and password don't match an operator's; the same for either (F2.9 behavior 7).</summary>
+    public const string AuthWrongCredentials = "auth.wrong-credentials";
+
+    /// <summary>
+    /// Too many failed sign-ins from this address or for this name: wait <see cref="EngineErrorArgs.Minutes"/> (F2.9
+    /// behavior 9).
+    /// </summary>
+    public const string AuthTooManyTries = "auth.too-many-tries";
+
+    /// <summary>Sign-in is offered over HTTPS only, or from the gateway's own host (F2.9 behavior 8.1).</summary>
+    public const string AuthNeedsHttps = "auth.needs-https";
+
+    /// <summary>This gateway offers no sign-in here: no operator is set up, or this isn't its operator port (behavior 8).</summary>
+    public const string AuthNotOfferedHere = "auth.not-offered-here";
+
     /// <summary>The gateway has as many viewers as it allows, in all or from this address (F1.14 behavior 3).</summary>
     public const string GatewayBusy = "gateway.busy";
 
@@ -277,6 +292,7 @@ public static class EngineErrorCodes
     {
         ArgumentNullException.ThrowIfNull(code);
         return code.StartsWith("gateway.", StringComparison.Ordinal) ? EngineErrorKind.Access
+            : code.StartsWith("auth.", StringComparison.Ordinal) ? EngineErrorKind.Access
             : code.StartsWith("geocoding.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("aprs-is.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("transmit.", StringComparison.Ordinal) ? EngineErrorKind.Operation
@@ -305,6 +321,9 @@ public static class EngineErrorArgs
 
     /// <summary>An HTTP status code.</summary>
     public const string Status = "status";
+
+    /// <summary>How many minutes to wait, as a whole number.</summary>
+    public const string Minutes = "minutes";
 
     /// <summary>A server's own words, such as why it refused a login (not translated).</summary>
     public const string Reason = "reason";
