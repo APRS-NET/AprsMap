@@ -50,6 +50,10 @@ public enum DashboardRange
 /// </param>
 /// <param name="Weather">The weather stations heard in the range, and their extremes (behavior 4.11).</param>
 /// <param name="Tables">What's on the air among the stations held now (behavior 10).</param>
+/// <param name="MyView">
+/// Counted only for the stations a view filter shows (behavior 7), with points of at least 5 minutes. Packets by
+/// source, the busiest relays and each source's last packet are the whole feed's, since they aren't kept per station.
+/// </param>
 public sealed record Dashboard(
     DateTimeOffset At,
     DashboardRange Range,
@@ -73,7 +77,8 @@ public sealed record Dashboard(
     IReadOnlyList<DashboardMoment> Sources,
     IReadOnlyList<DashboardHop>? FarthestDirect = null,
     DashboardWeather? Weather = null,
-    DashboardTables? Tables = null
+    DashboardTables? Tables = null,
+    bool MyView = false
 );
 
 /// <summary>A station heard directly by an IGate, and how far apart they are.</summary>

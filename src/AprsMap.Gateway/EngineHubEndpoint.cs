@@ -149,8 +149,8 @@ internal sealed class EngineHubEndpoint(
     }
 
     [HubMethodName(EngineHub.GetDashboard)]
-    public Task<Dashboard> GetDashboard(DashboardRange range) =>
-        engine.GetDashboardAsync(range, Context.ConnectionAborted);
+    public Task<Dashboard> GetDashboard(DashboardRange range, StationFilter? filter) =>
+        engine.GetDashboardAsync(range, filter, Context.ConnectionAborted);
 
     [HubMethodName(EngineHub.GetNetworkLinks)]
     public Task<IReadOnlyList<NetworkLink>> GetNetworkLinks() => engine.GetNetworkLinksAsync(Context.ConnectionAborted);
