@@ -24,16 +24,37 @@ internal sealed class BulletinFeed : IDisposable
         _board.Changed += OnChanged;
     }
 
+    /// <summary>
+    /// This station's own bulletins (behavior 6): watchers get them with the board's, a copy heard back is marked as
+    /// ours, and each change to one of ours goes to every watcher.
+    /// </summary>
+    public OwnBulletins? Own
+    {
+        get;
+        set
+        {
+            field?.Changed -= Publish;
+            field = value;
+            field?.Changed += Publish;
+        }
+    }
+
     /// <summary>Hands a received packet to the board; anything that isn't a bulletin is ignored there.</summary>
     public void Receive(AprsPacket packet, string? sourceId) => _board.Receive(packet, sourceId);
 
-    private void OnChanged(object? sender, BulletinChangedEventArgs e)
+    private void OnChanged(object? sender, BulletinChangedEventArgs e) =>
+        Publish(
+            Decorate(ViewOf(e.Bulletin)) with
+            {
+                Updated = e.Change == BulletinChange.Replaced,
+                Removed = e.Change == BulletinChange.Removed,
+            }
+        );
+
+    private BulletinView Decorate(BulletinView view) => Own?.Decorate(view) ?? view;
+
+    private void Publish(BulletinView view)
     {
-        var view = ViewOf(e.Bulletin) with
-        {
-            Updated = e.Change == BulletinChange.Replaced,
-            Removed = e.Change == BulletinChange.Removed,
-        };
         lock (_lock)
         {
             foreach (var watcher in _watchers)
@@ -49,17 +70,19 @@ internal sealed class BulletinFeed : IDisposable
         var channel = Channel.CreateBounded<BulletinView>(
             new BoundedChannelOptions(1000) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true }
         );
-        IReadOnlyList<Bulletin> now;
+        List<BulletinView> now;
         lock (_lock)
         {
             _watchers.Add(channel);
-            now = _board.Bulletins;
+            now = [.. _board.Bulletins.Select(b => Decorate(ViewOf(b)))];
         }
+        // Ours not heard back yet aren't on the board.
+        now.AddRange(Own?.Views().Where(o => !now.Any(v => v.Key == o.Key)) ?? []);
         try
         {
-            foreach (var bulletin in now)
+            foreach (var view in now)
             {
-                yield return ViewOf(bulletin);
+                yield return view;
             }
             await foreach (var view in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
             {

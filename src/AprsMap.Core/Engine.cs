@@ -19,7 +19,7 @@ namespace AprsMap.Core;
 /// position of every station for <see cref="WatchStationsAsync"/>. It logs in with the active station profile from
 /// <see cref="ISettingsStore"/>, waits while there is none, and reconnects when the profile changes.
 /// </summary>
-public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost, IBeaconHost
+public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost, IBeaconHost, IBulletinHost
 {
     private readonly EngineOptions _options;
     private readonly IPacketSourceFactory _sources;
@@ -99,6 +99,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _messenger = new Messenger(this, messages ?? new InMemoryMessageStore(), time);
         _beaconer = new Beaconer(this, time);
         _bulletins = new BulletinFeed(time);
+        _ownBulletins = new OwnBulletins(this, time);
+        _bulletins.Own = _ownBulletins;
+        _groupTimer = time.CreateTimer(_ => KeepGroupsAlive(), null, GroupCheck, GroupCheck);
         _capture = _options.CaptureFolder is { } captureFolder ? new PacketCapture(captureFolder, time) : null;
     }
 
@@ -107,6 +110,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         _messenger.Dispose();
         _beaconer.Dispose();
+        _groupTimer.Dispose();
+        _ownBulletins.Dispose();
         _bulletins.Dispose();
         _capture?.DisposeAsync().AsTask().GetAwaiter().GetResult(); // what's queued is written first
         _settingsLock.Dispose();
@@ -1449,16 +1454,23 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     }
 
     /// <inheritdoc />
-    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default)
+    public Task<Dashboard> GetDashboardAsync(
+        DashboardRange range,
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    )
     {
-        var dashboard = _dashboard.Read(range, _time.GetUtcNow());
+        var now = _time.GetUtcNow();
+        // My view (F1.22 behavior 7): only the stations the viewer's filter shows now; an empty filter is the whole feed.
+        Func<string, bool>? include = filter is { IsEmpty: false } ? _stations.Matching(filter, now).Contains : null;
+        var dashboard = _dashboard.Read(range, now, include);
         // The counters cover the range; the rest is read from the stations held (F1.22 behaviors 4.10, 4.11, 10).
         return Task.FromResult(
             dashboard with
             {
-                FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5),
-                Weather = _stations.WeatherSince(dashboard.Start),
-                Tables = _stations.Statistics(),
+                FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5, include),
+                Weather = _stations.WeatherSince(dashboard.Start, include),
+                Tables = _stations.Statistics(include is null ? null : filter, now),
             }
         );
     }
@@ -2016,6 +2028,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         await _messenger.UseAsync(profile?.Id, profile?.Callsign, cancellationToken).ConfigureAwait(false);
         _messenger.Pump(); // the Transmit switch or a source may have changed
         _beaconer.Poke(); // and beacons with them (F2.2 behavior 4)
+        _ownBulletins.Poke(); // and bulletins (F2.5 behavior 7)
     }
 
     /// <summary>Distances and bearings are from the active profile's location (F1.13 behavior 4).</summary>

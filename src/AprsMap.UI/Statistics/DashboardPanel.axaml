@@ -128,6 +128,22 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+      <!-- Whole feed or My view (behavior 7). -->
+      <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,16,0">
+        <RadioButton
+          x:Name="WholeFeedButton"
+          GroupName="DashboardScope"
+          Content="{l:T Dashboard.WholeFeed}"
+          IsChecked="{Binding WholeFeed}"
+        />
+        <RadioButton
+          x:Name="MyViewButton"
+          GroupName="DashboardScope"
+          Content="{l:T Dashboard.MyView}"
+          IsChecked="{Binding MyView}"
+          ToolTip.Tip="{l:T Dashboard.MyView.Help}"
+        />
+      </StackPanel>
       <StackPanel VerticalAlignment="Center">
         <TextBlock x:Name="AsOf" Text="{Binding AsOfText}" Foreground="{DynamicResource Brush.TextMuted}" />
         <TextBlock
@@ -137,6 +153,15 @@
         />
       </StackPanel>
     </WrapPanel>
+    <TextBlock
+      DockPanel.Dock="Top"
+      x:Name="ScopeNote"
+      Text="{Binding ScopeText}"
+      IsVisible="{Binding ScopeText, Converter={x:Static ObjectConverters.IsNotNull}}"
+      Classes="detail"
+      TextWrapping="Wrap"
+      Margin="12,4"
+    />
     <TextBlock
       DockPanel.Dock="Top"
       x:Name="WaitingNote"

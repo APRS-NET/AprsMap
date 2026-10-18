@@ -527,6 +527,209 @@ public sealed class TransmitTests
         );
     }
 
+    private static async Task<string?> ErrorOf(Func<Task> act) =>
+        (await Assert.ThrowsAnyAsync<Exception>(act) as IHasEngineError)?.EngineError.Code;
+
+    /// <summary>ANSRVR acks the message to it that has <paramref name="text"/>, as it does every message.</summary>
+    private static async Task AnsrvrAcks(EngineTests.FakeSource aprsIs, string text)
+    {
+        var line = aprsIs.Sent.Last(l => l.Contains(text, StringComparison.Ordinal));
+        await aprsIs.Write($"ANSRVR>APRS,TCPIP*,qAC,T2TEST::N0TEST   :ack{line[(line.LastIndexOf('{') + 1)..]}");
+    }
+
+    private static int Count(EngineTests.FakeSource source, string text) =>
+        source.Sent.Count(l => l.Contains(text, StringComparison.Ordinal));
+
+    [Fact]
+    public async Task APostedBulletinGoesOutOnEachSourceAndRepeatsOnTheScheduleUntilStopped()
+    {
+        var station = Create(Home(sources: [AprsIs, Tnc]));
+        var (run, cts, aprsIs, tnc) = await Run(station);
+        using (cts)
+        {
+            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            const string Line = ":BLN1NET  :Net tonight 7pm on 146.52";
+
+            var view = await station.Engine.PostBulletinAsync(
+                new BulletinPost(BulletinKind.Bulletin, "1", " Net tonight 7pm on 146.52 ", "net"),
+                Ct
+            );
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, Line) == 1 && Count(tnc, Line) == 1));
+
+            Assert.True(view.Mine);
+            Assert.Equal("BLN1NET", view.Addressee);
+            Assert.Equal("NET", view.Group);
+            Assert.Equal(
+                $"N0TEST>{Brand.Tocall},WIDE1-1,WIDE2-1:{Line}",
+                tnc.Sent.Single(l => l.Contains(Line, StringComparison.Ordinal))
+            );
+            await using (var watch = station.Engine.WatchBulletinsAsync(Ct).GetAsyncEnumerator(Ct))
+            {
+                Assert.True(await watch.MoveNextAsync()); // ours, though not heard back
+                Assert.True(watch.Current.Mine);
+                Assert.Equal(station.Time.GetUtcNow() + TimeSpan.FromMinutes(1), watch.Current.NextSend);
+            }
+
+            station.Time.Advance(TimeSpan.FromMinutes(1)); // the first repeat
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, Line) == 2));
+
+            await station.Engine.StopBulletinAsync("bln1net", Ct);
+            station.Time.Advance(TimeSpan.FromMinutes(30));
+            await station.Engine.TickBulletinsAsync();
+            Assert.Equal(2, Count(aprsIs, Line));
+
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
+    public async Task ABulletinWaitsWhileTransmitIsOffAndOneThatCantBeSentIsRefused()
+    {
+        var station = Create(Home(sources: [AprsIs]));
+        var (run, cts, aprsIs, _) = await Run(station);
+        using (cts)
+        {
+            var post = new BulletinPost(BulletinKind.Announcement, "q", "Club meeting Tuesday");
+            Assert.Equal(
+                EngineErrorCodes.TransmitOff,
+                await RefusalOf(() => station.Engine.PostBulletinAsync(post, Ct))
+            );
+            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            Assert.Equal(
+                EngineErrorCodes.BulletinIdInvalid,
+                await ErrorOf(() => station.Engine.PostBulletinAsync(post with { Kind = BulletinKind.Bulletin }, Ct))
+            );
+            Assert.Equal(
+                EngineErrorCodes.BulletinTextInvalid,
+                await ErrorOf(() => station.Engine.PostBulletinAsync(post with { Text = new string('x', 68) }, Ct))
+            );
+            Assert.Equal(
+                EngineErrorCodes.BulletinTextInvalid,
+                await ErrorOf(() => station.Engine.PostBulletinAsync(post with { Text = "a|b" }, Ct))
+            );
+            Assert.Equal(
+                EngineErrorCodes.BulletinGroupInvalid,
+                await ErrorOf(() => station.Engine.PostBulletinAsync(post with { Group = "TOOLONG" }, Ct))
+            );
+
+            await station.Engine.PostBulletinAsync(post, Ct);
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, ":BLNQ     :Club meeting Tuesday") == 1));
+            await station.Engine.SetToggleAsync(Toggle.Transmit, false, Ct);
+            station.Time.Advance(TimeSpan.FromMinutes(10)); // due, but held
+            await station.Engine.TickBulletinsAsync();
+            Assert.Equal(1, Count(aprsIs, ":BLNQ     :Club meeting Tuesday"));
+
+            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct); // goes once, not for each one missed
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, ":BLNQ     :Club meeting Tuesday") == 2));
+
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
+    public async Task JoiningAGroupSendsAnsrvrsJoinAndKeepsItAliveEvery8HoursUntilLeft()
+    {
+        var station = Create(Home(sources: [AprsIs]));
+        var (run, cts, aprsIs, _) = await Run(station);
+        using (cts)
+        {
+            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+
+            await station.Engine.JoinGroupAsync(" nzevent ", Ct);
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, ":ANSRVR   :J NZEVENT{") == 1));
+            await AnsrvrAcks(aprsIs, ":ANSRVR   :J NZEVENT{");
+            Assert.Equal(["NZEVENT"], await station.Engine.GetGroupsAsync(Ct));
+            Assert.Equal(["NZEVENT"], (await station.Engine.GetSettingsAsync(Ct)).GetActiveProfile()!.Groups!);
+
+            await station.Engine.PostToGroupAsync("NZEVENT", "Net at 7pm", Ct);
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, ":ANSRVR   :CQ NZEVENT Net at 7pm{") == 1));
+            await AnsrvrAcks(aprsIs, ":ANSRVR   :CQ NZEVENT Net at 7pm{");
+
+            station.Time.Advance(TimeSpan.FromHours(7)); // a post kept it alive: not yet
+            station.Engine.KeepGroupsAlive();
+            Assert.Equal(0, Count(aprsIs, ":ANSRVR   :K NZEVENT{"));
+            station.Time.Advance(TimeSpan.FromHours(1));
+            station.Engine.KeepGroupsAlive();
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, ":ANSRVR   :K NZEVENT{") == 1));
+            await AnsrvrAcks(aprsIs, ":ANSRVR   :K NZEVENT{");
+
+            await station.Engine.LeaveGroupAsync("NZEVENT", Ct);
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, ":ANSRVR   :U NZEVENT{") == 1));
+            Assert.Empty(await station.Engine.GetGroupsAsync(Ct));
+            Assert.Equal(
+                EngineErrorCodes.BulletinGroupInvalid,
+                await ErrorOf(() => station.Engine.JoinGroupAsync("TWO WORDS", Ct))
+            );
+
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Theory]
+    [InlineData(BulletinKind.Bulletin, "7", null, "BLN7", null)]
+    [InlineData(BulletinKind.Announcement, "z", " wx ", "BLNZWX", null)]
+    [InlineData(BulletinKind.Nws, "1", null, null, EngineErrorCodes.BulletinIdInvalid)]
+    [InlineData(BulletinKind.Bulletin, "12", null, null, EngineErrorCodes.BulletinIdInvalid)]
+    [InlineData(BulletinKind.Announcement, "A", "W-X", null, EngineErrorCodes.BulletinGroupInvalid)]
+    public void ABulletinIsCheckedAndTidiedBeforeItsPosted(
+        BulletinKind kind,
+        string id,
+        string? group,
+        string? addressee,
+        string? error
+    )
+    {
+        var (post, refused) = OwnBulletins.Check(new BulletinPost(kind, id, " Text ", group));
+
+        Assert.Equal(addressee, post?.Addressee);
+        Assert.Equal(error, refused?.Code);
+        Assert.Equal(addressee is null ? null : "Text", post?.Text);
+    }
+
+    [Fact]
+    public async Task ABulletinStopsAndLeavesTheListWhenItsScheduleFinishes()
+    {
+        var station = Create(Home(sources: [AprsIs]));
+        var (run, cts, aprsIs, _) = await Run(station);
+        using (cts)
+        {
+            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await using var watch = station.Engine.WatchBulletinsAsync(Ct).GetAsyncEnumerator(Ct);
+            await station.Engine.PostBulletinAsync(new BulletinPost(BulletinKind.Bulletin, "2", "Repeater down"), Ct);
+            Assert.True(await watch.MoveNextAsync()); // posted
+            Assert.True(watch.Current.Mine);
+
+            station.Time.Advance(TimeSpan.FromHours(5)); // past its 4 hours
+            await station.Engine.TickBulletinsAsync();
+
+            var removed = false;
+            while (!removed && await watch.MoveNextAsync())
+            {
+                removed = watch.Current.Removed;
+            }
+            Assert.True(removed);
+            await station.Engine.StopBulletinAsync("BLN2", Ct); // no longer ours: nothing happens
+
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
+    public void KeepAlivesPutAsManyGroupsInEachMessageAsFit()
+    {
+        var groups = Enumerable.Range(0, 12).Select(i => $"GROUP{i:D2}").ToList(); // 7 characters and a space each
+
+        var commands = Engine.KeepAlives(groups);
+
+        Assert.Equal(2, commands.Count);
+        Assert.All(commands, c => Assert.True(c.Text.Length <= BulletinPost.MaxText));
+        Assert.Equal(groups, commands.SelectMany(c => c.Groups));
+    }
+
     private static async Task WaitUntil(Func<Task<bool>> condition)
     {
         for (var i = 0; i < 400; i++)

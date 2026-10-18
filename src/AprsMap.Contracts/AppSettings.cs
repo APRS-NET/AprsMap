@@ -174,6 +174,10 @@ public sealed record StationAging(
 /// Whether a position has been sent by hand since the callsign, symbol, comment or location last changed (F2.1 behavior
 /// 12): automatic transmissions wait for it. Set by the engine; ignored on save.
 /// </param>
+/// <param name="Groups">
+/// The ANSRVR groups joined (docs/features/F2.5-bulletins.md, behavior 10), kept alive while joined; set by joining and
+/// leaving, null for none.
+/// </param>
 public sealed record StationProfile(
     string Id,
     string Name,
@@ -189,7 +193,8 @@ public sealed record StationProfile(
     bool Licensed = false,
     bool DisableTransmit = false,
     PositionBeaconSettings? PositionBeacon = null,
-    StatusBeaconSettings? StatusBeacon = null
+    StatusBeaconSettings? StatusBeacon = null,
+    IReadOnlyList<string>? Groups = null
 )
 {
     /// <summary>The range a new profile gets: 150 km.</summary>

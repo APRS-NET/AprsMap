@@ -136,13 +136,13 @@ public sealed class SourceConsoleTests
         );
         Assert.NotNull(Snapshot(entries).Single(e => e.Kind == TrafficKind.DroppedFrame).Detail);
 
-        // Text from a TNC not in KISS mode comes a line at a time.
-        // (Its first byte isn't a KISS command byte, so it reads as text after a frame.)
-        await stream.WriteAsync("KISS OFF\r\n"u8.ToArray(), Ct);
+        // Text from a TNC not in KISS mode comes a line at a time: the TH-D72's prompt after it leaves KISS, whose "c"
+        // reads like a KISS command byte, is text too (APRS.NET 0.4.0-alpha.8).
+        await stream.WriteAsync("cmd:KISS OFF\r\n"u8.ToArray(), Ct);
         await WaitUntil(() => Snapshot(entries).Any(e => e.Kind == TrafficKind.Unframed));
         Assert.Contains(
             Snapshot(entries),
-            e => e.Kind == TrafficKind.Unframed && e.Text!.Contains("KISS OFF", StringComparison.Ordinal)
+            e => e.Kind == TrafficKind.Unframed && e.Text!.Contains("cmd:KISS OFF", StringComparison.Ordinal)
         );
 
         await cts.CancelAsync();

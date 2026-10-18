@@ -265,6 +265,76 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
+    /// <summary>The bulletins <see cref="PostBulletinAsync"/> was asked to post, in order.</summary>
+    public List<BulletinPost> PostedBulletins { get; } = [];
+
+    /// <summary>When set, <see cref="PostBulletinAsync"/> throws it.</summary>
+    public Exception? PostFailure { get; set; }
+
+    /// <summary>The addressees <see cref="StopBulletinAsync"/> was asked to stop, in order.</summary>
+    public List<string> StoppedBulletins { get; } = [];
+
+    /// <summary>The joined groups; <see cref="JoinGroupAsync"/> and <see cref="LeaveGroupAsync"/> change them.</summary>
+    public List<string> Groups { get; } = [];
+
+    /// <summary>What <see cref="PostToGroupAsync"/> was asked to post, in order.</summary>
+    public List<(string Group, string Text)> GroupPosts { get; } = [];
+
+    public Task<BulletinView> PostBulletinAsync(BulletinPost post, CancellationToken cancellationToken = default)
+    {
+        if (PostFailure is { } failure)
+        {
+            return Task.FromException<BulletinView>(failure);
+        }
+        PostedBulletins.Add(post);
+        return Task.FromResult(
+            new BulletinView(
+                $"N0CALL|{post.Kind}|{post.Addressee}|{post.Id}",
+                post.Kind,
+                "N0CALL",
+                post.Addressee,
+                post.Id,
+                post.Group,
+                post.Text,
+                DateTimeOffset.UnixEpoch,
+                DateTimeOffset.UnixEpoch,
+                null,
+                Mine: true
+            )
+        );
+    }
+
+    public Task StopBulletinAsync(string addressee, CancellationToken cancellationToken = default)
+    {
+        StoppedBulletins.Add(addressee);
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<string>> GetGroupsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<string>>([.. Groups]);
+
+    public Task JoinGroupAsync(string group, CancellationToken cancellationToken = default)
+    {
+        Groups.Add(group.ToUpperInvariant());
+        return Task.CompletedTask;
+    }
+
+    public Task LeaveGroupAsync(string group, CancellationToken cancellationToken = default)
+    {
+        Groups.Remove(group.ToUpperInvariant());
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<ChatMessage>> PostToGroupAsync(
+        string group,
+        string text,
+        CancellationToken cancellationToken = default
+    )
+    {
+        GroupPosts.Add((group, text));
+        return Task.FromResult<IReadOnlyList<ChatMessage>>([]);
+    }
+
     /// <summary>Bulletins for <see cref="WatchBulletinsAsync"/>: written here, read by the watcher.</summary>
     public System.Threading.Channels.Channel<BulletinView> Bulletins { get; } =
         System.Threading.Channels.Channel.CreateUnbounded<BulletinView>();
@@ -374,9 +444,17 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>The ranges <see cref="GetDashboardAsync"/> was asked for, in order.</summary>
     public List<DashboardRange> DashboardRanges { get; } = [];
 
-    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default)
+    /// <summary>The filters <see cref="GetDashboardAsync"/> was asked with, in order: null for the whole feed.</summary>
+    public List<StationFilter?> DashboardFilters { get; } = [];
+
+    public Task<Dashboard> GetDashboardAsync(
+        DashboardRange range,
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    )
     {
         DashboardRanges.Add(range);
+        DashboardFilters.Add(filter);
         return Task.FromResult(Dashboard ?? EmptyDashboard(range));
     }
 

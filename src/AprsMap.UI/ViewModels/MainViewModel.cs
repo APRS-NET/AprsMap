@@ -110,7 +110,8 @@ public sealed partial class MainViewModel : ObservableObject
             {
                 ViewFilter.Use(filter); // a table row: its View filter, on the map (F1.22 behavior 12)
                 Shell.ShowMap();
-            }
+            },
+            () => ViewFilter.Current
         );
         _text.LanguageChanged += (_, _) => Retranslate();
         _text.LanguageChanged += (_, _) => _destination?.Retranslate();
@@ -313,7 +314,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The Bulletins panel (docs/features/F2.5-bulletins.md).</summary>
     public Bulletins.BulletinsViewModel Bulletins =>
-        _bulletinsPanel ??= new Bulletins.BulletinsViewModel(engine, _text, time);
+        _bulletinsPanel ??= new Bulletins.BulletinsViewModel(engine, _text, time, () => _status);
 
     private Bulletins.BulletinsViewModel? _bulletinsPanel;
 
@@ -1401,6 +1402,7 @@ public sealed partial class MainViewModel : ObservableObject
         _stationsRestart?.Cancel();
         _ = StationList.RefreshAsync();
         ViewFilter.ShowCounts(_stations.Count, _status?.Stations ?? _stations.Count);
+        Dashboard.ViewFilterChanged(); // My view follows the filter (F1.22 behavior 7)
     }
 
     private async Task WatchStationsAsync(CancellationToken cancellationToken)
