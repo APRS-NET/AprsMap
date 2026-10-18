@@ -1408,6 +1408,21 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Layouts.SomeUnreadable" xml:space="preserve">
     <value>A saved layout couldn't be read and was left out.</value>
   </data>
+  <data name="Dashboard.WholeFeed" xml:space="preserve">
+    <value>Whole feed</value>
+  </data>
+  <data name="Dashboard.MyView" xml:space="preserve">
+    <value>My view</value>
+  </data>
+  <data name="Dashboard.MyView.Help" xml:space="preserve">
+    <value>Count only the stations your View filter shows.</value>
+  </data>
+  <data name="Dashboard.MyView.Note" xml:space="preserve">
+    <value>My view: only the stations your View filter shows, in steps of at least 5 minutes. Packets by source and the busiest digipeaters and IGates are still the whole feed.</value>
+  </data>
+  <data name="Dashboard.MyView.NoFilter" xml:space="preserve">
+    <value>Your View filter is off, so My view counts the whole feed.</value>
+  </data>
   <data name="Dashboard.Point" xml:space="preserve">
     <value>{value} at {time}</value>
     <comment>A sparkline point's tooltip: its value and time.</comment>
