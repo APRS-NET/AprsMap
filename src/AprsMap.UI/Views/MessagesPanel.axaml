@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
-<!-- The Messages panel (F2.4): New message and the conversations above, the open conversation's messages, its Send via
+<!-- The Messages panel (F2.4): New message and the conversations; or, with one open, Back, its messages, its Send via
      and retries, and the compose box. Its DataContext is the main view model; everything inside works on its Messages. -->
 <UserControl
   xmlns="https://github.com/avaloniaui"
@@ -39,175 +39,187 @@
       VerticalAlignment="Center"
       Margin="16"
     />
-    <Grid
-      RowDefinitions="Auto,Auto,*,Auto"
-      IsVisible="{Binding Unavailable, Converter={x:Static ObjectConverters.IsNull}}"
-    >
-      <!-- New message (behavior 3). -->
-      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="8,6" ColumnSpacing="6">
-        <TextBox
-          x:Name="NewCallsignBox"
-          Text="{Binding NewCallsign}"
-          PlaceholderText="{l:T Messages.NewCallsign}"
-          AutomationProperties.Name="{l:T Messages.NewCallsign}"
-          FontFamily="{DynamicResource Font.Mono}"
-        />
-        <Button Grid.Column="1" x:Name="StartButton" Content="{l:T Messages.Start}" Command="{Binding StartCommand}" />
-      </Grid>
-      <!-- The conversations (behavior 1). -->
-      <ListBox
-        Grid.Row="1"
-        x:Name="ConversationList"
-        ItemsSource="{Binding Conversations}"
-        SelectedItem="{Binding Selected}"
-        MaxHeight="220"
-        AutomationProperties.Name="{l:T Messages.Conversations}"
-      >
-        <ListBox.ItemTemplate>
-          <DataTemplate x:DataType="m:ConversationRow">
-            <Grid ColumnDefinitions="*,Auto" AutomationProperties.Name="{Binding Spoken}">
-              <StackPanel>
-                <TextBlock
-                  Text="{Binding Correspondent}"
-                  FontWeight="SemiBold"
-                  FontFamily="{DynamicResource Font.Mono}"
-                />
-                <TextBlock
-                  Text="{Binding LastText}"
-                  Foreground="{DynamicResource Brush.TextMuted}"
-                  TextTrimming="CharacterEllipsis"
-                />
-              </StackPanel>
-              <Border
-                Grid.Column="1"
-                IsVisible="{Binding HasUnread}"
-                BorderBrush="{DynamicResource Brush.Accent}"
-                BorderThickness="{DynamicResource Thickness.Border}"
-                CornerRadius="{DynamicResource Radius.Control}"
-                Padding="6,1"
-                VerticalAlignment="Center"
-              >
-                <TextBlock Text="{Binding Unread}" />
-              </Border>
-            </Grid>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
-      <!-- The open conversation's messages, oldest first (behavior 7). -->
-      <ScrollViewer Grid.Row="2" x:Name="ThreadScroll" Padding="8,4">
-        <StackPanel Spacing="6">
+    <Panel IsVisible="{Binding Unavailable, Converter={x:Static ObjectConverters.IsNull}}">
+      <!-- The list: New message and the conversations, the whole height (behaviors 1, 3). -->
+      <DockPanel x:Name="ListView" IsVisible="{Binding !IsOpen}">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="8,6" ColumnSpacing="6">
+          <TextBox
+            x:Name="NewCallsignBox"
+            Text="{Binding NewCallsign}"
+            PlaceholderText="{l:T Messages.NewCallsign}"
+            AutomationProperties.Name="{l:T Messages.NewCallsign}"
+            FontFamily="{DynamicResource Font.Mono}"
+          />
+          <Button
+            Grid.Column="1"
+            x:Name="StartButton"
+            Content="{l:T Messages.Start}"
+            Command="{Binding StartCommand}"
+          />
+        </Grid>
+        <ListBox
+          x:Name="ConversationList"
+          ItemsSource="{Binding Conversations}"
+          SelectedItem="{Binding Selected}"
+          AutomationProperties.Name="{l:T Messages.Conversations}"
+        >
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="m:ConversationRow">
+              <Grid ColumnDefinitions="*,Auto" AutomationProperties.Name="{Binding Spoken}">
+                <StackPanel>
+                  <TextBlock
+                    Text="{Binding Correspondent}"
+                    FontWeight="SemiBold"
+                    FontFamily="{DynamicResource Font.Mono}"
+                  />
+                  <TextBlock
+                    Text="{Binding LastText}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    TextTrimming="CharacterEllipsis"
+                  />
+                </StackPanel>
+                <Border
+                  Grid.Column="1"
+                  IsVisible="{Binding HasUnread}"
+                  BorderBrush="{DynamicResource Brush.Accent}"
+                  BorderThickness="{DynamicResource Thickness.Border}"
+                  CornerRadius="{DynamicResource Radius.Control}"
+                  Padding="6,1"
+                  VerticalAlignment="Center"
+                >
+                  <TextBlock Text="{Binding Unread}" />
+                </Border>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+      <!-- An open conversation: Back and its name, its messages oldest first, then Send via and the compose box; the
+         whole height, so the thread has room in a narrow panel (behaviors 6–9). -->
+      <Grid x:Name="ConversationView" RowDefinitions="Auto,*,Auto" IsVisible="{Binding IsOpen}">
+        <DockPanel Grid.Row="0" Margin="4,4,8,2">
+          <Button
+            x:Name="BackButton"
+            DockPanel.Dock="Left"
+            Content="{Binding BackText}"
+            Command="{Binding BackCommand}"
+            Background="{x:Null}"
+            BorderThickness="0"
+            Padding="6,2"
+          />
           <TextBlock
             Text="{Binding Selected.Correspondent, FallbackValue=''}"
             FontWeight="SemiBold"
             FontFamily="{DynamicResource Font.Mono}"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Center"
           />
-          <ItemsControl x:Name="ThreadList" ItemsSource="{Binding Thread}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Spacing="6" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="m:MessageRow">
-                <Border
-                  Classes="bubble"
-                  Classes.ours="{Binding Outgoing}"
-                  BorderThickness="{DynamicResource Thickness.Border}"
-                  CornerRadius="{DynamicResource Radius.Control}"
-                  Padding="8,5"
-                >
-                  <StackPanel Spacing="2">
-                    <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" />
-                    <TextBlock
-                      Classes="state"
-                      Classes.problem="{Binding IsProblem}"
-                      Text="{Binding StateText}"
-                      Foreground="{DynamicResource Brush.TextMuted}"
-                      TextWrapping="Wrap"
-                    />
-                    <WrapPanel ItemSpacing="6">
-                      <Button
-                        Content="{l:T Messages.Cancel}"
-                        Command="{Binding CancelCommand}"
-                        IsVisible="{Binding CanCancel}"
-                      />
-                      <Button
-                        Content="{l:T Messages.SendAgain}"
-                        Command="{Binding ResendCommand}"
-                        IsVisible="{Binding CanResend}"
-                      />
-                    </WrapPanel>
-                  </StackPanel>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </StackPanel>
-      </ScrollViewer>
-      <!-- Send via and retries (behaviors 8, 9), then the compose box (behavior 6). -->
-      <StackPanel
-        Grid.Row="3"
-        Margin="8,6"
-        Spacing="6"
-        IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}"
-      >
-        <Expander x:Name="SendViaExpander" HorizontalAlignment="Stretch">
-          <Expander.Header>
-            <TextBlock Text="{Binding RouteText}" TextWrapping="Wrap" />
-          </Expander.Header>
-          <StackPanel Spacing="4">
-            <CheckBox x:Name="AutomaticBox" Content="{l:T Messages.Automatic}" IsChecked="{Binding Automatic}" />
-            <TextBlock
-              Text="{l:T Messages.Automatic.Help}"
-              Foreground="{DynamicResource Brush.TextMuted}"
-              TextWrapping="Wrap"
-            />
-            <ItemsControl ItemsSource="{Binding Sources}" IsEnabled="{Binding !Automatic}">
+        </DockPanel>
+        <ScrollViewer Grid.Row="1" x:Name="ThreadScroll" Padding="8,4">
+          <StackPanel Spacing="6">
+            <ItemsControl x:Name="ThreadList" ItemsSource="{Binding Thread}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="6" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="m:SourceChoice">
-                  <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" />
+                <DataTemplate x:DataType="m:MessageRow">
+                  <Border
+                    Classes="bubble"
+                    Classes.ours="{Binding Outgoing}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    Padding="8,5"
+                  >
+                    <StackPanel Spacing="2">
+                      <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                      <TextBlock
+                        Classes="state"
+                        Classes.problem="{Binding IsProblem}"
+                        Text="{Binding StateText}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        TextWrapping="Wrap"
+                      />
+                      <WrapPanel ItemSpacing="6">
+                        <Button
+                          Content="{l:T Messages.Cancel}"
+                          Command="{Binding CancelCommand}"
+                          IsVisible="{Binding CanCancel}"
+                        />
+                        <Button
+                          Content="{l:T Messages.SendAgain}"
+                          Command="{Binding ResendCommand}"
+                          IsVisible="{Binding CanResend}"
+                        />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock Text="{l:T Messages.RetriesLabel}" Foreground="{DynamicResource Brush.TextMuted}" />
-            <ComboBox
-              x:Name="RetriesBox"
-              ItemsSource="{Binding Retries}"
-              SelectedItem="{Binding SelectedRetries}"
-              AutomationProperties.Name="{l:T Messages.RetriesLabel}"
-            />
           </StackPanel>
-        </Expander>
-        <TextBox
-          x:Name="ComposeBox"
-          Text="{Binding Compose}"
-          PlaceholderText="{l:T Messages.Compose}"
-          AutomationProperties.Name="{l:T Messages.Compose}"
-          AcceptsReturn="False"
-          TextWrapping="Wrap"
-          MaxLength="300"
-        />
-        <Grid ColumnDefinitions="*,Auto">
+        </ScrollViewer>
+        <!-- Send via and retries (behaviors 8, 9), then the compose box (behavior 6). -->
+        <StackPanel Grid.Row="2" Margin="8,6" Spacing="6">
+          <Expander x:Name="SendViaExpander" HorizontalAlignment="Stretch">
+            <Expander.Header>
+              <TextBlock Text="{Binding RouteText}" TextWrapping="Wrap" />
+            </Expander.Header>
+            <StackPanel Spacing="4">
+              <CheckBox x:Name="AutomaticBox" Content="{l:T Messages.Automatic}" IsChecked="{Binding Automatic}" />
+              <TextBlock
+                Text="{l:T Messages.Automatic.Help}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <ItemsControl ItemsSource="{Binding Sources}" IsEnabled="{Binding !Automatic}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="m:SourceChoice">
+                    <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock Text="{l:T Messages.RetriesLabel}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <ComboBox
+                x:Name="RetriesBox"
+                ItemsSource="{Binding Retries}"
+                SelectedItem="{Binding SelectedRetries}"
+                AutomationProperties.Name="{l:T Messages.RetriesLabel}"
+              />
+            </StackPanel>
+          </Expander>
+          <TextBox
+            x:Name="ComposeBox"
+            Text="{Binding Compose}"
+            PlaceholderText="{l:T Messages.Compose}"
+            AutomationProperties.Name="{l:T Messages.Compose}"
+            AcceptsReturn="False"
+            TextWrapping="Wrap"
+            MaxLength="300"
+          />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock
+              Text="{Binding ComposeCount}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              VerticalAlignment="Center"
+            />
+            <Button
+              Grid.Column="1"
+              x:Name="SendButton"
+              Classes="accent"
+              Content="{l:T Messages.Send}"
+              Command="{Binding SendCommand}"
+            />
+          </Grid>
           <TextBlock
-            Text="{Binding ComposeCount}"
-            Foreground="{DynamicResource Brush.TextMuted}"
-            VerticalAlignment="Center"
+            Text="{Binding Error}"
+            IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Foreground="{DynamicResource Brush.Warn}"
+            TextWrapping="Wrap"
           />
-          <Button
-            Grid.Column="1"
-            x:Name="SendButton"
-            Classes="accent"
-            Content="{l:T Messages.Send}"
-            Command="{Binding SendCommand}"
-          />
-        </Grid>
-        <TextBlock
-          Text="{Binding Error}"
-          IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
-          Foreground="{DynamicResource Brush.Warn}"
-          TextWrapping="Wrap"
-        />
-      </StackPanel>
-    </Grid>
+        </StackPanel>
+      </Grid>
+    </Panel>
   </Panel>
 </UserControl>

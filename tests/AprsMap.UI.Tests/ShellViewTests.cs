@@ -144,7 +144,7 @@ public sealed class ShellViewTests
     }
 
     [AvaloniaFact]
-    public void TheAppMenuShowsClosedPanelsAndResetsTheLayout()
+    public void TheAppMenuHoldsTheMenusAndViewPanelsShowsAClosedPanelAgain()
     {
         var (window, vm) = Show();
         var stations = ShellViewModel
@@ -165,8 +165,13 @@ public sealed class ShellViewTests
         Dispatcher.UIThread.RunJobs();
         Assert.True(menu.IsOpen);
         var headers = menu.Items.OfType<MenuItem>().Select(i => i.Header?.ToString()).ToList();
-        Assert.Equal(["Show Stations", "Reset layout", "Save layout as…"], headers); // no Gather outside the desktop app
-        var show = menu.Items.OfType<MenuItem>().First();
+        Assert.Equal(["_File", "_View", "_Station", "_Tools", "_Help"], headers); // F1.29: the menus, under ☰
+        var view = menu.Items.OfType<MenuItem>().Single(i => i.Name == "Menu_view");
+        var panels = view.Items.OfType<MenuItem>().Single(i => i.Header?.ToString() == "Panels");
+        var show = panels.Items.OfType<MenuItem>().Single(i => i.Header?.ToString() == "Stations");
+        Assert.False(show.IsChecked); // closed: unticked
+        Assert.Contains(view.Items.OfType<MenuItem>(), i => i.Header?.ToString() == "Reset layout…"); // it asks first (F1.29)
+        Assert.DoesNotContain(view.Items.OfType<MenuItem>(), i => i.Header?.ToString() == "Gather windows"); // desktop only
         show.Command!.Execute(show.CommandParameter);
         menu.Hide();
 

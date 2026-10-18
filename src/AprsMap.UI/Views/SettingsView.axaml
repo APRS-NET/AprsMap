@@ -815,23 +815,10 @@
           </StackPanel>
 
           <!-- Map (F1.4 behavior 21): the viewer's map preferences, and the station's aging where it may be changed. -->
-          <!-- Layout (F1.23): Save layout as, the saved layouts to use, update, rename or delete, and the question. -->
+          <!-- Layout (F1.23): the saved layouts to use, update, rename or delete, and the question. Save layout as is in
+               View › Layouts (F1.29). -->
           <StackPanel x:Name="LayoutSection" IsVisible="{Binding IsLayoutSection}" Spacing="12">
             <TextBlock Text="{l:T Layouts.Description}" TextWrapping="Wrap" />
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-              <TextBox
-                x:Name="LayoutNameBox"
-                Text="{Binding Layouts.NewName, FallbackValue=''}"
-                PlaceholderText="{l:T Layouts.NamePlaceholder}"
-                AutomationProperties.Name="{l:T Layouts.NamePlaceholder}"
-              />
-              <Button
-                x:Name="SaveLayoutAsButton"
-                Grid.Column="1"
-                Content="{l:T Layouts.SaveAsButton}"
-                Command="{Binding Layouts.SaveAsCommand}"
-              />
-            </Grid>
             <TextBlock
               Text="{Binding Layouts.Error}"
               IsVisible="{Binding Layouts.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
@@ -948,7 +935,7 @@
             </ItemsControl>
           </StackPanel>
 
-          <!-- Data (F0.10): Reset the app, with a confirmation that says what goes. -->
+          <!-- Data: packet capture. Clear data and Start over are in the Tools menu (F1.29). -->
           <StackPanel x:Name="DataSection" IsVisible="{Binding IsDataSection}" Spacing="12">
             <!-- Packet capture (F1.27 behaviors 4, 5): off by default, with its limits. -->
             <StackPanel
@@ -1004,164 +991,6 @@
                 TextWrapping="Wrap"
               />
             </StackPanel>
-            <!-- Clear (F1.19): what the station has collected, each with a count, confirmed before it goes. -->
-            <StackPanel
-              x:Name="ClearSection"
-              Spacing="8"
-              IsVisible="{Binding Data.Clear, Converter={x:Static ObjectConverters.IsNotNull}}"
-            >
-              <TextBlock Text="{l:T Settings.Data.Clear.Title}" FontWeight="SemiBold" />
-              <TextBlock Text="{l:T Settings.Data.Clear.Description}" TextWrapping="Wrap" />
-              <ItemsControl x:Name="ClearRows" ItemsSource="{Binding Data.Clear.Rows}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="s:ClearRow">
-                    <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                      <TextBlock Text="{Binding Text}" VerticalAlignment="Center" TextWrapping="Wrap" />
-                      <Button
-                        Grid.Column="1"
-                        Content="{l:T Settings.Data.Clear.Button}"
-                        Command="{Binding ClearCommand}"
-                        IsEnabled="{Binding !IsEmpty}"
-                        AutomationProperties.Name="{Binding Text}"
-                        Margin="8,0,0,0"
-                      />
-                    </Grid>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-              <Border
-                x:Name="ClearConfirmation"
-                IsVisible="{Binding Data.Clear.IsConfirming, FallbackValue=False}"
-                BorderBrush="{DynamicResource Brush.Warn}"
-                BorderThickness="{DynamicResource Thickness.Border}"
-                CornerRadius="{DynamicResource Radius.Control}"
-                Padding="12"
-              >
-                <StackPanel Spacing="10">
-                  <TextBlock
-                    Text="{Binding Data.Clear.ConfirmText}"
-                    Foreground="{DynamicResource Brush.Warn}"
-                    FontWeight="SemiBold"
-                    TextWrapping="Wrap"
-                  />
-                  <WrapPanel ItemSpacing="8" LineSpacing="8">
-                    <Button
-                      x:Name="ConfirmClearButton"
-                      Content="{l:T Settings.Data.Clear.Button}"
-                      Command="{Binding Data.Clear.ConfirmCommand}"
-                    />
-                    <Button
-                      x:Name="CancelClearButton"
-                      Content="{l:T Settings.Data.Confirm.Cancel}"
-                      Command="{Binding Data.Clear.CancelCommand}"
-                    />
-                  </WrapPanel>
-                </StackPanel>
-              </Border>
-              <TextBlock
-                Text="{Binding Data.Clear.ResultText}"
-                IsVisible="{Binding Data.Clear.ResultText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
-                TextWrapping="Wrap"
-              />
-            </StackPanel>
-            <TextBlock Text="{l:T Settings.Data.Reset.Title}" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding Data.Description}" TextWrapping="Wrap" />
-            <Button
-              x:Name="ResetAppButton"
-              Content="{l:T Settings.Data.Reset}"
-              Command="{Binding Data.StartCommand}"
-              IsVisible="{Binding !Data.IsConfirming}"
-            />
-            <Border
-              x:Name="ResetConfirmation"
-              IsVisible="{Binding Data.IsConfirming}"
-              BorderBrush="{DynamicResource Brush.Warn}"
-              BorderThickness="{DynamicResource Thickness.Border}"
-              CornerRadius="{DynamicResource Radius.Control}"
-              Padding="12"
-            >
-              <StackPanel Spacing="10">
-                <TextBlock
-                  Text="{l:T Settings.Data.Confirm}"
-                  Foreground="{DynamicResource Brush.Warn}"
-                  FontWeight="SemiBold"
-                  TextWrapping="Wrap"
-                />
-                <CheckBox
-                  x:Name="IncludeStationBox"
-                  IsVisible="{Binding Data.ShowStationChoice}"
-                  IsChecked="{Binding Data.IncludeStation}"
-                >
-                  <TextBlock Text="{l:T Settings.Data.IncludeStation}" TextWrapping="Wrap" />
-                </CheckBox>
-                <WrapPanel ItemSpacing="8" LineSpacing="8">
-                  <Button
-                    x:Name="ConfirmResetButton"
-                    Content="{l:T Settings.Data.Confirm.Delete}"
-                    Command="{Binding Data.ConfirmCommand}"
-                  />
-                  <Button
-                    x:Name="CancelResetButton"
-                    Content="{l:T Settings.Data.Confirm.Cancel}"
-                    Command="{Binding Data.CancelCommand}"
-                  />
-                </WrapPanel>
-                <TextBlock
-                  Text="{Binding Data.ErrorText}"
-                  IsVisible="{Binding Data.ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
-                  Foreground="{DynamicResource Brush.Warn}"
-                  TextWrapping="Wrap"
-                />
-              </StackPanel>
-            </Border>
-          </StackPanel>
-
-          <!-- About -->
-          <StackPanel x:Name="AboutSection" IsVisible="{Binding IsAboutSection}" Spacing="8">
-            <TextBlock
-              Text="{x:Static s:AboutViewModel.ProductName}"
-              FontSize="{DynamicResource Text.Title}"
-              FontWeight="SemiBold"
-            />
-            <TextBlock x:Name="VersionLabel" Text="{Binding About.VersionText}" TextWrapping="Wrap" />
-            <TextBlock
-              x:Name="EngineLabel"
-              TextWrapping="Wrap"
-              Text="{Binding About.EngineText}"
-              IsVisible="{Binding About.EngineText, Converter={x:Static ObjectConverters.IsNotNull}}"
-              Foreground="{DynamicResource Brush.TextMuted}"
-            />
-            <TextBlock
-              x:Name="ViewersLabel"
-              TextWrapping="Wrap"
-              Text="{Binding About.ViewersText}"
-              IsVisible="{Binding About.ViewersText, Converter={x:Static ObjectConverters.IsNotNull}}"
-              Foreground="{DynamicResource Brush.TextMuted}"
-            />
-            <TextBlock
-              x:Name="AboutConnectionLabel"
-              TextWrapping="Wrap"
-              Text="{Binding About.ConnectionText}"
-              IsVisible="{Binding About.ConnectionText, Converter={x:Static ObjectConverters.IsNotNull}}"
-              Foreground="{DynamicResource Brush.TextMuted}"
-            />
-            <TextBlock Text="{Binding About.LicenceText}" TextWrapping="Wrap" />
-            <HyperlinkButton
-              x:Name="SourceLink"
-              Content="{l:T Settings.About.Source}"
-              NavigateUri="{x:Static s:AboutViewModel.SourceUri}"
-              Padding="0"
-            />
-            <TextBlock Text="{l:T Settings.About.Credits}" FontWeight="SemiBold" Margin="0,12,0,0" />
-            <TextBlock Text="{l:T Settings.About.IconCredit}" TextWrapping="Wrap" />
-            <HyperlinkButton
-              x:Name="LookupCredit"
-              NavigateUri="{x:Static s:AboutViewModel.OpenStreetMapCopyrightUri}"
-              IsVisible="{Binding About.ShowLookupCredit}"
-              Padding="0"
-            >
-              <TextBlock Text="{l:T Settings.About.LookupCredit}" TextWrapping="Wrap" />
-            </HyperlinkButton>
           </StackPanel>
         </Panel>
       </ScrollViewer>

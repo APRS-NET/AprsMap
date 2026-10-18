@@ -186,7 +186,7 @@ public static class EngineHub
 
     /// <summary>English text of <see cref="EngineErrorCodes.OperatorOnly"/>: address lookup, the passcode calculator and reconnecting.</summary>
     public const string OperatorOnlyMessage =
-        "Only this gateway's operator can do that, and operator sign-in isn't available yet.";
+        "Only this gateway's operator can do that. An operator signs in from the app menu.";
 
     /// <summary>English text of <see cref="EngineErrorCodes.GatewayBusy"/>.</summary>
     public const string BusyMessage = "This gateway has as many viewers as it allows. Try again in a little while.";

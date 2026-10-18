@@ -169,4 +169,22 @@ public sealed class MessagesTests
     {
         Assert.Equal(3, MessagesViewModel.Split(string.Join(' ', Enumerable.Repeat("seventeen chars!", 9))).Count);
     }
+
+    [Fact]
+    public void AnOpenConversationTakesThePanelAndBackSaysWhatsUnreadElsewhere()
+    {
+        var (messages, _) = Create();
+        messages.Apply(Received("a", "N1ABC", "Hello", 1, read: true));
+        messages.Apply(Received("b", "K2XYZ", "Hi there", 2));
+        messages.Apply(Received("c", "K2XYZ", "Still there?", 3));
+        Assert.False(messages.IsOpen);
+
+        messages.Selected = messages.Conversations.Single(c => c.Correspondent == "N1ABC");
+
+        Assert.True(messages.IsOpen);
+        Assert.Equal("← Conversations (2 unread)", messages.BackText);
+        messages.BackCommand.Execute(null);
+        Assert.False(messages.IsOpen);
+        Assert.Null(messages.Selected);
+    }
 }

@@ -15,6 +15,14 @@ public static class ShellConverters
     /// <summary>True when the dockable is in a floating window: shows "Dock beside the map" instead of "Float".</summary>
     public static IValueConverter IsFloating { get; } = new FuncValueConverter<IDockable?, bool>(InFloatingWindow);
 
+    /// <summary>True for a panel (not the map or the dashboard): its tab beside the map offers Move to (F1.0 behavior 16).</summary>
+    public static IValueConverter IsPanel { get; } =
+        new FuncValueConverter<IDockable?, bool>(dockable => dockable is PanelTool);
+
+    /// <summary>True for the dashboard, whose floating tab offers Dock beside the map.</summary>
+    public static IValueConverter IsDashboard { get; } =
+        new FuncValueConverter<IDockable?, bool>(dockable => dockable is DashboardDocument);
+
     /// <summary>True when the dockable is in the main window.</summary>
     public static IValueConverter IsDocked { get; } =
         new FuncValueConverter<IDockable?, bool>(dockable => dockable is not null && !InFloatingWindow(dockable));

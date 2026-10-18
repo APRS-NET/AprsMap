@@ -8,11 +8,24 @@ internal sealed class GatewayOptions
     public const string SectionName = "Gateway";
 
     /// <summary>
-    /// Lets any browser change the station's settings and switch profiles, and see its passcodes. Off by default:
-    /// there is no operator sign-in yet (scope F2.9), and a profile switch changes the station for every viewer. Turn
-    /// it on only on a network where everyone may act as the station's operator.
+    /// Lets any browser change the station's settings and switch profiles, and see its passcodes, on a gateway with no
+    /// operator set up. Off by default: a profile switch changes the station for every viewer. Turn it on only on a
+    /// network where everyone may act as the station's operator. Once an operator is set up it's ignored: signing in
+    /// decides (docs/features/F2.9-operator-sign-in.md, behavior 17).
     /// </summary>
     public bool AllowSettingsChanges { get; set; }
+
+    /// <summary>
+    /// Operators set up in configuration, each a name and a password hash from <c>operator add</c> (F2.9 behavior 1).
+    /// Most gateways keep them in <c>operators.json</c> in the data folder instead.
+    /// </summary>
+    public IList<OperatorOptions> Operators { get; } = [];
+
+    /// <summary>
+    /// Other origins whose pages may call the hub and <c>/auth</c> (F2.9 behavior 16), such as
+    /// <c>https://aprs.example.org</c>; the gateway's own origin always may.
+    /// </summary>
+    public IList<string> AllowedOrigins { get; } = [];
 
     /// <summary>
     /// A path the gateway is served under, such as <c>/aprs</c>, for a reverse proxy that maps a path to it (F1.14
@@ -32,6 +45,22 @@ internal sealed class GatewayOptions
     /// either way.
     /// </summary>
     public bool FollowViewers { get; set; }
+
+    /// <summary>
+    /// A second port where an operator signs in (docs/features/F1.26-public-console.md, behaviors 1–3), such as 8081,
+    /// published on the host's loopback only. With it set, the main port never offers sign-in and ignores a session
+    /// cookie; null for none, where sign-in is offered on the main port.
+    /// </summary>
+    public int? OperatorPort { get; set; }
+
+    /// <summary>
+    /// How much of the station's location viewers learn (F1.26 behavior 11): <c>Exact</c>, <c>Grid</c> or <c>Hidden</c>.
+    /// Unset, <c>Grid</c> with an operator port and <c>Exact</c> without. A signed-in operator always gets the exact one.
+    /// </summary>
+    public HomePrivacy? HomePrivacy { get; set; }
+
+    /// <summary>The page's title, such as "What N0CALL's TNC hears" (F1.26 behavior 10); null for none.</summary>
+    public string? Title { get; set; }
 
     /// <summary>The most browsers connected at once (F1.14 behavior 3).</summary>
     public int MaxViewers { get; set; } = 100;

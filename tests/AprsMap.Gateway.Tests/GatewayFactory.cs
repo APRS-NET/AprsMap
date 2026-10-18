@@ -2,6 +2,7 @@
 using AprsMap.Client.Remote;
 using AprsMap.Contracts;
 using AprsMap.Core;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -49,7 +50,7 @@ public class GatewayFactory : WebApplicationFactory<Program>
 
     // TestServer has no real sockets; long polling runs through its in-memory handler. JSON uses only the
     // source-generated metadata, as in the published browser app, so a missing hub type fails here and not in a browser.
-    public RemoteEngineService CreateRemote()
+    public RemoteEngineService CreateRemote(string? cookie = null, string? origin = null, int? localPort = null)
     {
         var connection = new HubConnectionBuilder()
             .WithUrl(
@@ -58,6 +59,20 @@ public class GatewayFactory : WebApplicationFactory<Program>
                 {
                     o.HttpMessageHandlerFactory = _ => Server.CreateHandler();
                     o.Transports = HttpTransportType.LongPolling;
+                    if (cookie is not null)
+                    {
+                        o.Headers["Cookie"] = cookie; // a signed-in operator's session (F2.9)
+                    }
+                    if (origin is not null)
+                    {
+                        o.Headers["Origin"] = origin;
+                    }
+                    if (localPort is { } port)
+                    {
+                        o.Headers[LocalPortFilter.Header] = port.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture
+                        );
+                    }
                 }
             )
             .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolver = EngineJsonContext.Default)
@@ -131,4 +146,31 @@ public sealed class FakeGeocoder : IGeocoder
             )
             : Task.FromResult<IReadOnlyList<GeocodeResult>>([new($"{query}, Colorado", 40.015, -105.27)]);
     }
+}
+
+/// <summary>
+/// The test server has no sockets, so no local port: a request's <see cref="Header"/> stands in for the port it
+/// arrived on (F1.26's operator port). Test-only.
+/// </summary>
+public sealed class LocalPortFilter : Microsoft.AspNetCore.Hosting.IStartupFilter
+{
+    public const string Header = "X-Test-Local-Port";
+
+    public Action<Microsoft.AspNetCore.Builder.IApplicationBuilder> Configure(
+        Action<Microsoft.AspNetCore.Builder.IApplicationBuilder> next
+    ) =>
+        app =>
+        {
+            app.Use(
+                (context, then) =>
+                {
+                    if (int.TryParse(context.Request.Headers[Header], out var port))
+                    {
+                        context.Connection.LocalPort = port;
+                    }
+                    return then(context);
+                }
+            );
+            next(app);
+        };
 }

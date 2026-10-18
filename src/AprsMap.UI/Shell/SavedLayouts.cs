@@ -60,7 +60,7 @@ public sealed partial class SavedLayoutsViewModel : ObservableObject
 
     /// <summary>Why the last action couldn't be done; null otherwise.</summary>
     [ObservableProperty]
-    public partial string? Error { get; private set; }
+    public partial string? Error { get; internal set; }
 
     private SavedLayoutRow? _prompted;
 
@@ -135,7 +135,11 @@ public sealed partial class SavedLayoutsViewModel : ObservableObject
         }
         NewName = string.Empty;
         await KeepAsync();
+        Saved?.Invoke(this, EventArgs.Empty);
     }
+
+    /// <summary>Raised after Save layout as kept a layout (it closes its dialog, F1.29 behavior 11).</summary>
+    public event EventHandler? Saved;
 
     /// <summary>Puts a saved layout on screen, and the main window where it was (behavior 1).</summary>
     internal async Task ApplyAsync(SavedLayoutRow row)

@@ -152,7 +152,13 @@ internal sealed class AprsIsPacketSourceFactory(
         {
             throw new NotSupportedException($"{source.Kind} sources aren't built yet.");
         }
-        var clientOptions = ClientOptions(profile, source.Server ?? string.Empty, filter, timeProvider);
+        var clientOptions = ClientOptions(
+            profile,
+            source.Server ?? string.Empty,
+            filter,
+            timeProvider,
+            options.Value.ReceiveOnly
+        );
         clientOptions.ReconnectDelay = options.Value.InitialRetryDelay;
         clientOptions.MaxReconnectDelay = options.Value.MaxRetryDelay;
         return new AprsIsPacketSource(
@@ -212,20 +218,23 @@ internal sealed class AprsIsPacketSourceFactory(
     /// </summary>
     /// <exception cref="AprsNet.Packets.AprsValidationException">The server, callsign or filter is not usable; it has a code.</exception>
     /// <exception cref="ArgumentException">Another setting is not usable.</exception>
+    /// <param name="receiveOnly">The engine was started receive only (<c>Engine:ReceiveOnly</c>).</param>
     internal static AprsIsClientOptions ClientOptions(
         StationProfile profile,
         string server,
         string filter,
-        TimeProvider timeProvider
+        TimeProvider timeProvider,
+        bool receiveOnly = false
     )
     {
         var endpoint = AprsIsEndpoint.Parse(server);
         var clientOptions = new AprsIsClientOptions
         {
             Callsign = profile.Callsign,
-            Passcode = profile.Passcode,
+            // Receive only for good (F1.26 behavior 7.2): an unverified login, which a server won't take packets from.
+            Passcode = receiveOnly ? -1 : profile.Passcode,
             // A listener ID logs in with -1 and APRS.NET refuses to send on it (F2.1 behavior 4).
-            ListenOnly = AprsIsLogin.IsListenerId(profile.Callsign),
+            ListenOnly = receiveOnly || AprsIsLogin.IsListenerId(profile.Callsign),
             Filter = filter,
             Endpoint = endpoint,
             SoftwareName = SoftwareToken(Brand.DisplayName),

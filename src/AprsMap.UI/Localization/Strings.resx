@@ -272,8 +272,21 @@
   <data name="Error.gateway.rate-limited" xml:space="preserve">
     <value>Too many requests to the gateway at once; slowing down.</value>
   </data>
+  <data name="Error.auth.wrong-credentials" xml:space="preserve">
+    <value>That name and password don't match.</value>
+  </data>
+  <data name="Error.auth.too-many-tries" xml:space="preserve">
+    <value>Too many tries. Wait {minutes} min and try again.</value>
+    <comment>minutes: a whole number of minutes.</comment>
+  </data>
+  <data name="Error.auth.needs-https" xml:space="preserve">
+    <value>Signing in needs a secure (https://) address, so the password can't be read on the way. Open the gateway over HTTPS, or from its own computer.</value>
+  </data>
+  <data name="Error.auth.not-offered-here" xml:space="preserve">
+    <value>This gateway doesn't offer signing in here.</value>
+  </data>
   <data name="Error.gateway.operator-only" xml:space="preserve">
-    <value>Only this gateway's operator can do that, and operator sign-in isn't available yet.</value>
+    <value>Only this gateway's operator can do that. An operator signs in from the app menu.</value>
   </data>
   <data name="Error.geocoding.disabled" xml:space="preserve">
     <value>Address lookup is turned off.</value>
@@ -802,10 +815,6 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Settings.Appearance" xml:space="preserve">
     <value>Appearance</value>
-    <comment>Section.</comment>
-  </data>
-  <data name="Settings.About" xml:space="preserve">
-    <value>About</value>
     <comment>Section.</comment>
   </data>
   <data name="Settings.Appearance.Theme" xml:space="preserve">
@@ -1421,6 +1430,41 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Bulletins</value>
     <comment>Panel title: bulletins and announcements heard.</comment>
   </data>
+  <data name="Settings.About.FailedSignIns" xml:space="preserve">
+    <value>{count, plural, =0 {No failed sign-ins in the last day} one {# failed sign-in in the last day} other {# failed sign-ins in the last day}}</value>
+    <comment>count: failed operator sign-ins on this gateway in the last 24 hours.</comment>
+  </data>
+  <data name="Auth.SignInMenu" xml:space="preserve">
+    <value>Sign in…</value>
+  </data>
+  <data name="Auth.SignOut" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="Auth.SignedInAs" xml:space="preserve">
+    <value>Signed in as {name}</value>
+    <comment>name: the operator's name.</comment>
+  </data>
+  <data name="Auth.Title" xml:space="preserve">
+    <value>Sign in as this station's operator</value>
+  </data>
+  <data name="Auth.Help" xml:space="preserve">
+    <value>Signed in, you can transmit, change the station's settings and read its messages. Operators are set up on the gateway's computer.</value>
+  </data>
+  <data name="Auth.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Auth.Password" xml:space="preserve">
+    <value>Password</value>
+  </data>
+  <data name="Auth.SignIn" xml:space="preserve">
+    <value>Sign in</value>
+  </data>
+  <data name="Auth.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Auth.Unreachable" xml:space="preserve">
+    <value>The gateway can't be reached. Try again in a moment.</value>
+  </data>
   <data name="Bulletins.NewBulletin" xml:space="preserve">
     <value>New bulletin…</value>
   </data>
@@ -1590,6 +1634,13 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Messages.SendAgain" xml:space="preserve">
     <value>Send again</value>
   </data>
+  <data name="Messages.Back" xml:space="preserve">
+    <value>← Conversations</value>
+  </data>
+  <data name="Messages.BackUnread" xml:space="preserve">
+    <value>← Conversations ({count} unread)</value>
+    <comment>count: unread messages in the other conversations.</comment>
+  </data>
   <data name="Messages.Route" xml:space="preserve">
     <value>Send via {sources}</value>
     <comment>sources: where the next message goes, such as "Direwolf" or "rotate.aprs2.net".</comment>
@@ -1682,19 +1733,11 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Data</value>
     <comment>Settings section: data kept by the app, and Reset the app.</comment>
   </data>
-  <data name="Settings.Data.Reset.Title" xml:space="preserve">
-    <value>Start over</value>
-    <comment>Heading in Settings › Data.</comment>
-  </data>
   <data name="Settings.Data.Description.Desktop" xml:space="preserve">
     <value>Deletes every station profile, your appearance and panel layout, and what has been received, then opens first-run setup. Use it to try setup again from scratch.</value>
   </data>
   <data name="Settings.Data.Description.Browser" xml:space="preserve">
     <value>Deletes what this browser keeps for this app (appearance and panel layout) and reloads the page. The gateway's station profiles stay unless you choose to delete them too.</value>
-  </data>
-  <data name="Settings.Data.Reset" xml:space="preserve">
-    <value>Reset the app…</value>
-    <comment>Button; it asks for confirmation before deleting anything.</comment>
   </data>
   <data name="Settings.Data.Confirm" xml:space="preserve">
     <value>This can't be undone. Delete it all?</value>
@@ -1708,6 +1751,13 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Settings.Data.Confirm.Cancel" xml:space="preserve">
     <value>Cancel</value>
+  </data>
+  <data name="Shell.MoveBesideMap" xml:space="preserve">
+    <value>Move beside the _map</value>
+    <comment>Moves the panel to a tab next to the map. The underscore marks the access key.</comment>
+  </data>
+  <data name="Menu.View.BesideMap" xml:space="preserve">
+    <value>Beside the map</value>
   </data>
   <data name="Shell.MoveToLeft" xml:space="preserve">
     <value>Move to _left</value>
@@ -2044,9 +2094,6 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Shell.Menu.ClearData" xml:space="preserve">
     <value>Clear data…</value>
     <comment>Main menu: opens Settings › Data, where stations, tracks and packets can be cleared.</comment>
-  </data>
-  <data name="Settings.Data.Clear.Title" xml:space="preserve">
-    <value>Clear</value>
   </data>
   <data name="Settings.Data.Clear.Description" xml:space="preserve">
     <value>Start fresh without restarting: clear what the station has collected. Settings, profiles and preferences stay. New packets fill it again as they arrive.</value>
@@ -3674,5 +3721,191 @@ pause 1s</value>
   </data>
   <data name="Transmit.BeaconReason.Spacing" xml:space="preserve">
     <value>held back to keep beacons spaced out on this source</value>
+  </data>
+  <data name="Menu.Bar" xml:space="preserve">
+    <value>Menu bar</value>
+  </data>
+  <data name="Menu.File" xml:space="preserve">
+    <value>_File</value>
+    <comment>The underscore marks the access key (Alt + that letter): keep one, before a letter of the translation.</comment>
+  </data>
+  <data name="Menu.View" xml:space="preserve">
+    <value>_View</value>
+    <comment>Access key: as Menu.File.</comment>
+  </data>
+  <data name="Menu.Station" xml:space="preserve">
+    <value>_Station</value>
+    <comment>The menu of what acts on this APRS station: switches, sending, sources. Access key: as Menu.File.</comment>
+  </data>
+  <data name="Menu.Tools" xml:space="preserve">
+    <value>_Tools</value>
+    <comment>Access key: as Menu.File.</comment>
+  </data>
+  <data name="Menu.Help" xml:space="preserve">
+    <value>_Help</value>
+    <comment>Access key: as Menu.File.</comment>
+  </data>
+  <data name="Menu.File.Profile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Menu.File.EditProfiles" xml:space="preserve">
+    <value>Edit profiles…</value>
+  </data>
+  <data name="Menu.File.SavePackets" xml:space="preserve">
+    <value>Save packet list</value>
+  </data>
+  <data name="Menu.File.ExportCapture" xml:space="preserve">
+    <value>Export captured packets…</value>
+  </data>
+  <data name="Menu.File.Settings" xml:space="preserve">
+    <value>Settings…</value>
+  </data>
+  <data name="Menu.File.Quit" xml:space="preserve">
+    <value>Quit</value>
+  </data>
+  <data name="Menu.View.Panels" xml:space="preserve">
+    <value>Panels</value>
+  </data>
+  <data name="Menu.View.ShowAll" xml:space="preserve">
+    <value>Show all panels</value>
+  </data>
+  <data name="Menu.View.Layouts" xml:space="preserve">
+    <value>Layouts</value>
+  </data>
+  <data name="Menu.View.ManageLayouts" xml:space="preserve">
+    <value>Manage layouts…</value>
+  </data>
+  <data name="Menu.View.FullScreen" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="Menu.View.AlwaysShowMenuBar" xml:space="preserve">
+    <value>Always show the menu bar</value>
+  </data>
+  <data name="Menu.Station.ReconnectAll" xml:space="preserve">
+    <value>Reconnect all</value>
+  </data>
+  <data name="Menu.Station.SendOn" xml:space="preserve">
+    <value>Send position on</value>
+  </data>
+  <data name="Menu.Station.Destination" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="Menu.Station.DestinationSet" xml:space="preserve">
+    <value>Set…</value>
+  </data>
+  <data name="Menu.Station.DestinationClear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Menu.Station.Sources" xml:space="preserve">
+    <value>Sources…</value>
+  </data>
+  <data name="Menu.Station.Beacons" xml:space="preserve">
+    <value>Beacons…</value>
+  </data>
+  <data name="Menu.Station.TncCommands" xml:space="preserve">
+    <value>TNC commands</value>
+  </data>
+  <data name="Menu.Station.Console" xml:space="preserve">
+    <value>Console</value>
+  </data>
+  <data name="Menu.Tools.Find" xml:space="preserve">
+    <value>Find a station…</value>
+  </data>
+  <data name="Menu.Tools.Messages" xml:space="preserve">
+    <value>Messages</value>
+  </data>
+  <data name="Menu.Tools.Bulletins" xml:space="preserve">
+    <value>Bulletins</value>
+  </data>
+  <data name="Menu.Tools.Setup" xml:space="preserve">
+    <value>Run the setup wizard again…</value>
+  </data>
+  <data name="Menu.Tools.StartOver" xml:space="preserve">
+    <value>Start over…</value>
+  </data>
+  <data name="Menu.Help.Docs" xml:space="preserve">
+    <value>Documentation</value>
+  </data>
+  <data name="Menu.Help.Report" xml:space="preserve">
+    <value>Report a problem</value>
+  </data>
+  <data name="Menu.Help.About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Menu.Why.ReadOnly" xml:space="preserve">
+    <value>Only this station's operator can change it.</value>
+  </data>
+  <data name="Menu.Why.Operator" xml:space="preserve">
+    <value>Sign in as this station's operator first.</value>
+  </data>
+  <data name="Menu.Why.MapStays" xml:space="preserve">
+    <value>The map can't be closed.</value>
+  </data>
+  <data name="Menu.Why.AllShown" xml:space="preserve">
+    <value>Every panel is shown.</value>
+  </data>
+  <data name="Menu.Why.InternetOff" xml:space="preserve">
+    <value>The internet is off.</value>
+  </data>
+  <data name="Menu.Why.ReceiveOnly" xml:space="preserve">
+    <value>This station is receive only, or its profile may not transmit.</value>
+  </data>
+  <data name="Menu.Why.TransmitOff" xml:space="preserve">
+    <value>Transmit is off.</value>
+  </data>
+  <data name="Menu.Why.DestinationSet" xml:space="preserve">
+    <value>A destination is set: clear it first.</value>
+  </data>
+  <data name="Menu.Why.NoDestination" xml:space="preserve">
+    <value>No destination is set.</value>
+  </data>
+  <data name="Settings.Appearance.AlwaysShowMenuBar" xml:space="preserve">
+    <value>Always show the menu bar (otherwise press Alt)</value>
+  </data>
+  <data name="Dialog.Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Menu.Tools.StartOver.Title" xml:space="preserve">
+    <value>Start over</value>
+  </data>
+  <data name="Layouts.SaveAs.Title" xml:space="preserve">
+    <value>Save layout as</value>
+  </data>
+  <data name="Menu.Help.About.Title" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Menu.Help.Shortcuts" xml:space="preserve">
+    <value>Keyboard shortcuts</value>
+  </data>
+  <data name="Menu.Help.Shortcuts.Title" xml:space="preserve">
+    <value>Keyboard shortcuts</value>
+  </data>
+  <data name="Menu.View.ResetQuestion" xml:space="preserve">
+    <value>Put every panel back where it started? Your saved layouts aren't changed, and View › Undo reset layout puts this one back.</value>
+  </data>
+  <data name="Menu.View.UndoReset" xml:space="preserve">
+    <value>Undo reset layout</value>
+  </data>
+  <data name="Menu.View.ClosedNote" xml:space="preserve">
+    <value>Closed {panel}. Show it again from View › Panels.</value>
+    <comment>panel: the panel's name, such as Packets.</comment>
+  </data>
+  <data name="Menu.Shortcuts.Other" xml:space="preserve">
+    <value>Anywhere</value>
+  </data>
+  <data name="Menu.Shortcuts.ShowMenus" xml:space="preserve">
+    <value>Show the menu bar</value>
+  </data>
+  <data name="Menu.Shortcuts.OpenMenu" xml:space="preserve">
+    <value>Open a menu</value>
+  </data>
+  <data name="Menu.Shortcuts.AltLetter" xml:space="preserve">
+    <value>Alt + its underlined letter</value>
+  </data>
+  <data name="Menu.Shortcuts.Connection" xml:space="preserve">
+    <value>Open the connection menu</value>
+  </data>
+  <data name="Menu.Shortcuts.SwitchPanel" xml:space="preserve">
+    <value>Switch between panels</value>
   </data>
 </root>

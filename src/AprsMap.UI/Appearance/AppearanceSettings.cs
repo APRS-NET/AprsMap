@@ -177,6 +177,9 @@ public sealed record AppearanceSettings
     /// <summary>Whether the icon size also scales with <see cref="TextScale"/> (behavior 9).</summary>
     public bool IconsFollowText { get; init; } = true;
 
+    /// <summary>Keeps the menu bar shown instead of hidden until Alt (docs/features/F1.29-menus.md, behavior 7).</summary>
+    public bool AlwaysShowMenuBar { get; init; }
+
     /// <summary>List and panel spacing.</summary>
     public Density Density { get; init; } = Density.Comfortable;
 

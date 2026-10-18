@@ -59,7 +59,6 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
         MapItems = [.. mapItems ?? []];
         UnitItems = [.. unitItems ?? []];
-        About = new AboutViewModel(_text);
         Sections = [];
         Retranslate();
         SelectedSection = Sections[0];
@@ -70,14 +69,13 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>Raised when the page should close (Back or Escape).</summary>
     public event EventHandler? Closed;
 
-    /// <summary>The sections, in order: Profiles, Appearance, Data, About.</summary>
+    /// <summary>The sections, in order; About is a dialog of its own (F1.29 behavior 10).</summary>
     public ObservableCollection<SettingsSection> Sections { get; }
 
     /// <summary>The section showing.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(
         nameof(IsAppearanceSection),
-        nameof(IsAboutSection),
         nameof(IsProfilesSection),
         nameof(IsSourcesSection),
         nameof(IsBeaconsSection),
@@ -128,6 +126,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public Shell.SavedLayoutsViewModel? Layouts { get; }
 
     /// <summary>Shows the Layout section (from the app menu's Save layout as…).</summary>
+    internal void ShowSection(string id) =>
+        SelectedSection = Sections.FirstOrDefault(s => s.Id == id) ?? SelectedSection;
+
     internal void ShowLayout() => SelectedSection = Sections.FirstOrDefault(s => s.Id == "layout") ?? SelectedSection;
 
     /// <summary>Whether Data is showing.</summary>
@@ -136,14 +137,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     /// <summary>The Data section (F0.10), when the app offers Reset the app.</summary>
     public DataSectionViewModel? Data { get; }
 
-    /// <summary>Whether About is showing.</summary>
-    public bool IsAboutSection => SelectedSection?.Id == "about";
-
     /// <summary>The Appearance section's options, from the registry.</summary>
     public ObservableCollection<SettingItem> AppearanceItems { get; }
-
-    /// <summary>The About section.</summary>
-    public AboutViewModel About { get; }
 
     /// <summary>The page title, in the viewer's language.</summary>
     [ObservableProperty]
@@ -198,10 +193,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Close() => Closed?.Invoke(this, EventArgs.Empty);
 
-    /// <summary>Gives About the engine's details (versions, address lookup) when the page opens.</summary>
-    public void Show(EngineStatus? status, GeocodingInfo? geocoding)
+    /// <summary>Gives the profiles the station's filter when the page opens.</summary>
+    public void Show(EngineStatus? status)
     {
-        About.Show(status, geocoding);
         Profiles?.ShowFilter(status?.Filter);
     }
 
@@ -266,17 +260,16 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("units", _text["Settings.Units"]));
         }
-        if (Data is not null)
+        if (Data?.Capture is not null)
         {
+            // Packet capture; Clear data and Start over are in the Tools menu (F1.29 behavior 9).
             Sections.Add(new SettingsSection("data", _text["Settings.Data"]));
         }
-        Sections.Add(new SettingsSection("about", _text["Settings.About"]));
         SelectedSection = Sections.FirstOrDefault(s => s.Id == selected) ?? (selected is null ? null : Sections[0]);
         foreach (var item in AppearanceItems.Concat(MapItems).Concat(UnitItems))
         {
             item.Retranslate();
         }
-        About.Retranslate();
         Profiles?.Retranslate();
         Sources?.Retranslate();
         Beacons?.Retranslate();
@@ -284,11 +277,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     }
 }
 
-/// <summary>The About section (behavior 15).</summary>
+/// <summary>About (behavior 15), now a dialog from Help › About (F1.29 behavior 10).</summary>
 public sealed partial class AboutViewModel(Localizer text) : ObservableObject
 {
     private EngineStatus? _status;
     private GeocodingInfo? _geocoding;
+    private AuthInfo? _auth;
 
     /// <summary>The product name.</summary>
     public static string ProductName => Brand.DisplayName;
@@ -310,6 +304,10 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     /// <summary>"3 viewers connected", on a gateway (F1.14 behavior 11); null on desktop.</summary>
     [ObservableProperty]
     public partial string? ViewersText { get; set; }
+
+    /// <summary>"No failed sign-ins in the last day", to a signed-in gateway operator (F2.9 behavior 10); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? SignInsText { get; set; }
 
     /// <summary>Whether the APRS-IS login is verified and how often it reconnected, while connected.</summary>
     [ObservableProperty]
@@ -335,10 +333,11 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
         return $"{version[..plus]} ({commit[..Math.Min(7, commit.Length)]})";
     }
 
-    internal void Show(EngineStatus? status, GeocodingInfo? geocoding)
+    internal void Show(EngineStatus? status, GeocodingInfo? geocoding, AuthInfo? auth = null)
     {
         _status = status;
         _geocoding = geocoding;
+        _auth = auth;
         Retranslate();
     }
 
@@ -362,6 +361,12 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
         ConnectionText = _status is null ? null : ViewModels.ConnectionText.Details(text, _status);
         ViewersText = _status?.Viewers is { } viewers
             ? text.Format("Settings.About.Viewers", new Dictionary<string, object?> { ["count"] = viewers })
+            : null;
+        SignInsText = _auth is { Operator: true } signedIn
+            ? text.Format(
+                "Settings.About.FailedSignIns",
+                new Dictionary<string, object?> { ["count"] = signedIn.FailedSignIns }
+            )
             : null;
         ShowLookupCredit = _geocoding?.Enabled == true;
     }

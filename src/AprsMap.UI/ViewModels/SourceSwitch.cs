@@ -29,6 +29,12 @@ public sealed partial class SourceSwitch(Func<bool, Task> change) : ObservableOb
     [ObservableProperty]
     public partial bool CanChange { get; private set; }
 
+    /// <summary>
+    /// Whether the switch shows at all: not for a gateway viewer who can never act on the station (F1.26 behavior 9).
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsShown { get; set; } = true;
+
     /// <summary>Shows the engine's state, without asking it for anything.</summary>
     internal void Show(bool on, bool canChange)
     {

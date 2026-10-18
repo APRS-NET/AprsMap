@@ -37,7 +37,20 @@ public sealed partial class ShellViewModel : ObservableObject
         Factory = new ShellFactory(context, managedWindows);
         // Dock's events for changes the user makes; each one saves the layout after a pause.
         Factory.ActiveDockableChanged += (_, _) => OnChanged();
-        Factory.DockableClosed += (_, _) => OnChanged();
+        Factory.DockableClosed += (_, e) =>
+        {
+            var kind = e.Dockable switch
+            {
+                PanelTool panel => panel.Kind,
+                DashboardDocument => PanelKinds.Dashboard,
+                _ => null,
+            };
+            if (kind is not null)
+            {
+                PanelClosed?.Invoke(this, kind);
+            }
+            OnChanged();
+        };
         Factory.DockableDocked += (_, _) => OnChanged();
         Factory.DockableHidden += (_, _) => OnChanged();
         Factory.DockableMoved += (_, _) => OnChanged();
@@ -56,6 +69,9 @@ public sealed partial class ShellViewModel : ObservableObject
         _text.LanguageChanged += (_, _) => Retitle();
         Retitle();
     }
+
+    /// <summary>Raised when a panel is really closed (its ×, or Close), with its kind; not when it moves.</summary>
+    public event EventHandler<string>? PanelClosed;
 
     /// <summary>Builds layouts and attaches the view model to panels.</summary>
     public ShellFactory Factory { get; }
@@ -119,6 +135,8 @@ public sealed partial class ShellViewModel : ObservableObject
     /// <summary>Back to the default layout (behavior 10).</summary>
     public void Reset()
     {
+        _lastDock.Clear();
+        _lastSide.Clear();
         var layout = Factory.CreateLayout();
         Factory.InitLayout(layout);
         CloseWindows(Layout);
@@ -170,7 +188,7 @@ public sealed partial class ShellViewModel : ObservableObject
         {
             Factory.PinDockable(panel); // back from the edge first: it toggles
         }
-        var target = SideDock(dockId);
+        var target = Target(dockId);
         if (panel.Owner is IDock from && !ReferenceEquals(from, target))
         {
             Factory.MoveDockable(from, target, panel, null);
@@ -180,7 +198,48 @@ public sealed partial class ShellViewModel : ObservableObject
         OnChanged();
     }
 
-    /// <summary>Shows a closed panel again, in its default dock (behavior 4).</summary>
+    /// <summary>The side dock each panel was last seen in, so showing it again puts it back there (F1.29 behavior 12).</summary>
+    private readonly Dictionary<string, string> _lastDock = new(StringComparer.Ordinal);
+
+    private void RememberDocks()
+    {
+        foreach (var panel in Dockables(Layout).OfType<PanelTool>())
+        {
+            if (
+                panel.Owner is IDock
+                {
+                    Id: ShellFactory.LeftDock
+                        or ShellFactory.RightDock
+                        or ShellFactory.BottomDock
+                        or ShellFactory.CentreDock,
+                } dock
+            )
+            {
+                _lastDock[panel.Kind] = dock.Id;
+                if (dock.Id != ShellFactory.CentreDock)
+                {
+                    _lastSide[panel.Kind] = dock.Id;
+                }
+            }
+        }
+    }
+
+    /// <summary>Closes a panel, as its × does (F1.29 behavior 12); the map stays.</summary>
+    public void Close(string kind)
+    {
+        RememberDocks();
+        IDockable? panel =
+            kind == PanelKinds.Dashboard
+                ? Dockables(Layout).OfType<DashboardDocument>().FirstOrDefault()
+                : Dockables(Layout).OfType<PanelTool>().FirstOrDefault(p => p.Kind == kind);
+        if (panel is { CanClose: true })
+        {
+            Factory.CloseDockable(panel);
+            OnChanged();
+        }
+    }
+
+    /// <summary>Shows a closed panel again, where it was last or in its default dock (behavior 4, F1.29 behavior 12).</summary>
     public void Show(string kind)
     {
         if (kind == PanelKinds.Dashboard)
@@ -196,8 +255,8 @@ public sealed partial class ShellViewModel : ObservableObject
             }
             return;
         }
-        var dockId = PanelKinds.All.First(p => p.Kind == kind).Dock;
-        var target = SideDock(dockId);
+        var dockId = _lastDock.GetValueOrDefault(kind) ?? PanelKinds.All.First(p => p.Kind == kind).Dock;
+        var target = Target(dockId);
         var panel = ShellFactory.CreatePanel(kind);
         Factory.AddDockable(target, panel);
         target.ActiveDockable = panel;
@@ -256,7 +315,11 @@ public sealed partial class ShellViewModel : ObservableObject
     public void Gather(ScreenArea screen) => FitOpenWindows([screen]);
 
     /// <summary>Tells the shell the user changed something Dock doesn't report, such as dragging a splitter.</summary>
-    public void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
+    public void OnChanged()
+    {
+        RememberDocks();
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
 
     /// <summary>Every panel and the map in a layout, including those in floating windows.</summary>
     internal static IEnumerable<IDockable> Dockables(IDockable root)
@@ -317,6 +380,39 @@ public sealed partial class ShellViewModel : ObservableObject
         }.Any(list => list?.Contains(panel) == true);
 
     /// <summary>The left, right or bottom dock, created beside the map if it has collapsed.</summary>
+    /// <summary>The dock for <paramref name="dockId"/>: the map's for <see cref="ShellFactory.CentreDock"/>, else a side.</summary>
+    private IDock Target(string dockId) => dockId == ShellFactory.CentreDock ? Centre(Layout) : SideDock(dockId);
+
+    /// <summary>The side each panel was last in, for moving it back from beside the map.</summary>
+    private readonly Dictionary<string, string> _lastSide = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Moves a panel beside the map, or back to the side it came from (View › Beside the map, F1.0 behavior 16); a closed
+    /// panel is shown first.
+    /// </summary>
+    public void SetBesideMap(string kind, bool beside)
+    {
+        if (kind is PanelKinds.Map or PanelKinds.Dashboard)
+        {
+            return;
+        }
+        Show(kind);
+        RememberDocks();
+        if (Dockables(Layout).OfType<PanelTool>().FirstOrDefault(p => p.Kind == kind) is not { } panel)
+        {
+            return;
+        }
+        MoveTo(
+            panel,
+            beside
+                ? ShellFactory.CentreDock
+                : _lastSide.GetValueOrDefault(kind) ?? PanelKinds.All.First(p => p.Kind == kind).Dock
+        );
+    }
+
+    /// <summary>The panels that are tabs beside the map (F1.0 behavior 16).</summary>
+    public IReadOnlyList<string> BesideMap => [.. Dockables(Centre(Layout)).OfType<PanelTool>().Select(p => p.Kind)];
+
     private IDock SideDock(string dockId)
     {
         if (Dockables(Layout).OfType<IToolDock>().FirstOrDefault(d => d.Id == dockId) is { } existing)

@@ -197,6 +197,9 @@ public sealed class App : Application, IDisposable
                 Preferences = _platform.Preferences,
                 MainScreen = MainScreen,
                 SharedStation = _platform.SharedStation,
+                OperatorSession = _platform.OperatorSession,
+                MenuStyle = _platform.MenuStyle,
+                SetPageTitle = _platform.SetTitle,
                 Restart = _platform.Restart,
             };
             created = viewModel;

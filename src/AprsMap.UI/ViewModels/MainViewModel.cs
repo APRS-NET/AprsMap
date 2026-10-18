@@ -89,6 +89,9 @@ public sealed partial class MainViewModel : ObservableObject
         StationList.Filter = () => ViewFilter.Current;
         Shell = new ShellViewModel(this, _text, managedWindows);
         Layouts = new SavedLayoutsViewModel(Shell, _text);
+        Layouts.Saved += OnLayoutSaved;
+        Shell.Changed += OnShellChangedForMenus;
+        Shell.PanelClosed += OnPanelClosed;
         Dashboard = new Statistics.DashboardViewModel(
             engine,
             time,
@@ -120,6 +123,13 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The product name, from branding.</summary>
     public string Title { get; } = Brand.DisplayName;
+
+    /// <summary>The gateway's page title beside the product name (F1.26 behavior 10); null for none.</summary>
+    [ObservableProperty]
+    public partial string? StationTitle { get; private set; }
+
+    /// <summary>Sets the browser tab's title; null where there's no tab.</summary>
+    public Action<string>? SetPageTitle { get; init; }
 
     /// <summary>
     /// Deletes this viewer's own preferences (appearance, layout) and puts their defaults back, for Reset the app (F0.10).
@@ -400,7 +410,10 @@ public sealed partial class MainViewModel : ObservableObject
     [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanOpenSettings))]
     internal async Task OpenSettingsAsync()
     {
-        var profiles = new ProfilesSectionViewModel(engine, time, _text, OpenProfileEditorAsync, Show);
+        // A viewer who can never act here sees only their own choices (F1.26 behavior 9).
+        var profiles = IsViewerOnly
+            ? null
+            : new ProfilesSectionViewModel(engine, time, _text, OpenProfileEditorAsync, Show);
         var data = new DataSectionViewModel(
             _text,
             SharedStation,
@@ -427,8 +440,8 @@ public sealed partial class MainViewModel : ObservableObject
                     ? (() => _settings?.EffectiveAging ?? StationAging.Default, SaveAging)
                     : null
             );
-        var sources = new SourcesSectionViewModel(engine, _text, Show);
-        var beacons = new BeaconsSectionViewModel(engine, _text, Show);
+        var sources = IsViewerOnly ? null : new SourcesSectionViewModel(engine, _text, Show);
+        var beacons = IsViewerOnly ? null : new BeaconsSectionViewModel(engine, _text, Show);
         var unitItems = _settings is { ReadOnly: false }
             ? SettingsRegistry.Units(_text, () => _settings?.Units ?? UnitSettings.Metric, SaveUnits)
             : null;
@@ -447,21 +460,15 @@ public sealed partial class MainViewModel : ObservableObject
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
-        GeocodingInfo? geocoding = null;
-        try
-        {
-            geocoding = await engine.GetGeocodingInfoAsync();
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            // About shows less without it; nothing else depends on it.
-        }
-        settings.Show(_status, geocoding);
+        settings.Show(_status);
         if (_settings is { } current)
         {
-            sources.Show(current);
-            beacons.Show(current);
-            await profiles.ShowAsync(current);
+            sources?.Show(current);
+            beacons?.Show(current);
+            if (profiles is not null)
+            {
+                await profiles.ShowAsync(current);
+            }
         }
     }
 
@@ -544,10 +551,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The main menu's Clear data: Settings › Data, where Clear is (docs/features/F1.19-housekeeping.md).</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanOpenSettings))]
-    internal async Task OpenClearDataAsync()
+    internal Task OpenClearDataAsync()
     {
-        await OpenSettingsAsync();
-        Settings?.ShowData();
+        OpenClearData(); // a dialog of its own now (F1.29 behavior 9)
+        return Task.CompletedTask;
     }
 
     /// <summary>Whether this viewer may clear the station's data, for the main menu.</summary>
@@ -709,6 +716,8 @@ public sealed partial class MainViewModel : ObservableObject
         Destination.Preferences = Preferences;
         await Destination.LoadAsync();
         await StationList.LoadAsync();
+        await LoadAuthAsync(); // signed in as the gateway's operator? (F2.9)
+        await LoadCloseNoteAsync();
         var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
         var status = KeepAsync(PollStatusAsync, cancellationToken);
@@ -946,6 +955,7 @@ public sealed partial class MainViewModel : ObservableObject
                     commandLine => OpenConsoleAsync(source.Id, commandLine)
                 );
                 SourcePills.Insert(Math.Min(i, SourcePills.Count), pill);
+                pill.Switch.IsShown = !IsViewerOnly;
             }
             pill.Show(source, CanTransmit, TransmitOn && CanTransmit);
         }
@@ -1092,6 +1102,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         AprsIsSwitch.Show(AprsIsOn, CanToggleDependents);
         ShowTransmit();
+        ShowViewerOnly();
     }
 
     /// <summary>Turns <paramref name="toggle"/> the other way (F1.15).</summary>
@@ -1328,6 +1339,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     internal void Show(EngineStatus status)
     {
+        if (status.Title != StationTitle)
+        {
+            StationTitle = status.Title;
+            SetPageTitle?.Invoke(status.Title is { } title ? $"{title} · {Brand.DisplayName}" : Brand.DisplayName);
+        }
         FilterAreas = status.FilterAreas;
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();

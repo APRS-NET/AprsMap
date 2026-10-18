@@ -110,6 +110,7 @@ try {
     prefRemove,
     prefClear,
     reloadPage: () => globalThis.location.reload(),
+    setTitle: (title) => { globalThis.document.title = title; },
     screenPixels: () =>
       (globalThis.screen?.width ?? 1280) * (globalThis.screen?.height ?? 800) * (globalThis.devicePixelRatio ?? 1) ** 2,
     prefersReducedMotion,

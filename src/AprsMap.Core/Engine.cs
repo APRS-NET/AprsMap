@@ -2047,20 +2047,39 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
 
         var callsign = _options.Callsign.Trim().ToUpperInvariant();
-        var source = SourceSettings.AprsIsFor(
-            _options.Server,
-            string.IsNullOrWhiteSpace(_options.Filter) ? null : _options.Filter
-        );
+        List<SourceSettings> sources = [];
+        if (!string.IsNullOrWhiteSpace(_options.Server))
+        {
+            sources.Add(
+                SourceSettings.AprsIsFor(
+                    _options.Server,
+                    string.IsNullOrWhiteSpace(_options.Filter) ? null : _options.Filter
+                )
+            );
+        }
+        if (_options.Kiss.Host is { Length: > 0 } host)
+        {
+            // A TNC from the environment, for a headless first start (F1.26 behavior 14).
+            var kiss = SourceSettings.KissTcpFor(host.Trim(), _options.Kiss.Port, _options.Kiss.TncPort);
+            sources.Add(
+                string.IsNullOrWhiteSpace(_options.Kiss.Name) ? kiss : kiss with { Name = _options.Kiss.Name.Trim() }
+            );
+        }
+        if (sources.Count == 0)
+        {
+            LogDefaultsUnusable("Neither Engine:Server nor Engine:Kiss:Host is set.");
+            return AppSettings.Empty;
+        }
         var profile = new StationProfile(
             Guid.NewGuid().ToString("N"),
             callsign,
             callsign,
             _options.Passcode,
-            [source.Id],
+            [.. sources.Select(s => s.Id)],
             null,
             null
         );
-        var settings = new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [source]);
+        var settings = new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: sources);
         try
         {
             SettingsValidator.Validate(settings, _time);
