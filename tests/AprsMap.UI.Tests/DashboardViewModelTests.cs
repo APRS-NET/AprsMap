@@ -57,6 +57,8 @@ public sealed class DashboardViewModelTests
 
         public SourceSwitch Switch { get; } = new(_ => Task.CompletedTask);
 
+        public StationFilter? ViewFilter { get; set; }
+
         public DashboardViewModel Create() =>
             new(
                 Engine,
@@ -66,7 +68,8 @@ public sealed class DashboardViewModelTests
                 new SourceNames(() => null),
                 source => source.Kind == SourceKind.AprsIs ? Switch : null,
                 Selected.Add,
-                () => ProblemsShown++
+                () => ProblemsShown++,
+                viewFilter: () => ViewFilter
             );
     }
 
@@ -210,6 +213,38 @@ public sealed class DashboardViewModelTests
         Assert.True(vm.IsWaiting);
         Assert.Equal("0", vm.Packets.Number);
         Assert.DoesNotContain(vm.ArrivalRows, r => r.Fraction > 0);
+    }
+
+    [Fact]
+    public async Task MyViewAsksWithTheViewFilterAndFollowsItsChanges()
+    {
+        var harness = new Harness();
+        var vm = harness.Create();
+        vm.Start();
+        await WaitUntil(() => harness.Engine.DashboardFilters.Count == 1);
+        Assert.Null(harness.Engine.DashboardFilters[^1]); // the whole feed by default
+        Assert.True(vm.WholeFeed);
+        Assert.Null(vm.ScopeText);
+
+        vm.MyView = true; // no view filter on: the whole feed, and it says so
+        await WaitUntil(() => harness.Engine.DashboardFilters.Count == 2);
+        Assert.Null(harness.Engine.DashboardFilters[^1]);
+        Assert.Equal("Your View filter is off, so My view counts the whole feed.", vm.ScopeText);
+
+        harness.ViewFilter = new StationFilter(Reception: Reception.AnyRf);
+        vm.ViewFilterChanged();
+        await WaitUntil(() => harness.Engine.DashboardFilters.Count == 3);
+        Assert.Equal(harness.ViewFilter, harness.Engine.DashboardFilters[^1]);
+        Assert.StartsWith("My view: only the stations", vm.ScopeText, StringComparison.Ordinal);
+
+        vm.WholeFeed = true;
+        await WaitUntil(() => harness.Engine.DashboardFilters.Count == 4);
+        Assert.Null(harness.Engine.DashboardFilters[^1]);
+        Assert.False(vm.MyView);
+        vm.ViewFilterChanged(); // the whole feed doesn't ask again for a filter change
+        await Task.Yield();
+        Assert.Equal(4, harness.Engine.DashboardFilters.Count);
+        vm.Stop();
     }
 
     [Fact]

@@ -6,8 +6,10 @@ namespace AprsMap.Core;
 /// <summary>
 /// The dashboard's history (docs/features/F1.22-statistics.md, "Engine"): counters a minute for the last 24 hours in a
 /// fixed ring, distinct stations counted a point for each of the three point sizes, and per-station and per-relay
-/// counts in 5-minute steps. Memory stays bounded: buckets are reused, and stations not heard for 24 hours are dropped.
-/// Thread-safe; the engine records from its sessions and viewers read from theirs.
+/// counts in 5-minute steps. Each station's steps also keep how its packets arrived, their kind and their problems, so
+/// My view (behavior 7) can count only the stations a view filter shows. Memory stays bounded: buckets are reused, and
+/// stations not heard for 24 hours are dropped. Thread-safe; the engine records from its sessions and viewers read
+/// from theirs.
 /// </summary>
 internal sealed class DashboardCounters
 {
@@ -78,7 +80,7 @@ internal sealed class DashboardCounters
             {
                 bucket.Problems++;
             }
-            Hear(packet.Source, minute, now, bucket);
+            Hear(packet.Source, minute, now, bucket, arrival, packet.Kind, packet.HasIssues);
             foreach (var (name, _) in relays)
             {
                 if (!_relays.TryGetValue(name, out var counts))
@@ -133,9 +135,16 @@ internal sealed class DashboardCounters
         }
     }
 
-    /// <summary>The numbers over <paramref name="range"/> up to <paramref name="now"/>.</summary>
-    public Dashboard Read(DashboardRange range, DateTimeOffset now)
+    /// <summary>
+    /// The numbers over <paramref name="range"/> up to <paramref name="now"/>: the whole feed, or with
+    /// <paramref name="include"/> only the stations it says yes to (My view, behavior 7).
+    /// </summary>
+    public Dashboard Read(DashboardRange range, DateTimeOffset now, Func<string, bool>? include = null)
     {
+        if (include is not null)
+        {
+            return ReadFor(range, now, include);
+        }
         var size = range switch
         {
             DashboardRange.Hour => 1,
@@ -233,8 +242,8 @@ internal sealed class DashboardCounters
                 ],
                 problems,
                 problems.Sum(),
-                Top(_stations.Select(s => (s.Key, s.Value.Counts)), firstStep),
-                Top(_relays.Select(r => (r.Key, r.Value)), firstStep),
+                Top(_stations.Select(s => (s.Key, s.Value.Total(firstStep)))),
+                Top(_relays.Select(r => (r.Key, r.Value.Where(c => c.Step >= firstStep).Sum(c => c.Count)))),
                 [
                     .. _sources
                         .OrderBy(s => s.Key, StringComparer.Ordinal)
@@ -244,23 +253,132 @@ internal sealed class DashboardCounters
         }
     }
 
-    private static List<DashboardCount> Top(
-        IEnumerable<(string Name, List<(long Step, int Count)> Counts)> all,
-        long from
-    ) =>
+    /// <summary>
+    /// My view (behavior 7): the numbers from the stations <paramref name="include"/> says yes to, read from their
+    /// 5-minute steps, so points are at least 5 minutes. Packets by source, the busiest relays and each source's last
+    /// packet stay the whole feed's: they aren't kept per station.
+    /// </summary>
+    private Dashboard ReadFor(DashboardRange range, DateTimeOffset now, Func<string, bool> include)
+    {
+        var size = range == DashboardRange.Day ? 15 : CountStep;
+        var points = range switch
+        {
+            DashboardRange.Hour => 12,
+            DashboardRange.SixHours => 72,
+            _ => 96,
+        };
+        var minute = MinuteOf(now);
+        var lastSlot = minute / size;
+        var firstSlot = lastSlot - points + 1;
+        var firstMinute = firstSlot * size;
+        var firstStep = firstMinute / CountStep;
+        var recentStep = (minute - 4) / CountStep; // the steps covering the last 5 minutes
+        var start = DateTimeOffset.UnixEpoch.AddMinutes(firstMinute);
+        lock (_gate)
+        {
+            Prune(minute);
+            var packets = new int[points];
+            var problems = new int[points];
+            var fresh = new int[points];
+            var heard = new int[points];
+            var arrivals = ArrivalKinds.ToDictionary(k => k, _ => new int[points]);
+            var kinds = new int[PacketKinds.Length];
+            var recent = 0;
+            var stations = _stations.Where(s => include(s.Key)).ToList();
+            foreach (var (_, station) in stations)
+            {
+                var lastPoint = -1;
+                foreach (var tally in station.Tallies)
+                {
+                    if (tally.Step < firstStep)
+                    {
+                        continue;
+                    }
+                    var point = (int)((tally.Step * CountStep - firstMinute) / size);
+                    packets[point] += tally.Count;
+                    problems[point] += tally.Problems;
+                    arrivals[ArrivalKinds[tally.Arrival]][point] += tally.Count;
+                    kinds[tally.Kind] += tally.Count;
+                    if (point != lastPoint)
+                    {
+                        heard[point]++; // once a point, however many packets
+                        lastPoint = point;
+                    }
+                    if (tally.Step >= recentStep)
+                    {
+                        recent += tally.Count;
+                    }
+                }
+                if (station.FirstHeard >= start)
+                {
+                    fresh[(int)((MinuteOf(station.FirstHeard) - firstMinute) / size)]++;
+                }
+            }
+            var recentMinutes = minute - (recentStep * CountStep) + 1;
+            return new Dashboard(
+                now,
+                range,
+                start,
+                TimeSpan.FromMinutes(size),
+                HistoryStart,
+                packets,
+                recent / (double)recentMinutes,
+                [],
+                heard,
+                stations.Count(s => s.Value.LastHeard >= start),
+                fresh,
+                fresh.Sum(),
+                [
+                    .. stations
+                        .Where(s => s.Value.FirstHeard >= start)
+                        .OrderByDescending(s => s.Value.FirstHeard)
+                        .Take(NewestKept)
+                        .Select(s => new DashboardMoment(s.Key, s.Value.FirstHeard)),
+                ],
+                [.. arrivals.Select(a => new DashboardSeries(a.Key.ToString(), a.Value))],
+                [
+                    .. PacketKinds
+                        .Select(k => new DashboardCount(k.ToString(), kinds[(int)k]))
+                        .Where(c => c.Count > 0)
+                        .OrderByDescending(c => c.Count)
+                        .ThenBy(c => c.Key, StringComparer.Ordinal),
+                ],
+                problems,
+                problems.Sum(),
+                Top(stations.Select(s => (s.Key, s.Value.Total(firstStep)))),
+                Top(_relays.Select(r => (r.Key, r.Value.Where(c => c.Step >= firstStep).Sum(c => c.Count)))),
+                [
+                    .. _sources
+                        .OrderBy(s => s.Key, StringComparer.Ordinal)
+                        .Select(s => new DashboardMoment(s.Key, s.Value)),
+                ],
+                MyView: true
+            );
+        }
+    }
+
+    private static List<DashboardCount> Top(IEnumerable<(string Name, int Count)> all) =>
         [
-            .. all.Select(a => new DashboardCount(a.Name, a.Counts.Where(c => c.Step >= from).Sum(c => c.Count)))
+            .. all.Select(a => new DashboardCount(a.Name, a.Count))
                 .Where(c => c.Count > 0)
                 .OrderByDescending(c => c.Count)
                 .ThenBy(c => c.Key, StringComparer.Ordinal)
                 .Take(TopKept),
         ];
 
-    private void Hear(string name, long minute, DateTimeOffset now, Bucket bucket)
+    private void Hear(
+        string name,
+        long minute,
+        DateTimeOffset now,
+        Bucket bucket,
+        ArrivalKind arrival,
+        PacketKind kind,
+        bool problem
+    )
     {
         if (!_stations.TryGetValue(name, out var station))
         {
-            _stations[name] = station = new Heard();
+            _stations[name] = station = new Heard(now);
             bucket.New++;
             _newest.AddFirst(new DashboardMoment(name, now));
             if (_newest.Count > NewestKept)
@@ -269,7 +387,7 @@ internal sealed class DashboardCounters
             }
         }
         station.LastHeard = now;
-        Add(station.Counts, minute / CountStep);
+        station.Add(minute / CountStep, arrival, kind, problem);
         for (var i = 0; i < PointSizes.Length; i++)
         {
             var slot = minute / PointSizes[i];
@@ -369,12 +487,55 @@ internal sealed class DashboardCounters
         }
     }
 
-    private sealed class Heard
+    private sealed class Heard(DateTimeOffset firstHeard)
     {
+        /// <summary>When it was first heard in the window: "new" for the new-stations tile.</summary>
+        public DateTimeOffset FirstHeard { get; } = firstHeard;
+
         public DateTimeOffset LastHeard { get; set; }
 
         public long[] LastSlots { get; } = [.. PointSizes.Select(_ => long.MinValue)];
 
-        public List<(long Step, int Count)> Counts { get; } = [];
+        /// <summary>Its packets a 5-minute step, one tally per way they arrived and kind, oldest first.</summary>
+        public List<Tally> Tallies { get; } = [];
+
+        /// <summary>One more packet in <paramref name="step"/>; steps older than the window drop off the front.</summary>
+        public void Add(long step, ArrivalKind arrival, PacketKind kind, bool problem)
+        {
+            var i = Tallies.Count - 1;
+            while (
+                i >= 0
+                && Tallies[i].Step == step
+                && (Tallies[i].Arrival != (byte)arrival || Tallies[i].Kind != (byte)kind)
+            )
+            {
+                i--;
+            }
+            if (i >= 0 && Tallies[i].Step == step)
+            {
+                Tallies[i] = Tallies[i] with
+                {
+                    Count = Tallies[i].Count + 1,
+                    Problems = Tallies[i].Problems + (problem ? 1 : 0),
+                };
+            }
+            else
+            {
+                Tallies.Add(new Tally(step, 1, problem ? 1 : 0, (byte)arrival, (byte)kind));
+            }
+            var oldest = step - Minutes / CountStep;
+            var drop = 0;
+            while (drop < Tallies.Count && Tallies[drop].Step <= oldest)
+            {
+                drop++;
+            }
+            Tallies.RemoveRange(0, drop);
+        }
+
+        /// <summary>Its packets from <paramref name="firstStep"/> on.</summary>
+        public int Total(long firstStep) => Tallies.Where(t => t.Step >= firstStep).Sum(t => t.Count);
     }
+
+    /// <summary>A station's packets in one 5-minute step that arrived one way and were one kind.</summary>
+    private readonly record struct Tally(long Step, int Count, int Problems, byte Arrival, byte Kind);
 }
