@@ -39,6 +39,9 @@ public sealed record PlatformServices
     /// </summary>
     public bool SharedStation { get; init; }
 
+    /// <summary>Where the menus go (F1.29): a hidden bar, the system menu bar (macOS) or under ☰ (the browser).</summary>
+    public Shell.MenuStyle MenuStyle { get; init; } = Shell.MenuStyle.InWindow;
+
     /// <summary>Operator sign-in on a gateway (F2.9); null on the desktop, whose user is always the operator.</summary>
     public IOperatorSession? OperatorSession { get; init; }
 

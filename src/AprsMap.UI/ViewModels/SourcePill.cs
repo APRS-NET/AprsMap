@@ -80,6 +80,9 @@ public sealed partial class SourcePill : ObservableObject
     [ObservableProperty]
     public partial string SwitchName { get; private set; } = string.Empty;
 
+    /// <summary>The source's name, for the menus (F1.29).</summary>
+    public string Name { get; private set; } = string.Empty;
+
     /// <summary>Connected: the OK colours, as the APRS-IS pill (F1.1).</summary>
     [ObservableProperty]
     public partial bool IsConnected { get; private set; }
@@ -104,6 +107,7 @@ public sealed partial class SourcePill : ObservableObject
         IsTransmitEnabled = status.TransmitEnabled && canChange;
         CanType = status.Kind == SourceKind.KissSerial && canChange;
         CanSendPosition = transmitting && status.CanTransmit;
+        Name = status.Name;
         var name = new Dictionary<string, object?> { ["source"] = status.Name };
         Text =
             !status.Enabled ? _text.Format("Status.Source.Off", name)

@@ -73,6 +73,14 @@
   </UserControl.Styles>
   <Panel>
     <DockPanel>
+      <!-- The menu bar (F1.29): hidden until Alt or F10 on Windows and Linux, kept in the window at no height so Alt and
+           Alt + a menu's letter reach it; the system menu bar on macOS; optional in the web app. Filled in code. -->
+      <Menu
+        x:Name="MenuBar"
+        DockPanel.Dock="Top"
+        Background="{DynamicResource Brush.Surface}"
+        AutomationProperties.Name="{l:T Menu.Bar}"
+      />
       <Border
         DockPanel.Dock="Top"
         Background="{DynamicResource Brush.Surface}"

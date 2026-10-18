@@ -66,4 +66,8 @@ public static class PanelKinds
 
     /// <summary>The resource key of a panel's title.</summary>
     public static string TitleKey(string kind) => "Shell.Panel." + kind;
+
+    /// <summary>Every panel in the order View › Panels lists them (F1.29 behavior 12).</summary>
+    public static IReadOnlyList<string> Ordered { get; } =
+    [Map, Dashboard, Stations, Details, Packets, Messages, Bulletins, Console, Captured];
 }

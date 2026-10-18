@@ -120,6 +120,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.Details.CentreRequested -= OnCentreRequested;
             _main.Details.PropertyChanged -= OnDetailsChanged;
             _main.CentreOnStationRequested -= OnCentreOnStation;
+            _main.DestinationRequested -= OnDestinationRequested;
             _main.Destination.PropertyChanged -= OnDestinationChanged;
         }
         _main = DataContext as MainViewModel;
@@ -130,6 +131,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.Details.CentreRequested += OnCentreRequested;
             _main.Details.PropertyChanged += OnDetailsChanged;
             _main.CentreOnStationRequested += OnCentreOnStation;
+            _main.DestinationRequested += OnDestinationRequested;
             _main.Destination.PropertyChanged += OnDestinationChanged;
             ShowDestination();
             _map.SetStations(_main.Stations);
@@ -414,4 +416,14 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _map.Apply(batch);
         }
     }
+
+    /// <summary>Station › Destination › Set… (F1.29): the destination box, as its button opens it.</summary>
+    private void OnDestinationRequested(object? sender, EventArgs e) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (TypeDestinationButton.IsEffectivelyVisible)
+            {
+                TypeDestinationButton.Flyout?.ShowAt(TypeDestinationButton);
+            }
+        });
 }

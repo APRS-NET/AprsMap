@@ -128,6 +128,9 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public Shell.SavedLayoutsViewModel? Layouts { get; }
 
     /// <summary>Shows the Layout section (from the app menu's Save layout as…).</summary>
+    internal void ShowSection(string id) =>
+        SelectedSection = Sections.FirstOrDefault(s => s.Id == id) ?? SelectedSection;
+
     internal void ShowLayout() => SelectedSection = Sections.FirstOrDefault(s => s.Id == "layout") ?? SelectedSection;
 
     /// <summary>Whether Data is showing.</summary>

@@ -19,7 +19,12 @@ public sealed partial class MainView : UserControl
         InitializeComponent();
         // Kept filled, never filled as it opens: on the desktop the menu is a window of its own, created as it opens,
         // and one emptied and refilled then showed nothing. It follows the layout and the language instead.
-        Localization.Localizer.Instance.LanguageChanged += (_, _) => FillAppMenu();
+        Localization.Localizer.Instance.LanguageChanged += (_, _) =>
+        {
+            _menus = null; // the menus' words are worked out when they're built
+            FillAppMenu();
+        };
+        HookMenus();
         // A toggle's marker opens the menu where it's changed (F1.15 behavior 4).
         ToggleMarkers.AddHandler(Button.ClickEvent, (_, _) => OpenConnectionMenu());
         TransmitMarker.Click += (_, _) => OpenConnectionMenu();
@@ -92,70 +97,45 @@ public sealed partial class MainView : UserControl
     private void OnSavedLayoutsChanged(
         object? sender,
         System.Collections.Specialized.NotifyCollectionChangedEventArgs e
-    ) => FillAppMenu();
+    ) => MenusChanged();
 
     /// <summary>
-    /// The app menu's items, built as it opens because the closed panels change (F1.0 behaviors 4, 10, 14): Show for each
-    /// closed panel, Reset layout, and on the desktop Gather floating windows.
+    /// Refreshes the menus (docs/features/F1.29-menus.md): the menu bar and the ☰ menu, each its own items from the
+    /// same <see cref="AppMenus"/>. An open menu isn't touched; it's refreshed when it closes.
     /// </summary>
     private void FillAppMenu()
     {
-        AppMenu.Items.Clear();
         if (DataContext is not MainViewModel vm)
         {
+            AppMenu.Items.Clear();
+            MenuBar.ItemsSource = null;
             return;
         }
-        var text = Localization.Localizer.Instance;
-        foreach (var (kind, title) in vm.ClosedPanels)
+        if (MenuBar.IsOpen || AppMenu.IsOpen)
         {
-            AppMenu.Items.Add(
-                new MenuItem
-                {
-                    Header = text.Format("Shell.Menu.Show", new Dictionary<string, object?> { ["panel"] = title }),
-                    Command = vm.ShowPanelCommand,
-                    CommandParameter = kind,
-                }
-            );
+            _menusStale = true;
+            return;
         }
-        if (AppMenu.Items.Count > 0)
+        _menusStale = false;
+        _menus ??= new AppMenus(vm, Localization.Localizer.Instance, this);
+        var menus = _menus.Menus;
+        AppMenu.Items.Clear();
+        foreach (var menu in menus)
         {
-            AppMenu.Items.Add(new Separator());
+            AppMenu.Items.Add(MenuBuilder.Top(menu));
         }
-        AppMenu.Items.Add(new MenuItem { Header = text["Shell.Menu.ResetLayout"], Command = vm.ResetLayoutCommand });
-        // Saved layouts (F1.23 behavior 1): each one to use, and Save layout as….
-        foreach (var saved in vm.Layouts.Layouts)
+        if (vm.MenuStyle == MenuStyle.System)
         {
-            AppMenu.Items.Add(
-                new MenuItem
-                {
-                    Header = text.Format("Layouts.Use", new Dictionary<string, object?> { ["layout"] = saved.Name }),
-                    Command = saved.ApplyCommand,
-                }
-            );
+            if (TopLevel.GetTopLevel(this) is Window window)
+            {
+                NativeMenu.SetMenu(window, MenuBuilder.Native(menus));
+            }
         }
-        AppMenu.Items.Add(new MenuItem { Header = text["Layouts.SaveAs"], Command = vm.OpenLayoutSettingsCommand });
-        if (vm.CanClearData)
+        else
         {
-            AppMenu.Items.Add(
-                new MenuItem { Header = text["Shell.Menu.ClearData"], Command = vm.OpenClearDataCommand }
-            );
+            MenuBar.ItemsSource = menus.Select(MenuBuilder.Top).ToList();
         }
-        if (vm.CanGatherWindows)
-        {
-            AppMenu.Items.Add(new MenuItem { Header = text["Shell.Menu.Gather"], Command = vm.GatherWindowsCommand });
-        }
-        // Operator sign-in on a gateway (F2.9 behaviors 4, 6).
-        if (vm.IsSignedIn)
-        {
-            AppMenu.Items.Add(new Separator());
-            AppMenu.Items.Add(new MenuItem { Header = vm.SignedInText, IsEnabled = false });
-            AppMenu.Items.Add(new MenuItem { Header = text["Auth.SignOut"], Command = vm.SignOutCommand });
-        }
-        else if (vm.CanSignIn)
-        {
-            AppMenu.Items.Add(new Separator());
-            AppMenu.Items.Add(new MenuItem { Header = text["Auth.SignInMenu"], Command = vm.OpenSignInCommand });
-        }
+        ShowMenuBar();
     }
 
     /// <inheritdoc />
@@ -185,7 +165,11 @@ public sealed partial class MainView : UserControl
         {
             _main.PropertyChanged -= OnMainChanged;
             _main.Layouts.Layouts.CollectionChanged -= OnSavedLayoutsChanged;
+            _main.SourcePills.CollectionChanged -= OnSavedLayoutsChanged;
+            _main.Profiles.CollectionChanged -= OnSavedLayoutsChanged;
+            _main.Destination.PropertyChanged -= OnDestinationChanged;
         }
+        _menus = null;
         _main = DataContext as MainViewModel;
         _shell = _main?.Shell;
         if (_shell is not null)
@@ -196,6 +180,9 @@ public sealed partial class MainView : UserControl
         {
             _main.PropertyChanged += OnMainChanged;
             _main.Layouts.Layouts.CollectionChanged += OnSavedLayoutsChanged;
+            _main.SourcePills.CollectionChanged += OnSavedLayoutsChanged; // the lists the menus hold
+            _main.Profiles.CollectionChanged += OnSavedLayoutsChanged;
+            _main.Destination.PropertyChanged += OnDestinationChanged;
         }
         FillAppMenu();
     }
@@ -206,15 +193,21 @@ public sealed partial class MainView : UserControl
     /// <summary>Clear data is offered once the settings say this viewer may change the station.</summary>
     private void OnMainChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(MainViewModel.CanClearData) or nameof(MainViewModel.Auth))
+        if (e.PropertyName is { } name && MenuProperties.Contains(name))
         {
-            Avalonia.Threading.Dispatcher.UIThread.Post(FillAppMenu);
+            MenusChanged();
+        }
+        if (e.PropertyName is nameof(MainViewModel.MenuBarRevealed) or nameof(MainViewModel.AlwaysShowMenuBar))
+        {
+            ShowMenuBar();
         }
     }
 
     /// <summary>A panel closed or came back: the menu's Show items follow, on the UI thread.</summary>
-    private void OnShellChanged(object? sender, EventArgs e) =>
-        Avalonia.Threading.Dispatcher.UIThread.Post(FillAppMenu);
+    private void OnShellChanged(object? sender, EventArgs e) => MenusChanged();
+
+    private void OnDestinationChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) =>
+        MenusChanged();
 
     /// <summary>
     /// Ctrl+, opens Settings (Cmd+, on macOS: the platform's command key; F0.6 behavior 1). Bound on the window, so it
@@ -226,6 +219,7 @@ public sealed partial class MainView : UserControl
         _topLevel = TopLevel.GetTopLevel(this);
         if (_topLevel is not null && DataContext is MainViewModel vm)
         {
+            BindMenuKeys(_topLevel, vm);
             var command =
                 Application.Current?.PlatformSettings?.HotkeyConfiguration.CommandModifiers ?? KeyModifiers.Control;
             _settingsKey = new KeyBinding
@@ -251,6 +245,10 @@ public sealed partial class MainView : UserControl
 
     private void UnbindSettingsKey()
     {
+        if (_topLevel is not null)
+        {
+            UnbindMenuKeys(_topLevel);
+        }
         if (_topLevel is not null && _settingsKey is not null)
         {
             _topLevel.KeyBindings.Remove(_settingsKey);

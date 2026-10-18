@@ -54,6 +54,8 @@ internal static class Program
                 .GetAwaiter()
                 .GetResult(),
             ShowPseudoLanguage = ShowPseudoLanguage(builder.Configuration["Ui:ShowPseudoLanguage"]),
+            // The macOS menu bar holds the menus there; elsewhere a bar in the window, hidden until Alt (F1.29).
+            MenuStyle = OperatingSystem.IsMacOS() ? UI.Shell.MenuStyle.System : UI.Shell.MenuStyle.InWindow,
         };
         // Ctrl+C or SIGTERM stops the host; close the window too rather than leave a UI with no engine behind it.
         s_host

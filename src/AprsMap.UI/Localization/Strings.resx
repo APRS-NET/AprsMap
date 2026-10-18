@@ -3708,4 +3708,141 @@ pause 1s</value>
   <data name="Transmit.BeaconReason.Spacing" xml:space="preserve">
     <value>held back to keep beacons spaced out on this source</value>
   </data>
+  <data name="Menu.Bar" xml:space="preserve">
+    <value>Menu bar</value>
+  </data>
+  <data name="Menu.File" xml:space="preserve">
+    <value>_File</value>
+    <comment>The underscore marks the access key (Alt + that letter): keep one, before a letter of the translation.</comment>
+  </data>
+  <data name="Menu.View" xml:space="preserve">
+    <value>_View</value>
+    <comment>Access key: as Menu.File.</comment>
+  </data>
+  <data name="Menu.Station" xml:space="preserve">
+    <value>_Station</value>
+    <comment>The menu of what acts on this APRS station: switches, sending, sources. Access key: as Menu.File.</comment>
+  </data>
+  <data name="Menu.Tools" xml:space="preserve">
+    <value>_Tools</value>
+    <comment>Access key: as Menu.File.</comment>
+  </data>
+  <data name="Menu.Help" xml:space="preserve">
+    <value>_Help</value>
+    <comment>Access key: as Menu.File.</comment>
+  </data>
+  <data name="Menu.File.Profile" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Menu.File.EditProfiles" xml:space="preserve">
+    <value>Edit profiles…</value>
+  </data>
+  <data name="Menu.File.SavePackets" xml:space="preserve">
+    <value>Save packet list</value>
+  </data>
+  <data name="Menu.File.ExportCapture" xml:space="preserve">
+    <value>Export captured packets…</value>
+  </data>
+  <data name="Menu.File.Settings" xml:space="preserve">
+    <value>Settings…</value>
+  </data>
+  <data name="Menu.File.Quit" xml:space="preserve">
+    <value>Quit</value>
+  </data>
+  <data name="Menu.View.Panels" xml:space="preserve">
+    <value>Panels</value>
+  </data>
+  <data name="Menu.View.ShowAll" xml:space="preserve">
+    <value>Show all panels</value>
+  </data>
+  <data name="Menu.View.Layouts" xml:space="preserve">
+    <value>Layouts</value>
+  </data>
+  <data name="Menu.View.ManageLayouts" xml:space="preserve">
+    <value>Manage layouts…</value>
+  </data>
+  <data name="Menu.View.FullScreen" xml:space="preserve">
+    <value>Full screen</value>
+  </data>
+  <data name="Menu.View.AlwaysShowMenuBar" xml:space="preserve">
+    <value>Always show the menu bar</value>
+  </data>
+  <data name="Menu.Station.ReconnectAll" xml:space="preserve">
+    <value>Reconnect all</value>
+  </data>
+  <data name="Menu.Station.SendOn" xml:space="preserve">
+    <value>Send position on</value>
+  </data>
+  <data name="Menu.Station.Destination" xml:space="preserve">
+    <value>Destination</value>
+  </data>
+  <data name="Menu.Station.DestinationSet" xml:space="preserve">
+    <value>Set…</value>
+  </data>
+  <data name="Menu.Station.DestinationClear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Menu.Station.Sources" xml:space="preserve">
+    <value>Sources…</value>
+  </data>
+  <data name="Menu.Station.Beacons" xml:space="preserve">
+    <value>Beacons…</value>
+  </data>
+  <data name="Menu.Station.Console" xml:space="preserve">
+    <value>Console</value>
+  </data>
+  <data name="Menu.Tools.Find" xml:space="preserve">
+    <value>Find a station…</value>
+  </data>
+  <data name="Menu.Tools.Messages" xml:space="preserve">
+    <value>Messages</value>
+  </data>
+  <data name="Menu.Tools.Bulletins" xml:space="preserve">
+    <value>Bulletins</value>
+  </data>
+  <data name="Menu.Tools.Setup" xml:space="preserve">
+    <value>Run the setup wizard again…</value>
+  </data>
+  <data name="Menu.Tools.StartOver" xml:space="preserve">
+    <value>Start over…</value>
+  </data>
+  <data name="Menu.Help.Docs" xml:space="preserve">
+    <value>Documentation</value>
+  </data>
+  <data name="Menu.Help.Report" xml:space="preserve">
+    <value>Report a problem</value>
+  </data>
+  <data name="Menu.Help.About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Menu.Why.ReadOnly" xml:space="preserve">
+    <value>Only this station's operator can change it.</value>
+  </data>
+  <data name="Menu.Why.Operator" xml:space="preserve">
+    <value>Sign in as this station's operator first.</value>
+  </data>
+  <data name="Menu.Why.MapStays" xml:space="preserve">
+    <value>The map can't be closed.</value>
+  </data>
+  <data name="Menu.Why.AllShown" xml:space="preserve">
+    <value>Every panel is shown.</value>
+  </data>
+  <data name="Menu.Why.InternetOff" xml:space="preserve">
+    <value>The internet is off.</value>
+  </data>
+  <data name="Menu.Why.ReceiveOnly" xml:space="preserve">
+    <value>This station is receive only, or its profile may not transmit.</value>
+  </data>
+  <data name="Menu.Why.TransmitOff" xml:space="preserve">
+    <value>Transmit is off.</value>
+  </data>
+  <data name="Menu.Why.DestinationSet" xml:space="preserve">
+    <value>A destination is set: clear it first.</value>
+  </data>
+  <data name="Menu.Why.NoDestination" xml:space="preserve">
+    <value>No destination is set.</value>
+  </data>
+  <data name="Settings.Appearance.AlwaysShowMenuBar" xml:space="preserve">
+    <value>Always show the menu bar (otherwise press Alt)</value>
+  </data>
 </root>
