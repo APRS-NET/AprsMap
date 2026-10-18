@@ -16,9 +16,12 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Velopack" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The applications menu's icon for an installed AppImage (LinuxDesktopEntry). -->
+    <EmbeddedResource Include="../../build/branding/icon-256.png" LogicalName="icon-256.png" />
   </ItemGroup>
 </Project>

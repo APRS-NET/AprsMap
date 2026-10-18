@@ -24,7 +24,7 @@ to the app grid with its icon (GNOME shows the icon only through that entry).
 1. **First run:** the setup wizard covers the window. It asks for your callsign, an optional location (Maidenhead
    locator, address or postal code, coordinates, or a point on a map; in the browser also "this device's location"),
    the APRS-IS server or **a TNC instead** (RF only, no passcode), and an optional passcode. The passcode calculator is there, behind the "licensed, own callsign" tick.
-   Settings are saved in your user folder (`~/.aprsnet/aprsmap` on Linux, `%APPDATA%\aprsnet\aprsmap` on Windows,
+   Settings are saved in your user folder (`~/.config/aprsnet/aprsmap` on Linux, `%APPDATA%\aprsnet\aprsmap` on Windows,
    `~/Library/Application Support/aprsnet/aprsmap` on macOS).
 2. **The window:** the map in the centre, with panels around it that dock, tab, split, auto-hide and float. The layout
    and the window's place are remembered; the menu (☰) brings back closed panels and resets the layout.

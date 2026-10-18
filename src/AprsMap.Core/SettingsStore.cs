@@ -118,26 +118,10 @@ public sealed class FileSettingsStore(string folder) : ISettingsStore
 public static class SettingsLocation
 {
     /// <summary>The vendor folder that groups the products' folders.</summary>
-    public const string VendorFolder = "aprsnet";
+    public const string VendorFolder = AppFolders.VendorFolder;
 
     /// <summary>The current user's settings folder for the product <paramref name="slug"/> on this machine.</summary>
-    public static string UserFolder(string slug) =>
-        UserFolder(
-            slug,
-            OperatingSystem.IsWindows() ? OSPlatform.Windows
-                : OperatingSystem.IsMacOS() ? OSPlatform.MacOS
-                : OSPlatform.Other,
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
-        );
-
-    internal static string UserFolder(string slug, OSPlatform platform, string home, string appData) =>
-        platform switch
-        {
-            OSPlatform.Windows => Path.Combine(appData, VendorFolder, slug),
-            OSPlatform.MacOS => Path.Combine(home, "Library", "Application Support", VendorFolder, slug),
-            _ => Path.Combine(home, "." + VendorFolder, slug),
-        };
+    public static string UserFolder(string slug) => AppFolders.For(slug).Settings;
 
     /// <summary>
     /// When <paramref name="folder"/> has no settings yet, copies them from the first folder of
@@ -173,27 +157,45 @@ public static class SettingsLocation
 
     /// <summary>
     /// The settings folder for <paramref name="options"/>: <see cref="EngineOptions.SettingsFolder"/> when set,
-    /// otherwise the user's folder, migrated from the folders of the product's previous names. The desktop app keeps
-    /// the viewer's own preferences here too (F0.6).
+    /// otherwise the user's folder (<see cref="UserFolders"/>). The desktop app keeps the viewer's own preferences here
+    /// too (F0.6).
     /// </summary>
     public static string Folder(EngineOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        if (!string.IsNullOrWhiteSpace(options.SettingsFolder))
-        {
-            return options.SettingsFolder;
-        }
-
-        var folder = UserFolder(Brand.Slug);
-        MigrateIfMissing(folder, Brand.PreviousSlugs.Select(UserFolder));
-        return folder;
+        return string.IsNullOrWhiteSpace(options.SettingsFolder) ? UserFolders().Settings : options.SettingsFolder;
     }
 
-    internal enum OSPlatform
+    /// <summary>
+    /// Where message history and captures go for <paramref name="options"/>: <see cref="EngineOptions.DataFolder"/>
+    /// when set; otherwise <see cref="EngineOptions.SettingsFolder"/> when that's set, so a gateway's volume holds
+    /// everything; otherwise the user's data folder.
+    /// </summary>
+    public static string DataFolder(EngineOptions options)
     {
-        Windows,
-        MacOS,
-        Other,
+        ArgumentNullException.ThrowIfNull(options);
+        return !string.IsNullOrWhiteSpace(options.DataFolder) ? options.DataFolder
+            : !string.IsNullOrWhiteSpace(options.SettingsFolder) ? options.SettingsFolder
+            : UserFolders().Data;
+    }
+
+    /// <summary>The current user's folders. Only works them out; <see cref="PrepareUserFolders"/> makes them ready.</summary>
+    public static AppFolders UserFolders() => AppFolders.For(Brand.Slug);
+
+    /// <summary>
+    /// Makes the current user's folders ready, once, as the desktop app starts: creates them, moves an earlier
+    /// version's files in and copies a previous name's settings (docs/branding.md). Nothing else moves files, so
+    /// looking a folder up, as the tests and the gateway do, never touches what's on the machine.
+    /// </summary>
+    public static AppFolders PrepareUserFolders() =>
+        Prepare(UserFolders(), AppFolders.Legacy(Brand.Slug, AppFolders.FolderEnvironment.Current));
+
+    internal static AppFolders Prepare(AppFolders folders, string? legacy)
+    {
+        folders.Create();
+        folders.MoveFromLegacy(legacy);
+        MigrateIfMissing(folders.Settings, Brand.PreviousSlugs.Select(UserFolder));
+        return folders;
     }
 }
 

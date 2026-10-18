@@ -19,7 +19,7 @@ public static class EngineServiceCollectionExtensions
     {
         services.AddOptions<EngineOptions>();
         services.PostConfigure<EngineOptions>(o =>
-            o.CaptureFolder ??= Path.Combine(SettingsLocation.Folder(o), "capture")
+            o.CaptureFolder ??= Path.Combine(SettingsLocation.DataFolder(o), AppFolders.PacketCaptureFolder)
         );
         services.AddOptions<GeocodingOptions>();
         services.TryAddSingleton(TimeProvider.System);
@@ -34,7 +34,7 @@ public static class EngineServiceCollectionExtensions
             SettingsLocation.CreateStore(sp.GetRequiredService<IOptions<EngineOptions>>().Value)
         );
         services.TryAddSingleton<IMessageStore>(sp => new FileMessageStore(
-            SettingsLocation.Folder(sp.GetRequiredService<IOptions<EngineOptions>>().Value)
+            SettingsLocation.DataFolder(sp.GetRequiredService<IOptions<EngineOptions>>().Value)
         ));
         services.TryAddSingleton<Engine>();
         services.TryAddSingleton<IEngineService>(sp => sp.GetRequiredService<Engine>());

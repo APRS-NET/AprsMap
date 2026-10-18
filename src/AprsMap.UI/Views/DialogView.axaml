@@ -274,7 +274,47 @@
                     IsVisible="{Binding PullText, Converter={x:Static ObjectConverters.IsNotNull}}"
                     TextWrapping="Wrap"
                   />
+                  <!-- Installing (behavior 11): the download's progress with Cancel, then Restart now. -->
+                  <StackPanel Spacing="8" IsVisible="{Binding Owner.IsDownloading}">
+                    <ProgressBar
+                      x:Name="UpdateProgress"
+                      Minimum="0"
+                      Maximum="1"
+                      Value="{Binding Owner.Progress}"
+                      AutomationProperties.Name="{Binding Owner.NoticeText}"
+                    />
+                    <Button
+                      x:Name="CancelUpdateButton"
+                      Content="{l:T Updates.Cancel}"
+                      Command="{Binding CancelCommand}"
+                      HorizontalAlignment="Right"
+                    />
+                  </StackPanel>
+                  <TextBlock
+                    Text="{l:T Updates.DownloadFailed}"
+                    IsVisible="{Binding Owner.Failed}"
+                    TextWrapping="Wrap"
+                    Foreground="{DynamicResource Brush.Warn}"
+                  />
+                  <StackPanel Spacing="8" IsVisible="{Binding Owner.IsReady}">
+                    <TextBlock Text="{l:T Updates.Ready}" TextWrapping="Wrap" />
+                    <WrapPanel ItemSpacing="8" LineSpacing="8" HorizontalAlignment="Right">
+                      <Button Content="{l:T Updates.OnClose}" Command="{Binding CloseCommand}" />
+                      <Button
+                        x:Name="RestartNowButton"
+                        Classes="accent"
+                        Content="{l:T Updates.RestartNow}"
+                        Command="{Binding RestartNowCommand}"
+                      />
+                    </WrapPanel>
+                  </StackPanel>
                   <WrapPanel ItemSpacing="8" LineSpacing="8" HorizontalAlignment="Right">
+                    <WrapPanel.IsVisible>
+                      <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="!Owner.IsDownloading" />
+                        <Binding Path="!Owner.IsReady" />
+                      </MultiBinding>
+                    </WrapPanel.IsVisible>
                     <Button Content="{l:T Updates.Later}" Command="{Binding LaterCommand}" />
                     <Button x:Name="SkipUpdateButton" Content="{l:T Updates.Skip}" Command="{Binding SkipCommand}" />
                     <Button
@@ -283,6 +323,13 @@
                       Content="{l:T Updates.Download}"
                       Command="{Binding DownloadCommand}"
                       IsVisible="{Binding CanDownload}"
+                    />
+                    <Button
+                      x:Name="InstallUpdateButton"
+                      Classes="accent"
+                      Content="{l:T Updates.Install}"
+                      Command="{Binding InstallCommand}"
+                      IsVisible="{Binding CanInstall}"
                     />
                   </WrapPanel>
                 </StackPanel>

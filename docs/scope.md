@@ -37,18 +37,20 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 
 ### Settings storage and profiles
 
-- **Per-user storage (F0.4).** Settings live in the user's own folder, never next to the executable or in a shared
-  location:
+- **Per-user storage (F0.4).** Settings live in the user's own folders, never next to the executable or in a shared
+  location. Each kind of file goes where its system expects it ([F4.15 behavior 13](features/F4.15-updates.md)):
 
-  | OS | Folder |
-  | --- | --- |
-  | Windows | `%APPDATA%\aprsnet\<slug>` (roaming; caches such as tiles go under `%LOCALAPPDATA%`) |
-  | Linux | `~/.aprsnet/<slug>` |
-  | macOS | `~/Library/Application Support/aprsnet/<slug>` |
+  | | Windows | Linux (XDG) | macOS |
+  | --- | --- | --- | --- |
+  | Settings, profiles, preferences | `%APPDATA%\aprsnet\<slug>` | `~/.config/aprsnet/<slug>` | `~/Library/Application Support/aprsnet/<slug>` |
+  | Message history, captures | `%LOCALAPPDATA%\aprsnet\<slug>` | `~/.local/share/aprsnet/<slug>` | as settings |
+  | Tile cache | `%LOCALAPPDATA%\aprsnet\<slug>\tiles` | `~/.cache/aprsnet/<slug>/tiles` | `~/Library/Caches/aprsnet/<slug>/tiles` |
+  | Machine-wide defaults | `%ProgramData%\aprsnet\<slug>` | `/etc/xdg/aprsnet/<slug>` | `/Library/Application Support/aprsnet/<slug>` |
 
   `<slug>` is `Brand.Slug` (`aprsmap` today), so a rename moves the folder and migrates it through `PreviousSlugs`
-  ([branding.md](branding.md)). The gateway keeps the same model in its server-side store. The browser app stores
-  nothing itself: its settings belong to the gateway's station.
+  ([branding.md](branding.md)). Linux's folders were `~/.aprsnet/<slug>` before 0.5 and move on the first start. The
+  gateway keeps the same model in its server-side store (`/data`). The browser app stores nothing itself: its settings
+  belong to the gateway's station.
 - **First-run location (F0.5).** The wizard asks for the callsign and the station's location. The location can be entered
   in any of these ways, and every one ends as latitude and longitude shown on a small map for confirmation:
   - Maidenhead locator (4–10 characters; conversion is APRS.NET gap G08);
