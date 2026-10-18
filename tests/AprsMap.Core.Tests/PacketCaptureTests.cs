@@ -210,4 +210,96 @@ public sealed class PacketCaptureTests : IDisposable
         Assert.Empty(_folder.GetFiles());
         Assert.Equal(0, (await engine.GetStatusAsync(Ct)).CapturedToday);
     }
+
+    [Fact]
+    public async Task WithoutACaptureFolderThereIsNothingToShowExportOrClear()
+    {
+        using var engine = new Engine(
+            Options.Create(new EngineOptions()),
+            new EngineTests.FakeSourceFactory(),
+            InMemorySettingsStore.WithProfile(),
+            _time,
+            NullLogger<Engine>.Instance
+        );
+        await On(engine);
+
+        engine.Accept(BadLatitude);
+        await engine.FlushCaptureAsync(Ct);
+        await engine.ClearCaptureAsync(Ct);
+
+        Assert.Empty((await engine.GetCaptureAsync(new CaptureQuery(), Ct)).Packets);
+        var export = await engine.ExportCaptureAsync(new CaptureExport(), Ct);
+        Assert.Equal(0, export.Lines);
+        Assert.Empty(export.Text);
+        Assert.Empty(_folder.GetFiles());
+    }
+
+    [Fact]
+    public async Task EachDayHasItsOwnFilesCountAndExport()
+    {
+        using var engine = Create(null);
+        await On(engine);
+        engine.Accept(BadLatitude);
+        await engine.FlushCaptureAsync(Ct);
+
+        _time.Advance(TimeSpan.FromDays(1));
+        Assert.Equal(0, (await engine.GetStatusAsync(Ct)).CapturedToday); // a new day starts at nothing
+        engine.Accept(Unsupported);
+        engine.Accept(BadLatitude); // the same station, but over an hour later
+        await engine.FlushCaptureAsync(Ct);
+
+        var all = await engine.GetCaptureAsync(new CaptureQuery(), Ct);
+        Assert.Equal(
+            [new CaptureDay(new DateOnly(2026, 10, 19), 2), new CaptureDay(new DateOnly(2026, 10, 18), 1)],
+            all.Days
+        );
+        Assert.Equal(3, all.Packets.Count);
+        Assert.Equal(2, (await engine.GetCaptureAsync(new CaptureQuery(Max: 2), Ct)).Packets.Count);
+
+        var firstDay = await engine.GetCaptureAsync(new CaptureQuery(Day: new DateOnly(2026, 10, 18)), Ct);
+        Assert.Equal([BadLatitude], firstDay.Packets.Select(p => p.Raw));
+
+        var export = await engine.ExportCaptureAsync(new CaptureExport(Day: new DateOnly(2026, 10, 18)), Ct);
+        Assert.Equal("capture-2026-10-18.log", export.FileName);
+        Assert.Equal(1, export.Lines);
+        var everything = await engine.ExportCaptureAsync(new CaptureExport(), Ct);
+        Assert.Equal("capture-2026-10-19-all.log", everything.FileName);
+        Assert.Contains("2026-10-18 12:00 to 2026-10-19 12:00 UTC", everything.Note, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnExportWithNothingCapturedSaysSo()
+    {
+        using var engine = Create(null);
+        await On(engine);
+
+        var export = await engine.ExportCaptureAsync(new CaptureExport(Reason: "aprs.parse.invalid-latitude"), Ct);
+
+        Assert.Equal(0, export.Lines);
+        Assert.Empty(export.Text);
+        Assert.Contains("- 0 lines, - to - UTC", export.Note, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task TodaysCountCarriesOverARestartAndStrayFilesAreIgnored()
+    {
+        using (var first = Create(null))
+        {
+            await On(first);
+            first.Accept(BadLatitude);
+            first.Accept(Unsupported);
+            await first.FlushCaptureAsync(Ct);
+        }
+        await File.WriteAllTextAsync(Path.Combine(_folder.FullName, "notes.log"), "not a day", Ct);
+        // A day whose reasons file was lost still lists its packets, with no reasons.
+        File.Copy(Path.Combine(_folder.FullName, "2026-10-18.log"), Path.Combine(_folder.FullName, "2026-10-17.log"));
+
+        using var engine = Create(null);
+        await On(engine);
+
+        Assert.Equal(2, (await engine.GetStatusAsync(Ct)).CapturedToday);
+        var view = await engine.GetCaptureAsync(new CaptureQuery(), Ct);
+        Assert.Equal([new DateOnly(2026, 10, 18), new DateOnly(2026, 10, 17)], view.Days.Select(d => d.Day));
+        Assert.Equal(0, view.Days[1].Count);
+    }
 }
