@@ -31,6 +31,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     private readonly Action<StationFilter> _useFilter;
     private readonly Action<string> _select;
     private readonly Action _showProblems;
+    private readonly Func<StationFilter?> _viewFilter;
     private CancellationTokenSource? _running;
     private Dashboard? _last;
 
@@ -44,9 +45,11 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         Action<string> select,
         Action showProblems,
         Func<UnitSettings>? units = null,
-        Action<StationFilter>? useFilter = null
+        Action<StationFilter>? useFilter = null,
+        Func<StationFilter?>? viewFilter = null
     )
     {
+        _viewFilter = viewFilter ?? (() => null);
         _units = units ?? (() => UnitSettings.Metric);
         _useFilter = useFilter ?? (_ => { });
         Platforms = new StatTable(text, "Dashboard.Table.Platforms");
@@ -71,6 +74,56 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     /// <summary>The range shown (behavior 3), per viewer; the last hour by default.</summary>
     [ObservableProperty]
     public partial DashboardRange Range { get; set; }
+
+    /// <summary>
+    /// My view (behavior 7): count only the stations the viewer's view filter shows; off (the whole feed) by default
+    /// (decision 4).
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WholeFeed))]
+    public partial bool MyView { get; set; }
+
+    /// <summary>The other side of <see cref="MyView"/>, for the Whole feed button.</summary>
+    public bool WholeFeed
+    {
+        get => !MyView;
+        set
+        {
+            if (value)
+            {
+                MyView = false;
+            }
+        }
+    }
+
+    /// <summary>What My view counts, or that the view filter is off so it's the whole feed; null for the whole feed.</summary>
+    [ObservableProperty]
+    public partial string? ScopeText { get; private set; }
+
+    partial void OnMyViewChanged(bool value)
+    {
+        ShowScope();
+        if (_running is not null)
+        {
+            _ = RefreshAsync(_running.Token);
+        }
+    }
+
+    /// <summary>The view filter changed: My view counts again with it.</summary>
+    internal void ViewFilterChanged()
+    {
+        ShowScope();
+        if (MyView && _running is not null)
+        {
+            _ = RefreshAsync(_running.Token);
+        }
+    }
+
+    private void ShowScope() =>
+        ScopeText =
+            !MyView ? null
+            : _viewFilter() is null ? _text["Dashboard.MyView.NoFilter"]
+            : _text["Dashboard.MyView.Note"];
 
     /// <summary>"As of 14:32:10", or "Waiting for the engine" before the first answer.</summary>
     [ObservableProperty]
@@ -183,7 +236,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     {
         try
         {
-            Show(await _engine.GetDashboardAsync(Range, cancellationToken));
+            Show(await _engine.GetDashboardAsync(Range, MyView ? _viewFilter() : null, cancellationToken));
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
         {
@@ -225,6 +278,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         {
             option.Refresh();
         }
+        ShowScope();
         if (_last is not null)
         {
             Show(_last);
