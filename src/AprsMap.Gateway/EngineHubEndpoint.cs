@@ -313,6 +313,44 @@ internal sealed class EngineHubEndpoint(
     public IAsyncEnumerable<BulletinView> WatchBulletins(CancellationToken cancellationToken) =>
         engine.WatchBulletinsAsync(cancellationToken);
 
+    [HubMethodName(EngineHub.PostBulletin)]
+    public Task<BulletinView> PostBulletin(BulletinPost post)
+    {
+        RefuseTransmit();
+        return engine.PostBulletinAsync(post, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.StopBulletin)]
+    public Task StopBulletin(string addressee)
+    {
+        RefuseTransmit();
+        return engine.StopBulletinAsync(addressee, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.GetGroups)]
+    public Task<IReadOnlyList<string>> GetGroups() => engine.GetGroupsAsync(Context.ConnectionAborted);
+
+    [HubMethodName(EngineHub.JoinGroup)]
+    public Task JoinGroup(string group)
+    {
+        RefuseTransmit();
+        return engine.JoinGroupAsync(group, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.LeaveGroup)]
+    public Task LeaveGroup(string group)
+    {
+        RefuseTransmit();
+        return engine.LeaveGroupAsync(group, Context.ConnectionAborted);
+    }
+
+    [HubMethodName(EngineHub.PostToGroup)]
+    public Task<IReadOnlyList<ChatMessage>> PostToGroup(string group, string text)
+    {
+        RefuseTransmit();
+        return engine.PostToGroupAsync(group, text, Context.ConnectionAborted);
+    }
+
     /// <summary>Distance and bearing from the station's location to a viewer's destination (F1.18): open to every viewer.</summary>
     [HubMethodName(EngineHub.GetDestination)]
     public Task<DestinationInfo> GetDestination(double latitude, double longitude) =>

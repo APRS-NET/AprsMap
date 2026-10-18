@@ -19,7 +19,7 @@ namespace AprsMap.Core;
 /// position of every station for <see cref="WatchStationsAsync"/>. It logs in with the active station profile from
 /// <see cref="ISettingsStore"/>, waits while there is none, and reconnects when the profile changes.
 /// </summary>
-public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost, IBeaconHost
+public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost, IBeaconHost, IBulletinHost
 {
     private readonly EngineOptions _options;
     private readonly IPacketSourceFactory _sources;
@@ -99,6 +99,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _messenger = new Messenger(this, messages ?? new InMemoryMessageStore(), time);
         _beaconer = new Beaconer(this, time);
         _bulletins = new BulletinFeed(time);
+        _ownBulletins = new OwnBulletins(this, time);
+        _bulletins.Own = _ownBulletins;
+        _groupTimer = time.CreateTimer(_ => KeepGroupsAlive(), null, GroupCheck, GroupCheck);
         _capture = _options.CaptureFolder is { } captureFolder ? new PacketCapture(captureFolder, time) : null;
     }
 
@@ -107,6 +110,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         _messenger.Dispose();
         _beaconer.Dispose();
+        _groupTimer.Dispose();
+        _ownBulletins.Dispose();
         _bulletins.Dispose();
         _capture?.DisposeAsync().AsTask().GetAwaiter().GetResult(); // what's queued is written first
         _settingsLock.Dispose();
@@ -2016,6 +2021,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         await _messenger.UseAsync(profile?.Id, profile?.Callsign, cancellationToken).ConfigureAwait(false);
         _messenger.Pump(); // the Transmit switch or a source may have changed
         _beaconer.Poke(); // and beacons with them (F2.2 behavior 4)
+        _ownBulletins.Poke(); // and bulletins (F2.5 behavior 7)
     }
 
     /// <summary>Distances and bearings are from the active profile's location (F1.13 behavior 4).</summary>
