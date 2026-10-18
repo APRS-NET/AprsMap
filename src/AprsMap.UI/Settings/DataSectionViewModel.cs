@@ -31,6 +31,12 @@ public sealed partial class DataSectionViewModel : ObservableObject
     /// <summary>Clear (F1.19), where this viewer may change the station; null otherwise.</summary>
     public ClearDataViewModel? Clear { get; init; }
 
+    /// <summary>
+    /// Capture unexpected packets (docs/features/F1.27-packet-capture.md, behavior 4), where this viewer may change the
+    /// station; null otherwise.
+    /// </summary>
+    public Capture.CaptureSettingsViewModel? Capture { get; init; }
+
     /// <summary>Whether the station's settings live on a gateway, shared with other viewers.</summary>
     public bool SharedStation { get; }
 

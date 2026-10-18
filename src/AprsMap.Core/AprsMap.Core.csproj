@@ -18,6 +18,7 @@
     <PackageReference Include="AprsNet.Beacons" />
     <PackageReference Include="AprsNet.DeviceId" />
     <PackageReference Include="AprsNet.Filters" />
+    <PackageReference Include="AprsNet.Corpus" />
     <PackageReference Include="AprsNet.Kiss" />
     <PackageReference Include="AprsNet.Kiss.Serial" />
     <PackageReference Include="AprsNet.Messaging" />

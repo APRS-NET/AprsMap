@@ -46,6 +46,9 @@ public static class PanelKinds
     /// <summary>A source's live traffic, for troubleshooting (docs/features/F1.28-source-console.md).</summary>
     public const string Console = "console";
 
+    /// <summary>The packets capture recorded (docs/features/F1.27-packet-capture.md, behavior 7).</summary>
+    public const string Captured = "captured";
+
     /// <summary>Every panel, with the id of the dock it starts in (behavior 2).</summary>
     public static IReadOnlyList<(string Kind, string Dock)> All { get; } =
     [
@@ -54,6 +57,7 @@ public static class PanelKinds
         (Messages, ShellFactory.RightDock),
         (Packets, ShellFactory.BottomDock),
         (Console, ShellFactory.BottomDock),
+        (Captured, ShellFactory.BottomDock),
     ];
 
     /// <summary>The resource key of a panel's title.</summary>

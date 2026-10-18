@@ -1184,6 +1184,119 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.kiss.bytes-invalid" xml:space="preserve">
     <value>Bytes are pairs of hex digits, such as C0 FF C0.</value>
   </data>
+  <data name="Shell.Panel.captured" xml:space="preserve">
+    <value>Captured packets</value>
+    <comment>Panel title: packets recorded for analysis because they weren't fully understood.</comment>
+  </data>
+  <data name="Capture.Title" xml:space="preserve">
+    <value>Capture unexpected packets</value>
+  </data>
+  <data name="Capture.Description" xml:space="preserve">
+    <value>Records the packets that couldn't be read or were only partly understood, exactly as received, so they can be sent to the developers to add to the test corpus. Off unless switched on.</value>
+  </data>
+  <data name="Capture.Switch" xml:space="preserve">
+    <value>Capture unexpected packets</value>
+  </data>
+  <data name="Capture.MaxMegabytes" xml:space="preserve">
+    <value>Keep at most (MB)</value>
+  </data>
+  <data name="Capture.Days" xml:space="preserve">
+    <value>Keep for (days)</value>
+  </data>
+  <data name="Capture.UserDefined" xml:space="preserve">
+    <value>Include user-defined packets, whose data is never decoded</value>
+  </data>
+  <data name="Capture.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Capture.Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="Capture.LimitsInvalid" xml:space="preserve">
+    <value>The limits are whole numbers above 0.</value>
+  </data>
+  <data name="Capture.Status" xml:space="preserve">
+    <value>Capturing unexpected packets: {count} today</value>
+  </data>
+  <data name="Capture.DayFilter" xml:space="preserve">
+    <value>Day</value>
+  </data>
+  <data name="Capture.ReasonFilter" xml:space="preserve">
+    <value>Reason</value>
+  </data>
+  <data name="Capture.AllDays" xml:space="preserve">
+    <value>All days</value>
+  </data>
+  <data name="Capture.Day" xml:space="preserve">
+    <value>{day} ({count})</value>
+  </data>
+  <data name="Capture.AnyReason" xml:space="preserve">
+    <value>Any reason</value>
+  </data>
+  <data name="Capture.Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Capture.Anonymize" xml:space="preserve">
+    <value>Anonymize</value>
+    <comment>Export with callsigns, names and e-mail addresses replaced, ready for the test corpus.</comment>
+  </data>
+  <data name="Capture.Export" xml:space="preserve">
+    <value>Export for analysis…</value>
+  </data>
+  <data name="Capture.FileType" xml:space="preserve">
+    <value>Packet capture</value>
+  </data>
+  <data name="Capture.Report" xml:space="preserve">
+    <value>Report on GitHub…</value>
+  </data>
+  <data name="Capture.Clear" xml:space="preserve">
+    <value>Clear captured</value>
+  </data>
+  <data name="Capture.ClearConfirm" xml:space="preserve">
+    <value>Delete every captured packet?</value>
+  </data>
+  <data name="Capture.OpenInPackets" xml:space="preserve">
+    <value>Open in Packets</value>
+  </data>
+  <data name="Capture.Empty" xml:space="preserve">
+    <value>No packets captured yet. Switch capture on in Settings › Data.</value>
+  </data>
+  <data name="Capture.Repeats" xml:space="preserve">
+    <value>{count} repeats today were counted, not written again.</value>
+  </data>
+  <data name="Capture.Exported" xml:space="preserve">
+    <value>Saved {count} lines as {file}.</value>
+  </data>
+  <data name="Capture.ExportedCheck" xml:space="preserve">
+    <value>Saved {count} lines as {file}. The anonymizer found something that may still be a callsign or an address: check the file before sharing it.</value>
+  </data>
+  <data name="Capture.IssueTitle" xml:space="preserve">
+    <value>Captured packets for the test corpus</value>
+  </data>
+  <data name="Capture.IssueAttach" xml:space="preserve">
+    <value>(Attach the exported .log file here.)</value>
+  </data>
+  <data name="Error.capture.unsupported" xml:space="preserve">
+    <value>Data type not supported</value>
+  </data>
+  <data name="Error.capture.unknown-type" xml:space="preserve">
+    <value>Data type not known</value>
+  </data>
+  <data name="Error.capture.write-failed" xml:space="preserve">
+    <value>The capture files couldn't be written</value>
+  </data>
+  <data name="Error.aprs.unrecognized.unknown-data-extension" xml:space="preserve">
+    <value>Unknown data extension</value>
+  </data>
+  <data name="Error.aprs.unrecognized.unknown-path-entry" xml:space="preserve">
+    <value>Path entry no radio could have sent</value>
+  </data>
+  <data name="Error.aprs.unrecognized.unread-weather-field" xml:space="preserve">
+    <value>Weather reading not understood</value>
+  </data>
+  <data name="Error.aprs.unrecognized.user-defined-data" xml:space="preserve">
+    <value>User-defined data</value>
+  </data>
   <data name="Shell.Panel.messages" xml:space="preserve">
     <value>Messages</value>
     <comment>Panel title: conversations with other stations.</comment>

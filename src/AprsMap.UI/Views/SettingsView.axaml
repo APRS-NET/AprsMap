@@ -905,6 +905,60 @@
 
           <!-- Data (F0.10): Reset the app, with a confirmation that says what goes. -->
           <StackPanel x:Name="DataSection" IsVisible="{Binding IsDataSection}" Spacing="12">
+            <!-- Packet capture (F1.27 behaviors 4, 5): off by default, with its limits. -->
+            <StackPanel
+              x:Name="CaptureSection"
+              Spacing="8"
+              IsVisible="{Binding Data.Capture, Converter={x:Static ObjectConverters.IsNotNull}}"
+            >
+              <TextBlock Text="{l:T Capture.Title}" FontWeight="SemiBold" />
+              <TextBlock Text="{l:T Capture.Description}" TextWrapping="Wrap" />
+              <ToggleSwitch
+                x:Name="CaptureSwitch"
+                IsChecked="{Binding Data.Capture.On, FallbackValue=False}"
+                OnContent="{l:T Capture.Switch}"
+                OffContent="{l:T Capture.Switch}"
+              />
+              <WrapPanel ItemSpacing="12" LineSpacing="8">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Capture.MaxMegabytes}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="CaptureMegabytesBox"
+                    Text="{Binding Data.Capture.MaxMegabytes, FallbackValue=''}"
+                    AutomationProperties.Name="{l:T Capture.MaxMegabytes}"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Capture.Days}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="CaptureDaysBox"
+                    Text="{Binding Data.Capture.Days, FallbackValue=''}"
+                    AutomationProperties.Name="{l:T Capture.Days}"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+              </WrapPanel>
+              <CheckBox
+                x:Name="CaptureUserDefinedBox"
+                Content="{l:T Capture.UserDefined}"
+                IsChecked="{Binding Data.Capture.UserDefined, FallbackValue=False}"
+              />
+              <WrapPanel ItemSpacing="8" LineSpacing="8">
+                <Button
+                  x:Name="CaptureSaveButton"
+                  Content="{l:T Capture.Save}"
+                  Command="{Binding Data.Capture.SaveCommand}"
+                />
+                <TextBlock Text="{Binding Data.Capture.SavedText}" VerticalAlignment="Center" />
+              </WrapPanel>
+              <TextBlock
+                Text="{Binding Data.Capture.Error}"
+                IsVisible="{Binding Data.Capture.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
             <!-- Clear (F1.19): what the station has collected, each with a count, confirmed before it goes. -->
             <StackPanel
               x:Name="ClearSection"

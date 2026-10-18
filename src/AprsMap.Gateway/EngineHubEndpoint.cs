@@ -305,6 +305,30 @@ internal sealed class EngineHubEndpoint(
         return engine.SendTncCommandAsync(sourceId, command, Context.ConnectionAborted);
     }
 
+    /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
+    [HubMethodName(EngineHub.GetCapture)]
+    public Task<CaptureView> GetCapture(CaptureQuery query)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetCaptureAsync(query, Context.ConnectionAborted);
+    }
+
+    /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
+    [HubMethodName(EngineHub.ExportCapture)]
+    public Task<CaptureExportResult> ExportCapture(CaptureExport request)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ExportCaptureAsync(request, Context.ConnectionAborted);
+    }
+
+    /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
+    [HubMethodName(EngineHub.ClearCapture)]
+    public Task ClearCapture()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.ClearCaptureAsync(Context.ConnectionAborted);
+    }
+
     /// <summary>The TNC types APRS.NET knows: the same for every gateway, so anyone may list them (F3.2 behavior 4).</summary>
     [HubMethodName(EngineHub.GetTncTypes)]
     public Task<IReadOnlyList<TncTypeInfo>> GetTncTypes() => engine.GetTncTypesAsync(Context.ConnectionAborted);

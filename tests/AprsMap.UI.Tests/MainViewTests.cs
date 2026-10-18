@@ -133,6 +133,7 @@ public class MainViewTests
             [
                 "ReconnectItem",
                 "AprsIsConsoleItem",
+                "CaptureItem",
                 "InternetToggle",
                 "AprsIsToggle",
                 "TilesToggle",

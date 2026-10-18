@@ -27,6 +27,7 @@ public sealed class PanelTemplate : IDataTemplate
             PanelTool { Kind: PanelKinds.Stations } panel => new StationsPanel { DataContext = panel.Context },
             PanelTool { Kind: PanelKinds.Messages } panel => new MessagesPanel { DataContext = panel.Context },
             PanelTool { Kind: PanelKinds.Console } panel => new SourceConsolePanel { DataContext = panel.Context },
+            PanelTool { Kind: PanelKinds.Captured } panel => new CapturedPacketsPanel { DataContext = panel.Context },
             PanelTool panel => Placeholder(panel.Kind),
             MapDocument { Context: ViewModels.MainViewModel { Map: not null } context } => new Map.MapPanel
             {

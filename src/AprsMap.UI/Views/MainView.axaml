@@ -253,6 +253,13 @@
                         Header="{l:T Console.Open}"
                         Command="{Binding OpenAprsIsConsoleCommand}"
                       />
+                      <!-- Packet capture (F1.27 behavior 6): says so while it's on, and opens what it recorded. -->
+                      <MenuItem
+                        x:Name="CaptureItem"
+                        Header="{Binding CaptureText}"
+                        IsVisible="{Binding CaptureText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Command="{Binding OpenCapturedPacketsCommand}"
+                      />
                       <Separator />
                       <!-- Quick toggles (F1.15): the station's, so read-only for a gateway's viewers. -->
                       <MenuItem

@@ -79,6 +79,24 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task BrowsersCannotSeeExportOrClearCapturedPackets()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var read = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.GetCaptureAsync(new CaptureQuery(), Ct)
+        );
+        var export = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.ExportCaptureAsync(new CaptureExport(), Ct)
+        );
+        var clear = await Assert.ThrowsAsync<EngineAccessException>(() => remote.ClearCaptureAsync(Ct));
+
+        // F1.27 behavior 11.
+        Assert.All(new[] { read, export, clear }, e => Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code));
+    }
+
+    [Fact]
     public async Task BrowsersCannotUseAddressLookupOrThePasscodeCalculator()
     {
         await using var remote = factory.CreateRemote();

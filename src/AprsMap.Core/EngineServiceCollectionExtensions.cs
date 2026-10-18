@@ -18,6 +18,9 @@ public static class EngineServiceCollectionExtensions
     public static IServiceCollection AddAprsMapEngine(this IServiceCollection services)
     {
         services.AddOptions<EngineOptions>();
+        services.PostConfigure<EngineOptions>(o =>
+            o.CaptureFolder ??= Path.Combine(SettingsLocation.Folder(o), "capture")
+        );
         services.AddOptions<GeocodingOptions>();
         services.TryAddSingleton(TimeProvider.System);
         services.AddHttpClient(

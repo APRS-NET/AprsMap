@@ -218,6 +218,20 @@ public interface IEngineService
     /// </summary>
     Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>The packets capture recorded, newest first (docs/features/F1.27-packet-capture.md, behavior 7).</summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task<CaptureView> GetCaptureAsync(CaptureQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Captured packets as one file for APRS.NET's test corpus, anonymized or as received, with a note (F1.27 behavior 8).
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task<CaptureExportResult> ExportCaptureAsync(CaptureExport request, CancellationToken cancellationToken = default);
+
+    /// <summary>Deletes the captured packets (F1.27 behavior 10).</summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task ClearCaptureAsync(CancellationToken cancellationToken = default);
+
     /// <summary>
     /// A source's traffic for the Source console (docs/features/F1.28-source-console.md, behaviors 2, 7): the entries
     /// kept, then new ones as they come. A TNC's are kept from when it opens; APRS-IS's only while someone watches.

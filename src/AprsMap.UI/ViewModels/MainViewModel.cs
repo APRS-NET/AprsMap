@@ -259,6 +259,31 @@ public sealed partial class MainViewModel : ObservableObject
         await Console.OpenAsync(sourceId, commandLine);
     }
 
+    /// <summary>"Capturing unexpected packets: 37 today" while capture is on (F1.27 behavior 6); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? CaptureText { get; private set; }
+
+    /// <summary>The Captured packets panel (docs/features/F1.27-packet-capture.md, behavior 7).</summary>
+    public Capture.CapturedPacketsViewModel CapturedPackets =>
+        _capturedPanel ??= new Capture.CapturedPacketsViewModel(engine, _text, time, OpenStationPackets);
+
+    private Capture.CapturedPacketsViewModel? _capturedPanel;
+
+    /// <summary>Opens the Captured packets panel, from the status line (F1.27 behavior 6).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task OpenCapturedPacketsAsync()
+    {
+        ShowPanel(PanelKinds.Captured);
+        await CapturedPackets.LoadAsync();
+    }
+
+    /// <summary>Open in Packets: that station's packets in the Packets panel (F1.27 behavior 7).</summary>
+    private void OpenStationPackets(string station)
+    {
+        PacketList.OnlyStation(station);
+        ShowPanel(PanelKinds.Packets);
+    }
+
     /// <summary>Opens the Source console on the APRS-IS source, from its pill (F1.28 behavior 1).</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private Task OpenAprsIsConsoleAsync() =>
@@ -357,7 +382,14 @@ public sealed partial class MainViewModel : ObservableObject
         )
         {
             Clear = _settings is { ReadOnly: false } ? new ClearDataViewModel(engine, _text) : null,
+            Capture = _settings is { ReadOnly: false }
+                ? new Capture.CaptureSettingsViewModel(engine, _text, Show)
+                : null,
         };
+        if (_settings is { } shown)
+        {
+            data.Capture?.Show(shown);
+        }
         var mapItems = Map is null
             ? null
             : SettingsRegistry.Map(
@@ -1106,6 +1138,7 @@ public sealed partial class MainViewModel : ObservableObject
         _settings = settings;
         PacketList.ShowSources(settings);
         Settings?.Beacons?.Show(settings); // a source's TX enabled changes what beacons can go out on
+        Settings?.Data?.Capture?.Show(settings);
         CanToggle = !settings.ReadOnly;
         if (CanClearData != couldClear)
         {
@@ -1244,6 +1277,9 @@ public sealed partial class MainViewModel : ObservableObject
             PacketList.Clear(); // someone cleared the packet history (F1.19 behavior 3)
         }
         _status = status;
+        CaptureText = status.CapturedToday is { } captured
+            ? _text.Format("Capture.Status", new Dictionary<string, object?> { ["count"] = captured })
+            : null;
         ShowToggles(status.Toggles ?? StationToggles.AllOn);
         _engineUnreachable = false;
         ShowConnection();

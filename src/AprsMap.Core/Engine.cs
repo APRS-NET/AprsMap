@@ -98,6 +98,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _logger = logger;
         _messenger = new Messenger(this, messages ?? new InMemoryMessageStore(), time);
         _beaconer = new Beaconer(this, time);
+        _capture = _options.CaptureFolder is { } captureFolder ? new PacketCapture(captureFolder, time) : null;
     }
 
     /// <inheritdoc />
@@ -105,6 +106,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         _messenger.Dispose();
         _beaconer.Dispose();
+        _capture?.DisposeAsync().AsTask().GetAwaiter().GetResult(); // what's queued is written first
         _settingsLock.Dispose();
         lock (_gate)
         {
@@ -147,6 +149,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     PacketHistory: _packetHistory,
                     Stations: _stations.Count,
                     Toggles: (_settings ?? AppSettings.Empty).EffectiveToggles,
+                    CapturedToday: _capture?.CapturedToday,
                     Transmit: new TransmitStatus(
                         (_settings ?? AppSettings.Empty).EffectiveToggles.Transmit,
                         TransmitBlock(_settings ?? AppSettings.Empty),
@@ -190,6 +193,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 _settings = saved;
             }
             MeasureFrom(saved);
+            UseCapture(saved);
             await UseMessengerAsync(saved, cancellationToken).ConfigureAwait(false);
             SignalSettingsChanged();
 
@@ -251,6 +255,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             lock (_gate)
             {
                 _settings = AppSettings.Empty; // not the configured defaults: the point is to see first-run setup
+                UseCapture(AppSettings.Empty);
                 _recent.Clear();
                 _listed.Clear();
                 _listedOrder.Clear();
@@ -1625,6 +1630,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
 
         if (!sent)
         {
+            _capture?.Consider(packet, sourceId); // unexpected packets, for the test corpus (F1.27)
             CheckEchoes(packet);
             _messenger.Receive(packet, sourceId, IsOwnReceiver(sourceId)); // messages, acks, and who was heard where
         }
@@ -1978,6 +1984,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             _settings = settings;
         }
         MeasureFrom(settings);
+        UseCapture(settings);
         await UseMessengerAsync(settings, cancellationToken).ConfigureAwait(false);
         return settings;
     }

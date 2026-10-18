@@ -57,6 +57,10 @@ public enum ConnectionState
 /// <param name="Toggles">The station's quick toggles (F1.15), for the status bar's markers.</param>
 /// <param name="Transmit">Whether the station transmits, and what holds it (docs/features/F2.1-own-station.md).</param>
 /// <param name="UnreadMessages">Unread messages to the active profile (docs/features/F2.4-messaging.md, behavior 4).</param>
+/// <param name="CapturedToday">
+/// While packet capture is on, how many packets it recorded today (docs/features/F1.27-packet-capture.md, behavior 6);
+/// null while it's off.
+/// </param>
 /// <param name="Stations">How many stations, objects and items the store holds, for the View filter's chip (F1.9).</param>
 /// <param name="PacketHistory">
 /// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
@@ -81,7 +85,8 @@ public sealed record EngineStatus(
     int Stations = 0,
     StationToggles? Toggles = null,
     TransmitStatus? Transmit = null,
-    int UnreadMessages = 0
+    int UnreadMessages = 0,
+    int? CapturedToday = null
 );
 
 /// <summary>Transmitting, for the status bar (docs/features/F2.1-own-station.md, behaviors 4–13).</summary>

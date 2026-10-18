@@ -534,6 +534,10 @@ reconnect like the other connections. No device access in the library beyond the
 **Acceptance.** The anonymizer API's output for the existing captures matches the script's byte for byte; a Mic-E line
 that isn't valid UTF-8 writes and reads back unchanged; each unrecognised-part code has a corpus line that shows it.
 
+**Delivered** (`0.4.0-alpha.5`, APRS.NET#250, #251): `AprsNet.Corpus` (`CorpusLine`, `CorpusFile`, `CorpusWriter`,
+`CorpusAnonymizer`, `CorpusPseudonyms`) and `AprsPacket.Unrecognized` with four `UnrecognizedPartCode`s. AprsMap's
+packet capture (F1.27) is built on them.
+
 ## G32: A typed reason when an APRS-IS login reaches a KISS TNC
 
 **Need.** AprsMap F1.1: since `0.4.0-alpha.4` a login that gets KISS frames back (an APRS-IS source given Dire Wolf's

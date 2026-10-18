@@ -180,6 +180,18 @@ public static class EngineErrorCodes
     /// </summary>
     public const string KissSetupFailed = "kiss.setup-failed";
 
+    /// <summary>A captured packet APRS.NET read but whose data type it doesn't support (F1.27 behavior 1.2).</summary>
+    public const string CaptureUnsupported = "capture.unsupported";
+
+    /// <summary>A captured packet whose data type APRS.NET doesn't know (F1.27 behavior 1.2).</summary>
+    public const string CaptureUnknownType = "capture.unknown-type";
+
+    /// <summary>The prefix of a captured packet's unrecognised part (F1.27 behavior 1.3), such as <c>aprs.unrecognized.unknown-path-entry</c>.</summary>
+    public const string AprsUnrecognizedPrefix = "aprs.unrecognized.";
+
+    /// <summary>The capture files couldn't be written or read (F1.27).</summary>
+    public const string CaptureFailed = "capture.write-failed";
+
     /// <summary>The console's source isn't one that's open, or can't take commands (F1.28, F3.2 behavior 8).</summary>
     public const string ConsoleSourceUnknown = "console.source-unknown";
 

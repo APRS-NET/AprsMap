@@ -222,6 +222,23 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SendTncCommand, sourceId, command, cancellationToken));
 
     /// <inheritdoc />
+    public Task<CaptureView> GetCaptureAsync(CaptureQuery query, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<CaptureView>(EngineHub.GetCapture, query, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<CaptureExportResult> ExportCaptureAsync(
+        CaptureExport request,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<CaptureExportResult>(EngineHub.ExportCapture, request, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task ClearCaptureAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ClearCapture, cancellationToken));
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() =>
             _connection.InvokeAsync<IReadOnlyList<TncTypeInfo>>(EngineHub.GetTncTypes, cancellationToken)

@@ -17,6 +17,12 @@ public sealed class EngineOptions
     public string? SettingsFolder { get; set; }
 
     /// <summary>
+    /// Where packet capture writes (docs/features/F1.27-packet-capture.md, behavior 4): <c>capture</c> in the settings
+    /// folder when the engine is added to a host; null, as in tests that build the engine themselves, turns it off.
+    /// </summary>
+    public string? CaptureFolder { get; set; }
+
+    /// <summary>
     /// First-run defaults: when no settings are stored yet and <see cref="Callsign"/> is set, the engine creates its
     /// first profile from these values. After that the stored settings win, and these are ignored.
     /// </summary>

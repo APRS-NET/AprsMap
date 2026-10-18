@@ -115,6 +115,15 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetSerialPortsAsync"/>.</summary>
     public const string GetSerialPorts = "GetSerialPorts";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetCaptureAsync"/>.</summary>
+    public const string GetCapture = "GetCapture";
+
+    /// <summary>Hub method for <see cref="IEngineService.ExportCaptureAsync"/>.</summary>
+    public const string ExportCapture = "ExportCapture";
+
+    /// <summary>Hub method for <see cref="IEngineService.ClearCaptureAsync"/>.</summary>
+    public const string ClearCapture = "ClearCapture";
+
     /// <summary>Hub streaming method for <see cref="IEngineService.WatchSourceTrafficAsync"/>.</summary>
     public const string WatchSourceTraffic = "WatchSourceTraffic";
 

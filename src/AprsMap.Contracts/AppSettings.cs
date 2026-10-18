@@ -24,9 +24,13 @@ public sealed record AppSettings(
     bool ReadOnly = false,
     StationAging? Aging = null,
     IReadOnlyList<SourceSettings>? Sources = null,
-    StationToggles? Toggles = null
+    StationToggles? Toggles = null,
+    CaptureSettings? Capture = null
 )
 {
+    /// <summary>Packet capture's settings in effect (docs/features/F1.27-packet-capture.md): <see cref="Capture"/>, or off.</summary>
+    public CaptureSettings EffectiveCapture => Capture ?? CaptureSettings.Off;
+
     /// <summary>The toggles in effect: <see cref="Toggles"/>, or everything on.</summary>
     public StationToggles EffectiveToggles => Toggles ?? StationToggles.AllOn;
 

@@ -265,6 +265,42 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
+    /// <summary>What <see cref="GetCaptureAsync"/> gives.</summary>
+    public CaptureView Capture { get; set; } = new([], [], []);
+
+    /// <summary>The queries asked, in order.</summary>
+    public List<CaptureQuery> CaptureQueries { get; } = [];
+
+    public Task<CaptureView> GetCaptureAsync(CaptureQuery query, CancellationToken cancellationToken = default)
+    {
+        CaptureQueries.Add(query);
+        return Task.FromResult(Capture);
+    }
+
+    /// <summary>The exports asked for, in order.</summary>
+    public List<CaptureExport> CaptureExports { get; } = [];
+
+    public Task<CaptureExportResult> ExportCaptureAsync(
+        CaptureExport request,
+        CancellationToken cancellationToken = default
+    )
+    {
+        CaptureExports.Add(request);
+        return Task.FromResult(
+            new CaptureExportResult("capture-2026-10-18.log", "2026-10-18T12:00:00.000Z Q0AAA>APRS:x\n", "note", 1)
+        );
+    }
+
+    /// <summary>How many times capture was cleared.</summary>
+    public int CaptureCleared { get; private set; }
+
+    public Task ClearCaptureAsync(CancellationToken cancellationToken = default)
+    {
+        CaptureCleared++;
+        Capture = new([], [], []);
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<TncTypeInfo>>([new TncTypeInfo("th-d72", "Kenwood TH-D72")]);
 

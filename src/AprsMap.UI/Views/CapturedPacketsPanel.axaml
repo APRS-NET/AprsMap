@@ -1,0 +1,115 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- Captured packets (F1.27 behaviors 7–10): what packet capture recorded, newest first, by day and reason; Export for
+     analysis, Report on GitHub, Clear captured. Its DataContext is the main view model; inside, its CapturedPackets. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:c="using:AprsMap.UI.Capture"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Views.CapturedPacketsPanel"
+  x:DataType="vm:MainViewModel"
+>
+  <DockPanel
+    DataContext="{Binding CapturedPackets}"
+    x:DataType="c:CapturedPacketsViewModel"
+    Background="{DynamicResource Brush.Surface}"
+  >
+    <WrapPanel DockPanel.Dock="Top" ItemSpacing="8" LineSpacing="4" Margin="8,6">
+      <ComboBox
+        x:Name="DayBox"
+        ItemsSource="{Binding Days}"
+        SelectedItem="{Binding SelectedDay}"
+        AutomationProperties.Name="{l:T Capture.DayFilter}"
+        MinWidth="140"
+      />
+      <ComboBox
+        x:Name="ReasonBox"
+        ItemsSource="{Binding Reasons}"
+        SelectedItem="{Binding SelectedReason}"
+        AutomationProperties.Name="{l:T Capture.ReasonFilter}"
+        MinWidth="160"
+      />
+      <Button x:Name="RefreshButton" Content="{l:T Capture.Refresh}" Command="{Binding LoadCommand}" />
+      <CheckBox x:Name="AnonymizeBox" Content="{l:T Capture.Anonymize}" IsChecked="{Binding Anonymize}" />
+      <Button x:Name="ExportButton" Content="{l:T Capture.Export}" />
+      <Button x:Name="ReportButton" Content="{l:T Capture.Report}" />
+      <Button x:Name="ClearButton" Content="{l:T Capture.Clear}" Command="{Binding ClearCommand}" />
+    </WrapPanel>
+    <Border
+      DockPanel.Dock="Top"
+      IsVisible="{Binding IsConfirmingClear}"
+      BorderBrush="{DynamicResource Brush.Warn}"
+      BorderThickness="{DynamicResource Thickness.Border}"
+      CornerRadius="{DynamicResource Radius.Control}"
+      Padding="8"
+      Margin="8,0"
+    >
+      <WrapPanel ItemSpacing="8" LineSpacing="4">
+        <TextBlock
+          Text="{l:T Capture.ClearConfirm}"
+          Foreground="{DynamicResource Brush.Warn}"
+          VerticalAlignment="Center"
+        />
+        <Button x:Name="ConfirmClearButton" Content="{l:T Capture.Clear}" Command="{Binding ConfirmClearCommand}" />
+        <Button Content="{l:T Settings.Data.Confirm.Cancel}" Command="{Binding CancelClearCommand}" />
+      </WrapPanel>
+    </Border>
+    <TextBlock
+      DockPanel.Dock="Top"
+      Text="{Binding Notice}"
+      IsVisible="{Binding Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
+      TextWrapping="Wrap"
+      Margin="8,2"
+    />
+    <TextBlock
+      DockPanel.Dock="Top"
+      Text="{Binding Summary}"
+      IsVisible="{Binding Summary, Converter={x:Static ObjectConverters.IsNotNull}}"
+      Foreground="{DynamicResource Brush.TextMuted}"
+      TextWrapping="Wrap"
+      Margin="8,2"
+    />
+    <Panel>
+      <TextBlock
+        x:Name="UnavailableNote"
+        Text="{Binding Unavailable}"
+        IsVisible="{Binding Unavailable, Converter={x:Static ObjectConverters.IsNotNull}}"
+        Foreground="{DynamicResource Brush.TextMuted}"
+        TextWrapping="Wrap"
+        TextAlignment="Center"
+        VerticalAlignment="Center"
+        Margin="16"
+      />
+      <ListBox
+        x:Name="CapturedList"
+        ItemsSource="{Binding Rows}"
+        IsVisible="{Binding Unavailable, Converter={x:Static ObjectConverters.IsNull}}"
+        AutomationProperties.Name="{l:T Shell.Panel.captured}"
+      >
+        <ListBox.ItemTemplate>
+          <DataTemplate DataType="c:CapturedRow">
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
+              <TextBlock Text="{Binding Time}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock Grid.Column="1" Text="{Binding Station}" FontWeight="SemiBold" />
+              <StackPanel Grid.Column="2" Spacing="2">
+                <TextBlock Text="{Binding ReasonsText}" Foreground="{DynamicResource Brush.Warn}" TextWrapping="Wrap" />
+                <SelectableTextBlock
+                  Text="{Binding Raw}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
+              <Button
+                Grid.Column="3"
+                Content="{l:T Capture.OpenInPackets}"
+                Command="{Binding OpenInPacketsCommand}"
+                VerticalAlignment="Top"
+              />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Panel>
+  </DockPanel>
+</UserControl>
