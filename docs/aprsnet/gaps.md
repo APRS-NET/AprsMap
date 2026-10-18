@@ -34,7 +34,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G19 | Query and response handling | Packets + Messaging | 2 | [APRS.NET#200](https://github.com/APRS-NET/APRS.NET/issues/200) |
 | G12 | AX.25 UI frame codec (delivered) | new: AprsNet.Ax25 | 3 | — |
 | G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial published in `0.3.0-alpha.2` as `AprsNet.Kiss.Serial`, unplug and warnings in `0.4.0-alpha.4`, issue open for hardware testing) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), [APRS.NET#160](https://github.com/APRS-NET/APRS.NET/issues/160) |
-| G14 | Radios' built-in TNCs: KISS setup (delivered, `0.4.0-alpha.6`), typing over an open connection and the APRS-mode reader (APRS.NET#265, #267 in review) | Kiss.Serial | 2 | [APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249) |
+| G14 | Radios' built-in TNCs: KISS setup (`0.4.0-alpha.6`), typing over an open connection and the APRS-mode reader (`0.4.0-alpha.7`): delivered | Kiss.Serial | 2 | [APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249) |
 | G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | [APRS.NET#209](https://github.com/APRS-NET/APRS.NET/issues/209) |
 | G16 | IGate engine | new: AprsNet.IGate | 3 | [APRS.NET#206](https://github.com/APRS-NET/APRS.NET/issues/206), [APRS.NET#212](https://github.com/APRS-NET/APRS.NET/issues/212) |
 | G17 | NMEA sentence parsing and `$` packets | Packets | 3 | [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
@@ -49,7 +49,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet (delivered, `0.4.0-alpha.5`: `AprsNet.Corpus`, `AprsPacket.Unrecognized`) | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
 | G32 | A typed reason when an APRS-IS login reaches a KISS TNC (delivered, `0.4.0-alpha.5`: `KissTncLoginException`) | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
-| G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console (KISS delivered, `0.4.0-alpha.6`; APRS-IS in APRS.NET#266, in review) | Kiss, AprsIsTcpClient | 2 | [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) |
+| G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console (delivered: KISS `0.4.0-alpha.6`, APRS-IS `0.4.0-alpha.7`) | Kiss, AprsIsTcpClient | 2 | [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) |
 
 ---
 
