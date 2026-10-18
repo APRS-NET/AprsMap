@@ -333,6 +333,13 @@ source, starting with the Kenwood TH-D72A.
    radio keeps working as an APRS station. NMEA sentences and damaged lines are skipped and counted. Same reconnects,
    port handling, DTR/RTS and quiet warning as KISS over serial. Nothing can be sent this way.
 
+3. **Typing to the TNC over an open connection** (depends on #262's unframed traffic): `BeginManual()` returns an
+   `IDisposable`; inside it, `SendRawAsync` and `SendLineAsync` write to the open port under the frame lock (they throw
+   outside it), the automatic setup re-run is held off (the `TextNotKiss` warning still fires), and `RunScriptAsync`
+   runs a script without a reopen, its expects matching the unframed bytes. At a TNC-2 prompt some commands transmit
+   (`ID`, `CONV`, `K`), and in KISS mode a raw data frame goes on the air, so AprsMap's console says so. A raw line on
+   APRS-IS (`#filter`) is lower priority.
+
 Not planned: switching the radio's TNC mode from the computer, sending through a TNC's own commands (sending uses KISS),
 and a second TNC family's transcript (no other radio on hand).
 
