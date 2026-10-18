@@ -274,9 +274,38 @@ internal sealed partial class TileCache : IDisposable
 
     private async Task<TileResult> FromDiskAsync(string path, TileOutcome outcome, TileMeta meta)
     {
-        var data = await File.ReadAllBytesAsync(path).ConfigureAwait(false);
+        var data = await ReadSharedAsync(path).ConfigureAwait(false);
         Touch(path);
         return new TileResult(data, outcome, meta.Expires, meta.ETag);
+    }
+
+    /// <summary>
+    /// Reads a tile while a refresh may be replacing it. On Windows a replace and a read of the same file can collide
+    /// for a moment, so the read lets the file be replaced under it and tries again a few times on a sharing violation.
+    /// </summary>
+    private static async Task<byte[]> ReadSharedAsync(string path)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await using var stream = new FileStream(
+                    path,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite | FileShare.Delete,
+                    bufferSize: 4096,
+                    useAsync: true
+                );
+                var data = new byte[stream.Length];
+                await stream.ReadExactlyAsync(data).ConfigureAwait(false);
+                return data;
+            }
+            catch (IOException ex) when (attempt < 5 && ex is not FileNotFoundException)
+            {
+                await Task.Yield();
+            }
+        }
     }
 
     private static async Task<TileMeta?> ReadMetaAsync(string path, string metaPath)
