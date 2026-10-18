@@ -152,8 +152,14 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync<int>(EngineHub.Clear, scope, cancellationToken));
 
     /// <inheritdoc />
-    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default) =>
-        WithEngineErrors(() => _connection.InvokeAsync<Dashboard>(EngineHub.GetDashboard, range, cancellationToken));
+    public Task<Dashboard> GetDashboardAsync(
+        DashboardRange range,
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<Dashboard>(EngineHub.GetDashboard, range, filter, cancellationToken)
+        );
 
     /// <inheritdoc />
     public Task SetSourceEnabledAsync(string sourceId, bool enabled, CancellationToken cancellationToken = default) =>

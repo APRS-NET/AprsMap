@@ -1449,16 +1449,23 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     }
 
     /// <inheritdoc />
-    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default)
+    public Task<Dashboard> GetDashboardAsync(
+        DashboardRange range,
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    )
     {
-        var dashboard = _dashboard.Read(range, _time.GetUtcNow());
+        var now = _time.GetUtcNow();
+        // My view (F1.22 behavior 7): only the stations the viewer's filter shows now; an empty filter is the whole feed.
+        Func<string, bool>? include = filter is { IsEmpty: false } ? _stations.Matching(filter, now).Contains : null;
+        var dashboard = _dashboard.Read(range, now, include);
         // The counters cover the range; the rest is read from the stations held (F1.22 behaviors 4.10, 4.11, 10).
         return Task.FromResult(
             dashboard with
             {
-                FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5),
-                Weather = _stations.WeatherSince(dashboard.Start),
-                Tables = _stations.Statistics(),
+                FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5, include),
+                Weather = _stations.WeatherSince(dashboard.Start, include),
+                Tables = _stations.Statistics(include is null ? null : filter, now),
             }
         );
     }
