@@ -174,6 +174,18 @@ public static class EngineErrorCodes
     /// <summary>A KISS TNC is connected but has sent nothing for a while: it may be switched off. A warning.</summary>
     public const string KissQuiet = "kiss.quiet";
 
+    /// <summary>
+    /// The TNC didn't switch into KISS when its port opened (docs/features/F3.2-built-in-tncs.md, behavior 6); the
+    /// <see cref="EngineErrorArgs.Reason"/> says why, with the type's hint.
+    /// </summary>
+    public const string KissSetupFailed = "kiss.setup-failed";
+
+    /// <summary>A serial source's TNC type isn't known, or a custom one's scripts can't be read (F3.2 behavior 4).</summary>
+    public const string TncScriptInvalid = "settings.source.tnc-script-invalid";
+
+    /// <summary>A source that can't send, such as a radio in APRS mode, was set TX enabled (F3.2 behavior 3).</summary>
+    public const string SourceReceiveOnly = "settings.source.receive-only";
+
     /// <summary>A KISS over serial source's port, speed or TNC port isn't usable.</summary>
     public const string KissSerialSourceInvalid = "settings.source.serial-invalid";
 

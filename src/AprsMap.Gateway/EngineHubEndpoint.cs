@@ -271,6 +271,10 @@ internal sealed class EngineHubEndpoint(
         return engine.GetSerialPortsAsync(Context.ConnectionAborted);
     }
 
+    /// <summary>The TNC types APRS.NET knows: the same for every gateway, so anyone may list them (F3.2 behavior 4).</summary>
+    [HubMethodName(EngineHub.GetTncTypes)]
+    public Task<IReadOnlyList<TncTypeInfo>> GetTncTypes() => engine.GetTncTypesAsync(Context.ConnectionAborted);
+
     /// <summary>Address lookup is offered only where settings can be changed, so the gateway isn't an open proxy.</summary>
     [HubMethodName(EngineHub.GetGeocodingInfo)]
     public async Task<GeocodingInfo> GetGeocodingInfo() =>

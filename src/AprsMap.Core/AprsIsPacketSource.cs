@@ -74,7 +74,7 @@ internal sealed class AprsIsPacketSourceFactory(
     /// <exception cref="NotSupportedException">A kind that isn't built yet: GPS.</exception>
     public IPacketSource Create(StationProfile profile, SourceSettings source, string filter)
     {
-        if (source.Kind == SourceKind.KissSerial)
+        if (source.IsSerial)
         {
             return new KissPacketSource(
                 new KissSerialConnection(SerialOptions(source, options.Value, timeProvider)),
@@ -116,9 +116,15 @@ internal sealed class AprsIsPacketSourceFactory(
     /// its port, speed, TNC port and control lines, the engine's reconnect waits, and a warning after 30 minutes with
     /// nothing at all from the TNC (decision 5), for a radio switched off behind a port that stays open.
     /// </summary>
+    /// <remarks>
+    /// A radio in its APRS mode is read as text with no setup (F3.2 behavior 2); a KISS TNC with a type is switched into
+    /// KISS each time the port opens (behavior 5).
+    /// </remarks>
     internal static KissSerialOptions SerialOptions(SourceSettings source, EngineOptions engine, TimeProvider time) =>
         new()
         {
+            TextMode = source.Kind == SourceKind.AprsTextSerial,
+            Setup = source.Kind == SourceKind.KissSerial ? SetupOf(source) : null,
             PortName = source.SerialPort ?? string.Empty,
             BaudRate = source.Baud ?? SourceSettings.DefaultBaud,
             TncPort = source.TncPort ?? 0,
@@ -128,6 +134,25 @@ internal sealed class AprsIsPacketSourceFactory(
             MaxReconnectDelay = engine.MaxRetryDelay,
             QuietWarning = SerialQuietWarning,
             TimeProvider = time,
+        };
+
+    /// <summary>
+    /// How <paramref name="source"/>'s TNC is switched into KISS (F3.2 behavior 4): null for a TNC in KISS already, a
+    /// type APRS.NET knows, or the source's own scripts.
+    /// </summary>
+    /// <exception cref="FormatException">A custom script can't be read.</exception>
+    /// <exception cref="ArgumentException">The type isn't known.</exception>
+    internal static TncSetup? SetupOf(SourceSettings source) =>
+        source.TncType switch
+        {
+            null or "" => null,
+            SourceSettings.CustomTncType => new TncSetup(
+                SourceSettings.CustomTncType,
+                source.Name,
+                TncScript.Parse(source.EnterScript ?? string.Empty),
+                string.IsNullOrWhiteSpace(source.LeaveScript) ? null : TncScript.Parse(source.LeaveScript)
+            ),
+            var id => TncSetup.Find(id) ?? throw new ArgumentException($"No TNC type '{id}'.", nameof(source)),
         };
 
     /// <summary>How long a serial TNC may send nothing before its pill asks whether it's switched on (F3.1 decision 5).</summary>

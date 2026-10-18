@@ -34,7 +34,15 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
 
     /// <summary>The kind in the form: picked for a new source, fixed for one being edited.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAprsIs), nameof(IsKiss), nameof(IsKissTcp), nameof(IsKissSerial))]
+    [NotifyPropertyChangedFor(
+        nameof(IsAprsIs),
+        nameof(IsKiss),
+        nameof(IsKissTcp),
+        nameof(IsKissSerial),
+        nameof(IsSerial),
+        nameof(IsTnc),
+        nameof(CanTransmitKind)
+    )]
     public partial SourceKind EditKind { get; set; } = SourceKind.AprsIs;
 
     /// <summary>Whether the form shows APRS-IS's server and filter.</summary>
@@ -46,8 +54,62 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     /// <summary>Whether the form shows a TCP TNC's host and port (F3.1 behavior 1.1).</summary>
     public bool IsKissTcp => EditKind == SourceKind.KissTcp;
 
-    /// <summary>Whether the form shows a serial TNC's port, speed and control lines (F3.1 behavior 1.2).</summary>
+    /// <summary>Whether the form shows a serial KISS TNC's type (docs/features/F3.2-built-in-tncs.md, behavior 4).</summary>
     public bool IsKissSerial => EditKind == SourceKind.KissSerial;
+
+    /// <summary>Whether the form shows a serial port, speed and control lines (F3.1 behavior 1.2, F3.2 behavior 1).</summary>
+    public bool IsSerial => EditKind is SourceKind.KissSerial or SourceKind.AprsTextSerial;
+
+    /// <summary>Whether it's this station's own radio, so the form asks which profiles use it.</summary>
+    public bool IsTnc => EditKind is not SourceKind.AprsIs;
+
+    /// <summary>Whether the kind can send, so TX enabled is offered: not a radio read in its APRS mode (F3.2 behavior 3).</summary>
+    public bool CanTransmitKind => new SourceSettings("", "", EditKind).CanTransmit;
+
+    /// <summary>The TNC types: Plain KISS, those APRS.NET knows, and Custom (F3.2 behavior 4).</summary>
+    public ObservableCollection<TncTypeChoice> TncTypes { get; } = [];
+
+    /// <summary>The TNC type in the form.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustomTnc))]
+    public partial TncTypeChoice? SelectedTncType { get; set; }
+
+    /// <summary>Whether the form shows the custom scripts.</summary>
+    public bool IsCustomTnc => SelectedTncType?.Id == SourceSettings.CustomTncType;
+
+    /// <summary>A custom TNC's script into KISS, one step a line.</summary>
+    [ObservableProperty]
+    public partial string EditEnterScript { get; set; } = string.Empty;
+
+    /// <summary>A custom TNC's script out of KISS; empty for none.</summary>
+    [ObservableProperty]
+    public partial string EditLeaveScript { get; set; } = string.Empty;
+
+    /// <summary>Fills <see cref="TncTypes"/> and picks <paramref name="id"/>'s, keeping an unknown id as it is.</summary>
+    private async Task ShowTncTypesAsync(string? id)
+    {
+        var known = Array.Empty<TncTypeInfo>() as IReadOnlyList<TncTypeInfo>;
+        try
+        {
+            known = await _engine.GetTncTypesAsync();
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            // Offer Plain KISS and Custom only.
+        }
+        TncTypes.Clear();
+        TncTypes.Add(new TncTypeChoice(null, _text["Settings.Sources.TncType.Plain"]));
+        foreach (var type in known)
+        {
+            TncTypes.Add(new TncTypeChoice(type.Id, type.Name));
+        }
+        if (id is { Length: > 0 } && id != SourceSettings.CustomTncType && known.All(t => t.Id != id))
+        {
+            TncTypes.Add(new TncTypeChoice(id, id));
+        }
+        TncTypes.Add(new TncTypeChoice(SourceSettings.CustomTncType, _text["Settings.Sources.TncType.Custom"]));
+        SelectedTncType = TncTypes.FirstOrDefault(t => t.Id == (id is { Length: > 0 } ? id : null)) ?? TncTypes[0];
+    }
 
     /// <summary>The serial port in the form: picked from <see cref="SerialPorts"/> or typed.</summary>
     [ObservableProperty]
@@ -115,9 +177,17 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         {
             kind.Refresh();
         }
-        if (value == SourceKind.KissSerial && IsEditing)
+        if (value is SourceKind.KissSerial or SourceKind.AprsTextSerial && IsEditing)
         {
             _ = RefreshSerialPortsAsync();
+        }
+        if (value == SourceKind.KissSerial && IsEditing && TncTypes.Count == 0)
+        {
+            _ = ShowTncTypesAsync(null);
+        }
+        if (!CanTransmitKind)
+        {
+            EditTransmit = false;
         }
     }
 
@@ -268,6 +338,9 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 string.Empty;
         EditDtr = EditRts = true;
         SerialPortsNote = null;
+        EditEnterScript = EditLeaveScript = string.Empty;
+        TncTypes.Clear();
+        SelectedTncType = null;
         EditKind = SourceKind.AprsIs;
         CanPickKind = true;
         EditTransmit = false;
@@ -291,6 +364,10 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditDtr = row.Source.DtrEnable ?? true;
         EditRts = row.Source.RtsEnable ?? true;
         SerialPortsNote = null;
+        EditEnterScript = row.Source.EnterScript ?? string.Empty;
+        EditLeaveScript = row.Source.LeaveScript ?? string.Empty;
+        TncTypes.Clear();
+        SelectedTncType = null;
         EditKind = row.Source.Kind;
         CanPickKind = false;
         EditServer = row.Source.Server ?? string.Empty;
@@ -304,9 +381,13 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditUsedBy = row.UsedByText;
         Error = null;
         IsEditing = true;
-        if (IsKissSerial)
+        if (IsSerial)
         {
             _ = RefreshSerialPortsAsync();
+        }
+        if (IsKissSerial)
+        {
+            _ = ShowTncTypesAsync(row.Source.TncType);
         }
     }
 
@@ -314,7 +395,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveAsync()
     {
-        if (IsKiss)
+        if (IsTnc)
         {
             await SaveKissAsync();
             return;
@@ -353,25 +434,29 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         int? tncPort = EditTncPort.Trim().Length == 0 ? null : Number(EditTncPort);
         var txPath = EditTxPath.Trim().Length > 0 ? EditTxPath.Trim().ToUpperInvariant() : null;
         SourceSettings source;
-        if (IsKissSerial)
+        if (IsSerial)
         {
             var serialPort = EditSerialPort.Trim();
             int? baud = EditBaud.Trim().Length == 0 ? null : Number(EditBaud);
             var name = EditName.Trim().Length > 0 ? EditName.Trim() : serialPort;
+            var custom = IsKissSerial && IsCustomTnc;
             source = (
-                _editingId is { } id
-                    ? _settings.SourceList.Single(s => s.Id == id)
-                    : SourceSettings.KissSerialFor(serialPort)
+                _editingId is { } id ? _settings.SourceList.Single(s => s.Id == id)
+                : IsKissSerial ? SourceSettings.KissSerialFor(serialPort)
+                : SourceSettings.AprsTextSerialFor(serialPort)
             ) with
             {
                 Name = name,
                 SerialPort = serialPort,
                 Baud = baud,
-                TncPort = tncPort,
+                TncPort = IsKissSerial ? tncPort : null,
                 DtrEnable = EditDtr ? null : false,
                 RtsEnable = EditRts ? null : false,
-                Transmit = EditTransmit,
-                TxPath = txPath,
+                Transmit = CanTransmitKind && EditTransmit,
+                TxPath = IsKissSerial ? txPath : null,
+                TncType = IsKissSerial ? SelectedTncType?.Id : null,
+                EnterScript = custom ? EditEnterScript.Trim() : null,
+                LeaveScript = custom && EditLeaveScript.Trim().Length > 0 ? EditLeaveScript.Trim() : null,
             };
         }
         else
@@ -630,6 +715,15 @@ public sealed partial class SourceKindChoice(
                 "Settings.Sources.Coming",
                 new Dictionary<string, object?> { ["kind"] = text[$"Settings.Sources.Kind.{kind}"] }
             );
+}
+
+/// <summary>A TNC type in the serial KISS form (docs/features/F3.2-built-in-tncs.md, behavior 4).</summary>
+/// <param name="Id">The id saved as <see cref="SourceSettings.TncType"/>: null for Plain KISS.</param>
+/// <param name="Name">"Plain KISS", "Kenwood TH-D72", "Custom".</param>
+public sealed record TncTypeChoice(string? Id, string Name)
+{
+    /// <inheritdoc />
+    public override string ToString() => Name;
 }
 
 /// <summary>A profile in the KISS form's "Use with" list (F3.1 behavior 2).</summary>

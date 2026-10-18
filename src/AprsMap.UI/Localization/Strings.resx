@@ -2826,6 +2826,56 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Sources.ControlLines.Help" xml:space="preserve">
     <value>Most TNCs and radios need both raised; untick one only if the TNC's manual says so.</value>
   </data>
+  <data name="Settings.Sources.Kind.AprsTextSerial" xml:space="preserve">
+    <value>Radio in APRS mode (receive only)</value>
+    <comment>A radio's built-in TNC read in its own APRS mode, such as a TH-D72A in APRS12.</comment>
+  </data>
+  <data name="Settings.Sources.AprsText.Help" xml:space="preserve">
+    <value>A radio with a TNC inside, such as a Kenwood TH-D72A on its USB cable: in its APRS mode it's read as it is and keeps working on its own, receive only; as KISS over serial it can send too.</value>
+  </data>
+  <data name="Settings.Sources.TncType" xml:space="preserve">
+    <value>TNC type</value>
+  </data>
+  <data name="Settings.Sources.TncType.Help" xml:space="preserve">
+    <value>Plain KISS for a TNC that's in KISS mode already. A radio's type switches its TNC into KISS whenever the port opens, again after a power cut, and back when it closes.</value>
+  </data>
+  <data name="Settings.Sources.TncType.Plain" xml:space="preserve">
+    <value>Plain KISS</value>
+  </data>
+  <data name="Settings.Sources.TncType.Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Settings.Sources.EnterScript" xml:space="preserve">
+    <value>Into KISS</value>
+    <comment>A custom TNC's script that switches it into KISS mode.</comment>
+  </data>
+  <data name="Settings.Sources.LeaveScript" xml:space="preserve">
+    <value>Out of KISS (optional)</value>
+  </data>
+  <data name="Settings.Sources.ScriptExample" xml:space="preserve">
+    <value>send KISS ON
+send RESTART
+pause 1s</value>
+    <comment>Script commands stay in English: they're what the TNC understands.</comment>
+  </data>
+  <data name="Settings.Sources.LeaveScriptExample" xml:space="preserve">
+    <value>bytes C0 FF C0</value>
+    <comment>The KISS exit frame in script form: don't translate.</comment>
+  </data>
+  <data name="Settings.Sources.Script.Help" xml:space="preserve">
+    <value>One step a line: send TEXT (with a carriage return), bytes HEX, expect 3s TEXT, pause 500ms, drain 500ms.</value>
+    <comment>The step words (send, bytes, expect, pause, drain) are the script language: don't translate them.</comment>
+  </data>
+  <data name="Error.kiss.setup-failed" xml:space="preserve">
+    <value>TNC didn't switch to KISS: {reason}</value>
+    <comment>reason: APRS.NET's explanation, with a hint such as "Switch the radio's TNC to packet mode (PACKET12) first" (not translated).</comment>
+  </data>
+  <data name="Error.settings.source.tnc-script-invalid" xml:space="preserve">
+    <value>A serial TNC's type isn't known, or its script can't be read: each line is send, bytes, expect, pause or drain.</value>
+  </data>
+  <data name="Error.settings.source.receive-only" xml:space="preserve">
+    <value>A radio in APRS mode only receives, so it can't be TX enabled.</value>
+  </data>
   <data name="Error.settings.source.serial-invalid" xml:space="preserve">
     <value>A KISS over serial source needs a port, a speed above 0, and a TNC port from 0 to 15.</value>
   </data>

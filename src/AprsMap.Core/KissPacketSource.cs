@@ -149,9 +149,19 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
             ? new EngineError(EngineErrorCodes.KissQuiet, "The TNC has sent nothing for a while.")
         : null;
 
-    /// <summary>Why the connection ended, as a code the UI words: closed, unreachable, or the link failed.</summary>
+    /// <summary>
+    /// Why the connection ended, as a code the UI words: closed, unreachable, the link failed, or the TNC didn't switch
+    /// into KISS.
+    /// </summary>
     private EngineError ErrorOf(KissConnectionStateChangedEventArgs e) =>
         e.Error is null ? new EngineError(EngineErrorCodes.KissClosed, "The TNC closed the connection.")
+        // The TNC didn't switch into KISS (F3.2 behavior 6): APRS.NET's message carries the type's hint.
+        : e.Error.InnerException is TncScriptException
+            ? new EngineError(
+                EngineErrorCodes.KissSetupFailed,
+                e.Error.Message,
+                new Dictionary<string, string> { [EngineErrorArgs.Reason] = e.Error.Message }
+            )
         : _wasConnected ? new EngineError(EngineErrorCodes.KissLinkFailed, e.Error.Message)
         : new EngineError(EngineErrorCodes.KissUnreachable, e.Error.Message);
 

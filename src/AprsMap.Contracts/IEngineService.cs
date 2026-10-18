@@ -213,6 +213,12 @@ public interface IEngineService
     Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The TNC types a KISS over serial source can be switched into KISS with, such as the Kenwood TH-D72
+    /// (docs/features/F3.2-built-in-tncs.md, behavior 4).
+    /// </summary>
+    Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Starts over (docs/features/F0.10-start-over.md): deletes every stored profile and setting, disconnects, and
     /// forgets the packets and stations received, so the next step is first-run setup. Defaults from configuration are
     /// not applied again until the engine restarts.

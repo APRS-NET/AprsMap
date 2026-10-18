@@ -332,7 +332,13 @@
                 </StackPanel>
                 <!-- KISS (F3.1 behavior 1): over TCP the TNC's host and port, on serial its port, speed and control
                      lines; then its radio port, TX path and the profiles using it. -->
-                <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKiss}">
+                <StackPanel Spacing="8" IsVisible="{Binding Sources.IsTnc}">
+                  <TextBlock
+                    Text="{l:T Settings.Sources.AprsText.Help}"
+                    IsVisible="{Binding Sources.IsSerial}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    TextWrapping="Wrap"
+                  />
                   <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKissTcp}">
                     <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
                     <TextBox
@@ -343,7 +349,7 @@
                       FontFamily="{DynamicResource Font.Mono}"
                     />
                   </StackPanel>
-                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKissSerial}">
+                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsSerial}">
                     <TextBlock
                       Text="{l:T Settings.Sources.SerialPort}"
                       Foreground="{DynamicResource Brush.TextMuted}"
@@ -389,7 +395,7 @@
                         MinWidth="96"
                       />
                     </StackPanel>
-                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKissSerial}">
+                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsSerial}">
                       <TextBlock Text="{l:T Settings.Sources.Baud}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <ComboBox
                         x:Name="SerialBaudBox"
@@ -402,7 +408,7 @@
                         MinWidth="128"
                       />
                     </StackPanel>
-                    <StackPanel Spacing="4">
+                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKiss}">
                       <TextBlock Text="{l:T Settings.Sources.TncPort}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <TextBox
                         x:Name="SourceTncPortBox"
@@ -414,7 +420,7 @@
                       />
                     </StackPanel>
                   </WrapPanel>
-                  <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKissSerial}">
+                  <StackPanel Spacing="4" IsVisible="{Binding Sources.IsSerial}">
                     <CheckBox
                       x:Name="SerialDtrBox"
                       Content="{l:T Settings.Sources.Dtr}"
@@ -431,9 +437,66 @@
                       TextWrapping="Wrap"
                     />
                   </StackPanel>
-                  <TextBlock Text="{l:T Settings.Sources.TxPath}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <!-- TNC type (F3.2 behavior 4): how the TNC is switched into KISS when the port opens. -->
+                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKissSerial}">
+                    <TextBlock Text="{l:T Settings.Sources.TncType}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox
+                      x:Name="TncTypeBox"
+                      ItemsSource="{Binding Sources.TncTypes}"
+                      SelectedItem="{Binding Sources.SelectedTncType}"
+                      AutomationProperties.Name="{l:T Settings.Sources.TncType}"
+                      AutomationProperties.HelpText="{l:T Settings.Sources.TncType.Help}"
+                      MinWidth="240"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.TncType.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                    <StackPanel Spacing="8" IsVisible="{Binding Sources.IsCustomTnc}">
+                      <TextBlock
+                        Text="{l:T Settings.Sources.EnterScript}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                      />
+                      <TextBox
+                        x:Name="EnterScriptBox"
+                        Text="{Binding Sources.EditEnterScript}"
+                        AcceptsReturn="True"
+                        TextWrapping="NoWrap"
+                        MinHeight="96"
+                        PlaceholderText="{l:T Settings.Sources.ScriptExample}"
+                        AutomationProperties.Name="{l:T Settings.Sources.EnterScript}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                      />
+                      <TextBlock
+                        Text="{l:T Settings.Sources.LeaveScript}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                      />
+                      <TextBox
+                        x:Name="LeaveScriptBox"
+                        Text="{Binding Sources.EditLeaveScript}"
+                        AcceptsReturn="True"
+                        TextWrapping="NoWrap"
+                        MinHeight="64"
+                        PlaceholderText="{l:T Settings.Sources.LeaveScriptExample}"
+                        AutomationProperties.Name="{l:T Settings.Sources.LeaveScript}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                      />
+                      <TextBlock
+                        Text="{l:T Settings.Sources.Script.Help}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        TextWrapping="Wrap"
+                      />
+                    </StackPanel>
+                  </StackPanel>
+                  <TextBlock
+                    Text="{l:T Settings.Sources.TxPath}"
+                    IsVisible="{Binding Sources.IsKiss}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                  />
                   <TextBox
                     x:Name="TxPathBox"
+                    IsVisible="{Binding Sources.IsKiss}"
                     Text="{Binding Sources.EditTxPath}"
                     PlaceholderText="{x:Static s:SourcesSectionViewModel.DefaultTxPath}"
                     IsEnabled="{Binding Sources.EditTransmit}"
@@ -443,6 +506,7 @@
                   />
                   <TextBlock
                     Text="{l:T Settings.Sources.TxPath.Help}"
+                    IsVisible="{Binding Sources.IsKiss}"
                     Foreground="{DynamicResource Brush.TextMuted}"
                     TextWrapping="Wrap"
                   />
@@ -460,8 +524,10 @@
                   x:Name="TxEnabledBox"
                   Content="{l:T Settings.Sources.TxEnabledBox}"
                   IsChecked="{Binding Sources.EditTransmit}"
+                  IsVisible="{Binding Sources.CanTransmitKind}"
                 />
                 <TextBlock
+                  IsVisible="{Binding Sources.CanTransmitKind}"
                   Text="{l:T Settings.Sources.TxEnabledBox.Help}"
                   Foreground="{DynamicResource Brush.TextMuted}"
                   TextWrapping="Wrap"

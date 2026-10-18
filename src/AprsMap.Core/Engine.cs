@@ -713,6 +713,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<string>>([.. KissSerialConnection.GetPortNames().Order(StringComparer.Ordinal)]);
 
+    /// <inheritdoc />
+    public Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<TncTypeInfo>>([.. TncSetup.Known.Select(t => new TncTypeInfo(t.Id, t.Name))]);
+
     private void SetSourceLink(SourceSettings source, Link link)
     {
         lock (_gate)
@@ -1676,12 +1680,16 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         return view;
     }
 
-    /// <summary>Whether <paramref name="sourceId"/> is this station's own receiver: a KISS TNC (F3.1 behavior 8).</summary>
+    /// <summary>
+    /// Whether <paramref name="sourceId"/> is this station's own receiver: a KISS TNC (F3.1 behavior 8) or a radio read in
+    /// its APRS mode (F3.2 behavior 2).
+    /// </summary>
     private bool IsOwnReceiver(string? sourceId) =>
         sourceId is not null
         && _settings?.SourceList.FirstOrDefault(s => s.Id == sourceId)?.Kind
             is SourceKind.KissTcp
-                or SourceKind.KissSerial;
+                or SourceKind.KissSerial
+                or SourceKind.AprsTextSerial;
 
     /// <summary>Keeps <paramref name="node"/> findable by identity for one duplicate window.</summary>
     private void Remember(PacketIdentity identity, LinkedListNode<PacketView> node, DateTimeOffset now)

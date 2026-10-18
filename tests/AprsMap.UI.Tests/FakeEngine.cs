@@ -215,6 +215,9 @@ internal sealed class FakeEngine : IEngineService
     public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<string>>(SerialPorts);
 
+    public Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<TncTypeInfo>>([new TncTypeInfo("th-d72", "Kenwood TH-D72")]);
+
     /// <summary>The toggles <see cref="SetToggleAsync"/> set, in order.</summary>
     public List<(Toggle Toggle, bool Enabled)> Toggled { get; } = [];
 

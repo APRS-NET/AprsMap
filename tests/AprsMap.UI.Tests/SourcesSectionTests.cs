@@ -28,10 +28,10 @@ public class SourcesSectionTests
         Assert.Equal("Used by: Home, Portable", section.Rows[0].UsedByText);
         Assert.Equal("Not used by any profile", section.Rows[1].UsedByText);
         Assert.Equal(
-            ["APRS-IS", "KISS over TCP", "KISS over serial", "GPS · coming"],
+            ["APRS-IS", "KISS over TCP", "KISS over serial", "Radio in APRS mode (receive only)", "GPS · coming"],
             section.Kinds.Select(k => k.Name)
         );
-        Assert.Equal([true, true, true, false], section.Kinds.Select(k => k.IsAvailable));
+        Assert.Equal([true, true, true, true, false], section.Kinds.Select(k => k.IsAvailable));
     }
 
     [Fact]
@@ -88,6 +88,59 @@ public class SourcesSectionTests
             ("/dev/ttyUSB0", "19200", true, false),
             (section.EditSerialPort, section.EditBaud, section.EditDtr, section.EditRts)
         );
+    }
+
+    [Fact]
+    public async Task ASerialTncCanBeGivenARadiosTypeOrItsOwnScripts()
+    {
+        var (section, engine) = Create(BothOnRotate());
+        section.AddCommand.Execute(null);
+        section.Kinds[2].IsSelected = true; // KISS over serial
+        await Task.Yield();
+
+        Assert.Equal(["Plain KISS", "Kenwood TH-D72", "Custom"], section.TncTypes.Select(t => t.Name));
+        Assert.Null(section.SelectedTncType?.Id); // Plain KISS
+        section.EditSerialPort = "/dev/ttyUSB0";
+        section.SelectedTncType = section.TncTypes[1];
+        Assert.False(section.IsCustomTnc);
+        await section.SaveCommand.ExecuteAsync(null);
+        Assert.Equal("th-d72", engine.Settings.SourceList.Single(s => s.Kind == SourceKind.KissSerial).TncType);
+
+        section.Rows[^1].EditCommand.Execute(null);
+        await Task.Yield();
+        Assert.Equal("th-d72", section.SelectedTncType?.Id);
+        section.SelectedTncType = section.TncTypes[^1];
+        Assert.True(section.IsCustomTnc);
+        section.EditEnterScript = "send KISS ON\nsend RESTART";
+        await section.SaveCommand.ExecuteAsync(null);
+        var custom = engine.Settings.SourceList.Single(s => s.Kind == SourceKind.KissSerial);
+        Assert.Equal(
+            ("custom", "send KISS ON\nsend RESTART", (string?)null),
+            (custom.TncType, custom.EnterScript, custom.LeaveScript)
+        );
+    }
+
+    [Fact]
+    public async Task ARadioInAprsModeHasNoTxEnabledTncPortOrType()
+    {
+        var (section, engine) = Create(BothOnRotate());
+        section.AddCommand.Execute(null);
+        section.EditTransmit = true;
+        section.Kinds[3].IsSelected = true; // Radio in APRS mode
+
+        Assert.True(section.IsSerial);
+        Assert.True(section.IsTnc);
+        Assert.False(section.IsKiss);
+        Assert.False(section.IsKissSerial);
+        Assert.False(section.CanTransmitKind);
+        Assert.False(section.EditTransmit); // unticked: it can't send
+        section.EditSerialPort = "/dev/ttyUSB0";
+        await section.SaveCommand.ExecuteAsync(null);
+
+        var radio = engine.Settings.SourceList.Single(s => s.Kind == SourceKind.AprsTextSerial);
+        Assert.Equal(("/dev/ttyUSB0", false, (string?)null), (radio.SerialPort, radio.Transmit, radio.TncType));
+        Assert.Contains(radio.Id, engine.Settings.Profiles[0].SourceIds);
+        Assert.Equal("/dev/ttyUSB0@9600", section.Rows[^1].Server);
     }
 
     [Fact]
