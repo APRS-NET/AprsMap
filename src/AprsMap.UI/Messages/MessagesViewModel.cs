@@ -37,7 +37,31 @@ public sealed partial class MessagesViewModel : ObservableObject
 
     /// <summary>The open conversation.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOpen))]
     public partial ConversationRow? Selected { get; set; }
+
+    /// <summary>
+    /// Whether a conversation is open: it takes the panel's whole height, and the list waits behind
+    /// <see cref="BackText"/> (behavior 7).
+    /// </summary>
+    public bool IsOpen => Selected is not null;
+
+    /// <summary>"← Conversations", with the unread count of the others: "← Conversations (2 unread)".</summary>
+    [ObservableProperty]
+    public partial string BackText { get; private set; } = string.Empty;
+
+    /// <summary>Back to the conversations.</summary>
+    [RelayCommand]
+    private void Back() => Selected = null;
+
+    private void ShowBack()
+    {
+        var others = Conversations.Where(c => !ReferenceEquals(c, Selected)).Sum(c => c.Unread);
+        BackText =
+            others > 0
+                ? _text.Format("Messages.BackUnread", new Dictionary<string, object?> { ["count"] = others })
+                : _text["Messages.Back"];
+    }
 
     /// <summary>The open conversation's messages, oldest first.</summary>
     public ObservableCollection<MessageRow> Thread { get; } = [];
@@ -145,6 +169,7 @@ public sealed partial class MessagesViewModel : ObservableObject
 
     partial void OnSelectedChanged(ConversationRow? value)
     {
+        ShowBack();
         Thread.Clear();
         Error = null;
         if (value is null)
@@ -340,6 +365,7 @@ public sealed partial class MessagesViewModel : ObservableObject
             var group = groups.FirstOrDefault(g => Same(g.Correspondent, wanted[i]));
             row.Show(group.Last, group.Unread, _text);
         }
+        ShowBack();
     }
 
     /// <summary>The parts <paramref name="text"/> is sent as: at most 67 characters, between words (behavior 6).</summary>

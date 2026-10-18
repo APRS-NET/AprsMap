@@ -5,7 +5,7 @@ using Avalonia.Controls;
 namespace AprsMap.UI.Shell;
 
 /// <summary>
-/// The desktop main window's part of the layout (F1.0 behavior 15): placed where it was, if that is still on a screen,
+/// The desktop main window's part of the layout (F1.0 behavior 16): placed where it was, if that is still on a screen,
 /// and its place recorded as it moves. Only the size and place while not maximized are kept, so un-maximizing after a
 /// restart goes back to them.
 /// </summary>

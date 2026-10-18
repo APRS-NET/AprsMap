@@ -85,10 +85,10 @@ public class SettingsViewTests
         var (window, vm) = Show();
         vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 1, "1.2.3", AprsNetVersion: "0.1.0-alpha.17"));
 
-        await vm.OpenSettingsCommand.ExecuteAsync(null);
-        vm.Settings!.SelectedSection = vm.Settings.Sections.Single(s => s.Id == "about");
+        await vm.OpenAboutAsync(); // Help › About, a dialog of its own (F1.29 behavior 10)
         await Settle();
 
+        Assert.Equal("About", Find<TextBlock>(window, "DialogTitle").Text);
         Assert.True(Find<StackPanel>(window, "AboutSection").IsEffectivelyVisible);
         Assert.Equal("Engine 1.2.3 · APRS.NET 0.1.0-alpha.17", Find<TextBlock>(window, "EngineLabel").Text);
         Assert.True(Find<HyperlinkButton>(window, "LookupCredit").IsVisible); // the fake engine has lookup on

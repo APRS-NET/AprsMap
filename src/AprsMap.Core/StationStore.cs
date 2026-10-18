@@ -621,11 +621,11 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     }
 
     /// <summary>The statistics tables over the stations held now (F1.22 behavior 10).</summary>
-    public DashboardTables Statistics()
+    public DashboardTables Statistics(StationFilter? filter = null, DateTimeOffset now = default)
     {
         lock (_gate)
         {
-            var entries = _entries.Values.ToList();
+            var entries = _entries.Values.Where(e => filter is null || e.Matches(filter, now)).ToList();
             static List<DashboardCount> Counts(IEnumerable<string> keys) =>
                 [
                     .. keys.GroupBy(k => k, StringComparer.Ordinal)
@@ -666,11 +666,24 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     /// The weather stations heard since <paramref name="since"/> and the extremes of their latest readings (F1.22
     /// behavior 4.11).
     /// </summary>
-    public DashboardWeather WeatherSince(DateTimeOffset since)
+    /// <summary>The names of the stations, objects and items <paramref name="filter"/> shows now (F1.22 behavior 7).</summary>
+    public HashSet<string> Matching(StationFilter filter, DateTimeOffset now)
     {
         lock (_gate)
         {
-            var reporting = _entries.Values.Where(e => e.LastHeard >= since && e.Weather is not null).ToList();
+            return [.. _entries.Values.Where(e => e.Matches(filter, now)).Select(e => e.Name)];
+        }
+    }
+
+    public DashboardWeather WeatherSince(DateTimeOffset since, Func<string, bool>? include = null)
+    {
+        lock (_gate)
+        {
+            var reporting = _entries
+                .Values.Where(e =>
+                    e.LastHeard >= since && e.Weather is not null && (include is null || include(e.Name))
+                )
+                .ToList();
             var temperatures = reporting
                 .Where(e => e.Weather!.Temperature is not null)
                 .Select(e => new DashboardReading(e.Name, e.Weather!.Temperature!.Value))
@@ -692,7 +705,11 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     /// The longest direct RF hops among stations heard since <paramref name="since"/> whose IGate's position is known,
     /// farthest first (F1.22 behavior 4.10).
     /// </summary>
-    public IReadOnlyList<DashboardHop> FarthestDirect(DateTimeOffset since, int count)
+    public IReadOnlyList<DashboardHop> FarthestDirect(
+        DateTimeOffset since,
+        int count,
+        Func<string, bool>? include = null
+    )
     {
         List<(string Name, DateTimeOffset At)> direct;
         lock (_gate)
@@ -700,7 +717,12 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             direct =
             [
                 .. _entries
-                    .Values.Where(e => e.LastHeard >= since && e.Arrival == ArrivalKind.Direct && e.HasPosition)
+                    .Values.Where(e =>
+                        e.LastHeard >= since
+                        && e.Arrival == ArrivalKind.Direct
+                        && e.HasPosition
+                        && (include is null || include(e.Name))
+                    )
                     .Select(e => (e.Name, e.LastHeard)),
             ];
         }

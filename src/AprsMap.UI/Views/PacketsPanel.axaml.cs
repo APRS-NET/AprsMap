@@ -200,7 +200,11 @@ public sealed partial class PacketsPanel : UserControl
         foreach (var exporter in PacketExporter.All)
         {
             var item = new MenuItem { Header = text[exporter.NameKey] };
-            item.Click += (_, _) => _ = SaveAsync(exporter);
+            item.Click += (_, _) =>
+                _ =
+                    List is { } list && TopLevel.GetTopLevel(this) is { } topLevel
+                        ? SaveAsync(topLevel, list, exporter)
+                        : Task.CompletedTask;
             menu.Items.Add(item);
         }
     }
@@ -209,9 +213,9 @@ public sealed partial class PacketsPanel : UserControl
     /// Saves the rows shown in <paramref name="exporter"/>'s format where the viewer picks: a save dialog, or a download
     /// (behavior 10).
     /// </summary>
-    private async Task SaveAsync(PacketExporter exporter)
+    internal static async Task SaveAsync(TopLevel topLevel, PacketListViewModel list, PacketExporter exporter)
     {
-        if (List is not { } list || TopLevel.GetTopLevel(this)?.StorageProvider is not { CanSave: true } storage)
+        if (topLevel.StorageProvider is not { CanSave: true } storage)
         {
             return;
         }

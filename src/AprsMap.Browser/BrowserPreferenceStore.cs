@@ -62,6 +62,10 @@ internal sealed partial class BrowserPreferenceStore : IPreferenceStore
     [JSImport("reloadPage", "main.js")]
     internal static partial void ReloadPage();
 
+    /// <summary>The browser tab's title (F1.26 behavior 10).</summary>
+    [JSImport("setTitle", "main.js")]
+    internal static partial void SetTitle(string title);
+
     [JSImport("prefersReducedMotion", "main.js")]
     private static partial bool ReducedMotion();
 

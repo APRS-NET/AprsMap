@@ -1454,16 +1454,23 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     }
 
     /// <inheritdoc />
-    public Task<Dashboard> GetDashboardAsync(DashboardRange range, CancellationToken cancellationToken = default)
+    public Task<Dashboard> GetDashboardAsync(
+        DashboardRange range,
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    )
     {
-        var dashboard = _dashboard.Read(range, _time.GetUtcNow());
+        var now = _time.GetUtcNow();
+        // My view (F1.22 behavior 7): only the stations the viewer's filter shows now; an empty filter is the whole feed.
+        Func<string, bool>? include = filter is { IsEmpty: false } ? _stations.Matching(filter, now).Contains : null;
+        var dashboard = _dashboard.Read(range, now, include);
         // The counters cover the range; the rest is read from the stations held (F1.22 behaviors 4.10, 4.11, 10).
         return Task.FromResult(
             dashboard with
             {
-                FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5),
-                Weather = _stations.WeatherSince(dashboard.Start),
-                Tables = _stations.Statistics(),
+                FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5, include),
+                Weather = _stations.WeatherSince(dashboard.Start, include),
+                Tables = _stations.Statistics(include is null ? null : filter, now),
             }
         );
     }
@@ -2040,20 +2047,39 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
 
         var callsign = _options.Callsign.Trim().ToUpperInvariant();
-        var source = SourceSettings.AprsIsFor(
-            _options.Server,
-            string.IsNullOrWhiteSpace(_options.Filter) ? null : _options.Filter
-        );
+        List<SourceSettings> sources = [];
+        if (!string.IsNullOrWhiteSpace(_options.Server))
+        {
+            sources.Add(
+                SourceSettings.AprsIsFor(
+                    _options.Server,
+                    string.IsNullOrWhiteSpace(_options.Filter) ? null : _options.Filter
+                )
+            );
+        }
+        if (_options.Kiss.Host is { Length: > 0 } host)
+        {
+            // A TNC from the environment, for a headless first start (F1.26 behavior 14).
+            var kiss = SourceSettings.KissTcpFor(host.Trim(), _options.Kiss.Port, _options.Kiss.TncPort);
+            sources.Add(
+                string.IsNullOrWhiteSpace(_options.Kiss.Name) ? kiss : kiss with { Name = _options.Kiss.Name.Trim() }
+            );
+        }
+        if (sources.Count == 0)
+        {
+            LogDefaultsUnusable("Neither Engine:Server nor Engine:Kiss:Host is set.");
+            return AppSettings.Empty;
+        }
         var profile = new StationProfile(
             Guid.NewGuid().ToString("N"),
             callsign,
             callsign,
             _options.Passcode,
-            [source.Id],
+            [.. sources.Select(s => s.Id)],
             null,
             null
         );
-        var settings = new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [source]);
+        var settings = new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: sources);
         try
         {
             SettingsValidator.Validate(settings, _time);

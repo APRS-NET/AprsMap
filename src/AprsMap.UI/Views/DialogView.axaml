@@ -1,0 +1,260 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- A dialog over the main view (F1.29 behaviors 9–11, 14, 17): the actions that left Settings for the menus (Clear
+     data, Start over, Save layout as, About), Keyboard shortcuts, and Reset layout's question. A scrim behind one
+     panel; Escape or Close closes it. Colours, sizes and corners come from theme tokens. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:s="using:AprsMap.UI.Settings"
+  xmlns:sh="using:AprsMap.UI.Shell"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Views.DialogView"
+  x:DataType="vm:DialogViewModel"
+>
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Escape" Command="{Binding CloseCommand}" />
+  </UserControl.KeyBindings>
+  <Border Background="{DynamicResource Brush.Scrim}">
+    <Border
+      x:Name="DialogPanel"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="{DynamicResource Thickness.Border}"
+      CornerRadius="{DynamicResource Radius.Panel}"
+      MaxWidth="560"
+      MaxHeight="640"
+      Margin="16"
+      Padding="24,20"
+      VerticalAlignment="Center"
+      HorizontalAlignment="Stretch"
+    >
+      <DockPanel>
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+          <Button
+            x:Name="DialogCloseButton"
+            DockPanel.Dock="Right"
+            Content="{l:T Dialog.Close}"
+            Command="{Binding CloseCommand}"
+            VerticalAlignment="Top"
+          />
+          <TextBlock
+            x:Name="DialogTitle"
+            Text="{Binding Title}"
+            FontSize="{DynamicResource Text.Title}"
+            FontWeight="SemiBold"
+            TextWrapping="Wrap"
+            VerticalAlignment="Center"
+          />
+        </DockPanel>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <ContentControl x:Name="DialogContent" Content="{Binding Content}">
+            <ContentControl.DataTemplates>
+              <!-- Clear data (F1.19): what the station has collected, each with a count, confirmed before it goes. -->
+              <DataTemplate DataType="s:ClearDataViewModel">
+                <StackPanel x:Name="ClearSection" Spacing="8">
+                  <TextBlock Text="{l:T Settings.Data.Clear.Description}" TextWrapping="Wrap" />
+                  <ItemsControl x:Name="ClearRows" ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="s:ClearRow">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                          <TextBlock Text="{Binding Text}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                          <Button
+                            Grid.Column="1"
+                            Content="{l:T Settings.Data.Clear.Button}"
+                            Command="{Binding ClearCommand}"
+                            IsEnabled="{Binding !IsEmpty}"
+                            AutomationProperties.Name="{Binding Text}"
+                            Margin="8,0,0,0"
+                          />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Border
+                    x:Name="ClearConfirmation"
+                    IsVisible="{Binding IsConfirming}"
+                    BorderBrush="{DynamicResource Brush.Warn}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    Padding="12"
+                  >
+                    <StackPanel Spacing="10">
+                      <TextBlock
+                        Text="{Binding ConfirmText}"
+                        Foreground="{DynamicResource Brush.Warn}"
+                        FontWeight="SemiBold"
+                        TextWrapping="Wrap"
+                      />
+                      <WrapPanel ItemSpacing="8" LineSpacing="8">
+                        <Button
+                          x:Name="ConfirmClearButton"
+                          Content="{l:T Settings.Data.Clear.Button}"
+                          Command="{Binding ConfirmCommand}"
+                        />
+                        <Button
+                          x:Name="CancelClearButton"
+                          Content="{l:T Settings.Data.Confirm.Cancel}"
+                          Command="{Binding CancelCommand}"
+                        />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Border>
+                  <TextBlock
+                    Text="{Binding ResultText}"
+                    IsVisible="{Binding ResultText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    TextWrapping="Wrap"
+                  />
+                </StackPanel>
+              </DataTemplate>
+              <!-- Start over (F0.10): what goes, and the confirmation. -->
+              <DataTemplate DataType="s:DataSectionViewModel">
+                <StackPanel x:Name="StartOverSection" Spacing="10">
+                  <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+                  <TextBlock
+                    Text="{l:T Settings.Data.Confirm}"
+                    Foreground="{DynamicResource Brush.Warn}"
+                    FontWeight="SemiBold"
+                    TextWrapping="Wrap"
+                  />
+                  <CheckBox
+                    x:Name="IncludeStationBox"
+                    IsVisible="{Binding ShowStationChoice}"
+                    IsChecked="{Binding IncludeStation}"
+                  >
+                    <TextBlock Text="{l:T Settings.Data.IncludeStation}" TextWrapping="Wrap" />
+                  </CheckBox>
+                  <WrapPanel ItemSpacing="8" LineSpacing="8">
+                    <Button
+                      x:Name="ConfirmResetButton"
+                      Content="{l:T Settings.Data.Confirm.Delete}"
+                      Command="{Binding ConfirmCommand}"
+                    />
+                  </WrapPanel>
+                  <TextBlock
+                    Text="{Binding ErrorText}"
+                    IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.Warn}"
+                    TextWrapping="Wrap"
+                  />
+                </StackPanel>
+              </DataTemplate>
+              <!-- Save layout as (F1.23 behavior 1): a name, then saved. -->
+              <DataTemplate DataType="sh:SavedLayoutsViewModel">
+                <StackPanel x:Name="SaveLayoutSection" Spacing="10">
+                  <TextBlock Text="{l:T Layouts.Description}" TextWrapping="Wrap" />
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <TextBox
+                      x:Name="LayoutNameBox"
+                      Text="{Binding NewName}"
+                      PlaceholderText="{l:T Layouts.NamePlaceholder}"
+                      AutomationProperties.Name="{l:T Layouts.NamePlaceholder}"
+                    />
+                    <Button
+                      x:Name="SaveLayoutAsButton"
+                      Grid.Column="1"
+                      IsDefault="True"
+                      Content="{l:T Layouts.SaveAsButton}"
+                      Command="{Binding SaveAsCommand}"
+                    />
+                  </Grid>
+                  <TextBlock
+                    Text="{Binding Error}"
+                    IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.Warn}"
+                    TextWrapping="Wrap"
+                  />
+                </StackPanel>
+              </DataTemplate>
+              <!-- About: the versions, the connection, the licence and the credits. -->
+              <DataTemplate DataType="s:AboutViewModel">
+                <StackPanel x:Name="AboutSection" Spacing="8">
+                  <TextBlock
+                    Text="{x:Static s:AboutViewModel.ProductName}"
+                    FontSize="{DynamicResource Text.Title}"
+                    FontWeight="SemiBold"
+                  />
+                  <TextBlock x:Name="VersionLabel" Text="{Binding VersionText}" TextWrapping="Wrap" />
+                  <TextBlock
+                    x:Name="EngineLabel"
+                    TextWrapping="Wrap"
+                    Text="{Binding EngineText}"
+                    IsVisible="{Binding EngineText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                  />
+                  <TextBlock
+                    x:Name="ViewersLabel"
+                    TextWrapping="Wrap"
+                    Text="{Binding ViewersText}"
+                    IsVisible="{Binding ViewersText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  />
+                  <TextBlock
+                    x:Name="FailedSignInsLabel"
+                    Text="{Binding SignInsText}"
+                    IsVisible="{Binding SignInsText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    TextWrapping="Wrap"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                  />
+                  <TextBlock
+                    x:Name="AboutConnectionLabel"
+                    TextWrapping="Wrap"
+                    Text="{Binding ConnectionText}"
+                    IsVisible="{Binding ConnectionText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                  />
+                  <TextBlock Text="{Binding LicenceText}" TextWrapping="Wrap" />
+                  <HyperlinkButton
+                    x:Name="SourceLink"
+                    Content="{l:T Settings.About.Source}"
+                    NavigateUri="{x:Static s:AboutViewModel.SourceUri}"
+                    Padding="0"
+                  />
+                  <TextBlock Text="{l:T Settings.About.Credits}" FontWeight="SemiBold" Margin="0,12,0,0" />
+                  <TextBlock Text="{l:T Settings.About.IconCredit}" TextWrapping="Wrap" />
+                  <HyperlinkButton
+                    x:Name="LookupCredit"
+                    NavigateUri="{x:Static s:AboutViewModel.OpenStreetMapCopyrightUri}"
+                    IsVisible="{Binding ShowLookupCredit}"
+                    Padding="0"
+                  >
+                    <TextBlock Text="{l:T Settings.About.LookupCredit}" TextWrapping="Wrap" />
+                  </HyperlinkButton>
+                </StackPanel>
+              </DataTemplate>
+              <!-- Keyboard shortcuts (behavior 17): menu by menu. -->
+              <DataTemplate DataType="vm:ShortcutsViewModel">
+                <ItemsControl x:Name="ShortcutRows" ItemsSource="{Binding Rows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ShortcutRow">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="0,3">
+                        <TextBlock Text="{Binding Menu}" Foreground="{DynamicResource Brush.TextMuted}" MinWidth="80" />
+                        <TextBlock Grid.Column="1" Text="{Binding Command}" TextWrapping="Wrap" />
+                        <TextBlock Grid.Column="2" Text="{Binding Keys}" FontFamily="{DynamicResource Font.Mono}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </DataTemplate>
+              <!-- A question with one action, such as Reset layout's (behavior 14). -->
+              <DataTemplate DataType="vm:ConfirmViewModel">
+                <StackPanel Spacing="12">
+                  <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                  <WrapPanel ItemSpacing="8" HorizontalAlignment="Right">
+                    <Button Content="{l:T Settings.Data.Confirm.Cancel}" Command="{Binding CancelCommand}" />
+                    <Button
+                      x:Name="ConfirmButton"
+                      Classes="accent"
+                      IsDefault="True"
+                      Content="{Binding ConfirmText}"
+                      Command="{Binding ConfirmCommand}"
+                    />
+                  </WrapPanel>
+                </StackPanel>
+              </DataTemplate>
+            </ContentControl.DataTemplates>
+          </ContentControl>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Border>
+</UserControl>

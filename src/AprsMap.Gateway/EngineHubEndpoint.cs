@@ -10,39 +10,77 @@ internal sealed class EngineHubEndpoint(
     IEngineService engine,
     IOptions<GatewayOptions> options,
     Viewers viewers,
-    Core.Engine filterEngine
+    Core.Engine filterEngine,
+    OperatorStore operators,
+    HomeShields shields
 ) : Hub
 {
     /// <summary>The widest a viewer's map part may be on a gateway that follows viewers (F1.2 behavior 9).</summary>
     internal const double MaxViewerViewKm = 500;
 
-    private bool AllowSettingsChanges => options.Value.AllowSettingsChanges;
+    /// <summary>
+    /// A signed-in operator (docs/features/F2.9-operator-sign-in.md, behavior 13): the session the connection was opened
+    /// with decides, checked by <see cref="OperatorFilter"/> on every call; nothing the browser sends does.
+    /// </summary>
+    private bool IsOperator => Context.Items.ContainsKey(OperatorFilter.OperatorKey);
+
+    /// <summary>
+    /// Who may change the station: a signed-in operator, or with no operator set up, every browser on a gateway that
+    /// allows settings changes (F2.9 behavior 17).
+    /// </summary>
+    private bool MayChangeStation => IsOperator || (!operators.Any && options.Value.AllowSettingsChanges);
+
+    /// <summary>This call's home privacy (F1.26 behavior 11): none for whoever may change the station.</summary>
+    private Task<HomeShield?> ShieldAsync() => shields.ForAsync(MayChangeStation, Context.ConnectionAborted);
 
     [HubMethodName(EngineHub.GetStatus)]
-    public async Task<EngineStatus> GetStatus() =>
-        (await engine.GetStatusAsync(Context.ConnectionAborted).ConfigureAwait(false)) with
+    public async Task<EngineStatus> GetStatus()
+    {
+        var status = (await engine.GetStatusAsync(Context.ConnectionAborted).ConfigureAwait(false)) with
         {
             Viewers = viewers.Count,
+            Title = string.IsNullOrWhiteSpace(options.Value.Title) ? null : options.Value.Title.Trim(),
         };
+        return await ShieldAsync().ConfigureAwait(false) is { } shield
+            ? status with
+            {
+                FilterAreas = shield.Apply(status.FilterAreas),
+            }
+            : status;
+    }
 
     [HubMethodName(EngineHub.WatchPackets)]
     public IAsyncEnumerable<PacketView> WatchPackets(PacketFilter? filter, CancellationToken cancellationToken) =>
         engine.WatchPacketsAsync(filter, cancellationToken);
 
     [HubMethodName(EngineHub.WatchStations)]
-    public IAsyncEnumerable<StationBatch> WatchStations(StationFilter? filter, CancellationToken cancellationToken) =>
-        engine.WatchStationsAsync(filter, cancellationToken);
+    public async IAsyncEnumerable<StationBatch> WatchStations(
+        StationFilter? filter,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
+    {
+        var shielded = shields.Effective != HomePrivacy.Exact && !MayChangeStation;
+        await foreach (var batch in engine.WatchStationsAsync(filter, cancellationToken).ConfigureAwait(false))
+        {
+            // Measured from the shown point for a viewer (F1.26 behavior 11); the home is read each batch, as it can move.
+            yield return shielded
+            && await shields.ForAsync(false, cancellationToken).ConfigureAwait(false) is { } shield
+                ? shield.Apply(batch)
+                : batch;
+        }
+    }
 
     /// <summary>
     /// A toggle changes the station for every viewer, so it has the settings gate (F1.15 behavior 6). Turning Transmit
-    /// on needs a signed-in operator, which doesn't exist yet, so it's refused for everyone (F2.1 behavior 9).
+    /// on needs a signed-in operator (F2.1 behavior 9, F2.9 behavior 12).
     /// </summary>
     [HubMethodName(EngineHub.SetToggle)]
+    [Transmits]
     public async Task SetToggle(Toggle toggle, bool enabled)
     {
         if (toggle == Toggle.Transmit && enabled)
         {
-            RefuseTransmit();
+            RequireOperator();
         }
         Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
         try
@@ -55,72 +93,76 @@ internal sealed class EngineHubEndpoint(
         }
     }
 
-    /// <summary>Sending needs a signed-in operator, which doesn't exist yet: refused for everyone (F2.1 behavior 9).</summary>
+    /// <summary>Sending needs a signed-in operator (F2.1 behavior 9, F2.9 behavior 12).</summary>
     [HubMethodName(EngineHub.SendPosition)]
+    [Transmits]
     public Task<IReadOnlyList<PacketView>> SendPosition(string? sourceId)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.SendPositionAsync(sourceId, Context.ConnectionAborted);
     }
 
-    /// <summary>Test send transmits too: refused for everyone until operator sign-in (F2.1 behavior 8).</summary>
+    /// <summary>Test send transmits too: a signed-in operator only (F2.1 behavior 8).</summary>
     [HubMethodName(EngineHub.TestSend)]
+    [Transmits]
     public Task<TestSendResult> TestSend(string sourceId)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.TestSendAsync(sourceId, Context.ConnectionAborted);
     }
 
     /// <summary>
-    /// The station's conversations are its operator's: until F2.9's sign-in, browsers can neither read nor send them
+    /// The station's conversations are its operator's: only a signed-in operator reads or sends them
     /// (docs/features/F2.4-messaging.md, behavior 16).
     /// </summary>
     [HubMethodName(EngineHub.GetConversations)]
     public Task<IReadOnlyList<Conversation>> GetConversations()
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.GetConversationsAsync(Context.ConnectionAborted);
     }
 
     [HubMethodName(EngineHub.WatchMessages)]
     public IAsyncEnumerable<ChatMessage> WatchMessages(CancellationToken cancellationToken)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.WatchMessagesAsync(cancellationToken);
     }
 
     [HubMethodName(EngineHub.SendMessage)]
+    [Transmits]
     public Task<IReadOnlyList<ChatMessage>> SendMessage(string correspondent, string text)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.SendMessageAsync(correspondent, text, Context.ConnectionAborted);
     }
 
     [HubMethodName(EngineHub.CancelMessage)]
     public Task CancelMessage(string id)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.CancelMessageAsync(id, Context.ConnectionAborted);
     }
 
     [HubMethodName(EngineHub.ResendMessage)]
+    [Transmits]
     public Task ResendMessage(string id)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.ResendMessageAsync(id, Context.ConnectionAborted);
     }
 
     [HubMethodName(EngineHub.MarkRead)]
     public Task MarkRead(string correspondent)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.MarkReadAsync(correspondent, Context.ConnectionAborted);
     }
 
     [HubMethodName(EngineHub.SetConversation)]
     public Task SetConversation(string correspondent, SendVia sendVia, MessageRetries retries)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.SetConversationAsync(correspondent, sendVia, retries, Context.ConnectionAborted);
     }
 
@@ -128,11 +170,19 @@ internal sealed class EngineHubEndpoint(
     [HubMethodName(EngineHub.NewListenerId)]
     public Task<string> NewListenerId() => engine.NewListenerIdAsync(Context.ConnectionAborted);
 
-    /// <summary>Transmitting from a browser waits for F2.9's operator sign-in, whatever <c>AllowSettingsChanges</c> says.</summary>
-    private static void RefuseTransmit() =>
-        throw new HubException(
-            EngineHub.EncodeError(new EngineError(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage))
-        );
+    /// <summary>
+    /// Transmitting and the station's conversations need a signed-in operator, whatever <c>AllowSettingsChanges</c>
+    /// says (F2.9 behavior 12); the engine's own rules still apply after (behavior 14).
+    /// </summary>
+    private void RequireOperator()
+    {
+        if (!IsOperator)
+        {
+            throw new HubException(
+                EngineHub.EncodeError(new EngineError(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage))
+            );
+        }
+    }
 
     [HubMethodName(EngineHub.GetViewFacets)]
     public Task<ViewFacets> GetViewFacets() => engine.GetViewFacetsAsync(Context.ConnectionAborted);
@@ -149,23 +199,46 @@ internal sealed class EngineHubEndpoint(
     }
 
     [HubMethodName(EngineHub.GetDashboard)]
-    public Task<Dashboard> GetDashboard(DashboardRange range) =>
-        engine.GetDashboardAsync(range, Context.ConnectionAborted);
+    public async Task<Dashboard> GetDashboard(DashboardRange range, StationFilter? filter)
+    {
+        var dashboard = await engine.GetDashboardAsync(range, filter, Context.ConnectionAborted).ConfigureAwait(false);
+        return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.Apply(dashboard) : dashboard;
+    }
 
     [HubMethodName(EngineHub.GetNetworkLinks)]
-    public Task<IReadOnlyList<NetworkLink>> GetNetworkLinks() => engine.GetNetworkLinksAsync(Context.ConnectionAborted);
+    public async Task<IReadOnlyList<NetworkLink>> GetNetworkLinks()
+    {
+        var links = await engine.GetNetworkLinksAsync(Context.ConnectionAborted).ConfigureAwait(false);
+        return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.Apply(links) : links;
+    }
 
     [HubMethodName(EngineHub.GetTelemetry)]
     public Task<TelemetryView?> GetTelemetry(string name) => engine.GetTelemetryAsync(name, Context.ConnectionAborted);
 
     [HubMethodName(EngineHub.GetRoute)]
-    public Task<PacketRoute?> GetRoute(RouteQuery query) => engine.GetRouteAsync(query, Context.ConnectionAborted);
+    public async Task<PacketRoute?> GetRoute(RouteQuery query)
+    {
+        var route = await engine.GetRouteAsync(query, Context.ConnectionAborted).ConfigureAwait(false);
+        return route is not null && await ShieldAsync().ConfigureAwait(false) is { } shield
+            ? shield.Apply(route)
+            : route;
+    }
 
     [HubMethodName(EngineHub.GetRoutesOut)]
-    public Task<IReadOnlyList<PacketRoute>> GetRoutesOut() => engine.GetRoutesOutAsync(Context.ConnectionAborted);
+    public async Task<IReadOnlyList<PacketRoute>> GetRoutesOut()
+    {
+        var routes = await engine.GetRoutesOutAsync(Context.ConnectionAborted).ConfigureAwait(false);
+        return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.RoutesOut(routes) : routes;
+    }
 
     [HubMethodName(EngineHub.GetStation)]
-    public Task<StationDetail?> GetStation(string name) => engine.GetStationAsync(name, Context.ConnectionAborted);
+    public async Task<StationDetail?> GetStation(string name)
+    {
+        var detail = await engine.GetStationAsync(name, Context.ConnectionAborted).ConfigureAwait(false);
+        return detail is not null && await ShieldAsync().ConfigureAwait(false) is { } shield
+            ? shield.Apply(detail)
+            : detail;
+    }
 
     /// <summary>
     /// A browser's map view, for the station's filter (F1.2 behaviors 8 and 9): its followed station always, its map
@@ -192,21 +265,44 @@ internal sealed class EngineHubEndpoint(
     }
 
     [HubMethodName(EngineHub.QueryStations)]
-    public Task<StationPage> QueryStations(StationQuery query) =>
-        engine.QueryStationsAsync(query, Context.ConnectionAborted);
+    public async Task<StationPage> QueryStations(StationQuery query)
+    {
+        var page = await engine.QueryStationsAsync(query, Context.ConnectionAborted).ConfigureAwait(false);
+        if (await ShieldAsync().ConfigureAwait(false) is not { } shield)
+        {
+            return page;
+        }
+        // Each row measured from the shown point, from its position (F1.26 behavior 11).
+        var rows = new List<StationRow>(page.Rows.Count);
+        foreach (var row in page.Rows)
+        {
+            (double, double)? position = null;
+            if (row.DistanceKm is not null || row.BearingDegrees is not null)
+            {
+                var detail = await engine.GetStationAsync(row.Name, Context.ConnectionAborted).ConfigureAwait(false);
+                position = detail is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
+            }
+            rows.Add(shield.Apply(row, position));
+        }
+        return page with { Rows = rows };
+    }
 
     /// <summary>The settings; read-only, with passcodes hidden, unless this gateway allows settings changes.</summary>
     [HubMethodName(EngineHub.GetSettings)]
     public async Task<AppSettings> GetSettings()
     {
         var settings = await engine.GetSettingsAsync(Context.ConnectionAborted).ConfigureAwait(false);
-        return AllowSettingsChanges
-            ? settings
-            : settings with
-            {
-                ReadOnly = true,
-                Profiles = [.. settings.Profiles.Select(p => p with { Passcode = -1 })],
-            };
+        if (MayChangeStation)
+        {
+            return settings;
+        }
+        var viewers = settings with
+        {
+            ReadOnly = true,
+            Profiles = [.. settings.Profiles.Select(p => p with { Passcode = -1 })],
+        };
+        // The profiles' locations, the house drawn: the square's centre, or none (F1.26 behavior 11.4).
+        return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.Apply(viewers) : viewers;
     }
 
     [HubMethodName(EngineHub.SaveSettings)]
@@ -284,25 +380,27 @@ internal sealed class EngineHubEndpoint(
         return engine.WatchSourceTrafficAsync(sourceId, cancellationToken);
     }
 
-    /// <summary>Manual mode is for typing to the TNC, which can key the radio: refused until F2.9 (F3.2 behavior 12).</summary>
+    /// <summary>Manual mode is for typing to the TNC, which can key the radio: a signed-in operator only (F3.2 behavior 12).</summary>
     [HubMethodName(EngineHub.SetTncManual)]
+    [Transmits]
     public Task SetTncManual(string sourceId, bool manual)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.SetTncManualAsync(sourceId, manual, Context.ConnectionAborted);
     }
 
     /// <summary>
     /// Switching a TNC into or out of KISS changes the station's source: the settings gate. A typed command can key the
-    /// radio, so it's refused until F2.9 (F3.2 behaviors 11, 12).
+    /// radio, so it needs a signed-in operator (F3.2 behaviors 11, 12).
     /// </summary>
     [HubMethodName(EngineHub.SendTncCommand)]
+    [Transmits]
     public Task SendTncCommand(string sourceId, TncCommand command)
     {
         ArgumentNullException.ThrowIfNull(command);
         if (command.Kind is TncCommandKind.Line or TncCommandKind.Bytes)
         {
-            RefuseTransmit();
+            RequireOperator();
         }
         Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
         return engine.SendTncCommandAsync(sourceId, command, Context.ConnectionAborted);
@@ -314,16 +412,18 @@ internal sealed class EngineHubEndpoint(
         engine.WatchBulletinsAsync(cancellationToken);
 
     [HubMethodName(EngineHub.PostBulletin)]
+    [Transmits]
     public Task<BulletinView> PostBulletin(BulletinPost post)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.PostBulletinAsync(post, Context.ConnectionAborted);
     }
 
     [HubMethodName(EngineHub.StopBulletin)]
+    [Transmits]
     public Task StopBulletin(string addressee)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.StopBulletinAsync(addressee, Context.ConnectionAborted);
     }
 
@@ -331,30 +431,35 @@ internal sealed class EngineHubEndpoint(
     public Task<IReadOnlyList<string>> GetGroups() => engine.GetGroupsAsync(Context.ConnectionAborted);
 
     [HubMethodName(EngineHub.JoinGroup)]
+    [Transmits]
     public Task JoinGroup(string group)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.JoinGroupAsync(group, Context.ConnectionAborted);
     }
 
     [HubMethodName(EngineHub.LeaveGroup)]
+    [Transmits]
     public Task LeaveGroup(string group)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.LeaveGroupAsync(group, Context.ConnectionAborted);
     }
 
     [HubMethodName(EngineHub.PostToGroup)]
+    [Transmits]
     public Task<IReadOnlyList<ChatMessage>> PostToGroup(string group, string text)
     {
-        RefuseTransmit();
+        RequireOperator();
         return engine.PostToGroupAsync(group, text, Context.ConnectionAborted);
     }
 
     /// <summary>Distance and bearing from the station's location to a viewer's destination (F1.18): open to every viewer.</summary>
     [HubMethodName(EngineHub.GetDestination)]
-    public Task<DestinationInfo> GetDestination(double latitude, double longitude) =>
-        engine.GetDestinationAsync(latitude, longitude, Context.ConnectionAborted);
+    public async Task<DestinationInfo> GetDestination(double latitude, double longitude) =>
+        await ShieldAsync().ConfigureAwait(false) is { } shield
+            ? shield.Destination(latitude, longitude, segments: 64)
+            : await engine.GetDestinationAsync(latitude, longitude, Context.ConnectionAborted).ConfigureAwait(false);
 
     /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
     [HubMethodName(EngineHub.GetCapture)]
@@ -387,7 +492,7 @@ internal sealed class EngineHubEndpoint(
     /// <summary>Address lookup is offered only where settings can be changed, so the gateway isn't an open proxy.</summary>
     [HubMethodName(EngineHub.GetGeocodingInfo)]
     public async Task<GeocodingInfo> GetGeocodingInfo() =>
-        AllowSettingsChanges
+        MayChangeStation
             ? await engine.GetGeocodingInfoAsync(Context.ConnectionAborted).ConfigureAwait(false)
             : GeocodingInfo.Disabled;
 
@@ -452,7 +557,7 @@ internal sealed class EngineHubEndpoint(
     /// <summary>Refuses the call with <paramref name="code"/> unless this gateway allows settings changes.</summary>
     private void Require(string code, string message)
     {
-        if (!AllowSettingsChanges)
+        if (!MayChangeStation)
         {
             throw new HubException(EngineHub.EncodeError(new EngineError(code, message)));
         }

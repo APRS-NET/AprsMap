@@ -91,6 +91,14 @@ public static class SettingsRegistry
                 value => Update(s => s with { Icons = (IconSize)value! })
             ),
             new ToggleSetting(
+                "appearance.always-show-menu-bar",
+                "Settings.Appearance.AlwaysShowMenuBar",
+                null,
+                text,
+                () => appearance.Current.AlwaysShowMenuBar,
+                value => Update(s => s with { AlwaysShowMenuBar = value })
+            ),
+            new ToggleSetting(
                 "appearance.icons-follow-text",
                 "Settings.Appearance.IconsFollowText",
                 null,

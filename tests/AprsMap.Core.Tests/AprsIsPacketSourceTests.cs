@@ -25,6 +25,23 @@ public class AprsIsPacketSourceTests
     }
 
     [Fact]
+    public void AReceiveOnlyEngineLogsInUnverifiedWhateverThePasscode()
+    {
+        var licensed = new StationProfile("h", "Home", "N0TEST", 12345, [], null, null, Licensed: true);
+
+        var options = AprsIsPacketSourceFactory.ClientOptions(
+            licensed,
+            "rotate.aprs2.net:14580",
+            "",
+            TimeProvider.System,
+            receiveOnly: true
+        );
+
+        Assert.Equal(-1, options.Passcode); // F1.26 behavior 7.2
+        Assert.True(options.ListenOnly);
+    }
+
+    [Fact]
     public void AListenerIdLogsInListenOnlyAndACallsignDoesNot()
     {
         var listener = new StationProfile("l", "Listening", "SWL482913", 12345, [], null, null);

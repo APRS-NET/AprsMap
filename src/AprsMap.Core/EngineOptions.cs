@@ -45,6 +45,12 @@ public sealed class EngineOptions
     public string? Filter { get; set; }
 
     /// <summary>
+    /// First-run default: a KISS over TCP source (docs/features/F1.26-public-console.md, behavior 14), ticked for the first
+    /// profile. With <see cref="Server"/> empty the first profile has no APRS-IS source: a TNC-only station.
+    /// </summary>
+    public KissSeedOptions Kiss { get; set; } = new();
+
+    /// <summary>
     /// How many recent packets the engine keeps for clients that connect later, and for filtering after the fact
     /// (F1.8 behavior 9): a few minutes of a full APRS-IS feed, or hours of a filtered one.
     /// </summary>
@@ -67,4 +73,20 @@ public sealed class EngineOptions
 
     /// <summary>The longest wait between reconnect attempts.</summary>
     public TimeSpan MaxRetryDelay { get; set; } = TimeSpan.FromMinutes(2);
+}
+
+/// <summary>A first-run KISS over TCP source: <c>Engine__Kiss__Host</c> and the rest.</summary>
+public sealed class KissSeedOptions
+{
+    /// <summary>The TNC's host; empty for none.</summary>
+    public string? Host { get; set; }
+
+    /// <summary>The TNC's port; null for 8001.</summary>
+    public int? Port { get; set; }
+
+    /// <summary>The TNC's radio port, 0–15; null for 0.</summary>
+    public int? TncPort { get; set; }
+
+    /// <summary>The source's name; null for the host and port.</summary>
+    public string? Name { get; set; }
 }

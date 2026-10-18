@@ -49,6 +49,7 @@ COPY --from=build /out/gateway/ ./
 # image's 'app' user.
 COPY --from=build --chown=$APP_UID:$APP_UID /out/data /data
 ENV ASPNETCORE_HTTP_PORTS=8080 \
+    PATH="/app:${PATH}" \
     Engine__SettingsFolder=/data \
     Tiles__CacheFolder=/data/tiles
 VOLUME /data
