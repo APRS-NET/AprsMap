@@ -73,6 +73,9 @@ public sealed class MapView : Control, IDisposable
     private IBrush? _haloBrush;
     private IPen? _ringPen;
     private IPen? _filterPen;
+    private ImmutablePen? _destinationPen;
+    private ImmutablePen? _destinationPolePen;
+    private ImmutableSolidColorBrush? _flagBrush;
     private IReadOnlyList<FilterArea> _filterAreas = [];
     private TileLayer? _tiles;
     private Point? _dragFrom;
@@ -126,6 +129,11 @@ public sealed class MapView : Control, IDisposable
                 _filterPen = v is Color f
                     ? new ImmutablePen(new ImmutableSolidColorBrush(f), 1.5, new ImmutableDashStyle([4, 4], 0))
                     : null;
+                _destinationPen = v is Color d
+                    ? new ImmutablePen(new ImmutableSolidColorBrush(d), 2, new ImmutableDashStyle([3, 3], 0))
+                    : null;
+                _destinationPolePen = v is Color p ? new ImmutablePen(new ImmutableSolidColorBrush(p), 2) : null;
+                _flagBrush = v is Color b ? new ImmutableSolidColorBrush(b) : null;
             }
         );
         Watch("Map.ShowFilterCircles", v => ShowFilterCircles = v is true);
@@ -218,6 +226,76 @@ public sealed class MapView : Control, IDisposable
 
     /// <summary>The filter's range parts drawn, for tests.</summary>
     internal IReadOnlyList<FilterArea> FilterAreas => _filterAreas;
+
+    private GeoPoint? _destination;
+    private IReadOnlyList<GeoPoint> _destinationLine = [];
+
+    /// <summary>The destination's flag and great-circle line (docs/features/F1.18-destination.md, behavior 3).</summary>
+    public void SetDestination(GeoPoint? at, IReadOnlyList<GeoPoint> line)
+    {
+        _destination = at;
+        _destinationLine = line;
+        InvalidateVisual();
+    }
+
+    /// <summary>The destination drawn, for tests.</summary>
+    internal (GeoPoint? At, int LinePoints) Destination => (_destination, _destinationLine.Count);
+
+    /// <summary>
+    /// The line from my location to the destination, dashed in the accent colour, and a flag at the destination. Drawn
+    /// on the UI thread with the pens resolved from the theme, so the render thread reads nothing styled.
+    /// </summary>
+    private void DrawDestination(DrawingContext context, Viewport viewport)
+    {
+        if (_destination is not { } at || _destinationPen is null || _flagBrush is null)
+        {
+            return;
+        }
+        if (_destinationLine.Count > 1)
+        {
+            var geometry = new StreamGeometry();
+            using (var g = geometry.Open())
+            {
+                var previous = (Point?)null;
+                foreach (var point in _destinationLine)
+                {
+                    var (x, y) = SphericalMercator.FromLonLat(point.Longitude, point.Latitude);
+                    var s = ToScreen(viewport, new StationMark(string.Empty, x, y, null, false, default));
+                    var here = new Point(s.X, s.Y);
+                    // A line crossing the antimeridian jumps across the map: it's broken there rather than drawn back.
+                    if (previous is not { } before || Math.Abs(here.X - before.X) > Bounds.Width)
+                    {
+                        if (previous is not null)
+                        {
+                            g.EndFigure(false);
+                        }
+                        g.BeginFigure(here, false);
+                    }
+                    else
+                    {
+                        g.LineTo(here);
+                    }
+                    previous = here;
+                }
+                g.EndFigure(false);
+            }
+            context.DrawGeometry(null, _destinationPen, geometry);
+        }
+        var (fx, fy) = SphericalMercator.FromLonLat(at.Longitude, at.Latitude);
+        var flagAt = ToScreen(viewport, new StationMark(string.Empty, fx, fy, null, false, default));
+        var size = _symbolDip * 0.6;
+        var pole = new Point(flagAt.X, flagAt.Y);
+        var flag = new StreamGeometry();
+        using (var g = flag.Open())
+        {
+            g.BeginFigure(new Point(pole.X, pole.Y - size * 1.6), true);
+            g.LineTo(new Point(pole.X + size, pole.Y - size * 1.3));
+            g.LineTo(new Point(pole.X, pole.Y - size));
+            g.EndFigure(true);
+        }
+        context.DrawLine(_destinationPolePen!, pole, new Point(pole.X, pole.Y - size * 1.6));
+        context.DrawGeometry(_flagBrush, null, flag);
+    }
 
     /// <summary>The APRS-IS filter's range parts, for <see cref="ShowFilterCircles"/>.</summary>
     public void SetFilterAreas(IReadOnlyList<FilterArea>? areas)
@@ -753,6 +831,7 @@ public sealed class MapView : Control, IDisposable
             DrawRouteLabel(context, new Point(at.X, at.Y), km);
         }
         DrawFilterAreas(context, viewport);
+        DrawDestination(context, viewport);
         DrawLabels(context, marks, screen);
         if (Selected is { } name && _ringPen is not null && FindIndex(marks, name) is { } selected)
         {

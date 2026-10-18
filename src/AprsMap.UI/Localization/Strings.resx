@@ -1297,6 +1297,37 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.aprs.unrecognized.user-defined-data" xml:space="preserve">
     <value>User-defined data</value>
   </data>
+  <data name="Map.SetDestination" xml:space="preserve">
+    <value>Set destination here</value>
+  </data>
+  <data name="Details.SetDestination" xml:space="preserve">
+    <value>Set as destination</value>
+  </data>
+  <data name="Destination.Text" xml:space="preserve">
+    <value>{name} · {range}</value>
+    <comment>The destination chip: its name and the distance and bearing from my location, such as "W1AW-9 · 42 km NE 038°".</comment>
+  </data>
+  <data name="Destination.NoLocation" xml:space="preserve">
+    <value>{name} · Set your location to see the distance</value>
+  </data>
+  <data name="Destination.Centre" xml:space="preserve">
+    <value>Centre the map on the destination</value>
+  </data>
+  <data name="Destination.Clear" xml:space="preserve">
+    <value>Clear the destination</value>
+  </data>
+  <data name="Destination.Placeholder" xml:space="preserve">
+    <value>Destination: coordinates or a locator</value>
+  </data>
+  <data name="Destination.Type" xml:space="preserve">
+    <value>Destination…</value>
+  </data>
+  <data name="Destination.Set" xml:space="preserve">
+    <value>Set destination</value>
+  </data>
+  <data name="Destination.TypedInvalid" xml:space="preserve">
+    <value>Type a latitude and longitude, such as 40.015, -105.27, or a locator such as DN70ka.</value>
+  </data>
   <data name="Shell.Panel.messages" xml:space="preserve">
     <value>Messages</value>
     <comment>Panel title: conversations with other stations.</comment>

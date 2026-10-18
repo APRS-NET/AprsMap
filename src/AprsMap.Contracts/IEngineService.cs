@@ -304,6 +304,16 @@ public interface IEngineService
     /// <exception cref="ArgumentException">It isn't a locator; the error's code says why and where.</exception>
     Task<LocatorInfo> ParseLocatorAsync(string locator, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The distance and bearing from the active profile's location to a destination, and the great-circle line to it
+    /// (docs/features/F1.18-destination.md, behaviors 2, 3); <see cref="DestinationInfo.Unknown"/> without a location.
+    /// </summary>
+    Task<DestinationInfo> GetDestinationAsync(
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>The 6-character Maidenhead locator of a position, for showing next to coordinates.</summary>
     /// <exception cref="ArgumentException">The position is off the globe.</exception>
     Task<string> GetLocatorAsync(double latitude, double longitude, CancellationToken cancellationToken = default);

@@ -69,6 +69,7 @@ public sealed partial class MainViewModel : ObservableObject
         );
         Details.CloseRequested += (_, _) => SelectedStation = null;
         Details.MessageRequested += (_, name) => OpenConversation(name);
+        Details.DestinationRequested += (_, d) => _ = Destination.SetAsync(d.Latitude, d.Longitude, d.Name);
         Details.SelectRequested += (_, name) => SelectedStation = name;
         Details.PropertyChanged += (_, e) =>
         {
@@ -111,6 +112,7 @@ public sealed partial class MainViewModel : ObservableObject
             }
         );
         _text.LanguageChanged += (_, _) => Retranslate();
+        _text.LanguageChanged += (_, _) => _destination?.Retranslate();
         Retranslate();
     }
 
@@ -233,6 +235,12 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>"2 new messages" in the status bar while any are unread (behavior 4); null otherwise.</summary>
     [ObservableProperty]
     public partial string? UnreadText { get; private set; }
+
+    /// <summary>My destination, in the map's chip and as a line on the map (docs/features/F1.18-destination.md).</summary>
+    public Map.DestinationViewModel Destination =>
+        _destination ??= new Map.DestinationViewModel(engine, _text, () => _settings?.Units ?? UnitSettings.Metric);
+
+    private Map.DestinationViewModel? _destination;
 
     /// <summary>The Source console panel (docs/features/F1.28-source-console.md).</summary>
     public Traffic.SourceConsoleViewModel Console => _consolePanel ??= CreateConsole();
@@ -678,6 +686,8 @@ public sealed partial class MainViewModel : ObservableObject
             _appearance.Changed += (_, settings) => Map.UseProvider(settings.MapProvider);
         }
         await ViewFilter.LoadAsync(Preferences);
+        Destination.Preferences = Preferences;
+        await Destination.LoadAsync();
         await StationList.LoadAsync();
         var packets = KeepAsync(PacketList.WatchAsync, cancellationToken);
         var stations = KeepAsync(WatchStationsAsync, cancellationToken);
@@ -721,6 +731,7 @@ public sealed partial class MainViewModel : ObservableObject
             _ = ShowRouteAsync(following); // the station's last packet changed
         }
         StationsChanged?.Invoke(this, batch);
+        _destination?.StationsChanged(batch);
         Details.Changed(batch);
         StationList.Changed();
     }
@@ -1139,6 +1150,10 @@ public sealed partial class MainViewModel : ObservableObject
         PacketList.ShowSources(settings);
         Settings?.Beacons?.Show(settings); // a source's TX enabled changes what beacons can go out on
         Settings?.Data?.Capture?.Show(settings);
+        if (_destination is { IsSet: true } destination)
+        {
+            _ = destination.RefreshAsync(); // my location or the units may have changed
+        }
         CanToggle = !settings.ReadOnly;
         if (CanClearData != couldClear)
         {

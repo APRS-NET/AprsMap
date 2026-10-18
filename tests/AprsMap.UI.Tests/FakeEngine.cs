@@ -265,6 +265,15 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
+    /// <summary>What <see cref="GetDestinationAsync"/> gives, by destination; <see cref="DestinationInfo.Unknown"/> otherwise.</summary>
+    public Dictionary<(double, double), DestinationInfo> Destinations { get; } = [];
+
+    public Task<DestinationInfo> GetDestinationAsync(
+        double latitude,
+        double longitude,
+        CancellationToken cancellationToken = default
+    ) => Task.FromResult(Destinations.GetValueOrDefault((latitude, longitude)) ?? DestinationInfo.Unknown);
+
     /// <summary>What <see cref="GetCaptureAsync"/> gives.</summary>
     public CaptureView Capture { get; set; } = new([], [], []);
 

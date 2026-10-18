@@ -72,6 +72,20 @@ public sealed partial class MapPanel : UserControl, IDisposable
         _linkTimer.Tick += (_, _) => _ = LoadLinksAsync();
         _linkTimer.Start();
         StopFollowingButton.Click += (_, _) => StopFollowing();
+        SetDestinationItem.Click += (_, _) =>
+        {
+            if (_menuAt is var (lat, lon) && _main is not null)
+            {
+                _ = _main.Destination.SetAsync(lat, lon);
+            }
+        };
+        DestinationChipButton.Click += (_, _) =>
+        {
+            if (_main?.Destination.Point is { } point && _map.View is var (_, _, resolution))
+            {
+                _map.GoTo(point.Latitude, point.Longitude, resolution); // behavior 2: centres on the destination
+            }
+        };
         SetMyLocationItem.Click += (_, _) =>
         {
             if (_menuAt is var (lat, lon) && _main is not null)
@@ -106,6 +120,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.Details.CentreRequested -= OnCentreRequested;
             _main.Details.PropertyChanged -= OnDetailsChanged;
             _main.CentreOnStationRequested -= OnCentreOnStation;
+            _main.Destination.PropertyChanged -= OnDestinationChanged;
         }
         _main = DataContext as MainViewModel;
         if (_main is not null)
@@ -115,6 +130,8 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.Details.CentreRequested += OnCentreRequested;
             _main.Details.PropertyChanged += OnDetailsChanged;
             _main.CentreOnStationRequested += OnCentreOnStation;
+            _main.Destination.PropertyChanged += OnDestinationChanged;
+            ShowDestination();
             _map.SetStations(_main.Stations);
             _map.SetTracks(_main.Tracks);
             _map.Route = _main.PickedRoute;
@@ -334,16 +351,35 @@ public sealed partial class MapPanel : UserControl, IDisposable
         _map.ShowMe(_state?.Home?.Latitude, _state?.Home?.Longitude, _state?.HomeName);
     }
 
+    /// <summary>The destination's flag and line follow the view model (F1.18 behavior 3).</summary>
+    private void OnDestinationChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(DestinationViewModel.Point) or nameof(DestinationViewModel.Line))
+        {
+            ShowDestination();
+        }
+    }
+
+    private void ShowDestination()
+    {
+        if (_main is not null)
+        {
+            _map.SetDestination(_main.Destination.Point, _main.Destination.Line);
+        }
+    }
+
     /// <summary>
-    /// Right-click, long-press or the context-menu key offers Set my location here (F1.13 behavior 2) for the place
-    /// pointed at, or the map's centre from the keyboard; not on a read-only gateway.
+    /// Right-click, long-press or the context-menu key offers, for the place pointed at (or the map's centre from the
+    /// keyboard), Set destination here (F1.18 behavior 1), which is each viewer's own, and Set my location here (F1.13
+    /// behavior 2), not on a read-only gateway.
     /// </summary>
     private void OnContextRequested(object? sender, ContextRequestedEventArgs e)
     {
-        if (_main is not { CanSetMyLocation: true })
+        if (_main is null)
         {
             return;
         }
+        SetMyLocationItem.IsVisible = _main.CanSetMyLocation;
         var at = e.TryGetPosition(_map, out var point)
             ? point
             : new Point(_map.Bounds.Width / 2, _map.Bounds.Height / 2);

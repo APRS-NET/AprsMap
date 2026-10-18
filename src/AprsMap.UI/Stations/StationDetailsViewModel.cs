@@ -542,6 +542,19 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     /// <summary>Asks for a conversation with the station named.</summary>
     public event EventHandler<string>? MessageRequested;
 
+    /// <summary>Sets the station as my destination (docs/features/F1.18-destination.md, behavior 1).</summary>
+    [RelayCommand]
+    private void SetDestination()
+    {
+        if (Name is { } name && _detail is { Latitude: { } lat, Longitude: { } lon })
+        {
+            DestinationRequested?.Invoke(this, (name, lat, lon));
+        }
+    }
+
+    /// <summary>Asks for the station named, at its position, to become the destination.</summary>
+    public event EventHandler<(string Name, double Latitude, double Longitude)>? DestinationRequested;
+
     /// <summary>Clears the selection.</summary>
     [RelayCommand]
     private void Close() => CloseRequested?.Invoke(this, EventArgs.Empty);

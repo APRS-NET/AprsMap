@@ -115,6 +115,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetSerialPortsAsync"/>.</summary>
     public const string GetSerialPorts = "GetSerialPorts";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetDestinationAsync"/>.</summary>
+    public const string GetDestination = "GetDestination";
+
     /// <summary>Hub method for <see cref="IEngineService.GetCaptureAsync"/>.</summary>
     public const string GetCapture = "GetCapture";
 

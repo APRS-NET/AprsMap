@@ -305,6 +305,11 @@ internal sealed class EngineHubEndpoint(
         return engine.SendTncCommandAsync(sourceId, command, Context.ConnectionAborted);
     }
 
+    /// <summary>Distance and bearing from the station's location to a viewer's destination (F1.18): open to every viewer.</summary>
+    [HubMethodName(EngineHub.GetDestination)]
+    public Task<DestinationInfo> GetDestination(double latitude, double longitude) =>
+        engine.GetDestinationAsync(latitude, longitude, Context.ConnectionAborted);
+
     /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
     [HubMethodName(EngineHub.GetCapture)]
     public Task<CaptureView> GetCapture(CaptureQuery query)
