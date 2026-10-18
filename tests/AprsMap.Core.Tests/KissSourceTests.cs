@@ -173,6 +173,49 @@ public sealed class KissSourceTests
     }
 
     [Fact]
+    public async Task AnAprsIsServerThatIsAKissTncSaysSoAndIsntRetried()
+    {
+        // Direwolf's KISS port given as an APRS-IS server by mistake (G32).
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var profile = InMemorySettingsStore.Profile("N0TEST");
+        var engine = new Engine(
+            Options.Create(Quick),
+            new AprsIsPacketSourceFactory(Options.Create(Quick), NullLoggerFactory.Instance, TimeProvider.System),
+            new InMemorySettingsStore(
+                new AppSettings(
+                    [profile],
+                    profile.Id,
+                    UnitSettings.Metric,
+                    Sources: [InMemorySettingsStore.Rotate with { Server = $"127.0.0.1:{port}" }]
+                )
+            ),
+            TimeProvider.System,
+            NullLogger<Engine>.Instance
+        );
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var run = engine.RunAsync(cts.Token);
+
+        using var client = await listener.AcceptTcpClientAsync(Ct);
+        await client.GetStream().WriteAsync(Frame("N0CAR-9>APRS,WIDE1-1:!4903.50N/07201.75W>"), Ct);
+        await client.GetStream().WriteAsync("\r\n"u8.ToArray(), Ct);
+
+        await WaitUntil(async () =>
+            await engine.GetStatusAsync(Ct) is { Connection: ConnectionState.Refused } s
+            && s.ConnectionError?.Code == EngineErrorCodes.AprsIsKissTnc
+        );
+        using var wait = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        wait.CancelAfter(TimeSpan.FromMilliseconds(500)); // several retry delays: no second attempt
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await listener.AcceptTcpClientAsync(wait.Token)
+        );
+
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
     public async Task SwitchingATncOffStopsItAndOnOpensItAgainAndReconnectNowReconnects()
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);

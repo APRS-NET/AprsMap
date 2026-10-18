@@ -34,7 +34,10 @@ internal sealed class AprsIsPacketSource(AprsIsConnection connection) : IPacketS
                     var error = AprsIsErrors.From(e.Error, wasConnected);
                     wasConnected = false;
                     stateChanged(
-                        e.Error is LoginRejectedException
+                        // Retrying won't help either: a refused login, or a KISS TNC where a server should be.
+                        e.Error
+                            is LoginRejectedException
+                                or KissTncLoginException
                             ? new PacketSourceEvent(ConnectionState.Refused, Error: error)
                             : new PacketSourceEvent(ConnectionState.Reconnecting, RetryIn: e.RetryIn, Error: error)
                     );

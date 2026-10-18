@@ -150,6 +150,12 @@ public static class EngineErrorCodes
     /// <summary>The APRS-IS server sent nothing, not even a keepalive, for too long.</summary>
     public const string AprsIsIdle = "aprs-is.idle";
 
+    /// <summary>
+    /// The APRS-IS server answered the login with KISS frames: it's a KISS TNC, such as Direwolf's port 8001, to add as a
+    /// TNC source. Not retried, as a refused login isn't.
+    /// </summary>
+    public const string AprsIsKissTnc = "aprs-is.kiss-tnc";
+
     /// <summary>A KISS TNC couldn't be reached (refused, timed out, no such host).</summary>
     public const string KissUnreachable = "kiss.unreachable";
 

@@ -1541,6 +1541,13 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 SetLink(new Link(ConnectionState.Refused, Error: AprsIsErrors.From(ex, wasConnected: false)));
                 LogLoginRefused(ex.ServerMessage);
             }
+            catch (KissTncLoginException ex)
+            {
+                // A KISS TNC answered, not a server: retrying only knocks on the TNC again (G32).
+                EngineTelemetry.ConnectionFailures.Add(1);
+                SetLink(new Link(ConnectionState.Refused, Error: AprsIsErrors.From(ex, wasConnected: false)));
+                LogKissTnc();
+            }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 EngineTelemetry.ConnectionFailures.Add(1);
@@ -2108,6 +2115,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         EngineError? Error = null,
         EngineError? Warning = null
     );
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "The APRS-IS server is a KISS TNC: add it as a TNC source instead. Not retrying."
+    )]
+    private partial void LogKissTnc();
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Connected to APRS-IS server {Server}")]
     private partial void LogConnected(string server);
