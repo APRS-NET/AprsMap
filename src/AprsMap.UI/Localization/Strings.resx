@@ -2795,6 +2795,40 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Use with</value>
     <comment>The profiles that open this source.</comment>
   </data>
+  <data name="Settings.Sources.SerialPort" xml:space="preserve">
+    <value>Serial port</value>
+    <comment>KISS over serial: the port the TNC is plugged into.</comment>
+  </data>
+  <data name="Settings.Sources.SerialPortExample" xml:space="preserve">
+    <value>/dev/ttyUSB0 or COM3</value>
+  </data>
+  <data name="Settings.Sources.SerialPort.Help" xml:space="preserve">
+    <value>The ports on this computer are listed; on Linux, a port under /dev/serial/by-id/ keeps its name when the TNC is plugged in again. In the web app the TNC plugs into the server.</value>
+  </data>
+  <data name="Settings.Sources.RefreshPorts" xml:space="preserve">
+    <value>Refresh</value>
+    <comment>Lists the serial ports again, after plugging a TNC in.</comment>
+  </data>
+  <data name="Settings.Sources.NoSerialPorts" xml:space="preserve">
+    <value>No serial ports found. Plug the TNC in and press Refresh, or type the port.</value>
+  </data>
+  <data name="Settings.Sources.Baud" xml:space="preserve">
+    <value>Speed (baud)</value>
+  </data>
+  <data name="Settings.Sources.Dtr" xml:space="preserve">
+    <value>Raise DTR</value>
+    <comment>A serial control line; keep the technical name.</comment>
+  </data>
+  <data name="Settings.Sources.Rts" xml:space="preserve">
+    <value>Raise RTS</value>
+    <comment>A serial control line; keep the technical name.</comment>
+  </data>
+  <data name="Settings.Sources.ControlLines.Help" xml:space="preserve">
+    <value>Most TNCs and radios need both raised; untick one only if the TNC's manual says so.</value>
+  </data>
+  <data name="Error.settings.source.serial-invalid" xml:space="preserve">
+    <value>A KISS over serial source needs a port, a speed above 0, and a TNC port from 0 to 15.</value>
+  </data>
   <data name="Error.kiss.unreachable" xml:space="preserve">
     <value>TNC not reachable</value>
     <comment>Shown in a KISS source's status.</comment>

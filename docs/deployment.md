@@ -68,6 +68,24 @@ the non-root `app` user. Put a reverse proxy with TLS in front of it for anythin
 upgrades through for `/hubs/engine`. Operator sign-in for transmitting (scope F2.9) is not built yet, so the current
 gateway is receive-only and should not be given a passcode.
 
+### A TNC on a serial port
+
+A KISS TNC on USB serial (a radio's built-in TNC, a TNC-X, a NinoTNC) plugs into the gateway's host, and the container
+needs the device passed in, plus access to it: the image runs as the non-root `app` user, so add the device's group.
+
+```sh
+docker run -d --name aprsmap -p 8080:8080 -v aprsmap-settings:/data \
+  --device /dev/serial/by-id/usb-Silicon_Labs_CP2102-if00-port0:/dev/ttyTNC \
+  --group-add "$(stat -c %g /dev/serial/by-id/usb-Silicon_Labs_CP2102-if00-port0)" \
+  ghcr.io/aprs-net/aprsmap:alpha
+```
+
+Then add a **KISS over serial** source on `/dev/ttyTNC` in Settings › Sources (an operator action, like any source
+change; the gateway's serial ports are only listed to an operator). Use the `/dev/serial/by-id/` name on the host: it
+stays the same when the TNC is plugged in again, where `/dev/ttyUSB0` may come back as `/dev/ttyUSB1`. With Compose,
+the same goes under `devices:` and `group_add:`. A device passed in must be plugged in when the container starts; after
+unplugging the TNC, restart the container once it's back.
+
 ### Behind a reverse proxy
 
 The gateway can sit behind a proxy at the root of a host or under a path. Under a path, set `Gateway__PathBase` and

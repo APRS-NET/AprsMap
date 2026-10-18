@@ -330,18 +330,55 @@
                     FontFamily="{DynamicResource Font.Mono}"
                   />
                 </StackPanel>
-                <!-- KISS over TCP (F3.1 behavior 1): the TNC's host and port, its radio port, and the profiles using it. -->
+                <!-- KISS (F3.1 behavior 1): over TCP the TNC's host and port, on serial its port, speed and control
+                     lines; then its radio port, TX path and the profiles using it. -->
                 <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKiss}">
-                  <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
-                  <TextBox
-                    x:Name="SourceHostBox"
-                    Text="{Binding Sources.EditHost}"
-                    PlaceholderText="{l:T Settings.Sources.HostExample}"
-                    AutomationProperties.Name="{l:T Settings.Sources.Host}"
-                    FontFamily="{DynamicResource Font.Mono}"
-                  />
+                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKissTcp}">
+                    <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <TextBox
+                      x:Name="SourceHostBox"
+                      Text="{Binding Sources.EditHost}"
+                      PlaceholderText="{l:T Settings.Sources.HostExample}"
+                      AutomationProperties.Name="{l:T Settings.Sources.Host}"
+                      FontFamily="{DynamicResource Font.Mono}"
+                    />
+                  </StackPanel>
+                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKissSerial}">
+                    <TextBlock
+                      Text="{l:T Settings.Sources.SerialPort}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                    />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <ComboBox
+                        x:Name="SerialPortBox"
+                        IsEditable="True"
+                        ItemsSource="{Binding Sources.SerialPorts}"
+                        Text="{Binding Sources.EditSerialPort}"
+                        PlaceholderText="{l:T Settings.Sources.SerialPortExample}"
+                        AutomationProperties.Name="{l:T Settings.Sources.SerialPort}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        HorizontalAlignment="Stretch"
+                      />
+                      <Button
+                        Grid.Column="1"
+                        Content="{l:T Settings.Sources.RefreshPorts}"
+                        Command="{Binding Sources.RefreshSerialPortsCommand}"
+                      />
+                    </Grid>
+                    <TextBlock
+                      Text="{Binding Sources.SerialPortsNote}"
+                      IsVisible="{Binding Sources.SerialPortsNote, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.SerialPort.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
                   <WrapPanel ItemSpacing="12">
-                    <StackPanel Spacing="4">
+                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKissTcp}">
                       <TextBlock Text="{l:T Settings.Sources.Port}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <TextBox
                         x:Name="SourcePortBox"
@@ -350,6 +387,19 @@
                         AutomationProperties.Name="{l:T Settings.Sources.Port}"
                         FontFamily="{DynamicResource Font.Mono}"
                         MinWidth="96"
+                      />
+                    </StackPanel>
+                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKissSerial}">
+                      <TextBlock Text="{l:T Settings.Sources.Baud}" Foreground="{DynamicResource Brush.TextMuted}" />
+                      <ComboBox
+                        x:Name="SerialBaudBox"
+                        IsEditable="True"
+                        ItemsSource="{x:Static s:SourcesSectionViewModel.Bauds}"
+                        Text="{Binding Sources.EditBaud}"
+                        PlaceholderText="9600"
+                        AutomationProperties.Name="{l:T Settings.Sources.Baud}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        MinWidth="128"
                       />
                     </StackPanel>
                     <StackPanel Spacing="4">
@@ -364,6 +414,23 @@
                       />
                     </StackPanel>
                   </WrapPanel>
+                  <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKissSerial}">
+                    <CheckBox
+                      x:Name="SerialDtrBox"
+                      Content="{l:T Settings.Sources.Dtr}"
+                      IsChecked="{Binding Sources.EditDtr}"
+                    />
+                    <CheckBox
+                      x:Name="SerialRtsBox"
+                      Content="{l:T Settings.Sources.Rts}"
+                      IsChecked="{Binding Sources.EditRts}"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.ControlLines.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
                   <TextBlock Text="{l:T Settings.Sources.TxPath}" Foreground="{DynamicResource Brush.TextMuted}" />
                   <TextBox
                     x:Name="TxPathBox"

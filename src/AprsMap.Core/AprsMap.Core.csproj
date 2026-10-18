@@ -19,6 +19,7 @@
     <PackageReference Include="AprsNet.DeviceId" />
     <PackageReference Include="AprsNet.Filters" />
     <PackageReference Include="AprsNet.Kiss" />
+    <PackageReference Include="AprsNet.Kiss.Serial" />
     <PackageReference Include="AprsNet.Messaging" />
     <PackageReference Include="AprsNet.Packets" />
     <PackageReference Include="AprsNet.Symbols" />

@@ -166,6 +166,12 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.ReconnectSource, sourceId, cancellationToken));
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<string>>(EngineHub.GetSerialPorts, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<NetworkLink>> GetNetworkLinksAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() =>
             _connection.InvokeAsync<IReadOnlyList<NetworkLink>>(EngineHub.GetNetworkLinks, cancellationToken)

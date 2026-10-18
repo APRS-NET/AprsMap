@@ -45,6 +45,18 @@ internal static class SettingsValidator
                     "A KISS source needs a host, a port from 1 to 65535 and a TNC port from 0 to 15."
                 );
             }
+            if (
+                source.Kind == SourceKind.KissSerial
+                && (
+                    string.IsNullOrWhiteSpace(source.SerialPort) || source.Baud is <= 0 || source.TncPort is < 0 or > 15
+                )
+            )
+            {
+                throw Fail(
+                    EngineErrorCodes.KissSerialSourceInvalid,
+                    "A KISS over serial source needs a port, a speed above 0 and a TNC port from 0 to 15."
+                );
+            }
         }
 
         foreach (var source in settings.SourceList.Where(s => s.Kind != SourceKind.AprsIs && s.TxPath is not null))

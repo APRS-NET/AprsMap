@@ -209,6 +209,12 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
+    /// <summary>The serial ports <see cref="GetSerialPortsAsync"/> gives.</summary>
+    public List<string> SerialPorts { get; } = ["/dev/ttyUSB0"];
+
+    public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<string>>(SerialPorts);
+
     /// <summary>The toggles <see cref="SetToggleAsync"/> set, in order.</summary>
     public List<(Toggle Toggle, bool Enabled)> Toggled { get; } = [];
 

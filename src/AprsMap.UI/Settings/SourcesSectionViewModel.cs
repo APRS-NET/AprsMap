@@ -10,8 +10,8 @@ namespace AprsMap.UI.Settings;
 
 /// <summary>
 /// Settings › Sources (docs/features/F1.25-sources.md, behaviors 1–3): the master list profiles pick from, with Add a
-/// source, edit and delete. APRS-IS is the only kind built; the others are listed as coming. Deleting a source in use
-/// asks first and unticks it from its profiles.
+/// source, edit and delete: APRS-IS, and KISS TNCs over TCP and on a serial port (F3.1 behavior 1); GPS is listed as
+/// coming. Deleting a source in use asks first and unticks it from its profiles.
 /// </summary>
 public sealed partial class SourcesSectionViewModel : ObservableObject
 {
@@ -28,21 +28,53 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         _saved = saved;
         Kinds =
         [
-            .. Enum.GetValues<SourceKind>()
-                .Select(k => new SourceKindChoice(k, k is SourceKind.AprsIs or SourceKind.KissTcp, text, this)),
+            .. Enum.GetValues<SourceKind>().Select(k => new SourceKindChoice(k, k is not SourceKind.Gps, text, this)),
         ];
     }
 
     /// <summary>The kind in the form: picked for a new source, fixed for one being edited.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAprsIs), nameof(IsKiss))]
+    [NotifyPropertyChangedFor(nameof(IsAprsIs), nameof(IsKiss), nameof(IsKissTcp), nameof(IsKissSerial))]
     public partial SourceKind EditKind { get; set; } = SourceKind.AprsIs;
 
     /// <summary>Whether the form shows APRS-IS's server and filter.</summary>
     public bool IsAprsIs => EditKind == SourceKind.AprsIs;
 
-    /// <summary>Whether the form shows a KISS TNC's host, port and the profiles that use it (F3.1 behavior 1).</summary>
-    public bool IsKiss => EditKind == SourceKind.KissTcp;
+    /// <summary>Whether the form shows a KISS TNC's radio port, TX path and the profiles that use it (F3.1 behavior 1).</summary>
+    public bool IsKiss => EditKind is SourceKind.KissTcp or SourceKind.KissSerial;
+
+    /// <summary>Whether the form shows a TCP TNC's host and port (F3.1 behavior 1.1).</summary>
+    public bool IsKissTcp => EditKind == SourceKind.KissTcp;
+
+    /// <summary>Whether the form shows a serial TNC's port, speed and control lines (F3.1 behavior 1.2).</summary>
+    public bool IsKissSerial => EditKind == SourceKind.KissSerial;
+
+    /// <summary>The serial port in the form: picked from <see cref="SerialPorts"/> or typed.</summary>
+    [ObservableProperty]
+    public partial string EditSerialPort { get; set; } = string.Empty;
+
+    /// <summary>The serial ports present on the engine's machine (on a gateway, the gateway's).</summary>
+    public ObservableCollection<string> SerialPorts { get; } = [];
+
+    /// <summary>"No serial ports found", when the list came back empty; null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? SerialPortsNote { get; private set; }
+
+    /// <summary>The speed in the form, picked from <see cref="Bauds"/> or typed; empty for 9600.</summary>
+    [ObservableProperty]
+    public partial string EditBaud { get; set; } = string.Empty;
+
+    /// <summary>The speeds offered.</summary>
+    public static IReadOnlyList<string> Bauds { get; } =
+    [.. SourceSettings.CommonBauds.Select(b => b.ToString(CultureInfo.InvariantCulture))];
+
+    /// <summary>Whether DTR is raised when the port opens; on unless a TNC needs it low.</summary>
+    [ObservableProperty]
+    public partial bool EditDtr { get; set; } = true;
+
+    /// <summary>Whether RTS is raised when the port opens; on unless a TNC needs it low.</summary>
+    [ObservableProperty]
+    public partial bool EditRts { get; set; } = true;
 
     /// <summary>Whether the kind can still be picked: only while adding.</summary>
     [ObservableProperty]
@@ -82,6 +114,34 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         foreach (var kind in Kinds)
         {
             kind.Refresh();
+        }
+        if (value == SourceKind.KissSerial && IsEditing)
+        {
+            _ = RefreshSerialPortsAsync();
+        }
+    }
+
+    /// <summary>Lists the serial ports present again, for a TNC plugged in while the form is open.</summary>
+    [RelayCommand]
+    private async Task RefreshSerialPortsAsync()
+    {
+        try
+        {
+            var ports = await _engine.GetSerialPortsAsync();
+            SerialPorts.Clear();
+            foreach (var port in ports)
+            {
+                SerialPorts.Add(port);
+            }
+            SerialPortsNote = ports.Count == 0 ? _text["Settings.Sources.NoSerialPorts"] : null;
+            if (EditSerialPort.Length == 0 && ports.Count == 1)
+            {
+                EditSerialPort = ports[0]; // the one TNC plugged in
+            }
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            SerialPortsNote = _text.Describe(ex);
         }
     }
 
@@ -197,7 +257,17 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     {
         _editingId = null;
         EditTitle = _text["Settings.Sources.Add"];
-        EditName = EditServer = EditFilter = EditHost = EditPort = EditTncPort = string.Empty;
+        EditName =
+            EditServer =
+            EditFilter =
+            EditHost =
+            EditPort =
+            EditTncPort =
+            EditSerialPort =
+            EditBaud =
+                string.Empty;
+        EditDtr = EditRts = true;
+        SerialPortsNote = null;
         EditKind = SourceKind.AprsIs;
         CanPickKind = true;
         EditTransmit = false;
@@ -216,6 +286,11 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
             new Dictionary<string, object?> { ["source"] = row.Name }
         );
         EditName = row.Source.Name;
+        EditSerialPort = row.Source.SerialPort ?? string.Empty;
+        EditBaud = row.Source.Baud?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        EditDtr = row.Source.DtrEnable ?? true;
+        EditRts = row.Source.RtsEnable ?? true;
+        SerialPortsNote = null;
         EditKind = row.Source.Kind;
         CanPickKind = false;
         EditServer = row.Source.Server ?? string.Empty;
@@ -229,6 +304,10 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditUsedBy = row.UsedByText;
         Error = null;
         IsEditing = true;
+        if (IsKissSerial)
+        {
+            _ = RefreshSerialPortsAsync();
+        }
     }
 
     /// <summary>Saves the form: a new source, or the edited one in its place. A name defaults to the server's host.</summary>
@@ -266,32 +345,57 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Saves a KISS over TCP source and ticks or unticks it on each profile as the form says (F3.1 behaviors 1, 2). A
-    /// port that isn't a number is passed on as out of range, so the engine's check words it.
+    /// Saves a KISS source, over TCP or on a serial port, and ticks or unticks it on each profile as the form says (F3.1
+    /// behaviors 1, 2). A number that isn't one is passed on as out of range, so the engine's check words it.
     /// </summary>
     private async Task SaveKissAsync()
     {
-        var host = EditHost.Trim();
-        int? port = EditPort.Trim().Length == 0 ? null : Number(EditPort);
         int? tncPort = EditTncPort.Trim().Length == 0 ? null : Number(EditTncPort);
-        var name = EditName.Trim().Length > 0 ? EditName.Trim() : host;
         var txPath = EditTxPath.Trim().Length > 0 ? EditTxPath.Trim().ToUpperInvariant() : null;
-        var source = _editingId is { } id
-            ? _settings.SourceList.Single(s => s.Id == id) with
+        SourceSettings source;
+        if (IsKissSerial)
+        {
+            var serialPort = EditSerialPort.Trim();
+            int? baud = EditBaud.Trim().Length == 0 ? null : Number(EditBaud);
+            var name = EditName.Trim().Length > 0 ? EditName.Trim() : serialPort;
+            source = (
+                _editingId is { } id
+                    ? _settings.SourceList.Single(s => s.Id == id)
+                    : SourceSettings.KissSerialFor(serialPort)
+            ) with
             {
                 Name = name,
-                Host = host,
-                Port = port,
+                SerialPort = serialPort,
+                Baud = baud,
                 TncPort = tncPort,
-                Transmit = EditTransmit,
-                TxPath = txPath,
-            }
-            : SourceSettings.KissTcpFor(host, port, tncPort) with
-            {
-                Name = name,
+                DtrEnable = EditDtr ? null : false,
+                RtsEnable = EditRts ? null : false,
                 Transmit = EditTransmit,
                 TxPath = txPath,
             };
+        }
+        else
+        {
+            var host = EditHost.Trim();
+            int? port = EditPort.Trim().Length == 0 ? null : Number(EditPort);
+            var name = EditName.Trim().Length > 0 ? EditName.Trim() : host;
+            source = _editingId is { } id
+                ? _settings.SourceList.Single(s => s.Id == id) with
+                {
+                    Name = name,
+                    Host = host,
+                    Port = port,
+                    TncPort = tncPort,
+                    Transmit = EditTransmit,
+                    TxPath = txPath,
+                }
+                : SourceSettings.KissTcpFor(host, port, tncPort) with
+                {
+                    Name = name,
+                    Transmit = EditTransmit,
+                    TxPath = txPath,
+                };
+        }
         var ticked = EditProfiles.Where(p => p.IsChecked).Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
         var settings = _settings with
         {
@@ -437,7 +541,7 @@ public sealed partial class SourceRow(SourceSettings source, SourcesSectionViewM
     public string Name => Source.Name;
 
     /// <summary>Where it connects, for APRS-IS.</summary>
-    public string? Server => Source.Server ?? Source.KissEndpoint;
+    public string? Server => Source.Server ?? Source.KissEndpoint ?? Source.SerialEndpoint;
 
     /// <summary>Its filter text, when it has one.</summary>
     public string? Filter => Source.Filter;

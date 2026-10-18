@@ -71,9 +71,16 @@ internal sealed class AprsIsPacketSourceFactory(
     TimeProvider timeProvider
 ) : IPacketSourceFactory
 {
-    /// <exception cref="NotSupportedException">A kind that isn't built yet: KISS over serial and GPS.</exception>
+    /// <exception cref="NotSupportedException">A kind that isn't built yet: GPS.</exception>
     public IPacketSource Create(StationProfile profile, SourceSettings source, string filter)
     {
+        if (source.Kind == SourceKind.KissSerial)
+        {
+            return new KissPacketSource(
+                new KissSerialConnection(SerialOptions(source, options.Value, timeProvider)),
+                source.SerialEndpoint ?? source.Name
+            );
+        }
         if (source.Kind == SourceKind.KissTcp)
         {
             // Sends only what the engine lets through: TX enabled, a licensed profile, the Transmit switch (F2.1).
@@ -103,6 +110,28 @@ internal sealed class AprsIsPacketSourceFactory(
             new AprsIsConnection(clientOptions, loggerFactory.CreateLogger<AprsIsConnection>())
         );
     }
+
+    /// <summary>
+    /// The APRS.NET options for a KISS over serial source (docs/features/F3.1-kiss-sources.md, behaviors 1.2, 4, 13):
+    /// its port, speed, TNC port and control lines, the engine's reconnect waits, and a warning after 30 minutes with
+    /// nothing at all from the TNC (decision 5), for a radio switched off behind a port that stays open.
+    /// </summary>
+    internal static KissSerialOptions SerialOptions(SourceSettings source, EngineOptions engine, TimeProvider time) =>
+        new()
+        {
+            PortName = source.SerialPort ?? string.Empty,
+            BaudRate = source.Baud ?? SourceSettings.DefaultBaud,
+            TncPort = source.TncPort ?? 0,
+            DtrEnable = source.DtrEnable ?? true,
+            RtsEnable = source.RtsEnable ?? true,
+            ReconnectDelay = engine.InitialRetryDelay,
+            MaxReconnectDelay = engine.MaxRetryDelay,
+            QuietWarning = SerialQuietWarning,
+            TimeProvider = time,
+        };
+
+    /// <summary>How long a serial TNC may send nothing before its pill asks whether it's switched on (F3.1 decision 5).</summary>
+    internal static readonly TimeSpan SerialQuietWarning = TimeSpan.FromMinutes(30);
 
     /// <summary>
     /// The APRS.NET client options for <paramref name="profile"/>, validated by APRS.NET (which owns the login rules).

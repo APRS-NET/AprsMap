@@ -20,6 +20,15 @@ namespace AprsMap.Contracts;
 /// <param name="TxPath">
 /// For a TNC: the path packets are sent with, such as <c>WIDE1-1,WIDE2-1</c>; null for <see cref="DefaultTxPath"/>.
 /// </param>
+/// <param name="SerialPort">
+/// For KISS over serial: the port's name, such as <c>/dev/ttyUSB0</c> or <c>COM3</c> (docs/features/F3.1-kiss-sources.md,
+/// behavior 1.2).
+/// </param>
+/// <param name="Baud">For KISS over serial: the speed; null for <see cref="DefaultBaud"/>.</param>
+/// <param name="DtrEnable">
+/// For KISS over serial: whether DTR is raised when the port opens; null for raised. Some TNCs need it low.
+/// </param>
+/// <param name="RtsEnable">For KISS over serial: whether RTS is raised when the port opens; null for raised.</param>
 public sealed record SourceSettings(
     string Id,
     string Name,
@@ -30,9 +39,36 @@ public sealed record SourceSettings(
     int? Port = null,
     int? TncPort = null,
     bool Transmit = false,
-    string? TxPath = null
+    string? TxPath = null,
+    string? SerialPort = null,
+    int? Baud = null,
+    bool? DtrEnable = null,
+    bool? RtsEnable = null
 )
 {
+    /// <summary>The speed a serial TNC runs at unless set: 9600, as most USB TNCs and radios (F3.1 decision 4).</summary>
+    public const int DefaultBaud = 9600;
+
+    /// <summary>The speeds offered for a serial TNC; another can be typed.</summary>
+    public static IReadOnlyList<int> CommonBauds { get; } = [1200, 4800, 9600, 19200, 38400, 57600, 115200];
+
+    /// <summary>A new KISS over serial source on <paramref name="serialPort"/>, named after it.</summary>
+    public static SourceSettings KissSerialFor(string serialPort, int? baud = null, int? tncPort = null) =>
+        new(
+            Guid.NewGuid().ToString("N"),
+            serialPort.Trim(),
+            SourceKind.KissSerial,
+            TncPort: tncPort,
+            SerialPort: serialPort.Trim(),
+            Baud: baud
+        );
+
+    /// <summary>"/dev/ttyUSB0@9600": where a KISS over serial source connects; null for other kinds.</summary>
+    public string? SerialEndpoint =>
+        Kind == SourceKind.KissSerial && SerialPort is { } port
+            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{port}@{Baud ?? DefaultBaud}")
+            : null;
+
     /// <summary>The path a TNC sends with unless it has its own: <c>WIDE1-1,WIDE2-1</c> (F2.1 behavior 5.2).</summary>
     public const string DefaultTxPath = "WIDE1-1,WIDE2-1";
 
@@ -82,7 +118,7 @@ public enum SourceKind
     /// <summary>A KISS TNC over TCP, such as Direwolf (0.4.0).</summary>
     KissTcp,
 
-    /// <summary>A KISS TNC on a serial port (0.4.0).</summary>
+    /// <summary>A KISS TNC on a serial port, such as a radio's built-in TNC on USB (0.5.0).</summary>
     KissSerial,
 
     /// <summary>A GPS, over serial, TCP or gpsd (with beaconing).</summary>

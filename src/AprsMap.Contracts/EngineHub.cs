@@ -112,6 +112,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.ReconnectSourceAsync"/>.</summary>
     public const string ReconnectSource = "ReconnectSource";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetSerialPortsAsync"/>.</summary>
+    public const string GetSerialPorts = "GetSerialPorts";
+
     /// <summary>Hub method for <see cref="IEngineService.ResetSettingsAsync"/>.</summary>
     public const string ResetSettings = "ResetSettings";
 

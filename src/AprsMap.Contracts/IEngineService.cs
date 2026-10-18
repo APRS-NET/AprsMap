@@ -206,6 +206,13 @@ public interface IEngineService
     Task ReconnectSourceAsync(string sourceId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The serial ports present on the engine's machine, for a KISS over serial source (docs/features/F3.1-kiss-sources.md,
+    /// behavior 1.2); on a gateway, the gateway's.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Starts over (docs/features/F0.10-start-over.md): deletes every stored profile and setting, disconnects, and
     /// forgets the packets and stations received, so the next step is first-run setup. Defaults from configuration are
     /// not applied again until the engine restarts.

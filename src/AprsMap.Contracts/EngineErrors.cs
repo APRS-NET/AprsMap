@@ -174,6 +174,9 @@ public static class EngineErrorCodes
     /// <summary>A KISS TNC is connected but has sent nothing for a while: it may be switched off. A warning.</summary>
     public const string KissQuiet = "kiss.quiet";
 
+    /// <summary>A KISS over serial source's port, speed or TNC port isn't usable.</summary>
+    public const string KissSerialSourceInvalid = "settings.source.serial-invalid";
+
     /// <summary>A KISS source's host, port or TNC port isn't usable.</summary>
     public const string KissSourceInvalid = "settings.source.kiss-invalid";
 

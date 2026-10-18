@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using AprsMap.Contracts;
 using AprsNet.AprsIsTcpClient;
+using AprsNet.Kiss;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -707,6 +708,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
         return Task.CompletedTask;
     }
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<string>>([.. KissSerialConnection.GetPortNames().Order(StringComparer.Ordinal)]);
 
     private void SetSourceLink(SourceSettings source, Link link)
     {

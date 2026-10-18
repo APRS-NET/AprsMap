@@ -260,6 +260,17 @@ internal sealed class EngineHubEndpoint(
         return engine.ReconnectSourceAsync(sourceId, Context.ConnectionAborted);
     }
 
+    /// <summary>
+    /// The gateway host's serial ports are only listed where sources can be changed (F3.1 behavior 1.2, 12): the
+    /// settings gate.
+    /// </summary>
+    [HubMethodName(EngineHub.GetSerialPorts)]
+    public Task<IReadOnlyList<string>> GetSerialPorts()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetSerialPortsAsync(Context.ConnectionAborted);
+    }
+
     /// <summary>Address lookup is offered only where settings can be changed, so the gateway isn't an open proxy.</summary>
     [HubMethodName(EngineHub.GetGeocodingInfo)]
     public async Task<GeocodingInfo> GetGeocodingInfo() =>

@@ -42,6 +42,17 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
     }
 
     [Fact]
+    public async Task BrowsersCannotListTheGatewaysSerialPorts()
+    {
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+
+        var ex = await Assert.ThrowsAsync<EngineAccessException>(() => remote.GetSerialPortsAsync(Ct));
+
+        Assert.Equal(EngineErrorCodes.OperatorOnly, ex.EngineError.Code); // F3.1 behavior 12
+    }
+
+    [Fact]
     public async Task BrowsersCannotUseAddressLookupOrThePasscodeCalculator()
     {
         await using var remote = factory.CreateRemote();
