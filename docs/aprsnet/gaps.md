@@ -49,6 +49,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
 | G32 | A typed reason when an APRS-IS login reaches a KISS TNC | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
+| G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console | Kiss, AprsIsTcpClient | 2 | — (requested) |
 
 ---
 
@@ -531,3 +532,20 @@ rather than "That's a KISS TNC: add it as a TNC source".
 
 **Filed** as [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) for `0.5.0-alpha.1`: a `LoginException`
 subclass, as `LoginRejectedException` is. AprsMap waits for it rather than matching the message.
+
+## G33: A traffic event for a troubleshooting console
+
+**Need.** AprsMap F1.28 Source console (0.5.0, [#246](https://github.com/APRS-NET/AprsMap/issues/246)): a source's live
+traffic, mostly what never becomes a packet. `ReadPacketsAsync` and `ReadFramesAsync` each have one reader, so the app
+can't watch them without taking packets away, and what's dropped (text, corrupt or non-APRS frames, KISS commands) is
+only counted. Why something was dropped is protocol knowledge, so it belongs in the library.
+
+**Scope.** A `Traffic` event on `KissConnection`, `KissTcpClient` and `KissStreamClient`, like `StateChanged` and
+`Warning`: raised on the reading thread only when subscribed. Each entry has the time, direction (received, sent), kind
+(frame, text, discarded, setup), a copy of the bytes, the TNC port and KISS command for frames, the packet when it
+decoded as APRS, and a note saying why not ("not APRS", "invalid escape", "expect timed out"). Text from a TNC not in
+KISS mode comes a line at a time; sent frames and each step of a `TncSetup` script are reported too. The same for
+APRS-IS, one entry per line in or out, with the passcode masked in the login line by the library.
+
+**Acceptance.** A fake TNC sending text, a corrupt frame, a non-APRS frame and a good frame raises one entry of each
+kind with the right note; a sent packet raises a sent entry; the APRS-IS login line never carries the passcode.
