@@ -1619,6 +1619,13 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Messages.SendAgain" xml:space="preserve">
     <value>Send again</value>
   </data>
+  <data name="Messages.Back" xml:space="preserve">
+    <value>← Conversations</value>
+  </data>
+  <data name="Messages.BackUnread" xml:space="preserve">
+    <value>← Conversations ({count} unread)</value>
+    <comment>count: unread messages in the other conversations.</comment>
+  </data>
   <data name="Messages.Route" xml:space="preserve">
     <value>Send via {sources}</value>
     <comment>sources: where the next message goes, such as "Direwolf" or "rotate.aprs2.net".</comment>
