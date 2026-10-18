@@ -60,6 +60,13 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial string? HeardHereText { get; private set; }
 
+    /// <summary>
+    /// How my last position got out (docs/features/F3.3-rf-paths.md, behavior 2), on this station's details; null
+    /// otherwise.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? LastPositionText { get; private set; }
+
     /// <summary>The stations this station heard directly in the last hour, nearest first, each selectable.</summary>
     public System.Collections.ObjectModel.ObservableCollection<HeardRow> HeardDirectly { get; } = [];
 
@@ -76,6 +83,13 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         HeardThroughDigipeaters.Clear();
         IsMe = me is not null;
         HasHeardThroughDigipeaters = me is { HeardThroughDigipeaters.Count: > 0 };
+        LastPositionText = me?.LastPosition is { } last
+            ? Localization.HeardBackText.Describe(
+                last,
+                _text,
+                at => TimeZoneInfo.ConvertTime(at, _time.LocalTimeZone).ToString("t", _text.Culture)
+            )
+            : null;
         if (me is null)
         {
             HeardHereText = null;

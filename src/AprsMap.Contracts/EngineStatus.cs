@@ -102,13 +102,17 @@ public sealed record EngineStatus(
 /// Why beacons are waiting (behaviors 4, 5): a <c>transmit.*</c> code, <c>transmit.position-unconfirmed</c> included;
 /// null when they go out as due.
 /// </param>
+/// <param name="LastPosition">
+/// How the last position sent got out (docs/features/F3.3-rf-paths.md, behavior 4), or null before one was sent.
+/// </param>
 public sealed record TransmitStatus(
     bool On,
     EngineError? Blocked = null,
     DateTimeOffset? LastSent = null,
     bool ReceiveOnly = false,
     NextBeacon? NextBeacon = null,
-    EngineError? BeaconHeld = null
+    EngineError? BeaconHeld = null,
+    LastPositionHeard? LastPosition = null
 );
 
 /// <summary>One source's connection, for its status pill (F1.25 behavior 11).</summary>

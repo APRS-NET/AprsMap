@@ -246,6 +246,20 @@
             TextWrapping="Wrap"
             Foreground="{DynamicResource Brush.TextMuted}"
           />
+          <!-- How my last position got out (F3.3 behavior 2). -->
+          <StackPanel
+            x:Name="LastPositionSection"
+            Spacing="2"
+            IsVisible="{Binding LastPositionText, Converter={x:Static ObjectConverters.IsNotNull}}"
+          >
+            <TextBlock Text="{l:T HeardBack.Title}" Margin="0,4,0,0" />
+            <TextBlock
+              x:Name="LastPositionLine"
+              Text="{Binding LastPositionText}"
+              TextWrapping="Wrap"
+              Foreground="{DynamicResource Brush.TextMuted}"
+            />
+          </StackPanel>
           <TextBlock Text="{l:T Details.Me.Directly}" Margin="0,4,0,0" />
           <ItemsControl ItemsSource="{Binding HeardDirectly}">
             <ItemsControl.ItemTemplate>

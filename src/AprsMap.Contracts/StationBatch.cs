@@ -200,10 +200,49 @@ public sealed record StationDetail(
 /// </summary>
 /// <param name="HeardDirectly">Stations heard with no digipeater, nearest first.</param>
 /// <param name="HeardThroughDigipeaters">Stations heard through digipeaters, nearest first.</param>
+/// <param name="LastPosition">
+/// How this station's last position got out (docs/features/F3.3-rf-paths.md, behavior 2), or null before one was sent.
+/// </param>
 public sealed record ThisStation(
     IReadOnlyList<HeardStation> HeardDirectly,
-    IReadOnlyList<HeardStation> HeardThroughDigipeaters
+    IReadOnlyList<HeardStation> HeardThroughDigipeaters,
+    LastPositionHeard? LastPosition = null
 );
+
+/// <summary>How a copy of this station's packet was heard back (F3.3 behavior 1).</summary>
+public enum HeardBackKind
+{
+    /// <summary>Repeated by a digipeater, heard on this station's own TNC.</summary>
+    Repeated,
+
+    /// <summary>Gated to APRS-IS by an IGate that heard it on RF.</summary>
+    Gated,
+
+    /// <summary>Sent to APRS-IS by this station itself.</summary>
+    Direct,
+}
+
+/// <summary>One way this station's packet got out (F3.3 behavior 1).</summary>
+/// <param name="Kind">Repeated, gated or sent directly.</param>
+/// <param name="By">The digipeater or IGate; for <see cref="HeardBackKind.Direct"/>, the APRS-IS source's name.</param>
+/// <param name="At">When.</param>
+public sealed record HeardBack(HeardBackKind Kind, string By, DateTimeOffset At);
+
+/// <summary>This station's last position and how it got out (F3.3 behaviors 1, 2, 4).</summary>
+/// <param name="At">When it was sent.</param>
+/// <param name="Sources">The sources it went out on, by name.</param>
+/// <param name="Heard">Each way it got out, first first; one per digipeater or IGate.</param>
+/// <param name="Following">Whether copies are still being listened for (10 minutes after it went out).</param>
+public sealed record LastPositionHeard(
+    DateTimeOffset At,
+    IReadOnlyList<string> Sources,
+    IReadOnlyList<HeardBack> Heard,
+    bool Following
+)
+{
+    /// <summary>Whether it went out on a TNC: then "not heard back on RF" means something.</summary>
+    public bool SentOnRf { get; init; }
+}
 
 /// <summary>A station this station heard, how far away it is, and when.</summary>
 public sealed record HeardStation(string Name, double? DistanceKm, DateTimeOffset LastHeard);

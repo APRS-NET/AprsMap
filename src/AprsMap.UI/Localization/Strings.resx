@@ -1446,6 +1446,30 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Bulletins.Muted" xml:space="preserve">
     <value>Muted: {groups}</value>
   </data>
+  <data name="HeardBack.Title" xml:space="preserve">
+    <value>My last position</value>
+  </data>
+  <data name="HeardBack.Sent" xml:space="preserve">
+    <value>Sent {time} on {sources}.</value>
+  </data>
+  <data name="HeardBack.Repeated" xml:space="preserve">
+    <value>repeated by {by} (RF)</value>
+  </data>
+  <data name="HeardBack.Gated" xml:space="preserve">
+    <value>gated by {by} (to APRS-IS)</value>
+  </data>
+  <data name="HeardBack.Direct" xml:space="preserve">
+    <value>sent to APRS-IS directly</value>
+  </data>
+  <data name="HeardBack.Listening" xml:space="preserve">
+    <value>listening for copies on RF</value>
+  </data>
+  <data name="HeardBack.NotOnRf" xml:space="preserve">
+    <value>not heard back on RF</value>
+  </data>
+  <data name="HeardBack.Tip" xml:space="preserve">
+    <value>Last position heard back via {by}, {minutes} min ago</value>
+  </data>
   <data name="Shell.Panel.messages" xml:space="preserve">
     <value>Messages</value>
     <comment>Panel title: conversations with other stations.</comment>

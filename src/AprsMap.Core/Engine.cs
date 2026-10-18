@@ -158,7 +158,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                         _lastSent,
                         _options.ReceiveOnly,
                         nextBeacon,
-                        beaconHeld
+                        beaconHeld,
+                        LastPositionHeard()
                     ),
                     UnreadMessages: unread
                 )
@@ -809,7 +810,15 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     public Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(name);
-        return Task.FromResult(_stations.Get(name));
+        var detail = _stations.Get(name);
+        if (detail is { Me: { } me })
+        {
+            lock (_gate)
+            {
+                detail = detail with { Me = me with { LastPosition = LastPositionHeard() } }; // F3.3 behavior 2
+            }
+        }
+        return Task.FromResult(detail);
     }
 
     /// <inheritdoc />
@@ -1054,6 +1063,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             _lastSent = _time.GetUtcNow();
         }
+        FollowSent(packet, source); // to see how it gets out (F3.3)
         return (Accept(packet, source.Id, sent: true), null);
     }
 
@@ -1640,6 +1650,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             _capture?.Consider(packet, sourceId); // unexpected packets, for the test corpus (F1.27)
             CheckEchoes(packet);
+            CheckHeardBack(packet, sourceId);
             _messenger.Receive(packet, sourceId, IsOwnReceiver(sourceId)); // messages, acks, and who was heard where
             _bulletins.Receive(packet, sourceId); // bulletins and announcements (F2.5)
         }
