@@ -584,7 +584,7 @@ no subscriber; a throwing handler doesn't stop reading.
 **Need.** AprsMap F2.5 (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)): posting bulletins and
 announcements, and joining announcement groups through ANSRVR.
 
-**Scope** ([APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272), milestone to be decided).
+**Scope** ([APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272), APRS.NET 0.5.0).
 
 1. **A bulletin repeat schedule**: when to send a bulletin or announcement again (often at first, then less often) and
    for how long, as `AprsNet.Beacons` answers for beacons, following APRS101's guidance on bulletin repetition.
