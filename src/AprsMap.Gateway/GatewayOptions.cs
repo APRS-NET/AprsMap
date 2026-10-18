@@ -46,6 +46,16 @@ internal sealed class GatewayOptions
     /// </summary>
     public bool FollowViewers { get; set; }
 
+    /// <summary>
+    /// A second port where an operator signs in (docs/features/F1.26-public-console.md, behaviors 1–3), such as 8081,
+    /// published on the host's loopback only. With it set, the main port never offers sign-in and ignores a session
+    /// cookie; null for none, where sign-in is offered on the main port.
+    /// </summary>
+    public int? OperatorPort { get; set; }
+
+    /// <summary>The page's title, such as "What N0CALL's TNC hears" (F1.26 behavior 10); null for none.</summary>
+    public string? Title { get; set; }
+
     /// <summary>The most browsers connected at once (F1.14 behavior 3).</summary>
     public int MaxViewers { get; set; } = 100;
 

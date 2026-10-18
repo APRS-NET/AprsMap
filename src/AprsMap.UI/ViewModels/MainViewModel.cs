@@ -123,6 +123,13 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The product name, from branding.</summary>
     public string Title { get; } = Brand.DisplayName;
 
+    /// <summary>The gateway's page title beside the product name (F1.26 behavior 10); null for none.</summary>
+    [ObservableProperty]
+    public partial string? StationTitle { get; private set; }
+
+    /// <summary>Sets the browser tab's title; null where there's no tab.</summary>
+    public Action<string>? SetPageTitle { get; init; }
+
     /// <summary>
     /// Deletes this viewer's own preferences (appearance, layout) and puts their defaults back, for Reset the app (F0.10).
     /// The app supplies it; without it only the in-memory appearance and layout are reset.
@@ -402,7 +409,10 @@ public sealed partial class MainViewModel : ObservableObject
     [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanOpenSettings))]
     internal async Task OpenSettingsAsync()
     {
-        var profiles = new ProfilesSectionViewModel(engine, time, _text, OpenProfileEditorAsync, Show);
+        // A viewer who can never act here sees only their own choices (F1.26 behavior 9).
+        var profiles = IsViewerOnly
+            ? null
+            : new ProfilesSectionViewModel(engine, time, _text, OpenProfileEditorAsync, Show);
         var data = new DataSectionViewModel(
             _text,
             SharedStation,
@@ -429,8 +439,8 @@ public sealed partial class MainViewModel : ObservableObject
                     ? (() => _settings?.EffectiveAging ?? StationAging.Default, SaveAging)
                     : null
             );
-        var sources = new SourcesSectionViewModel(engine, _text, Show);
-        var beacons = new BeaconsSectionViewModel(engine, _text, Show);
+        var sources = IsViewerOnly ? null : new SourcesSectionViewModel(engine, _text, Show);
+        var beacons = IsViewerOnly ? null : new BeaconsSectionViewModel(engine, _text, Show);
         var unitItems = _settings is { ReadOnly: false }
             ? SettingsRegistry.Units(_text, () => _settings?.Units ?? UnitSettings.Metric, SaveUnits)
             : null;
@@ -452,9 +462,12 @@ public sealed partial class MainViewModel : ObservableObject
         settings.Show(_status);
         if (_settings is { } current)
         {
-            sources.Show(current);
-            beacons.Show(current);
-            await profiles.ShowAsync(current);
+            sources?.Show(current);
+            beacons?.Show(current);
+            if (profiles is not null)
+            {
+                await profiles.ShowAsync(current);
+            }
         }
     }
 
@@ -941,6 +954,7 @@ public sealed partial class MainViewModel : ObservableObject
                     commandLine => OpenConsoleAsync(source.Id, commandLine)
                 );
                 SourcePills.Insert(Math.Min(i, SourcePills.Count), pill);
+                pill.Switch.IsShown = !IsViewerOnly;
             }
             pill.Show(source, CanTransmit, TransmitOn && CanTransmit);
         }
@@ -1087,6 +1101,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         AprsIsSwitch.Show(AprsIsOn, CanToggleDependents);
         ShowTransmit();
+        ShowViewerOnly();
     }
 
     /// <summary>Turns <paramref name="toggle"/> the other way (F1.15).</summary>
@@ -1323,6 +1338,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     internal void Show(EngineStatus status)
     {
+        if (status.Title != StationTitle)
+        {
+            StationTitle = status.Title;
+            SetPageTitle?.Invoke(status.Title is { } title ? $"{title} · {Brand.DisplayName}" : Brand.DisplayName);
+        }
         FilterAreas = status.FilterAreas;
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();

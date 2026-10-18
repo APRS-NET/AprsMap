@@ -19,6 +19,17 @@ namespace AprsMap.UI.Tests;
 [Collection(nameof(LanguageViewTests))]
 public sealed class MenuTests
 {
+    private sealed class OfferingSignIn : AprsMap.UI.Platform.IOperatorSession
+    {
+        public Task<AuthInfo> GetAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new AuthInfo(false, SignInOffered: true));
+
+        public Task SignInAsync(SignInRequest request, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task SignOutAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
     private sealed class Actions : IMenuActions
     {
         public bool CanQuit => true;
@@ -127,7 +138,7 @@ public sealed class MenuTests
     }
 
     [Fact]
-    public void CommandsThatCantRunNowAreGreyedOutWithTheReason()
+    public async Task CommandsThatCantRunNowAreGreyedOutWithTheReason()
     {
         var vm = Desktop();
         var commands = All(new AppMenus(vm, Text, new Actions()));
@@ -140,8 +151,14 @@ public sealed class MenuTests
         Assert.Equal("Every panel is shown.", commands["view.show-all"].WhyNot);
         Assert.True(commands["station.internet"].Checked);
 
-        var viewer = new MainViewModel(new FakeEngine(), new FakeTimeProvider()) { SharedStation = true };
+        // A viewer who could sign in (the operator port): greyed, with why (a pure viewer's are left out, F1.26).
+        var viewer = new MainViewModel(new FakeEngine(), new FakeTimeProvider())
+        {
+            SharedStation = true,
+            OperatorSession = new OfferingSignIn(),
+        };
         viewer.Show(new FakeEngine().Settings with { ReadOnly = true });
+        await viewer.LoadAuthAsync();
         var shared = All(new AppMenus(viewer, Text, new Actions()));
         Assert.Equal("Sign in as this station's operator first.", shared["station.transmit"].WhyNot);
         Assert.Equal("Only this station's operator can change it.", shared["station.internet"].WhyNot);

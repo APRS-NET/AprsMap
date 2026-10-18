@@ -35,7 +35,27 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     public partial SignInViewModel? SignIn { get; private set; }
 
-    partial void OnAuthChanged(AuthInfo? value) => ShowTransmit();
+    partial void OnAuthChanged(AuthInfo? value)
+    {
+        ShowTransmit();
+        ShowViewerOnly();
+    }
+
+    /// <summary>
+    /// A gateway viewer who can never act on the station here: settings read-only, not an operator, and no sign-in
+    /// offered (the public port, F1.26 behavior 9). The controls that change the station are left out, not greyed.
+    /// </summary>
+    public bool IsViewerOnly => SharedStation && !CanToggle && !IsOperator && !CanSignIn;
+
+    private void ShowViewerOnly()
+    {
+        OnPropertyChanged(nameof(IsViewerOnly));
+        AprsIsSwitch.IsShown = !IsViewerOnly;
+        foreach (var pill in SourcePills)
+        {
+            pill.Switch.IsShown = !IsViewerOnly;
+        }
+    }
 
     /// <summary>Asks the gateway who this browser is.</summary>
     internal async Task LoadAuthAsync()

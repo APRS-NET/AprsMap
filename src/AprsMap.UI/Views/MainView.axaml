@@ -224,6 +224,15 @@
               FontWeight="SemiBold"
               VerticalAlignment="Center"
             />
+            <!-- A gateway's own title (F1.26 behavior 10). -->
+            <TextBlock
+              x:Name="StationTitleText"
+              Text="{Binding StationTitle}"
+              IsVisible="{Binding StationTitle, Converter={x:Static ObjectConverters.IsNotNull}}"
+              FontSize="{DynamicResource Text.Title}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              VerticalAlignment="Center"
+            />
             <ComboBox
               x:Name="ProfilePicker"
               ItemsSource="{Binding Profiles}"
@@ -263,6 +272,7 @@
                   x:DataType="vm:SourceSwitch"
                   IsChecked="{Binding IsOn}"
                   IsEnabled="{Binding CanChange}"
+                  IsVisible="{Binding IsShown}"
                   OnContent="{x:Null}"
                   OffContent="{x:Null}"
                   MinWidth="0"
@@ -301,11 +311,13 @@
                         x:Name="ReconnectItem"
                         Header="{l:T Status.Reconnect}"
                         Command="{Binding ReconnectCommand}"
+                        IsVisible="{Binding !IsViewerOnly}"
                       />
                       <MenuItem
                         x:Name="AprsIsConsoleItem"
                         Header="{l:T Console.Open}"
                         Command="{Binding OpenAprsIsConsoleCommand}"
+                        IsVisible="{Binding !IsViewerOnly}"
                       />
                       <!-- Packet capture (F1.27 behavior 6): says so while it's on, and opens what it recorded. -->
                       <MenuItem
@@ -314,10 +326,12 @@
                         IsVisible="{Binding CaptureText, Converter={x:Static ObjectConverters.IsNotNull}}"
                         Command="{Binding OpenCapturedPacketsCommand}"
                       />
-                      <Separator />
-                      <!-- Quick toggles (F1.15): the station's, so read-only for a gateway's viewers. -->
+                      <Separator IsVisible="{Binding !IsViewerOnly}" />
+                      <!-- Quick toggles (F1.15): the station's, so read-only for a gateway's viewers and left out for
+                           one who can never act here (F1.26 behavior 9). -->
                       <MenuItem
                         x:Name="InternetToggle"
+                        IsVisible="{Binding !IsViewerOnly}"
                         Header="{l:T Toggles.Internet}"
                         ToggleType="CheckBox"
                         IsChecked="{Binding InternetOn, Mode=OneWay}"
@@ -327,6 +341,7 @@
                       />
                       <MenuItem
                         x:Name="AprsIsToggle"
+                        IsVisible="{Binding !IsViewerOnly}"
                         Header="{l:T Toggles.AprsIs}"
                         ToggleType="CheckBox"
                         IsChecked="{Binding AprsIsOn, Mode=OneWay}"
@@ -336,6 +351,7 @@
                       />
                       <MenuItem
                         x:Name="TilesToggle"
+                        IsVisible="{Binding !IsViewerOnly}"
                         Header="{l:T Toggles.Tiles}"
                         ToggleType="CheckBox"
                         IsChecked="{Binding TilesOn, Mode=OneWay}"
@@ -343,13 +359,13 @@
                         Command="{Binding ToggleCommand}"
                         CommandParameter="{x:Static c:Toggle.Tiles}"
                       />
-                      <!-- Transmitting (F2.1): never from a gateway's browser until operator sign-in (behavior 9). -->
-                      <Separator IsVisible="{Binding !SharedStation}" />
+                      <!-- Transmitting (F2.1): from a gateway's browser only for a signed-in operator (F2.9). -->
+                      <Separator IsVisible="{Binding IsOperator}" />
                       <MenuItem
                         x:Name="TransmitToggle"
                         Header="{l:T Toggles.Transmit}"
                         ToggleType="CheckBox"
-                        IsVisible="{Binding !SharedStation}"
+                        IsVisible="{Binding IsOperator}"
                         IsChecked="{Binding TransmitOn, Mode=OneWay}"
                         IsEnabled="{Binding CanTransmit}"
                         Command="{Binding ToggleCommand}"
@@ -358,7 +374,7 @@
                       <MenuItem
                         x:Name="SendPositionItem"
                         Header="{l:T Transmit.SendPosition}"
-                        IsVisible="{Binding !SharedStation}"
+                        IsVisible="{Binding IsOperator}"
                         Command="{Binding SendPositionCommand}"
                       />
                       <MenuItem
@@ -474,6 +490,7 @@
                         Classes="source-switch"
                         IsChecked="{Binding Switch.IsOn}"
                         IsEnabled="{Binding Switch.CanChange}"
+                        IsVisible="{Binding Switch.IsShown}"
                         OnContent="{x:Null}"
                         OffContent="{x:Null}"
                         MinWidth="0"
@@ -493,9 +510,17 @@
                         <TextBlock Classes="source-label" Text="{Binding Text}" TextWrapping="Wrap" />
                         <Button.Flyout>
                           <MenuFlyout>
-                            <MenuItem Header="{l:T Status.Reconnect}" Command="{Binding ReconnectCommand}" />
+                            <MenuItem
+                              Header="{l:T Status.Reconnect}"
+                              Command="{Binding ReconnectCommand}"
+                              IsVisible="{Binding Switch.IsShown}"
+                            />
                             <!-- The Source console (F1.28 behavior 1), and typing to a serial TNC (F3.2 behavior 8). -->
-                            <MenuItem Header="{l:T Console.Open}" Command="{Binding ConsoleCommand}" />
+                            <MenuItem
+                              Header="{l:T Console.Open}"
+                              Command="{Binding ConsoleCommand}"
+                              IsVisible="{Binding Switch.IsShown}"
+                            />
                             <MenuItem
                               Header="{l:T Console.TncCommands}"
                               IsVisible="{Binding CanType}"

@@ -59,7 +59,14 @@ internal static partial class OperatorSignIn
                 o.Events.OnValidatePrincipal = context =>
                 {
                     var sessions = context.HttpContext.RequestServices.GetRequiredService<OperatorSessions>();
-                    if (SessionId(context.Principal) is not { } id || sessions.Use(id) is null)
+                    var gateway = context.HttpContext.RequestServices.GetRequiredService<
+                        IOptionsMonitor<GatewayOptions>
+                    >();
+                    if (!IsOperatorPort(context.HttpContext, gateway.CurrentValue))
+                    {
+                        context.RejectPrincipal(); // the viewer port ignores a session cookie (F1.26 behavior 1)
+                    }
+                    else if (SessionId(context.Principal) is not { } id || sessions.Use(id) is null)
                     {
                         context.RejectPrincipal();
                     }
@@ -113,11 +120,14 @@ internal static partial class OperatorSignIn
             }
         );
         app.UseAuthentication();
+        var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AprsMap.Gateway");
         if (app.Services.GetRequiredService<OperatorStore>().Any && options.CurrentValue.AllowSettingsChanges)
         {
-            LogSettingsChangesIgnored(
-                app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AprsMap.Gateway")
-            );
+            LogSettingsChangesIgnored(logger);
+        }
+        else if (options.CurrentValue is { OperatorPort: not null, AllowSettingsChanges: true })
+        {
+            LogSettingsChangesUndoSplit(logger); // every browser on either port may change the station (F1.26 behavior 4)
         }
     }
 
@@ -125,6 +135,13 @@ internal static partial class OperatorSignIn
     internal static bool IsAllowedOrigin(HttpRequest request, string origin, GatewayOptions options) =>
         string.Equals(origin, $"{request.Scheme}://{request.Host}", StringComparison.OrdinalIgnoreCase)
         || options.AllowedOrigins.Any(o => string.Equals(o.TrimEnd('/'), origin, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Whether this request may sign in or act as an operator: on the operator port when there is one, otherwise anywhere
+    /// (behavior 8.2, F1.26 behaviors 1–3). The server's own local port decides, never anything the browser sends.
+    /// </summary>
+    internal static bool IsOperatorPort(HttpContext context, GatewayOptions options) =>
+        options.OperatorPort is not { } port || context.Connection.LocalPort == port;
 
     /// <summary>Over HTTPS (directly or through a trusted proxy), or from the gateway's own host (behavior 8.1).</summary>
     internal static bool IsSecureEnough(HttpContext context) =>
@@ -143,10 +160,11 @@ internal static partial class OperatorSignIn
         OperatorStore operators,
         OperatorSessions sessions,
         SignInLimiter limiter,
-        SignInAudit audit
+        SignInAudit audit,
+        IOptionsMonitor<GatewayOptions> options
     )
     {
-        if (!operators.Any)
+        if (!operators.Any || !IsOperatorPort(context, options.CurrentValue))
         {
             return Refuse(StatusCodes.Status404NotFound, EngineErrorCodes.AuthNotOfferedHere, "No operator is set up.");
         }
@@ -231,9 +249,14 @@ internal static partial class OperatorSignIn
         HttpContext context,
         OperatorStore operators,
         OperatorSessions sessions,
-        SignInLimiter limiter
+        SignInLimiter limiter,
+        IOptionsMonitor<GatewayOptions> options
     )
     {
+        if (!IsOperatorPort(context, options.CurrentValue))
+        {
+            return Results.Json(AuthInfo.Viewer, EngineJsonContext.Default.AuthInfo); // no sign-in here (F1.26 behavior 1)
+        }
         var offered = operators.Any && IsSecureEnough(context);
         var session = SessionId(context.User) is { } id ? sessions.Use(id) : null;
         var needsHttps = operators.Any && !IsSecureEnough(context);
@@ -251,6 +274,12 @@ internal static partial class OperatorSignIn
         Message = "Gateway:AllowSettingsChanges is ignored: an operator is set up, so signing in decides who may change the station"
     )]
     private static partial void LogSettingsChangesIgnored(ILogger logger);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Gateway:AllowSettingsChanges is on with an operator port: with no operator set up, browsers on the public port may change the station too"
+    )]
+    private static partial void LogSettingsChangesUndoSplit(ILogger logger);
 }
 
 /// <summary>
@@ -323,7 +352,11 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
 /// Gives each hub call its role from the session its connection was opened with (behavior 13): checked on every call,
 /// and a connection whose session has ended is closed. Logs every transmitting call by an operator (behavior 15).
 /// </summary>
-internal sealed class OperatorFilter(OperatorSessions sessions, SignInAudit audit) : IHubFilter
+internal sealed class OperatorFilter(
+    OperatorSessions sessions,
+    SignInAudit audit,
+    IOptionsMonitor<GatewayOptions> options
+) : IHubFilter
 {
     /// <summary>Where a call's operator name is kept while it runs; absent for a viewer.</summary>
     public const string OperatorKey = "aprsmap.operator";
@@ -335,7 +368,11 @@ internal sealed class OperatorFilter(OperatorSessions sessions, SignInAudit audi
     {
         var context = invocationContext.Context;
         context.Items.Remove(OperatorKey);
-        if (OperatorSignIn.SessionId(context.User) is { } id)
+        if (
+            OperatorSignIn.SessionId(context.User) is { } id
+            && context.GetHttpContext() is { } http
+            && OperatorSignIn.IsOperatorPort(http, options.CurrentValue)
+        )
         {
             if (sessions.Use(id) is not { } session)
             {

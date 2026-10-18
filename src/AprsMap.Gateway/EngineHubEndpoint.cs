@@ -34,6 +34,7 @@ internal sealed class EngineHubEndpoint(
         (await engine.GetStatusAsync(Context.ConnectionAborted).ConfigureAwait(false)) with
         {
             Viewers = viewers.Count,
+            Title = string.IsNullOrWhiteSpace(options.Value.Title) ? null : options.Value.Title.Trim(),
         };
 
     [HubMethodName(EngineHub.WatchPackets)]

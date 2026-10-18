@@ -334,6 +334,40 @@ public class EngineTests
         Assert.Same(settings, await engine.GetSettingsAsync(Ct)); // loaded once
     }
 
+    [Fact]
+    public async Task AFirstRunKissSourceWithNoServerIsATncOnlyStation()
+    {
+        var store = new InMemorySettingsStore();
+        var engine = new Engine(
+            Options.Create(
+                new EngineOptions
+                {
+                    Callsign = "N0CALL-10",
+                    Server = "",
+                    Kiss = new KissSeedOptions
+                    {
+                        Host = " 10.0.0.2 ",
+                        Port = 8002,
+                        Name = "Pi TNC",
+                    },
+                }
+            ),
+            new FakeSourceFactory(),
+            store,
+            new FakeTimeProvider(),
+            NullLogger<Engine>.Instance
+        );
+
+        var settings = await engine.GetSettingsAsync(Ct);
+
+        var source = Assert.Single(settings.SourceList); // no APRS-IS (F1.26 behavior 14)
+        Assert.Equal(
+            (SourceKind.KissTcp, "10.0.0.2", 8002, "Pi TNC"),
+            (source.Kind, source.Host, source.Port, source.Name)
+        );
+        Assert.Equal([source.Id], Assert.Single(settings.Profiles).SourceIds);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("N0CALL-TOOLONGSSID")]

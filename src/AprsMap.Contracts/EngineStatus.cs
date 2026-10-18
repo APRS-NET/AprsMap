@@ -63,6 +63,7 @@ public enum ConnectionState
 /// </param>
 /// <param name="Stations">How many stations, objects and items the store holds, for the View filter's chip (F1.9).</param>
 /// <param name="PacketHistory">
+/// <param name="Title">The gateway's page title (<c>Gateway:Title</c>, F1.26 behavior 10); null on the desktop.</param>
 /// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
 /// </param>
 public sealed record EngineStatus(
@@ -86,7 +87,8 @@ public sealed record EngineStatus(
     StationToggles? Toggles = null,
     TransmitStatus? Transmit = null,
     int UnreadMessages = 0,
-    int? CapturedToday = null
+    int? CapturedToday = null,
+    string? Title = null
 );
 
 /// <summary>Transmitting, for the status bar (docs/features/F2.1-own-station.md, behaviors 4–13).</summary>

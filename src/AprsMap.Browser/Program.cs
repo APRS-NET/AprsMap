@@ -44,6 +44,7 @@ internal static class Program
             MenuStyle = UI.Shell.MenuStyle.Hamburger, // Alt is the browser's (F1.29 behavior 6)
             OperatorSession = new BrowserOperatorSession(new HttpClient { BaseAddress = gateway }),
             Restart = BrowserPreferenceStore.ReloadPage,
+            SetTitle = BrowserPreferenceStore.SetTitle,
             SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
             CoarsePointer = BrowserPreferenceStore.IsCoarsePointer(),
 #if DEBUG

@@ -45,6 +45,9 @@ public sealed record PlatformServices
     /// <summary>Operator sign-in on a gateway (F2.9); null on the desktop, whose user is always the operator.</summary>
     public IOperatorSession? OperatorSession { get; init; }
 
+    /// <summary>Sets the page's title, where the platform has one (the browser tab, F1.26 behavior 10).</summary>
+    public Action<string>? SetTitle { get; init; }
+
     /// <summary>Starts the app afresh after Reset the app, where the platform can (the browser reloads the page).</summary>
     public Action? Restart { get; init; }
 

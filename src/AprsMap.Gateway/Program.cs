@@ -18,6 +18,15 @@ if (args is ["operator", .. var command])
 }
 
 var builder = WebApplication.CreateBuilder(args);
+if (builder.Configuration.GetValue<int?>("Gateway:OperatorPort") is { } operatorPort)
+{
+    // The operator port listens beside the main one (F1.26 behavior 2).
+    var ports = builder.Configuration["HTTP_PORTS"] is { Length: > 0 } main ? main : "8080";
+    builder.WebHost.UseSetting(
+        "HTTP_PORTS",
+        string.Join(';', ports, operatorPort.ToString(System.Globalization.CultureInfo.InvariantCulture))
+    );
+}
 builder
     .AddAprsMapEngine()
     .AddAprsMapTiles()

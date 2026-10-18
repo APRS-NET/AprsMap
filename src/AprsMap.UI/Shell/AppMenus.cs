@@ -105,12 +105,63 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
     /// <summary>The five menus, in order.</summary>
     public IReadOnlyList<TopMenu> Menus =>
         [
-            new("file", text["Menu.File"], File),
-            new("view", text["Menu.View"], View),
-            new("station", text["Menu.Station"], Station),
-            new("tools", text["Menu.Tools"], Tools),
+            new("file", text["Menu.File"], () => ForViewer(File())),
+            new("view", text["Menu.View"], () => ForViewer(View())),
+            new("station", text["Menu.Station"], () => ForViewer(Station())),
+            new("tools", text["Menu.Tools"], () => ForViewer(Tools())),
             new("help", text["Menu.Help"], Help),
         ];
+
+    /// <summary>
+    /// What a gateway viewer who can never act on the station may not do, by command id or id prefix: left out of their
+    /// menus, not greyed (docs/features/F1.26-public-console.md, behavior 9).
+    /// </summary>
+    private static readonly string[] StationOnly =
+    [
+        "file.profile.",
+        "file.edit-profiles",
+        "file.export-capture",
+        "station.internet",
+        "station.aprs-is",
+        "station.tiles",
+        "station.transmit",
+        "station.reconnect-all",
+        "station.send-",
+        "station.sources",
+        "station.beacons",
+        "station.console.",
+        "station.tnc.",
+        "tools.messages",
+        "tools.clear-data",
+        "tools.setup",
+    ];
+
+    private IReadOnlyList<MenuEntry> ForViewer(IReadOnlyList<MenuEntry> entries) =>
+        vm.IsViewerOnly ? Without(entries) : entries;
+
+    private static List<MenuEntry> Without(IReadOnlyList<MenuEntry> entries)
+    {
+        var kept = new List<MenuEntry>();
+        foreach (var entry in entries)
+        {
+            switch (entry)
+            {
+                case CommandEntry c when StationOnly.Any(id => c.Id.StartsWith(id, StringComparison.Ordinal)):
+                    continue;
+                case SubmenuEntry s:
+                    var items = Without(s.Items);
+                    if (items.OfType<CommandEntry>().Any() || items.OfType<SubmenuEntry>().Any())
+                    {
+                        kept.Add(s with { Items = items });
+                    }
+                    continue;
+                default:
+                    kept.Add(entry);
+                    continue;
+            }
+        }
+        return kept;
+    }
 
     /// <summary>A name shown in a menu as typed: an underscore isn't an access key.</summary>
     internal static string Literal(string name) => name.Replace("_", "__", StringComparison.Ordinal);
