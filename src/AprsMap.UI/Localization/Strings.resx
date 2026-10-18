@@ -3773,6 +3773,9 @@ pause 1s</value>
   <data name="Menu.Station.Beacons" xml:space="preserve">
     <value>Beacons…</value>
   </data>
+  <data name="Menu.Station.TncCommands" xml:space="preserve">
+    <value>TNC commands</value>
+  </data>
   <data name="Menu.Station.Console" xml:space="preserve">
     <value>Console</value>
   </data>

@@ -398,7 +398,7 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
         {
             items.Add(
                 new SubmenuEntry(
-                    text["Console.TncCommands"],
+                    text["Menu.Station.TncCommands"],
                     [
                         .. typing.Select(p => new CommandEntry(
                             "station.tnc." + p.Id,
