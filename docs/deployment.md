@@ -225,18 +225,52 @@ To pass a USB TNC into the container instead, see "A TNC on a serial port".
 
 ## Desktop app
 
-Each release attaches self-contained archives for `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64` and
-`osx-arm64`. Unpack and run `aprsmap` (`aprsmap.exe` on Windows). `appsettings.json` next to the executable holds
-first-run defaults and logging; the user's settings (station profiles) live in their own folder:
+### Installing
 
-| OS | Folder |
-| --- | --- |
-| Windows | `%APPDATA%\aprsnet\aprsmap` |
-| Linux | `~/.aprsnet/aprsmap` |
-| macOS | `~/Library/Application Support/aprsnet/aprsmap` |
+Each release attaches an installer for every platform, built with Velopack. An installed app updates itself (F4.15):
+
+| OS | Installer | Where the program goes |
+| --- | --- | --- |
+| Windows x64, arm64 | the `.msi` for `win-<arch>` | `C:\Program Files\<publisher>\<product>`, for every user of the PC |
+| macOS x64, arm64 | the `.pkg` for `osx-<arch>` | `/Applications` (or `~/Applications`, which the installer offers) |
+| Linux x64, arm64 | `aprsmap-linux-<arch>.AppImage` | wherever you put it; `~/Applications` is usual |
+
+- **Windows:** installing asks for administrator approval, and so does each update, because Program Files is
+  protected. An administrator can install somewhere else with `msiexec /i <file>.msi VELOPACK_INSTALLDIR="D:\Apps\..."`.
+- **macOS:** the package is unsigned for now, so open it with right-click › Open the first time.
+- **Linux:** make the AppImage executable (`chmod +x`) and run it. On its first start it adds itself to the applications
+  menu (`~/.local/share/applications`, with its icon under `~/.local/share/icons`), and updates replace the AppImage
+  in place. If it's somewhere only root can write to, an update asks for your password through `pkexec`.
+- **Unsigned:** the Windows installer isn't signed yet, so SmartScreen warns on the first install, but not on updates,
+  which the app applies itself. Code signing is scope F4.8.
+
+The self-contained archives (`aprsmap-v<version>-<rid>.zip` or `.tar.gz`) are still attached. Unpack one anywhere and run
+`aprsmap` (`aprsmap.exe` on Windows). An archive can't update itself, so it offers **Download** instead.
+
+### Where the app keeps its files
+
+Nothing is kept beside the program, so an update or an uninstall leaves your settings alone. Each kind of file goes
+where the operating system expects it:
+
+| | Windows | Linux | macOS |
+| --- | --- | --- | --- |
+| Settings, profiles, layout | `%APPDATA%\aprsnet\aprsmap` | `~/.config/aprsnet/aprsmap` | `~/Library/Application Support/aprsnet/aprsmap` |
+| Message history, captures | `%LOCALAPPDATA%\aprsnet\aprsmap` | `~/.local/share/aprsnet/aprsmap` | as settings |
+| Map tiles | `%LOCALAPPDATA%\aprsnet\aprsmap\tiles` | `~/.cache/aprsnet/aprsmap/tiles` | `~/Library/Caches/aprsnet/aprsmap/tiles` |
+| Defaults for every user | `%ProgramData%\aprsnet\aprsmap\appsettings.json` | `/etc/xdg/aprsnet/aprsmap/appsettings.json` | `/Library/Application Support/aprsnet/aprsmap/appsettings.json` |
+
+- **Linux:** follows the XDG Base Directory specification, so `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME` and
+  `XDG_CONFIG_DIRS` move these folders. The app creates its folders readable only by you, because the settings hold
+  passcodes.
+- **Earlier versions:** on Linux, versions before 0.5 kept everything in `~/.aprsnet/aprsmap`, and on Windows the
+  message history sat with the settings in `%APPDATA%`. The first start of a newer version moves those files to the
+  folders above, never replacing one that's already there, and removes the old folder once it's empty.
+- **Defaults for every user:** `appsettings.json` beside the program holds the shipped defaults, and an update replaces
+  it. To set defaults for every user of a machine, such as `"Engine": { "Updates": { "Check": false } }`, an
+  administrator puts an `appsettings.json` in the machine folder. It goes over the shipped file; environment
+  variables and the command line still go over both.
+- **Removing everything:** Settings › Data › Reset the app (or `--reset-all`) deletes the settings and preferences.
+  Uninstalling leaves all of these folders in place.
 
 Until the first-run wizard (scope F0.5) exists, set `Engine:Callsign` in `appsettings.json` (or the `Engine__Callsign`
 environment variable) before the first start, or the app stays "not set up".
-
-The archives are not signed yet. macOS will ask for confirmation on first launch (right-click › Open), and Windows
-SmartScreen may warn. Installers, code signing and notarization are scope F4.8.

@@ -17,8 +17,14 @@ public sealed class EngineOptions
     public string? SettingsFolder { get; set; }
 
     /// <summary>
-    /// Where packet capture writes (docs/features/F1.27-packet-capture.md, behavior 4): <c>capture</c> in the settings
-    /// folder when the engine is added to a host; null, as in tests that build the engine themselves, turns it off.
+    /// Where message history and packet captures are stored. Empty means <see cref="SettingsFolder"/> when that's set,
+    /// otherwise the user's data folder (<see cref="AppFolders.Data"/>).
+    /// </summary>
+    public string? DataFolder { get; set; }
+
+    /// <summary>
+    /// Where packet capture writes (docs/features/F1.27-packet-capture.md, behavior 4): <c>capture</c> in the data
+    /// folder (<see cref="DataFolder"/>) when the engine is added to a host; null, as in tests that build the engine themselves, turns it off.
     /// </summary>
     public string? CaptureFolder { get; set; }
 

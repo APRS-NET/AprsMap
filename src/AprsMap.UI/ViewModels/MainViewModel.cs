@@ -327,7 +327,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     private Updates.UpdatesViewModel CreateUpdates()
     {
-        var updates = new Updates.UpdatesViewModel(engine, _text, uri => OpenUri?.Invoke(uri) ?? Task.CompletedTask)
+        var updates = new Updates.UpdatesViewModel(
+            engine,
+            _text,
+            uri => OpenUri?.Invoke(uri) ?? Task.CompletedTask,
+            SharedStation ? null : Installer
+        )
         {
             Gateway = SharedStation,
         };
@@ -336,6 +341,9 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     private Updates.UpdatesViewModel? _updates;
+
+    /// <summary>Installs updates in an installed desktop build (F4.15 behavior 11); null elsewhere.</summary>
+    public IAppInstaller? Installer { get; init; }
 
     /// <summary>Opens a page in the browser; set by the view, which has the launcher.</summary>
     public Func<Uri, Task>? OpenUri { get; set; }

@@ -51,7 +51,7 @@ jobs:
 
   desktop:
     # Self-contained single-file builds; no .NET install needed on the user's machine. All targets cross-publish from
-    # Linux. Archives are unsigned for now (installers, code signing and notarization: scope F4.8).
+    # Linux. Archives are unsigned for now (code signing and notarization: scope F4.8); the installers are the next job.
     needs: [release-please, test]
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -98,6 +98,106 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: gh release upload "$TAG" artifacts/* --clobber
+
+  installers:
+    # Velopack installers and update packages (docs/features/F4.15-updates.md, behavior 12), each on its own platform's
+    # runner: an MSI that installs to Program Files on Windows, a .pkg on macOS and an AppImage on Linux, with full and
+    # delta packages and the releases.<rid>.json feed an installed build updates from. Unsigned until a signing
+    # provider is found (behavior 14).
+    needs: [release-please, test]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: win-x64, os: windows-latest }
+          - { rid: win-arm64, os: windows-latest }
+          - { rid: osx-x64, os: macos-latest }
+          - { rid: osx-arm64, os: macos-latest }
+          - { rid: linux-x64, os: ubuntu-latest }
+          - { rid: linux-arm64, os: ubuntu-24.04-arm }
+    defaults:
+      run:
+        shell: bash
+    env:
+      RID: ${{ matrix.rid }}
+      TAG: ${{ needs.release-please.outputs.tag_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          fetch-depth: 0 # MinVer needs tags
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          dotnet-version: 10.0.x
+      - run: dotnet tool restore
+      - name: Product identity
+        # From build/Branding.props, so a rename (tools/rename-product.py) carries through to the installers.
+        run: |
+          props=$(dotnet msbuild src/AprsMap.Desktop/AprsMap.Desktop.csproj \
+            -getProperty:ProductSlug -getProperty:ProductDisplayName -getProperty:Company -getProperty:ProductSourceUrl)
+          {
+            echo "SLUG=$(jq -r .Properties.ProductSlug <<< "$props")"
+            echo "TITLE=$(jq -r .Properties.ProductDisplayName <<< "$props")"
+            echo "AUTHORS=$(jq -r .Properties.Company <<< "$props")"
+            echo "REPO_URL=$(jq -r .Properties.ProductSourceUrl <<< "$props")"
+            echo "VERSION=${TAG#v}"
+          } >> "$GITHUB_ENV"
+      - name: Publish
+        # A folder rather than one file, so the delta packages stay small.
+        run: |
+          dotnet publish src/AprsMap.Desktop/AprsMap.Desktop.csproj -c Release -r "$RID" --self-contained -o publish
+          cp LICENSE LICENSING.md publish/
+      - name: Fetch the previous release's packages
+        # Deltas are made against it; the first release has none.
+        run: |
+          dotnet vpk download github --repoUrl "$REPO_URL" --channel "$RID" --pre --token "$GH_TOKEN" -o releases \
+            || echo "No earlier release for $RID: full packages only."
+      - name: Packing tools
+        # mksquashfs builds the AppImage; zstd makes the delta packages.
+        if: runner.os != 'Windows'
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update -q && sudo apt-get install -y -q squashfs-tools zstd
+          else
+            command -v zstd > /dev/null || brew install zstd
+          fi
+      - name: macOS icon
+        if: runner.os == 'macOS'
+        run: |
+          mkdir icon.iconset
+          for size in 16 32 128 256; do
+            sips -z $size $size build/branding/icon-256.png --out "icon.iconset/icon_${size}x${size}.png" > /dev/null
+          done
+          for size in 16 32 128; do
+            sips -z $((size * 2)) $((size * 2)) build/branding/icon-256.png \
+              --out "icon.iconset/icon_${size}x${size}@2x.png" > /dev/null
+          done
+          iconutil -c icns icon.iconset -o icon.icns
+      - name: Pack
+        run: |
+          case "$RUNNER_OS" in
+            Windows) extra=(--msi --instLocation PerMachine --noPortable -i build/branding/icon.ico -e "$SLUG.exe") ;;
+            macOS) extra=(--noPortable -i icon.icns -e "$SLUG") ;;
+            *) extra=(--categories "Network;HamRadio" -i build/branding/icon-256.png -e "$SLUG") ;;
+          esac
+          dotnet vpk pack -u "$SLUG" -v "$VERSION" -p publish -c "$RID" -r "$RID" --packTitle "$TITLE" \
+            --packAuthors "$AUTHORS" -o releases "${extra[@]}"
+      - name: Attach to the GitHub release
+        # Only this version's packages, the feed and the installer: on Windows the per-machine MSI, not the per-user
+        # Setup.exe.
+        run: |
+          shopt -s nullglob
+          files=(releases/releases."$RID".json releases/"$SLUG-$VERSION-$RID"-*.nupkg)
+          files+=(releases/*.msi releases/*.pkg releases/*.AppImage)
+          ls -l "${files[@]}"
+          gh release upload "$TAG" "${files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
 
   container:
     # The web app is Docker-first: one multi-arch image (linux/amd64, linux/arm64) holding the gateway and the browser

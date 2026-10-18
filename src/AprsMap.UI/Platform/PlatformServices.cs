@@ -51,6 +51,9 @@ public sealed record PlatformServices
     /// <summary>Starts the app afresh after Reset the app, where the platform can (the browser reloads the page).</summary>
     public Action? Restart { get; init; }
 
+    /// <summary>Installs updates in an installed desktop build (F4.15 behavior 11); null elsewhere.</summary>
+    public IAppInstaller? Installer { get; init; }
+
     /// <summary>Whether the platform asks for reduced motion (the browser's <c>prefers-reduced-motion</c>).</summary>
     public bool SystemReducedMotion { get; init; }
 

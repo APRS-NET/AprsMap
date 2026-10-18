@@ -3927,6 +3927,32 @@ pause 1s</value>
   <data name="Updates.Later" xml:space="preserve">
     <value>Later</value>
   </data>
+  <data name="Updates.Install" xml:space="preserve">
+    <value>Update and restart</value>
+  </data>
+  <data name="Updates.Downloading" xml:space="preserve">
+    <value>Downloading {version}: {percent}</value>
+    <comment>version: a version such as 0.5.0-alpha.1; percent: how much is downloaded, such as 42 %.</comment>
+  </data>
+  <data name="Updates.ReadyNotice" xml:space="preserve">
+    <value>Restart to finish updating to {version}</value>
+    <comment>version: a version such as 0.5.0-alpha.1.</comment>
+  </data>
+  <data name="Updates.Ready" xml:space="preserve">
+    <value>The update is downloaded. It goes in when you close the app, or restart now to use it straight away.</value>
+  </data>
+  <data name="Updates.RestartNow" xml:space="preserve">
+    <value>Restart now</value>
+  </data>
+  <data name="Updates.OnClose" xml:space="preserve">
+    <value>When I close the app</value>
+  </data>
+  <data name="Updates.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Updates.DownloadFailed" xml:space="preserve">
+    <value>The update couldn't be downloaded. Try again, or download it from the release page.</value>
+  </data>
   <data name="Updates.CheckNow" xml:space="preserve">
     <value>Check now</value>
   </data>

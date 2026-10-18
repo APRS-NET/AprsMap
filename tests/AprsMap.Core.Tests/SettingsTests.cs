@@ -152,21 +152,6 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal(content, await File.ReadAllTextAsync(store.FilePath + ".invalid", Ct));
     }
 
-    [Theory]
-    [InlineData("Windows", "/appdata/aprsnet/aprsmap")]
-    [InlineData("MacOS", "/home/Library/Application Support/aprsnet/aprsmap")]
-    [InlineData("Other", "/home/.aprsnet/aprsmap")]
-    public void EachPlatformHasItsOwnPerUserFolder(string platform, string expected) =>
-        Assert.Equal(
-            expected.Replace('/', Path.DirectorySeparatorChar),
-            SettingsLocation.UserFolder(
-                "aprsmap",
-                Enum.Parse<SettingsLocation.OSPlatform>(platform),
-                $"{Path.DirectorySeparatorChar}home",
-                $"{Path.DirectorySeparatorChar}appdata"
-            )
-        );
-
     [Fact]
     public void TheCurrentUsersFolderEndsWithTheVendorAndProductFolders()
     {

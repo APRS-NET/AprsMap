@@ -2,6 +2,7 @@
 using System.Globalization;
 using AprsMap.Contracts;
 using AprsMap.UI.Localization;
+using AprsMap.UI.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -10,15 +11,21 @@ namespace AprsMap.UI.Updates;
 /// <summary>
 /// Updates in the app (docs/features/F4.15-updates.md, behaviors 8–10, 15, 16): the engine's update status followed, a
 /// quiet notice in the status bar when there's an update, its dialog, and Check now. On a gateway only the operator
-/// follows it; a viewer's refused call leaves nothing to show.
+/// follows it; a viewer's refused call leaves nothing to show. An installed desktop build also downloads and installs
+/// the update (behavior 11).
 /// </summary>
-public sealed partial class UpdatesViewModel(IEngineService engine, Localizer text, Func<Uri, Task> openUri)
-    : ObservableObject
+public sealed partial class UpdatesViewModel(
+    IEngineService engine,
+    Localizer text,
+    Func<Uri, Task> openUri,
+    IAppInstaller? installer = null
+) : ObservableObject
 {
     /// <summary>How many lines of the notes the dialog shows before Release notes (behavior 9.1).</summary>
     public const int NotesLines = 40;
 
     private string? _later;
+    private Action? _cancel;
 
     /// <summary>Where the check stands; null before the first answer, or for a gateway viewer.</summary>
     [ObservableProperty]
@@ -28,11 +35,53 @@ public sealed partial class UpdatesViewModel(IEngineService engine, Localizer te
     /// <summary>Whether this is a gateway's browser: the dialog says how to pull the image instead (behavior 16).</summary>
     public bool Gateway { get; init; }
 
-    /// <summary>"Update available: 0.5.0-alpha.1" in the status bar (behavior 8); null with none, or after Later.</summary>
+    /// <summary>
+    /// The status bar's notice (behaviors 8, 11): "Update available: 0.5.0-alpha.1", the download's progress, or that
+    /// it's ready; null with none, or after Later.
+    /// </summary>
     public string? NoticeText =>
-        Status?.Update is { } update && update.Version != _later
-            ? text.Format("Updates.Notice", new Dictionary<string, object?> { ["version"] = update.Version })
-            : null;
+        Install switch
+        {
+            InstallState.Downloading => text.Format(
+                "Updates.Downloading",
+                new Dictionary<string, object?>
+                {
+                    ["version"] = _installing?.Version,
+                    ["percent"] = Progress.ToString("P0", text.Culture),
+                }
+            ),
+            InstallState.Ready => text.Format(
+                "Updates.ReadyNotice",
+                new Dictionary<string, object?> { ["version"] = _installing?.Version }
+            ),
+            _ => Status?.Update is { } update && update.Version != _later
+                ? text.Format("Updates.Notice", new Dictionary<string, object?> { ["version"] = update.Version })
+                : null,
+        };
+
+    /// <summary>Whether this build installs updates itself, rather than offering Download (behavior 11).</summary>
+    public bool CanInstall => installer?.CanInstall == true && !Gateway;
+
+    /// <summary>Where installing the update stands.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NoticeText), nameof(IsDownloading), nameof(IsReady), nameof(Failed))]
+    public partial InstallState Install { get; private set; }
+
+    /// <summary>How much is downloaded, from 0 to 1.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NoticeText))]
+    public partial double Progress { get; private set; }
+
+    /// <summary>Whether the update is downloading, so the dialog shows its progress and Cancel.</summary>
+    public bool IsDownloading => Install == InstallState.Downloading;
+
+    /// <summary>Whether it's downloaded, so the dialog offers Restart now.</summary>
+    public bool IsReady => Install == InstallState.Ready;
+
+    /// <summary>Whether the last download failed, so the dialog says so and offers it again.</summary>
+    public bool Failed => Install == InstallState.Failed;
+
+    private UpdateInfo? _installing;
 
     /// <summary>The dialog while it's open.</summary>
     [ObservableProperty]
@@ -58,7 +107,7 @@ public sealed partial class UpdatesViewModel(IEngineService engine, Localizer te
     [RelayCommand]
     private void Open()
     {
-        if (Status?.Update is { } update)
+        if ((Install is InstallState.None or InstallState.Failed ? Status?.Update : _installing) is { } update)
         {
             Dialog = new UpdateDialogViewModel(update, text, Gateway, this);
         }
@@ -107,6 +156,73 @@ public sealed partial class UpdatesViewModel(IEngineService engine, Localizer te
     {
         Dialog = null;
         return openUri(update.ReleasePage);
+    }
+
+    /// <summary>
+    /// Update and restart (behavior 11): downloads in the background with progress in the notice; once it's ready the
+    /// update goes in when the app closes, unless Restart now comes first.
+    /// </summary>
+    internal async Task InstallAsync(UpdateInfo update)
+    {
+        if (installer is null || IsDownloading)
+        {
+            return;
+        }
+        _installing = update;
+        using var download = new CancellationTokenSource();
+        _cancel = download.Cancel;
+        Progress = 0;
+        Install = InstallState.Downloading;
+        var context = SynchronizationContext.Current;
+        var progress = new Reporter(p =>
+        {
+            if (context is null)
+            {
+                Progress = p;
+            }
+            else
+            {
+                context.Post(_ => Progress = p, null);
+            }
+        });
+        try
+        {
+            await installer.DownloadAsync(update, progress, download.Token);
+            installer.ApplyOnExit();
+            Install = InstallState.Ready;
+        }
+        catch (OperationCanceledException)
+        {
+            Install = InstallState.None;
+        }
+#pragma warning disable CA1031 // any failure leaves Download to fall back on
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            Install = InstallState.Failed;
+        }
+        finally
+        {
+            _cancel = null;
+        }
+    }
+
+    /// <summary>Cancel: stops the download, and the notice goes back to the update.</summary>
+    internal void CancelInstall() => _cancel?.Invoke();
+
+    /// <summary>Restart now: closes as usual and reopens on the update (behavior 11.4).</summary>
+    internal void RestartNow()
+    {
+        if (IsReady)
+        {
+            Dialog = null;
+            installer?.RestartNow();
+        }
+    }
+
+    private sealed class Reporter(Action<double> report) : IProgress<double>
+    {
+        public void Report(double value) => report(Math.Clamp(value, 0, 1));
     }
 
     internal void Close() => Dialog = null;
@@ -166,8 +282,14 @@ public sealed partial class UpdateDialogViewModel(
     /// <summary>Whether the notes run on past what's shown, so Release notes is worth a look.</summary>
     public bool MoreNotes { get; } = update.Notes.Split('\n').Length > UpdatesViewModel.NotesLines;
 
-    /// <summary>Download on the desktop; on a gateway, the image and how to pull it instead.</summary>
-    public bool CanDownload { get; } = !gateway;
+    /// <summary>Where the update stands, for the dialog's progress and buttons.</summary>
+    public UpdatesViewModel Owner => owner;
+
+    /// <summary>Update and restart, in an installed desktop build (behavior 11).</summary>
+    public bool CanInstall { get; } = owner.CanInstall;
+
+    /// <summary>Download, for an archive build or when installing failed; on a gateway the image instead.</summary>
+    public bool CanDownload { get; } = !gateway && (!owner.CanInstall || owner.Failed);
 
     /// <summary>On a gateway: "docker compose pull" and the tag (behavior 16); null on the desktop.</summary>
     public string? PullText { get; } =
@@ -178,6 +300,22 @@ public sealed partial class UpdateDialogViewModel(
     /// <summary>Opens the release page.</summary>
     [RelayCommand]
     private Task DownloadAsync() => owner.DownloadAsync(update);
+
+    /// <summary>Update and restart: closes the dialog, with the progress in the notice.</summary>
+    [RelayCommand]
+    private Task InstallAsync()
+    {
+        owner.Close();
+        return owner.InstallAsync(update);
+    }
+
+    /// <summary>Stops the download.</summary>
+    [RelayCommand]
+    private void Cancel() => owner.CancelInstall();
+
+    /// <summary>Restarts on the downloaded update.</summary>
+    [RelayCommand]
+    private void RestartNow() => owner.RestartNow();
 
     /// <summary>The full notes, on the release page.</summary>
     [RelayCommand]
@@ -194,4 +332,20 @@ public sealed partial class UpdateDialogViewModel(
     /// <summary>Closes the dialog.</summary>
     [RelayCommand]
     private void Close() => owner.Close();
+}
+
+/// <summary>Where installing an update stands (behavior 11).</summary>
+public enum InstallState
+{
+    /// <summary>Not started, or cancelled.</summary>
+    None,
+
+    /// <summary>Downloading, with progress.</summary>
+    Downloading,
+
+    /// <summary>Downloaded: it goes in when the app closes, or on Restart now.</summary>
+    Ready,
+
+    /// <summary>The download or its check failed; it can be tried again, or Download used.</summary>
+    Failed,
 }

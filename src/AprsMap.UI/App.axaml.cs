@@ -198,6 +198,7 @@ public sealed class App : Application, IDisposable
                 MainScreen = MainScreen,
                 SharedStation = _platform.SharedStation,
                 OperatorSession = _platform.OperatorSession,
+                Installer = _platform.Installer,
                 MenuStyle = _platform.MenuStyle,
                 SetPageTitle = _platform.SetTitle,
                 Restart = _platform.Restart,
