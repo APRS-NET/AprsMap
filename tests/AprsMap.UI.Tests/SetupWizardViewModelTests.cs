@@ -426,6 +426,35 @@ public class SetupWizardViewModelTests
     }
 
     [Fact]
+    public async Task ATncOnASerialPortCanBePickedWithItsTypeInTheWizard()
+    {
+        var engine = new FakeEngine { Settings = AppSettings.Empty };
+        engine.SerialPorts.Clear();
+        engine.SerialPorts.Add("/dev/ttyUSB0");
+        var wizard = await AtStep(SetupStep.Server, engine);
+        wizard.UseTnc = true;
+        wizard.TncOnSerial = true;
+        await wizard.FillSerialCommand.ExecuteAsync(null);
+
+        Assert.False(wizard.TncOnNetwork);
+        Assert.Equal("/dev/ttyUSB0", wizard.TncSerialPort); // the one plugged in
+        Assert.Equal(["Plain KISS", "Kenwood TH-D72"], wizard.TncTypes.Select(t => t.Name));
+        wizard.SelectedTncType = wizard.TncTypes[1];
+        wizard.TncSerialPort = "";
+        await wizard.NextCommand.ExecuteAsync(null);
+        Assert.Equal("Pick or type the serial port the TNC is on.", wizard.TncError);
+
+        wizard.TncSerialPort = "/dev/ttyUSB0";
+        await wizard.NextCommand.ExecuteAsync(null);
+
+        var tnc = Assert.Single(Assert.Single(engine.Saved).SourceList);
+        Assert.Equal(
+            (SourceKind.KissSerial, "/dev/ttyUSB0", (int?)null, "th-d72"),
+            (tnc.Kind, tnc.SerialPort, tnc.Baud, tnc.TncType)
+        );
+    }
+
+    [Fact]
     public async Task ARejectedTncIsShownOnTheServerStep()
     {
         var engine = new FakeEngine

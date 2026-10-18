@@ -638,6 +638,78 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty]
     public partial string? TncError { get; set; }
 
+    /// <summary>
+    /// Whether the TNC is on a serial port (a USB TNC, or a radio's built-in TNC; F3.1 behavior 1.2) rather than over the
+    /// network.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TncOnNetwork))]
+    public partial bool TncOnSerial { get; set; }
+
+    /// <summary>The opposite of <see cref="TncOnSerial"/>, for the host and port fields.</summary>
+    public bool TncOnNetwork => !TncOnSerial;
+
+    /// <summary>The serial port, picked from those present or typed.</summary>
+    [ObservableProperty]
+    public partial string TncSerialPort { get; set; } = string.Empty;
+
+    /// <summary>The serial ports present on the engine's machine.</summary>
+    public ObservableCollection<string> TncSerialPorts { get; } = [];
+
+    /// <summary>The serial speed, 9600 to start with.</summary>
+    [ObservableProperty]
+    public partial string TncBaud { get; set; } = SourceSettings.DefaultBaud.ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>The TNC types: Plain KISS and those APRS.NET knows, such as the Kenwood TH-D72 (F3.2 behavior 4).</summary>
+    public ObservableCollection<Settings.TncTypeChoice> TncTypes { get; } = [];
+
+    /// <summary>The TNC type picked.</summary>
+    [ObservableProperty]
+    public partial Settings.TncTypeChoice? SelectedTncType { get; set; }
+
+    partial void OnTncSerialPortChanged(string value) => TncError = null;
+
+    partial void OnTncOnSerialChanged(bool value)
+    {
+        TncError = null;
+        if (value)
+        {
+            _ = FillSerialAsync();
+        }
+    }
+
+    /// <summary>Lists the serial ports present and the TNC types, for a TNC on a serial port.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task FillSerialAsync()
+    {
+        try
+        {
+            var ports = await _engine.GetSerialPortsAsync();
+            TncSerialPorts.Clear();
+            foreach (var port in ports)
+            {
+                TncSerialPorts.Add(port);
+            }
+            if (TncSerialPort.Length == 0 && ports.Count == 1)
+            {
+                TncSerialPort = ports[0];
+            }
+            if (TncTypes.Count == 0)
+            {
+                TncTypes.Add(new Settings.TncTypeChoice(null, _text["Settings.Sources.TncType.Plain"]));
+                foreach (var type in await _engine.GetTncTypesAsync())
+                {
+                    TncTypes.Add(new Settings.TncTypeChoice(type.Id, type.Name));
+                }
+                SelectedTncType = TncTypes[0];
+            }
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            TncError = _text.Describe(ex);
+        }
+    }
+
     partial void OnTncHostChanged(string value) => TncError = null;
 
     partial void OnTncPortChanged(string value) => TncError = null;
@@ -920,9 +992,9 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     {
         if (UseTnc)
         {
-            if (TncHost.Trim().Length == 0)
+            if (TncOnSerial ? TncSerialPort.Trim().Length == 0 : TncHost.Trim().Length == 0)
             {
-                TncError = _text["Wizard.Tnc.HostEmpty"];
+                TncError = _text[TncOnSerial ? "Wizard.Tnc.SerialPortEmpty" : "Wizard.Tnc.HostEmpty"];
                 return false;
             }
             return true;
@@ -1183,7 +1255,8 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         }
 
         var source =
-            UseTnc ? TncFor(TncHost.Trim(), TncPort.Trim())
+            UseTnc && TncOnSerial ? SerialTncFor(TncSerialPort.Trim(), TncBaud.Trim())
+            : UseTnc ? TncFor(TncHost.Trim(), TncPort.Trim())
             : IsNewSource ? SourceFor(Server, IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null)
             : SelectedSource?.Source; // an existing source, or none
         var others = _editing is null
@@ -1237,6 +1310,29 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             && string.Equals(s.Filter, filter, StringComparison.Ordinal)
         )
         ?? SourceSettings.AprsIsFor(server, filter);
+
+    /// <summary>
+    /// The KISS over serial source for <paramref name="port"/>: an existing one on that port, or a new one named after it
+    /// with the speed and TNC type picked (F3.1 behavior 1.2, F3.2 behavior 4).
+    /// </summary>
+    private SourceSettings SerialTncFor(string port, string baud)
+    {
+        int? speed =
+            baud.Length == 0 ? null
+            : int.TryParse(baud, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n
+            : -1;
+        if (speed == SourceSettings.DefaultBaud)
+        {
+            speed = null;
+        }
+        return _existing?.SourceList.FirstOrDefault(s =>
+                s.Kind == SourceKind.KissSerial && string.Equals(s.SerialPort, port, StringComparison.Ordinal)
+            )
+            ?? SourceSettings.KissSerialFor(port, speed) with
+            {
+                TncType = SelectedTncType?.Id,
+            };
+    }
 
     /// <summary>
     /// The KISS over TCP source for <paramref name="host"/> and <paramref name="port"/>: an existing one that connects
@@ -1309,7 +1405,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Step = SetupStep.Callsign;
             CommentError = message;
         }
-        else if (code == EngineErrorCodes.KissSourceInvalid && UseTnc)
+        else if (code is EngineErrorCodes.KissSourceInvalid or EngineErrorCodes.KissSerialSourceInvalid && UseTnc)
         {
             Step = SetupStep.Server;
             TncError = message;

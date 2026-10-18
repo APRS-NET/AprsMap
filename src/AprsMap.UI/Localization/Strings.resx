@@ -628,7 +628,16 @@
     <value>TNC</value>
   </data>
   <data name="Wizard.Tnc.Help" xml:space="preserve">
-    <value>Direwolf, soundmodem or another TNC that serves KISS over TCP. The station receives on RF only: nothing is sent to APRS-IS, so no passcode is needed. In the web app the server connects to the TNC, so localhost means the server's computer.</value>
+    <value>A TNC over the network, such as Direwolf or soundmodem, or one on a serial port. The station uses RF only: nothing is sent to APRS-IS, so no passcode is needed. In the web app the server connects to the TNC, so localhost and the serial ports are the server's.</value>
+  </data>
+  <data name="Wizard.Tnc.Network" xml:space="preserve">
+    <value>Over the network (Direwolf, soundmodem)</value>
+  </data>
+  <data name="Wizard.Tnc.Serial" xml:space="preserve">
+    <value>On a serial port (a USB TNC, or a radio's built-in TNC in KISS mode)</value>
+  </data>
+  <data name="Wizard.Tnc.SerialPortEmpty" xml:space="preserve">
+    <value>Pick or type the serial port the TNC is on.</value>
   </data>
   <data name="Wizard.Tnc.HostEmpty" xml:space="preserve">
     <value>Type where the TNC is: a host name or address.</value>
