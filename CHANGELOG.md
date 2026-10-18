@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.4.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.4...v0.4.0-alpha.5) (2026-10-18)
+
+
+### Features
+
+* **bulletins:** a Bulletins panel of what's heard (F2.5, reading) ([c07911f](https://github.com/APRS-NET/AprsMap/commit/c07911f3f1b0c48648ff68bba3aeac5c343ae067))
+* **bulletins:** post bulletins and announcements, and join, leave and post to ANSRVR groups (F2.5) ([1c6235f](https://github.com/APRS-NET/AprsMap/commit/1c6235fbd7ed4808b8011bee2be768f45bd54402))
+* **bulletins:** post bulletins and announcements, and join, leave and post to ANSRVR groups (F2.5) ([5ccfa57](https://github.com/APRS-NET/AprsMap/commit/5ccfa575deef79e9a878bfea353d05428133a4da))
+* **capture:** record unexpected packets for the test corpus (F1.27) ([f3c87cc](https://github.com/APRS-NET/AprsMap/commit/f3c87cca618734e30da425486ef02cd9c0d06f76))
+* **console:** a source's live traffic, and typing to a serial TNC (F1.28, F3.2) ([f333f06](https://github.com/APRS-NET/AprsMap/commit/f333f06f13e8beb3c3cad3fc8f70afeca512ec2f))
+* **dashboard:** My view counts only the stations the view filter shows (F1.22) ([faa2d06](https://github.com/APRS-NET/AprsMap/commit/faa2d069d4b6695b9ba1a67448af80a3c17db04d))
+* **dashboard:** My view counts only the stations the view filter shows (F1.22) ([0bb75b9](https://github.com/APRS-NET/AprsMap/commit/0bb75b990b54490a526b48b62620db249b7c9490))
+* **dashboard:** sparkline values on hover and by keyboard, and Copy on the tiles (F1.22) ([318d081](https://github.com/APRS-NET/AprsMap/commit/318d0813a6500c98f6e6552f95d1feed70b43b66))
+* **gateway:** a public port and an operator port, receive-only logins, a title, and a viewer's page without station controls (F1.26) ([ef62e35](https://github.com/APRS-NET/AprsMap/commit/ef62e353f6d2167faf77db414da718cb525f99e3))
+* **gateway:** home privacy for viewers: the square's centre, or no location (F1.26) ([1641bb9](https://github.com/APRS-NET/AprsMap/commit/1641bb95e350ff45ce985226b54bcc0f0938640b))
+* **gateway:** operator sign-in: operators on the host, a session cookie, guessing limits, and roles on every hub call (F2.9) ([d08d2e3](https://github.com/APRS-NET/AprsMap/commit/d08d2e36c1a10db7add194ed2a68c257e44b8cb5))
+* **installers:** installers that update in the app, and each system's own folders for settings, data and cache (F4.15) ([d571a62](https://github.com/APRS-NET/AprsMap/commit/d571a62e2b4cb4120489dbdde2b409ef7e18b80b))
+* **layout:** save layouts by name and ask to use one when the monitors change (F1.23) ([d7414fa](https://github.com/APRS-NET/AprsMap/commit/d7414fa336c83047011030ed880f9a2fa9dc351a))
+* **map:** a destination with its distance, bearing and line (F1.18) ([88f2381](https://github.com/APRS-NET/AprsMap/commit/88f2381747c6ee85f5981a910a9c53fa876ce069))
+* **map:** my last position's routes out, through each digipeater to each IGate (F3.3) ([2c288aa](https://github.com/APRS-NET/AprsMap/commit/2c288aacad046436845ab2094f5574aada685ac0))
+* **map:** my last position's routes out, through each digipeater to each IGate (F3.3) ([e26bdfd](https://github.com/APRS-NET/AprsMap/commit/e26bdfda5070ae70cc213fda75d7ca464e444d89))
+* **shell:** any panel can be a tab beside the map (F1.0 behavior 16) ([3416274](https://github.com/APRS-NET/AprsMap/commit/34162745fa0b360dc93c7b98a53fa288256eba21))
+* **sources:** KISS TNCs on a serial port (F3.1) ([3089bcf](https://github.com/APRS-NET/AprsMap/commit/3089bcffd89f56522898ae07aede04f392e6166c))
+* **sources:** radios' built-in TNCs, by TNC type or in APRS mode (F3.2) ([28447c1](https://github.com/APRS-NET/AprsMap/commit/28447c1679a4f2c3c98c43255194722106ac713a))
+* **transmit:** how my last position got out (F3.3) ([2cdecda](https://github.com/APRS-NET/AprsMap/commit/2cdecda6fd64b6f9159c4ce33e26691120b50515))
+* **transmit:** how my last position got out (F3.3) ([6cf775f](https://github.com/APRS-NET/AprsMap/commit/6cf775f530fd79d80c732aed2cb517a6c8ce65d7))
+* **ui:** actions leave Settings for the menus; Reset layout asks and can be undone (F1.29) ([8fb443e](https://github.com/APRS-NET/AprsMap/commit/8fb443eb5ca602402152068b8d34bbf9521f81fa))
+* **ui:** File, View, Station, Tools and Help menus, hidden until Alt (F1.29) ([43757ac](https://github.com/APRS-NET/AprsMap/commit/43757ace8f00bea48786f9f9c9dd039652bcdf10))
+* **updates:** a daily check of the releases, a quiet notice, and the gateway operator's image to pull (F4.15) ([276d3dc](https://github.com/APRS-NET/AprsMap/commit/276d3dc6bae30c1bf771f8f3ca049c0ed824cfcf))
+* **updates:** a daily check of the releases, a quiet notice, and the gateway operator's image to pull (F4.15) ([c128332](https://github.com/APRS-NET/AprsMap/commit/c128332078130b726f0410c566e718d49305fe4e))
+* **web:** sign in as the gateway's operator from the app menu (F2.9) ([adc32d8](https://github.com/APRS-NET/AprsMap/commit/adc32d869557cfc33a14ded59c04e19c2b0a1468))
+* **wizard:** a TNC on a serial port in Use a TNC instead (F3.1, F3.2) ([a18919f](https://github.com/APRS-NET/AprsMap/commit/a18919fb9d12ad92b6eb6150872d30dd820b1e13))
+
+
+### Bug Fixes
+
+* **messages:** an open conversation takes the whole panel, with Back to the list ([627f48b](https://github.com/APRS-NET/AprsMap/commit/627f48b677836d7cae05a5c5783193caaa47a0f8))
+* **tiles:** a tile read while a refresh replaces it no longer fails on Windows ([cf09d41](https://github.com/APRS-NET/AprsMap/commit/cf09d419a99bd3e385dbf8a4ff03b27e71a37862))
+* **tiles:** a tile read while a refresh replaces it no longer fails on Windows ([e3e9519](https://github.com/APRS-NET/AprsMap/commit/e3e9519d82f3a821d6537d2b43a101517f411893))
+* **ui:** TNC commands is a submenu, without an ellipsis ([677960d](https://github.com/APRS-NET/AprsMap/commit/677960d4114a55c8281b16fb35d8360b9cf58a68))
+
 ## [0.4.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.3...v0.4.0-alpha.4) (2026-10-17)
 
 
