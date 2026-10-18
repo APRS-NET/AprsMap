@@ -11,7 +11,8 @@ internal sealed class EngineHubEndpoint(
     IOptions<GatewayOptions> options,
     Viewers viewers,
     Core.Engine filterEngine,
-    OperatorStore operators
+    OperatorStore operators,
+    HomeShields shields
 ) : Hub
 {
     /// <summary>The widest a viewer's map part may be on a gateway that follows viewers (F1.2 behavior 9).</summary>
@@ -29,21 +30,45 @@ internal sealed class EngineHubEndpoint(
     /// </summary>
     private bool MayChangeStation => IsOperator || (!operators.Any && options.Value.AllowSettingsChanges);
 
+    /// <summary>This call's home privacy (F1.26 behavior 11): none for whoever may change the station.</summary>
+    private Task<HomeShield?> ShieldAsync() => shields.ForAsync(MayChangeStation, Context.ConnectionAborted);
+
     [HubMethodName(EngineHub.GetStatus)]
-    public async Task<EngineStatus> GetStatus() =>
-        (await engine.GetStatusAsync(Context.ConnectionAborted).ConfigureAwait(false)) with
+    public async Task<EngineStatus> GetStatus()
+    {
+        var status = (await engine.GetStatusAsync(Context.ConnectionAborted).ConfigureAwait(false)) with
         {
             Viewers = viewers.Count,
             Title = string.IsNullOrWhiteSpace(options.Value.Title) ? null : options.Value.Title.Trim(),
         };
+        return await ShieldAsync().ConfigureAwait(false) is { } shield
+            ? status with
+            {
+                FilterAreas = shield.Apply(status.FilterAreas),
+            }
+            : status;
+    }
 
     [HubMethodName(EngineHub.WatchPackets)]
     public IAsyncEnumerable<PacketView> WatchPackets(PacketFilter? filter, CancellationToken cancellationToken) =>
         engine.WatchPacketsAsync(filter, cancellationToken);
 
     [HubMethodName(EngineHub.WatchStations)]
-    public IAsyncEnumerable<StationBatch> WatchStations(StationFilter? filter, CancellationToken cancellationToken) =>
-        engine.WatchStationsAsync(filter, cancellationToken);
+    public async IAsyncEnumerable<StationBatch> WatchStations(
+        StationFilter? filter,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken
+    )
+    {
+        var shielded = shields.Effective != HomePrivacy.Exact && !MayChangeStation;
+        await foreach (var batch in engine.WatchStationsAsync(filter, cancellationToken).ConfigureAwait(false))
+        {
+            // Measured from the shown point for a viewer (F1.26 behavior 11); the home is read each batch, as it can move.
+            yield return shielded
+            && await shields.ForAsync(false, cancellationToken).ConfigureAwait(false) is { } shield
+                ? shield.Apply(batch)
+                : batch;
+        }
+    }
 
     /// <summary>
     /// A toggle changes the station for every viewer, so it has the settings gate (F1.15 behavior 6). Turning Transmit
@@ -174,23 +199,46 @@ internal sealed class EngineHubEndpoint(
     }
 
     [HubMethodName(EngineHub.GetDashboard)]
-    public Task<Dashboard> GetDashboard(DashboardRange range, StationFilter? filter) =>
-        engine.GetDashboardAsync(range, filter, Context.ConnectionAborted);
+    public async Task<Dashboard> GetDashboard(DashboardRange range, StationFilter? filter)
+    {
+        var dashboard = await engine.GetDashboardAsync(range, filter, Context.ConnectionAborted).ConfigureAwait(false);
+        return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.Apply(dashboard) : dashboard;
+    }
 
     [HubMethodName(EngineHub.GetNetworkLinks)]
-    public Task<IReadOnlyList<NetworkLink>> GetNetworkLinks() => engine.GetNetworkLinksAsync(Context.ConnectionAborted);
+    public async Task<IReadOnlyList<NetworkLink>> GetNetworkLinks()
+    {
+        var links = await engine.GetNetworkLinksAsync(Context.ConnectionAborted).ConfigureAwait(false);
+        return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.Apply(links) : links;
+    }
 
     [HubMethodName(EngineHub.GetTelemetry)]
     public Task<TelemetryView?> GetTelemetry(string name) => engine.GetTelemetryAsync(name, Context.ConnectionAborted);
 
     [HubMethodName(EngineHub.GetRoute)]
-    public Task<PacketRoute?> GetRoute(RouteQuery query) => engine.GetRouteAsync(query, Context.ConnectionAborted);
+    public async Task<PacketRoute?> GetRoute(RouteQuery query)
+    {
+        var route = await engine.GetRouteAsync(query, Context.ConnectionAborted).ConfigureAwait(false);
+        return route is not null && await ShieldAsync().ConfigureAwait(false) is { } shield
+            ? shield.Apply(route)
+            : route;
+    }
 
     [HubMethodName(EngineHub.GetRoutesOut)]
-    public Task<IReadOnlyList<PacketRoute>> GetRoutesOut() => engine.GetRoutesOutAsync(Context.ConnectionAborted);
+    public async Task<IReadOnlyList<PacketRoute>> GetRoutesOut()
+    {
+        var routes = await engine.GetRoutesOutAsync(Context.ConnectionAborted).ConfigureAwait(false);
+        return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.RoutesOut(routes) : routes;
+    }
 
     [HubMethodName(EngineHub.GetStation)]
-    public Task<StationDetail?> GetStation(string name) => engine.GetStationAsync(name, Context.ConnectionAborted);
+    public async Task<StationDetail?> GetStation(string name)
+    {
+        var detail = await engine.GetStationAsync(name, Context.ConnectionAborted).ConfigureAwait(false);
+        return detail is not null && await ShieldAsync().ConfigureAwait(false) is { } shield
+            ? shield.Apply(detail)
+            : detail;
+    }
 
     /// <summary>
     /// A browser's map view, for the station's filter (F1.2 behaviors 8 and 9): its followed station always, its map
@@ -217,21 +265,44 @@ internal sealed class EngineHubEndpoint(
     }
 
     [HubMethodName(EngineHub.QueryStations)]
-    public Task<StationPage> QueryStations(StationQuery query) =>
-        engine.QueryStationsAsync(query, Context.ConnectionAborted);
+    public async Task<StationPage> QueryStations(StationQuery query)
+    {
+        var page = await engine.QueryStationsAsync(query, Context.ConnectionAborted).ConfigureAwait(false);
+        if (await ShieldAsync().ConfigureAwait(false) is not { } shield)
+        {
+            return page;
+        }
+        // Each row measured from the shown point, from its position (F1.26 behavior 11).
+        var rows = new List<StationRow>(page.Rows.Count);
+        foreach (var row in page.Rows)
+        {
+            (double, double)? position = null;
+            if (row.DistanceKm is not null || row.BearingDegrees is not null)
+            {
+                var detail = await engine.GetStationAsync(row.Name, Context.ConnectionAborted).ConfigureAwait(false);
+                position = detail is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
+            }
+            rows.Add(shield.Apply(row, position));
+        }
+        return page with { Rows = rows };
+    }
 
     /// <summary>The settings; read-only, with passcodes hidden, unless this gateway allows settings changes.</summary>
     [HubMethodName(EngineHub.GetSettings)]
     public async Task<AppSettings> GetSettings()
     {
         var settings = await engine.GetSettingsAsync(Context.ConnectionAborted).ConfigureAwait(false);
-        return MayChangeStation
-            ? settings
-            : settings with
-            {
-                ReadOnly = true,
-                Profiles = [.. settings.Profiles.Select(p => p with { Passcode = -1 })],
-            };
+        if (MayChangeStation)
+        {
+            return settings;
+        }
+        var viewers = settings with
+        {
+            ReadOnly = true,
+            Profiles = [.. settings.Profiles.Select(p => p with { Passcode = -1 })],
+        };
+        // The profiles' locations, the house drawn: the square's centre, or none (F1.26 behavior 11.4).
+        return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.Apply(viewers) : viewers;
     }
 
     [HubMethodName(EngineHub.SaveSettings)]
@@ -385,8 +456,10 @@ internal sealed class EngineHubEndpoint(
 
     /// <summary>Distance and bearing from the station's location to a viewer's destination (F1.18): open to every viewer.</summary>
     [HubMethodName(EngineHub.GetDestination)]
-    public Task<DestinationInfo> GetDestination(double latitude, double longitude) =>
-        engine.GetDestinationAsync(latitude, longitude, Context.ConnectionAborted);
+    public async Task<DestinationInfo> GetDestination(double latitude, double longitude) =>
+        await ShieldAsync().ConfigureAwait(false) is { } shield
+            ? shield.Destination(latitude, longitude, segments: 64)
+            : await engine.GetDestinationAsync(latitude, longitude, Context.ConnectionAborted).ConfigureAwait(false);
 
     /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
     [HubMethodName(EngineHub.GetCapture)]

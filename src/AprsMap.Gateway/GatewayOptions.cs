@@ -53,6 +53,12 @@ internal sealed class GatewayOptions
     /// </summary>
     public int? OperatorPort { get; set; }
 
+    /// <summary>
+    /// How much of the station's location viewers learn (F1.26 behavior 11): <c>Exact</c>, <c>Grid</c> or <c>Hidden</c>.
+    /// Unset, <c>Grid</c> with an operator port and <c>Exact</c> without. A signed-in operator always gets the exact one.
+    /// </summary>
+    public HomePrivacy? HomePrivacy { get; set; }
+
     /// <summary>The page's title, such as "What N0CALL's TNC hears" (F1.26 behavior 10); null for none.</summary>
     public string? Title { get; set; }
 

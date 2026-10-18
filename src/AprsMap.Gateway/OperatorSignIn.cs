@@ -39,6 +39,7 @@ internal static partial class OperatorSignIn
         services.AddSingleton<SignInLimiter>();
         services.AddSingleton<SignInAudit>();
         services.AddSingleton<OperatorFilter>();
+        services.AddSingleton<HomeShields>();
         services.TryAddTimeProvider();
         // The cookie's keys outlive a restart, in the data folder (behavior 5).
         services
