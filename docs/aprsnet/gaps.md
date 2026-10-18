@@ -324,7 +324,7 @@ source, starting with the Kenwood TH-D72A.
 
 **Scope** ([APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249), rescoped 2026-10-18, part of #160):
 
-1. **KISS mode** (APRS.NET#257, #258, in review): `TncScript`, `TncSetup` with `TncSetup.KenwoodThD72` built in, and
+1. **KISS mode** (APRS.NET#257, #258, merged): `TncScript`, `TncSetup` with `TncSetup.KenwoodThD72` built in, and
    `KissSerialOptions.Setup`. The connection switches the radio into KISS each time it opens the port, again when the
    radio sends text after a power cut, and out of KISS when it closes. A failed setup reconnects with an
    `IOException` carrying a hint ("Switch the radio's TNC to packet mode (PACKET12) first"). `TncSetup.Known` and
