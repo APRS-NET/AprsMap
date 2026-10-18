@@ -42,7 +42,7 @@ public sealed class DashboardTests
         time.Advance(TimeSpan.FromMinutes(2.5));
         engine.Accept(Direct.Replace("4903.50", "4904.50", StringComparison.Ordinal));
 
-        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, Ct);
+        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct);
 
         Assert.Equal(TimeSpan.FromMinutes(1), dashboard.Step);
         Assert.Equal(60, dashboard.Packets.Count);
@@ -62,14 +62,14 @@ public sealed class DashboardTests
         time.Advance(TimeSpan.FromMinutes(1));
         engine.Accept(Direct.Replace("4903.50", "4905.50", StringComparison.Ordinal));
 
-        var hour = await engine.GetDashboardAsync(DashboardRange.Hour, Ct);
+        var hour = await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct);
 
         Assert.Equal([2, 1], hour.StationsHeard.TakeLast(2));
         Assert.Equal(2, hour.StationsHeardTotal);
         Assert.Equal([2, 0], hour.NewStations.TakeLast(2));
         Assert.Equal(2, hour.NewStationsTotal);
         Assert.Equal(["N0HOUSE", "N0CAR-9"], hour.Newest.Select(n => n.Key));
-        var day = await engine.GetDashboardAsync(DashboardRange.Day, Ct);
+        var day = await engine.GetDashboardAsync(DashboardRange.Day, cancellationToken: Ct);
         Assert.Equal(2, day.StationsHeard[^1]); // one 15-minute point: each station once
     }
 
@@ -81,7 +81,7 @@ public sealed class DashboardTests
         engine.Accept(Digipeated);
         engine.Accept(Internet);
 
-        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, Ct);
+        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct);
 
         int Last(string kind) => dashboard.Arrivals.Single(a => a.Key == kind).Values[^1];
         Assert.Equal(1, Last(nameof(ArrivalKind.Direct)));
@@ -99,7 +99,7 @@ public sealed class DashboardTests
         engine.Accept(Direct.Replace("4903.50", "4904.50", StringComparison.Ordinal));
         engine.Accept(Invalid);
 
-        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, Ct);
+        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct);
 
         // The malformed position is still a position report, flagged.
         Assert.Equal(3, dashboard.Kinds.Single(k => k.Key == nameof(PacketKind.Position)).Count);
@@ -115,7 +115,7 @@ public sealed class DashboardTests
         var (engine, _) = Create();
         engine.Accept("N0X>APRS:>" + new string('\u20AC', 1)); // not Latin-1: the line is dropped
 
-        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, Ct);
+        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct);
 
         Assert.Equal(0, dashboard.Packets[^1]);
         Assert.Equal(1, dashboard.ProblemsTotal);
@@ -129,16 +129,16 @@ public sealed class DashboardTests
         time.Advance(TimeSpan.FromMinutes(7));
         engine.Accept(Internet);
 
-        var six = await engine.GetDashboardAsync(DashboardRange.SixHours, Ct);
+        var six = await engine.GetDashboardAsync(DashboardRange.SixHours, cancellationToken: Ct);
         Assert.Equal(TimeSpan.FromMinutes(5), six.Step);
         Assert.Equal(72, six.Packets.Count);
         Assert.Equal([1, 1], six.Packets.TakeLast(2));
-        var day = await engine.GetDashboardAsync(DashboardRange.Day, Ct);
+        var day = await engine.GetDashboardAsync(DashboardRange.Day, cancellationToken: Ct);
         Assert.Equal(96, day.Packets.Count);
         Assert.Equal(2, day.Packets[^1]);
 
         time.Advance(TimeSpan.FromHours(25));
-        var later = await engine.GetDashboardAsync(DashboardRange.Day, Ct);
+        var later = await engine.GetDashboardAsync(DashboardRange.Day, cancellationToken: Ct);
         Assert.Equal(0, later.Packets.Sum());
         Assert.Equal(0, later.StationsHeardTotal);
         Assert.Empty(later.BusiestStations);
@@ -154,7 +154,7 @@ public sealed class DashboardTests
 
         await engine.ClearAsync(ClearScope.Packets, Ct);
         engine.Accept(Direct);
-        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, Ct);
+        var dashboard = await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct);
 
         Assert.Equal(T0.AddMinutes(3), dashboard.HistoryStart);
         Assert.Equal(1, dashboard.Packets.Sum());
@@ -198,7 +198,7 @@ public sealed class DashboardTests
         engine.Accept(Direct); // an unknown device
         engine.Accept("N0OBJ>APRS,TCPIP*,qAC,T2TEST:;AIDSTN1  *161200z4903.50N/07201.75Wa Aid station");
 
-        var tables = (await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).Tables!;
+        var tables = (await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct)).Tables!;
 
         Assert.Equal(5, tables.Total); // the object's sender is a station too
         var droid = Assert.Single(
@@ -218,7 +218,7 @@ public sealed class DashboardTests
         engine.Accept("N0COLD>APRS,TCPIP*,qAC,T2TEST:@161200z4903.50N/07201.75W_090/005g010t014");
         engine.Accept("N0WARM>APRS,TCPIP*,qAC,T2TEST:@161200z4904.50N/07201.75W_090/005g030t095");
 
-        var weather = (await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).Weather!;
+        var weather = (await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct)).Weather!;
 
         Assert.Equal(2, weather.Stations);
         Assert.Equal("N0COLD", weather.Coldest!.Station);
@@ -227,7 +227,7 @@ public sealed class DashboardTests
         Assert.Equal("N0WARM", weather.Gustiest!.Station);
 
         time.Advance(TimeSpan.FromHours(2));
-        Assert.Equal(0, (await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).Weather!.Stations);
+        Assert.Equal(0, (await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct)).Weather!.Stations);
     }
 
     [Fact]
@@ -235,12 +235,53 @@ public sealed class DashboardTests
     {
         var (engine, _) = Create();
         engine.Accept(Direct); // heard directly by N0GATE, whose position isn't known yet
-        Assert.Empty((await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).FarthestDirect!);
+        Assert.Empty((await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct)).FarthestDirect!);
 
         engine.Accept("N0GATE>APRS,TCPIP*,qAC,T2TEST:!4913.50N/07201.75W&"); // 10' of latitude north: ~18.5 km
 
-        var hop = Assert.Single((await engine.GetDashboardAsync(DashboardRange.Hour, Ct)).FarthestDirect!);
+        var hop = Assert.Single(
+            (await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct)).FarthestDirect!
+        );
         Assert.Equal(("N0CAR-9", "N0GATE"), (hop.Station, hop.Gateway));
         Assert.Equal(18.53, hop.DistanceKm, 2);
+    }
+
+    [Fact]
+    public async Task MyViewCountsOnlyTheStationsTheViewFilterShowsInFiveMinuteSteps()
+    {
+        var (engine, time) = Create();
+        engine.Accept(Direct);
+        engine.Accept(Internet);
+        engine.Accept(Weather);
+        engine.Accept(Invalid);
+        time.Advance(TimeSpan.FromMinutes(6));
+        engine.Accept(Digipeated);
+        engine.Accept(Direct.Replace("4903.50", "4904.50", StringComparison.Ordinal));
+        var rf = new StationFilter(Reception: Reception.AnyRf);
+
+        var mine = await engine.GetDashboardAsync(DashboardRange.Hour, rf, Ct);
+
+        Assert.True(mine.MyView);
+        Assert.Equal(TimeSpan.FromMinutes(5), mine.Step);
+        Assert.Equal(12, mine.Packets.Count);
+        Assert.Equal([1, 2], mine.Packets.TakeLast(2)); // N0CAR-9, then N0BIKE-7 and N0CAR-9 again
+        Assert.Equal([1, 2], mine.StationsHeard.TakeLast(2));
+        Assert.Equal(2, mine.StationsHeardTotal);
+        Assert.Equal(2, mine.NewStationsTotal);
+        Assert.Equal(["N0BIKE-7", "N0CAR-9"], mine.Newest.Select(n => n.Key));
+        Assert.Equal(["N0CAR-9", "N0BIKE-7"], mine.BusiestStations.Select(b => b.Key));
+        Assert.Equal(0, mine.Arrivals.Single(a => a.Key == nameof(ArrivalKind.Internet)).Values.Sum());
+        Assert.Equal(0, mine.ProblemsTotal); // the invalid packet came over the internet
+        Assert.Equal(0, mine.Weather!.Stations);
+        Assert.Equal(2, mine.Tables!.Total);
+        Assert.Empty(mine.PacketsBySource); // not kept per station
+
+        var day = await engine.GetDashboardAsync(DashboardRange.Day, rf, Ct);
+        Assert.Equal(TimeSpan.FromMinutes(15), day.Step);
+        Assert.Equal(3, day.Packets.Sum());
+
+        var whole = await engine.GetDashboardAsync(DashboardRange.Hour, StationFilter.None, Ct); // an empty filter
+        Assert.False(whole.MyView);
+        Assert.Equal(6, whole.Packets.Sum());
     }
 }
