@@ -255,8 +255,13 @@ public sealed class SourceConsoleTests
 
         // Nothing was kept before anyone watched (behavior 7).
         var entries = Collect(engine, aprsIs.Id, cts.Token);
-        await writer.WriteLineAsync("# keepalive");
-        await WaitUntil(() => Snapshot(entries).Any(e => e.Kind == TrafficKind.ServerComment));
+        // The watch starts on its own task, so keepalives come until one is seen, as a real server sends them.
+        for (var i = 0; i < 100 && !Snapshot(entries).Any(e => e.Kind == TrafficKind.ServerComment); i++)
+        {
+            await writer.WriteLineAsync("# keepalive");
+            await Task.Delay(TimeSpan.FromMilliseconds(50), TimeProvider.System, Ct);
+        }
+        Assert.Contains(Snapshot(entries), e => e.Kind == TrafficKind.ServerComment);
         Assert.DoesNotContain(Snapshot(entries), e => e.Kind == TrafficKind.LoginSent);
 
         // Reconnect while watched: the login is there, its passcode masked.
