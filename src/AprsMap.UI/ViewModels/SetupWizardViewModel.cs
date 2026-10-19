@@ -393,7 +393,6 @@ public sealed partial class SetupWizardViewModel : ObservableObject
                 _typedCallsign = Callsign;
             }
             Callsign = _listenerId ?? Callsign;
-            DisableTransmit = false;
             ReceiveOnly = true;
         }
         _switchingLogin = false;
@@ -401,10 +400,6 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         OnPropertyChanged(nameof(ListeningAsText));
         OnStepChanged(Step); // "Step 1 of 3"
     }
-
-    /// <summary>Disable TX: a receive-only profile, even with a licensed operator (behavior 4.2).</summary>
-    [ObservableProperty]
-    public partial bool DisableTransmit { get; set; }
 
     /// <summary>The symbols to choose from (docs/features/F2.1-own-station.md, behavior 1).</summary>
     public static IReadOnlyList<SymbolChoice> Symbols => SymbolChoice.All;
@@ -814,7 +809,6 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         _switchingLogin = false;
         // A profile with a callsign was made by a licensed operator: before this box, the editor only took callsigns.
         IsLicensedOperator = !ListenerId.Is(profile.Callsign);
-        DisableTransmit = profile.DisableTransmit;
         OnPropertyChanged(nameof(ListeningAsText));
         SelectedSymbol = SymbolChoice.For(profile.EffectiveSymbol);
         Comment = profile.Comment ?? string.Empty;
@@ -852,7 +846,6 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             '\u001F',
             Callsign,
             IsLicensedOperator ? "licensed" : "",
-            DisableTransmit ? "no-tx" : "",
             SelectedSymbol?.Symbol ?? "",
             Comment,
             ProfileName,
@@ -1276,8 +1269,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Symbol: SelectedSymbol?.Symbol,
             Comment: Comment.Trim().Length > 0 ? Comment.Trim() : null,
             PositionConfirmed: _editing?.PositionConfirmed ?? false, // the engine clears it when what's sent changed
-            Licensed: IsLicensedOperator,
-            DisableTransmit: DisableTransmit && IsLicensedOperator
+            Licensed: IsLicensedOperator
         );
         IsBusy = true;
         try

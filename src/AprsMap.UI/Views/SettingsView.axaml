@@ -243,6 +243,11 @@
                         TextWrapping="Wrap"
                         AutomationProperties.LiveSetting="Polite"
                       />
+                      <Button
+                        Content="{l:T Settings.Sources.TurnTransmitOn}"
+                        Command="{Binding TurnTransmitOnCommand}"
+                        IsVisible="{Binding OffersTransmitOn}"
+                      />
                       <WrapPanel
                         ItemSpacing="8"
                         LineSpacing="6"
@@ -500,7 +505,7 @@
                     IsVisible="{Binding Sources.IsKiss}"
                     Text="{Binding Sources.EditTxPath}"
                     PlaceholderText="{x:Static s:SourcesSectionViewModel.DefaultTxPath}"
-                    IsEnabled="{Binding Sources.EditTransmit}"
+                    IsEnabled="{Binding !Sources.EditRxOnly}"
                     AutomationProperties.Name="{l:T Settings.Sources.TxPath}"
                     AutomationProperties.HelpText="{l:T Settings.Sources.TxPath.Help}"
                     FontFamily="{DynamicResource Font.Mono}"
@@ -520,16 +525,15 @@
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
                 </StackPanel>
-                <!-- TX enabled (F2.1 behavior 5): off unless ticked; a source left unticked is never sent on. -->
+                <!-- RX only (F2.1 behavior 5): unticked unless chosen; a kind that can't send shows it ticked, fixed. -->
                 <CheckBox
-                  x:Name="TxEnabledBox"
-                  Content="{l:T Settings.Sources.TxEnabledBox}"
-                  IsChecked="{Binding Sources.EditTransmit}"
-                  IsVisible="{Binding Sources.CanTransmitKind}"
+                  x:Name="RxOnlyBox"
+                  Content="{l:T Settings.Sources.RxOnlyBox}"
+                  IsChecked="{Binding Sources.EditRxOnly}"
+                  IsEnabled="{Binding Sources.CanTransmitKind}"
                 />
                 <TextBlock
-                  IsVisible="{Binding Sources.CanTransmitKind}"
-                  Text="{l:T Settings.Sources.TxEnabledBox.Help}"
+                  Text="{l:T Settings.Sources.RxOnlyBox.Help}"
                   Foreground="{DynamicResource Brush.TextMuted}"
                   TextWrapping="Wrap"
                 />

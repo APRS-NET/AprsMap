@@ -103,8 +103,8 @@ public sealed class BulletinsUiTests
     {
         Sources =
         [
-            new SourceStatus("rotate", "APRS-IS", SourceKind.AprsIs, ConnectionState.Connected, TransmitEnabled: true),
-            new SourceStatus("tnc", "Direwolf", SourceKind.KissTcp, ConnectionState.Connected, TransmitEnabled: true),
+            new SourceStatus("rotate", "APRS-IS", SourceKind.AprsIs, ConnectionState.Connected, MaySend: true),
+            new SourceStatus("tnc", "Direwolf", SourceKind.KissTcp, ConnectionState.Connected, MaySend: true),
             new SourceStatus("rx", "Receiver", SourceKind.KissTcp, ConnectionState.Connected),
         ],
     };

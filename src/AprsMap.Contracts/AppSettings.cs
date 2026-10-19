@@ -172,7 +172,6 @@ public sealed record StationAging(
 /// The user confirmed they're a licensed amateur who may transmit with this callsign (F2.1 behavior 4.1); asked once per
 /// profile. A listener ID (<see cref="ListenerId"/>) is never licensed.
 /// </param>
-/// <param name="DisableTransmit">Disable TX: a receive-only profile, even with a licensed operator (F2.1 behavior 4.2).</param>
 /// <param name="PositionBeacon">The position beacon (docs/features/F2.2-beacons.md, behavior 1); null is off.</param>
 /// <param name="StatusBeacon">The status beacon (F2.2 behavior 3); null is off.</param>
 /// <param name="PositionConfirmed">
@@ -196,7 +195,6 @@ public sealed record StationProfile(
     string? Comment = null,
     bool PositionConfirmed = false,
     bool Licensed = false,
-    bool DisableTransmit = false,
     PositionBeaconSettings? PositionBeacon = null,
     StatusBeaconSettings? StatusBeacon = null,
     IReadOnlyList<string>? Groups = null
@@ -249,7 +247,6 @@ public sealed record StationProfile(
         && Comment == other.Comment
         && PositionConfirmed == other.PositionConfirmed
         && Licensed == other.Licensed
-        && DisableTransmit == other.DisableTransmit
         && EffectivePositionBeacon == other.EffectivePositionBeacon
         && EffectiveStatusBeacon == other.EffectiveStatusBeacon;
 
@@ -261,7 +258,6 @@ public sealed record StationProfile(
             Comment,
             PositionConfirmed,
             Licensed,
-            DisableTransmit,
             HashCode.Combine(EffectivePositionBeacon, EffectiveStatusBeacon)
         );
 

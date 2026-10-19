@@ -219,7 +219,7 @@ public static class EngineErrorCodes
     /// <summary>A serial source's TNC type isn't known, or a custom one's scripts can't be read (F3.2 behavior 4).</summary>
     public const string TncScriptInvalid = "settings.source.tnc-script-invalid";
 
-    /// <summary>A source that can't send, such as a radio in APRS mode, was set TX enabled (F3.2 behavior 3).</summary>
+    /// <summary>A source that can't send was set TX enabled; no longer raised: such a kind is RX only (F2.1, 2026-10-18).</summary>
     public const string SourceReceiveOnly = "settings.source.receive-only";
 
     /// <summary>A KISS over serial source's port, speed or TNC port isn't usable.</summary>
@@ -231,16 +231,24 @@ public static class EngineErrorCodes
     /// <summary>The Transmit switch is off (docs/features/F2.1-own-station.md, behavior 11).</summary>
     public const string TransmitOff = "transmit.off";
 
-    /// <summary>The profile has Disable TX ticked (F2.1 behavior 4.2).</summary>
+    /// <summary>The profile had Disable TX ticked; no longer raised since Disable TX went (F2.1, 2026-10-18).</summary>
     public const string TransmitProfileDisabled = "transmit.profile-disabled";
 
     /// <summary>The profile's licence isn't confirmed, or it listens with a listener ID (F2.1 behavior 4.1).</summary>
     public const string TransmitNotLicensed = "transmit.not-licensed";
 
-    /// <summary>The source isn't TX enabled (F2.1 behavior 5).</summary>
+    /// <summary>The source wasn't TX enabled; no longer raised since RX only replaced it (F2.1, 2026-10-18).</summary>
     public const string TransmitSourceDisabled = "transmit.source-disabled";
 
-    /// <summary>None of the profile's sources is TX enabled (F2.1 behavior 6.1).</summary>
+    /// <summary>The source is RX only (F2.1 behavior 5), named in <see cref="EngineErrorArgs.Source"/>.</summary>
+    public const string TransmitSourceRxOnly = "transmit.source-rx-only";
+
+    /// <summary>
+    /// The source is switched off on its status pill (F2.1 behavior 5.1), named in <see cref="EngineErrorArgs.Source"/>.
+    /// </summary>
+    public const string TransmitSourceOff = "transmit.source-off";
+
+    /// <summary>None of the profile's sources may send: it has none, or they're all RX only (F2.1 behavior 6.1).</summary>
     public const string TransmitNoSource = "transmit.no-source";
 
     /// <summary>
@@ -316,6 +324,12 @@ public static class EngineErrorArgs
 {
     /// <summary>The name of the profile the error is about.</summary>
     public const string Profile = "profile";
+
+    /// <summary>The name of the source a <c>transmit.*</c> refusal is about (F2.1 behavior 7a).</summary>
+    public const string Source = "source";
+
+    /// <summary>The callsign a <c>transmit.not-verified</c> refusal is about (F2.1 behavior 7a).</summary>
+    public const string Callsign = "callsign";
 
     /// <summary>The rejected value as typed (a callsign, server or filter).</summary>
     public const string Value = "value";

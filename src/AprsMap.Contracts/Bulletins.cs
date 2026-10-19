@@ -51,7 +51,7 @@ public sealed record BulletinView(
 /// <param name="Id">A digit for a bulletin, a letter for an announcement.</param>
 /// <param name="Text">Up to 67 characters, the same characters as a message.</param>
 /// <param name="Group">A group of up to 5 letters and digits, such as <c>WX</c>; null for none.</param>
-/// <param name="SourceIds">The sources to send on, as Send via ticks them; null for every TX enabled source.</param>
+/// <param name="SourceIds">The sources to send on, as Send via ticks them; null for every source that isn't RX only.</param>
 public sealed record BulletinPost(
     BulletinKind Kind,
     string Id,

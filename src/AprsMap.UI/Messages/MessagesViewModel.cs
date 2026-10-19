@@ -194,7 +194,7 @@ public sealed partial class MessagesViewModel : ObservableObject
     private async Task LoadSettingsAsync(string correspondent)
     {
         Sources.Clear();
-        foreach (var source in (_status()?.Sources ?? []).Where(s => s.TransmitEnabled))
+        foreach (var source in (_status()?.Sources ?? []).Where(s => s.MaySend))
         {
             Sources.Add(new SourceChoice(source.Id, source.Name, this));
         }

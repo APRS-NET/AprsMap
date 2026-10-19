@@ -13,9 +13,9 @@ namespace AprsMap.Contracts;
 /// <param name="Host">For KISS over TCP: the TNC's host name or address (docs/features/F3.1-kiss-sources.md).</param>
 /// <param name="Port">For KISS over TCP: the TNC's port; null for <see cref="DefaultKissPort"/>.</param>
 /// <param name="TncPort">For KISS: the TNC's radio port, 0 to 15, for multi-port TNCs; null for 0.</param>
-/// <param name="Transmit">
-/// TX enabled (docs/features/F2.1-own-station.md, behavior 5): the station may send on this source. Off unless the user
-/// ticks it.
+/// <param name="RxOnly">
+/// RX only (docs/features/F2.1-own-station.md, behavior 5): the station never sends on this source. Off unless the user
+/// ticks it; a kind that can't send (<see cref="CanTransmit"/>) is RX only whatever it says.
 /// </param>
 /// <param name="TxPath">
 /// For a TNC: the path packets are sent with, such as <c>WIDE1-1,WIDE2-1</c>; null for <see cref="DefaultTxPath"/>.
@@ -44,7 +44,7 @@ public sealed record SourceSettings(
     string? Host = null,
     int? Port = null,
     int? TncPort = null,
-    bool Transmit = false,
+    bool RxOnly = false,
     string? TxPath = null,
     string? SerialPort = null,
     int? Baud = null,
@@ -58,13 +58,16 @@ public sealed record SourceSettings(
     /// <summary>The <see cref="TncType"/> of a TNC switched with the source's own scripts (F3.2 behavior 4.3).</summary>
     public const string CustomTncType = "custom";
 
-    /// <summary>Whether it's on a serial port: KISS over serial, or a radio in APRS mode (F3.1, F3.2).</summary>
+    /// <summary>Whether it's on a serial port: KISS over serial, or TNC text output (F3.1, F3.2).</summary>
     public bool IsSerial => Kind is SourceKind.KissSerial or SourceKind.AprsTextSerial;
 
-    /// <summary>Whether it can ever send: not a radio read in its APRS mode (F3.2 behavior 3), nor a GPS.</summary>
+    /// <summary>Whether its kind can ever send: not TNC text output (F3.2 behavior 3), nor a GPS.</summary>
     public bool CanTransmit => Kind is SourceKind.AprsIs or SourceKind.KissTcp or SourceKind.KissSerial;
 
-    /// <summary>A new source reading a radio in its APRS mode on <paramref name="serialPort"/> (F3.2 behavior 1.1).</summary>
+    /// <summary>Whether the station may send on it: a kind that can, not ticked RX only (F2.1 behavior 5).</summary>
+    public bool MaySend => CanTransmit && !RxOnly;
+
+    /// <summary>A new source reading a TNC's text output on <paramref name="serialPort"/> (F3.2 behavior 1.1).</summary>
     public static SourceSettings AprsTextSerialFor(string serialPort, int? baud = null) =>
         new(
             Guid.NewGuid().ToString("N"),
@@ -150,7 +153,8 @@ public enum SourceKind
     KissSerial,
 
     /// <summary>
-    /// A radio's built-in TNC read in its own APRS mode, receive only: the TNC-2 lines it prints (F3.2 behaviors 1–3).
+    /// TNC text output (TNC2) over serial, RX only: the lines a radio or TNC prints for the packets it hears, such as a
+    /// TH-D72A in its APRS mode (F3.2 behaviors 1–3). Named "Radio in APRS mode" until 2026-10-18.
     /// </summary>
     AprsTextSerial,
 

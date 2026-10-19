@@ -10,15 +10,9 @@ namespace AprsMap.UI.Tests;
 /// <summary>Beacons in the UI (docs/features/F2.2-beacons.md, behaviors 1–5, 10).</summary>
 public sealed class BeaconsUiTests
 {
-    private static readonly SourceSettings AprsIs = FakeEngine.Rotate with { Transmit = true };
+    private static readonly SourceSettings AprsIs = FakeEngine.Rotate;
 
-    private static readonly SourceSettings Tnc = new(
-        "tnc",
-        "Direwolf",
-        SourceKind.KissTcp,
-        Host: "127.0.0.1",
-        Transmit: true
-    );
+    private static readonly SourceSettings Tnc = new("tnc", "Direwolf", SourceKind.KissTcp, Host: "127.0.0.1");
 
     private static AppSettings Licensed(bool confirmed = true, bool licensed = true) =>
         new(

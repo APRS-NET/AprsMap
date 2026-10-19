@@ -126,10 +126,12 @@ public sealed record TransmitStatus(
 /// <param name="Error">Why it is reconnecting or stopped.</param>
 /// <param name="Enabled">Whether it's switched on (F3.1 behavior 6); a source switched off is listed, disconnected.</param>
 /// <param name="RetryAt">When the next attempt is, while it is reconnecting.</param>
-/// <param name="TransmitEnabled">The source is TX enabled (docs/features/F2.1-own-station.md, behavior 5).</param>
+/// <param name="MaySend">
+/// The station may send on it: it isn't RX only (docs/features/F2.1-own-station.md, behavior 5).
+/// </param>
 /// <param name="TransmitBlocked">
-/// Why the station couldn't send on it now (a <c>transmit.*</c> code), or null when it can; null too when it isn't TX
-/// enabled.
+/// Why the station couldn't send on it now (a <c>transmit.*</c> code naming the source), or null when it can; null too
+/// when it's RX only.
 /// </param>
 /// <param name="Manual">
 /// Whether a serial TNC is in manual mode, taking typed commands (docs/features/F3.2-built-in-tncs.md, behavior 9).
@@ -147,14 +149,14 @@ public sealed record SourceStatus(
     EngineError? Error = null,
     bool Enabled = true,
     DateTimeOffset? RetryAt = null,
-    bool TransmitEnabled = false,
+    bool MaySend = false,
     EngineError? TransmitBlocked = null,
     EngineError? Warning = null,
     bool Manual = false
 )
 {
     /// <summary>Whether the station can send on this source now.</summary>
-    public bool CanTransmit => TransmitEnabled && TransmitBlocked is null;
+    public bool CanTransmit => MaySend && TransmitBlocked is null;
 }
 
 /// <summary>What a Test send did (docs/features/F2.1-own-station.md, behavior 9).</summary>

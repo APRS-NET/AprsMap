@@ -60,15 +60,10 @@
     <Style Selector="Border#ConnectionPill.warn TextBlock#ConnectionLabel">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
     </Style>
-    <!-- Transmitting (F2.1): a quiet outline while it's on; the warning colour while it's held. -->
-    <Style Selector="Button#TransmitMarker">
-      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
-    </Style>
-    <Style Selector="Button#TransmitMarker.warn">
-      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Warn}" />
-    </Style>
-    <Style Selector="Button#TransmitMarker.warn TextBlock">
-      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    <!-- The Transmit switch (F2.1 behavior 6): a source pill's look, outlined in the transmit colour while it's on and in
+         the warning colour while it's held. -->
+    <Style Selector="Border#TransmitPill.transmitting">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Transmit}" />
     </Style>
   </UserControl.Styles>
   <Panel>
@@ -359,24 +354,8 @@
                         Command="{Binding ToggleCommand}"
                         CommandParameter="{x:Static c:Toggle.Tiles}"
                       />
-                      <!-- Transmitting (F2.1): from a gateway's browser only for a signed-in operator (F2.9). -->
-                      <Separator IsVisible="{Binding IsOperator}" />
-                      <MenuItem
-                        x:Name="TransmitToggle"
-                        Header="{l:T Toggles.Transmit}"
-                        ToggleType="CheckBox"
-                        IsVisible="{Binding IsOperator}"
-                        IsChecked="{Binding TransmitOn, Mode=OneWay}"
-                        IsEnabled="{Binding CanTransmit}"
-                        Command="{Binding ToggleCommand}"
-                        CommandParameter="{x:Static c:Toggle.Transmit}"
-                      />
-                      <MenuItem
-                        x:Name="SendPositionItem"
-                        Header="{l:T Transmit.SendPosition}"
-                        IsVisible="{Binding IsOperator}"
-                        Command="{Binding SendPositionCommand}"
-                      />
+                      <!-- On APRS-IS alone (F2.1 behavior 10); Transmit itself is the status bar's switch. -->
+                      <Separator IsVisible="{Binding IsAprsIsTransmitEnabled}" />
                       <MenuItem
                         x:Name="SendPositionOnAprsIsItem"
                         Header="{l:T Transmit.SendPositionOnAprsIs}"
@@ -435,22 +414,43 @@
             >
               <TextBlock Text="{Binding UnreadText}" TextWrapping="Wrap" />
             </Button>
-            <!-- Transmitting (F2.1 behaviors 4, 8): said in words, the warning colour only while it's held. -->
-            <Button
-              x:Name="TransmitMarker"
-              Classes="toggle-marker"
+            <!-- The Transmit switch (F2.1 behavior 6): the one place transmitting is turned on or off, mirrored by
+                 Station › Transmit; from a gateway's browser only for a signed-in operator (F2.9). -->
+            <Border
+              x:Name="TransmitPill"
+              Classes="source-pill"
+              Classes.transmitting="{Binding IsTransmitting}"
               Classes.warn="{Binding IsTransmitHeld}"
-              IsVisible="{Binding TransmitText, Converter={x:Static ObjectConverters.IsNotNull}}"
-              BorderThickness="{DynamicResource Thickness.Border}"
+              IsVisible="{Binding TransmitSwitch.IsShown}"
               CornerRadius="{DynamicResource Radius.Control}"
-              Padding="8,3"
+              BorderThickness="{DynamicResource Thickness.Border}"
               VerticalAlignment="Center"
               ToolTip.Tip="{Binding TransmitTip}"
-              AutomationProperties.Name="{Binding TransmitText}"
-              AutomationProperties.HelpText="{Binding TransmitTip}"
             >
-              <TextBlock Text="{Binding TransmitText}" TextWrapping="Wrap" />
-            </Button>
+              <StackPanel Orientation="Horizontal">
+                <ToggleSwitch
+                  x:Name="TransmitSwitch"
+                  Classes="source-switch"
+                  IsChecked="{Binding TransmitSwitch.IsOn}"
+                  IsEnabled="{Binding TransmitSwitch.CanChange}"
+                  OnContent="{x:Null}"
+                  OffContent="{x:Null}"
+                  MinWidth="0"
+                  Margin="8,0,0,0"
+                  VerticalAlignment="Center"
+                  AutomationProperties.Name="{l:T Toggles.Transmit}"
+                  AutomationProperties.HelpText="{Binding TransmitTip}"
+                />
+                <TextBlock
+                  x:Name="TransmitLabel"
+                  Classes="source-label"
+                  Text="{Binding TransmitPillText}"
+                  TextWrapping="Wrap"
+                  Margin="6,4,10,4"
+                  VerticalAlignment="Center"
+                />
+              </StackPanel>
+            </Border>
             <TextBlock
               x:Name="TransmitAnnouncement"
               Text="{Binding TransmitAnnouncement}"
@@ -526,7 +526,7 @@
                               IsVisible="{Binding CanType}"
                               Command="{Binding TncCommandsCommand}"
                             />
-                            <!-- On this source alone (F2.1 behavior 10), when it's TX enabled. -->
+                            <!-- On this source alone (F2.1 behavior 10), unless it's RX only. -->
                             <MenuItem
                               Header="{l:T Transmit.SendPositionHere}"
                               IsVisible="{Binding IsTransmitEnabled}"

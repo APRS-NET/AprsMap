@@ -27,7 +27,6 @@ public sealed partial class MainView : UserControl
         HookMenus();
         // A toggle's marker opens the menu where it's changed (F1.15 behavior 4).
         ToggleMarkers.AddHandler(Button.ClickEvent, (_, _) => OpenConnectionMenu());
-        TransmitMarker.Click += (_, _) => OpenConnectionMenu();
         // Dock doesn't report splitter drags or floating-window resizes; a released pointer may have done either.
         ShellDock.AddHandler(
             PointerReleasedEvent,

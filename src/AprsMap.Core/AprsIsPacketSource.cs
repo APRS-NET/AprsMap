@@ -132,7 +132,7 @@ internal sealed class AprsIsPacketSourceFactory(
         }
         if (source.Kind == SourceKind.KissTcp)
         {
-            // Sends only what the engine lets through: TX enabled, a licensed profile, the Transmit switch (F2.1).
+            // Sends only what the engine lets through: not RX only, a licensed profile, the Transmit switch (F2.1).
             return new KissPacketSource(
                 new KissTcpConnection(
                     new KissTcpOptions
@@ -172,7 +172,7 @@ internal sealed class AprsIsPacketSourceFactory(
     /// nothing at all from the TNC (decision 5), for a radio switched off behind a port that stays open.
     /// </summary>
     /// <remarks>
-    /// A radio in its APRS mode is read as text with no setup (F3.2 behavior 2); a KISS TNC with a type is switched into
+    /// TNC text output is read as text with no setup (F3.2 behavior 2); a KISS TNC with a type is switched into
     /// KISS each time the port opens (behavior 5).
     /// </remarks>
     internal static KissSerialOptions SerialOptions(SourceSettings source, EngineOptions engine, TimeProvider time) =>

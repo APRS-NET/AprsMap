@@ -115,7 +115,7 @@ public sealed class MessagesTests
         await messages.SendCommand.ExecuteAsync(null);
 
         Assert.Equal(
-            "This profile only listens: confirm you're a licensed amateur in the profile to transmit.",
+            "This profile only listens. To transmit, tick I'm a licensed amateur radio operator in its profile (Settings › Profiles).",
             messages.Error
         );
         Assert.Equal("Hi", messages.Compose); // kept, to send once it can
@@ -136,15 +136,9 @@ public sealed class MessagesTests
                     "rotate.aprs2.net",
                     SourceKind.AprsIs,
                     ConnectionState.Connected,
-                    TransmitEnabled: true
+                    MaySend: true
                 ),
-                new SourceStatus(
-                    "tnc",
-                    "Direwolf",
-                    SourceKind.KissTcp,
-                    ConnectionState.Connected,
-                    TransmitEnabled: true
-                ),
+                new SourceStatus("tnc", "Direwolf", SourceKind.KissTcp, ConnectionState.Connected, MaySend: true),
             ]
         );
         var (messages, engine) = Create(status);

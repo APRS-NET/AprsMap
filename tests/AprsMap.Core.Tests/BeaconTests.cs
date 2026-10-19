@@ -12,15 +12,9 @@ public sealed class BeaconTests
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private static readonly SourceSettings AprsIs = InMemorySettingsStore.Rotate with { Transmit = true };
+    private static readonly SourceSettings AprsIs = InMemorySettingsStore.Rotate;
 
-    private static readonly SourceSettings Tnc = new(
-        "tnc",
-        "Direwolf",
-        SourceKind.KissTcp,
-        Host: "127.0.0.1",
-        Transmit: true
-    );
+    private static readonly SourceSettings Tnc = new("tnc", "Direwolf", SourceKind.KissTcp, Host: "127.0.0.1");
 
     private static readonly PositionBeaconSettings Fixed = new(
         On: true,

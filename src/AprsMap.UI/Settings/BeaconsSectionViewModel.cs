@@ -49,7 +49,7 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanEdit))]
     public partial bool IsReadOnly { get; private set; }
 
-    /// <summary>Why this profile can't beacon (it only listens, or has Disable TX), or null.</summary>
+    /// <summary>Why this profile can't beacon (it only listens), or null.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanEdit))]
     public partial string? ListensOnlyText { get; private set; }
@@ -57,7 +57,7 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
     /// <summary>Whether the beacons can be set: the settings can change and the profile may transmit.</summary>
     public bool CanEdit => !IsReadOnly && ListensOnlyText is null;
 
-    /// <summary>"Tick TX enabled on a source…" when the profile has none to beacon on, or null.</summary>
+    /// <summary>"Add a source, or untick RX only…" when the profile has none to beacon on, or null.</summary>
     [ObservableProperty]
     public partial string? NoSourcesText { get; private set; }
 
@@ -181,7 +181,7 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
         StatusOn = status.On;
         StatusText = status.Text;
         SelectedStatusInterval = StatusIntervals.FirstOrDefault(i => i.Value == status.IntervalMinutes);
-        var sources = profile is null ? [] : settings.SourceList.Where(s => s.Transmit && profile.Uses(s)).ToList();
+        var sources = profile is null ? [] : settings.SourceList.Where(s => s.MaySend && profile.Uses(s)).ToList();
         PositionVia.Clear();
         StatusVia.Clear();
         foreach (var source in sources)
@@ -201,9 +201,9 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
             ? null
             : _text.Format("Beacons.Heading", new Dictionary<string, object?> { ["profile"] = profile.Name });
         ListensOnlyText =
-            profile is null || !profile.Licensed || ListenerId.Is(profile.Callsign) ? _text["Beacons.ListensOnly"]
-            : profile.DisableTransmit ? _text["Beacons.DisableTx"]
-            : null;
+            profile is null || !profile.Licensed || ListenerId.Is(profile.Callsign)
+                ? _text["Beacons.ListensOnly"]
+                : null;
         NoSourcesText = PositionVia.Count == 0 ? _text["Beacons.NoSources"] : null;
         UnconfirmedText =
             profile is { PositionConfirmed: false } && (PositionOn || StatusOn) ? _text["Beacons.Unconfirmed"] : null;
@@ -335,7 +335,7 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
         }
     }
 
-    /// <summary>Every source ticked is null, so a source given TX enabled later is included (behavior 1.2).</summary>
+    /// <summary>Every source ticked is null, so a source that can send later is included (behavior 1.2).</summary>
     private static List<string>? Via(IEnumerable<ViaChoice> choices)
     {
         var list = choices.ToList();
