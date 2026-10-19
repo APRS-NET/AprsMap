@@ -612,7 +612,8 @@ can't use a newer list without copying the generator's format and rules.
    `HttpClient`; sends `If-None-Match` and answers unchanged, a new list with its `ETag`, or a typed failure.
 3. **`IsNewerThan(other)`** by `GeneratedAt`, so every app decides "newer" the same way.
 
-The schedule, where a downloaded copy is kept and which list an app uses stay with the app.
+The schedule, where a downloaded copy is kept and which list an app uses stay with the app. Agreed with the maintainer (2026-10-19): a list object apps pass around, with
+`AprsDevices` left on the built-in list, not a static switched for the whole process.
 
 **Acceptance.** `BuiltIn` answers as `AprsDevices` does; the published file round-trips to the same lookups as the
 generated table; a file with an unknown class, a bad pattern or no TOCALLs is refused with a reason; against a fake
