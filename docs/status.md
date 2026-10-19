@@ -65,8 +65,8 @@ through that entry). See [deployment.md](deployment.md#desktop-app) for where ea
      corners, density, motion, language; applied live, per viewer, with Reset and Undo.
    - **Profiles:** add, edit, copy, delete with Undo, switch.
    - **Sources:** the APRS-IS servers and TNCs profiles pick from: KISS over TCP (host, port, TNC port), KISS on a
-     serial port with the TNC's type so the app can switch it into KISS, or a radio in APRS mode (receive only). Each
-     has TX enabled and Test send.
+     serial port with the TNC's type so the app can switch it into KISS, or TNC text output (TNC2) over serial (RX
+     only). Each can be RX only, and has Test send.
    - **Beacons:** position and status beacons, fixed, decaying or SmartBeaconing-style, and the path per source.
    - **Map:** tile provider, brightness, labels, symbol size, the filter circles, and when stations fade and go.
    - **Data:** packet capture on or off, and its limits.
