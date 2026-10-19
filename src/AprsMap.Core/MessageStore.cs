@@ -35,7 +35,7 @@ public sealed class InMemoryMessageStore : IMessageStore
 }
 
 /// <summary>
-/// Each profile's conversations as <c>messages-{profile}.json</c> beside <c>settings.json</c>, written through a
+/// Each profile's conversations as <c>messages-{profile}.json</c> in the Data folder (F4.15 behavior 13), written through a
 /// temporary file, one write at a time. A file that can't be read is set aside as <c>.invalid</c> and starts empty.
 /// </summary>
 public sealed class FileMessageStore(string folder) : IMessageStore, IDisposable
