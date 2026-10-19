@@ -31,6 +31,35 @@ public sealed class MessagesTests
         new(id, from, Outgoing: false, text, Noon.AddMinutes(minute), ChatMessageState.Received, Read: read);
 
     [Fact]
+    public async Task AWaitingConversationSaysWhyAndWhereToFixIt()
+    {
+        var (messages, engine) = Create();
+        engine.Conversations.Add(
+            new Conversation(
+                "N0P",
+                0,
+                null,
+                new SendVia(["tnc"]),
+                MessageRetries.Automatic,
+                Waiting: new EngineError(
+                    EngineErrorCodes.TransmitSourceOff,
+                    "10.10.20.144 is switched off.",
+                    new Dictionary<string, string> { [EngineErrorArgs.Source] = "10.10.20.144" }
+                )
+            )
+        );
+        messages.Apply(Received("a", "N0P", "Hello", 1));
+
+        messages.Selected = messages.Conversations.Single();
+        for (var i = 0; i < 100 && messages.RouteText?.StartsWith("Waiting", StringComparison.Ordinal) != true; i++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal("Waiting: 10.10.20.144 is switched off. Turn it on in the status bar.", messages.RouteText);
+    }
+
+    [Fact]
     public void ConversationsAreNewestFirstWithTheirUnreadCounts()
     {
         var (messages, _) = Create();

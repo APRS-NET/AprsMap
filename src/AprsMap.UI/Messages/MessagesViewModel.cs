@@ -220,10 +220,16 @@ public sealed partial class MessagesViewModel : ObservableObject
         }
     }
 
-    /// <summary>Says which way the next message goes (behavior 8).</summary>
+    /// <summary>Says which way the next message goes, or why it waits and what to change (behavior 8).</summary>
     private void ShowRoute(Conversation? conversation) =>
-        RouteText = conversation?.Route is { } route
-            ? _text.Format("Messages.Route", new Dictionary<string, object?> { ["sources"] = route })
+        RouteText =
+            conversation?.Route is { } route
+                ? _text.Format("Messages.Route", new Dictionary<string, object?> { ["sources"] = route })
+            : conversation?.Waiting is { } waiting
+                ? _text.Format(
+                    "Messages.Waiting",
+                    new Dictionary<string, object?> { ["reason"] = _text.Format(waiting) }
+                )
             : _text["Messages.RouteNone"];
 
     /// <summary>Asks the engine which way the open conversation's next message goes, keeping what's shown ticked.</summary>
