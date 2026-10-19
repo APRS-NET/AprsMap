@@ -292,6 +292,10 @@ internal sealed class EngineHubEndpoint(
     public async Task<AppSettings> GetSettings()
     {
         var settings = await engine.GetSettingsAsync(Context.ConnectionAborted).ConfigureAwait(false);
+        if (!IsOperator)
+        {
+            settings = settings with { Logging = null }; // logging is the signed-in operator's (F1.32 behavior 1)
+        }
         if (MayChangeStation)
         {
             return settings;
@@ -311,6 +315,12 @@ internal sealed class EngineHubEndpoint(
         Require(EngineErrorCodes.SettingsReadOnly, EngineHub.SettingsReadOnlyMessage);
         try
         {
+            if (!IsOperator)
+            {
+                // Logging is the signed-in operator's (F1.32 behavior 1): what anyone else sends keeps what's stored.
+                var stored = await engine.GetSettingsAsync(Context.ConnectionAborted).ConfigureAwait(false);
+                settings = settings with { Logging = stored.Logging };
+            }
             await engine.SaveSettingsAsync(settings, Context.ConnectionAborted).ConfigureAwait(false);
         }
         catch (Exception ex) when (ToHubException(ex) is { } hub)
@@ -413,6 +423,14 @@ internal sealed class EngineHubEndpoint(
     {
         Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
         return engine.GetUpdateStatusAsync(Context.ConnectionAborted);
+    }
+
+    /// <summary>Logging is the operator's (docs/features/F1.32-logging.md, behavior 1); viewers' calls are refused.</summary>
+    [HubMethodName(EngineHub.GetLoggingStatus)]
+    public Task<LoggingStatus> GetLoggingStatus()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetLoggingStatusAsync(Context.ConnectionAborted);
     }
 
     [HubMethodName(EngineHub.CheckForUpdate)]

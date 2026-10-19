@@ -236,6 +236,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync<UpdateStatus>(EngineHub.GetUpdateStatus, cancellationToken));
 
     /// <inheritdoc />
+    public Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<LoggingStatus>(EngineHub.GetLoggingStatus, cancellationToken));
+
+    /// <inheritdoc />
     public Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<UpdateStatus>(EngineHub.CheckForUpdate, cancellationToken));
 

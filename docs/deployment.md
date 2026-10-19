@@ -46,7 +46,9 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | Tile cache size per provider, in MB (least recently used tiles go first) | `Tiles__MaxCacheMegabytes` | `512` |
 | Tile providers, by key: `Name`, `UrlTemplate` (`{z}`, `{x}`, `{y}` or `{-y}`), `Attribution`, `AttributionUrl`, `MinZoom`, `MaxZoom`, `ImageType` | `Tiles__Providers__<key>__…` | OpenStreetMap as `osm` |
 | That server's usage policy, linked in the setup wizard | `Geocoding__UsagePolicyUrl` | the OSMF policy for the public server |
-| OpenTelemetry export | `OTEL_EXPORTER_OTLP_ENDPOINT` (+ standard `OTEL_*`) | off |
+| OpenTelemetry export | `OTEL_EXPORTER_OTLP_ENDPOINT` (+ standard `OTEL_*`); more targets in Settings › Logging | off |
+| Log levels; overrides Settings › Logging | `Logging__LogLevel__Default`, `Logging__LogLevel__AprsMap.Connections` and the other areas' categories | `Information` |
+| Log file | Settings › Logging (operator) | off on a gateway; `/data/logs` when on |
 
 Browsers see the gateway's settings read-only, with passcodes hidden, until an operator signs in (below). A profile
 switch changes the station for every viewer, so it is an operator action. On a gateway with no operator set up,
@@ -257,6 +259,7 @@ where the operating system expects it:
 | Settings, profiles, layout | `%APPDATA%\aprsnet\aprsmap` | `~/.config/aprsnet/aprsmap` | `~/Library/Application Support/aprsnet/aprsmap` |
 | Message history, captures | `%LOCALAPPDATA%\aprsnet\aprsmap` | `~/.local/share/aprsnet/aprsmap` | as settings |
 | Map tiles | `%LOCALAPPDATA%\aprsnet\aprsmap\tiles` | `~/.cache/aprsnet/aprsmap/tiles` | `~/Library/Caches/aprsnet/aprsmap/tiles` |
+| Logs (Settings › Logging; one file a UTC day, kept 14 days, 100 MB at most) | `%LOCALAPPDATA%\aprsnet\aprsmap\logs` | `~/.local/share/aprsnet/aprsmap/logs` | `~/Library/Application Support/aprsnet/aprsmap/logs` |
 | Defaults for every user | `%ProgramData%\aprsnet\aprsmap\appsettings.json` | `/etc/xdg/aprsnet/aprsmap/appsettings.json` | `/Library/Application Support/aprsnet/aprsmap/appsettings.json` |
 
 - **Linux:** follows the XDG Base Directory specification, so `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME` and

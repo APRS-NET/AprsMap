@@ -1059,6 +1059,303 @@
               />
             </StackPanel>
           </StackPanel>
+          <!-- Logging (docs/features/F1.32-logging.md): levels, privacy, the log file and OTLP targets, saved with Save. -->
+          <StackPanel x:Name="LoggingSection" IsVisible="{Binding IsLoggingSection}" Spacing="12">
+            <TextBlock Text="{l:T Logging.WhatToLog}" FontWeight="SemiBold" />
+            <StackPanel Spacing="4">
+              <TextBlock Text="{l:T Logging.Overall}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <ComboBox
+                x:Name="LogLevelBox"
+                ItemsSource="{Binding Logging.Levels, FallbackValue={x:Null}}"
+                SelectedItem="{Binding Logging.SelectedLevel, FallbackValue={x:Null}}"
+                IsEnabled="{Binding !Logging.LevelFromEnvironment, FallbackValue=True}"
+                AutomationProperties.Name="{l:T Logging.Overall}"
+                MinWidth="180"
+              />
+              <TextBlock
+                Text="{l:T Logging.FromEnvironment}"
+                IsVisible="{Binding Logging.LevelFromEnvironment, FallbackValue=False}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
+            </StackPanel>
+            <TextBlock Text="{l:T Logging.Areas}" Foreground="{DynamicResource Brush.TextMuted}" />
+            <ItemsControl x:Name="LogAreas" ItemsSource="{Binding Logging.Areas, FallbackValue={x:Null}}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="s:LogAreaRow">
+                  <WrapPanel ItemSpacing="12" LineSpacing="4" Margin="0,2">
+                    <TextBlock Text="{Binding Name}" MinWidth="200" VerticalAlignment="Center" TextWrapping="Wrap" />
+                    <ComboBox
+                      ItemsSource="{Binding Choices}"
+                      SelectedItem="{Binding Selected}"
+                      IsEnabled="{Binding CanChange}"
+                      AutomationProperties.Name="{Binding Name}"
+                      MinWidth="180"
+                    />
+                    <TextBlock
+                      Text="{l:T Logging.FromEnvironment}"
+                      IsVisible="{Binding FromEnvironment}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      VerticalAlignment="Center"
+                    />
+                  </WrapPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <CheckBox
+              x:Name="LogPacketsBox"
+              Content="{l:T Logging.Packets}"
+              IsChecked="{Binding Logging.Packets, FallbackValue=False}"
+            />
+            <TextBlock
+              Text="{l:T Logging.Packets.Help}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <CheckBox
+              x:Name="LogMessageTextsBox"
+              Content="{l:T Logging.MessageTexts}"
+              IsChecked="{Binding Logging.MessageTexts, FallbackValue=False}"
+            />
+            <TextBlock
+              Text="{l:T Logging.MessageTexts.Help}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock Text="{l:T Logging.Never}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+
+            <TextBlock Text="{l:T Logging.File}" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <ToggleSwitch
+              x:Name="LogFileSwitch"
+              IsChecked="{Binding Logging.FileOn, FallbackValue=False}"
+              OnContent="{l:T Logging.FileOn}"
+              OffContent="{l:T Logging.FileOn}"
+            />
+            <StackPanel Spacing="4" IsVisible="{Binding Logging.FileOn, FallbackValue=False}">
+              <TextBlock Text="{l:T Logging.Folder}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBox
+                x:Name="LogFolderBox"
+                Text="{Binding Logging.Folder, FallbackValue=''}"
+                PlaceholderText="{Binding Logging.DefaultFolder, FallbackValue=''}"
+                AutomationProperties.Name="{l:T Logging.Folder}"
+                FontFamily="{DynamicResource Font.Mono}"
+              />
+              <WrapPanel ItemSpacing="8" LineSpacing="6">
+                <Button
+                  x:Name="LogChooseFolderButton"
+                  Content="{l:T Logging.ChooseFolder}"
+                  Command="{Binding Logging.ChooseFolderCommand, FallbackValue={x:Null}}"
+                  IsVisible="{Binding Logging.CanChooseFolder, FallbackValue=False}"
+                />
+                <Button
+                  Content="{l:T Logging.ResetFolder}"
+                  Command="{Binding Logging.ResetFolderCommand, FallbackValue={x:Null}}"
+                />
+              </WrapPanel>
+              <TextBlock
+                Text="{l:T Logging.FileHelp}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <WrapPanel ItemSpacing="12" LineSpacing="8">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Logging.MaxFile}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="LogMaxFileBox"
+                    Text="{Binding Logging.MaxFileMegabytes, FallbackValue=''}"
+                    AutomationProperties.Name="{l:T Logging.MaxFile}"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Logging.KeepDays}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="LogKeepDaysBox"
+                    Text="{Binding Logging.KeepDays, FallbackValue=''}"
+                    AutomationProperties.Name="{l:T Logging.KeepDays}"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Logging.Total}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="LogTotalBox"
+                    Text="{Binding Logging.TotalMegabytes, FallbackValue=''}"
+                    AutomationProperties.Name="{l:T Logging.Total}"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+              </WrapPanel>
+            </StackPanel>
+
+            <TextBlock Text="{l:T Logging.Otlp}" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <TextBlock
+              Text="{l:T Logging.Otlp.Help}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock
+              Text="{Binding Logging.EnvironmentTarget, FallbackValue={x:Null}}"
+              IsVisible="{Binding Logging.EnvironmentTarget, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              FontFamily="{DynamicResource Font.Mono}"
+              TextWrapping="Wrap"
+            />
+            <ItemsControl x:Name="OtlpTargets" ItemsSource="{Binding Logging.Targets, FallbackValue={x:Null}}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="s:OtlpTargetRow">
+                  <Border
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    Padding="10,8"
+                    Margin="0,0,0,6"
+                  >
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock
+                        Text="{Binding Summary}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        TextWrapping="Wrap"
+                      />
+                      <WrapPanel ItemSpacing="8">
+                        <Button Content="{l:T Logging.EditTarget}" Command="{Binding EditCommand}" />
+                        <Button Content="{l:T Logging.DeleteTarget}" Command="{Binding DeleteCommand}" />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button
+              x:Name="AddOtlpTargetButton"
+              Content="{l:T Logging.AddTarget}"
+              Command="{Binding Logging.AddTargetCommand, FallbackValue={x:Null}}"
+            />
+            <Border
+              x:Name="OtlpTargetForm"
+              IsVisible="{Binding Logging.IsEditingTarget, FallbackValue=False}"
+              Background="{DynamicResource Brush.Surface}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Control}"
+              Padding="12"
+            >
+              <StackPanel Spacing="8">
+                <TextBlock Text="{l:T Logging.TargetName}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="OtlpNameBox"
+                  Text="{Binding Logging.EditName, FallbackValue=''}"
+                  AutomationProperties.Name="{l:T Logging.TargetName}"
+                />
+                <TextBlock Text="{l:T Logging.Endpoint}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="OtlpEndpointBox"
+                  Text="{Binding Logging.EditEndpoint, FallbackValue=''}"
+                  PlaceholderText="{l:T Logging.EndpointExample}"
+                  AutomationProperties.Name="{l:T Logging.Endpoint}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                />
+                <TextBlock Text="{l:T Logging.Protocol}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <WrapPanel ItemSpacing="12">
+                  <RadioButton
+                    GroupName="OtlpProtocol"
+                    Content="{l:T Logging.Protocol.Grpc}"
+                    IsChecked="{Binding Logging.EditGrpc, FallbackValue=True}"
+                  />
+                  <RadioButton
+                    GroupName="OtlpProtocol"
+                    Content="{l:T Logging.Protocol.HttpProtobuf}"
+                    IsChecked="{Binding !Logging.EditGrpc, FallbackValue=False}"
+                  />
+                </WrapPanel>
+                <TextBlock Text="{l:T Logging.Signals}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <WrapPanel ItemSpacing="12">
+                  <CheckBox
+                    Content="{l:T Logging.Signal.Logs}"
+                    IsChecked="{Binding Logging.EditLogs, FallbackValue=True}"
+                  />
+                  <CheckBox
+                    Content="{l:T Logging.Signal.Metrics}"
+                    IsChecked="{Binding Logging.EditMetrics, FallbackValue=True}"
+                  />
+                  <CheckBox
+                    Content="{l:T Logging.Signal.Traces}"
+                    IsChecked="{Binding Logging.EditTraces, FallbackValue=True}"
+                  />
+                </WrapPanel>
+                <TextBlock Text="{l:T Logging.Headers}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <ItemsControl ItemsSource="{Binding Logging.EditHeaders, FallbackValue={x:Null}}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="s:OtlpHeaderRow">
+                      <WrapPanel ItemSpacing="8" LineSpacing="4" Margin="0,2">
+                        <TextBox
+                          Text="{Binding Name}"
+                          PlaceholderText="{l:T Logging.HeaderName}"
+                          AutomationProperties.Name="{l:T Logging.HeaderName}"
+                          MinWidth="160"
+                          FontFamily="{DynamicResource Font.Mono}"
+                        />
+                        <TextBox
+                          Text="{Binding Value}"
+                          PasswordChar="•"
+                          PlaceholderText="{l:T Logging.HeaderValue}"
+                          AutomationProperties.Name="{l:T Logging.HeaderValue}"
+                          MinWidth="220"
+                        />
+                        <TextBlock
+                          Text="{l:T Logging.HeaderStored}"
+                          IsVisible="{Binding HasStoredValue}"
+                          Foreground="{DynamicResource Brush.TextMuted}"
+                          VerticalAlignment="Center"
+                        />
+                        <Button Content="{l:T Logging.RemoveHeader}" Command="{Binding RemoveCommand}" />
+                      </WrapPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button
+                  Content="{l:T Logging.AddHeader}"
+                  Command="{Binding Logging.AddHeaderCommand, FallbackValue={x:Null}}"
+                />
+                <CheckBox
+                  Content="{l:T Logging.TargetOnSwitch}"
+                  IsChecked="{Binding Logging.EditOn, FallbackValue=True}"
+                />
+                <WrapPanel ItemSpacing="8">
+                  <Button
+                    x:Name="OtlpKeepButton"
+                    Content="{l:T Logging.KeepTarget}"
+                    Command="{Binding Logging.KeepTargetCommand, FallbackValue={x:Null}}"
+                  />
+                  <Button
+                    Content="{l:T Logging.CancelTarget}"
+                    Command="{Binding Logging.CancelTargetCommand, FallbackValue={x:Null}}"
+                  />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+            <TextBlock
+              Text="{l:T Logging.RestartPending}"
+              IsVisible="{Binding Logging.RestartPending, FallbackValue=False}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+            <WrapPanel ItemSpacing="8" LineSpacing="8">
+              <Button
+                x:Name="LoggingSaveButton"
+                Content="{l:T Logging.Save}"
+                Command="{Binding Logging.SaveCommand, FallbackValue={x:Null}}"
+              />
+              <TextBlock Text="{Binding Logging.SavedText, FallbackValue={x:Null}}" VerticalAlignment="Center" />
+            </WrapPanel>
+            <TextBlock
+              Text="{Binding Logging.Error, FallbackValue={x:Null}}"
+              IsVisible="{Binding Logging.Error, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
         </Panel>
       </ScrollViewer>
     </DockPanel>

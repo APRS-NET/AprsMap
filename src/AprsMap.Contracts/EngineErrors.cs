@@ -219,6 +219,15 @@ public static class EngineErrorCodes
     /// <summary>A serial source's TNC type isn't known, or a custom one's scripts can't be read (F3.2 behavior 4).</summary>
     public const string TncScriptInvalid = "settings.source.tnc-script-invalid";
 
+    /// <summary>The log file's folder can't be written (docs/features/F1.32-logging.md, behavior 8).</summary>
+    public const string LoggingFolderNotWritable = "settings.logging.folder-not-writable";
+
+    /// <summary>A log file limit is out of its range (F1.32 behaviors 9–11), named in <see cref="EngineErrorArgs.Field"/>.</summary>
+    public const string LoggingLimitInvalid = "settings.logging.limit-invalid";
+
+    /// <summary>An OTLP target's name, endpoint or header isn't usable (F1.32 behavior 13).</summary>
+    public const string LoggingTargetInvalid = "settings.logging.target-invalid";
+
     /// <summary>A source that can't send was set TX enabled; no longer raised: such a kind is RX only (F2.1, 2026-10-18).</summary>
     public const string SourceReceiveOnly = "settings.source.receive-only";
 

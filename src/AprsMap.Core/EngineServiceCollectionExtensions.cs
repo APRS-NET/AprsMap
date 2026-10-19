@@ -36,6 +36,7 @@ public static class EngineServiceCollectionExtensions
         services.TryAddSingleton<IMessageStore>(sp => new FileMessageStore(
             SettingsLocation.DataFolder(sp.GetRequiredService<IOptions<EngineOptions>>().Value)
         ));
+        services.TryAddSingleton<LoggingState>(); // the host sets what it knows (docs/features/F1.32-logging.md)
         services.TryAddSingleton<Engine>();
         services.TryAddSingleton<IEngineService>(sp => sp.GetRequiredService<Engine>());
         services.AddHostedService<EngineHostedService>();

@@ -14,12 +14,17 @@ public class TelemetryTests
     private static (IHost Host, List<Metric> Exported) Build(bool otlp)
     {
         var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { DisableDefaults = true });
+        // Never the real user folders: the settings are read here as the host starts (F1.32), so a temp folder.
+        builder.Configuration["Engine:SettingsFolder"] = Path.Combine(
+            Path.GetTempPath(),
+            "aprsmap-telemetry-" + Guid.NewGuid().ToString("N")
+        );
         if (otlp)
         {
             // Never reached: the in-memory exporter below is what the test reads.
             builder.Configuration[HostingExtensions.OtlpEndpointVariable] = "http://127.0.0.1:9";
         }
-        builder.AddAprsMapTelemetry("test");
+        builder.AddAprsMapTelemetry("test", logFile: false);
         var exported = new List<Metric>();
         builder.Services.ConfigureOpenTelemetryMeterProvider(m => m.AddInMemoryExporter(exported));
         return (builder.Build(), exported);
