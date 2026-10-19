@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.4.0-alpha.6](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.5...v0.4.0-alpha.6) (2026-10-19)
+
+
+### Features
+
+* **setup:** first run asks the callsign and location, then Finish or add a source; APRS-IS server drop-down (F0.5) ([22a52af](https://github.com/APRS-NET/AprsMap/commit/22a52afb572882cd1ad79d4580b885ec8aaad9c8))
+* **setup:** first run asks the callsign and location, then Finish, Add APRS-IS or Add a TNC; the APRS-IS server is a drop-down (F0.5) ([e3aa68b](https://github.com/APRS-NET/AprsMap/commit/e3aa68bd18256931fbbad476e6d39875dd2e0051)), closes [#295](https://github.com/APRS-NET/AprsMap/issues/295)
+* **setup:** no APRS-IS pill for a profile without an APRS-IS source, and each profile keeps its own login (F0.5) ([f7cb335](https://github.com/APRS-NET/AprsMap/commit/f7cb335a1545857ea0e28d9e85aeaf1f98da8389))
+* **transmit:** one Transmit switch in the status bar, RX only sources, and refusals that say where to fix them (F2.1) ([27fe8dc](https://github.com/APRS-NET/AprsMap/commit/27fe8dc2be92e6c26af61123a2d00381b53f3787)), closes [#296](https://github.com/APRS-NET/AprsMap/issues/296)
+* **transmit:** one Transmit switch in the status bar, RX only sources, refusals that say where to fix them (F2.1) ([e71cb92](https://github.com/APRS-NET/AprsMap/commit/e71cb92cca6af6ef381dbb330320774fc28f008b))
+
+
+### Bug Fixes
+
+* **engine:** a profile without an APRS-IS source isn't warned about as not set up ([54574dc](https://github.com/APRS-NET/AprsMap/commit/54574dc16212d72458837cd9013c4c18063fcdad))
+* **messages:** a new conversation says which way it would go, not that nothing can send ([5f0b1f3](https://github.com/APRS-NET/AprsMap/commit/5f0b1f3f17e614aba970881de9fe5c42e8282f2e))
+* **messages:** an RF-only station's messages go out on its TNCs, deleted sources leave Send via, and a waiting message says why (F2.4) ([213b2fb](https://github.com/APRS-NET/AprsMap/commit/213b2fb68d191ae0854fabba61bdab44d78a0d20)), closes [#297](https://github.com/APRS-NET/AprsMap/issues/297)
+* **messages:** RF-only stations send on their TNCs, deleted sources leave Send via, waiting messages say why (F2.4) ([9c31a95](https://github.com/APRS-NET/AprsMap/commit/9c31a9556edd98692bb73e39ead70ccc046ae72b))
+* **transmit:** an RX-only source's pill always says RX only, not only while transmitting ([f8e1823](https://github.com/APRS-NET/AprsMap/commit/f8e18235ba53ecbb3e9e0b926ec0fbda76d4ebfd))
+* **transmit:** the Transmit pill says TX enabled while it's on ([4b8c4fd](https://github.com/APRS-NET/AprsMap/commit/4b8c4fdf3efa2aeb8deca919121f147c24aa46bf))
+
 ## [0.4.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.4...v0.4.0-alpha.5) (2026-10-18)
 
 
