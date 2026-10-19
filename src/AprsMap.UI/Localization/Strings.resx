@@ -1725,6 +1725,38 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Messages.State.Cancelled" xml:space="preserve">
     <value>Cancelled</value>
   </data>
+  <data name="Messages.AutomaticReply" xml:space="preserve">
+    <value>Automatic reply</value>
+    <comment>On a pong the station sent by itself.</comment>
+  </data>
+  <data name="Messages.Ping.Answered" xml:space="preserve">
+    <value>Ping, answered</value>
+    <comment>A message starting with the ping phrase; a pong went back.</comment>
+  </data>
+  <data name="Messages.Ping.Off" xml:space="preserve">
+    <value>Ping, not answered: Answer pings is off</value>
+  </data>
+  <data name="Messages.Ping.NotAllowed" xml:space="preserve">
+    <value>Ping, not answered: not from a callsign that may ping</value>
+  </data>
+  <data name="Messages.Ping.TooSoon" xml:space="preserve">
+    <value>Ping, not answered: too soon after the last pong</value>
+  </data>
+  <data name="Messages.Ping.CantSend" xml:space="preserve">
+    <value>Ping, not answered: this station can't send there now</value>
+  </data>
+  <data name="Error.settings.ping.phrase-invalid" xml:space="preserve">
+    <value>A ping or pong phrase has 1 to 40 plain letters, digits and punctuation, with no vertical bar, tilde or opening curly brace.</value>
+  </data>
+  <data name="Error.settings.ping.phrases-same" xml:space="preserve">
+    <value>The pong phrase can't be the ping phrase, or start with it.</value>
+  </data>
+  <data name="Error.settings.ping.interval-too-short" xml:space="preserve">
+    <value>At most one pong every 10 seconds, and at least one a day.</value>
+  </data>
+  <data name="Error.settings.ping.callsign-invalid" xml:space="preserve">
+    <value>That isn't a callsign that may ping: use a callsign, or the start of one and *.</value>
+  </data>
   <data name="Messages.UnreadMarker" xml:space="preserve">
     <value>{count, plural, one {# new message} other {# new messages}}</value>
   </data>
@@ -1762,6 +1794,59 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.Logging" xml:space="preserve">
     <value>Logging</value>
     <comment>Settings section: log levels, the log file and OpenTelemetry targets.</comment>
+  </data>
+  <data name="Settings.Messaging" xml:space="preserve">
+    <value>Messaging</value>
+    <comment>Settings section for automatic message replies such as ping.</comment>
+  </data>
+  <data name="Ping.Heading" xml:space="preserve">
+    <value>Ping for {profile}</value>
+    <comment>profile: the active profile's callsign.</comment>
+  </data>
+  <data name="Ping.Description" xml:space="preserve">
+    <value>A remote check: a message to this station that starts with the ping phrase gets the pong phrase and the time in UTC, the same way it came, so you know the station is running, hearing and sending.</value>
+  </data>
+  <data name="Ping.On" xml:space="preserve">
+    <value>Answer pings</value>
+  </data>
+  <data name="Ping.Phrase" xml:space="preserve">
+    <value>Ping phrase</value>
+  </data>
+  <data name="Ping.PongPhrase" xml:space="preserve">
+    <value>Pong phrase</value>
+  </data>
+  <data name="Ping.PhraseHelp" xml:space="preserve">
+    <value>Case doesn't matter, and anything after the phrase is fine, such as a note saying where you are.</value>
+  </data>
+  <data name="Ping.Who" xml:space="preserve">
+    <value>Who may ping</value>
+  </data>
+  <data name="Ping.Who.Anyone" xml:space="preserve">
+    <value>Anyone</value>
+  </data>
+  <data name="Ping.Who.MyCallsign" xml:space="preserve">
+    <value>My callsign, any SSID</value>
+  </data>
+  <data name="Ping.Who.Callsigns" xml:space="preserve">
+    <value>These callsigns</value>
+  </data>
+  <data name="Ping.CallsignsHelp" xml:space="preserve">
+    <value>One a line. A callsign without an SSID covers all of its SSIDs; WA0RC* covers anything starting WA0RC.</value>
+  </data>
+  <data name="Ping.Interval" xml:space="preserve">
+    <value>At most one pong every (seconds)</value>
+  </data>
+  <data name="Ping.IntervalHelp" xml:space="preserve">
+    <value>For the whole station, never less than 10. Pings in between are shown and not answered.</value>
+  </data>
+  <data name="Ping.Rules" xml:space="preserve">
+    <value>A pong is sent only with Transmit on, from a licensed profile, on a source that isn't RX only.</value>
+  </data>
+  <data name="Ping.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Ping.Saved" xml:space="preserve">
+    <value>Saved</value>
   </data>
   <data name="Logging.WhatToLog" xml:space="preserve">
     <value>What to log</value>

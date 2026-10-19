@@ -45,7 +45,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         IReadOnlyList<SettingItem>? unitItems = null,
         BeaconsSectionViewModel? beacons = null,
         Shell.SavedLayoutsViewModel? layouts = null,
-        LoggingSectionViewModel? logging = null
+        LoggingSectionViewModel? logging = null,
+        MessagingSectionViewModel? messaging = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
@@ -56,6 +57,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Data = data;
         Layouts = layouts;
         Logging = logging;
+        Messaging = messaging;
         _time = time;
         _text = text ?? Localizer.Instance;
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
@@ -85,7 +87,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsMapSection),
         nameof(IsUnitsSection),
         nameof(IsLayoutSection),
-        nameof(IsLoggingSection)
+        nameof(IsLoggingSection),
+        nameof(IsMessagingSection)
     )]
     public partial SettingsSection? SelectedSection { get; set; }
 
@@ -133,6 +136,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         SelectedSection = Sections.FirstOrDefault(s => s.Id == id) ?? SelectedSection;
 
     internal void ShowLayout() => SelectedSection = Sections.FirstOrDefault(s => s.Id == "layout") ?? SelectedSection;
+
+    /// <summary>Whether Messaging is showing (docs/features/F2.13-ping.md).</summary>
+    public bool IsMessagingSection => SelectedSection?.Id == "messaging";
+
+    /// <summary>Settings › Messaging: the active profile's ping responder, where this viewer may change the station.</summary>
+    public MessagingSectionViewModel? Messaging { get; }
 
     /// <summary>Whether Logging is showing (docs/features/F1.32-logging.md).</summary>
     public bool IsLoggingSection => SelectedSection?.Id == "logging";
@@ -256,6 +265,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("beacons", _text["Settings.Beacons"]));
         }
+        if (Messaging is not null)
+        {
+            Sections.Add(new SettingsSection("messaging", _text["Settings.Messaging"]));
+        }
         Sections.Add(new SettingsSection("appearance", _text["Settings.Appearance"]));
         if (MapItems.Count > 0)
         {
@@ -286,6 +299,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Profiles?.Retranslate();
         Sources?.Retranslate();
         Logging?.Retranslate();
+        Messaging?.Retranslate();
         Beacons?.Retranslate();
         Data?.Retranslate();
     }

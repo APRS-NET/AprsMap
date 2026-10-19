@@ -187,6 +187,7 @@ public sealed record StationAging(
 /// The ANSRVR groups joined (docs/features/F2.5-bulletins.md, behavior 10), kept alive while joined; set by joining and
 /// leaving, null for none.
 /// </param>
+/// <param name="Ping">The ping responder (docs/features/F2.13-ping.md); null for off.</param>
 public sealed record StationProfile(
     string Id,
     string Name,
@@ -202,9 +203,13 @@ public sealed record StationProfile(
     bool Licensed = false,
     PositionBeaconSettings? PositionBeacon = null,
     StatusBeaconSettings? StatusBeacon = null,
-    IReadOnlyList<string>? Groups = null
+    IReadOnlyList<string>? Groups = null,
+    PingSettings? Ping = null
 )
 {
+    /// <summary>The ping responder's settings in effect (docs/features/F2.13-ping.md): <see cref="Ping"/>, or off.</summary>
+    public PingSettings EffectivePing => Ping ?? PingSettings.Off;
+
     /// <summary>The range a new profile gets: 150 km.</summary>
     public const int DefaultRangeKm = 150;
 
@@ -253,7 +258,8 @@ public sealed record StationProfile(
         && PositionConfirmed == other.PositionConfirmed
         && Licensed == other.Licensed
         && EffectivePositionBeacon == other.EffectivePositionBeacon
-        && EffectiveStatusBeacon == other.EffectiveStatusBeacon;
+        && EffectiveStatusBeacon == other.EffectiveStatusBeacon
+        && EffectivePing == other.EffectivePing;
 
     /// <inheritdoc />
     public override int GetHashCode() =>
@@ -263,7 +269,7 @@ public sealed record StationProfile(
             Comment,
             PositionConfirmed,
             Licensed,
-            HashCode.Combine(EffectivePositionBeacon, EffectiveStatusBeacon)
+            HashCode.Combine(EffectivePositionBeacon, EffectiveStatusBeacon, EffectivePing)
         );
 
     /// <summary>Whether this profile uses <paramref name="source"/>.</summary>

@@ -138,6 +138,7 @@ internal static class SettingsValidator
                 );
             }
             ValidateBeacons(profile);
+            ValidatePing(profile);
             if (profile.Symbol is { Length: > 0 } symbol && !IsSymbol(symbol))
             {
                 throw Fail(
@@ -215,6 +216,69 @@ internal static class SettingsValidator
         if (settings.Logging is { } logging)
         {
             ValidateLogging(logging);
+        }
+    }
+
+    /// <summary>
+    /// The ping responder (docs/features/F2.13-ping.md, behaviors 3, 6, 7): phrases a message can carry, distinct, the
+    /// pong not starting with the ping (or two stations would answer each other); the interval; the callsigns.
+    /// </summary>
+    private static void ValidatePing(StationProfile profile)
+    {
+        if (profile.Ping is not { } ping)
+        {
+            return;
+        }
+        foreach (var phrase in new[] { ping.Ping, ping.Pong })
+        {
+            if (
+                phrase is not null
+                && (
+                    phrase.Trim().Length is 0 or > PingSettings.MaxPhraseLength
+                    || phrase.Any(c => c is < ' ' or > '~' or '|' or '{')
+                )
+            )
+            {
+                throw Fail(
+                    EngineErrorCodes.PingPhraseInvalid,
+                    $"Profile '{profile.Name}': a ping or pong phrase has 1 to {PingSettings.MaxPhraseLength} plain "
+                        + "characters, without |, ~ or {.",
+                    profile.Name
+                );
+            }
+        }
+        if (ping.EffectivePong.StartsWith(ping.EffectivePing, StringComparison.OrdinalIgnoreCase))
+        {
+            throw Fail(
+                EngineErrorCodes.PingPhrasesSame,
+                $"Profile '{profile.Name}': the pong phrase can't be or start with the ping phrase.",
+                profile.Name
+            );
+        }
+        if (ping.IntervalSeconds is < PingSettings.MinIntervalSeconds or > PingSettings.MaxIntervalSeconds)
+        {
+            throw Fail(
+                EngineErrorCodes.PingIntervalTooShort,
+                $"Profile '{profile.Name}': at most one pong every {PingSettings.MinIntervalSeconds} seconds, "
+                    + "and at least one a day.",
+                profile.Name
+            );
+        }
+        foreach (var entry in ping.CallsignList)
+        {
+            var call = entry.Trim().TrimEnd('*');
+            if (
+                call.Length == 0
+                || !Callsign.TryParse(call, out _)
+                    && !(entry.Trim().EndsWith('*') && call.All(char.IsAsciiLetterOrDigit))
+            )
+            {
+                throw Fail(
+                    EngineErrorCodes.PingCallsignInvalid,
+                    $"Profile '{profile.Name}': '{entry}' isn't a callsign that may ping.",
+                    profile.Name
+                );
+            }
         }
     }
 

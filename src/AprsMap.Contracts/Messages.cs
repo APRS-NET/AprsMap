@@ -79,6 +79,8 @@ public sealed record SendVia(IReadOnlyList<string>? SourceIds = null)
 /// <param name="HeardDirect">For a message received on RF: heard straight from the sender.</param>
 /// <param name="NotAcknowledged">Received while this station couldn't send, so no ack went back (behavior 13).</param>
 /// <param name="Read">For a received message: its conversation was open since it came.</param>
+/// <param name="Automatic">Sent by the station itself: a pong (docs/features/F2.13-ping.md, behavior 11).</param>
+/// <param name="Ping">For a received ping: what happened to it (F2.13 behavior 11); null for any other message.</param>
 public sealed record ChatMessage(
     string Id,
     string Correspondent,
@@ -93,7 +95,9 @@ public sealed record ChatMessage(
     IReadOnlyList<string>? SourceIds = null,
     bool? HeardDirect = null,
     bool NotAcknowledged = false,
-    bool Read = true
+    bool Read = true,
+    bool Automatic = false,
+    PingResult? Ping = null
 );
 
 /// <summary>A conversation with one station (behavior 1).</summary>

@@ -125,7 +125,7 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | F2.10 | Auto-reply with delay and rate limits | Auto-Reply | App | G10 | scoped (0.6.0, [#202](https://github.com/APRS-NET/AprsMap/issues/202)) |
 | F2.11 | Status reports with saved alternatives | (Configure › Status Report) | App | G01 | scoped (0.6.0, [#203](https://github.com/APRS-NET/AprsMap/issues/203)) |
 | F2.12 | Mic-E status codes: choose the status to send; per-code filtering and alert styles for received ones, with emergency handling | (observed) | App | G01 | scoped (0.6.0, [#204](https://github.com/APRS-NET/AprsMap/issues/204)) |
-| F2.13 | Ping ([spec](features/F2.13-ping.md)): a remote connectivity check; a message starting with the ping phrase ("AprsMap ping" by default, from the brand) is answered with the pong phrase and the UTC time, the way it came; off by default, who may ping and how often (never under 10 s) set by the operator | — (maintainer request) | App | G10 | spec'd (0.6.0, [#307](https://github.com/APRS-NET/AprsMap/issues/307)) |
+| F2.13 | Ping ([spec](features/F2.13-ping.md)): a remote connectivity check; a message starting with the ping phrase ("AprsMap ping" by default, from the brand) is answered with the pong phrase and the UTC time, the way it came; off by default, who may ping and how often (never under 10 s) set by the operator | — (maintainer request) | App | G10 | built (0.6.0, [#307](https://github.com/APRS-NET/AprsMap/issues/307)) |
 
 ## Phase 3: RF, GPS, IGate, digipeater
 

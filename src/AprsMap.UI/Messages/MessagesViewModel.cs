@@ -530,6 +530,8 @@ public sealed partial class MessageRow : ObservableObject
         var time = message.At.ToLocalTime().ToString("t", _text.Culture);
         var state = message.State switch
         {
+            // A ping says what came of it (docs/features/F2.13-ping.md, behavior 11).
+            ChatMessageState.Received when message.Ping is { } ping => _text[$"Messages.Ping.{ping}"],
             ChatMessageState.Received when message.NotAcknowledged => _text["Messages.State.NotAcknowledged"],
             ChatMessageState.Retrying => _text.Format(
                 "Messages.State.Retrying",
@@ -537,7 +539,11 @@ public sealed partial class MessageRow : ObservableObject
             ),
             _ => _text[$"Messages.State.{message.State}"],
         };
-        StateText = time + " · " + state;
+        StateText =
+            time
+            + " · "
+            + (message.Automatic ? _text["Messages.AutomaticReply"] + " · " : string.Empty) // a pong (F2.13 behavior 11)
+            + state;
         IsProblem = message.State is ChatMessageState.Failed or ChatMessageState.Rejected || message.NotAcknowledged;
         CanCancel = message.State is ChatMessageState.Queued or ChatMessageState.Sent or ChatMessageState.Retrying;
         CanResend = message.State is ChatMessageState.Failed or ChatMessageState.Rejected or ChatMessageState.Cancelled;
