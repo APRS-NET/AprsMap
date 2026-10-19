@@ -6,9 +6,33 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace AprsMap.UI.ViewModels;
 
-/// <summary>Transmitting (docs/features/F2.1-own-station.md): the Transmit switch, its marker and Send position now.</summary>
+/// <summary>Transmitting (docs/features/F2.1-own-station.md): the Transmit switch, its pill and Send position now.</summary>
 public sealed partial class MainViewModel
 {
+    /// <summary>
+    /// The Transmit switch in the status bar (behavior 6), the one place it's turned on or off; Station › Transmit
+    /// mirrors it. A refused turn springs back, and the refusal shows in the error line.
+    /// </summary>
+    public SourceSwitch TransmitSwitch { get; }
+
+    /// <summary>"Transmit" while it's off, otherwise <see cref="TransmitText"/>: the pill's words.</summary>
+    [ObservableProperty]
+    public partial string TransmitPillText { get; private set; } = string.Empty;
+
+    /// <summary>Transmit is on and nothing holds it: the pill is outlined in the transmit colour.</summary>
+    [ObservableProperty]
+    public partial bool IsTransmitting { get; private set; }
+
+    /// <summary>Turns Transmit <paramref name="on"/> or off from the switch, then shows what the engine settled on.</summary>
+    private async Task SwitchTransmitAsync(bool on)
+    {
+        if (on != TransmitOn)
+        {
+            await ToggleAsync(Toggle.Transmit);
+        }
+        ShowTransmit();
+    }
+
     /// <summary>The Transmit switch (behavior 4).</summary>
     [ObservableProperty]
     public partial bool TransmitOn { get; private set; }
@@ -20,7 +44,7 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     public partial bool CanTransmit { get; private set; }
 
-    /// <summary>"Transmitting", or "Transmit held: APRS-IS isn't connected"; null while Transmit is off.</summary>
+    /// <summary>"TX enabled", or "Transmit held: APRS-IS isn't connected"; null while Transmit is off.</summary>
     [ObservableProperty]
     public partial string? TransmitText { get; private set; }
 
@@ -55,7 +79,7 @@ public sealed partial class MainViewModel
             ? SendPositionOnAsync(aprsIs.Id)
             : Task.CompletedTask;
 
-    /// <summary>Whether the APRS-IS pill's menu has Send position on APRS-IS: it's TX enabled.</summary>
+    /// <summary>Whether the APRS-IS pill's menu has Send position on APRS-IS: it isn't RX only.</summary>
     [ObservableProperty]
     public partial bool IsAprsIsTransmitEnabled { get; private set; }
 
@@ -93,7 +117,7 @@ public sealed partial class MainViewModel
         }
     }
 
-    /// <summary>"Transmitting · next beacon in 12 min", or "Transmitting" with no beacon on.</summary>
+    /// <summary>"TX enabled · next beacon in 12 min", or "TX enabled" with no beacon on.</summary>
     private string BeaconText(TransmitStatus? transmit)
     {
         if (transmit?.BeaconHeld is not null)
@@ -157,9 +181,17 @@ public sealed partial class MainViewModel
         {
             TransmitTip += Environment.NewLine + heardBack; // F3.3 behavior 4
         }
+        IsTransmitting = TransmitOn && !held;
+        TransmitPillText = TransmitText ?? _text["Toggles.Transmit"];
+        if (!TransmitOn)
+        {
+            TransmitTip = _text["Transmit.OffTip"];
+        }
+        TransmitSwitch.Show(TransmitOn, CanTransmit);
+        TransmitSwitch.IsShown = IsOperator;
         CanSendPosition = TransmitOn && !held && !_engineUnreachable && CanTransmit;
         var aprsIs = _status?.Sources?.FirstOrDefault(s => s.Kind == SourceKind.AprsIs);
-        IsAprsIsTransmitEnabled = CanTransmit && aprsIs is { TransmitEnabled: true };
+        IsAprsIsTransmitEnabled = CanTransmit && aprsIs is { MaySend: true };
         CanSendPositionOnAprsIs = CanSendPosition && aprsIs is { CanTransmit: true };
     }
 }

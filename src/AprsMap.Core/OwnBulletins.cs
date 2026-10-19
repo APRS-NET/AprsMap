@@ -10,7 +10,7 @@ internal interface IBulletinHost
 {
     /// <summary>
     /// The active profile's callsign, why sends must wait (Transmit off, a profile that may not transmit), and the
-    /// profile's TX enabled sources.
+    /// profile's sources that aren't RX only.
     /// </summary>
     (string? Callsign, EngineError? Held, IReadOnlyList<string> Sources) BulletinState();
 

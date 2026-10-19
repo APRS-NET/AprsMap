@@ -120,31 +120,15 @@ public sealed class KissSerialSourceTests
     }
 
     [Theory]
-    [InlineData("no-such-radio", null, false, EngineErrorCodes.TncScriptInvalid)]
-    [InlineData(SourceSettings.CustomTncType, "", false, EngineErrorCodes.TncScriptInvalid)]
-    [InlineData(SourceSettings.CustomTncType, "wiggle the antenna", false, EngineErrorCodes.TncScriptInvalid)]
-    [InlineData(null, null, true, EngineErrorCodes.SourceReceiveOnly)]
-    public async Task AnUnknownTncTypeABadScriptOrARadioInAprsModeSetToSendIsRefused(
-        string? type,
-        string? script,
-        bool aprsModeSending,
-        string code
-    )
+    [InlineData("no-such-radio", null, EngineErrorCodes.TncScriptInvalid)]
+    [InlineData(SourceSettings.CustomTncType, "", EngineErrorCodes.TncScriptInvalid)]
+    [InlineData(SourceSettings.CustomTncType, "wiggle the antenna", EngineErrorCodes.TncScriptInvalid)]
+    public async Task AnUnknownTncTypeOrABadScriptIsRefused(string? type, string? script, string code)
     {
         var good = SourceSettings.KissSerialFor("/dev/ttyUSB0");
         using var engine = Create(good);
         var settings = await engine.GetSettingsAsync(Ct);
-        var changed = aprsModeSending
-            ? SourceSettings.AprsTextSerialFor("/dev/ttyUSB0") with
-            {
-                Id = good.Id,
-                Transmit = true,
-            }
-            : good with
-            {
-                TncType = type,
-                EnterScript = script,
-            };
+        var changed = good with { TncType = type, EnterScript = script };
 
         var error = await Assert.ThrowsAsync<EngineArgumentException>(() =>
             engine.SaveSettingsAsync(settings with { Sources = [settings.SourceList[0], changed] }, Ct)

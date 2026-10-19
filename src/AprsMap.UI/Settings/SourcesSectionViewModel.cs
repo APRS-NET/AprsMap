@@ -63,7 +63,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     /// <summary>Whether it's this station's own radio, so the form asks which profiles use it.</summary>
     public bool IsTnc => EditKind is not SourceKind.AprsIs;
 
-    /// <summary>Whether the kind can send, so TX enabled is offered: not a radio read in its APRS mode (F3.2 behavior 3).</summary>
+    /// <summary>Whether the kind can send, so RX only may be unticked: not TNC text output (F3.2 behavior 3).</summary>
     public bool CanTransmitKind => new SourceSettings("", "", EditKind).CanTransmit;
 
     /// <summary>The TNC types: Plain KISS, those APRS.NET knows, and Custom (F3.2 behavior 4).</summary>
@@ -160,9 +160,12 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     /// </summary>
     public ObservableCollection<ProfileChoice> EditProfiles { get; } = [];
 
-    /// <summary>TX enabled (docs/features/F2.1-own-station.md, behavior 5): the station may send on this source.</summary>
+    /// <summary>
+    /// RX only (docs/features/F2.1-own-station.md, behavior 5): the station never sends on this source. Always ticked for a
+    /// kind that can't send.
+    /// </summary>
     [ObservableProperty]
-    public partial bool EditTransmit { get; set; }
+    public partial bool EditRxOnly { get; set; }
 
     /// <summary>A TNC's TX path; empty for the default, <c>WIDE1-1,WIDE2-1</c> (behavior 5.2).</summary>
     [ObservableProperty]
@@ -187,7 +190,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         }
         if (!CanTransmitKind)
         {
-            EditTransmit = false;
+            EditRxOnly = true;
         }
     }
 
@@ -304,10 +307,10 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 new Dictionary<string, object?> { ["source"] = row.Name }
             );
             row.TransmitText =
-                !row.Source.Transmit ? _text["Settings.Sources.ReceiveOnly"]
-                : row.Source.Kind == SourceKind.AprsIs ? _text["Settings.Sources.TxEnabled"]
+                !row.Source.MaySend ? _text["Settings.Sources.RxOnly"]
+                : row.Source.Kind == SourceKind.AprsIs ? _text["Settings.Sources.CanSend"]
                 : _text.Format(
-                    "Settings.Sources.TxEnabledPath",
+                    "Settings.Sources.CanSendPath",
                     new Dictionary<string, object?> { ["path"] = row.Source.EffectiveTxPath }
                 );
             row.TestSendName = _text.Format(
@@ -343,7 +346,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         SelectedTncType = null;
         EditKind = SourceKind.AprsIs;
         CanPickKind = true;
-        EditTransmit = false;
+        EditRxOnly = false;
         EditTxPath = string.Empty;
         FillProfiles(id => id == _settings.ActiveProfileId);
         EditUsedBy = null;
@@ -375,7 +378,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditHost = row.Source.Host ?? string.Empty;
         EditPort = row.Source.Port?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         EditTncPort = row.Source.TncPort?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
-        EditTransmit = row.Source.Transmit;
+        EditRxOnly = !row.Source.MaySend;
         EditTxPath = row.Source.TxPath ?? string.Empty;
         FillProfiles(id => _settings.Profiles.Any(p => p.Id == id && p.Uses(row.Source)));
         EditUsedBy = row.UsedByText;
@@ -409,12 +412,12 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 Name = name,
                 Server = server,
                 Filter = filter,
-                Transmit = EditTransmit,
+                RxOnly = EditRxOnly,
             }
             : SourceSettings.AprsIsFor(server, filter) with
             {
                 Name = name,
-                Transmit = EditTransmit,
+                RxOnly = EditRxOnly,
             };
         var sources = _editingId is null
             ? [.. _settings.SourceList, source]
@@ -452,7 +455,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 TncPort = IsKissSerial ? tncPort : null,
                 DtrEnable = EditDtr ? null : false,
                 RtsEnable = EditRts ? null : false,
-                Transmit = CanTransmitKind && EditTransmit,
+                RxOnly = !CanTransmitKind || EditRxOnly,
                 TxPath = IsKissSerial ? txPath : null,
                 TncType = IsKissSerial ? SelectedTncType?.Id : null,
                 EnterScript = custom ? EditEnterScript.Trim() : null,
@@ -471,13 +474,13 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                     Host = host,
                     Port = port,
                     TncPort = tncPort,
-                    Transmit = EditTransmit,
+                    RxOnly = EditRxOnly,
                     TxPath = txPath,
                 }
                 : SourceSettings.KissTcpFor(host, port, tncPort) with
                 {
                     Name = name,
-                    Transmit = EditTransmit,
+                    RxOnly = EditRxOnly,
                     TxPath = txPath,
                 };
         }
@@ -534,6 +537,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     internal async Task TestSendAsync(SourceRow row)
     {
         row.TestResult = _text["Settings.Sources.TestSending"];
+        row.OffersTransmitOn = false;
         try
         {
             var result = await _engine.TestSendAsync(row.Source.Id);
@@ -547,6 +551,26 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
         {
             row.TestResult = _text.Describe(ex);
+            row.OffersTransmitOn = ex is IHasEngineError { EngineError.Code: EngineErrorCodes.TransmitOff };
+        }
+    }
+
+    /// <summary>
+    /// Turn Transmit on, beside Test send's "Transmit is off" (F2.1 behavior 9): the same switch as the status bar's, so
+    /// the engine's checks apply and a refusal says why.
+    /// </summary>
+    internal async Task TurnTransmitOnAsync(SourceRow row)
+    {
+        try
+        {
+            await _engine.SetToggleAsync(Toggle.Transmit, true);
+            row.OffersTransmitOn = false;
+            row.TestResult = null;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
+        {
+            row.TestResult = _text.Describe(ex);
+            row.OffersTransmitOn = false;
         }
     }
 
@@ -653,12 +677,12 @@ public sealed partial class SourceRow(SourceSettings source, SourcesSectionViewM
     [RelayCommand]
     private Task DeleteAsync() => section.DeleteAsync(this);
 
-    /// <summary>"TX enabled · WIDE1-1,WIDE2-1", or "Receive only" (docs/features/F2.1-own-station.md, behavior 5).</summary>
+    /// <summary>"Can send · WIDE1-1,WIDE2-1", or "RX only" (docs/features/F2.1-own-station.md, behavior 5).</summary>
     [ObservableProperty]
     public partial string TransmitText { get; set; } = string.Empty;
 
-    /// <summary>Whether Test send is offered: the source is TX enabled (behavior 9).</summary>
-    public bool CanTestSend => Source.Transmit;
+    /// <summary>Whether Test send is offered: the source isn't RX only (behavior 9).</summary>
+    public bool CanTestSend => Source.MaySend;
 
     /// <summary>What the last Test send did: sending, heard back through whom, or why it couldn't.</summary>
     [ObservableProperty]
@@ -671,6 +695,14 @@ public sealed partial class SourceRow(SourceSettings source, SourcesSectionViewM
     /// <summary>Sends one status report on this source and listens for it coming back (behavior 9).</summary>
     [RelayCommand(AllowConcurrentExecutions = false)]
     private Task TestSendAsync() => section.TestSendAsync(this);
+
+    /// <summary>Whether Turn Transmit on shows: the last Test send was refused because Transmit is off.</summary>
+    [ObservableProperty]
+    public partial bool OffersTransmitOn { get; set; }
+
+    /// <summary>Turns the Transmit switch on (behavior 9).</summary>
+    [RelayCommand(AllowConcurrentExecutions = false)]
+    private Task TurnTransmitOnAsync() => section.TurnTransmitOnAsync(this);
 }
 
 /// <summary>A kind Add a source offers, with "coming" for those not built yet.</summary>

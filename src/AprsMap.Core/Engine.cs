@@ -769,8 +769,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     _link.State,
                     _link.Server,
                     _link.Error,
-                    TransmitEnabled: station.Source.Transmit,
-                    TransmitBlocked: station.Source.Transmit ? SourceBlock(_settings!, station.Source) : null
+                    MaySend: station.Source.MaySend,
+                    TransmitBlocked: station.Source.MaySend ? SourceBlock(_settings!, station.Source) : null
                 )
             );
         }
@@ -785,8 +785,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 RetryAt: v.Link.RetryAt,
                 Warning: v.Link.Warning,
                 Manual: IsManual(v.Source.Id),
-                TransmitEnabled: v.Source.Transmit,
-                TransmitBlocked: v.Source.Transmit && _settings is not null ? SourceBlock(_settings, v.Source) : null
+                MaySend: v.Source.MaySend,
+                TransmitBlocked: v.Source.MaySend && _settings is not null ? SourceBlock(_settings, v.Source) : null
             ))
         );
         // A source switched off stays listed, so its pill can switch it on again (F3.1 behavior 6).
@@ -807,8 +807,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                         s.Kind,
                         ConnectionState.Disconnected,
                         Enabled: false,
-                        TransmitEnabled: s.Transmit,
-                        TransmitBlocked: s.Transmit ? SourceBlock(_settings, s) : null
+                        MaySend: s.MaySend,
+                        TransmitBlocked: s.MaySend ? SourceBlock(_settings, s) : null
                     ))
             );
         }
@@ -879,10 +879,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         var sources = TransmitSources(settings);
         if (sources.Count == 0)
         {
-            return new EngineError(
-                EngineErrorCodes.TransmitNoSource,
-                "None of this profile's sources is TX enabled. Tick TX enabled on one in Settings."
-            );
+            return NoSource();
         }
         EngineError? first = null;
         foreach (var source in sources)
@@ -915,15 +912,20 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     EngineErrorCodes.TransmitNotLicensed,
                     "This profile isn't confirmed as a licensed amateur's, so it only listens."
                 )
-            : profile.DisableTransmit
-                ? new EngineError(EngineErrorCodes.TransmitProfileDisabled, "This profile has Disable TX ticked.")
             : null;
     }
 
-    /// <summary>The active profile's sources that are TX enabled, in the list's order.</summary>
+    /// <summary>The refusal when the profile has no source that may send (behavior 6.1).</summary>
+    private static EngineError NoSource() =>
+        new(
+            EngineErrorCodes.TransmitNoSource,
+            "This profile has no source that can send. Add one, or untick RX only on one, in Settings › Sources."
+        );
+
+    /// <summary>The active profile's sources that may send (not RX only), in the list's order.</summary>
     private static List<SourceSettings> TransmitSources(AppSettings settings) =>
         settings.GetActiveProfile() is { } profile
-            ? [.. settings.SourceList.Where(s => s.Transmit && profile.Uses(s))]
+            ? [.. settings.SourceList.Where(s => s.MaySend && profile.Uses(s))]
             : [];
 
     /// <summary>
@@ -932,24 +934,42 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     /// </summary>
     private EngineError? SourceBlock(AppSettings settings, SourceSettings source)
     {
+        // Every refusal names the source, so the UI can say what to change and where (behavior 7a).
+        var name = new Dictionary<string, string>(StringComparer.Ordinal) { [EngineErrorArgs.Source] = source.Name };
         var notConnected = new EngineError(
             EngineErrorCodes.TransmitNotConnected,
-            source.Kind == SourceKind.AprsIs ? "APRS-IS isn't connected." : $"{source.Name} isn't connected."
+            $"{source.Name} isn't connected.",
+            name
         );
-        if (!source.Transmit)
+        if (!source.MaySend)
         {
             return new EngineError(
-                EngineErrorCodes.TransmitSourceDisabled,
-                $"{source.Name} isn't TX enabled. Tick TX enabled on it in Settings."
+                EngineErrorCodes.TransmitSourceRxOnly,
+                $"{source.Name} is RX only. Untick RX only on it in Settings › Sources.",
+                name
+            );
+        }
+        var toggles = settings.EffectiveToggles;
+        if (source.Kind == SourceKind.AprsIs ? !toggles.ConnectsAprsIs : !toggles.IsSourceOn(source.Id))
+        {
+            return new EngineError(
+                EngineErrorCodes.TransmitSourceOff,
+                $"{source.Name} is switched off. Turn it on in the status bar.",
+                name
             );
         }
         if (source.Kind == SourceKind.AprsIs)
         {
-            return !settings.EffectiveToggles.ConnectsAprsIs || _link.State != ConnectionState.Connected ? notConnected
+            var callsign = settings.GetActiveProfile()?.Callsign ?? string.Empty;
+            return _link.State != ConnectionState.Connected ? notConnected
                 : !_link.Verified
                     ? new EngineError(
                         EngineErrorCodes.TransmitNotVerified,
-                        "The APRS-IS server didn't verify the login: check the passcode for this callsign."
+                        $"{source.Name} didn't verify {callsign}'s login. Check the passcode in Settings › Sources.",
+                        new Dictionary<string, string>(name, StringComparer.Ordinal)
+                        {
+                            [EngineErrorArgs.Callsign] = callsign,
+                        }
                     )
                 : _source is not IPacketSender ? notConnected
                 : null;
@@ -1017,12 +1037,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 if (candidates.Count == 0)
                 {
                     blocked = sourceId is null
-                        ? new EngineError(
-                            EngineErrorCodes.TransmitNoSource,
-                            "None of this profile's sources is TX enabled. Tick TX enabled on one in Settings."
-                        )
+                        ? NoSource()
                         : new EngineError(
-                            EngineErrorCodes.TransmitSourceDisabled,
+                            EngineErrorCodes.TransmitNoSource,
                             "That source isn't one this profile uses."
                         );
                 }
@@ -1726,8 +1743,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     }
 
     /// <summary>
-    /// Whether <paramref name="sourceId"/> is this station's own receiver: a KISS TNC (F3.1 behavior 8) or a radio read in
-    /// its APRS mode (F3.2 behavior 2).
+    /// Whether <paramref name="sourceId"/> is this station's own receiver: a KISS TNC (F3.1 behavior 8) or TNC text output
+    /// (F3.2 behavior 2).
     /// </summary>
     private bool IsOwnReceiver(string? sourceId) =>
         sourceId is not null

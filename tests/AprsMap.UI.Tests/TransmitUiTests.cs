@@ -37,10 +37,66 @@ public sealed class TransmitUiTests
 
         Assert.Equal([(Toggle.Transmit, true)], engine.Toggled);
         Assert.True(vm.TransmitOn);
-        Assert.Equal("Transmitting", vm.TransmitText);
+        Assert.Equal("TX enabled", vm.TransmitText);
         Assert.False(vm.IsTransmitHeld);
         Assert.True(vm.SendPositionCommand.CanExecute(null));
         Assert.Equal("Transmit on", vm.ToggleAnnouncement);
+    }
+
+    [Fact]
+    public async Task TheStatusBarSwitchIsWhereTransmitIsTurnedOnAndARefusalSpringsBack()
+    {
+        var engine = new FakeEngine();
+        var vm = Shell(engine);
+        vm.Show(Status(StationToggles.AllOn, new TransmitStatus(false)));
+        Assert.True(vm.TransmitSwitch.IsShown);
+        Assert.True(vm.TransmitSwitch.CanChange);
+        Assert.False(vm.TransmitSwitch.IsOn);
+        Assert.Equal("Transmit", vm.TransmitPillText);
+        Assert.StartsWith("Transmit is off", vm.TransmitTip, StringComparison.Ordinal);
+
+        vm.TransmitSwitch.IsOn = true;
+        await WaitFor(() => vm.TransmitOn);
+
+        Assert.Equal([(Toggle.Transmit, true)], engine.Toggled);
+        Assert.True(vm.IsTransmitting);
+        Assert.Equal("TX enabled", vm.TransmitPillText);
+
+        vm.TransmitSwitch.IsOn = false;
+        await WaitFor(() => !vm.TransmitOn);
+        engine.ToggleFailure = EngineErrors.ToException(
+            new EngineError(
+                EngineErrorCodes.TransmitSourceOff,
+                "Direwolf is switched off.",
+                new Dictionary<string, string> { [EngineErrorArgs.Source] = "Direwolf" }
+            )
+        );
+
+        vm.TransmitSwitch.IsOn = true;
+        await WaitFor(() => vm.ErrorText is not null);
+
+        Assert.False(vm.TransmitSwitch.IsOn); // springs back
+        Assert.Equal("Direwolf is switched off. Turn it on in the status bar.", vm.ErrorText);
+    }
+
+    [Fact]
+    public void AGatewayViewerDoesntSeeTheTransmitSwitch()
+    {
+        var engine = new FakeEngine();
+        var vm = Shell(engine, shared: true);
+
+        vm.Show(Status(StationToggles.AllOn, new TransmitStatus(false)));
+
+        Assert.False(vm.TransmitSwitch.IsShown);
+    }
+
+    private static async Task WaitFor(Func<bool> condition)
+    {
+        for (var i = 0; i < 100 && !condition(); i++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+        Assert.True(condition());
     }
 
     [Fact]
@@ -85,7 +141,7 @@ public sealed class TransmitUiTests
         );
         await vm.SendPositionCommand.ExecuteAsync(null);
 
-        Assert.Equal("Set the station's location first.", vm.ErrorText);
+        Assert.Equal("Set the station's location first, in Settings › Profiles.", vm.ErrorText);
     }
 
     [Fact]
@@ -166,13 +222,7 @@ public sealed class TransmitUiTests
 /// <summary>Transmitting per source and per profile in the UI (docs/features/F2.1-own-station.md, behaviors 4, 5, 9, 10).</summary>
 public sealed class PerSourceTransmitUiTests
 {
-    private static readonly SourceSettings Tnc = new(
-        "tnc",
-        "Direwolf",
-        SourceKind.KissTcp,
-        Host: "10.10.20.144",
-        Transmit: true
-    );
+    private static readonly SourceSettings Tnc = new("tnc", "Direwolf", SourceKind.KissTcp, Host: "10.10.20.144");
 
     private static Localizer English() => new(CultureInfo.GetCultureInfo("en-US"));
 
@@ -197,17 +247,15 @@ public sealed class PerSourceTransmitUiTests
         Assert.Equal(string.Empty, wizard.Callsign); // now the callsign is theirs to type
         Assert.Equal(4, wizard.StepCount);
         wizard.Callsign = "AB1CD-9";
-        wizard.DisableTransmit = true;
 
         wizard.IsLicensedOperator = false;
         Assert.Equal("SWL123456", wizard.Callsign);
-        Assert.False(wizard.DisableTransmit); // only for a licensed operator's profile
         wizard.IsLicensedOperator = true;
         Assert.Equal("AB1CD-9", wizard.Callsign); // what they typed comes back
     }
 
     [Fact]
-    public async Task AnExistingCallsignOpensLicensedAndSavesTheLicenceWithDisableTx()
+    public async Task AnExistingCallsignOpensLicensedAndSavesTheLicence()
     {
         var two = FakeEngine.TwoProfiles();
         var settings = two with { Profiles = [two.Profiles[0] with { Callsign = "AB1CD-9" }, two.Profiles[1]] };
@@ -217,12 +265,10 @@ public sealed class PerSourceTransmitUiTests
         Assert.True(wizard.IsLicensedOperator); // it has a callsign
         Assert.Equal("AB1CD-9", wizard.Callsign);
 
-        wizard.DisableTransmit = true;
         await wizard.FinishCommand.ExecuteAsync(null);
 
         var profile = Assert.Single(engine.Saved).Profiles.Single(p => p.Id == settings.Profiles[0].Id);
         Assert.True(profile.Licensed);
-        Assert.True(profile.DisableTransmit);
     }
 
     [Fact]
@@ -243,23 +289,23 @@ public sealed class PerSourceTransmitUiTests
     }
 
     [Fact]
-    public async Task TheSourceFormSavesTxEnabledAndTheTxPath()
+    public async Task TheSourceFormSavesRxOnlyAndTheTxPath()
     {
-        var settings = FakeEngine.TwoProfiles() with { Sources = [FakeEngine.Rotate, Tnc with { Transmit = false }] };
+        var settings = FakeEngine.TwoProfiles() with { Sources = [FakeEngine.Rotate, Tnc with { RxOnly = true }] };
         var engine = new FakeEngine { Settings = settings };
         var section = new SourcesSectionViewModel(engine, English(), _ => { });
         section.Show(settings);
-        Assert.Equal("Receive only", section.Rows[1].TransmitText);
+        Assert.Equal("RX only", section.Rows[1].TransmitText);
         Assert.False(section.Rows[1].CanTestSend);
 
         section.Edit(section.Rows[1]);
-        Assert.False(section.EditTransmit);
-        section.EditTransmit = true;
+        Assert.True(section.EditRxOnly);
+        section.EditRxOnly = false;
         section.EditTxPath = "wide2-1";
         await section.SaveCommand.ExecuteAsync(null);
 
         var saved = Assert.Single(engine.Saved).SourceList.Single(s => s.Id == Tnc.Id);
-        Assert.True(saved.Transmit);
+        Assert.False(saved.RxOnly);
         Assert.Equal("WIDE2-1", saved.TxPath);
     }
 
@@ -271,7 +317,7 @@ public sealed class PerSourceTransmitUiTests
         var section = new SourcesSectionViewModel(engine, English(), _ => { });
         section.Show(settings);
         var row = section.Rows[1];
-        Assert.Equal("TX enabled · WIDE1-1,WIDE2-1", row.TransmitText);
+        Assert.Equal("Can send · WIDE1-1,WIDE2-1", row.TransmitText);
         Assert.True(row.CanTestSend);
 
         await row.TestSendCommand.ExecuteAsync(null);
@@ -283,11 +329,17 @@ public sealed class PerSourceTransmitUiTests
             new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
         );
         await row.TestSendCommand.ExecuteAsync(null);
-        Assert.Equal("Transmit is off. Turn it on first.", row.TestResult);
+        Assert.Equal("Transmit is off. Turn it on in the status bar.", row.TestResult);
+        Assert.True(row.OffersTransmitOn); // Turn Transmit on, beside the reason (behavior 9)
+
+        await row.TurnTransmitOnCommand.ExecuteAsync(null);
+        Assert.Contains((Toggle.Transmit, true), engine.Toggled);
+        Assert.False(row.OffersTransmitOn);
+        Assert.Null(row.TestResult);
     }
 
     [Fact]
-    public async Task ATxEnabledSourcesPillSendsThePositionOnThatSourceAlone()
+    public async Task ASourcesPillSendsThePositionOnThatSourceAlone()
     {
         var engine = new FakeEngine();
         var vm = new MainViewModel(engine, new FakeTimeProvider());
@@ -302,14 +354,8 @@ public sealed class PerSourceTransmitUiTests
                 Sources:
                 [
                     new SourceStatus("rotate", "rotate.aprs2.net", SourceKind.AprsIs, ConnectionState.Connected),
-                    new SourceStatus(
-                        Tnc.Id,
-                        Tnc.Name,
-                        SourceKind.KissTcp,
-                        ConnectionState.Connected,
-                        TransmitEnabled: true
-                    ),
-                    new SourceStatus("rx", "Receiver", SourceKind.KissTcp, ConnectionState.Connected),
+                    new SourceStatus(Tnc.Id, Tnc.Name, SourceKind.KissTcp, ConnectionState.Connected, MaySend: true),
+                    new SourceStatus("rx", "Receiver", SourceKind.KissTcp, ConnectionState.Connected), // RX only
                 ],
                 Toggles: StationToggles.AllOn with
                 {
@@ -321,7 +367,8 @@ public sealed class PerSourceTransmitUiTests
         var tnc = vm.SourcePills.Single(p => p.Id == Tnc.Id);
         var receiver = vm.SourcePills.Single(p => p.Id == "rx");
         Assert.True(tnc.IsTransmitEnabled);
-        Assert.False(receiver.IsTransmitEnabled); // not TX enabled: no Send position now in its menu
+        Assert.False(receiver.IsTransmitEnabled); // RX only: no Send position now in its menu
+        Assert.Equal("Receiver connected · RX only", receiver.Text);
         Assert.False(vm.IsAprsIsTransmitEnabled);
 
         await tnc.SendPositionCommand.ExecuteAsync(null);

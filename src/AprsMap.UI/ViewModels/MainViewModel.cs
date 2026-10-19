@@ -59,6 +59,7 @@ public sealed partial class MainViewModel : ObservableObject
         SourceNames = new SourceNames(() => _settings);
         PacketList = new PacketListViewModel(engine, time, _text, SourceNames);
         AprsIsSwitch = new SourceSwitch(SwitchAprsIsAsync);
+        TransmitSwitch = new SourceSwitch(SwitchTransmitAsync);
         Details = new Stations.StationDetailsViewModel(
             engine,
             time,
@@ -1233,7 +1234,7 @@ public sealed partial class MainViewModel : ObservableObject
         var couldClear = CanClearData;
         _settings = settings;
         PacketList.ShowSources(settings);
-        Settings?.Beacons?.Show(settings); // a source's TX enabled changes what beacons can go out on
+        Settings?.Beacons?.Show(settings); // a source's RX only changes what beacons can go out on
         Settings?.Data?.Capture?.Show(settings);
         if (_destination is { IsSet: true } destination)
         {

@@ -28,7 +28,7 @@ public class SourcesSectionTests
         Assert.Equal("Used by: Home, Portable", section.Rows[0].UsedByText);
         Assert.Equal("Not used by any profile", section.Rows[1].UsedByText);
         Assert.Equal(
-            ["APRS-IS", "KISS over TCP", "KISS over serial", "Radio in APRS mode (receive only)", "GPS · coming"],
+            ["APRS-IS", "KISS over TCP", "KISS over serial", "TNC text output (TNC2) over serial", "GPS · coming"],
             section.Kinds.Select(k => k.Name)
         );
         Assert.Equal([true, true, true, true, false], section.Kinds.Select(k => k.IsAvailable));
@@ -121,24 +121,24 @@ public class SourcesSectionTests
     }
 
     [Fact]
-    public async Task ARadioInAprsModeHasNoTxEnabledTncPortOrType()
+    public async Task TncTextOutputIsRxOnlyWithNoTncPortOrType()
     {
         var (section, engine) = Create(BothOnRotate());
         section.AddCommand.Execute(null);
-        section.EditTransmit = true;
-        section.Kinds[3].IsSelected = true; // Radio in APRS mode
+        Assert.False(section.EditRxOnly); // a new source may send unless ticked
+        section.Kinds[3].IsSelected = true; // TNC text output (TNC2) over serial
 
         Assert.True(section.IsSerial);
         Assert.True(section.IsTnc);
         Assert.False(section.IsKiss);
         Assert.False(section.IsKissSerial);
         Assert.False(section.CanTransmitKind);
-        Assert.False(section.EditTransmit); // unticked: it can't send
+        Assert.True(section.EditRxOnly); // ticked, and the box can't be unticked: it can't send
         section.EditSerialPort = "/dev/ttyUSB0";
         await section.SaveCommand.ExecuteAsync(null);
 
         var radio = engine.Settings.SourceList.Single(s => s.Kind == SourceKind.AprsTextSerial);
-        Assert.Equal(("/dev/ttyUSB0", false, (string?)null), (radio.SerialPort, radio.Transmit, radio.TncType));
+        Assert.Equal(("/dev/ttyUSB0", true, (string?)null), (radio.SerialPort, radio.RxOnly, radio.TncType));
         Assert.Contains(radio.Id, engine.Settings.Profiles[0].SourceIds);
         Assert.Equal("/dev/ttyUSB0@9600", section.Rows[^1].Server);
     }

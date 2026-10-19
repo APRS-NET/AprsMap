@@ -73,7 +73,7 @@ through that entry). See [deployment.md](deployment.md#desktop-app) for where ea
    - Actions are in the menus: **Tools › Clear data…** (stations, stale stations, tracks or the packet history),
      **Tools › Start over…** (delete everything and run first-run setup again; `--reset-all` at start-up), and
      **Help › About** (versions, the connection's details, licences, source link and credits).
-5. **Transmitting:** off until you turn on Station › Transmit (also in the connection menu, Ctrl+T) with a verified passcode or
+5. **Transmitting:** off until you turn on the **Transmit** switch in the status bar (or Station › Transmit) with a verified passcode or
    a licensed callsign on RF. Beacons, **Messages** (conversations with ack and retry, unread in the status bar),
    **Bulletins** (reading, posting, ANSRVR groups) and the Sent marker in the packet list. Each source's pill has
    **Console…** to watch its raw traffic, and Station › Destination sets a point to show distance and bearing to.

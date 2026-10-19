@@ -10,15 +10,9 @@ namespace AprsMap.UI.Tests;
 /// <summary>Beacons in the UI (docs/features/F2.2-beacons.md, behaviors 1–5, 10).</summary>
 public sealed class BeaconsUiTests
 {
-    private static readonly SourceSettings AprsIs = FakeEngine.Rotate with { Transmit = true };
+    private static readonly SourceSettings AprsIs = FakeEngine.Rotate;
 
-    private static readonly SourceSettings Tnc = new(
-        "tnc",
-        "Direwolf",
-        SourceKind.KissTcp,
-        Host: "127.0.0.1",
-        Transmit: true
-    );
+    private static readonly SourceSettings Tnc = new("tnc", "Direwolf", SourceKind.KissTcp, Host: "127.0.0.1");
 
     private static AppSettings Licensed(bool confirmed = true, bool licensed = true) =>
         new(
@@ -142,7 +136,7 @@ public sealed class BeaconsUiTests
                 )
             )
         );
-        Assert.Equal("Transmitting · next beacon in 12 min", vm.TransmitText);
+        Assert.Equal("TX enabled · next beacon in 12 min", vm.TransmitText);
         Assert.Equal(
             "Next: your position on Direwolf, held back to keep beacons spaced out on this source.",
             vm.TransmitTip
@@ -153,7 +147,7 @@ public sealed class BeaconsUiTests
                 new TransmitStatus(true, BeaconHeld: new EngineError(EngineErrorCodes.TransmitPositionUnconfirmed, "x"))
             )
         );
-        Assert.Equal("Transmitting · beacons waiting", vm.TransmitText);
+        Assert.Equal("TX enabled · beacons waiting", vm.TransmitText);
         Assert.Equal("Beacons are waiting: Send your position once by hand to start beaconing.", vm.TransmitTip);
         Assert.False(vm.IsTransmitHeld); // a hand send is still possible: that's what starts them
     }

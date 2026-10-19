@@ -531,13 +531,6 @@
     <value>I'm a licensed amateur radio operator</value>
     <comment>Ticked: the profile uses the operator's callsign and may transmit. Unticked: it listens only, with a generated ID.</comment>
   </data>
-  <data name="Wizard.DisableTx" xml:space="preserve">
-    <value>Disable TX on this profile</value>
-    <comment>Checkbox: this profile never transmits.</comment>
-  </data>
-  <data name="Wizard.DisableTx.Help" xml:space="preserve">
-    <value>This profile only listens, whatever the Transmit switch says.</value>
-  </data>
   <data name="Wizard.Symbol" xml:space="preserve">
     <value>Symbol</value>
     <comment>The APRS symbol the station shows on maps and sends with its position.</comment>
@@ -2423,12 +2416,12 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Toggles.Tiles" xml:space="preserve">
     <value>Download map tiles</value>
   </data>
-  <data name="Settings.Sources.TxEnabledBox" xml:space="preserve">
-    <value>TX enabled</value>
-    <comment>Checkbox on a source: the station may send through it.</comment>
+  <data name="Settings.Sources.RxOnlyBox" xml:space="preserve">
+    <value>RX only</value>
+    <comment>Checkbox on a source: the station never sends through it. RX is the usual radio abbreviation for receive.</comment>
   </data>
-  <data name="Settings.Sources.TxEnabledBox.Help" xml:space="preserve">
-    <value>Leave it unticked for a source that only receives, such as a TNC without a radio set up to transmit.</value>
+  <data name="Settings.Sources.RxOnlyBox.Help" xml:space="preserve">
+    <value>Never send on this source, whatever the Transmit switch says: for a TNC without a transmitter, a scanner, or an APRS-IS server used only to listen.</value>
   </data>
   <data name="Settings.Sources.TxPath" xml:space="preserve">
     <value>TX path</value>
@@ -2438,19 +2431,23 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Digipeater aliases or callsigns, separated by commas. Leave it empty for WIDE1-1,WIDE2-1.</value>
     <comment>WIDE1-1,WIDE2-1 is an APRS path: don't translate it.</comment>
   </data>
-  <data name="Settings.Sources.ReceiveOnly" xml:space="preserve">
-    <value>Receive only</value>
-    <comment>A source that isn't TX enabled.</comment>
+  <data name="Settings.Sources.RxOnly" xml:space="preserve">
+    <value>RX only</value>
+    <comment>A source the station never sends on.</comment>
   </data>
-  <data name="Settings.Sources.TxEnabled" xml:space="preserve">
-    <value>TX enabled</value>
+  <data name="Settings.Sources.CanSend" xml:space="preserve">
+    <value>Can send</value>
   </data>
-  <data name="Settings.Sources.TxEnabledPath" xml:space="preserve">
-    <value>TX enabled · {path}</value>
+  <data name="Settings.Sources.CanSendPath" xml:space="preserve">
+    <value>Can send · {path}</value>
     <comment>path: the TX path, such as WIDE1-1,WIDE2-1.</comment>
   </data>
   <data name="Settings.Sources.TestSend" xml:space="preserve">
     <value>Test send</value>
+  </data>
+  <data name="Settings.Sources.TurnTransmitOn" xml:space="preserve">
+    <value>Turn Transmit on</value>
+    <comment>Button beside Test send's "Transmit is off": turns on the same switch as the status bar's.</comment>
   </data>
   <data name="Settings.Sources.TestSend.Help" xml:space="preserve">
     <value>Sends one short status packet on this source only, then listens 30 seconds for a digipeater or IGate repeating it. Needs Transmit on.</value>
@@ -2481,7 +2478,7 @@ Start the gateway (for example with docker compose up), then open the app from t
     <comment>Sends the station's position once, by hand.</comment>
   </data>
   <data name="Transmit.On" xml:space="preserve">
-    <value>Transmitting</value>
+    <value>TX enabled</value>
     <comment>Status bar marker while the Transmit switch is on.</comment>
   </data>
   <data name="Transmit.Held" xml:space="preserve">
@@ -2504,7 +2501,11 @@ Start the gateway (for example with docker compose up), then open the app from t
     <comment>Packet list marker on a packet this app transmitted.</comment>
   </data>
   <data name="Transmit.Marker.Help" xml:space="preserve">
-    <value>Turn Transmit off, or send your position, from the connection menu (Ctrl+T).</value>
+    <value>Transmitting: turn the switch off to stop. Send your position from the Station menu.</value>
+  </data>
+  <data name="Transmit.OffTip" xml:space="preserve">
+    <value>Transmit is off: the station sends nothing. Turn it on to send your position, beacons and messages.</value>
+    <comment>Tooltip of the Transmit switch in the status bar while it is off.</comment>
   </data>
   <data name="Toggles.Marker.Internet" xml:space="preserve">
     <value>Internet off</value>
@@ -3383,11 +3384,11 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Most TNCs and radios need both raised; untick one only if the TNC's manual says so.</value>
   </data>
   <data name="Settings.Sources.Kind.AprsTextSerial" xml:space="preserve">
-    <value>Radio in APRS mode (receive only)</value>
+    <value>TNC text output (TNC2) over serial</value>
     <comment>A radio's built-in TNC read in its own APRS mode, such as a TH-D72A in APRS12.</comment>
   </data>
   <data name="Settings.Sources.AprsText.Help" xml:space="preserve">
-    <value>A radio with a TNC inside, such as a Kenwood TH-D72A on its USB cable: in its APRS mode it's read as it is and keeps working on its own, receive only; as KISS over serial it can send too.</value>
+    <value>Listen to a radio or TNC that prints the packets it hears, such as a TH-D72A in APRS mode, while it keeps working by itself. It's RX only. To send through a radio's TNC, add it as KISS over serial with its TNC type instead.</value>
   </data>
   <data name="Settings.Sources.TncType" xml:space="preserve">
     <value>TNC type</value>
@@ -3430,7 +3431,7 @@ pause 1s</value>
     <value>A serial TNC's type isn't known, or its script can't be read: each line is send, bytes, expect, pause or drain.</value>
   </data>
   <data name="Error.settings.source.receive-only" xml:space="preserve">
-    <value>A radio in APRS mode only receives, so it can't be TX enabled.</value>
+    <value>TNC text output only receives, so it's always RX only.</value>
   </data>
   <data name="Error.settings.source.serial-invalid" xml:space="preserve">
     <value>A KISS over serial source needs a port, a speed above 0, and a TNC port from 0 to 15.</value>
@@ -3462,7 +3463,7 @@ pause 1s</value>
     <comment>profile: the profile's name.</comment>
   </data>
   <data name="Error.transmit.off" xml:space="preserve">
-    <value>Transmit is off. Turn it on first.</value>
+    <value>Transmit is off. Turn it on in the status bar.</value>
   </data>
   <data name="Error.transmit.receive-only" xml:space="preserve">
     <value>This station was started receive only, so it doesn't transmit.</value>
@@ -3476,25 +3477,37 @@ pause 1s</value>
     <value>Transmitting goes through APRS-IS, and it's off or this profile doesn't use it.</value>
   </data>
   <data name="Error.transmit.not-connected" xml:space="preserve">
-    <value>APRS-IS isn't connected.</value>
+    <value>{source} isn't connected.</value>
+    <comment>source: the source's name, such as APRS-IS or 10.10.20.144.</comment>
   </data>
   <data name="Error.transmit.not-verified" xml:space="preserve">
-    <value>The APRS-IS server didn't verify the login. Check the passcode for this callsign.</value>
+    <value>{source} didn't verify {callsign}'s login. Check the passcode in Settings › Sources.</value>
+    <comment>source: the APRS-IS source's name; callsign: the profile's callsign.</comment>
   </data>
   <data name="Error.transmit.no-position" xml:space="preserve">
-    <value>Set the station's location first.</value>
+    <value>Set the station's location first, in Settings › Profiles.</value>
   </data>
   <data name="Error.transmit.profile-disabled" xml:space="preserve">
-    <value>This profile has Disable TX ticked. Untick it in the profile to transmit.</value>
+    <value>This profile only listens.</value>
+    <comment>No longer raised: Disable TX was removed. Kept for older engines.</comment>
   </data>
   <data name="Error.transmit.not-licensed" xml:space="preserve">
-    <value>This profile only listens: confirm you're a licensed amateur in the profile to transmit.</value>
+    <value>This profile only listens. To transmit, tick I'm a licensed amateur radio operator in its profile (Settings › Profiles).</value>
   </data>
   <data name="Error.transmit.source-disabled" xml:space="preserve">
-    <value>This source isn't TX enabled. Tick TX enabled on it in Settings.</value>
+    <value>This source doesn't send.</value>
+    <comment>No longer raised: TX enabled became RX only. Kept for older engines.</comment>
+  </data>
+  <data name="Error.transmit.source-rx-only" xml:space="preserve">
+    <value>{source} is RX only. Untick RX only on it in Settings › Sources.</value>
+    <comment>source: the source's name. RX only is the checkbox's name in Settings › Sources.</comment>
+  </data>
+  <data name="Error.transmit.source-off" xml:space="preserve">
+    <value>{source} is switched off. Turn it on in the status bar.</value>
+    <comment>source: the source's name; its switch is on its pill in the status bar.</comment>
   </data>
   <data name="Error.transmit.no-source" xml:space="preserve">
-    <value>None of this profile's sources is TX enabled. Tick TX enabled on one in Settings.</value>
+    <value>This profile has no source that can send. Add one, or untick RX only on one, in Settings › Sources.</value>
   </data>
   <data name="Error.transmit.position-unconfirmed" xml:space="preserve">
     <value>Send your position once by hand to start beaconing.</value>
@@ -3565,6 +3578,10 @@ pause 1s</value>
     <value>{source} off</value>
     <comment>A source's pill while it's switched off.</comment>
   </data>
+  <data name="Status.Source.RxOnly" xml:space="preserve">
+    <value>{status} · RX only</value>
+    <comment>A source's pill text for a source the station never sends on. status: what the pill says otherwise.</comment>
+  </data>
   <data name="Toggles.Switch.Source" xml:space="preserve">
     <value>{source} on or off</value>
     <comment>The switch on a source's pill: its name for screen readers and its tooltip.</comment>
@@ -3598,11 +3615,8 @@ pause 1s</value>
   <data name="Beacons.ListensOnly" xml:space="preserve">
     <value>This profile only listens, so it doesn't beacon.</value>
   </data>
-  <data name="Beacons.DisableTx" xml:space="preserve">
-    <value>This profile has Disable TX ticked, so it doesn't beacon.</value>
-  </data>
   <data name="Beacons.NoSources" xml:space="preserve">
-    <value>None of this profile's sources is TX enabled. Tick TX enabled on one in Settings › Sources to beacon on it.</value>
+    <value>This profile has no source that can send. Add one, or untick RX only on one, in Settings › Sources to beacon on it.</value>
   </data>
   <data name="Beacons.Unconfirmed" xml:space="preserve">
     <value>Send your position once by hand to start beaconing.</value>
@@ -3688,15 +3702,15 @@ pause 1s</value>
     <value>{count, plural, one {# hour} other {# hours}}</value>
   </data>
   <data name="Transmit.BeaconsWaiting" xml:space="preserve">
-    <value>Transmitting · beacons waiting</value>
+    <value>TX enabled · beacons waiting</value>
     <comment>Status bar marker: Transmit is on but beacons wait; the tooltip says why.</comment>
   </data>
   <data name="Transmit.NextBeacon" xml:space="preserve">
-    <value>Transmitting · next beacon in {minutes} min</value>
+    <value>TX enabled · next beacon in {minutes} min</value>
     <comment>minutes: whole minutes until the next beacon.</comment>
   </data>
   <data name="Transmit.NextBeaconSoon" xml:space="preserve">
-    <value>Transmitting · next beacon within a minute</value>
+    <value>TX enabled · next beacon within a minute</value>
   </data>
   <data name="Transmit.BeaconsWaitingTip" xml:space="preserve">
     <value>Beacons are waiting: {reason}</value>
@@ -3851,7 +3865,7 @@ pause 1s</value>
     <value>This station is receive only, or its profile may not transmit.</value>
   </data>
   <data name="Menu.Why.TransmitOff" xml:space="preserve">
-    <value>Transmit is off.</value>
+    <value>Transmit is off. Turn it on in the status bar.</value>
   </data>
   <data name="Menu.Why.DestinationSet" xml:space="preserve">
     <value>A destination is set: clear it first.</value>

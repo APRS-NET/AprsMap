@@ -137,9 +137,7 @@ public class MainViewTests
                 "InternetToggle",
                 "AprsIsToggle",
                 "TilesToggle",
-                "TransmitToggle",
-                "SendPositionItem",
-                "SendPositionOnAprsIsItem",
+                "SendPositionOnAprsIsItem", // Transmit itself is the status bar's switch (F2.1 behavior 6)
             ],
             items.Select(i => i.Name)
         );

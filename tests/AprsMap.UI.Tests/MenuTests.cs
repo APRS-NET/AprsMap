@@ -145,7 +145,7 @@ public sealed class MenuTests
 
         Assert.Null(commands["station.transmit"].WhyNot);
         Assert.False(commands["station.transmit"].Checked);
-        Assert.Equal("Transmit is off.", commands["station.send-position"].WhyNot);
+        Assert.Equal("Transmit is off. Turn it on in the status bar.", commands["station.send-position"].WhyNot);
         Assert.Equal("No destination is set.", commands["station.destination.clear"].WhyNot);
         Assert.Equal("The map can't be closed.", commands["view.panel.map"].WhyNot);
         Assert.Equal("Every panel is shown.", commands["view.show-all"].WhyNot);

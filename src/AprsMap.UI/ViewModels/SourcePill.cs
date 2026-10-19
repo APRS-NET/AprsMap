@@ -39,7 +39,7 @@ public sealed partial class SourcePill : ObservableObject
     /// <summary>Sends the station's position on this source alone (docs/features/F2.1-own-station.md, behavior 10).</summary>
     public IAsyncRelayCommand SendPositionCommand { get; }
 
-    /// <summary>Whether the menu has Send position now: the source is TX enabled and this app may transmit.</summary>
+    /// <summary>Whether the menu has Send position now: the source isn't RX only and this app may transmit.</summary>
     [ObservableProperty]
     public partial bool IsTransmitEnabled { get; private set; }
 
@@ -104,7 +104,7 @@ public sealed partial class SourcePill : ObservableObject
     /// </summary>
     internal void Show(SourceStatus status, bool canChange, bool transmitting = false)
     {
-        IsTransmitEnabled = status.TransmitEnabled && canChange;
+        IsTransmitEnabled = status.MaySend && canChange;
         CanType = status.Kind == SourceKind.KissSerial && canChange;
         CanSendPosition = transmitting && status.CanTransmit;
         Name = status.Name;
@@ -126,6 +126,11 @@ public sealed partial class SourcePill : ObservableObject
                 },
                 name
             );
+        // A source that never sends says so on its pill (F2.1 behavior 5; maintainer, 2026-10-18).
+        if (status.Enabled && !status.MaySend && status.Kind is not SourceKind.Gps)
+        {
+            Text = _text.Format("Status.Source.RxOnly", new Dictionary<string, object?> { ["status"] = Text });
+        }
         SwitchName = _text.Format("Toggles.Switch.Source", name);
         // Connected with a warning, such as a TNC not in KISS mode, takes the warning colour (F3.1 behavior 13).
         var warned = status.State == ConnectionState.Connected && status.Warning is not null;

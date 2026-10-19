@@ -127,7 +127,7 @@ public sealed partial class BulletinsViewModel : ObservableObject
     /// <summary>"23/67": the characters used of those a bulletin can carry.</summary>
     public string PostCount => $"{PostText.Trim().Length}/{BulletinPost.MaxText}";
 
-    /// <summary>Send via: the TX enabled sources, each ticked to send on it.</summary>
+    /// <summary>Send via: the sources that aren't RX only, each ticked to send on it.</summary>
     public ObservableCollection<ViaChoice> PostVia { get; } = [];
 
     /// <summary>Why the last post or group action didn't go through; null when it did.</summary>
@@ -137,7 +137,7 @@ public sealed partial class BulletinsViewModel : ObservableObject
     partial void OnPostKindChanged(BeaconChoice<BulletinKind> value) =>
         PostId = value.Value == BulletinKind.Announcement ? "A" : "0";
 
-    /// <summary>Opens the form for a new bulletin, sent on every TX enabled source.</summary>
+    /// <summary>Opens the form for a new bulletin, sent on every source that isn't RX only.</summary>
     [RelayCommand]
     private void NewBulletin()
     {
@@ -164,7 +164,7 @@ public sealed partial class BulletinsViewModel : ObservableObject
     private void FillVia(IReadOnlyList<string>? ticked)
     {
         PostVia.Clear();
-        foreach (var source in (_status()?.Sources ?? []).Where(s => s.TransmitEnabled))
+        foreach (var source in (_status()?.Sources ?? []).Where(s => s.MaySend))
         {
             PostVia.Add(new ViaChoice(source.Id, source.Name) { IsChecked = ticked?.Contains(source.Id) ?? true });
         }

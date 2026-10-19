@@ -11,15 +11,9 @@ public sealed class TransmitTests
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private static readonly SourceSettings AprsIs = InMemorySettingsStore.Rotate with { Transmit = true };
+    private static readonly SourceSettings AprsIs = InMemorySettingsStore.Rotate;
 
-    private static readonly SourceSettings Tnc = new(
-        "tnc",
-        "Direwolf",
-        SourceKind.KissTcp,
-        Host: "127.0.0.1",
-        Transmit: true
-    );
+    private static readonly SourceSettings Tnc = new("tnc", "Direwolf", SourceKind.KissTcp, Host: "127.0.0.1");
 
     private static StationProfile Home(string callsign = "N0TEST", params SourceSettings[] sources) =>
         InMemorySettingsStore.Profile(callsign) with
@@ -106,9 +100,8 @@ public sealed class TransmitTests
     public async Task TransmitIsOffInNewSettingsAndInSettingsStoredBeforeIt()
     {
         Assert.False(StationToggles.AllOn.Transmit);
-        Assert.False(InMemorySettingsStore.Rotate.Transmit);
+        Assert.False(InMemorySettingsStore.Rotate.RxOnly);
         Assert.False(InMemorySettingsStore.Profile("N0NEW").Licensed);
-        Assert.False(InMemorySettingsStore.Profile("N0NEW").DisableTransmit);
         var station = Create(toggles: null);
 
         var status = await station.Engine.GetStatusAsync(Ct);
@@ -150,9 +143,9 @@ public sealed class TransmitTests
     }
 
     [Fact]
-    public async Task ASourceWithoutTxEnabledIsNeverSentOn()
+    public async Task AnRxOnlySourceIsNeverSentOn()
     {
-        var quiet = Tnc with { Transmit = false };
+        var quiet = Tnc with { RxOnly = true };
         var station = Create(Home(sources: [AprsIs, quiet]), sources: [AprsIs, quiet]);
         var (run, cts, aprsIs, tnc) = await Run(station);
         using (cts)
@@ -161,29 +154,65 @@ public sealed class TransmitTests
 
             await station.Engine.SendPositionAsync(null, Ct);
             Assert.Equal(
-                EngineErrorCodes.TransmitSourceDisabled,
+                EngineErrorCodes.TransmitSourceRxOnly,
                 await RefusalOf(() => station.Engine.SendPositionAsync(quiet.Id, Ct))
             );
             Assert.Equal(
-                EngineErrorCodes.TransmitSourceDisabled,
+                EngineErrorCodes.TransmitSourceRxOnly,
                 await RefusalOf(() => station.Engine.TestSendAsync(quiet.Id, Ct))
             );
 
             Assert.Single(aprsIs.Sent);
             Assert.Empty(tnc.Sent);
             var status = (await station.Engine.GetStatusAsync(Ct)).Sources!.Single(s => s.Id == quiet.Id);
-            Assert.False(status.TransmitEnabled);
+            Assert.False(status.MaySend);
             await cts.CancelAsync();
             await run;
         }
     }
 
-    [Theory]
-    [InlineData(false, false, EngineErrorCodes.TransmitNotLicensed)]
-    [InlineData(true, true, EngineErrorCodes.TransmitProfileDisabled)]
-    public async Task AProfileThatIsntLicensedOrHasDisableTxSendsNothing(bool licensed, bool disabled, string code)
+    [Fact]
+    public async Task ASourceSwitchedOffIsRefusedByNameAndTheOthersStillSend()
     {
-        var station = Create(Home(sources: [AprsIs, Tnc]) with { Licensed = licensed, DisableTransmit = disabled });
+        var station = Create(Home(sources: [AprsIs, Tnc]));
+        var (run, cts, aprsIs, tnc) = await Run(station);
+        using (cts)
+        {
+            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetSourceEnabledAsync(Tnc.Id, false, Ct);
+
+            var refusal = await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
+                station.Engine.SendPositionAsync(Tnc.Id, Ct)
+            );
+            var error = ((IHasEngineError)refusal).EngineError;
+            Assert.Equal(EngineErrorCodes.TransmitSourceOff, error.Code);
+            Assert.Equal("Direwolf", error.Arg(EngineErrorArgs.Source)); // the UI says which and where (behavior 7a)
+            var status = (await station.Engine.GetStatusAsync(Ct)).Sources!.Single(s => s.Id == Tnc.Id);
+            Assert.Equal(EngineErrorCodes.TransmitSourceOff, status.TransmitBlocked!.Code);
+
+            await station.Engine.SendPositionAsync(null, Ct); // APRS-IS still sends
+            Assert.Single(aprsIs.Sent);
+            Assert.Empty(tnc.Sent);
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
+    public async Task TncTextOutputIsRxOnlyWhateverItSays()
+    {
+        var text = SourceSettings.AprsTextSerialFor("/dev/ttyUSB0") with { RxOnly = false };
+
+        Assert.False(text.MaySend);
+        Assert.True((Tnc with { RxOnly = false }).MaySend);
+        Assert.False((Tnc with { RxOnly = true }).MaySend);
+    }
+
+    [Fact]
+    public async Task AProfileThatIsntLicensedSendsNothing()
+    {
+        const string code = EngineErrorCodes.TransmitNotLicensed;
+        var station = Create(Home(sources: [AprsIs, Tnc]) with { Licensed = false });
         var (run, cts, aprsIs, tnc) = await Run(station);
         using (cts)
         {
@@ -282,9 +311,9 @@ public sealed class TransmitTests
     }
 
     [Fact]
-    public async Task WithoutATxEnabledSourceOrAConnectionTransmitCantTurnOn()
+    public async Task WithoutASourceThatMaySendOrAConnectionTransmitCantTurnOn()
     {
-        var none = Create(sources: [InMemorySettingsStore.Rotate, Tnc with { Transmit = false }]);
+        var none = Create(sources: [InMemorySettingsStore.Rotate with { RxOnly = true }, Tnc with { RxOnly = true }]);
         await none.Engine.GetSettingsAsync(Ct);
         Assert.Equal(
             EngineErrorCodes.TransmitNoSource,

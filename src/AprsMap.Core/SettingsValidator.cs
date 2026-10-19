@@ -61,10 +61,6 @@ internal static class SettingsValidator
 
         foreach (var source in settings.SourceList)
         {
-            if (source.Transmit && !source.CanTransmit)
-            {
-                throw Fail(EngineErrorCodes.SourceReceiveOnly, $"Source '{source.Name}' can only receive.");
-            }
             if (source.Kind == SourceKind.KissSerial && source.TncType is { Length: > 0 })
             {
                 if (source.TncType == SourceSettings.CustomTncType && string.IsNullOrWhiteSpace(source.EnterScript))
