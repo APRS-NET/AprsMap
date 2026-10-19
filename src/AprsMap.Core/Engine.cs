@@ -1634,7 +1634,14 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 {
                     // Nothing to log in with: wait until settings supply a profile with an APRS-IS source.
                     SetLink(new Link(ConnectionState.NotConfigured));
-                    LogNotConfigured();
+                    if (loaded.GetActiveProfile() is null)
+                    {
+                        LogNotConfigured();
+                    }
+                    else
+                    {
+                        LogNoAprsIs(); // a TNC-only station, or one still adding its sources (F0.5 behavior 23)
+                    }
                 }
                 else if (await RunOnceAsync(profile, attempt.Token).ConfigureAwait(false))
                 {
@@ -2288,6 +2295,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         Message = "No station profile yet: set a callsign (first-run setup, or Engine:Callsign) to connect"
     )]
     private partial void LogNotConfigured();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "This profile has no APRS-IS source, so APRS-IS isn't used")]
+    private partial void LogNoAprsIs();
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The configured first-run defaults are not usable: {Reason}")]
     private partial void LogDefaultsUnusable(string reason);
