@@ -50,8 +50,8 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet (delivered, `0.4.0-alpha.5`: `AprsNet.Corpus`, `AprsPacket.Unrecognized`) | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
 | G32 | A typed reason when an APRS-IS login reaches a KISS TNC (delivered, `0.4.0-alpha.5`: `KissTncLoginException`) | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
 | G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console (delivered: KISS `0.4.0-alpha.6`, APRS-IS `0.4.0-alpha.7`) | Kiss, AprsIsTcpClient | 2 | [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) |
-| G34 | Bulletin repeat schedule, and ANSRVR group helpers (partly delivered, `0.4.0-alpha.9`: `BulletinSchedule`, `AnsrvrCommand`; recognising a relayed group message still open) | Messaging | 2 | [APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272) |
-| G35 | The device list as a loadable object, and a fetcher with an overridable default address | DeviceId | 2 | — |
+| G34 | Bulletin repeat schedule, and ANSRVR group helpers (partly delivered, `0.4.0-alpha.9`: `BulletinSchedule`, `AnsrvrCommand`; recognising a relayed group message still open) | Messaging | 2 | [APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272) (closed), [APRS.NET#281](https://github.com/APRS-NET/APRS.NET/issues/281) (relays, paused) |
+| G35 | The device list as a loadable object, and a fetcher with an overridable default address | DeviceId | 2 | [APRS.NET#280](https://github.com/APRS-NET/APRS.NET/issues/280) |
 
 ---
 
@@ -601,7 +601,7 @@ message from a recorded transcript is recognised with its group and sender.
 reaches APRS.NET within a day (the nightly `deviceid` workflow), but only as each release's built-in table, so an app
 can't use a newer list without copying the generator's format and rules.
 
-**Scope** (APRS.NET 0.6.0, proposed).
+**Scope** ([APRS.NET#280](https://github.com/APRS-NET/APRS.NET/issues/280), APRS.NET 0.6.0).
 
 1. **`AprsDeviceList`**: the built-in list (`AprsDeviceList.BuiltIn`), or one read from the published JSON
    (`Parse(Stream)` and `TryParse`, with the reasons it can't, under the generator's rules: classes it knows, TOCALL
