@@ -106,6 +106,8 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | F1.27 | Packet capture for analysis ([spec](features/F1.27-packet-capture.md)): record the packets APRS.NET couldn't parse or decode, byte for byte in the corpus line format, look through them, and export them anonymized for APRS.NET's test corpus with a note for an issue | — (maintainer request) | App | G31 | built (0.5.0, [#233](https://github.com/APRS-NET/AprsMap/issues/233)) |
 | F1.28 | Source console ([spec](features/F1.28-source-console.md)): a source's live traffic for troubleshooting (frames, unframed text from a TNC not in KISS mode, non-APRS and dropped frames with why, the enter-KISS steps, what was sent; APRS-IS lines with the passcode masked), operator only on a gateway | — (maintainer request) | App | G33 | built (0.5.0, [#246](https://github.com/APRS-NET/AprsMap/issues/246)) |
 | F1.29 | Menus and commands ([spec](features/F1.29-menus.md)): File, View, Station, Tools and Help menus with every command and its shortcut; hidden until Alt on Windows and Linux, the system menu bar on macOS, under ☰ in the web app; panels shown and hidden from View › Panels; actions moved out of Settings | — (maintainer request) | App | — | built (0.5.0, [#278](https://github.com/APRS-NET/AprsMap/issues/278)) |
+| F1.31 | Where files are kept ([spec](features/F1.31-files.md)): Help › About lists the settings, data, cache and machine-defaults folders and a new rolling log file, each with Copy; on a gateway only for a signed-in operator, viewers told their layout is kept in this browser | — (maintainer request) | App | — | scoped (0.6.0, [#306](https://github.com/APRS-NET/AprsMap/issues/306)) |
+| F1.32 | Logging and telemetry settings ([spec](features/F1.32-logging.md)): Settings › Logging with an overall level, a level per area and privacy switches; a daily log file with a maximum size, days kept and a total cap (on on the desktop, off on a gateway); a list of OTLP targets with masked headers | — (maintainer request) | App | — | spec'd (0.6.0, [#310](https://github.com/APRS-NET/AprsMap/issues/310)) |
 
 ## Phase 2: Transmit via APRS-IS
 
@@ -115,7 +117,7 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | F2.2 | Beacons ([spec](features/F2.2-beacons.md)): fixed and SmartBeaconing-style position beacons, status beacons, PHG; **Send via** checkmarks per beacon over the sources that may transmit (F2.1), all ticked by default | PHG | App | G01, G11 | built (0.5.0, [#196](https://github.com/APRS-NET/AprsMap/issues/196)) |
 | F2.3 | Predictive beaconing indicator: show where others last saw you versus where you are (our own name for the feature) | Red Dot | App | G11 | scoped (0.6.0, [#197](https://github.com/APRS-NET/AprsMap/issues/197)) |
 | F2.4 | Messaging ([spec](features/F2.4-messaging.md)): chat per correspondent, ack/retry status, reply-ack, rejects, offline queue, selectable retry profiles (default, APRS-IS, none, slow HF modem), optional double-ack on RF; **Send via** per thread: Automatic (RF to a correspondent heard on a TNC recently, APRS-IS otherwise, falling back to APRS-IS when RF retries go unacked), or chosen sources; acks go back on the source the message came in on | APRS Messaging Explained | App | G01, G10 | built (0.5.0, [#192](https://github.com/APRS-NET/AprsMap/issues/192)) |
-| F2.5 | Bulletins and announcements, group bulletins; ANSRVR group join and leave; Send via checkmarks as for beacons ([spec](features/F2.5-bulletins.md)) | ANSRVR | App | G10, G34 | built; a conversation per group in 0.6.0 ([#285](https://github.com/APRS-NET/AprsMap/issues/285), waits on APRS.NET#272) (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)) |
+| F2.5 | Bulletins and announcements, group bulletins; ANSRVR group join and leave; Send via checkmarks as for beacons ([spec](features/F2.5-bulletins.md)) | ANSRVR | App | G10, G34 | built; a conversation per group deferred ([#285](https://github.com/APRS-NET/AprsMap/issues/285), waits on APRS.NET#281, paused) (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)) |
 | F2.6 | Email via the APRS email gateway, and the QRU/query service helpers | Email, QRU | App | G10 | scoped (0.6.0, [#201](https://github.com/APRS-NET/AprsMap/issues/201)) |
 | F2.7 | Objects and items: create, move, re-beacon with decay, kill; multiline objects | Multiline | App | G01, G11 | scoped (0.6.0, [#199](https://github.com/APRS-NET/AprsMap/issues/199)) |
 | F2.8 | Respond to directed queries (?APRSP, ?APRSS…) | — | App | G19 | scoped (0.6.0, [#200](https://github.com/APRS-NET/AprsMap/issues/200)) |
@@ -123,6 +125,7 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | F2.10 | Auto-reply with delay and rate limits | Auto-Reply | App | G10 | scoped (0.6.0, [#202](https://github.com/APRS-NET/AprsMap/issues/202)) |
 | F2.11 | Status reports with saved alternatives | (Configure › Status Report) | App | G01 | scoped (0.6.0, [#203](https://github.com/APRS-NET/AprsMap/issues/203)) |
 | F2.12 | Mic-E status codes: choose the status to send; per-code filtering and alert styles for received ones, with emergency handling | (observed) | App | G01 | scoped (0.6.0, [#204](https://github.com/APRS-NET/AprsMap/issues/204)) |
+| F2.13 | Ping ([spec](features/F2.13-ping.md)): a remote connectivity check; a message starting with the ping phrase ("AprsMap ping" by default, from the brand) is answered with the pong phrase and the UTC time, the way it came; off by default, who may ping and how often (never under 10 s) set by the operator | — (maintainer request) | App | G10 | spec'd (0.6.0, [#307](https://github.com/APRS-NET/AprsMap/issues/307)) |
 
 ## Phase 3: RF, GPS, IGate, digipeater
 
@@ -159,6 +162,7 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | F4.13 | Logging exports: GPX track auto-save, beacon-trigger CSV | (Enables menu) | App | — | scoped |
 | F4.14 | Digital-mode activity objects (FT8 / JS8Call / JT65); semantics pending maintainer observation | (observed) | App | G01 | scoped |
 | F4.15 | Updates ([spec](features/F4.15-updates.md)): a daily check of the GitHub releases with a quiet notice, in-app install on desktop with Velopack, an operator-only notice on the gateway; store packages later | — (maintainer request) | App | — | built but for signing (0.5.0, [#186](https://github.com/APRS-NET/AprsMap/issues/186)) |
+| F4.16 | Device list updates ([spec](features/F4.16-device-list.md)): fetch the aprs-deviceid list weekly (or now) from the APRS Foundation or a mirror, use whichever of it and APRS.NET's built-in list is newer, and name stations already heard again | — (maintainer request) | App | G35 | spec'd (0.6.0) |
 
 ## Order of work
 
