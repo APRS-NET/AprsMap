@@ -421,6 +421,7 @@ public class SetupWizardViewModelTests
 
         vm.Show(engine.Settings);
         Assert.True(vm.OffersAddSource);
+        Assert.False(vm.ShowsAprsIsPill); // no APRS-IS source: no pill for it
 
         await vm.AddSourceCommand.ExecuteAsync(null);
         Assert.True(vm.Settings!.IsSourcesSection);
@@ -435,6 +436,7 @@ public class SetupWizardViewModelTests
             }
         );
         Assert.False(vm.OffersAddSource);
+        Assert.True(vm.ShowsAprsIsPill);
     }
 
     [Fact]

@@ -254,6 +254,7 @@
                  Reconnect now (F1.1 behavior 7); its tooltip has the details. -->
             <Border
               x:Name="ConnectionPill"
+              IsVisible="{Binding ShowsAprsIsPill}"
               Classes.warn="{Binding IsConnectionWarning}"
               Classes.ok="{Binding IsConnected}"
               CornerRadius="{DynamicResource Radius.Control}"

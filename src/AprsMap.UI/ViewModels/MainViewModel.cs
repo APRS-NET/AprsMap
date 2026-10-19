@@ -651,6 +651,13 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial bool OffersAddSource { get; set; }
 
+    /// <summary>
+    /// Whether the APRS-IS pill shows: not for a profile without an APRS-IS source, where it would show a connection
+    /// that doesn't exist (maintainer, 2026-10-18). Its switches stay in the Station menu.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool ShowsAprsIsPill { get; set; } = true;
+
     /// <summary>Opens Settings › Sources with Add a source (F1.25 behavior 6).</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private async Task AddSourceAsync()
@@ -1298,6 +1305,7 @@ public sealed partial class MainViewModel : ObservableObject
         var notSetUp = settings.Profiles.Count == 0;
         ShowGatewaySetupNote = notSetUp && settings.ReadOnly;
         OffersAddSource = active is { SourceIds.Count: 0 } && !settings.ReadOnly;
+        ShowsAprsIsPill = active is null || settings.AprsIsSourceOf(active) is not null;
         CanOpenSetup = notSetUp && !settings.ReadOnly && _setupDismissed && Setup is null;
         if (notSetUp && !settings.ReadOnly && !_setupDismissed)
         {
