@@ -12,20 +12,48 @@ public class SetupWizardViewModelTests
     private static Localizer English() => new(CultureInfo.GetCultureInfo("en-US"));
 
     private static async Task<(SetupWizardViewModel Wizard, FakeEngine Engine, Localizer Text)> Start(
-        FakeEngine? engine = null
+        FakeEngine? engine = null,
+        bool adding = false
     )
     {
-        engine ??= new FakeEngine { Settings = AppSettings.Empty };
+        engine ??= new FakeEngine { Settings = adding ? OneProfileNoSources() : AppSettings.Empty };
         var text = English();
-        var wizard = new SetupWizardViewModel(engine, text);
+        var wizard = adding
+            ? new SetupWizardViewModel(engine, text, null, WizardMode.Add, engine.Settings)
+            : new SetupWizardViewModel(engine, text);
         await wizard.LoadAsync(TestContext.Current.CancellationToken);
         return (wizard, engine, text);
     }
 
-    private static async Task<SetupWizardViewModel> AtStep(SetupStep step, FakeEngine? engine = null)
+    /// <summary>
+    /// Settings with one profile and no sources, to add another from Settings: the profile editor keeps the server and
+    /// passcode steps (first run asks neither, docs/features/F0.5-first-run-wizard.md behavior 23).
+    /// </summary>
+    private static AppSettings OneProfileNoSources()
     {
-        var (wizard, _, _) = await Start(engine);
+        var old = InMemoryProfile("N0OLD");
+        return new AppSettings([old], old.Id, UnitSettings.Metric);
+    }
+
+    private static StationProfile InMemoryProfile(string callsign) =>
+        new(Guid.NewGuid().ToString("N"), callsign, callsign, -1, [], null, null);
+
+    /// <summary>The profile the wizard made: the one with its callsign.</summary>
+    private static StationProfile Made(AppSettings saved) => saved.Profiles.Single(p => p.Callsign == "AB1CD-9");
+
+    private static async Task<SetupWizardViewModel> AtStep(
+        SetupStep step,
+        FakeEngine? engine = null,
+        bool adding = false
+    )
+    {
+        var (wizard, _, _) = await Start(engine, adding);
         wizard.Callsign = "AB1CD-9";
+        if (adding)
+        {
+            wizard.IsLicensedOperator = true;
+            wizard.Callsign = "AB1CD-9";
+        }
         while (wizard.Step < step)
         {
             await wizard.NextCommand.ExecuteAsync(null);
@@ -146,7 +174,7 @@ public class SetupWizardViewModelTests
 
         wizard.LocatorText = "FN31pr";
         await wizard.NextCommand.ExecuteAsync(null);
-        Assert.Equal(SetupStep.Server, wizard.Step);
+        Assert.Equal(SetupStep.Start, wizard.Step); // first run's last page
         Assert.Equal(41.7291667, wizard.Latitude);
     }
 
@@ -252,7 +280,7 @@ public class SetupWizardViewModelTests
 
         wizard.SkipLocationCommand.Execute(null);
 
-        Assert.Equal(SetupStep.Server, wizard.Step);
+        Assert.Equal(SetupStep.Start, wizard.Step);
         Assert.False(wizard.HasLocation);
         Assert.Null(wizard.LocationText);
     }
@@ -320,7 +348,7 @@ public class SetupWizardViewModelTests
     [Fact]
     public async Task AnotherServerCanBeTypedButNotLeftEmpty()
     {
-        var wizard = await AtStep(SetupStep.Server);
+        var wizard = await AtStep(SetupStep.Server, adding: true);
         Assert.Equal("rotate.aprs2.net:14580", wizard.Server);
         wizard.SelectedServer = wizard.Servers.Single(s => s.Key == "euro");
         Assert.Equal("euro.aprs2.net:14580", wizard.Server);
@@ -348,8 +376,9 @@ public class SetupWizardViewModelTests
         wizard.Closed += (_, saved) => closed = saved;
         wizard.LocatorText = "DN70";
         await wizard.NextCommand.ExecuteAsync(null);
-        await wizard.NextCommand.ExecuteAsync(null);
-        Assert.True(wizard.IsLastStep);
+        Assert.Equal(SetupStep.Start, wizard.Step);
+        Assert.Equal("Step 3 of 3", wizard.StepText);
+        Assert.True(wizard.IsLastStep); // Finish is the last page's first choice (behavior 23.1)
 
         await wizard.FinishCommand.ExecuteAsync(null);
 
@@ -357,19 +386,75 @@ public class SetupWizardViewModelTests
         var profile = Assert.Single(saved.Profiles);
         Assert.Equal(profile.Id, saved.ActiveProfileId);
         Assert.Equal(("AB1CD-9", "AB1CD-9", -1), (profile.Name, profile.Callsign, profile.Passcode));
-        var source = Assert.Single(saved.SourceList); // the wizard sets up the APRS-IS source (F1.25 behavior 7)
-        Assert.Equal((SourceKind.AprsIs, "rotate.aprs2.net:14580", null), (source.Kind, source.Server, source.Filter));
-        Assert.Equal([source.Id], profile.SourceIds);
+        Assert.Empty(saved.SourceList); // no source needed to finish
+        Assert.Empty(profile.SourceIds);
         Assert.Equal((40.5, -105.0), (profile.Latitude, profile.Longitude));
         Assert.Equal(UnitSettings.Imperial, saved.Units); // en-US
         Assert.True(closed);
     }
 
+    [Theory]
+    [InlineData(SourceKind.AprsIs)]
+    [InlineData(SourceKind.KissTcp)]
+    public async Task FirstRunsAddButtonsSaveThenAskForThatKindOfSource(SourceKind kind)
+    {
+        var engine = new FakeEngine { Settings = AppSettings.Empty };
+        var wizard = await AtStep(SetupStep.Start, engine);
+        var events = new List<string>();
+        wizard.Closed += (_, saved) => events.Add("closed " + saved);
+        wizard.AddSourceRequested += (_, k) => events.Add("add " + k);
+
+        await (kind == SourceKind.AprsIs ? wizard.AddAprsIsCommand : wizard.AddTncCommand).ExecuteAsync(null);
+
+        var saved = Assert.Single(engine.Saved);
+        Assert.Empty(saved.SourceList); // the source comes from Add a source, which ticks it (behavior 24)
+        Assert.Equal(-1, Assert.Single(saved.Profiles).Passcode);
+        Assert.Equal(["closed True", "add " + kind], events);
+    }
+
+    [Fact]
+    public async Task WithNoSourcesTheStatusBarOffersAddASource()
+    {
+        var profile = InMemoryProfile("NZ0P-10");
+        var engine = new FakeEngine { Settings = new AppSettings([profile], profile.Id, UnitSettings.Metric) };
+        var vm = new MainViewModel(engine, new Microsoft.Extensions.Time.Testing.FakeTimeProvider());
+
+        vm.Show(engine.Settings);
+        Assert.True(vm.OffersAddSource);
+
+        await vm.AddSourceCommand.ExecuteAsync(null);
+        Assert.True(vm.Settings!.IsSourcesSection);
+        Assert.True(vm.Settings.Sources!.IsEditing); // Add a source, open on APRS-IS
+        Assert.True(vm.Settings.Sources.IsAprsIs);
+
+        vm.Show(
+            engine.Settings with
+            {
+                Sources = [FakeEngine.Rotate],
+                Profiles = [profile with { SourceIds = [FakeEngine.Rotate.Id] }],
+            }
+        );
+        Assert.False(vm.OffersAddSource);
+    }
+
+    [Fact]
+    public async Task FirstRunAsksNoServerOrPasscodeAndBackLeavesTheLastPage()
+    {
+        var wizard = await AtStep(SetupStep.Start);
+        wizard.IsLicensedOperator = true;
+        wizard.Callsign = "AB1CD-9";
+
+        Assert.Equal("Step 3 of 3", wizard.StepText); // licensed or not
+        Assert.True(wizard.IsStartStep);
+        wizard.BackCommand.Execute(null);
+        Assert.Equal(SetupStep.Location, wizard.Step);
+    }
+
     [Fact]
     public async Task ATncInsteadMakesAnRfOnlyProfileInThreeSteps()
     {
-        var engine = new FakeEngine { Settings = AppSettings.Empty };
-        var wizard = await AtStep(SetupStep.Server, engine);
+        var engine = new FakeEngine { Settings = OneProfileNoSources() };
+        var wizard = await AtStep(SetupStep.Server, engine, adding: true);
         bool? closed = null;
         wizard.Closed += (_, saved) => closed = saved;
 
@@ -387,7 +472,7 @@ public class SetupWizardViewModelTests
         await wizard.NextCommand.ExecuteAsync(null);
 
         var saved = Assert.Single(engine.Saved);
-        var profile = Assert.Single(saved.Profiles);
+        var profile = Made(saved);
         var tnc = Assert.Single(saved.SourceList); // no APRS-IS source
         Assert.Equal(
             (SourceKind.KissTcp, "10.10.20.144", "10.10.20.144", (int?)null),
@@ -428,10 +513,10 @@ public class SetupWizardViewModelTests
     [Fact]
     public async Task ATncOnASerialPortCanBePickedWithItsTypeInTheWizard()
     {
-        var engine = new FakeEngine { Settings = AppSettings.Empty };
+        var engine = new FakeEngine { Settings = OneProfileNoSources() };
         engine.SerialPorts.Clear();
         engine.SerialPorts.Add("/dev/ttyUSB0");
-        var wizard = await AtStep(SetupStep.Server, engine);
+        var wizard = await AtStep(SetupStep.Server, engine, adding: true);
         wizard.UseTnc = true;
         wizard.TncOnSerial = true;
         await wizard.FillSerialCommand.ExecuteAsync(null);
@@ -459,10 +544,10 @@ public class SetupWizardViewModelTests
     {
         var engine = new FakeEngine
         {
-            Settings = AppSettings.Empty,
+            Settings = OneProfileNoSources(),
             SaveFailure = EngineErrors.Create(EngineErrorCodes.KissSourceInvalid, "English reason"),
         };
-        var wizard = await AtStep(SetupStep.Server, engine);
+        var wizard = await AtStep(SetupStep.Server, engine, adding: true);
         wizard.UseTnc = true;
         wizard.TncHost = "localhost";
         wizard.TncPort = "eighty";
@@ -496,8 +581,8 @@ public class SetupWizardViewModelTests
     [InlineData("")]
     public async Task APasscodeMustBeANumberUpTo32767(string passcode)
     {
-        var engine = new FakeEngine { Settings = AppSettings.Empty };
-        var wizard = await AtStep(SetupStep.Passcode, engine);
+        var engine = new FakeEngine { Settings = OneProfileNoSources() };
+        var wizard = await AtStep(SetupStep.Passcode, engine, adding: true);
         wizard.HasPasscode = true;
         wizard.PasscodeText = passcode;
 
@@ -509,13 +594,13 @@ public class SetupWizardViewModelTests
         wizard.PasscodeText = "12345";
         Assert.Null(wizard.PasscodeError);
         await wizard.FinishCommand.ExecuteAsync(null);
-        Assert.Equal(12345, Assert.Single(Assert.Single(engine.Saved).Profiles).Passcode);
+        Assert.Equal(12345, Made(Assert.Single(engine.Saved)).Passcode);
     }
 
     [Fact]
     public async Task TheCalculatorNeedsTheLicenceTickAndNeverFillsInThePasscode()
     {
-        var wizard = await AtStep(SetupStep.Passcode);
+        var wizard = await AtStep(SetupStep.Passcode, adding: true);
         var copied = new List<string>();
         wizard.CopyToClipboard = text =>
         {
@@ -546,7 +631,7 @@ public class SetupWizardViewModelTests
     [Fact]
     public async Task WithoutAClipboardThereIsNoCopyButton()
     {
-        var wizard = await AtStep(SetupStep.Passcode);
+        var wizard = await AtStep(SetupStep.Passcode, adding: true);
         wizard.OpenCalculatorCommand.Execute(null);
         wizard.IsLicensed = true;
 
@@ -578,7 +663,7 @@ public class SetupWizardViewModelTests
             { "aprs.callsign-invalid-character", SetupStep.Callsign, nameof(SetupWizardViewModel.CallsignError) },
             { "aprs.server-port-invalid", SetupStep.Server, nameof(SetupWizardViewModel.ServerError) },
             { EngineErrorCodes.SettingsReadOnly, SetupStep.Passcode, nameof(SetupWizardViewModel.FinishError) },
-            { EngineErrorCodes.ProfileNameDuplicate, SetupStep.Passcode, nameof(SetupWizardViewModel.FinishError) },
+            { EngineErrorCodes.ProfileNameDuplicate, SetupStep.Callsign, nameof(SetupWizardViewModel.NameError) },
         };
 
     [Theory]
@@ -587,10 +672,10 @@ public class SetupWizardViewModelTests
     {
         var engine = new FakeEngine
         {
-            Settings = AppSettings.Empty,
+            Settings = OneProfileNoSources(),
             SaveFailure = EngineErrors.Create(code, "English reason"),
         };
-        var wizard = await AtStep(SetupStep.Passcode, engine);
+        var wizard = await AtStep(SetupStep.Passcode, engine, adding: true);
         bool? closed = null;
         wizard.Closed += (_, saved) => closed = saved;
 
@@ -626,7 +711,7 @@ public class SetupWizardViewModelTests
     [Fact]
     public async Task EscapeClosesTheCalculatorBeforeTheWizard()
     {
-        var wizard = await AtStep(SetupStep.Passcode);
+        var wizard = await AtStep(SetupStep.Passcode, adding: true);
         wizard.OpenCalculatorCommand.Execute(null);
 
         wizard.CloseCommand.Execute(null);
@@ -638,7 +723,7 @@ public class SetupWizardViewModelTests
     [Fact]
     public async Task BackKeepsWhatWasEntered()
     {
-        var wizard = await AtStep(SetupStep.Server);
+        var wizard = await AtStep(SetupStep.Server, adding: true);
 
         wizard.BackCommand.Execute(null);
         wizard.BackCommand.Execute(null);

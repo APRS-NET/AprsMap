@@ -89,16 +89,15 @@ public class SetupWizardViewTests
 
         Type(window, "fn31pr");
         await Press(window, PhysicalKey.Enter); // reads the locator and moves on
-        Assert.Equal(SetupStep.Server, vm.Setup.Step);
+        Assert.Equal(SetupStep.Start, vm.Setup.Step);
+        Assert.True(Find<Button>(window, "FinishButton").IsFocused); // Finish first; Tab reaches the Add buttons
 
-        await Press(window, PhysicalKey.Enter);
-        Assert.Equal(SetupStep.Passcode, vm.Setup.Step);
-
-        await Press(window, PhysicalKey.Enter); // Finish: receive only
+        await Press(window, PhysicalKey.Enter); // Finish: no source yet
         var profile = Assert.Single(Assert.Single(engine.Saved).Profiles);
         Assert.Equal("AB1CD-9", profile.Callsign);
         Assert.Equal(41.7291667, profile.Latitude);
         Assert.Equal(-1, profile.Passcode);
+        Assert.Empty(profile.SourceIds);
         Assert.Null(vm.Setup);
         Assert.False(Find<SetupWizardView>(window, "SetupWizard").IsVisible);
         window.Close();
@@ -170,9 +169,7 @@ public class SetupWizardViewTests
         var (window, vm, _) = await ShowNotSetUp();
         var wizard = vm.Setup!;
         wizard.Callsign = "AB1CD";
-        await wizard.NextCommand.ExecuteAsync(null);
-        await wizard.NextCommand.ExecuteAsync(null);
-        await wizard.NextCommand.ExecuteAsync(null);
+        wizard.Step = SetupStep.Passcode; // the profile editor's step; first run asks it in Add a source
         wizard.HasPasscode = true;
         wizard.OpenCalculatorCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
@@ -196,8 +193,7 @@ public class SetupWizardViewTests
         var (window, vm, _) = await ShowNotSetUp();
         var wizard = vm.Setup!;
         wizard.Callsign = "AB1CD-9";
-        await wizard.NextCommand.ExecuteAsync(null);
-        await wizard.NextCommand.ExecuteAsync(null);
+        wizard.Step = SetupStep.Server; // the profile editor's step; first run adds sources after
         Dispatcher.UIThread.RunJobs();
         Assert.True(Find<Control>(window, "AprsIsFields").IsEffectivelyVisible);
         Assert.False(Find<Control>(window, "TncFields").IsEffectivelyVisible);

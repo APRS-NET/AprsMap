@@ -34,6 +34,87 @@ public class SourcesSectionTests
         Assert.Equal([true, true, true, true, false], section.Kinds.Select(k => k.IsAvailable));
     }
 
+    /// <summary>First run's result: one licensed profile and no sources yet.</summary>
+    private static AppSettings LicensedWithNoSources() =>
+        new([new("home", "NZ0P-10", "NZ0P-10", -1, [], null, null, Licensed: true)], "home", UnitSettings.Metric);
+
+    private static async Task Settle(Func<bool> condition)
+    {
+        for (var i = 0; i < 100 && !condition(); i++)
+        {
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+    }
+
+    [Fact]
+    public async Task TheServerIsADropDownWithCustomAndTheActiveProfilesPasscodeIsAsked()
+    {
+        var (section, engine) = Create(LicensedWithNoSources());
+
+        section.AddKind(SourceKind.AprsIs); // from first run's Add APRS-IS
+        await Settle(() => section.ServerOptions.Count > 0);
+
+        Assert.Equal(
+            [
+                "Worldwide · rotate.aprs2.net:14580",
+                "North America · noam.aprs2.net:14580",
+                "Europe and Africa · euro.aprs2.net:14580",
+                "Custom…",
+            ],
+            section.ServerOptions.Select(o => o.Name)
+        );
+        Assert.Equal("rotate.aprs2.net:14580", section.EditServer);
+        Assert.False(section.IsCustomServer);
+        Assert.True(section.EditProfiles.Single().IsChecked); // the profile has none yet: ticked (F0.5 behavior 24)
+        Assert.True(section.ShowsPasscode);
+        Assert.Equal("Passcode for NZ0P-10", section.PasscodeForText);
+        Assert.False(section.EditHasPasscode); // receive only unless chosen
+
+        section.SelectedServerOption = section.ServerOptions[^1];
+        Assert.True(section.IsCustomServer);
+        Assert.Equal(string.Empty, section.EditServer);
+        section.EditServer = "t2test.example:10152";
+        section.EditHasPasscode = true;
+        section.EditPasscode = "40000";
+        await section.SaveCommand.ExecuteAsync(null);
+        Assert.Equal("A passcode is a whole number from 0 to 32767.", section.Error);
+        Assert.Empty(engine.Saved);
+
+        section.EditPasscode = "12345";
+        await section.SaveCommand.ExecuteAsync(null);
+
+        var saved = Assert.Single(engine.Saved);
+        var source = Assert.Single(saved.SourceList);
+        Assert.Equal("t2test.example:10152", source.Server);
+        Assert.Equal([source.Id], saved.Profiles[0].SourceIds);
+        Assert.Equal(12345, saved.Profiles[0].Passcode);
+    }
+
+    [Fact]
+    public async Task EditingASourceOnAnotherServerOpensOnCustom()
+    {
+        var own = new SourceSettings("own", "own", SourceKind.AprsIs, "t2test.example:10152");
+        var (section, _) = Create(FakeEngine.TwoProfiles() with { Sources = [FakeEngine.Rotate, own] });
+
+        section.Edit(section.Rows[1]);
+        await Settle(() => section.SelectedServerOption is not null);
+
+        Assert.True(section.IsCustomServer);
+        Assert.Equal("t2test.example:10152", section.EditServer);
+        Assert.False(section.ShowsPasscode); // the active profile isn't licensed
+    }
+
+    [Fact]
+    public async Task AddingASecondAprsIsSourceDoesntTakeTheActiveProfileOffItsOwn()
+    {
+        var (section, _) = Create(BothOnRotate());
+
+        section.AddKind(SourceKind.AprsIs);
+        await Settle(() => section.ServerOptions.Count > 0);
+
+        Assert.All(section.EditProfiles, p => Assert.False(p.IsChecked)); // Home already has one
+    }
+
     [Fact]
     public async Task AddingAKissSourceTicksItForTheActiveProfileByDefault()
     {
