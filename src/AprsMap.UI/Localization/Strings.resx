@@ -141,6 +141,14 @@
   <data name="Settings.Sources.Server" xml:space="preserve">
     <value>Server</value>
   </data>
+  <data name="Settings.Sources.CustomServer" xml:space="preserve">
+    <value>Custom…</value>
+    <comment>Last choice in the APRS-IS server list: shows a box for host or host:port.</comment>
+  </data>
+  <data name="Settings.Sources.PasscodeFor" xml:space="preserve">
+    <value>Passcode for {callsign}</value>
+    <comment>callsign: the active profile's callsign; the passcode is stored with that profile.</comment>
+  </data>
   <data name="Settings.Sources.ServerExample" xml:space="preserve">
     <value>rotate.aprs2.net:14580</value>
     <comment>An example server, shown in the empty box. Keep it as it is.</comment>
@@ -492,6 +500,27 @@
   <data name="Wizard.Finish" xml:space="preserve">
     <value>Finish</value>
     <comment>Button on the last step; saves and closes.</comment>
+  </data>
+  <data name="Wizard.Start.Title" xml:space="preserve">
+    <value>Where should traffic come from?</value>
+    <comment>First run's last page.</comment>
+  </data>
+  <data name="Wizard.Start.Help" xml:space="preserve">
+    <value>Add APRS-IS, a TNC, or both. You can also finish now and add them later in Settings › Sources.</value>
+  </data>
+  <data name="Wizard.Start.AprsIs" xml:space="preserve">
+    <value>Add APRS-IS</value>
+    <comment>Button: saves the profile and opens Add a source for an APRS-IS server.</comment>
+  </data>
+  <data name="Wizard.Start.AprsIs.Help" xml:space="preserve">
+    <value>The internet's APRS network: stations near you and around the world.</value>
+  </data>
+  <data name="Wizard.Start.Tnc" xml:space="preserve">
+    <value>Add a TNC</value>
+    <comment>Button: saves the profile and opens Add a source for a TNC.</comment>
+  </data>
+  <data name="Wizard.Start.Tnc.Help" xml:space="preserve">
+    <value>Your own radio: Direwolf or soundmodem over the network, or a TNC on USB.</value>
   </data>
   <data name="Wizard.Close" xml:space="preserve">
     <value>Close</value>
@@ -3581,6 +3610,10 @@ pause 1s</value>
   <data name="Status.Source.Off" xml:space="preserve">
     <value>{source} off</value>
     <comment>A source's pill while it's switched off.</comment>
+  </data>
+  <data name="Status.NoSources" xml:space="preserve">
+    <value>Nothing to receive from yet: Add a source</value>
+    <comment>Status bar button when the profile has no APRS-IS server or TNC; opens Settings › Sources › Add a source.</comment>
   </data>
   <data name="Status.Source.RxOnly" xml:space="preserve">
     <value>{status} · RX only</value>

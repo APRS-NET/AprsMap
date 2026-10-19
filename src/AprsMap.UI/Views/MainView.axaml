@@ -254,6 +254,7 @@
                  Reconnect now (F1.1 behavior 7); its tooltip has the details. -->
             <Border
               x:Name="ConnectionPill"
+              IsVisible="{Binding ShowsAprsIsPill}"
               Classes.warn="{Binding IsConnectionWarning}"
               Classes.ok="{Binding IsConnected}"
               CornerRadius="{DynamicResource Radius.Control}"
@@ -398,6 +399,21 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+            <!-- No sources yet (F0.5 behavior 23.1, F1.25 behavior 6): says so, and opens Add a source. -->
+            <Button
+              x:Name="AddSourceMarker"
+              Classes="toggle-marker"
+              IsVisible="{Binding OffersAddSource}"
+              BorderBrush="{DynamicResource Brush.Accent}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Control}"
+              Padding="8,3"
+              VerticalAlignment="Center"
+              Command="{Binding AddSourceCommand}"
+              AutomationProperties.Name="{l:T Status.NoSources}"
+            >
+              <TextBlock Text="{l:T Status.NoSources}" TextWrapping="Wrap" />
+            </Button>
             <!-- Unread messages (F2.4 behavior 4): opens the Messages panel. -->
             <Button
               x:Name="UnreadMarker"

@@ -219,6 +219,7 @@ public sealed partial class SetupWizardView : UserControl, IDisposable
                     _ => "LocatorBox",
                 },
                 SetupStep.Server => "RegionChoice",
+                SetupStep.Start => "FinishButton",
                 _ => "ReceiveOnlyChoice",
             }
         );

@@ -644,6 +644,28 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial bool ShowGatewaySetupNote { get; set; }
 
+    /// <summary>
+    /// Whether the active profile has no sources, as after first run's Finish (docs/features/F0.5-first-run-wizard.md,
+    /// behavior 23.1): the status bar says so and offers Add a source, where this viewer may change the station.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool OffersAddSource { get; set; }
+
+    /// <summary>
+    /// Whether the APRS-IS pill shows: not for a profile without an APRS-IS source, where it would show a connection
+    /// that doesn't exist (maintainer, 2026-10-18). Its switches stay in the Station menu.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool ShowsAprsIsPill { get; set; } = true;
+
+    /// <summary>Opens Settings › Sources with Add a source (F1.25 behavior 6).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task AddSourceAsync()
+    {
+        await OpenSettingsSectionAsync("sources");
+        Settings?.Sources?.AddKind(SourceKind.AprsIs);
+    }
+
     /// <summary>The latest error talking to the engine (for example, the gateway is unreachable), or null.</summary>
     [ObservableProperty]
     public partial string? ErrorText { get; set; }
@@ -1282,6 +1304,8 @@ public sealed partial class MainViewModel : ObservableObject
         }
         var notSetUp = settings.Profiles.Count == 0;
         ShowGatewaySetupNote = notSetUp && settings.ReadOnly;
+        OffersAddSource = active is { SourceIds.Count: 0 } && !settings.ReadOnly;
+        ShowsAprsIsPill = active is null || settings.AprsIsSourceOf(active) is not null;
         CanOpenSetup = notSetUp && !settings.ReadOnly && _setupDismissed && Setup is null;
         if (notSetUp && !settings.ReadOnly && !_setupDismissed)
         {
@@ -1304,6 +1328,7 @@ public sealed partial class MainViewModel : ObservableObject
             var wizard = new SetupWizardViewModel(engine, _text, _deviceLocation) { Map = Map };
             await wizard.LoadAsync();
             wizard.Closed += OnSetupClosed;
+            wizard.AddSourceRequested += (_, kind) => _ = AddSourceAfterSetupAsync(kind);
             Setup = wizard;
             CanOpenSetup = false;
         }
@@ -1315,6 +1340,17 @@ public sealed partial class MainViewModel : ObservableObject
         {
             _openingSetup = false;
         }
+    }
+
+    /// <summary>
+    /// First run's Add APRS-IS or Add a TNC (docs/features/F0.5-first-run-wizard.md, behavior 23.2): Settings › Sources
+    /// with Add a source open on that kind, once the new profile is loaded.
+    /// </summary>
+    private async Task AddSourceAfterSetupAsync(SourceKind kind)
+    {
+        await ReloadSettingsAsync();
+        await OpenSettingsSectionAsync("sources");
+        Settings?.Sources?.AddKind(kind);
     }
 
     private void OnSetupClosed(object? sender, bool saved)

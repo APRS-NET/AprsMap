@@ -318,14 +318,23 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <!-- APRS-IS: the server and the filter text. -->
+                <!-- APRS-IS: the server as a drop-down with Custom… (F0.5 behavior 25), the filter text, and the active
+                     profile's passcode when it's licensed (behaviors 26, 27). -->
                 <StackPanel Spacing="8" IsVisible="{Binding Sources.IsAprsIs}">
                   <TextBlock Text="{l:T Settings.Sources.Server}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <ComboBox
+                    x:Name="SourceServerPicker"
+                    ItemsSource="{Binding Sources.ServerOptions}"
+                    SelectedItem="{Binding Sources.SelectedServerOption}"
+                    AutomationProperties.Name="{l:T Settings.Sources.Server}"
+                    HorizontalAlignment="Stretch"
+                  />
                   <TextBox
                     x:Name="SourceServerBox"
+                    IsVisible="{Binding Sources.IsCustomServer}"
                     Text="{Binding Sources.EditServer}"
                     PlaceholderText="{l:T Settings.Sources.ServerExample}"
-                    AutomationProperties.Name="{l:T Settings.Sources.Server}"
+                    AutomationProperties.Name="{l:T Settings.Sources.CustomServer}"
                     FontFamily="{DynamicResource Font.Mono}"
                   />
                   <TextBlock Text="{l:T Settings.Sources.Filter}" Foreground="{DynamicResource Brush.TextMuted}" />
@@ -335,6 +344,60 @@
                     AutomationProperties.Name="{l:T Settings.Sources.Filter}"
                     FontFamily="{DynamicResource Font.Mono}"
                   />
+                  <StackPanel x:Name="SourcePasscode" Spacing="8" IsVisible="{Binding Sources.ShowsPasscode}">
+                    <TextBlock
+                      Text="{Binding Sources.PasscodeForText}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                    <RadioButton
+                      GroupName="SourcePasscode"
+                      Content="{l:T Wizard.Passcode.ReceiveOnly}"
+                      IsChecked="{Binding !Sources.EditHasPasscode}"
+                    />
+                    <TextBlock
+                      Text="{l:T Wizard.Passcode.ReceiveOnly.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                    <RadioButton
+                      x:Name="HavePasscodeChoice"
+                      GroupName="SourcePasscode"
+                      Content="{l:T Wizard.Passcode.Have}"
+                      IsChecked="{Binding Sources.EditHasPasscode}"
+                    />
+                    <TextBox
+                      x:Name="SourcePasscodeBox"
+                      IsVisible="{Binding Sources.EditHasPasscode}"
+                      Text="{Binding Sources.EditPasscode}"
+                      PlaceholderText="{l:T Wizard.Passcode.Watermark}"
+                      AutomationProperties.Name="{Binding Sources.PasscodeForText}"
+                      FontFamily="{DynamicResource Font.Mono}"
+                    />
+                    <!-- The calculator (behavior 27): a tick each time, and the number shown, never filled in. -->
+                    <CheckBox
+                      Content="{l:T Wizard.Calculator.Licensed}"
+                      IsChecked="{Binding Sources.CalculatorLicensed}"
+                    />
+                    <WrapPanel ItemSpacing="8" LineSpacing="6">
+                      <Button
+                        Content="{l:T Wizard.Calculator.Calculate}"
+                        Command="{Binding Sources.CalculateCommand}"
+                      />
+                      <SelectableTextBlock
+                        Text="{Binding Sources.CalculatedPasscode}"
+                        IsVisible="{Binding Sources.CalculatedPasscode, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                        VerticalAlignment="Center"
+                      />
+                    </WrapPanel>
+                    <TextBlock
+                      Text="{l:T Wizard.Calculator.Note}"
+                      IsVisible="{Binding Sources.CalculatedPasscode, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
                 </StackPanel>
                 <!-- KISS (F3.1 behavior 1): over TCP the TNC's host and port, on serial its port, speed and control
                      lines; then its radio port, TX path and the profiles using it. -->

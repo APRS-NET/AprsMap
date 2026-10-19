@@ -640,6 +640,38 @@
               </StackPanel>
             </StackPanel>
 
+            <!-- First run's last page (behavior 23): Finish (the footer's), or save and go on to Add a source. -->
+            <StackPanel x:Name="StartStep" IsVisible="{Binding IsStartStep}" Spacing="8">
+              <TextBlock Text="{l:T Wizard.Start.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock
+                Text="{l:T Wizard.Start.Help}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <Button
+                x:Name="AddAprsIsButton"
+                Content="{l:T Wizard.Start.AprsIs}"
+                Command="{Binding AddAprsIsCommand}"
+                AutomationProperties.HelpText="{l:T Wizard.Start.AprsIs.Help}"
+              />
+              <TextBlock
+                Text="{l:T Wizard.Start.AprsIs.Help}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+              <Button
+                x:Name="AddTncButton"
+                Content="{l:T Wizard.Start.Tnc}"
+                Command="{Binding AddTncCommand}"
+                AutomationProperties.HelpText="{l:T Wizard.Start.Tnc.Help}"
+              />
+              <TextBlock
+                Text="{l:T Wizard.Start.Tnc.Help}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+
             <!-- 4. Passcode -->
             <StackPanel x:Name="PasscodeStep" IsVisible="{Binding IsPasscodeStep}" Spacing="8">
               <TextBlock Text="{l:T Wizard.Passcode.Title}" FontWeight="SemiBold" />

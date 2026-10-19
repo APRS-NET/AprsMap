@@ -48,6 +48,129 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     /// <summary>Whether the form shows APRS-IS's server and filter.</summary>
     public bool IsAprsIs => EditKind == SourceKind.AprsIs;
 
+    // ── APRS-IS: the server as a drop-down, and the passcode (docs/features/F0.5-first-run-wizard.md, 25–27) ──────
+
+    /// <summary>The worldwide rotate, the regional rotates, then Custom… (behavior 25).</summary>
+    public ObservableCollection<ServerOption> ServerOptions { get; } = [];
+
+    /// <summary>The server chosen; picking a preset puts its address in <see cref="EditServer"/>.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCustomServer))]
+    public partial ServerOption? SelectedServerOption { get; set; }
+
+    /// <summary>Whether Custom… is chosen, which shows the <c>host</c> or <c>host:port</c> box.</summary>
+    public bool IsCustomServer => SelectedServerOption is { Server: null };
+
+    partial void OnSelectedServerOptionChanged(ServerOption? value)
+    {
+        if (value?.Server is { } server)
+        {
+            EditServer = server;
+        }
+        else if (value is not null && ServerOptions.Any(o => o.Server == EditServer))
+        {
+            EditServer = string.Empty; // Custom… starts empty, not on the preset it left
+        }
+    }
+
+    /// <summary>Lists the presets from the engine and picks the one <paramref name="server"/> is, or Custom….</summary>
+    private async Task ShowServersAsync(string? server)
+    {
+        if (ServerOptions.Count == 0)
+        {
+            IReadOnlyList<ServerPreset> presets;
+            try
+            {
+                presets = await _engine.GetServerPresetsAsync();
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or UnauthorizedAccessException)
+            {
+                presets = [];
+            }
+            foreach (var preset in presets)
+            {
+                var key = "Wizard.Server.Region." + preset.Key;
+                var name = Localizer.Exists(key) ? _text[key] : preset.Name;
+                ServerOptions.Add(new ServerOption(preset.Server, $"{name} · {preset.Server}"));
+            }
+            ServerOptions.Add(new ServerOption(null, _text["Settings.Sources.CustomServer"]));
+        }
+        SelectedServerOption = string.IsNullOrWhiteSpace(server)
+            ? ServerOptions[0]
+            : ServerOptions.FirstOrDefault(o =>
+                string.Equals(o.Server, server.Trim(), StringComparison.OrdinalIgnoreCase)
+            ) ?? ServerOptions[^1];
+        if (IsCustomServer)
+        {
+            EditServer = server ?? string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Whether the passcode is asked: an APRS-IS source and a licensed active profile (behavior 26). It's stored on the
+    /// profile, so the form says whose it is.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool ShowsPasscode { get; private set; }
+
+    /// <summary>"Passcode for NZ0P-10".</summary>
+    [ObservableProperty]
+    public partial string PasscodeForText { get; private set; } = string.Empty;
+
+    /// <summary>I have a passcode, rather than receive only.</summary>
+    [ObservableProperty]
+    public partial bool EditHasPasscode { get; set; }
+
+    /// <summary>The passcode typed: 0 to 32767. The app never fills it in.</summary>
+    [ObservableProperty]
+    public partial string EditPasscode { get; set; } = string.Empty;
+
+    /// <summary>The calculator's "licensed, own callsign" tick, asked each time the form opens (behavior 27.1).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CalculateCommand))]
+    public partial bool CalculatorLicensed { get; set; }
+
+    /// <summary>The passcode the calculator worked out, shown to copy; it doesn't fill in the field (behavior 27.2).</summary>
+    [ObservableProperty]
+    public partial string? CalculatedPasscode { get; private set; }
+
+    /// <summary>Works out the active profile's passcode with APRS.NET, once the tick says it's the user's own callsign.</summary>
+    [RelayCommand(CanExecute = nameof(CalculatorLicensed))]
+    private async Task CalculateAsync()
+    {
+        if (_settings.GetActiveProfile() is not { } profile)
+        {
+            return;
+        }
+        try
+        {
+            CalculatedPasscode = (await _engine.ComputePasscodeAsync(profile.Callsign)).ToString(
+                CultureInfo.InvariantCulture
+            );
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            Error = _text.Describe(ex);
+        }
+    }
+
+    /// <summary>Shows the passcode part for the kind in the form and the active profile.</summary>
+    private void ShowPasscode()
+    {
+        var profile = _settings.GetActiveProfile();
+        ShowsPasscode = IsAprsIs && profile is { Licensed: true } && !ListenerId.Is(profile.Callsign);
+        PasscodeForText = _text.Format(
+            "Settings.Sources.PasscodeFor",
+            new Dictionary<string, object?> { ["callsign"] = profile?.Callsign ?? string.Empty }
+        );
+        EditHasPasscode = profile is { Passcode: >= 0 };
+        EditPasscode = profile is { Passcode: >= 0 } p
+            ? p.Passcode.ToString(CultureInfo.InvariantCulture)
+            : string.Empty;
+        CalculatorLicensed = false;
+        CalculatedPasscode = null;
+    }
+
     /// <summary>Whether the form shows a KISS TNC's radio port, TX path and the profiles that use it (F3.1 behavior 1).</summary>
     public bool IsKiss => EditKind is SourceKind.KissTcp or SourceKind.KissSerial;
 
@@ -192,6 +315,26 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         {
             EditRxOnly = true;
         }
+        if (IsEditing && _editingId is null)
+        {
+            TickActiveProfile(); // one APRS-IS source per profile: ticked only for a profile without one (behavior 24)
+        }
+        if (value == SourceKind.AprsIs && IsEditing)
+        {
+            _ = ShowServersAsync(EditServer);
+        }
+        ShowPasscode();
+    }
+
+    /// <summary>
+    /// Ticks the active profile for a new source: always for a TNC, and for APRS-IS when it has none yet (F0.5 behavior
+    /// 24), so a source added from first run's last page connects at once.
+    /// </summary>
+    private void TickActiveProfile()
+    {
+        var active = _settings.GetActiveProfile();
+        var tick = active is not null && (!IsAprsIs || _settings.AprsIsSourceOf(active) is null);
+        FillProfiles(id => tick && id == active!.Id);
     }
 
     /// <summary>Lists the serial ports present again, for a TNC plugged in while the form is open.</summary>
@@ -348,10 +491,19 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         CanPickKind = true;
         EditRxOnly = false;
         EditTxPath = string.Empty;
-        FillProfiles(id => id == _settings.ActiveProfileId);
         EditUsedBy = null;
         Error = null;
         IsEditing = true;
+        TickActiveProfile();
+        ShowPasscode();
+        _ = ShowServersAsync(null);
+    }
+
+    /// <summary>Opens Add a source on <paramref name="kind"/>, from first run's last page (F0.5 behavior 23.2).</summary>
+    internal void AddKind(SourceKind kind)
+    {
+        Add();
+        EditKind = kind;
     }
 
     internal void Edit(SourceRow row)
@@ -384,6 +536,11 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditUsedBy = row.UsedByText;
         Error = null;
         IsEditing = true;
+        ShowPasscode();
+        if (IsAprsIs)
+        {
+            _ = ShowServersAsync(row.Source.Server);
+        }
         if (IsSerial)
         {
             _ = RefreshSerialPortsAsync();
@@ -422,7 +579,53 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         var sources = _editingId is null
             ? [.. _settings.SourceList, source]
             : _settings.SourceList.Select(s => s.Id == source.Id ? source : s).ToList();
-        if (await SaveSettingsAsync(_settings with { Sources = sources }))
+        int? passcode = null;
+        if (ShowsPasscode)
+        {
+            if (!EditHasPasscode)
+            {
+                passcode = -1;
+            }
+            else if (
+                int.TryParse(EditPasscode.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var number)
+                && number <= 32767
+            )
+            {
+                passcode = number;
+            }
+            else
+            {
+                Error = _text["Wizard.Passcode.Invalid"];
+                return;
+            }
+        }
+        // Ticked profiles use it as their one APRS-IS source (F1.25 behavior 3); the active one keeps the passcode.
+        var ticked = EditProfiles.Where(p => p.IsChecked).Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
+        var aprsIsIds = sources
+            .Where(s => s.Kind == SourceKind.AprsIs)
+            .Select(s => s.Id)
+            .ToHashSet(StringComparer.Ordinal);
+        var profiles = _settings
+            .Profiles.Select(p =>
+            {
+                var changed = ticked.Contains(p.Id)
+                    ? p with
+                    {
+                        SourceIds = [.. p.SourceIds.Where(id => !aprsIsIds.Contains(id)), source.Id],
+                    }
+                    : p with
+                    {
+                        SourceIds = [.. p.SourceIds.Where(id => id != source.Id)],
+                    };
+                return passcode is { } code && p.Id == _settings.ActiveProfileId
+                    ? changed with
+                    {
+                        Passcode = code,
+                    }
+                    : changed;
+            })
+            .ToList();
+        if (await SaveSettingsAsync(_settings with { Sources = sources, Profiles = profiles }))
         {
             IsEditing = false;
         }
@@ -703,6 +906,15 @@ public sealed partial class SourceRow(SourceSettings source, SourcesSectionViewM
     /// <summary>Turns the Transmit switch on (behavior 9).</summary>
     [RelayCommand(AllowConcurrentExecutions = false)]
     private Task TurnTransmitOnAsync() => section.TurnTransmitOnAsync(this);
+}
+
+/// <summary>A server the APRS-IS drop-down offers: a preset's address, or null for Custom….</summary>
+/// <param name="Server">The address as <c>host:port</c>, or null for Custom….</param>
+/// <param name="Name">How it's listed: the region's name and the address.</param>
+public sealed record ServerOption(string? Server, string Name)
+{
+    /// <inheritdoc />
+    public override string ToString() => Name;
 }
 
 /// <summary>A kind Add a source offers, with "coming" for those not built yet.</summary>

@@ -236,7 +236,7 @@ public sealed class PerSourceTransmitUiTests
         Assert.False(wizard.IsLicensedOperator); // unlicensed by default
         Assert.True(wizard.ListenOnly);
         Assert.Equal("SWL123456", wizard.Callsign);
-        Assert.Equal(3, wizard.StepCount); // no passcode step
+        Assert.Equal(3, wizard.StepCount); // first run: callsign, location, then where traffic comes from
         Assert.Equal(
             "You'll listen as SWL123456, an ID made for listeners: it isn't a callsign and never transmits.",
             wizard.ListeningAsText
@@ -245,7 +245,7 @@ public sealed class PerSourceTransmitUiTests
 
         wizard.IsLicensedOperator = true;
         Assert.Equal(string.Empty, wizard.Callsign); // now the callsign is theirs to type
-        Assert.Equal(4, wizard.StepCount);
+        Assert.Equal(3, wizard.StepCount); // the passcode is asked with APRS-IS, in Add a source
         wizard.Callsign = "AB1CD-9";
 
         wizard.IsLicensedOperator = false;

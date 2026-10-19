@@ -24,6 +24,11 @@ public enum SetupStep
 
     /// <summary>Passcode, or receive only.</summary>
     Passcode,
+
+    /// <summary>
+    /// First run's last page: Finish, Add APRS-IS or Add a TNC (docs/features/F0.5-first-run-wizard.md, behavior 23).
+    /// </summary>
+    Start,
 }
 
 /// <summary>What the wizard is for (docs/features/F0.8-profiles.md, behaviors 5–7).</summary>
@@ -168,6 +173,15 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// <summary>Raised when the wizard should close: after saving (true) or when the user gives up (false).</summary>
     public event EventHandler<bool>? Closed;
 
+    /// <summary>
+    /// Raised after first run's Add APRS-IS or Add a TNC has saved the profile: open Settings › Sources › Add a source
+    /// with that kind (behavior 23.2).
+    /// </summary>
+    public event EventHandler<SourceKind>? AddSourceRequested;
+
+    /// <summary>Whether this is first run, which asks only the callsign and location, then where traffic comes from.</summary>
+    public bool IsFirstRun => Mode == WizardMode.FirstRun;
+
     /// <summary>Puts text on the clipboard; set by the view where a clipboard exists (behavior 26.5).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanCopy))]
@@ -266,10 +280,14 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(StepNumber), nameof(IsCallsignStep), nameof(IsLocationStep))]
     [NotifyPropertyChangedFor(nameof(IsServerStep), nameof(IsPasscodeStep), nameof(IsFirstStep), nameof(IsLastStep))]
+    [NotifyPropertyChangedFor(nameof(IsStartStep))]
     public partial SetupStep Step { get; set; }
 
-    /// <summary>1 to 4, for "Step 2 of 4".</summary>
-    public int StepNumber => (int)Step + 1;
+    /// <summary>1 to 4, for "Step 2 of 4"; first run's last page is step 3.</summary>
+    public int StepNumber => Step == SetupStep.Start ? 3 : (int)Step + 1;
+
+    /// <summary>Whether first run's last page is showing: Finish, Add APRS-IS or Add a TNC.</summary>
+    public bool IsStartStep => Step == SetupStep.Start;
 
     /// <summary>Whether the callsign step is showing.</summary>
     public bool IsCallsignStep => Step == SetupStep.Callsign;
@@ -286,14 +304,18 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     /// <summary>Whether Back has nowhere to go.</summary>
     public bool IsFirstStep => Step == SetupStep.Callsign;
 
-    /// <summary>Whether Next is Finish: on the passcode step, or on the server step with a TNC (no APRS-IS login).</summary>
-    public bool IsLastStep => Step == SetupStep.Passcode || (Step == SetupStep.Server && SkipsPasscode);
+    /// <summary>
+    /// Whether Next is Finish: on the passcode step, on the server step with a TNC (no APRS-IS login), and on first run's
+    /// last page, where Finish saves with no sources (behavior 23.1).
+    /// </summary>
+    public bool IsLastStep =>
+        Step is SetupStep.Passcode or SetupStep.Start || (Step == SetupStep.Server && SkipsPasscode);
 
     /// <summary>No passcode step: a TNC-only profile, or a listener's (F2.1 behavior 4), which never logs in verified.</summary>
     public bool SkipsPasscode => UseTnc || ListenOnly;
 
-    /// <summary>How many steps there are: 4, or 3 with a TNC, which needs no passcode.</summary>
-    public int StepCount => SkipsPasscode ? 3 : 4;
+    /// <summary>How many steps there are: 3 on first run; otherwise 4, or 3 with a TNC, which needs no passcode.</summary>
+    public int StepCount => IsFirstRun || SkipsPasscode ? 3 : 4;
 
     /// <summary>"Step 2 of 4", in the viewer's language.</summary>
     [ObservableProperty]
@@ -889,7 +911,10 @@ public sealed partial class SetupWizardViewModel : ObservableObject
                 Step = SetupStep.Location;
                 break;
             case SetupStep.Location when await ConfirmPendingAsync():
-                Step = SetupStep.Server;
+                Step = IsFirstRun ? SetupStep.Start : SetupStep.Server;
+                break;
+            case SetupStep.Start:
+                await FinishAsync();
                 break;
             case SetupStep.Server when CheckServer() && SkipsPasscode:
                 await FinishAsync();
@@ -927,7 +952,11 @@ public sealed partial class SetupWizardViewModel : ObservableObject
     [RelayCommand]
     private void Back()
     {
-        if (Step > SetupStep.Callsign)
+        if (Step == SetupStep.Start)
+        {
+            Step = SetupStep.Location;
+        }
+        else if (Step > SetupStep.Callsign)
         {
             Step--;
         }
@@ -942,7 +971,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         _locationLocator = null;
         _confirmedInput = null;
         _locationFromDevice = false;
-        Step = SetupStep.Server;
+        Step = IsFirstRun ? SetupStep.Start : SetupStep.Server;
     }
 
     /// <summary>Closes, asking first if anything was entered (behavior 31).</summary>
@@ -1218,6 +1247,29 @@ public sealed partial class SetupWizardViewModel : ObservableObject
 
     private bool CanFinish() => !IsBusy;
 
+    /// <summary>First run's Add APRS-IS: saves the profile, then opens Add a source on APRS-IS (behavior 23.2).</summary>
+    [RelayCommand(CanExecute = nameof(CanFinish))]
+    private Task AddAprsIsAsync() => FinishThenAddAsync(SourceKind.AprsIs);
+
+    /// <summary>First run's Add a TNC: saves the profile, then opens Add a source on KISS over TCP (behavior 23.2).</summary>
+    [RelayCommand(CanExecute = nameof(CanFinish))]
+    private Task AddTncAsync() => FinishThenAddAsync(SourceKind.KissTcp);
+
+    private async Task FinishThenAddAsync(SourceKind kind)
+    {
+        _then = kind;
+        try
+        {
+            await FinishAsync();
+        }
+        finally
+        {
+            _then = null;
+        }
+    }
+
+    private SourceKind? _then;
+
     /// <summary>Saves the first profile and closes (behaviors 28–30).</summary>
     [RelayCommand(CanExecute = nameof(CanFinish))]
     private async Task FinishAsync()
@@ -1228,15 +1280,16 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             Step = SetupStep.Callsign;
             return;
         }
-        if ((UseTnc || IsNewSource) && !CheckServer())
+        if (!IsFirstRun && (UseTnc || IsNewSource) && !CheckServer())
         {
             Step = SetupStep.Server;
             return;
         }
         var passcode = -1;
-        if (ListenOnly)
+        if (ListenOnly || IsFirstRun)
         {
-            passcode = -1; // a listener logs in without one (F2.1 behavior 4)
+            // A listener logs in without one (F2.1 behavior 4); first run asks for it with APRS-IS, in Add a source.
+            passcode = -1;
         }
         else if (UseTnc)
         {
@@ -1248,7 +1301,8 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         }
 
         var source =
-            UseTnc && TncOnSerial ? SerialTncFor(TncSerialPort.Trim(), TncBaud.Trim())
+            IsFirstRun ? null // no source needed to finish (behavior 23)
+            : UseTnc && TncOnSerial ? SerialTncFor(TncSerialPort.Trim(), TncBaud.Trim())
             : UseTnc ? TncFor(TncHost.Trim(), TncPort.Trim())
             : IsNewSource ? SourceFor(Server, IsProfileMode && Filter.Trim().Length > 0 ? Filter.Trim() : null)
             : SelectedSource?.Source; // an existing source, or none
@@ -1275,7 +1329,12 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         try
         {
             await _engine.SaveSettingsAsync(Settings(profile, source));
+            var then = _then;
             Closed?.Invoke(this, true);
+            if (then is { } kind)
+            {
+                AddSourceRequested?.Invoke(this, kind);
+            }
         }
         catch (ArgumentException ex)
         {

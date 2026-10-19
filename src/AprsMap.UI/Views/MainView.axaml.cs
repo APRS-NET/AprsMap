@@ -241,7 +241,9 @@ public sealed partial class MainView : UserControl
     private KeyBinding? _togglesKey;
 
     /// <summary>The connection menu, from Ctrl+T or a toggle's marker.</summary>
-    private void OpenConnectionMenu() => ConnectionButton.Flyout?.ShowAt(ConnectionButton);
+    /// <summary>The connection menu at the APRS-IS pill, or at the status bar's edge while that pill is hidden.</summary>
+    private void OpenConnectionMenu() =>
+        ConnectionButton.Flyout?.ShowAt(ConnectionPill.IsVisible ? ConnectionButton : AppMenuButton);
 
     private void UnbindSettingsKey()
     {
