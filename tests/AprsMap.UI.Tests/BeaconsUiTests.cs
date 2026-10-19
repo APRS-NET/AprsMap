@@ -136,7 +136,7 @@ public sealed class BeaconsUiTests
                 )
             )
         );
-        Assert.Equal("Transmitting · next beacon in 12 min", vm.TransmitText);
+        Assert.Equal("TX enabled · next beacon in 12 min", vm.TransmitText);
         Assert.Equal(
             "Next: your position on Direwolf, held back to keep beacons spaced out on this source.",
             vm.TransmitTip
@@ -147,7 +147,7 @@ public sealed class BeaconsUiTests
                 new TransmitStatus(true, BeaconHeld: new EngineError(EngineErrorCodes.TransmitPositionUnconfirmed, "x"))
             )
         );
-        Assert.Equal("Transmitting · beacons waiting", vm.TransmitText);
+        Assert.Equal("TX enabled · beacons waiting", vm.TransmitText);
         Assert.Equal("Beacons are waiting: Send your position once by hand to start beaconing.", vm.TransmitTip);
         Assert.False(vm.IsTransmitHeld); // a hand send is still possible: that's what starts them
     }

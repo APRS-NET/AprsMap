@@ -2478,7 +2478,7 @@ Start the gateway (for example with docker compose up), then open the app from t
     <comment>Sends the station's position once, by hand.</comment>
   </data>
   <data name="Transmit.On" xml:space="preserve">
-    <value>Transmitting</value>
+    <value>TX enabled</value>
     <comment>Status bar marker while the Transmit switch is on.</comment>
   </data>
   <data name="Transmit.Held" xml:space="preserve">
@@ -3702,15 +3702,15 @@ pause 1s</value>
     <value>{count, plural, one {# hour} other {# hours}}</value>
   </data>
   <data name="Transmit.BeaconsWaiting" xml:space="preserve">
-    <value>Transmitting · beacons waiting</value>
+    <value>TX enabled · beacons waiting</value>
     <comment>Status bar marker: Transmit is on but beacons wait; the tooltip says why.</comment>
   </data>
   <data name="Transmit.NextBeacon" xml:space="preserve">
-    <value>Transmitting · next beacon in {minutes} min</value>
+    <value>TX enabled · next beacon in {minutes} min</value>
     <comment>minutes: whole minutes until the next beacon.</comment>
   </data>
   <data name="Transmit.NextBeaconSoon" xml:space="preserve">
-    <value>Transmitting · next beacon within a minute</value>
+    <value>TX enabled · next beacon within a minute</value>
   </data>
   <data name="Transmit.BeaconsWaitingTip" xml:space="preserve">
     <value>Beacons are waiting: {reason}</value>
