@@ -185,7 +185,7 @@ public sealed class SourceConsoleTests
                 "T2TEST",
                 0,
                 "1.0",
-                Sources: [Radio with { Manual = true }, Direwolf]
+                Sources: [Radio with { Manual = true, MaySend = true }, Direwolf]
             )
         );
 
