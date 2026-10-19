@@ -126,8 +126,8 @@ public sealed partial class SourcePill : ObservableObject
                 },
                 name
             );
-        // While transmitting, a source that never sends says so, which is why it isn't sending (F2.1 behavior 5).
-        if (transmitting && status.Enabled && !status.MaySend)
+        // A source that never sends says so on its pill (F2.1 behavior 5; maintainer, 2026-10-18).
+        if (status.Enabled && !status.MaySend && status.Kind is not SourceKind.Gps)
         {
             Text = _text.Format("Status.Source.RxOnly", new Dictionary<string, object?> { ["status"] = Text });
         }
