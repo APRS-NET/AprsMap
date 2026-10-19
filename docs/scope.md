@@ -159,6 +159,7 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | F4.13 | Logging exports: GPX track auto-save, beacon-trigger CSV | (Enables menu) | App | — | scoped |
 | F4.14 | Digital-mode activity objects (FT8 / JS8Call / JT65); semantics pending maintainer observation | (observed) | App | G01 | scoped |
 | F4.15 | Updates ([spec](features/F4.15-updates.md)): a daily check of the GitHub releases with a quiet notice, in-app install on desktop with Velopack, an operator-only notice on the gateway; store packages later | — (maintainer request) | App | — | built but for signing (0.5.0, [#186](https://github.com/APRS-NET/AprsMap/issues/186)) |
+| F4.16 | Device list updates ([spec](features/F4.16-device-list.md)): fetch the aprs-deviceid list weekly (or now) from the APRS Foundation or a mirror, use whichever of it and APRS.NET's built-in list is newer, and name stations already heard again | — (maintainer request) | App | G35 | spec'd (0.6.0) |
 
 ## Order of work
 
