@@ -132,7 +132,7 @@ public class SourcesShownTests
                 Sources:
                 [
                     new("rotate", "rotate.aprs2.net", SourceKind.AprsIs, ConnectionState.Connected, "T2TEST"),
-                    new("tnc", "Direwolf", SourceKind.KissTcp, ConnectionState.Connected),
+                    new("tnc", "Direwolf", SourceKind.KissTcp, ConnectionState.Connected, MaySend: true),
                     new(
                         "gps",
                         "Garmin",
@@ -153,10 +153,40 @@ public class SourcesShownTests
         Assert.True(vm.SourcePills[0].IsConnected); // the OK colours, as the APRS-IS pill
     }
 
+    [Fact]
+    public void AnRxOnlySourcesPillAlwaysSaysSo()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider());
+
+        vm.Show(
+            new EngineStatus(
+                ConnectionState.Connected,
+                "T2TEST",
+                1,
+                "1.0",
+                Sources:
+                [
+                    new("scanner", "Scanner", SourceKind.KissTcp, ConnectionState.Connected), // RX only
+                    new("tnc", "Direwolf", SourceKind.KissTcp, ConnectionState.Connected, MaySend: true),
+                ]
+            )
+        );
+
+        // Transmit off, and still said (maintainer, 2026-10-18).
+        Assert.Equal(["Scanner connected · RX only", "Direwolf connected"], vm.SourcePills.Select(p => p.Text));
+    }
+
     private static EngineStatus WithTnc(SourceStatus tnc) =>
         new(ConnectionState.Connected, "T2TEST", 0, "1.0", Toggles: StationToggles.AllOn)
         {
-            Sources = [new("rotate", "rotate.aprs2.net", SourceKind.AprsIs, ConnectionState.Connected, "T2TEST"), tnc],
+            Sources =
+            [
+                new("rotate", "rotate.aprs2.net", SourceKind.AprsIs, ConnectionState.Connected, "T2TEST"),
+                tnc with
+                {
+                    MaySend = true,
+                },
+            ],
         };
 
     [Fact]
