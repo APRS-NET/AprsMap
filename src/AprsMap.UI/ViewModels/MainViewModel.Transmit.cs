@@ -44,7 +44,7 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     public partial bool CanTransmit { get; private set; }
 
-    /// <summary>"Transmitting", or "Transmit held: APRS-IS isn't connected"; null while Transmit is off.</summary>
+    /// <summary>"TX enabled", or "Transmit held: APRS-IS isn't connected"; null while Transmit is off.</summary>
     [ObservableProperty]
     public partial string? TransmitText { get; private set; }
 
@@ -117,7 +117,7 @@ public sealed partial class MainViewModel
         }
     }
 
-    /// <summary>"Transmitting · next beacon in 12 min", or "Transmitting" with no beacon on.</summary>
+    /// <summary>"TX enabled · next beacon in 12 min", or "TX enabled" with no beacon on.</summary>
     private string BeaconText(TransmitStatus? transmit)
     {
         if (transmit?.BeaconHeld is not null)

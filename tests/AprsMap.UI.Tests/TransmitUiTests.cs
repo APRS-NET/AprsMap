@@ -37,7 +37,7 @@ public sealed class TransmitUiTests
 
         Assert.Equal([(Toggle.Transmit, true)], engine.Toggled);
         Assert.True(vm.TransmitOn);
-        Assert.Equal("Transmitting", vm.TransmitText);
+        Assert.Equal("TX enabled", vm.TransmitText);
         Assert.False(vm.IsTransmitHeld);
         Assert.True(vm.SendPositionCommand.CanExecute(null));
         Assert.Equal("Transmit on", vm.ToggleAnnouncement);
@@ -60,7 +60,7 @@ public sealed class TransmitUiTests
 
         Assert.Equal([(Toggle.Transmit, true)], engine.Toggled);
         Assert.True(vm.IsTransmitting);
-        Assert.Equal("Transmitting", vm.TransmitPillText);
+        Assert.Equal("TX enabled", vm.TransmitPillText);
 
         vm.TransmitSwitch.IsOn = false;
         await WaitFor(() => !vm.TransmitOn);
