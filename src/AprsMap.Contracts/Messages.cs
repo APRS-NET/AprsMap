@@ -55,7 +55,9 @@ public enum MessageRetries
 /// <param name="SourceIds">The sources ticked when not automatic.</param>
 public sealed record SendVia(IReadOnlyList<string>? SourceIds = null)
 {
-    /// <summary>RF to a station a TNC heard in the last 30 minutes, APRS-IS otherwise.</summary>
+    /// <summary>
+    /// RF to a station a TNC heard in the last 30 minutes, APRS-IS otherwise, and every TNC when APRS-IS can't send.
+    /// </summary>
     public bool Automatic => SourceIds is null || SourceIds.Count == 0;
 
     /// <summary>Automatic.</summary>
@@ -101,11 +103,16 @@ public sealed record ChatMessage(
 /// <param name="SendVia">Which way its messages go.</param>
 /// <param name="Retries">Which retry schedule they follow.</param>
 /// <param name="Route">Which way the next message goes now, by source name ("Direwolf"); null when none can send.</param>
+/// <param name="Waiting">
+/// Why nothing can send it now, naming the source (a <c>transmit.*</c> code; behavior 8), or null when
+/// <paramref name="Route"/> is set.
+/// </param>
 public sealed record Conversation(
     string Correspondent,
     int Unread,
     ChatMessage? Last,
     SendVia SendVia,
     MessageRetries Retries,
-    string? Route = null
+    string? Route = null,
+    EngineError? Waiting = null
 );

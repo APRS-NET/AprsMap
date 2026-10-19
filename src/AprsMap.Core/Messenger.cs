@@ -14,8 +14,14 @@ internal interface IMessengerHost
     /// <summary>Whether a packet can go out on <paramref name="sourceId"/> now: Transmit on and every F2.1 layer.</summary>
     bool CanSendOn(string sourceId);
 
-    /// <summary>The profile's TX-enabled sources, in order, with whether each is RF (a TNC).</summary>
+    /// <summary>The profile's sources that may send (not RX only), in order, with whether each is RF (a TNC).</summary>
     IReadOnlyList<(string Id, string Name, bool IsRf)> TransmitSources();
+
+    /// <summary>
+    /// Why a packet can't go out on <paramref name="sourceId"/> now, or, with null, on any source (F2.1 behavior 7a);
+    /// null when it can.
+    /// </summary>
+    EngineError? WhyNotOn(string? sourceId);
 
     /// <summary>Sends <paramref name="payload"/> on <paramref name="sourceId"/>, listed as Sent; false when it failed.</summary>
     Task<bool> SendAsync(string sourceId, MessagePayload payload, CancellationToken cancellationToken);
@@ -203,7 +209,8 @@ internal sealed class Messenger : IDisposable
                             g.MaxBy(m => m.At),
                             via,
                             retries,
-                            route is null ? null : string.Join(", ", route.SourceIds.Select(NameOf))
+                            route is null ? null : string.Join(", ", route.SourceIds.Select(NameOf)),
+                            route is null ? WhyWaiting(via) : null
                         );
                     })
                     .OrderByDescending(c => c.Last?.At),
@@ -222,7 +229,8 @@ internal sealed class Messenger : IDisposable
                             null,
                             via,
                             retries,
-                            route is null ? null : string.Join(", ", route.SourceIds.Select(NameOf))
+                            route is null ? null : string.Join(", ", route.SourceIds.Select(NameOf)),
+                            route is null ? WhyWaiting(via) : null
                         );
                     }),
             ];
@@ -599,9 +607,53 @@ internal sealed class Messenger : IDisposable
         {
             return new Route([heard.SourceId], Automatic: true, OverRf: true);
         }
-        return sources.FirstOrDefault(s => !s.IsRf && _host.CanSendOn(s.Id)) is { Id: { } aprsIs }
-            ? new Route([aprsIs], Automatic: true, OverRf: false)
-            : null;
+        if (sources.FirstOrDefault(s => !s.IsRf && _host.CanSendOn(s.Id)) is { Id: { } aprsIs })
+        {
+            return new Route([aprsIs], Automatic: true, OverRf: false);
+        }
+        // No APRS-IS that can send, as on an RF-only station: every TNC that can, so a station not heard lately is
+        // still reached through the digipeaters (behavior 8.1).
+        var tncs = sources.Where(s => s.IsRf && _host.CanSendOn(s.Id)).Select(s => s.Id).ToList();
+        return tncs.Count > 0 ? new Route(tncs, Automatic: true, OverRf: true) : null;
+    }
+
+    /// <summary>
+    /// Why a message sent <paramref name="via"/> waits (behavior 8): the first chosen source's reason, or for Automatic
+    /// the first source's, or why nothing may send at all. Call under the lock.
+    /// </summary>
+    private EngineError? WhyWaiting(SendVia via)
+    {
+        var sources = _host.TransmitSources();
+        var candidates = via.Automatic
+            ? sources.Select(s => s.Id)
+            : via.SourceIds!.Where(id => sources.Any(s => s.Id == id));
+        return candidates.Select(_host.WhyNotOn).FirstOrDefault(e => e is not null) ?? _host.WhyNotOn(null);
+    }
+
+    /// <summary>
+    /// Takes sources that are gone out of every conversation's Send via; one left with none goes back to Automatic
+    /// (behavior 8.2). Called when the settings change, and after the conversations load.
+    /// </summary>
+    public void KeepSources(IReadOnlyCollection<string> sourceIds)
+    {
+        var changed = false;
+        lock (_gate)
+        {
+            foreach (var (correspondent, (via, retries)) in _conversations.ToList())
+            {
+                if (via.Automatic || via.SourceIds!.All(sourceIds.Contains))
+                {
+                    continue;
+                }
+                var kept = via.SourceIds!.Where(sourceIds.Contains).ToList();
+                _conversations[correspondent] = (kept.Count == 0 ? SendVia.Auto : new SendVia(kept), retries);
+                changed = true;
+            }
+        }
+        if (changed)
+        {
+            SaveLater();
+        }
     }
 
     private string NameOf(string sourceId) =>

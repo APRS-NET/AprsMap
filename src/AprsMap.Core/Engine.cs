@@ -195,7 +195,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         try
         {
             var old = await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false);
-            var saved = trusted ? settings with { ReadOnly = false } : KeepTransmitState(settings, old);
+            var saved = ForgetDeletedSources(
+                trusted ? settings with { ReadOnly = false } : KeepTransmitState(settings, old)
+            );
             var before = Station.Of(old);
             await _settingsStore.SaveAsync(saved, cancellationToken).ConfigureAwait(false);
             lock (_gate)
@@ -227,6 +229,42 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             _settingsLock.Release();
         }
+    }
+
+    /// <summary>
+    /// Takes sources that are gone out of every beacon's Send via (docs/features/F2.2-beacons.md, behavior 1); one left
+    /// with none sends on every source again.
+    /// </summary>
+    private static AppSettings ForgetDeletedSources(AppSettings settings)
+    {
+        var ids = settings.SourceList.Select(s => s.Id).ToHashSet(StringComparer.Ordinal);
+        IReadOnlyList<string>? Keep(IReadOnlyList<string>? via) =>
+            via is null || via.All(ids.Contains) ? via
+            : via.Where(ids.Contains).ToList() is { Count: > 0 } kept ? kept
+            : null;
+        return settings with
+        {
+            Profiles =
+            [
+                .. settings.Profiles.Select(p =>
+                    p with
+                    {
+                        PositionBeacon = p.PositionBeacon is { } position
+                            ? position with
+                            {
+                                SourceIds = Keep(position.SourceIds),
+                            }
+                            : null,
+                        StatusBeacon = p.StatusBeacon is { } status
+                            ? status with
+                            {
+                                SourceIds = Keep(status.SourceIds),
+                            }
+                            : null,
+                    }
+                ),
+            ],
+        };
     }
 
     private static AppSettings KeepTransmitState(AppSettings settings, AppSettings old)
@@ -1300,6 +1338,27 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
     }
 
+    EngineError? IMessengerHost.WhyNotOn(string? sourceId)
+    {
+        lock (_gate)
+        {
+            var settings = _settings ?? AppSettings.Empty;
+            if (!settings.EffectiveToggles.Transmit)
+            {
+                return new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.");
+            }
+            if (ProfileBlock(settings) is { } profileBlock)
+            {
+                return profileBlock;
+            }
+            var profile = settings.GetActiveProfile();
+            return sourceId is null ? TransmitBlock(settings)
+                : settings.SourceList.FirstOrDefault(s => s.Id == sourceId) is { } source && profile!.Uses(source)
+                    ? SourceBlock(settings, source)
+                : NoSource();
+        }
+    }
+
     Task<bool> IMessengerHost.SendAsync(string sourceId, MessagePayload payload, CancellationToken cancellationToken) =>
         SendPayloadAsync(sourceId, payload, cancellationToken);
 
@@ -2047,6 +2106,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         var profile = settings.GetActiveProfile();
         await _messenger.UseAsync(profile?.Id, profile?.Callsign, cancellationToken).ConfigureAwait(false);
+        _messenger.KeepSources([.. settings.SourceList.Select(s => s.Id)]); // deleted sources leave Send via
         _messenger.Pump(); // the Transmit switch or a source may have changed
         _beaconer.Poke(); // and beacons with them (F2.2 behavior 4)
         _ownBulletins.Poke(); // and bulletins (F2.5 behavior 7)

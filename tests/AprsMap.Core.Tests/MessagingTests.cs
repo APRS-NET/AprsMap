@@ -165,6 +165,79 @@ public sealed class MessagingTests
     }
 
     [Fact]
+    public async Task WithoutAprsIsToSendOnAutomaticGoesOnTheTncsToAStationNotHeard()
+    {
+        using var station = Create();
+        var (run, cts, aprsIs, tnc) = await Run(station);
+        using (cts)
+        {
+            await station.Engine.SetToggleAsync(Toggle.AprsIs, false, Ct); // an RF-only station
+
+            await station.Engine.SendMessageAsync("N1XYZ", "Via the digis", Ct);
+
+            await WaitUntil(() => Task.FromResult(!tnc.Sent.IsEmpty));
+            Assert.StartsWith($"N0TEST>{Brand.Tocall},WIDE1-1,WIDE2-1::N1XYZ    :Via the digis{{", tnc.Sent.First());
+            Assert.Empty(aprsIs.Sent);
+            Assert.Equal("Direwolf", Assert.Single(await station.Engine.GetConversationsAsync(Ct)).Route);
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
+    public async Task AWaitingMessageSaysWhichSourceStopsItAndWhy()
+    {
+        using var station = Create();
+        var (run, cts, _, tnc) = await Run(station);
+        using (cts)
+        {
+            await station.Engine.SetConversationAsync("N1XYZ", new SendVia([Tnc.Id]), MessageRetries.Automatic, Ct);
+            await station.Engine.SetSourceEnabledAsync(Tnc.Id, false, Ct);
+
+            await station.Engine.SendMessageAsync("N1XYZ", "Hello?", Ct);
+
+            var conversation = Assert.Single(await station.Engine.GetConversationsAsync(Ct));
+            Assert.Null(conversation.Route);
+            Assert.Equal(EngineErrorCodes.TransmitSourceOff, conversation.Waiting!.Code);
+            Assert.Equal("Direwolf", conversation.Waiting.Arg(EngineErrorArgs.Source));
+            Assert.Empty(tnc.Sent);
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
+    public async Task DeletingASourceTakesItOutOfSendViaForConversationsAndBeacons()
+    {
+        using var station = Create();
+        var (run, cts, _, _) = await Run(station);
+        using (cts)
+        {
+            await station.Engine.SetConversationAsync("N1XYZ", new SendVia([Tnc.Id]), MessageRetries.Automatic, Ct);
+            var settings = await station.Engine.GetSettingsAsync(Ct);
+            var home = settings.Profiles[0] with
+            {
+                PositionBeacon = PositionBeaconSettings.Off with { SourceIds = [Tnc.Id] },
+            };
+            await station.Engine.SaveSettingsAsync(settings with { Profiles = [home] }, Ct);
+
+            await station.Engine.SaveSettingsAsync(
+                (await station.Engine.GetSettingsAsync(Ct)) with
+                {
+                    Sources = [AprsIs],
+                    Profiles = [home with { SourceIds = [AprsIs.Id] }],
+                },
+                Ct
+            );
+
+            Assert.True(Assert.Single(await station.Engine.GetConversationsAsync(Ct)).SendVia.Automatic);
+            Assert.Null((await station.Engine.GetSettingsAsync(Ct)).Profiles[0].PositionBeacon!.SourceIds);
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
     public async Task WhenEveryRfTryGoesUnackedItIsSentOnceMoreOverAprsIs()
     {
         using var station = Create();

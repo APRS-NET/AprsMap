@@ -220,11 +220,58 @@ public sealed partial class MessagesViewModel : ObservableObject
         }
     }
 
-    /// <summary>Says which way the next message goes (behavior 8).</summary>
-    private void ShowRoute(Conversation? conversation) =>
-        RouteText = conversation?.Route is { } route
-            ? _text.Format("Messages.Route", new Dictionary<string, object?> { ["sources"] = route })
+    /// <summary>Says which way the next message goes, or why it waits and what to change (behavior 8).</summary>
+    private void ShowRoute(Conversation? conversation)
+    {
+        if (conversation is null)
+        {
+            ShowNewRoute();
+            return;
+        }
+        RouteText =
+            conversation.Route is { } route
+                ? _text.Format("Messages.Route", new Dictionary<string, object?> { ["sources"] = route })
+            : conversation.Waiting is { } waiting
+                ? _text.Format(
+                    "Messages.Waiting",
+                    new Dictionary<string, object?> { ["reason"] = _text.Format(waiting) }
+                )
             : _text["Messages.RouteNone"];
+    }
+
+    /// <summary>
+    /// A conversation the engine doesn't list yet (nothing written, nothing chosen) goes Automatic to a station not heard
+    /// lately: APRS-IS when it can send, otherwise every TNC that can (behavior 8.1). Worked out from the status, so a new
+    /// conversation doesn't say nothing can send when something can.
+    /// </summary>
+    private void ShowNewRoute()
+    {
+        var status = _status();
+        var sources = (status?.Sources ?? []).Where(s => s.MaySend).ToList();
+        var aprsIs = sources.FirstOrDefault(s => s.Kind == SourceKind.AprsIs && s.CanTransmit);
+        List<string> route = aprsIs is not null
+            ? [aprsIs.Name]
+            : [.. sources.Where(s => s.Kind != SourceKind.AprsIs && s.CanTransmit).Select(s => s.Name)];
+        var waiting = status?.Toggles is { Transmit: false }
+            ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
+            : status?.Transmit?.Blocked ?? sources.Select(s => s.TransmitBlocked).FirstOrDefault(e => e is not null);
+        if (waiting?.Code == EngineErrorCodes.TransmitOff)
+        {
+            route.Clear(); // the master switch is over every source, whatever each one says
+        }
+        RouteText =
+            route.Count > 0
+                ? _text.Format(
+                    "Messages.Route",
+                    new Dictionary<string, object?> { ["sources"] = string.Join(", ", route) }
+                )
+            : waiting is not null
+                ? _text.Format(
+                    "Messages.Waiting",
+                    new Dictionary<string, object?> { ["reason"] = _text.Format(waiting) }
+                )
+            : _text["Messages.RouteNone"];
+    }
 
     /// <summary>Asks the engine which way the open conversation's next message goes, keeping what's shown ticked.</summary>
     private async Task RefreshRouteAsync(string correspondent)
