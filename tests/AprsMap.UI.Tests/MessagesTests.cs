@@ -60,6 +60,54 @@ public sealed class MessagesTests
     }
 
     [Fact]
+    public async Task ANewConversationSaysWhichWayItWouldGoFromTheStatus()
+    {
+        // An RF-only station, Transmit on: a new conversation goes on the TNC (found in use, 2026-10-18).
+        var status = new EngineStatus(
+            ConnectionState.NotConfigured,
+            null,
+            0,
+            "1.0",
+            Sources: [new("tnc", "Direwolf", SourceKind.KissTcp, ConnectionState.Connected, MaySend: true)],
+            Toggles: StationToggles.AllOn with
+            {
+                Transmit = true,
+            }
+        );
+        var (messages, _) = Create(status);
+
+        messages.Open("NZ0P-3");
+        for (var i = 0; i < 100 && messages.RouteText is null; i++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal("Send via Direwolf", messages.RouteText);
+    }
+
+    [Fact]
+    public async Task ANewConversationWithTransmitOffSaysSo()
+    {
+        var status = new EngineStatus(
+            ConnectionState.NotConfigured,
+            null,
+            0,
+            "1.0",
+            Sources: [new("tnc", "Direwolf", SourceKind.KissTcp, ConnectionState.Connected, MaySend: true)],
+            Toggles: StationToggles.AllOn
+        );
+        var (messages, _) = Create(status);
+
+        messages.Open("NZ0P-3");
+        for (var i = 0; i < 100 && messages.RouteText is null; i++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal("Waiting: Transmit is off. Turn it on in the status bar.", messages.RouteText);
+    }
+
+    [Fact]
     public void ConversationsAreNewestFirstWithTheirUnreadCounts()
     {
         var (messages, _) = Create();
