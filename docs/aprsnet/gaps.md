@@ -382,6 +382,11 @@ count), along with the sender's position once, wrapped as third-party; rate limi
 **Scope.** Checksum validation and parsing of GGA, RMC, GLL, VTG, GSA (and GNSS talker IDs GN/GL/GA/GB), plus
 `$`-type packets decoded as a `PositionedPayload` subtype or `NmeaReport`. Reading from devices stays in the app.
 
+Added 2026-10-20 for AprsMap F3.12 (GPS status): **GSV** (satellites in view: PRN, elevation, azimuth, SNR, across a
+multi-sentence group, per talker so GPS, GLONASS, Galileo and BeiDou stay apart, with the NMEA 4.1 signal ID where
+sent), **GST** (estimated position error in metres, where the receiver sends it), and the DOPs and satellites used from
+GGA and GSA, gathered into one fix-quality value next to the position fix shared with G30.
+
 **Acceptance.** APRS101 p.34 vectors; bad checksums give a warning, not an exception.
 
 ## G18: Raw weather station data and storm objects
@@ -514,6 +519,11 @@ another machine.
 **Scope.** Connect to gpsd over TCP (default port 2947), send `?WATCH={"enable":true,"json":true}`, and read TPV
 reports (time, position, speed, course, altitude, fix mode) into a position fix type shared with G17's NMEA parser;
 reconnect like the other connections. No device access in the library beyond the socket.
+
+Added 2026-10-20 for AprsMap F3.12 (GPS status): TPV's error estimates (`eph`, `epv`, `epx`, `epy`, `eps`), and
+**SKY** reports (the satellites in view with PRN, elevation, azimuth, signal strength, used or not and constellation
+(`gnssid`), and the DOPs) into the same satellite and fix-quality values as G17's GSV and GSA. The raw lines read, for
+an app's console.
 
 **Acceptance.** Recorded gpsd JSON sessions; no fix, 2D and 3D fixes; reconnect after the daemon restarts.
 
