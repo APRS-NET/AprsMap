@@ -44,7 +44,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         SourcesSectionViewModel? sources = null,
         IReadOnlyList<SettingItem>? unitItems = null,
         BeaconsSectionViewModel? beacons = null,
-        Shell.SavedLayoutsViewModel? layouts = null
+        Shell.SavedLayoutsViewModel? layouts = null,
+        LoggingSectionViewModel? logging = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
@@ -54,6 +55,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Beacons = beacons;
         Data = data;
         Layouts = layouts;
+        Logging = logging;
         _time = time;
         _text = text ?? Localizer.Instance;
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
@@ -82,7 +84,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsDataSection),
         nameof(IsMapSection),
         nameof(IsUnitsSection),
-        nameof(IsLayoutSection)
+        nameof(IsLayoutSection),
+        nameof(IsLoggingSection)
     )]
     public partial SettingsSection? SelectedSection { get; set; }
 
@@ -130,6 +133,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         SelectedSection = Sections.FirstOrDefault(s => s.Id == id) ?? SelectedSection;
 
     internal void ShowLayout() => SelectedSection = Sections.FirstOrDefault(s => s.Id == "layout") ?? SelectedSection;
+
+    /// <summary>Whether Logging is showing (docs/features/F1.32-logging.md).</summary>
+    public bool IsLoggingSection => SelectedSection?.Id == "logging";
+
+    /// <summary>Settings › Logging, for the desktop user and a gateway's signed-in operator (behavior 1).</summary>
+    public LoggingSectionViewModel? Logging { get; }
 
     /// <summary>Whether Data is showing.</summary>
     public bool IsDataSection => SelectedSection?.Id == "data";
@@ -265,6 +274,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             // Packet capture; Clear data and Start over are in the Tools menu (F1.29 behavior 9).
             Sections.Add(new SettingsSection("data", _text["Settings.Data"]));
         }
+        if (Logging is not null)
+        {
+            Sections.Add(new SettingsSection("logging", _text["Settings.Logging"]));
+        }
         SelectedSection = Sections.FirstOrDefault(s => s.Id == selected) ?? (selected is null ? null : Sections[0]);
         foreach (var item in AppearanceItems.Concat(MapItems).Concat(UnitItems))
         {
@@ -272,6 +285,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
         Profiles?.Retranslate();
         Sources?.Retranslate();
+        Logging?.Retranslate();
         Beacons?.Retranslate();
         Data?.Retranslate();
     }

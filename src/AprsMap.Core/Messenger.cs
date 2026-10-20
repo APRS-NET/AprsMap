@@ -2,6 +2,8 @@
 using AprsMap.Contracts;
 using AprsNet.Messaging;
 using AprsNet.Packets;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace AprsMap.Core;
 
@@ -32,7 +34,7 @@ internal interface IMessengerHost
 /// the offline queue, the route each message takes (Send via), the state of each message as the app shows it, unread
 /// counts and the stored history.
 /// </summary>
-internal sealed class Messenger : IDisposable
+internal sealed partial class Messenger : IDisposable
 {
     /// <summary>The most characters one compose may have (behavior 6).</summary>
     public const int MaxComposeLength = 300;
@@ -54,6 +56,8 @@ internal sealed class Messenger : IDisposable
 
     private readonly object _gate = new();
     private readonly IMessengerHost _host;
+    private readonly ILogger _log;
+    private readonly LoggingState _logging;
     private readonly IMessageStore _store;
     private readonly TimeProvider _time;
     private readonly List<ChatMessage> _messages = [];
@@ -78,11 +82,19 @@ internal sealed class Messenger : IDisposable
     /// <summary>Which sources one outgoing message goes on, and whether it fell back to APRS-IS (behavior 8).</summary>
     private sealed record Route(IReadOnlyList<string> SourceIds, bool Automatic, bool OverRf, bool FellBack = false);
 
-    public Messenger(IMessengerHost host, IMessageStore store, TimeProvider time)
+    public Messenger(
+        IMessengerHost host,
+        IMessageStore store,
+        TimeProvider time,
+        ILogger? logger = null,
+        LoggingState? logging = null
+    )
     {
         _host = host;
         _store = store;
         _time = time;
+        _log = logger ?? NullLogger.Instance;
+        _logging = logging ?? new LoggingState();
         _timer = time.CreateTimer(_ => Pump(), null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5));
     }
 
@@ -501,6 +513,7 @@ internal sealed class Messenger : IDisposable
             if (outgoing.IsFinished)
             {
                 _inFlight.Remove(outgoing);
+                LogSettled(_log, outgoing.To.Value, outgoing.MessageId ?? "-", state, outgoing.Attempts);
             }
             Update(
                 id,
@@ -538,6 +551,14 @@ internal sealed class Messenger : IDisposable
             NotAcknowledged: message.MessageId is not null && (source is null || !_host.CanSendOn(source)),
             Read: false
         );
+        // Who, when and its ID; the text only with Log message texts on (docs/features/F1.32-logging.md, behavior 5.2).
+        LogMessageReceived(
+            _log,
+            received.Correspondent,
+            message.MessageId ?? "-",
+            source ?? "APRS-IS",
+            _logging.Current.MessageTexts ? message.Text : "(text not logged)"
+        );
         lock (_gate)
         {
             _messages.Add(received);
@@ -546,6 +567,12 @@ internal sealed class Messenger : IDisposable
         }
         SaveLater();
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Message from {From} ({Id}) on {Source}: {Text}")]
+    private static partial void LogMessageReceived(ILogger logger, string from, string id, string source, string text);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Message to {To} ({Id}) {State} after {Attempts} tries")]
+    private static partial void LogSettled(ILogger logger, string to, string id, ChatMessageState state, int attempts);
 
     /// <summary>Sends what the station hands back: messages on their route, acks and rejs where the message came from.</summary>
     private async Task PumpOutgoingAsync(MessagingStation station, CancellationToken cancellationToken)

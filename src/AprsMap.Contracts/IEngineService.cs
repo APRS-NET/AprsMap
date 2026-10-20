@@ -328,6 +328,13 @@ public interface IEngineService
     /// </summary>
     Task<UpdateStatus> GetUpdateStatusAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// What the logging settings can't show by themselves (docs/features/F1.32-logging.md, behaviors 1, 2, 8, 14): what
+    /// the environment sets, the log file's default folder, and whether an OTLP change waits for a restart.
+    /// Operator-only on a gateway.
+    /// </summary>
+    Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Checks for an update now (Check now, behavior 1), and says where it stands after.</summary>
     Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default);
 

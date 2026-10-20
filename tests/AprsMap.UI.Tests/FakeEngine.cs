@@ -277,6 +277,12 @@ internal sealed class FakeEngine : IEngineService
     public Task<UpdateStatus> GetUpdateStatusAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(UpdateStatus);
 
+    /// <summary>What <see cref="GetLoggingStatusAsync"/> answers.</summary>
+    public LoggingStatus LoggingStatus { get; set; } = new("/home/test/.local/share/aprsnet/aprsmap/logs", true);
+
+    public Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(LoggingStatus);
+
     public Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default)
     {
         UpdateChecks++;

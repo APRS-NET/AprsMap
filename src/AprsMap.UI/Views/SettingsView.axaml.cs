@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 
 namespace AprsMap.UI.Views;
@@ -52,7 +53,28 @@ public sealed partial class SettingsView : UserControl
             {
                 profiles.PropertyChanged += OnProfilesChanged;
             }
+            // Choose folder… for the log file (F1.32 behavior 8): a folder on this computer, so the desktop only.
+            if (_viewModel.Logging is { } logging && !OperatingSystem.IsBrowser())
+            {
+                logging.FolderPicker = PickFolderAsync;
+            }
         }
+    }
+
+    private async Task<string?> PickFolderAsync()
+    {
+        if (TopLevel.GetTopLevel(this)?.StorageProvider is not { CanPickFolder: true } storage)
+        {
+            return null;
+        }
+        var picked = await storage.OpenFolderPickerAsync(
+            new FolderPickerOpenOptions
+            {
+                Title = Localization.Localizer.Instance["Logging.ChooseFolder"],
+                AllowMultiple = false,
+            }
+        );
+        return picked.Count > 0 ? picked[0].TryGetLocalPath() : null;
     }
 
     /// <summary>After a delete, Undo takes focus (F0.8 behavior 14); when it goes away, focus goes to Add profile.</summary>

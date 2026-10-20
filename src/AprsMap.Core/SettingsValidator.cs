@@ -211,6 +211,78 @@ internal static class SettingsValidator
         {
             throw Fail(EngineErrorCodes.ActiveProfileMissing, "The active profile must be one of the profiles.");
         }
+
+        if (settings.Logging is { } logging)
+        {
+            ValidateLogging(logging);
+        }
+    }
+
+    /// <summary>The log file's limits and the OTLP targets (docs/features/F1.32-logging.md, behaviors 9–13).</summary>
+    private static void ValidateLogging(LoggingSettings logging)
+    {
+        var file = logging.EffectiveFile;
+        CheckRange(file.MaxFileMegabytes, LogFileSettings.FileMegabytesRange, "maxFileMegabytes");
+        CheckRange(file.KeepDays, LogFileSettings.KeepDaysRange, "keepDays");
+        CheckRange(file.TotalMegabytes, LogFileSettings.TotalMegabytesRange, "totalMegabytes");
+
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var target in logging.TargetList)
+        {
+            if (string.IsNullOrWhiteSpace(target.Id) || !ids.Add(target.Id) || string.IsNullOrWhiteSpace(target.Name))
+            {
+                throw TargetInvalid(target.Name, "Every OTLP target needs its own id and a name.");
+            }
+            if (
+                !Uri.TryCreate(target.Endpoint, UriKind.Absolute, out var endpoint)
+                || endpoint.Scheme is not ("http" or "https")
+            )
+            {
+                throw TargetInvalid(target.Name, $"OTLP target '{target.Name}' needs an http or https address.");
+            }
+            var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var header in target.HeaderList)
+            {
+                // An HTTP header name: a token of letters, digits and !#$%&'*+-.^_`|~ (RFC 9110).
+                if (
+                    string.IsNullOrEmpty(header.Name)
+                    || !header.Name.All(c => char.IsAsciiLetterOrDigit(c) || "!#$%&'*+-.^_`|~".Contains(c))
+                    || !names.Add(header.Name)
+                    || header.Value?.Any(c => c is '\r' or '\n') == true
+                )
+                {
+                    throw TargetInvalid(target.Name, $"OTLP target '{target.Name}' has a header that can't be sent.");
+                }
+            }
+        }
+
+        static void CheckRange(int value, (int Min, int Max) range, string field)
+        {
+            if (value < range.Min || value > range.Max)
+            {
+                throw new EngineArgumentException(
+                    new EngineError(
+                        EngineErrorCodes.LoggingLimitInvalid,
+                        $"The log file's {field} must be from {range.Min} to {range.Max}.",
+                        new Dictionary<string, string>
+                        {
+                            [EngineErrorArgs.Field] = field,
+                            ["min"] = range.Min.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            ["max"] = range.Max.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        }
+                    )
+                );
+            }
+        }
+
+        static EngineArgumentException TargetInvalid(string name, string message) =>
+            new(
+                new EngineError(
+                    EngineErrorCodes.LoggingTargetInvalid,
+                    message,
+                    new Dictionary<string, string> { ["target"] = name ?? string.Empty }
+                )
+            );
     }
 
     /// <summary>Whether <paramref name="comment"/> fits a position report (F2.1 behavior 2).</summary>

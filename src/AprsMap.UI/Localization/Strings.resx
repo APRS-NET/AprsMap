@@ -1759,6 +1759,221 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Data</value>
     <comment>Settings section: data kept by the app, and Reset the app.</comment>
   </data>
+  <data name="Settings.Logging" xml:space="preserve">
+    <value>Logging</value>
+    <comment>Settings section: log levels, the log file and OpenTelemetry targets.</comment>
+  </data>
+  <data name="Logging.WhatToLog" xml:space="preserve">
+    <value>What to log</value>
+  </data>
+  <data name="Logging.Overall" xml:space="preserve">
+    <value>Overall level</value>
+  </data>
+  <data name="Logging.Level.Errors" xml:space="preserve">
+    <value>Errors</value>
+  </data>
+  <data name="Logging.Level.Warnings" xml:space="preserve">
+    <value>Warnings</value>
+  </data>
+  <data name="Logging.Level.Information" xml:space="preserve">
+    <value>Information</value>
+  </data>
+  <data name="Logging.Level.Debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="Logging.Level.Trace" xml:space="preserve">
+    <value>Trace</value>
+  </data>
+  <data name="Logging.SameAsOverall" xml:space="preserve">
+    <value>Same as overall</value>
+    <comment>An area that follows the overall level.</comment>
+  </data>
+  <data name="Logging.FromEnvironment" xml:space="preserve">
+    <value>Set by the environment</value>
+    <comment>The level is set where the app starts (an environment variable or the command line), which wins over this setting.</comment>
+  </data>
+  <data name="Logging.Areas" xml:space="preserve">
+    <value>Each area</value>
+  </data>
+  <data name="Logging.Area.Connections" xml:space="preserve">
+    <value>Connections</value>
+    <comment>APRS-IS, TNCs, serial ports.</comment>
+  </data>
+  <data name="Logging.Area.Packets" xml:space="preserve">
+    <value>Packets</value>
+  </data>
+  <data name="Logging.Area.Messages" xml:space="preserve">
+    <value>Messages and bulletins</value>
+  </data>
+  <data name="Logging.Area.Transmit" xml:space="preserve">
+    <value>Transmit and beacons</value>
+  </data>
+  <data name="Logging.Area.Tiles" xml:space="preserve">
+    <value>Map tiles</value>
+  </data>
+  <data name="Logging.Area.Updates" xml:space="preserve">
+    <value>Updates</value>
+  </data>
+  <data name="Logging.Area.Web" xml:space="preserve">
+    <value>Web and sign-in</value>
+    <comment>The gateway's web side.</comment>
+  </data>
+  <data name="Logging.Area.AprsNet" xml:space="preserve">
+    <value>APRS.NET</value>
+    <comment>The library this app is built on; keep its name.</comment>
+  </data>
+  <data name="Logging.Packets" xml:space="preserve">
+    <value>Log every packet</value>
+  </data>
+  <data name="Logging.Packets.Help" xml:space="preserve">
+    <value>Each packet received or sent, as its raw text, at Debug in Packets. A busy APRS-IS feed fills the log quickly.</value>
+  </data>
+  <data name="Logging.MessageTexts" xml:space="preserve">
+    <value>Log message texts</value>
+  </data>
+  <data name="Logging.MessageTexts.Help" xml:space="preserve">
+    <value>The text of messages and bulletins. Off, a message is logged by who and when, never what it says.</value>
+  </data>
+  <data name="Logging.Never" xml:space="preserve">
+    <value>Passcodes, passwords, session cookies and OTLP headers are never logged.</value>
+  </data>
+  <data name="Logging.File" xml:space="preserve">
+    <value>Log file</value>
+  </data>
+  <data name="Logging.FileOn" xml:space="preserve">
+    <value>Write a log file</value>
+  </data>
+  <data name="Logging.Folder" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="Logging.ChooseFolder" xml:space="preserve">
+    <value>Choose folder…</value>
+  </data>
+  <data name="Logging.ResetFolder" xml:space="preserve">
+    <value>Use the default</value>
+  </data>
+  <data name="Logging.FileHelp" xml:space="preserve">
+    <value>A file a day, named by the date in UTC. Past the largest size the day goes on in another file; older files and the oldest past the total are deleted.</value>
+  </data>
+  <data name="Logging.MaxFile" xml:space="preserve">
+    <value>Largest file (MB)</value>
+  </data>
+  <data name="Logging.KeepDays" xml:space="preserve">
+    <value>Keep for (days)</value>
+  </data>
+  <data name="Logging.Total" xml:space="preserve">
+    <value>All files together (MB)</value>
+  </data>
+  <data name="Logging.Otlp" xml:space="preserve">
+    <value>OpenTelemetry (OTLP)</value>
+  </data>
+  <data name="Logging.Otlp.Help" xml:space="preserve">
+    <value>A target receives the station's logs, metrics or traces. Logs name callsigns and positions; the levels and the privacy switches above apply to them as to the file.</value>
+  </data>
+  <data name="Logging.EnvironmentTarget" xml:space="preserve">
+    <value>Set by the environment: {endpoint}</value>
+    <comment>endpoint: the OTLP address from OTEL_EXPORTER_OTLP_ENDPOINT.</comment>
+  </data>
+  <data name="Logging.AddTarget" xml:space="preserve">
+    <value>Add a target</value>
+  </data>
+  <data name="Logging.TargetName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Logging.Endpoint" xml:space="preserve">
+    <value>Endpoint</value>
+  </data>
+  <data name="Logging.EndpointExample" xml:space="preserve">
+    <value>http://localhost:4317</value>
+    <comment>Example address; not translated.</comment>
+  </data>
+  <data name="Logging.Protocol" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="Logging.Protocol.Grpc" xml:space="preserve">
+    <value>gRPC</value>
+  </data>
+  <data name="Logging.Protocol.HttpProtobuf" xml:space="preserve">
+    <value>HTTP/protobuf</value>
+  </data>
+  <data name="Logging.Signals" xml:space="preserve">
+    <value>Sends</value>
+  </data>
+  <data name="Logging.Signal.Logs" xml:space="preserve">
+    <value>logs</value>
+  </data>
+  <data name="Logging.Signal.Metrics" xml:space="preserve">
+    <value>metrics</value>
+  </data>
+  <data name="Logging.Signal.Traces" xml:space="preserve">
+    <value>traces</value>
+  </data>
+  <data name="Logging.Signal.None" xml:space="preserve">
+    <value>nothing</value>
+  </data>
+  <data name="Logging.TargetOn" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Logging.TargetOff" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Logging.TargetOnSwitch" xml:space="preserve">
+    <value>Use this target</value>
+  </data>
+  <data name="Logging.Headers" xml:space="preserve">
+    <value>Headers, such as an API key</value>
+  </data>
+  <data name="Logging.HeaderName" xml:space="preserve">
+    <value>Header</value>
+  </data>
+  <data name="Logging.HeaderValue" xml:space="preserve">
+    <value>Value</value>
+  </data>
+  <data name="Logging.HeaderStored" xml:space="preserve">
+    <value>•••• saved; type to replace</value>
+    <comment>A header value is kept and never shown again.</comment>
+  </data>
+  <data name="Logging.AddHeader" xml:space="preserve">
+    <value>Add a header</value>
+  </data>
+  <data name="Logging.RemoveHeader" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Logging.KeepTarget" xml:space="preserve">
+    <value>Keep</value>
+  </data>
+  <data name="Logging.CancelTarget" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Logging.EditTarget" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Logging.DeleteTarget" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Logging.RestartPending" xml:space="preserve">
+    <value>Restart the app to apply the OTLP targets.</value>
+  </data>
+  <data name="Logging.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Logging.Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="Logging.LimitsNotNumbers" xml:space="preserve">
+    <value>Type whole numbers for the log file's limits.</value>
+  </data>
+  <data name="Error.settings.logging.folder-not-writable" xml:space="preserve">
+    <value>The log folder {value} can't be written: {reason}</value>
+    <comment>value: the folder; reason: the system's reason.</comment>
+  </data>
+  <data name="Error.settings.logging.limit-invalid" xml:space="preserve">
+    <value>A log file limit is out of range: use {min} to {max}.</value>
+  </data>
+  <data name="Error.settings.logging.target-invalid" xml:space="preserve">
+    <value>OTLP target {target}: give it a name, an http or https address, and headers that can be sent.</value>
+    <comment>target: the target's name.</comment>
+  </data>
   <data name="Settings.Data.Description.Desktop" xml:space="preserve">
     <value>Deletes every station profile, your appearance and panel layout, and what has been received, then opens first-run setup. Use it to try setup again from scratch.</value>
   </data>

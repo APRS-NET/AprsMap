@@ -28,6 +28,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     private readonly SemaphoreSlim _settingsLock = new(1, 1);
     private readonly TimeProvider _time;
     private readonly ILogger<Engine> _logger;
+
+    // One logger per area, so each area's level can be set on its own (docs/features/F1.32-logging.md, behavior 4).
+    private readonly ILogger _connections;
+    private readonly ILogger _packetsLog;
+    private readonly ILogger _transmitLog;
+    private readonly LoggingState _logging;
     private readonly Lock _gate = new();
     private readonly LinkedList<PacketView> _recent = new();
 
@@ -84,7 +90,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         ILogger<Engine> logger,
         IGeocoder? geocoder = null,
         IMessageStore? messages = null,
-        IHttpClientFactory? httpClients = null
+        IHttpClientFactory? httpClients = null,
+        ILoggerFactory? loggerFactory = null,
+        LoggingState? logging = null
     )
     {
         _httpClients = httpClients;
@@ -98,7 +106,17 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _duplicates = new DuplicateFilter(timeProvider: time);
         _dashboard = new DashboardCounters(time.GetUtcNow());
         _logger = logger;
-        _messenger = new Messenger(this, messages ?? new InMemoryMessageStore(), time);
+        _connections = loggerFactory?.CreateLogger(LogAreas.Connections) ?? logger;
+        _packetsLog = loggerFactory?.CreateLogger(LogAreas.Packets) ?? logger;
+        _transmitLog = loggerFactory?.CreateLogger(LogAreas.Transmit) ?? logger;
+        _logging = logging ?? new LoggingState();
+        _messenger = new Messenger(
+            this,
+            messages ?? new InMemoryMessageStore(),
+            time,
+            loggerFactory?.CreateLogger(LogAreas.Messages) ?? logger,
+            _logging
+        );
         _beaconer = new Beaconer(this, time);
         _bulletins = new BulletinFeed(time);
         _ownBulletins = new OwnBulletins(this, time);
@@ -176,7 +194,81 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
 
     /// <inheritdoc />
     public async Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default) =>
-        await LoadSettingsAsync(cancellationToken).ConfigureAwait(false);
+        WithoutSecrets(await LoadSettingsAsync(cancellationToken).ConfigureAwait(false));
+
+    /// <inheritdoc />
+    public Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_logging.Status());
+
+    /// <summary>
+    /// The settings as they're handed out: OTLP header values left out, with whether one is stored, so an API key never
+    /// leaves the engine (docs/features/F1.32-logging.md, behavior 13.5).
+    /// </summary>
+    private static AppSettings WithoutSecrets(AppSettings settings) =>
+        settings.Logging is not { Targets.Count: > 0 } logging
+            ? settings
+            : settings with
+            {
+                Logging = logging with
+                {
+                    Targets =
+                    [
+                        .. logging.TargetList.Select(t =>
+                            t with
+                            {
+                                Headers =
+                                [
+                                    .. t.HeaderList.Select(h => new OtlpHeader(
+                                        h.Name,
+                                        null,
+                                        h.HasValue || !string.IsNullOrEmpty(h.Value)
+                                    )),
+                                ],
+                            }
+                        ),
+                    ],
+                },
+            };
+
+    /// <summary>
+    /// <paramref name="settings"/> with each OTLP header saved without a value (as handed out) given back its stored value
+    /// from <paramref name="old"/>, matched by target and header name (behavior 13.5).
+    /// </summary>
+    private static AppSettings KeepSecrets(AppSettings settings, AppSettings old)
+    {
+        if (settings.Logging is not { Targets.Count: > 0 } logging)
+        {
+            return settings;
+        }
+        var stored = old.EffectiveLogging.TargetList.ToDictionary(t => t.Id, StringComparer.Ordinal);
+        return settings with
+        {
+            Logging = logging with
+            {
+                Targets =
+                [
+                    .. logging.TargetList.Select(t =>
+                        t with
+                        {
+                            Headers =
+                            [
+                                .. t.HeaderList.Select(h =>
+                                    h.Value is not null ? h with { HasValue = false }
+                                    : stored.TryGetValue(t.Id, out var was)
+                                    && was.HeaderList.FirstOrDefault(o =>
+                                        string.Equals(o.Name, h.Name, StringComparison.OrdinalIgnoreCase)
+                                    )
+                                        is { Value: { } value }
+                                        ? new OtlpHeader(h.Name, value)
+                                    : new OtlpHeader(h.Name)
+                                ),
+                            ],
+                        }
+                    ),
+                ],
+            },
+        };
+    }
 
     /// <inheritdoc />
     public Task SaveSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default) =>
@@ -195,8 +287,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         try
         {
             var old = await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false);
-            var saved = ForgetDeletedSources(
-                trusted ? settings with { ReadOnly = false } : KeepTransmitState(settings, old)
+            CheckLogFolder(settings, old);
+            var saved = KeepSecrets(
+                ForgetDeletedSources(trusted ? settings with { ReadOnly = false } : KeepTransmitState(settings, old)),
+                old
             );
             var before = Station.Of(old);
             await _settingsStore.SaveAsync(saved, cancellationToken).ConfigureAwait(false);
@@ -204,6 +298,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             {
                 _settings = saved;
             }
+            _logging.Update(saved.EffectiveLogging); // levels and the log file apply at once (F1.32 behavior 2)
             MeasureFrom(saved);
             UseCapture(saved);
             await UseMessengerAsync(saved, cancellationToken).ConfigureAwait(false);
@@ -212,12 +307,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             var after = Station.Of(saved);
             if (old.EffectiveToggles.ConnectsAprsIs != saved.EffectiveToggles.ConnectsAprsIs)
             {
-                LogToggled(saved.EffectiveToggles.ConnectsAprsIs ? "on" : "off");
+                LogToggled(_connections, saved.EffectiveToggles.ConnectsAprsIs ? "on" : "off");
                 SignalRestart(); // APRS-IS turned on or off (F1.15 behavior 1)
             }
             else if (after is null ? before is not null : after.NeedsNewLogin(before))
             {
-                LogProfileChanged(after?.Name ?? "(none)");
+                LogProfileChanged(_connections, after?.Name ?? "(none)");
                 SignalRestart();
             }
             else if (after is not null && after.NeedsNewFilter(before))
@@ -228,6 +323,42 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         finally
         {
             _settingsLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Refuses a newly chosen log folder that can't be written (docs/features/F1.32-logging.md, behavior 8): it's made if
+    /// missing, and a file is written and deleted there.
+    /// </summary>
+    private static void CheckLogFolder(AppSettings settings, AppSettings old)
+    {
+        var folder = settings.Logging?.File?.Folder;
+        if (string.IsNullOrWhiteSpace(folder) || folder == old.Logging?.File?.Folder)
+        {
+            return;
+        }
+        try
+        {
+            Directory.CreateDirectory(folder);
+            var probe = Path.Combine(folder, $".{Brand.Slug}-write-test");
+            File.WriteAllText(probe, string.Empty);
+            File.Delete(probe);
+        }
+        catch (Exception ex)
+            when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            throw new EngineArgumentException(
+                new EngineError(
+                    EngineErrorCodes.LoggingFolderNotWritable,
+                    $"The log folder {folder} can't be written: {ex.Message}",
+                    new Dictionary<string, string>
+                    {
+                        [EngineErrorArgs.Value] = folder,
+                        [EngineErrorArgs.Reason] = ex.Message,
+                    }
+                ),
+                ex
+            );
         }
     }
 
@@ -303,6 +434,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             lock (_gate)
             {
                 _settings = AppSettings.Empty; // not the configured defaults: the point is to see first-run setup
+                _logging.Update(LoggingSettings.Default);
                 UseCapture(AppSettings.Empty);
                 _recent.Clear();
                 _listed.Clear();
@@ -314,7 +446,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             MeasureFrom(AppSettings.Empty);
             await UseMessengerAsync(AppSettings.Empty, cancellationToken).ConfigureAwait(false);
             SignalSettingsChanged();
-            LogReset();
+            LogReset(_logger);
             SignalRestart();
         }
         finally
@@ -326,7 +458,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     /// <inheritdoc />
     public Task ReconnectAsync(CancellationToken cancellationToken = default)
     {
-        LogReconnectRequested();
+        LogReconnectRequested(_connections);
         SignalRestart();
         return Task.CompletedTask;
     }
@@ -686,7 +818,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                                 : new EngineError(EngineErrorCodes.AprsIsLinkFailed, ex.Message)
                         )
                     );
-                    LogSourceFailed(ex, source.Name, delay);
+                    LogSourceFailed(_connections, ex, source.Name, delay);
                 }
                 finally
                 {
@@ -893,11 +1025,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             {
                 throw EngineErrors.ToException(blocked);
             }
-            LogTransmit("on");
+            LogTransmit(_transmitLog, "on");
         }
         else if (toggle == Toggle.Transmit)
         {
-            LogTransmit("off");
+            LogTransmit(_transmitLog, "off");
         }
         await SaveAsync(settings with { Toggles = toggles }, trusted: toggle == Toggle.Transmit, cancellationToken)
             .ConfigureAwait(false);
@@ -1119,10 +1251,14 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or ObjectDisposedException)
         {
-            LogSendFailed(ex, source.Name);
+            LogSendFailed(_transmitLog, ex, source.Name);
             return (null, ex);
         }
-        LogSent(packet, source.Name);
+        if (_transmitLog.IsEnabled(LogLevel.Information))
+        {
+            var line = LogAreas.Packet(packet, _logging.Current.MessageTexts);
+            LogSent(_transmitLog, line, source.Name);
+        }
         lock (_gate)
         {
             _lastSent = _time.GetUtcNow();
@@ -1514,7 +1650,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             ClearScope.Telemetry => _stations.ClearTelemetry(),
             _ => throw new ArgumentOutOfRangeException(nameof(scope), scope, "Not something Clear knows."),
         };
-        LogCleared(scope, cleared);
+        LogCleared(_logger, scope, cleared);
         return Task.FromResult(cleared);
 
         int ClearPackets()
@@ -1636,16 +1772,16 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     SetLink(new Link(ConnectionState.NotConfigured));
                     if (loaded.GetActiveProfile() is null)
                     {
-                        LogNotConfigured();
+                        LogNotConfigured(_connections);
                     }
                     else
                     {
-                        LogNoAprsIs(); // a TNC-only station, or one still adding its sources (F0.5 behavior 23)
+                        LogNoAprsIs(_connections); // a TNC-only station, or one still adding its sources (F0.5 behavior 23)
                     }
                 }
                 else if (await RunOnceAsync(profile, attempt.Token).ConfigureAwait(false))
                 {
-                    LogLoginRefused(_link.Error?.Arg(EngineErrorArgs.Reason) ?? string.Empty);
+                    LogLoginRefused(_connections, _link.Error?.Arg(EngineErrorArgs.Reason) ?? string.Empty);
                 }
                 else
                 {
@@ -1673,21 +1809,21 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 // Retrying a refused login on a timer only adds load to the servers (F1.1 behavior 3).
                 EngineTelemetry.ConnectionFailures.Add(1);
                 SetLink(new Link(ConnectionState.Refused, Error: AprsIsErrors.From(ex, wasConnected: false)));
-                LogLoginRefused(ex.ServerMessage);
+                LogLoginRefused(_connections, ex.ServerMessage);
             }
             catch (KissTncLoginException ex)
             {
                 // A KISS TNC answered, not a server: retrying only knocks on the TNC again (G32).
                 EngineTelemetry.ConnectionFailures.Add(1);
                 SetLink(new Link(ConnectionState.Refused, Error: AprsIsErrors.From(ex, wasConnected: false)));
-                LogKissTnc();
+                LogKissTnc(_connections);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 EngineTelemetry.ConnectionFailures.Add(1);
                 retryIn = delay;
                 SetRetry(Station.Of(_settings), AprsIsErrors.From(ex, wasConnected: false), delay);
-                LogConnectionFailed(ex, delay);
+                LogConnectionFailed(_connections, ex, delay);
             }
 
             try
@@ -1723,7 +1859,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             // connection.
             EngineTelemetry.LinesRejected.Add(1);
             _dashboard.RecordRejected(_time.GetUtcNow());
-            LogLineRejected(ex);
+            LogLineRejected(_packetsLog, ex);
             return;
         }
         Accept(packet);
@@ -1745,6 +1881,15 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             return null; // server comments and noise
         }
 
+        if (!sent && _logging.Current.Packets)
+        {
+            if (_packetsLog.IsEnabled(LogLevel.Debug))
+            {
+                // Log every packet (F1.32 behavior 5.1), its text left out of a message unless asked for.
+                var line = LogAreas.Packet(packet, _logging.Current.MessageTexts);
+                LogReceived(_packetsLog, line, sourceId ?? "APRS-IS");
+            }
+        }
         if (!sent)
         {
             _capture?.Consider(packet, sourceId); // unexpected packets, for the test corpus (F1.27)
@@ -2049,7 +2194,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         try
         {
             await source.SetFilterAsync(filter, cancellationToken).ConfigureAwait(false);
-            LogFilterChanged(profile.Name, filter);
+            LogFilterChanged(_connections, profile.Name, filter);
         }
         catch (ObjectDisposedException)
         {
@@ -2102,6 +2247,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             _settings = settings;
         }
+        _logging.Update(settings.EffectiveLogging);
         MeasureFrom(settings);
         UseCapture(settings);
         await UseMessengerAsync(settings, cancellationToken).ConfigureAwait(false);
@@ -2155,7 +2301,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
         if (sources.Count == 0)
         {
-            LogDefaultsUnusable("Neither Engine:Server nor Engine:Kiss:Host is set.");
+            LogDefaultsUnusable(_logger, "Neither Engine:Server nor Engine:Kiss:Host is set.");
             return AppSettings.Empty;
         }
         var profile = new StationProfile(
@@ -2175,7 +2321,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
         catch (ArgumentException ex)
         {
-            LogDefaultsUnusable(ex.Message);
+            LogDefaultsUnusable(_logger, ex.Message);
             return AppSettings.Empty;
         }
     }
@@ -2233,7 +2379,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     _source = source;
                 }
                 SetLink(new Link(ConnectionState.Connected, login.Server, login.Verified));
-                LogConnected(login.Server);
+                LogConnected(_connections, login.Server);
                 await foreach (var packet in source.ReadPacketsAsync(session.Token).ConfigureAwait(false))
                 {
                     Accept(packet, profile.Source.Id);
@@ -2285,65 +2431,68 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         Level = LogLevel.Warning,
         Message = "The APRS-IS server is a KISS TNC: add it as a TNC source instead. Not retrying."
     )]
-    private partial void LogKissTnc();
+    private static partial void LogKissTnc(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Connected to APRS-IS server {Server}")]
-    private partial void LogConnected(string server);
+    private static partial void LogConnected(ILogger logger, string server);
 
     [LoggerMessage(
         Level = LogLevel.Warning,
         Message = "No station profile yet: set a callsign (first-run setup, or Engine:Callsign) to connect"
     )]
-    private partial void LogNotConfigured();
+    private static partial void LogNotConfigured(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "This profile has no APRS-IS source, so APRS-IS isn't used")]
-    private partial void LogNoAprsIs();
+    private static partial void LogNoAprsIs(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "The configured first-run defaults are not usable: {Reason}")]
-    private partial void LogDefaultsUnusable(string reason);
+    private static partial void LogDefaultsUnusable(ILogger logger, string reason);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Station profile changed to {Profile}; reconnecting")]
-    private partial void LogProfileChanged(string profile);
+    private static partial void LogProfileChanged(ILogger logger, string profile);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "Dropped a line that could not be parsed")]
-    private partial void LogLineRejected(Exception exception);
+    private static partial void LogLineRejected(ILogger logger, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Settings reset: every profile and setting was deleted")]
-    private partial void LogReset();
+    private static partial void LogReset(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "APRS-IS turned {State} by the quick toggles")]
-    private partial void LogToggled(string state);
+    private static partial void LogToggled(ILogger logger, string state);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Cleared {Count} ({Scope})")]
-    private partial void LogCleared(ClearScope scope, int count);
+    private static partial void LogCleared(ILogger logger, ClearScope scope, int count);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Reconnect requested; reconnecting now")]
-    private partial void LogReconnectRequested();
+    private static partial void LogReconnectRequested(ILogger logger);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Transmit turned {State}.")]
-    private partial void LogTransmit(string state);
+    private static partial void LogTransmit(ILogger logger, string state);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Sent {Packet} on {Source}")]
-    private partial void LogSent(AprsPacket packet, string source);
+    private static partial void LogSent(ILogger logger, string packet, string source);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Received {Packet} from {Source}")]
+    private static partial void LogReceived(ILogger logger, string packet, string source);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "A packet couldn't be sent on {Source}.")]
-    private partial void LogSendFailed(Exception exception, string source);
+    private static partial void LogSendFailed(ILogger logger, Exception exception, string source);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Source {Source} failed; trying again in {Delay}")]
-    private partial void LogSourceFailed(Exception exception, string source, TimeSpan delay);
+    private static partial void LogSourceFailed(ILogger logger, Exception exception, string source, TimeSpan delay);
 
     [LoggerMessage(
         Level = LogLevel.Information,
         Message = "Station profile {Profile}'s filter is now {Filter}; sent without a new login"
     )]
-    private partial void LogFilterChanged(string profile, string filter);
+    private static partial void LogFilterChanged(ILogger logger, string profile, string filter);
 
     [LoggerMessage(
         Level = LogLevel.Warning,
         Message = "The APRS-IS server refused the login ({Reason}); not retrying until the profile changes or a reconnect is asked for"
     )]
-    private partial void LogLoginRefused(string reason);
+    private static partial void LogLoginRefused(ILogger logger, string reason);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "APRS-IS connection failed; retrying in {Delay}")]
-    private partial void LogConnectionFailed(Exception exception, TimeSpan delay);
+    private static partial void LogConnectionFailed(ILogger logger, Exception exception, TimeSpan delay);
 }

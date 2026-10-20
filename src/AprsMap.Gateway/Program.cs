@@ -33,7 +33,8 @@ builder
     .AddAprsMapTelemetry(
         "gateway",
         tracing: t => t.AddAspNetCoreInstrumentation(),
-        metrics: m => m.AddAspNetCoreInstrumentation().AddMeter(Viewers.MeterName)
+        metrics: m => m.AddAspNetCoreInstrumentation().AddMeter(Viewers.MeterName),
+        logFile: false // its log is the container's output unless the operator turns the file on (F1.32 behavior 7)
     );
 builder.Services.AddSingleton<Viewers>();
 builder.Services.AddSingleton<ViewerFilter>();
