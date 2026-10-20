@@ -1944,13 +1944,53 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>For the whole station, never less than 10. Pings in between are shown and not answered.</value>
   </data>
   <data name="Ping.Rules" xml:space="preserve">
-    <value>A pong is sent only with Transmit on, from a licensed profile, on a source that isn't RX only.</value>
+    <value>A pong or auto-reply is sent only with Transmit on, from a licensed profile, on a source that isn't RX only.</value>
   </data>
   <data name="Ping.Save" xml:space="preserve">
     <value>Save</value>
   </data>
   <data name="Ping.Saved" xml:space="preserve">
     <value>Saved</value>
+  </data>
+  <data name="AutoReply.Heading" xml:space="preserve">
+    <value>Auto-reply for {profile}</value>
+    <comment>profile: the active profile's callsign.</comment>
+  </data>
+  <data name="AutoReply.Description" xml:space="preserve">
+    <value>An away message: while you haven't sent a message for a while, a station that messages you gets this once, after a short wait, the same way its message came. Its message stays unread for when you're back.</value>
+  </data>
+  <data name="AutoReply.On" xml:space="preserve">
+    <value>Send auto-replies</value>
+  </data>
+  <data name="AutoReply.Text" xml:space="preserve">
+    <value>Auto-reply text</value>
+  </data>
+  <data name="AutoReply.Away" xml:space="preserve">
+    <value>Only after no message sent for (minutes)</value>
+  </data>
+  <data name="AutoReply.AwayHelp" xml:space="preserve">
+    <value>Messages you write count; automatic ones don't. 0 means always.</value>
+  </data>
+  <data name="AutoReply.OncePer" xml:space="preserve">
+    <value>Once per station every (minutes)</value>
+  </data>
+  <data name="AutoReply.OncePerHelp" xml:space="preserve">
+    <value>A station that messages again sooner gets no second reply.</value>
+  </data>
+  <data name="AutoReply.Delay" xml:space="preserve">
+    <value>Wait before sending (seconds)</value>
+  </data>
+  <data name="AutoReply.DelayHelp" xml:space="preserve">
+    <value>Up to 600. Messaging that station yourself in the meantime cancels it.</value>
+  </data>
+  <data name="AutoReply.Never" xml:space="preserve">
+    <value>Never sent to pings, pongs, other auto-replies or services such as ANSRVR, EMAIL-2 and WXBOT.</value>
+  </data>
+  <data name="Error.settings.auto-reply.text-invalid" xml:space="preserve">
+    <value>An auto-reply has 1 to 67 plain letters, digits and punctuation, with no vertical bar, tilde or opening curly brace.</value>
+  </data>
+  <data name="Error.settings.auto-reply.limit-invalid" xml:space="preserve">
+    <value>Auto-reply times: 0 to 1440 minutes without a message sent, once per 1 to 1440 minutes, and a wait of 0 to 600 seconds.</value>
   </data>
   <data name="Logging.WhatToLog" xml:space="preserve">
     <value>What to log</value>

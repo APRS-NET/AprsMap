@@ -1514,6 +1514,14 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
     }
 
+    AutoReplySettings IMessengerHost.AutoReply()
+    {
+        lock (_gate)
+        {
+            return _settings?.GetActiveProfile()?.EffectiveAutoReply ?? AutoReplySettings.Off;
+        }
+    }
+
     EngineError? IMessengerHost.WhyNotOn(string? sourceId)
     {
         lock (_gate)

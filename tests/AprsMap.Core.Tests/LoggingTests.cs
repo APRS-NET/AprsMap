@@ -229,6 +229,8 @@ public sealed class LoggingTests
 
         public PingSettings Ping() => PingSettings.Off;
 
+        public AutoReplySettings AutoReply() => AutoReplySettings.Off;
+
         public Task<bool> SendAsync(string sourceId, MessagePayload payload, CancellationToken cancellationToken) =>
             Task.FromResult(false);
     }

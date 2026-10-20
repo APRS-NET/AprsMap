@@ -8,8 +8,8 @@ using CommunityToolkit.Mvvm.Input;
 namespace AprsMap.UI.Settings;
 
 /// <summary>
-/// Settings › Messaging (docs/features/F2.13-ping.md): the active profile's ping responder, off by default, its
-/// phrases, who may ping and how often it answers.
+/// Settings › Messaging (docs/features/F2.13-ping.md, F2.10-auto-reply.md): the active profile's ping responder and
+/// away message, both off by default, with their phrases, who may ping and how often each answers.
 /// </summary>
 public sealed partial class MessagingSectionViewModel(IEngineService engine, Localizer text, Action<AppSettings> saved)
     : ObservableObject
@@ -64,6 +64,33 @@ public sealed partial class MessagingSectionViewModel(IEngineService engine, Loc
     [ObservableProperty]
     public partial string IntervalSeconds { get; set; } = string.Empty;
 
+    /// <summary>"Auto-reply for NZ0P-10", or null without a profile.</summary>
+    [ObservableProperty]
+    public partial string? AutoReplyHeading { get; private set; }
+
+    /// <summary>Send the away message (F2.10 behavior 1).</summary>
+    [ObservableProperty]
+    public partial bool AutoReplyOn { get; set; }
+
+    /// <summary>The away message as typed; empty for the default (behavior 2).</summary>
+    [ObservableProperty]
+    public partial string AutoReplyText { get; set; } = string.Empty;
+
+    /// <summary>The default away message, shown when none is typed.</summary>
+    public static string DefaultAutoReply => AutoReplySettings.DefaultText;
+
+    /// <summary>Minutes without a message sent by hand, as typed (behavior 4).</summary>
+    [ObservableProperty]
+    public partial string AwayMinutes { get; set; } = string.Empty;
+
+    /// <summary>Once per correspondent in this many minutes, as typed (behavior 5).</summary>
+    [ObservableProperty]
+    public partial string OncePerMinutes { get; set; } = string.Empty;
+
+    /// <summary>Seconds to wait first, as typed (behavior 6).</summary>
+    [ObservableProperty]
+    public partial string DelaySeconds { get; set; } = string.Empty;
+
     /// <summary>"Saved", once saved; null otherwise.</summary>
     [ObservableProperty]
     public partial string? SavedText { get; private set; }
@@ -77,9 +104,6 @@ public sealed partial class MessagingSectionViewModel(IEngineService engine, Loc
     {
         _settings = settings;
         var profile = settings.GetActiveProfile();
-        Heading = profile is null
-            ? null
-            : text.Format("Ping.Heading", new Dictionary<string, object?> { ["profile"] = profile.Callsign });
         var ping = profile?.EffectivePing ?? PingSettings.Off;
         On = ping.On;
         PingPhrase = ping.Ping ?? string.Empty;
@@ -89,19 +113,32 @@ public sealed partial class MessagingSectionViewModel(IEngineService engine, Loc
         WhoCallsigns = ping.Who == PingWho.Callsigns;
         Callsigns = string.Join(Environment.NewLine, ping.CallsignList);
         IntervalSeconds = ping.IntervalSeconds.ToString(CultureInfo.InvariantCulture);
+        var reply = profile?.EffectiveAutoReply ?? AutoReplySettings.Off;
+        AutoReplyOn = reply.On;
+        AutoReplyText = reply.Text ?? string.Empty;
+        AwayMinutes = reply.AwayMinutes.ToString(CultureInfo.InvariantCulture);
+        OncePerMinutes = reply.OncePerMinutes.ToString(CultureInfo.InvariantCulture);
+        DelaySeconds = reply.DelaySeconds.ToString(CultureInfo.InvariantCulture);
+        Retranslate();
         SavedText = null;
     }
 
-    /// <summary>Rewords the heading after a language change.</summary>
+    /// <summary>Words the headings, and again after a language change.</summary>
     internal void Retranslate()
     {
         var profile = _settings.GetActiveProfile();
         Heading = profile is null
             ? null
             : text.Format("Ping.Heading", new Dictionary<string, object?> { ["profile"] = profile.Callsign });
+        AutoReplyHeading = profile is null
+            ? null
+            : text.Format("AutoReply.Heading", new Dictionary<string, object?> { ["profile"] = profile.Callsign });
     }
 
-    /// <summary>Saves the active profile's ping responder; the engine checks the phrases and the interval.</summary>
+    /// <summary>
+    /// Saves the active profile's ping responder and away message; the engine checks the phrases, the text and the
+    /// times.
+    /// </summary>
     [RelayCommand]
     private async Task SaveAsync()
     {
@@ -115,6 +152,22 @@ public sealed partial class MessagingSectionViewModel(IEngineService engine, Loc
             Error = text["Error.settings.ping.interval-too-short"];
             return;
         }
+        if (
+            !TryNumber(AwayMinutes, out var away)
+            || !TryNumber(OncePerMinutes, out var oncePer)
+            || !TryNumber(DelaySeconds, out var delay)
+        )
+        {
+            Error = text["Error.settings.auto-reply.limit-invalid"];
+            return;
+        }
+        var reply = new AutoReplySettings(
+            AutoReplyOn,
+            AutoReplyText.Trim().Length > 0 ? AutoReplyText.Trim() : null,
+            away,
+            oncePer,
+            delay
+        );
         var ping = new PingSettings(
             On,
             PingPhrase.Trim().Length > 0 ? PingPhrase.Trim() : null,
@@ -131,7 +184,10 @@ public sealed partial class MessagingSectionViewModel(IEngineService engine, Loc
         );
         var settings = _settings with
         {
-            Profiles = [.. _settings.Profiles.Select(p => p.Id == profile.Id ? p with { Ping = ping } : p)],
+            Profiles =
+            [
+                .. _settings.Profiles.Select(p => p.Id == profile.Id ? p with { Ping = ping, AutoReply = reply } : p),
+            ],
         };
         try
         {
@@ -146,4 +202,7 @@ public sealed partial class MessagingSectionViewModel(IEngineService engine, Loc
             Error = text.Describe(ex);
         }
     }
+
+    private static bool TryNumber(string typed, out int value) =>
+        int.TryParse(typed.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
 }
