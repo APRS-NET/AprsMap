@@ -150,7 +150,12 @@ public sealed partial class MainViewModel
         }
         var source = _status?.Sources?.FirstOrDefault(s => s.Id == next.SourceId)?.Name ?? next.SourceId;
         return _text.Format(
-            next.Kind == BeaconKind.Position ? "Transmit.NextPositionTip" : "Transmit.NextStatusTip",
+            next.Kind switch
+            {
+                BeaconKind.Position => "Transmit.NextPositionTip",
+                BeaconKind.Status => "Transmit.NextStatusTip",
+                _ => "Transmit.NextObjectTip", // docs/features/F2.7-objects-and-items.md
+            },
             new Dictionary<string, object?>
             {
                 ["source"] = source,

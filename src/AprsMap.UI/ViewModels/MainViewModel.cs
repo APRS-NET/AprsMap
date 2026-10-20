@@ -476,6 +476,11 @@ public sealed partial class MainViewModel : ObservableObject
             IsViewerOnly || _settings is not { ReadOnly: false }
                 ? null
                 : new MessagingSectionViewModel(engine, _text, Show); // F2.13
+        // Objects transmit: the desktop user's, and on a gateway the signed-in operator's (F2.7).
+        var objects =
+            !IsViewerOnly && (!SharedStation || IsOperator) && _settings is { ReadOnly: false }
+                ? new ObjectsSectionViewModel(engine, _text, Show)
+                : null;
         // Logging is the desktop user's, and on a gateway the signed-in operator's (F1.32 behavior 1).
         var logging =
             !IsViewerOnly && (!SharedStation || IsOperator) && _settings is { ReadOnly: false }
@@ -497,7 +502,8 @@ public sealed partial class MainViewModel : ObservableObject
             beacons,
             Layouts,
             logging,
-            messaging
+            messaging,
+            objects
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
@@ -507,6 +513,7 @@ public sealed partial class MainViewModel : ObservableObject
             sources?.Show(current);
             beacons?.Show(current);
             messaging?.Show(current);
+            objects?.Show(current);
             if (logging is not null)
             {
                 await logging.ShowAsync(current);
@@ -1276,6 +1283,8 @@ public sealed partial class MainViewModel : ObservableObject
         _settings = settings;
         PacketList.ShowSources(settings);
         Settings?.Beacons?.Show(settings); // a source's RX only changes what beacons can go out on
+        Settings?.Objects?.Show(settings); // a killed object goes once it's been sent (F2.7 behavior 8)
+        LiveObjects = [.. settings.GetActiveProfile()?.ObjectList.Where(o => o.Live) ?? []];
         Settings?.Data?.Capture?.Show(settings);
         if (_destination is { IsSet: true } destination)
         {

@@ -72,6 +72,20 @@ public static class EngineErrorCodes
     /// <summary>A Mic-E position comes compressed or with PHG (docs/features/F2.12-mic-e-status.md, behavior 3).</summary>
     public const string ProfileMicEInvalid = "settings.profile.mic-e-invalid";
 
+    /// <summary>An object's name doesn't fit its kind (docs/features/F2.7-objects-and-items.md, behavior 2.2).</summary>
+    public const string ObjectNameInvalid = "settings.object.name-invalid";
+
+    /// <summary>Another object in the profile has that name (F2.7 behavior 2.2).</summary>
+    public const string ObjectNameTaken = "settings.object.name-taken";
+
+    /// <summary>
+    /// An object's place, symbol, comment or interval can't be sent, or the profile has 50 already (F2.7 behavior 2).
+    /// </summary>
+    public const string ObjectInvalid = "settings.object.invalid";
+
+    /// <summary>No object in the active profile has that id (F2.7).</summary>
+    public const string ObjectUnknown = "settings.object.unknown";
+
     /// <summary>More than 20 saved status texts, or one a status can't carry (docs/features/F2.11-status-reports.md).</summary>
     public const string ProfileSavedStatusInvalid = "settings.profile.saved-status-invalid";
 

@@ -52,6 +52,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console (delivered: KISS `0.4.0-alpha.6`, APRS-IS `0.4.0-alpha.7`) | Kiss, AprsIsTcpClient | 2 | [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) |
 | G34 | Bulletin repeat schedule, and ANSRVR group helpers (partly delivered, `0.4.0-alpha.9`: `BulletinSchedule`, `AnsrvrCommand`; recognising a relayed group message still open) | Messaging | 2 | [APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272) (closed), [APRS.NET#281](https://github.com/APRS-NET/APRS.NET/issues/281) (relays, paused) |
 | G35 | The device list as a loadable object, and a fetcher with an overridable default address | DeviceId | 2 | [APRS.NET#280](https://github.com/APRS-NET/APRS.NET/issues/280) |
+| G36 | Multiline objects: lines and polygons in an object's comment (WXSVR multiline protocol), decode and encode | Packets | 4 | — (not filed) |
 
 ---
 
@@ -618,4 +619,15 @@ The schedule, where a downloaded copy is kept and which list an app uses stay wi
 **Acceptance.** `BuiltIn` answers as `AprsDevices` does; the published file round-trips to the same lookups as the
 generated table; a file with an unknown class, a bad pattern or no TOCALLs is refused with a reason; against a fake
 server, a `304` is unchanged, a `200` gives a list and its `ETag`, and a mirror's address is used when given.
+
+## G36: Multiline objects
+
+**Need.** AprsMap F2.7 (objects and items: multiline objects, deferred) and showing received ones on the map.
+
+**Scope.** Decoding and encoding the multiline extension an object's comment can carry: a line or closed polygon of up
+to several vertices as offsets from the object's position, with its colour and line style. It's specified outside
+APRS101 (the WXSVR multiline protocol, referenced by the APRS 1.1 errata A11-ERR-26 and not mirrored in APRS.NET's
+spec folder), so the first step is getting that page into `docs/spec` with its source.
+
+**Acceptance.** Round trips of lines and polygons; received examples (WXSVR warning areas) decode to their vertices.
 

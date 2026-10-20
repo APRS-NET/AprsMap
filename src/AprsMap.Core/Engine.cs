@@ -26,6 +26,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     private readonly ISettingsStore _settingsStore;
     private readonly IGeocoder _geocoder;
     private readonly SemaphoreSlim _settingsLock = new(1, 1);
+    private readonly SemaphoreSlim _objectsLock = new(1, 1);
     private readonly TimeProvider _time;
     private readonly ILogger<Engine> _logger;
 
@@ -315,7 +316,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             var old = await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false);
             CheckLogFolder(settings, old);
             var saved = KeepSecrets(
-                ForgetDeletedSources(trusted ? settings with { ReadOnly = false } : KeepTransmitState(settings, old)),
+                ForgetDeletedSources(
+                    trusted ? settings with { ReadOnly = false } : KeepObjects(KeepTransmitState(settings, old), old)
+                ),
                 old
             );
             var before = Station.Of(old);
@@ -418,9 +421,25 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                                 SourceIds = Keep(status.SourceIds),
                             }
                             : null,
+                        Objects = p.Objects is { } objects
+                            ? [.. objects.Select(o => o with { SourceIds = Keep(o.SourceIds) })]
+                            : null,
                     }
                 ),
             ],
+        };
+    }
+
+    /// <summary>
+    /// Keeps each profile's stored objects (docs/features/F2.7-objects-and-items.md): only placing and removing change
+    /// them, so a save from an older copy of the settings can't bring a killed one back or drop a new one.
+    /// </summary>
+    private static AppSettings KeepObjects(AppSettings settings, AppSettings old)
+    {
+        var stored = old.Profiles.ToDictionary(p => p.Id, p => p.Objects, StringComparer.Ordinal);
+        return settings with
+        {
+            Profiles = [.. settings.Profiles.Select(p => p with { Objects = stored.GetValueOrDefault(p.Id) })],
         };
     }
 
@@ -1399,6 +1418,89 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         return sent.Count == 0 ? throw SendFailed(failure!) : sent;
     }
 
+    /// <inheritdoc />
+    public Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(placed);
+        var live = placed with { Live = true };
+        return ChangeObjectsAsync(
+            objects =>
+                objects.Any(o => o.Id == placed.Id)
+                    ? [.. objects.Select(o => o.Id == placed.Id ? live : o)]
+                    : [.. objects, live],
+            cancellationToken,
+            placing: true
+        );
+    }
+
+    /// <inheritdoc />
+    public Task RemoveObjectAsync(string id, bool kill, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        return ChangeObjectsAsync(
+            objects =>
+            {
+                if (objects.All(o => o.Id != id))
+                {
+                    throw new EngineArgumentException(
+                        new EngineError(EngineErrorCodes.ObjectUnknown, "There's no such object in this profile.")
+                    );
+                }
+                return kill
+                    ? [.. objects.Select(o => o.Id == id ? o with { Live = false } : o)] // sent killed (behavior 8)
+                    : [.. objects.Where(o => o.Id != id)]; // Forget: nothing sent (behavior 9)
+            },
+            cancellationToken
+        );
+    }
+
+    /// <summary>
+    /// Changes the active profile's objects, one change at a time, and lets the beaconer start their schedules
+    /// (docs/features/F2.7-objects-and-items.md). The engine's own save: the stored objects aren't kept over it.
+    /// </summary>
+    private async Task ChangeObjectsAsync(
+        Func<IReadOnlyList<OwnObject>, IReadOnlyList<OwnObject>> change,
+        CancellationToken cancellationToken,
+        bool placing = false
+    )
+    {
+        await _objectsLock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+            if (settings.GetActiveProfile() is not { } profile)
+            {
+                throw new EngineArgumentException(
+                    new EngineError(EngineErrorCodes.ObjectUnknown, "There's no profile to place objects for.")
+                );
+            }
+            if (placing && ProfileBlock(settings) is { } blocked)
+            {
+                throw EngineErrors.ToException(blocked); // a profile that only listens places nothing (F2.1 behavior 4)
+            }
+            var objects = change(profile.ObjectList);
+            await SaveAsync(
+                    settings with
+                    {
+                        Profiles =
+                        [
+                            .. settings.Profiles.Select(p =>
+                                p.Id == profile.Id ? p with { Objects = objects.Count > 0 ? objects : null } : p
+                            ),
+                        ],
+                    },
+                    trusted: true,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            _objectsLock.Release();
+        }
+        _beaconer.Poke();
+    }
+
     /// <summary>How long Test send listens for its packet coming back (behavior 9.3).</summary>
     internal static readonly TimeSpan TestListenTime = TimeSpan.FromSeconds(30);
 
@@ -1617,6 +1719,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
 
     Task<bool> IBeaconHost.SendAsync(string sourceId, AprsPayload payload, CancellationToken cancellationToken) =>
         SendPayloadAsync(sourceId, payload, cancellationToken);
+
+    Task IBeaconHost.ObjectsGoneAsync(IReadOnlyCollection<string> ids) =>
+        ChangeObjectsAsync(
+            objects => [.. objects.Where(o => o.Live || !ids.Contains(o.Id))], // killed and sent: gone (F2.7 behavior 8)
+            CancellationToken.None
+        );
 
     /// <summary>Sends <paramref name="payload"/> from the active profile on <paramref name="sourceId"/>; false when it failed.</summary>
     private async Task<bool> SendPayloadAsync(string sourceId, AprsPayload payload, CancellationToken cancellationToken)

@@ -1899,6 +1899,106 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Logging</value>
     <comment>Settings section: log levels, the log file and OpenTelemetry targets.</comment>
   </data>
+  <data name="Settings.Objects" xml:space="preserve">
+    <value>Objects</value>
+    <comment>Settings section: objects and items the station places on the map.</comment>
+  </data>
+  <data name="Objects.Heading" xml:space="preserve">
+    <value>Objects for {profile}</value>
+    <comment>profile: the active profile's name.</comment>
+  </data>
+  <data name="Objects.Description" xml:space="preserve">
+    <value>Things you put on the map for others: a meeting point, a repeater, an aid station. Each goes out soon after you place or change it, then less and less often, until you kill it.</value>
+  </data>
+  <data name="Objects.Empty" xml:space="preserve">
+    <value>No objects yet. Add one here, or right-click the map and choose Place an object here.</value>
+  </data>
+  <data name="Objects.Add" xml:space="preserve">
+    <value>Add an object</value>
+  </data>
+  <data name="Objects.New" xml:space="preserve">
+    <value>New object</value>
+  </data>
+  <data name="Objects.Change" xml:space="preserve">
+    <value>Change {name}</value>
+    <comment>name: the object's name.</comment>
+  </data>
+  <data name="Objects.Edit" xml:space="preserve">
+    <value>Change</value>
+  </data>
+  <data name="Objects.Kill" xml:space="preserve">
+    <value>Kill</value>
+  </data>
+  <data name="Objects.Forget" xml:space="preserve">
+    <value>Forget</value>
+  </data>
+  <data name="Objects.State.Object" xml:space="preserve">
+    <value>Object</value>
+  </data>
+  <data name="Objects.State.Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Objects.State.Killing" xml:space="preserve">
+    <value>Being killed: sent killed three times, then removed</value>
+  </data>
+  <data name="Objects.Kind.Object" xml:space="preserve">
+    <value>Object</value>
+  </data>
+  <data name="Objects.Kind.Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Objects.Kind.Help" xml:space="preserve">
+    <value>An object goes out with the time; an item, for something that doesn't change, without.</value>
+  </data>
+  <data name="Objects.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Objects.Place" xml:space="preserve">
+    <value>Place (latitude, longitude)</value>
+  </data>
+  <data name="Objects.Symbol" xml:space="preserve">
+    <value>Symbol</value>
+  </data>
+  <data name="Objects.Comment" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+  <data name="Objects.Interval" xml:space="preserve">
+    <value>At most this long between sends</value>
+  </data>
+  <data name="Objects.Interval.Help" xml:space="preserve">
+    <value>It goes out at once, then after 30 seconds on APRS-IS or 2 minutes on a TNC, doubling up to this.</value>
+  </data>
+  <data name="Objects.Save" xml:space="preserve">
+    <value>Save and send</value>
+  </data>
+  <data name="Objects.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Objects.Rules" xml:space="preserve">
+    <value>Objects go out only with Transmit on, from a licensed profile, on sources that aren't RX only. Forget removes one without sending anything.</value>
+  </data>
+  <data name="Map.PlaceObject" xml:space="preserve">
+    <value>Place an object here</value>
+  </data>
+  <data name="Map.MoveObject" xml:space="preserve">
+    <value>Move an object here</value>
+  </data>
+  <data name="Transmit.NextObjectTip" xml:space="preserve">
+    <value>Next: an object on {source}, {reason}.</value>
+    <comment>source: a source's name. reason: one of the Transmit.BeaconReason texts.</comment>
+  </data>
+  <data name="Error.settings.object.name-invalid" xml:space="preserve">
+    <value>An object's name has 1 to 9 characters, an item's 3 to 9 without ! or _, with no space at either end.</value>
+  </data>
+  <data name="Error.settings.object.name-taken" xml:space="preserve">
+    <value>Another object in this profile has that name.</value>
+  </data>
+  <data name="Error.settings.object.invalid" xml:space="preserve">
+    <value>An object needs a place on the globe, a comment of at most 43 plain characters and an interval of 10 minutes to 24 hours; a profile has at most 50.</value>
+  </data>
+  <data name="Error.settings.object.unknown" xml:space="preserve">
+    <value>That object is no longer in this profile.</value>
+  </data>
   <data name="Settings.Messaging" xml:space="preserve">
     <value>Messaging</value>
     <comment>Settings section for automatic message replies such as ping.</comment>

@@ -111,6 +111,24 @@ internal sealed class EngineHubEndpoint(
         return engine.SendStatusAsync(sourceId, Context.ConnectionAborted);
     }
 
+    /// <summary>Objects are sent on their own: a signed-in operator only (F2.7).</summary>
+    [HubMethodName(EngineHub.PlaceObject)]
+    [Transmits]
+    public Task PlaceObject(OwnObject placed)
+    {
+        RequireOperator();
+        return engine.PlaceObjectAsync(placed, Context.ConnectionAborted);
+    }
+
+    /// <summary>Killing sends too, and forgetting changes what's sent: a signed-in operator only (F2.7).</summary>
+    [HubMethodName(EngineHub.RemoveObject)]
+    [Transmits]
+    public Task RemoveObject(string id, bool kill)
+    {
+        RequireOperator();
+        return engine.RemoveObjectAsync(id, kill, Context.ConnectionAborted);
+    }
+
     /// <summary>Test send transmits too: a signed-in operator only (F2.1 behavior 8).</summary>
     [HubMethodName(EngineHub.TestSend)]
     [Transmits]
