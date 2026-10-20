@@ -971,6 +971,110 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.About.Credits" xml:space="preserve">
     <value>Credits</value>
   </data>
+  <data name="About.Files" xml:space="preserve">
+    <value>Files</value>
+    <comment>Help › About: the folders the app keeps things in.</comment>
+  </data>
+  <data name="About.Folder.Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="About.Folder.Settings.Holds" xml:space="preserve">
+    <value>Profiles, sources, appearance and layouts</value>
+  </data>
+  <data name="About.Folder.Settings.Copy" xml:space="preserve">
+    <value>Copy the settings folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Settings.Open" xml:space="preserve">
+    <value>Open the settings folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Data" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="About.Folder.Data.Holds" xml:space="preserve">
+    <value>Message history and packet captures</value>
+  </data>
+  <data name="About.Folder.Data.Copy" xml:space="preserve">
+    <value>Copy the data folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Data.Open" xml:space="preserve">
+    <value>Open the data folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Tiles" xml:space="preserve">
+    <value>Map tiles</value>
+  </data>
+  <data name="About.Folder.Tiles.Holds" xml:space="preserve">
+    <value>Downloaded map tiles</value>
+  </data>
+  <data name="About.Folder.Tiles.Copy" xml:space="preserve">
+    <value>Copy the map tiles folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Tiles.Open" xml:space="preserve">
+    <value>Open the map tiles folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Logs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="About.Folder.Logs.Holds" xml:space="preserve">
+    <value>The app's log files</value>
+  </data>
+  <data name="About.Folder.Logs.Copy" xml:space="preserve">
+    <value>Copy the logs folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Logs.Open" xml:space="preserve">
+    <value>Open the logs folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Machine" xml:space="preserve">
+    <value>Defaults for every user</value>
+  </data>
+  <data name="About.Folder.Machine.Holds" xml:space="preserve">
+    <value>Read only: where an administrator puts an appsettings.json for everyone on this computer</value>
+  </data>
+  <data name="About.Folder.Machine.Copy" xml:space="preserve">
+    <value>Copy the defaults folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Machine.Open" xml:space="preserve">
+    <value>Open the defaults folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="About.Folder.Open" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="About.Folder.Copied" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="About.Folder.OpenFailed" xml:space="preserve">
+    <value>Couldn't open the folder; its path is copied instead.</value>
+  </data>
+  <data name="About.Folder.Configured" xml:space="preserve">
+    <value>set in configuration</value>
+    <comment>A folder moved from the usual place by appsettings.json or the environment.</comment>
+  </data>
+  <data name="About.Folder.NotCreated" xml:space="preserve">
+    <value>not created yet</value>
+  </data>
+  <data name="About.Folder.NotCreatedTip" xml:space="preserve">
+    <value>Not created yet: nothing has been kept there.</value>
+  </data>
+  <data name="About.Files.Browser" xml:space="preserve">
+    <value>This browser keeps your layout and appearance in its own storage.</value>
+    <comment>Shown on a gateway to viewers, who never see the server's folders.</comment>
+  </data>
+  <data name="About.Files.DockerLogs" xml:space="preserve">
+    <value>The gateway's log is the container's output (docker logs), unless a log file is turned on in Settings › Logging.</value>
+    <comment>docker logs is a command; keep it.</comment>
+  </data>
   <data name="Settings.About.IconCredit" xml:space="preserve">
     <value>App icon: the APRS.NET icon.</value>
   </data>

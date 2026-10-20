@@ -55,6 +55,23 @@ public static class HostingExtensions
         builder.Services.AddSingleton<ITileDownloads>(provider => new EngineTileDownloads(
             provider.GetRequiredService<Engine>()
         ));
+        // Where tiles are cached, for Help › About (docs/features/F1.31-files.md).
+        builder.Services.AddSingleton<IStorageFolderSource>(provider =>
+        {
+            var options = provider.GetRequiredService<IOptions<TilesOptions>>();
+            return new StorageFolderSource(() =>
+            {
+                var configured = options.Value.CacheFolder;
+                return
+                [
+                    StorageFolderSource.At(
+                        StorageFolderKind.Tiles,
+                        string.IsNullOrWhiteSpace(configured) ? TileLocation.UserFolder(Brand.Slug) : configured,
+                        !string.IsNullOrWhiteSpace(configured)
+                    ),
+                ];
+            });
+        });
         return builder;
     }
 
@@ -225,6 +242,21 @@ public static class HostingExtensions
         builder.Services.AddSingleton(state);
         builder.Services.AddSingleton<IConfigureOptions<LoggerFilterOptions>>(new LevelRules(state));
         builder.Services.AddSingleton<IOptionsChangeTokenSource<LoggerFilterOptions>>(new LevelRuleChanges(state));
+        // The log folder, for Help › About, while the log file is on (docs/features/F1.31-files.md, behavior 5).
+        builder.Services.AddSingleton<IStorageFolderSource>(
+            new StorageFolderSource(() =>
+                state.FileOn
+                    ?
+                    [
+                        StorageFolderSource.At(
+                            StorageFolderKind.Logs,
+                            state.Folder,
+                            !string.IsNullOrWhiteSpace(state.Current.EffectiveFile.Folder)
+                        ),
+                    ]
+                    : []
+            )
+        );
         builder.Services.AddSingleton<ILoggerProvider>(sp => new FileLoggerProvider(
             state,
             sp.GetService<TimeProvider>() ?? TimeProvider.System

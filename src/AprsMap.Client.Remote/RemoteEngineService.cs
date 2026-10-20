@@ -240,6 +240,12 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync<LoggingStatus>(EngineHub.GetLoggingStatus, cancellationToken));
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<StorageFolder>> GetStorageFoldersAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<StorageFolder>>(EngineHub.GetStorageFolders, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<UpdateStatus>(EngineHub.CheckForUpdate, cancellationToken));
 

@@ -305,9 +305,158 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     }
 }
 
+/// <summary>
+/// A folder in Help › About's Files part (docs/features/F1.31-files.md, behaviors 1–4a): its name, what it holds, its
+/// path, Copy and, on the desktop, Open folder.
+/// </summary>
+public sealed partial class StorageFolderRow : ObservableObject
+{
+    private readonly AboutViewModel _owner;
+    private readonly Localizer _text;
+
+    internal StorageFolderRow(StorageFolder folder, AboutViewModel owner, Localizer text)
+    {
+        Folder = folder;
+        _owner = owner;
+        _text = text;
+        var kind = folder.Kind.ToString();
+        Name = text[$"About.Folder.{kind}"];
+        Holds = text[$"About.Folder.{kind}.Holds"];
+        CopyName = text[$"About.Folder.{kind}.Copy"];
+        OpenName = text[$"About.Folder.{kind}.Open"];
+        Note =
+            !folder.Exists ? text["About.Folder.NotCreated"]
+            : folder.Configured ? text["About.Folder.Configured"]
+            : null;
+    }
+
+    /// <summary>The folder.</summary>
+    public StorageFolder Folder { get; }
+
+    /// <summary>"Settings".</summary>
+    public string Name { get; }
+
+    /// <summary>"Profiles, sources, appearance and layouts".</summary>
+    public string Holds { get; }
+
+    /// <summary>The full path, never shortened (behavior 4).</summary>
+    public string Path => Folder.Path;
+
+    /// <summary>"set in configuration" or "not created yet" (behavior 2); null otherwise.</summary>
+    public string? Note { get; }
+
+    /// <summary>Copy's accessible name: "Copy the settings folder" (behavior 3).</summary>
+    public string CopyName { get; }
+
+    /// <summary>Open folder's accessible name: "Open the settings folder" (behavior 4a).</summary>
+    public string OpenName { get; }
+
+    /// <summary>Whether Copy shows: there's a clipboard (behavior 3).</summary>
+    public bool ShowsCopy => _owner.CopyToClipboard is not null;
+
+    /// <summary>Whether Open folder shows: the desktop app (behavior 4a).</summary>
+    public bool ShowsOpen => _owner.FolderOpener is not null;
+
+    /// <summary>Whether Open folder can be used: the folder is there.</summary>
+    public bool CanOpen => Folder.Exists;
+
+    /// <summary>Why Open folder is disabled, as its tooltip: "Not created yet…"; null when it isn't (behavior 4a).</summary>
+    public string? OpenTip => CanOpen ? null : _text["About.Folder.NotCreatedTip"];
+
+    /// <summary>"Copied", or "Couldn't open the folder…", for a moment; null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? Said { get; private set; }
+
+    internal void Refresh()
+    {
+        OnPropertyChanged(nameof(ShowsCopy));
+        OnPropertyChanged(nameof(ShowsOpen));
+    }
+
+    /// <summary>Puts the path on the clipboard (behavior 3).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task CopyAsync()
+    {
+        if (_owner.CopyToClipboard is { } copy)
+        {
+            await copy(Path);
+            Said = _text["About.Folder.Copied"];
+        }
+    }
+
+    /// <summary>Opens the folder, or copies its path when the system can't (behavior 4a).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task OpenAsync()
+    {
+        if (_owner.FolderOpener is { } opener && !await opener.OpenAsync(Path))
+        {
+            if (_owner.CopyToClipboard is { } copy)
+            {
+                await copy(Path);
+            }
+            Said = _text["About.Folder.OpenFailed"];
+        }
+    }
+}
+
 /// <summary>About (behavior 15), now a dialog from Help › About (F1.29 behavior 10).</summary>
 public sealed partial class AboutViewModel(Localizer text) : ObservableObject
 {
+    /// <summary>The folders the app keeps things in (docs/features/F1.31-files.md); empty where they're not this viewer's.</summary>
+    public System.Collections.ObjectModel.ObservableCollection<StorageFolderRow> Folders { get; } = [];
+
+    /// <summary>
+    /// What a viewer is told instead of a server's paths (behavior 6), or where a gateway's log is (behavior 7); null
+    /// otherwise.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? FilesNote { get; private set; }
+
+    /// <summary>Puts text on the clipboard; set by the view where there's one (behavior 3).</summary>
+    [ObservableProperty]
+    public partial Func<string, Task>? CopyToClipboard { get; set; }
+
+    /// <summary>Opens a folder in the file manager; the desktop app's, null in the browser (behavior 4a).</summary>
+    public Platform.IFolderOpener? FolderOpener { get; set; }
+
+    partial void OnCopyToClipboardChanged(Func<string, Task>? value)
+    {
+        foreach (var row in Folders)
+        {
+            row.Refresh();
+        }
+    }
+
+    /// <summary>
+    /// Lists the folders: everyone's on the desktop, only a signed-in operator's on a gateway, where a viewer gets a note
+    /// instead (behaviors 1, 6, 7).
+    /// </summary>
+    internal async Task ShowFoldersAsync(IEngineService engine, bool sharedStation, bool isOperator)
+    {
+        Folders.Clear();
+        if (sharedStation && !isOperator)
+        {
+            FilesNote = text["About.Files.Browser"];
+            return;
+        }
+        try
+        {
+            foreach (var folder in await engine.GetStorageFoldersAsync())
+            {
+                Folders.Add(new StorageFolderRow(folder, this, text));
+            }
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            FilesNote = text.Describe(ex);
+            return;
+        }
+        FilesNote =
+            sharedStation && Folders.All(f => f.Folder.Kind != StorageFolderKind.Logs)
+                ? text["About.Files.DockerLogs"]
+                : null;
+    }
+
     private EngineStatus? _status;
     private GeocodingInfo? _geocoding;
     private AuthInfo? _auth;
