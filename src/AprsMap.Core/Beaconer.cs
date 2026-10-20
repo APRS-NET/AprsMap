@@ -319,11 +319,25 @@ internal sealed class Beaconer : IDisposable
         _timer.Change(wake, Timeout.InfiniteTimeSpan);
     }
 
-    /// <summary>The position report a profile sends, by hand or as a beacon (F2.1 behavior 10, F2.2 behavior 2).</summary>
-    public static PositionReport PositionReport(StationProfile profile)
+    /// <summary>
+    /// The position a profile sends, by hand or as a beacon (F2.1 behavior 10, F2.2 behavior 2): a position report, or
+    /// a Mic-E report with its status (docs/features/F2.12-mic-e-status.md, behaviors 1–3).
+    /// </summary>
+    public static PositionedPayload PositionReport(StationProfile profile)
     {
         var beacon = profile.EffectivePositionBeacon;
         var symbol = profile.EffectiveSymbol;
+        if (beacon.MicE is { } status)
+        {
+            return new MicEReport
+            {
+                Position = new AprsPosition(profile.Latitude ?? 0, profile.Longitude ?? 0),
+                Symbol = new AprsSymbol(symbol[0], symbol[1]),
+                Comment = profile.Comment ?? string.Empty,
+                Message = MicEMessageFor(status),
+                IsMessagingCapable = true,
+            };
+        }
         return new PositionReport
         {
             Position = new AprsPosition(profile.Latitude ?? 0, profile.Longitude ?? 0),
@@ -334,6 +348,20 @@ internal sealed class Beaconer : IDisposable
             PowerHeightGain = beacon.Phg is { } phg && !beacon.Compressed ? PowerHeightGain(phg) : null,
         };
     }
+
+    /// <summary>APRS.NET's Mic-E message for <paramref name="status"/>.</summary>
+    public static MicEMessage MicEMessageFor(MicEStatus status) =>
+        status switch
+        {
+            MicEStatus.OffDuty => MicEMessage.OffDuty,
+            MicEStatus.EnRoute => MicEMessage.EnRoute,
+            MicEStatus.InService => MicEMessage.InService,
+            MicEStatus.Returning => MicEMessage.Returning,
+            MicEStatus.Committed => MicEMessage.Committed,
+            MicEStatus.Special => MicEMessage.Special,
+            MicEStatus.Priority => MicEMessage.Priority,
+            _ => MicEMessage.Emergency,
+        };
 
     /// <summary>APRS.NET's PHG for <paramref name="phg"/>.</summary>
     public static PowerHeightGain PowerHeightGain(PhgSettings phg) =>

@@ -525,6 +525,45 @@ public sealed class TransmitTests
         Assert.False(station.Store.Stored!.Profiles[1].PositionConfirmed); // never set by a save
     }
 
+    [Fact]
+    public async Task AMicEStatusChangeKeepsTheConfirmationAndAFormatChangeClearsIt()
+    {
+        var station = Create(
+            Home() with
+            {
+                PositionConfirmed = true,
+                PositionBeacon = PositionBeaconSettings.Off with { MicE = MicEStatus.OffDuty },
+            }
+        );
+        var settings = await station.Engine.GetSettingsAsync(Ct);
+        var home = settings.GetActiveProfile()!;
+
+        await station.Engine.SaveSettingsAsync(
+            settings with
+            {
+                Profiles =
+                [
+                    home with
+                    {
+                        PositionBeacon = home.EffectivePositionBeacon with { MicE = MicEStatus.EnRoute },
+                    },
+                    settings.Profiles[1],
+                ],
+            },
+            Ct
+        );
+        Assert.True(station.Store.Stored!.GetActiveProfile()!.PositionConfirmed); // the status alone (F2.12 behavior 6)
+
+        await station.Engine.SaveSettingsAsync(
+            settings with
+            {
+                Profiles = [home with { PositionBeacon = PositionBeaconSettings.Off }, settings.Profiles[1]],
+            },
+            Ct
+        );
+        Assert.False(station.Store.Stored!.GetActiveProfile()!.PositionConfirmed); // back to Standard: the format
+    }
+
     [Theory]
     [InlineData("A comment that is far too long to fit in a position report", null, null)]
     [InlineData("Café", null, null)]

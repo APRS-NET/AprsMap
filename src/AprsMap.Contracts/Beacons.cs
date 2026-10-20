@@ -40,6 +40,34 @@ public enum BeaconDueReason
     Spacing,
 }
 
+/// <summary>The Mic-E status a position goes with (docs/features/F2.12-mic-e-status.md, APRS101 chapter 10).</summary>
+public enum MicEStatus
+{
+    /// <summary>M0: Off duty.</summary>
+    OffDuty,
+
+    /// <summary>M1: En route.</summary>
+    EnRoute,
+
+    /// <summary>M2: In service.</summary>
+    InService,
+
+    /// <summary>M3: Returning.</summary>
+    Returning,
+
+    /// <summary>M4: Committed.</summary>
+    Committed,
+
+    /// <summary>M5: Special.</summary>
+    Special,
+
+    /// <summary>M6: Priority.</summary>
+    Priority,
+
+    /// <summary>Emergency: a call for help; chosen only after a confirmation (F2.12 behavior 7).</summary>
+    Emergency,
+}
+
 /// <summary>
 /// PHG: transmitter power, antenna height above average terrain, gain and directivity (APRS101 chapter 7), from the
 /// values the format can carry.
@@ -57,13 +85,18 @@ public sealed record PhgSettings(int PowerWatts, int HeightFeet, int GainDbi, in
 /// <param name="SourceIds">Send via: the TX-enabled sources it goes out on; null for all of them.</param>
 /// <param name="Compressed">Whether the position is sent compressed, which is shorter on air.</param>
 /// <param name="Phg">PHG, or null for none. A compressed position can't carry it.</param>
+/// <param name="MicE">
+/// Mic-E with this status (docs/features/F2.12-mic-e-status.md), or null for an uncompressed or compressed position.
+/// Mic-E is never compressed and carries no PHG.
+/// </param>
 public sealed record PositionBeaconSettings(
     bool On = false,
     PositionBeaconSchedule Schedule = PositionBeaconSchedule.Decay,
     int IntervalMinutes = PositionBeaconSettings.DefaultIntervalMinutes,
     IReadOnlyList<string>? SourceIds = null,
     bool Compressed = false,
-    PhgSettings? Phg = null
+    PhgSettings? Phg = null,
+    MicEStatus? MicE = null
 )
 {
     /// <summary>The interval a new position beacon has: 30 minutes.</summary>
@@ -83,7 +116,8 @@ public sealed record PositionBeaconSettings(
         && IntervalMinutes == other.IntervalMinutes
         && BeaconSettings.SameSources(SourceIds, other.SourceIds)
         && Compressed == other.Compressed
-        && Phg == other.Phg;
+        && Phg == other.Phg
+        && MicE == other.MicE;
 
     /// <inheritdoc />
     public override int GetHashCode() =>
@@ -93,7 +127,8 @@ public sealed record PositionBeaconSettings(
             IntervalMinutes,
             SourceIds is null ? null : string.Join(',', SourceIds),
             Compressed,
-            Phg
+            Phg,
+            MicE
         );
 }
 

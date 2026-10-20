@@ -412,6 +412,14 @@ internal static class SettingsValidator
                 profile.Name
             );
         }
+        if (position.MicE is not null && (position.Compressed || position.Phg is not null))
+        {
+            throw Fail(
+                EngineErrorCodes.ProfileMicEInvalid,
+                $"Profile '{profile.Name}': a Mic-E position isn't compressed and carries no PHG.",
+                profile.Name
+            );
+        }
         if (position.Phg is { } phg && (position.Compressed || !IsPhg(phg)))
         {
             throw Fail(

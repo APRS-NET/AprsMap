@@ -1274,6 +1274,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var couldClear = CanClearData;
         _settings = settings;
+        IsSendingEmergency = settings.GetActiveProfile()?.EffectivePositionBeacon.MicE == MicEStatus.Emergency;
         PacketList.ShowSources(settings);
         Settings?.Beacons?.Show(settings); // a source's RX only changes what beacons can go out on
         Settings?.Data?.Capture?.Show(settings);

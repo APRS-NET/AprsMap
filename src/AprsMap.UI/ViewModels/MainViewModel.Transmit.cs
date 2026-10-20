@@ -23,6 +23,17 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     public partial bool IsTransmitting { get; private set; }
 
+    /// <summary>
+    /// The active profile sends the Mic-E Emergency status (docs/features/F2.12-mic-e-status.md, behavior 9): a warning
+    /// marker in the status bar, whatever the beacon's state.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IsSendingEmergency { get; private set; }
+
+    /// <summary>The Sending Emergency marker opens Settings › Beacons.</summary>
+    [RelayCommand]
+    private Task OpenBeaconsAsync() => OpenSettingsSectionAsync("beacons");
+
     /// <summary>Turns Transmit <paramref name="on"/> or off from the switch, then shows what the engine settled on.</summary>
     private async Task SwitchTransmitAsync(bool on)
     {

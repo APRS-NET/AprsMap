@@ -706,11 +706,41 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <CheckBox
+                    <!-- The format (docs/features/F2.12-mic-e-status.md, behaviors 1–3): Mic-E takes a status. -->
+                    <TextBlock Text="{l:T Beacons.Format}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <RadioButton
+                      x:Name="StandardBox"
+                      GroupName="PositionFormat"
+                      Content="{l:T Beacons.Format.Standard}"
+                      IsChecked="{Binding Beacons.FormatStandard}"
+                    />
+                    <RadioButton
                       x:Name="CompressedBox"
+                      GroupName="PositionFormat"
                       Content="{l:T Beacons.Compressed}"
                       IsChecked="{Binding Beacons.Compressed}"
                     />
+                    <RadioButton
+                      x:Name="MicEBox"
+                      GroupName="PositionFormat"
+                      Content="{l:T Beacons.Format.MicE}"
+                      IsChecked="{Binding Beacons.MicE}"
+                    />
+                    <StackPanel Spacing="4" IsVisible="{Binding Beacons.MicE}">
+                      <TextBlock Text="{l:T Beacons.MicEStatus}" Foreground="{DynamicResource Brush.TextMuted}" />
+                      <ComboBox
+                        x:Name="MicEStatusBox"
+                        ItemsSource="{Binding Beacons.MicEStatuses}"
+                        SelectedItem="{Binding Beacons.SelectedMicEStatus}"
+                        AutomationProperties.Name="{l:T Beacons.MicEStatus}"
+                        MinWidth="260"
+                      />
+                      <TextBlock
+                        Text="{l:T Beacons.MicEStatus.Help}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        TextWrapping="Wrap"
+                      />
+                    </StackPanel>
                     <CheckBox
                       x:Name="PhgBox"
                       Content="{l:T Beacons.Phg}"
@@ -802,6 +832,31 @@
                 Foreground="{DynamicResource Brush.Warn}"
                 TextWrapping="Wrap"
               />
+              <!-- Emergency asks first (F2.12 behavior 7). -->
+              <Border
+                x:Name="EmergencyConfirm"
+                IsVisible="{Binding Beacons.IsConfirmingEmergency}"
+                BorderBrush="{DynamicResource Brush.Warn}"
+                BorderThickness="{DynamicResource Thickness.Border}"
+                CornerRadius="{DynamicResource Radius.Control}"
+                Padding="12"
+              >
+                <StackPanel Spacing="8">
+                  <TextBlock Text="{l:T Beacons.Emergency.Confirm}" TextWrapping="Wrap" />
+                  <WrapPanel ItemSpacing="8">
+                    <Button
+                      x:Name="SendEmergencyButton"
+                      Content="{l:T Beacons.Emergency.Send}"
+                      Command="{Binding Beacons.ConfirmEmergencyCommand}"
+                    />
+                    <Button
+                      x:Name="CancelEmergencyButton"
+                      Content="{l:T Beacons.Emergency.Cancel}"
+                      Command="{Binding Beacons.CancelEmergencyCommand}"
+                    />
+                  </WrapPanel>
+                </StackPanel>
+              </Border>
               <WrapPanel ItemSpacing="10">
                 <Button
                   x:Name="SaveBeaconsButton"

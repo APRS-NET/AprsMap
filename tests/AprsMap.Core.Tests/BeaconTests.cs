@@ -299,6 +299,78 @@ public sealed class BeaconTests
         }
     }
 
+    [Fact]
+    public async Task AMicEPositionGoesOutWithItsStatusAndSendPositionNowSendsTheSame()
+    {
+        using var station = Create(Fixed with { MicE = MicEStatus.EnRoute }, uses: [AprsIs]);
+        var (run, cts, aprsIs, _) = await Run(station);
+        using (cts)
+        {
+            await Advance(station, Beaconer.MaxStartWait);
+            var beacon = Assert.IsType<MicEReport>(AprsPacket.Parse(Assert.Single(aprsIs.Sent)).Payload);
+            Assert.Equal(MicEMessage.EnRoute, beacon.Message);
+            Assert.Equal(
+                (49.0583, -72.0292),
+                (Math.Round(beacon.Position!.Latitude, 4), Math.Round(beacon.Position.Longitude, 4))
+            );
+            Assert.Equal("Home", beacon.Comment);
+
+            await station.Engine.SendPositionAsync(null, Ct);
+            var byHand = Assert.IsType<MicEReport>(AprsPacket.Parse(aprsIs.Sent.Last()).Payload);
+            Assert.Equal(MicEMessage.EnRoute, byHand.Message);
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Theory]
+    [InlineData(MicEStatus.OffDuty, MicEMessage.OffDuty)]
+    [InlineData(MicEStatus.Priority, MicEMessage.Priority)]
+    [InlineData(MicEStatus.Emergency, MicEMessage.Emergency)]
+    public void EachStatusIsItsMicEMessage(MicEStatus status, MicEMessage message)
+    {
+        var profile = InMemorySettingsStore.Profile("N0TEST") with
+        {
+            Latitude = 49.0583,
+            Longitude = -72.0292,
+            PositionBeacon = Fixed with { MicE = status },
+        };
+
+        var packet = AprsPacket.Parse(
+            PacketAddress.Parse("N0TEST", Brand.Tocall, []).Create(Beaconer.PositionReport(profile)).ToString()
+        );
+
+        Assert.Equal(message, Assert.IsType<MicEReport>(packet.Payload).Message);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task AMicEPositionCantBeCompressedOrCarryPhg(bool compressed, bool phg)
+    {
+        using var station = Create(Fixed, uses: [AprsIs]);
+        var settings = await station.Engine.GetSettingsAsync(Ct);
+        var profile = settings.GetActiveProfile()!;
+        var beacon = Fixed with
+        {
+            MicE = MicEStatus.InService,
+            Compressed = compressed,
+            Phg = phg ? new PhgSettings(25, 20, 3) : null,
+        };
+
+        var error = await Assert.ThrowsAsync<EngineArgumentException>(() =>
+            station.Engine.SaveSettingsAsync(
+                settings with
+                {
+                    Profiles = [profile with { PositionBeacon = beacon }],
+                },
+                Ct
+            )
+        );
+
+        Assert.Equal(EngineErrorCodes.ProfileMicEInvalid, error.EngineError.Code);
+    }
+
     [Theory]
     [InlineData(
         9,
