@@ -146,6 +146,24 @@ public sealed class ViewerLimitTests(LimitedGatewayFactory factory) : IClassFixt
         await WaitUntilAsync(() => Task.FromResult(engine.PreviewFilter() == before)); // it left: no longer counts
     }
 
+    [Fact]
+    public async Task ABrowsersWatchedStationsCountUpToThree()
+    {
+        var engine = factory.Services.GetRequiredService<Core.Engine>();
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+        await remote.GetSettingsAsync(Ct);
+
+        await remote.SetMapViewAsync(
+            new MapViewReport(null, null, 0, Watched: ["N0AAA", "N0BBB", "N0CCC", "N0DDD", "N0EEE"]),
+            Ct
+        );
+
+        var filter = engine.PreviewFilter()!;
+        Assert.EndsWith("f/N0AAA/150 f/N0BBB/150 f/N0CCC/150", filter, StringComparison.Ordinal);
+        Assert.DoesNotContain("N0DDD", filter, StringComparison.Ordinal);
+    }
+
     private sealed class RefuseNegotiate : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(

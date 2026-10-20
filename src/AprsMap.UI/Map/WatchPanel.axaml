@@ -1,0 +1,59 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- An extra map view (F1.16): the map, following one station; its name or Follow again over the top-left corner, and
+     zoom over the top-right. The main map's tiles and stations; colours and sizes come from tokens. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:l="using:AprsMap.UI.Localization"
+  x:Class="AprsMap.UI.Map.WatchPanel"
+>
+  <Panel>
+    <Border x:Name="MapHost" />
+    <Border
+      x:Name="WatchChip"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Top"
+      Margin="10"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Accent}"
+      BorderThickness="{DynamicResource Thickness.Border}"
+      CornerRadius="{DynamicResource Radius.Control}"
+      Padding="10,2,4,2"
+    >
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <TextBlock x:Name="WatchText" VerticalAlignment="Center" TextWrapping="Wrap" />
+        <Button x:Name="FollowAgainButton" Content="{l:T Watch.FollowAgain}" Padding="8,2" />
+      </StackPanel>
+    </Border>
+    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Spacing="6">
+      <Button
+        x:Name="ZoomInButton"
+        ToolTip.Tip="{l:T Map.ZoomIn}"
+        AutomationProperties.Name="{l:T Map.ZoomIn}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <PathIcon
+          Data="M 11,5 L 13,5 L 13,11 L 19,11 L 19,13 L 13,13 L 13,19 L 11,19 L 11,13 L 5,13 L 5,11 L 11,11 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+      </Button>
+      <Button
+        x:Name="ZoomOutButton"
+        ToolTip.Tip="{l:T Map.ZoomOut}"
+        AutomationProperties.Name="{l:T Map.ZoomOut}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <PathIcon
+          Data="M 5,11 L 19,11 L 19,13 L 5,13 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+      </Button>
+    </StackPanel>
+  </Panel>
+</UserControl>

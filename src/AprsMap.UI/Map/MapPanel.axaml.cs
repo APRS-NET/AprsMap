@@ -255,6 +255,9 @@ public sealed partial class MapPanel : UserControl, IDisposable
             case Key.Oem2 or Key.Divide:
                 main.FocusStationSearch();
                 return true;
+            case Key.W when main.SelectedStation is not null:
+                main.WatchSelectedCommand.Execute(null); // Watch in a view (F1.16 behavior 1)
+                return true;
             case Key.L when main.SelectedStation is not null:
                 main.Details.IsFollowing = !main.Details.IsFollowing;
                 return true;
