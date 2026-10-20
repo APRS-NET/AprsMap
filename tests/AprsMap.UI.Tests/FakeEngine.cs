@@ -594,6 +594,19 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>When set, <see cref="PlaceObjectAsync"/> throws it.</summary>
     public Exception? PlaceFailure { get; set; }
 
+    /// <summary>The QRU groups asked for, in order.</summary>
+    public List<string> QruAsked { get; } = [];
+
+    public Task<IReadOnlyList<PacketView>> AskQruAsync(string group, CancellationToken cancellationToken = default)
+    {
+        if (SendFailure is { } failure)
+        {
+            return Task.FromException<IReadOnlyList<PacketView>>(failure);
+        }
+        QruAsked.Add(group);
+        return Task.FromResult<IReadOnlyList<PacketView>>([SentPacket("rotate"), SentPacket("tnc")]);
+    }
+
     public Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default)
     {
         if (PlaceFailure is { } failure)

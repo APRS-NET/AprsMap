@@ -111,6 +111,15 @@ internal sealed class EngineHubEndpoint(
         return engine.SendStatusAsync(sourceId, Context.ConnectionAborted);
     }
 
+    /// <summary>Asking QRU servers transmits: a signed-in operator only (F2.6).</summary>
+    [HubMethodName(EngineHub.AskQru)]
+    [Transmits]
+    public Task<IReadOnlyList<PacketView>> AskQru(string group)
+    {
+        RequireOperator();
+        return engine.AskQruAsync(group, Context.ConnectionAborted);
+    }
+
     /// <summary>Objects are sent on their own: a signed-in operator only (F2.7).</summary>
     [HubMethodName(EngineHub.PlaceObject)]
     [Transmits]
