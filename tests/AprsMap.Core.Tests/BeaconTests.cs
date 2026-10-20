@@ -326,7 +326,7 @@ public sealed class BeaconTests
     [Theory]
     [InlineData(MicEStatus.OffDuty, MicEMessage.OffDuty)]
     [InlineData(MicEStatus.Priority, MicEMessage.Priority)]
-    [InlineData(MicEStatus.Emergency, MicEMessage.Emergency)]
+    [InlineData(MicEStatus.Returning, MicEMessage.Returning)]
     public void EachStatusIsItsMicEMessage(MicEStatus status, MicEMessage message)
     {
         var profile = InMemorySettingsStore.Profile("N0TEST") with

@@ -832,31 +832,6 @@
                 Foreground="{DynamicResource Brush.Warn}"
                 TextWrapping="Wrap"
               />
-              <!-- Emergency asks first (F2.12 behavior 7). -->
-              <Border
-                x:Name="EmergencyConfirm"
-                IsVisible="{Binding Beacons.IsConfirmingEmergency}"
-                BorderBrush="{DynamicResource Brush.Warn}"
-                BorderThickness="{DynamicResource Thickness.Border}"
-                CornerRadius="{DynamicResource Radius.Control}"
-                Padding="12"
-              >
-                <StackPanel Spacing="8">
-                  <TextBlock Text="{l:T Beacons.Emergency.Confirm}" TextWrapping="Wrap" />
-                  <WrapPanel ItemSpacing="8">
-                    <Button
-                      x:Name="SendEmergencyButton"
-                      Content="{l:T Beacons.Emergency.Send}"
-                      Command="{Binding Beacons.ConfirmEmergencyCommand}"
-                    />
-                    <Button
-                      x:Name="CancelEmergencyButton"
-                      Content="{l:T Beacons.Emergency.Cancel}"
-                      Command="{Binding Beacons.CancelEmergencyCommand}"
-                    />
-                  </WrapPanel>
-                </StackPanel>
-              </Border>
               <WrapPanel ItemSpacing="10">
                 <Button
                   x:Name="SaveBeaconsButton"
