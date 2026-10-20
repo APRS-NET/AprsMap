@@ -588,6 +588,22 @@ internal sealed class FakeEngine : IEngineService
         return Task.FromResult<IReadOnlyList<PacketView>>([SentPacket(sourceId)]);
     }
 
+    /// <summary>The source each <see cref="SendStatusAsync"/> was asked for (null for all), in order.</summary>
+    public List<string?> StatusSources { get; } = [];
+
+    public Task<IReadOnlyList<PacketView>> SendStatusAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (SendFailure is { } failure)
+        {
+            return Task.FromException<IReadOnlyList<PacketView>>(failure);
+        }
+        StatusSources.Add(sourceId);
+        return Task.FromResult<IReadOnlyList<PacketView>>([SentPacket(sourceId)]);
+    }
+
     private static PacketView SentPacket(string? sourceId) =>
         new(
             DateTimeOffset.UnixEpoch,

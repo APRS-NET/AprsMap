@@ -98,7 +98,8 @@ public sealed class BeaconsUiTests
         await section.SaveCommand.ExecuteAsync(null);
 
         Assert.Equal(
-            "Profile “Home”: a status can have up to 62 letters, digits and plain punctuation, without accents.",
+            "Profile “Home”: a status can have up to 62 letters, digits and plain punctuation, without accents; "
+                + "55 with the time, 53 with the grid square.",
             section.Error
         );
     }

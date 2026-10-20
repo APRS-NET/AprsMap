@@ -403,12 +403,24 @@ internal static class SettingsValidator
                 profile.Name
             );
         }
-        if (!IsSendableStatus(status.Text))
+        if (!IsSendableStatus(status.Text, status.Add))
         {
             throw Fail(
                 EngineErrorCodes.ProfileStatusInvalid,
                 $"Profile '{profile.Name}': a status has at most {StatusBeaconSettings.MaxTextLength} characters of "
                     + "printable ASCII.",
+                profile.Name
+            );
+        }
+        if (
+            status.SavedTextList.Count > StatusBeaconSettings.MaxSavedTexts
+            || status.SavedTextList.Any(t => t.Trim().Length == 0 || !IsSendableStatus(t))
+        )
+        {
+            throw Fail(
+                EngineErrorCodes.ProfileSavedStatusInvalid,
+                $"Profile '{profile.Name}': at most {StatusBeaconSettings.MaxSavedTexts} saved status texts, each one "
+                    + "a status can carry.",
                 profile.Name
             );
         }
@@ -435,8 +447,8 @@ internal static class SettingsValidator
         minutes is >= BeaconSettings.MinIntervalMinutes and <= BeaconSettings.MaxIntervalMinutes;
 
     /// <summary>Whether <paramref name="text"/> fits a status report without a timestamp (F2.2 behavior 3).</summary>
-    internal static bool IsSendableStatus(string text) =>
-        text.Length <= StatusBeaconSettings.MaxTextLength && text.All(c => c is >= ' ' and <= '~');
+    internal static bool IsSendableStatus(string text, StatusAddition add = StatusAddition.None) =>
+        text.Length <= StatusBeaconSettings.MaxTextLengthWith(add) && text.All(c => c is >= ' ' and <= '~');
 
     /// <summary>
     /// Whether APRS.NET sends <paramref name="phg"/> exactly: it rounds what the format can't carry, so the value is

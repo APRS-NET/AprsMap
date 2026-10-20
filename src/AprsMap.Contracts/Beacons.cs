@@ -132,16 +132,33 @@ public sealed record PositionBeaconSettings(
         );
 }
 
-/// <summary>A profile's status beacon (F2.2 behavior 3).</summary>
+/// <summary>What a status carries besides its text (docs/features/F2.11-status-reports.md, behavior 3).</summary>
+public enum StatusAddition
+{
+    /// <summary>The text alone.</summary>
+    None,
+
+    /// <summary>The 6-character Maidenhead locator of the profile's location and its symbol.</summary>
+    GridSquare,
+
+    /// <summary>The UTC day, hour and minute it's sent.</summary>
+    Time,
+}
+
+/// <summary>A profile's status beacon (F2.2 behavior 3), and its saved texts (F2.11).</summary>
 /// <param name="On">Whether it beacons; off by default.</param>
 /// <param name="Text">Up to 62 characters of printable ASCII.</param>
 /// <param name="IntervalMinutes">10 minutes to 24 hours.</param>
 /// <param name="SourceIds">Send via: the TX-enabled sources it goes out on; null for all of them.</param>
+/// <param name="SavedTexts">Texts kept to choose from, at most 20 (F2.11 behavior 1); null for none.</param>
+/// <param name="Add">The grid square or the time, or neither (F2.11 behavior 3).</param>
 public sealed record StatusBeaconSettings(
     bool On = false,
     string Text = "",
     int IntervalMinutes = StatusBeaconSettings.DefaultIntervalMinutes,
-    IReadOnlyList<string>? SourceIds = null
+    IReadOnlyList<string>? SourceIds = null,
+    IReadOnlyList<string>? SavedTexts = null,
+    StatusAddition Add = StatusAddition.None
 )
 {
     /// <summary>The interval a new status beacon has: 60 minutes.</summary>
@@ -149,6 +166,24 @@ public sealed record StatusBeaconSettings(
 
     /// <summary>The most characters a status without a timestamp may have (APRS101 chapter 16).</summary>
     public const int MaxTextLength = 62;
+
+    /// <summary>The most saved texts (F2.11 behavior 1).</summary>
+    public const int MaxSavedTexts = 20;
+
+    /// <summary>The saved texts, none when unset.</summary>
+    public IReadOnlyList<string> SavedTextList => SavedTexts ?? [];
+
+    /// <summary>
+    /// The most characters the text may have with <paramref name="add"/> (F2.11 behavior 4): 62, 55 with the time
+    /// (seven for <c>DDHHMMz</c>), 53 with the grid square (six, the symbol's two and a space).
+    /// </summary>
+    public static int MaxTextLengthWith(StatusAddition add) =>
+        add switch
+        {
+            StatusAddition.Time => MaxTextLength - 7,
+            StatusAddition.GridSquare => MaxTextLength - 9,
+            _ => MaxTextLength,
+        };
 
     /// <summary>A status beacon that's off.</summary>
     public static readonly StatusBeaconSettings Off = new();
@@ -162,11 +197,20 @@ public sealed record StatusBeaconSettings(
         && On == other.On
         && Text == other.Text
         && IntervalMinutes == other.IntervalMinutes
-        && BeaconSettings.SameSources(SourceIds, other.SourceIds);
+        && BeaconSettings.SameSources(SourceIds, other.SourceIds)
+        && SavedTextList.SequenceEqual(other.SavedTextList)
+        && Add == other.Add;
 
     /// <inheritdoc />
     public override int GetHashCode() =>
-        HashCode.Combine(On, Text, IntervalMinutes, SourceIds is null ? null : string.Join(',', SourceIds));
+        HashCode.Combine(
+            On,
+            Text,
+            IntervalMinutes,
+            SourceIds is null ? null : string.Join(',', SourceIds),
+            string.Join('\n', SavedTextList),
+            Add
+        );
 }
 
 /// <summary>Limits shared by both beacons.</summary>

@@ -1359,6 +1359,46 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         return sent;
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<PacketView>> SendStatusAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var (_, profile, targets) = await TargetsAsync(sourceId, cancellationToken).ConfigureAwait(false);
+        var status = profile.EffectiveStatusBeacon;
+        if (status.Text.Trim().Length == 0)
+        {
+            throw EngineErrors.ToException(
+                new EngineError(EngineErrorCodes.TransmitNoStatus, "Write a status to send first.")
+            );
+        }
+        if (sourceId is null)
+        {
+            targets = [.. targets.Where(t => status.SendsVia(t.Source.Id))]; // Send via (F2.11 behavior 5)
+            if (targets.Count == 0)
+            {
+                throw EngineErrors.ToException(
+                    new EngineError(EngineErrorCodes.TransmitNoSource, "None of the status's sources can send now.")
+                );
+            }
+        }
+        var report = Beaconer.StatusReport(profile, _time.GetUtcNow());
+        var sent = new List<PacketView>();
+        Exception? failure = null;
+        foreach (var (source, sender) in targets)
+        {
+            var (view, error) = await SendOnAsync(source, sender, Build(profile, source, report), cancellationToken)
+                .ConfigureAwait(false);
+            if (view is not null)
+            {
+                sent.Add(view);
+            }
+            failure ??= error;
+        }
+        return sent.Count == 0 ? throw SendFailed(failure!) : sent;
+    }
+
     /// <summary>How long Test send listens for its packet coming back (behavior 9.3).</summary>
     internal static readonly TimeSpan TestListenTime = TimeSpan.FromSeconds(30);
 

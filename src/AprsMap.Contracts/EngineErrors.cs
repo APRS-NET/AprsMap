@@ -72,6 +72,9 @@ public static class EngineErrorCodes
     /// <summary>A Mic-E position comes compressed or with PHG (docs/features/F2.12-mic-e-status.md, behavior 3).</summary>
     public const string ProfileMicEInvalid = "settings.profile.mic-e-invalid";
 
+    /// <summary>More than 20 saved status texts, or one a status can't carry (docs/features/F2.11-status-reports.md).</summary>
+    public const string ProfileSavedStatusInvalid = "settings.profile.saved-status-invalid";
+
     /// <summary>A profile's symbol isn't a table or overlay character and a symbol code (F2.1 behavior 1).</summary>
     public const string ProfileSymbolInvalid = "settings.profile.symbol-invalid";
 
@@ -303,6 +306,9 @@ public static class EngineErrorCodes
 
     /// <summary>The active profile has no location to send (F2.1 behavior 11).</summary>
     public const string TransmitNoPosition = "transmit.no-position";
+
+    /// <summary>Send status now with no status text (docs/features/F2.11-status-reports.md, behavior 5).</summary>
+    public const string TransmitNoStatus = "transmit.no-status";
 
     /// <summary>The connection failed while sending (F2.1 behavior 11).</summary>
     public const string TransmitFailed = "transmit.failed";

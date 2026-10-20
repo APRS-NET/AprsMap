@@ -3994,7 +3994,7 @@ pause 1s</value>
     <comment>profile: the profile's name.</comment>
   </data>
   <data name="Error.settings.profile.status-invalid" xml:space="preserve">
-    <value>Profile “{profile}”: a status can have up to 62 letters, digits and plain punctuation, without accents.</value>
+    <value>Profile “{profile}”: a status can have up to 62 letters, digits and plain punctuation, without accents; 55 with the time, 53 with the grid square.</value>
     <comment>profile: the profile's name. 62 is the most a status report carries.</comment>
   </data>
   <data name="Error.settings.profile.phg-invalid" xml:space="preserve">
@@ -4144,6 +4144,46 @@ pause 1s</value>
   </data>
   <data name="Error.settings.profile.mic-e-invalid" xml:space="preserve">
     <value>A Mic-E position isn't compressed and carries no PHG.</value>
+  </data>
+  <data name="Beacons.SavedTexts" xml:space="preserve">
+    <value>Saved texts</value>
+  </data>
+  <data name="Beacons.SavedTexts.Choose" xml:space="preserve">
+    <value>Choose a saved text</value>
+  </data>
+  <data name="Beacons.SavedTexts.Save" xml:space="preserve">
+    <value>Save this text</value>
+  </data>
+  <data name="Beacons.SavedTexts.Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Beacons.StatusAdd" xml:space="preserve">
+    <value>Add to the status</value>
+  </data>
+  <data name="Beacons.StatusAdd.None" xml:space="preserve">
+    <value>Nothing</value>
+  </data>
+  <data name="Beacons.StatusAdd.GridSquare" xml:space="preserve">
+    <value>My grid square</value>
+  </data>
+  <data name="Beacons.StatusAdd.Time" xml:space="preserve">
+    <value>The time (UTC)</value>
+  </data>
+  <data name="Beacons.StatusAdd.Help" xml:space="preserve">
+    <value>A status can carry the grid square or the time, not both. It then has room for 53 characters with the grid square, or 55 with the time.</value>
+  </data>
+  <data name="Beacons.SendStatusNow" xml:space="preserve">
+    <value>Save and send status now</value>
+  </data>
+  <data name="Beacons.StatusSent" xml:space="preserve">
+    <value>{count, plural, one {Status sent on # source} other {Status sent on # sources}}</value>
+    <comment>count: how many sources the status went out on.</comment>
+  </data>
+  <data name="Error.transmit.no-status" xml:space="preserve">
+    <value>Write a status to send first.</value>
+  </data>
+  <data name="Error.settings.profile.saved-status-invalid" xml:space="preserve">
+    <value>At most 20 saved status texts, each one a status can carry: up to 62 letters, digits and plain punctuation.</value>
   </data>
   <data name="Beacons.Compressed" xml:space="preserve">
     <value>Compressed (shorter on air)</value>

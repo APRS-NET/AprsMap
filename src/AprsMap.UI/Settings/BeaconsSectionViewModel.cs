@@ -33,6 +33,7 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
     private readonly Action<AppSettings> _saved;
     private AppSettings _settings = AppSettings.Empty;
     private MicEStatus? _savedMicE;
+    private StatusAddition _savedAddition;
 
     internal BeaconsSectionViewModel(IEngineService engine, Localizer text, Action<AppSettings> saved)
     {
@@ -158,6 +159,83 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
     /// <summary>The most characters a status may have.</summary>
     public static int MaxStatusLength => StatusBeaconSettings.MaxTextLength;
 
+    /// <summary>The saved status texts (docs/features/F2.11-status-reports.md, behavior 1).</summary>
+    public ObservableCollection<string> SavedTexts { get; } = [];
+
+    /// <summary>The saved text chosen; choosing one puts it in the status box (behavior 1).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RemoveSavedTextCommand))]
+    public partial string? SelectedSavedText { get; set; }
+
+    /// <summary>Nothing, the grid square or the time, named (behavior 3).</summary>
+    public ObservableCollection<BeaconChoice<StatusAddition>> Additions { get; } = [];
+
+    /// <summary>What's added to the status.</summary>
+    [ObservableProperty]
+    public partial BeaconChoice<StatusAddition>? SelectedAddition { get; set; }
+
+    /// <summary>"Status sent on 2 sources", once Send status now worked; null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? StatusSentText { get; private set; }
+
+    partial void OnSelectedSavedTextChanged(string? value)
+    {
+        if (value is not null)
+        {
+            StatusText = value;
+        }
+    }
+
+    /// <summary>Save this text: adds what's in the box to the saved texts, once (behavior 1).</summary>
+    [RelayCommand(CanExecute = nameof(CanSaveText))]
+    private void SaveText()
+    {
+        var text = StatusText.Trim();
+        SavedTexts.Add(text);
+        SelectedSavedText = text;
+        SaveTextCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanSaveText() =>
+        StatusText.Trim().Length > 0
+        && SavedTexts.Count < StatusBeaconSettings.MaxSavedTexts
+        && !SavedTexts.Contains(StatusText.Trim());
+
+    /// <summary>Remove: takes the chosen saved text off; the status box keeps its text.</summary>
+    [RelayCommand(CanExecute = nameof(CanRemoveSavedText))]
+    private void RemoveSavedText()
+    {
+        var text = SelectedSavedText!;
+        SelectedSavedText = null;
+        SavedTexts.Remove(text);
+        SaveTextCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanRemoveSavedText() => SelectedSavedText is not null;
+
+    /// <summary>Send status now: saves the section, then sends the status once (behavior 5).</summary>
+    [RelayCommand]
+    private async Task SendStatusNowAsync()
+    {
+        StatusSentText = null;
+        if (!await SaveBeaconsAsync())
+        {
+            return;
+        }
+        try
+        {
+            var sent = await _engine.SendStatusAsync();
+            StatusSentText = _text.Format(
+                "Beacons.StatusSent",
+                new Dictionary<string, object?> { ["count"] = sent.Count }
+            );
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Error = _text.Describe(ex);
+        }
+    }
+
     /// <summary>The intervals, named.</summary>
     public ObservableCollection<BeaconChoice<int>> StatusIntervals { get; } = [];
 
@@ -201,6 +279,16 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
         SelectedDirection = Directions.FirstOrDefault(c => c.Value == (phg.Directivity ?? 0)) ?? Directions[0];
         StatusOn = status.On;
         StatusText = status.Text;
+        SelectedSavedText = null;
+        SavedTexts.Clear();
+        foreach (var text in status.SavedTextList)
+        {
+            SavedTexts.Add(text);
+        }
+        SaveTextCommand.NotifyCanExecuteChanged();
+        _savedAddition = status.Add;
+        SelectedAddition = null;
+        StatusSentText = null;
         SelectedStatusInterval = StatusIntervals.FirstOrDefault(i => i.Value == status.IntervalMinutes);
         var sources = profile is null ? [] : settings.SourceList.Where(s => s.MaySend && profile.Uses(s)).ToList();
         PositionVia.Clear();
@@ -251,6 +339,12 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
         SelectedMicEStatus = MicEStatuses.FirstOrDefault(c => c.Value == status);
         Refill(PositionIntervals, positionMinutes, m => SelectedPositionInterval = m);
         Refill(StatusIntervals, statusMinutes, m => SelectedStatusInterval = m);
+        var addition = SelectedAddition?.Value ?? _savedAddition;
+        Additions.Clear();
+        Additions.Add(new(StatusAddition.None, _text["Beacons.StatusAdd.None"]));
+        Additions.Add(new(StatusAddition.GridSquare, _text["Beacons.StatusAdd.GridSquare"]));
+        Additions.Add(new(StatusAddition.Time, _text["Beacons.StatusAdd.Time"]));
+        SelectedAddition = Additions.FirstOrDefault(a => a.Value == addition);
         RefillPhg(Powers, PhgPowers, SelectedPower?.Value, "Beacons.Phg.Watts", c => SelectedPower = c);
         RefillPhg(Heights, PhgHeights, SelectedHeight?.Value, "Beacons.Phg.Feet", c => SelectedHeight = c);
         RefillPhg(Gains, PhgGains, SelectedGain?.Value, "Beacons.Phg.Db", c => SelectedGain = c);
@@ -312,7 +406,11 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
 
     partial void OnStatusOnChanged(bool value) => SavedText = null;
 
-    partial void OnStatusTextChanged(string value) => (Error, SavedText) = (null, null);
+    partial void OnStatusTextChanged(string value)
+    {
+        (Error, SavedText) = (null, null);
+        SaveTextCommand.NotifyCanExecuteChanged();
+    }
 
     /// <summary>Saves both beacons to the active profile.</summary>
     [RelayCommand]
@@ -344,7 +442,9 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
             StatusOn,
             StatusText.Trim(),
             SelectedStatusInterval?.Value ?? StatusBeaconSettings.DefaultIntervalMinutes,
-            Via(StatusVia)
+            Via(StatusVia),
+            SavedTexts.Count > 0 ? [.. SavedTexts] : null,
+            SelectedAddition?.Value ?? StatusAddition.None
         );
         var updated = profile with { PositionBeacon = position, StatusBeacon = status };
         var settings = _settings with

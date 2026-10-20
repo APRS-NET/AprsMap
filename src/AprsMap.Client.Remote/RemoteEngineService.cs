@@ -361,6 +361,15 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         );
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<PacketView>> SendStatusAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<PacketView>>(EngineHub.SendStatus, sourceId, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<TestSendResult> TestSendAsync(string sourceId, CancellationToken cancellationToken = default) =>
         WithEngineErrors(() =>
             _connection.InvokeAsync<TestSendResult>(EngineHub.TestSend, sourceId, cancellationToken)
