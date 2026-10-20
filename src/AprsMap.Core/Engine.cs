@@ -34,6 +34,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     private readonly ILogger _packetsLog;
     private readonly ILogger _transmitLog;
     private readonly LoggingState _logging;
+    private readonly IReadOnlyList<IStorageFolderSource> _folderSources;
     private readonly Lock _gate = new();
     private readonly LinkedList<PacketView> _recent = new();
 
@@ -92,9 +93,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         IMessageStore? messages = null,
         IHttpClientFactory? httpClients = null,
         ILoggerFactory? loggerFactory = null,
-        LoggingState? logging = null
+        LoggingState? logging = null,
+        IEnumerable<IStorageFolderSource>? folders = null
     )
     {
+        _folderSources = [.. folders ?? []];
         _httpClients = httpClients;
         ArgumentNullException.ThrowIfNull(options);
         _options = options.Value;
@@ -195,6 +198,29 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     /// <inheritdoc />
     public async Task<AppSettings> GetSettingsAsync(CancellationToken cancellationToken = default) =>
         WithoutSecrets(await LoadSettingsAsync(cancellationToken).ConfigureAwait(false));
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<StorageFolder>> GetStorageFoldersAsync(CancellationToken cancellationToken = default)
+    {
+        // The engine's own: settings, and the data beside or apart from them (docs/features/F1.31-files.md).
+        var settings = SettingsLocation.Folder(_options);
+        var data = SettingsLocation.DataFolder(_options);
+        List<StorageFolder> folders =
+        [
+            StorageFolderSource.At(
+                StorageFolderKind.Settings,
+                settings,
+                !string.IsNullOrWhiteSpace(_options.SettingsFolder)
+            ),
+            StorageFolderSource.At(
+                StorageFolderKind.Data,
+                data,
+                !string.IsNullOrWhiteSpace(_options.DataFolder) || !string.IsNullOrWhiteSpace(_options.SettingsFolder)
+            ),
+            .. _folderSources.SelectMany(s => s.Folders()),
+        ];
+        return Task.FromResult<IReadOnlyList<StorageFolder>>([.. folders.OrderBy(f => f.Kind)]);
+    }
 
     /// <inheritdoc />
     public Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default) =>
@@ -644,7 +670,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             // Saves wait a moment to group changes; what's waiting is written before the engine stops.
             try
             {
-                await _messenger.FlushAsync().ConfigureAwait(false);
+                await _messenger.FlushPendingAsync().ConfigureAwait(false);
             }
             catch (IOException) { } // nowhere to write: nothing more to do on the way out
         }
