@@ -68,6 +68,52 @@ public interface IEngineService
     );
 
     /// <summary>
+    /// Sends the active profile's status once, by hand (docs/features/F2.11-status-reports.md, behavior 5): its text,
+    /// with the grid square or time when chosen, on every source the status goes on that can send now, or on
+    /// <paramref name="sourceId"/> alone. The status beacon's schedule doesn't change.
+    /// </summary>
+    /// <param name="sourceId">The one source to send on, or null for every source the status goes on that can.</param>
+    /// <param name="cancellationToken">Cancels the send.</param>
+    /// <returns>The copies sent, one per source.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Nothing could be sent; the error's <c>transmit.*</c> code says why (<c>transmit.no-status</c> without a text).
+    /// </exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task<IReadOnlyList<PacketView>> SendStatusAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// Adds <paramref name="placed"/> to the active profile's objects, or changes the one with its id, and starts its
+    /// schedule: it goes out soon on each of its sources, then less and less often (docs/features/
+    /// F2.7-objects-and-items.md, behaviors 1–7).
+    /// </summary>
+    /// <exception cref="ArgumentException">It can't be sent as it is; the <c>settings.object.*</c> code says why.</exception>
+    /// <exception cref="InvalidOperationException">The active profile may not transmit; the <c>transmit.*</c> code says why.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Asks the QRU servers in range for <paramref name="group"/> (docs/features/F2.6-email-and-qru.md, behavior 4): a
+    /// message to <c>QRU</c>, without an ID, once on every source that can send now. Their answers arrive as objects
+    /// and messages.
+    /// </summary>
+    /// <returns>The copies sent, one per source.</returns>
+    /// <exception cref="ArgumentException">The group isn't 1 to 9 letters, digits and - (<c>message.qru-group-invalid</c>).</exception>
+    /// <exception cref="InvalidOperationException">Nothing could be sent; the error's <c>transmit.*</c> code says why.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task<IReadOnlyList<PacketView>> AskQruAsync(string group, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Kills the active profile's object <paramref name="id"/> (sent killed three times, then removed) or, without
+    /// <paramref name="kill"/>, removes it without sending anything (F2.7 behaviors 8, 9).
+    /// </summary>
+    /// <exception cref="ArgumentException">No object has that id (<c>settings.object.unknown</c>).</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task RemoveObjectAsync(string id, bool kill, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Sends one status report on <paramref name="sourceId"/> alone, then listens for 30 seconds for it coming back
     /// through a digipeater or an IGate (docs/features/F2.1-own-station.md, behavior 9).
     /// </summary>
@@ -334,6 +380,12 @@ public interface IEngineService
     /// Operator-only on a gateway.
     /// </summary>
     Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The folders the app keeps things in, for Help › About (docs/features/F1.31-files.md): settings, data, map tiles,
+    /// logs and the defaults for every user. Operator-only on a gateway, so a server's paths never reach a viewer.
+    /// </summary>
+    Task<IReadOnlyList<StorageFolder>> GetStorageFoldersAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Checks for an update now (Check now, behavior 1), and says where it stands after.</summary>
     Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default);

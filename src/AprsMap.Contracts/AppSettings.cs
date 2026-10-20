@@ -188,6 +188,11 @@ public sealed record StationAging(
 /// leaving, null for none.
 /// </param>
 /// <param name="Ping">The ping responder (docs/features/F2.13-ping.md); null for off.</param>
+/// <param name="AutoReply">The away message (docs/features/F2.10-auto-reply.md); null for off.</param>
+/// <param name="Objects">
+/// The objects and items it places (docs/features/F2.7-objects-and-items.md); changed only by
+/// <see cref="IEngineService.PlaceObjectAsync"/> and <see cref="IEngineService.RemoveObjectAsync"/>.
+/// </param>
 public sealed record StationProfile(
     string Id,
     string Name,
@@ -204,9 +209,17 @@ public sealed record StationProfile(
     PositionBeaconSettings? PositionBeacon = null,
     StatusBeaconSettings? StatusBeacon = null,
     IReadOnlyList<string>? Groups = null,
-    PingSettings? Ping = null
+    PingSettings? Ping = null,
+    AutoReplySettings? AutoReply = null,
+    IReadOnlyList<OwnObject>? Objects = null
 )
 {
+    /// <summary>The objects and items it places (docs/features/F2.7-objects-and-items.md); none when unset.</summary>
+    public IReadOnlyList<OwnObject> ObjectList => Objects ?? [];
+
+    /// <summary>The away message's settings in effect (docs/features/F2.10-auto-reply.md): <see cref="AutoReply"/>, or off.</summary>
+    public AutoReplySettings EffectiveAutoReply => AutoReply ?? AutoReplySettings.Off;
+
     /// <summary>The ping responder's settings in effect (docs/features/F2.13-ping.md): <see cref="Ping"/>, or off.</summary>
     public PingSettings EffectivePing => Ping ?? PingSettings.Off;
 
@@ -240,6 +253,7 @@ public sealed record StationProfile(
         || Latitude != before.Latitude
         || Longitude != before.Longitude
         || EffectivePositionBeacon.Compressed != before.EffectivePositionBeacon.Compressed
+        || EffectivePositionBeacon.MicE is null != before.EffectivePositionBeacon.MicE is null // the format, not the status
         || EffectivePositionBeacon.Phg != before.EffectivePositionBeacon.Phg;
 
     /// <summary>Equal when every field is, comparing the source ids in order.</summary>
@@ -259,7 +273,9 @@ public sealed record StationProfile(
         && Licensed == other.Licensed
         && EffectivePositionBeacon == other.EffectivePositionBeacon
         && EffectiveStatusBeacon == other.EffectiveStatusBeacon
-        && EffectivePing == other.EffectivePing;
+        && EffectivePing == other.EffectivePing
+        && EffectiveAutoReply == other.EffectiveAutoReply
+        && ObjectList.SequenceEqual(other.ObjectList);
 
     /// <inheritdoc />
     public override int GetHashCode() =>
@@ -269,7 +285,7 @@ public sealed record StationProfile(
             Comment,
             PositionConfirmed,
             Licensed,
-            HashCode.Combine(EffectivePositionBeacon, EffectiveStatusBeacon, EffectivePing)
+            HashCode.Combine(EffectivePositionBeacon, EffectiveStatusBeacon, EffectivePing, EffectiveAutoReply)
         );
 
     /// <summary>Whether this profile uses <paramref name="source"/>.</summary>

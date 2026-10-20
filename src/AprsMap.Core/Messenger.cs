@@ -19,6 +19,9 @@ internal interface IMessengerHost
     /// <summary>The active profile's ping responder (docs/features/F2.13-ping.md).</summary>
     PingSettings Ping();
 
+    /// <summary>The active profile's away message (docs/features/F2.10-auto-reply.md).</summary>
+    AutoReplySettings AutoReply();
+
     /// <summary>The profile's sources that may send (not RX only), in order, with whether each is RF (a TNC).</summary>
     IReadOnlyList<(string Id, string Name, bool IsRf)> TransmitSources();
 
@@ -72,6 +75,9 @@ internal sealed partial class Messenger : IDisposable
     private readonly Dictionary<string, Route> _routes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Route> _fixedRoutes = new(StringComparer.Ordinal); // pongs: the way the ping came
     private DateTimeOffset? _lastPong;
+    private readonly Dictionary<string, DateTimeOffset> _notBefore = new(StringComparer.Ordinal); // auto-replies' delay
+    private readonly Dictionary<string, DateTimeOffset> _lastAutoReply = new(StringComparer.OrdinalIgnoreCase);
+    private DateTimeOffset? _lastManualSend;
     private readonly Dictionary<string, (string SourceId, DateTimeOffset At)> _heardOnRf = new(
         StringComparer.OrdinalIgnoreCase
     );
@@ -138,6 +144,9 @@ internal sealed partial class Messenger : IDisposable
             _conversations.Clear();
             _pending.Clear();
             _routes.Clear();
+            _fixedRoutes.Clear();
+            _notBefore.Clear();
+            _lastAutoReply.Clear();
             _profileId = profileId;
             _callsign = callsign;
             _lastMessageId = archive?.LastMessageId;
@@ -335,6 +344,8 @@ internal sealed partial class Messenger : IDisposable
             .ToList();
         lock (_gate)
         {
+            _lastManualSend = now; // the operator is here (F2.10 behavior 4)
+            CancelAutoReplies(correspondent);
             foreach (var message in made)
             {
                 _messages.Add(message);
@@ -455,6 +466,14 @@ internal sealed partial class Messenger : IDisposable
                     _pending.Remove(id);
                     Update(id, m => m with { State = ChatMessageState.Failed });
                     continue;
+                }
+                if (_notBefore.TryGetValue(id, out var due))
+                {
+                    if (now < due)
+                    {
+                        continue; // an auto-reply's delay (F2.10 behavior 6)
+                    }
+                    _notBefore.Remove(id);
                 }
                 var (via, retries) = Settings(message.Correspondent);
                 var route = _fixedRoutes.TryGetValue(id, out var fixedRoute)
@@ -590,6 +609,10 @@ internal sealed partial class Messenger : IDisposable
                 QueuePong(received.Correspondent, source!, isRf);
             }
         }
+        else
+        {
+            MaybeAutoReply(received.Correspondent, message.Text, source, isRf);
+        }
         SaveLater();
     }
 
@@ -679,6 +702,118 @@ internal sealed partial class Messenger : IDisposable
         }
         _ = Task.Run(Pump);
     }
+
+    /// <summary>Why an auto-reply wasn't sent (F2.10 behavior 10).</summary>
+    private enum AutoReplyHold
+    {
+        NotAway,
+        OncePer,
+        Service,
+        AutomaticMessage,
+        CantSend,
+    }
+
+    /// <summary>The services that answer by themselves, any SSID (F2.10 behavior 7.4).</summary>
+    private static readonly HashSet<string> Services = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "ANSRVR",
+        "CQSRVR",
+        "EMAIL",
+        "WLNK",
+        "SMSGTE",
+        "WXBOT",
+        "WXSVR",
+        "REPEAT",
+        "FINDU",
+        "IGATE",
+        "QRU",
+    };
+
+    /// <summary>
+    /// Queues the away message to <paramref name="from"/> when it's on and every rule lets it go (docs/features/
+    /// F2.10-auto-reply.md, behaviors 4–8), or logs why not. MessagingStation raises only messages addressed to the
+    /// station, so bulletins and groups never get here (behavior 7.3).
+    /// </summary>
+    private void MaybeAutoReply(string from, string text, string? source, bool isRf)
+    {
+        var settings = _host.AutoReply();
+        if (!settings.On)
+        {
+            return;
+        }
+        var now = _time.GetUtcNow();
+        AutoReplyHold? hold;
+        lock (_gate)
+        {
+            var trimmed = text.Trim();
+            hold =
+                Services.Contains(from.Split('-')[0]) ? AutoReplyHold.Service
+                : trimmed.StartsWith(settings.EffectiveText, StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith(_host.Ping().EffectivePong, StringComparison.OrdinalIgnoreCase)
+                    ? AutoReplyHold.AutomaticMessage
+                : settings.AwayMinutes > 0
+                && _lastManualSend is { } manual
+                && now - manual < TimeSpan.FromMinutes(settings.AwayMinutes)
+                    ? AutoReplyHold.NotAway
+                : _lastAutoReply.TryGetValue(from, out var last)
+                && now - last < TimeSpan.FromMinutes(settings.OncePerMinutes)
+                    ? AutoReplyHold.OncePer
+                : source is null || !_host.CanSendOn(source) ? AutoReplyHold.CantSend
+                : null;
+            if (hold is null)
+            {
+                _lastAutoReply[from] = now;
+                var reply = new ChatMessage(
+                    Guid.NewGuid().ToString("N"),
+                    from,
+                    Outgoing: true,
+                    settings.EffectiveText,
+                    now,
+                    ChatMessageState.Queued,
+                    Automatic: true
+                );
+                _messages.Add(reply);
+                _pending.Add(reply.Id);
+                _fixedRoutes[reply.Id] = new Route([source!], Automatic: false, OverRf: isRf); // the way it came (8)
+                if (settings.DelaySeconds > 0)
+                {
+                    _notBefore[reply.Id] = now + TimeSpan.FromSeconds(settings.DelaySeconds);
+                }
+                Publish(reply);
+            }
+        }
+        if (hold is { } why)
+        {
+            LogAutoReplyHeld(_log, from, why);
+            return;
+        }
+        LogAutoReplyQueued(_log, from, source!, settings.DelaySeconds);
+        _ = Task.Run(Pump);
+    }
+
+    /// <summary>Cancels the auto-replies still waiting to go to <paramref name="correspondent"/> (behavior 6).</summary>
+    private void CancelAutoReplies(string correspondent)
+    {
+        foreach (var id in _notBefore.Keys.ToList())
+        {
+            if (
+                _messages.FirstOrDefault(m => m.Id == id) is { } waiting
+                && string.Equals(waiting.Correspondent, correspondent, StringComparison.OrdinalIgnoreCase)
+                && _pending.Remove(id)
+            )
+            {
+                _notBefore.Remove(id);
+                _fixedRoutes.Remove(id);
+                Update(id, m => m with { State = ChatMessageState.Cancelled, NextTry = null });
+            }
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Auto-reply to {To} on {Source} in {Delay} s")]
+    private static partial void LogAutoReplyQueued(ILogger logger, string to, string source, int delay);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "No auto-reply to {To}: {Reason}")]
+    private static partial void LogAutoReplyHeld(ILogger logger, string to, AutoReplyHold reason);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Ping from {From} on {Source}: {Result}")]
     private static partial void LogPing(ILogger logger, string from, string source, PingResult result);
@@ -899,6 +1034,9 @@ internal sealed partial class Messenger : IDisposable
     }
 
     /// <summary>Saves now, for tests and for shutting down.</summary>
+    /// <summary>Saves now if a save is waiting, as the engine stops; nothing is written when nothing changed.</summary>
+    internal Task FlushPendingAsync() => Volatile.Read(ref _saving) == 1 ? FlushAsync() : Task.CompletedTask;
+
     internal async Task FlushAsync()
     {
         string? profile;

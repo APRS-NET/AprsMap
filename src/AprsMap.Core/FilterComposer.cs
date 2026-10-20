@@ -78,7 +78,8 @@ internal static class FilterComposer
         }
 
         var friend = range > 0 ? range : DefaultFriendKm;
-        foreach (var name in views.Select(v => v.Following?.ToUpperInvariant()).OfType<string>().Distinct())
+        // The followed and watched stations (F1.7 behavior 8, F1.16 behavior 6), wherever they go.
+        foreach (var name in views.SelectMany(v => v.Tracked).Distinct(StringComparer.Ordinal))
         {
             terms.Add(AprsFilterTerm.FriendRange(name, friend));
             if (positionOf(name) is var (flat, flon))
@@ -103,13 +104,13 @@ internal static class FilterComposer
 
     /// <summary>
     /// Whether <paramref name="next"/> differs enough from <paramref name="last"/> to ask for a new filter (behavior 4):
-    /// the centre moved more than a quarter of the radius, the radius changed by more than a quarter, or the followed
-    /// station changed.
+    /// the centre moved more than a quarter of the radius, the radius changed by more than a quarter, or the followed or
+    /// watched stations changed.
     /// </summary>
     public static bool Differs(MapViewReport? last, MapViewReport next)
     {
         ArgumentNullException.ThrowIfNull(next);
-        if (last is null || !string.Equals(last.Following, next.Following, StringComparison.OrdinalIgnoreCase))
+        if (last is null || !last.Tracked.SequenceEqual(next.Tracked, StringComparer.Ordinal))
         {
             return true;
         }

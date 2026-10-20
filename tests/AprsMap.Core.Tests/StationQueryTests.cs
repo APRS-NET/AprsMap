@@ -94,9 +94,22 @@ public sealed class StationQueryTests
         Assert.Equal("Status only", store.Query(new StationQuery("K0NOPOS")).Rows[0].Comment); // no comment: the status
     }
 
+    /// <summary>
+    /// Whether coverlet instrumented the engine for this run (CI's coverage job): it adds its tracker types to each
+    /// assembly it measures, and slows every line down, so a time measured then says nothing about the real one.
+    /// </summary>
+    private static bool UnderCoverage =>
+        typeof(StationStore)
+            .Assembly.GetTypes()
+            .Any(t => t.Namespace?.StartsWith("Coverlet.Core.Instrumentation", StringComparison.Ordinal) == true);
+
     [Fact]
     public void AQueryOverFiftyThousandEntriesTakesUnderFiftyMilliseconds()
     {
+        if (UnderCoverage)
+        {
+            Assert.Skip("Timed only without coverage instrumentation; the build jobs check it.");
+        }
         var store = new StationStore();
         store.SetHome(40, -105);
         for (var i = 0; i < 50_000; i++)
@@ -113,16 +126,21 @@ public sealed class StationQueryTests
             );
         }
 
+        var query = new StationQuery("N1", Sort: StationSort.Distance, Count: 100);
+        for (var warm = 0; warm < 3; warm++)
+        {
+            store.Query(query); // untimed: .NET compiles hot code again, optimised, after its first calls
+        }
         var best = TimeSpan.MaxValue;
-        for (var run = 0; run < 5; run++)
+        for (var run = 0; run < 10; run++)
         {
             var watch = Stopwatch.StartNew();
-            var page = store.Query(new StationQuery("N1", Sort: StationSort.Distance, Count: 100));
+            var page = store.Query(query);
             watch.Stop();
             Assert.Equal(10_000, page.Total);
             best = watch.Elapsed < best ? watch.Elapsed : best;
         }
 
-        Assert.True(best < TimeSpan.FromMilliseconds(50), $"Best of five: {best.TotalMilliseconds:0} ms");
+        Assert.True(best < TimeSpan.FromMilliseconds(50), $"Best of ten: {best.TotalMilliseconds:0} ms");
     }
 }

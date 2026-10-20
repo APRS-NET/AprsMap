@@ -283,6 +283,16 @@ internal sealed class FakeEngine : IEngineService
     public Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(LoggingStatus);
 
+    /// <summary>What <see cref="GetStorageFoldersAsync"/> answers.</summary>
+    public List<StorageFolder> StorageFolders { get; } =
+    [
+        new(StorageFolderKind.Settings, "/home/test/.config/aprsnet/aprsmap", false, true),
+        new(StorageFolderKind.Data, "/home/test/.local/share/aprsnet/aprsmap", false, true),
+    ];
+
+    public Task<IReadOnlyList<StorageFolder>> GetStorageFoldersAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StorageFolder>>([.. StorageFolders]);
+
     public Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default)
     {
         UpdateChecks++;
@@ -575,6 +585,72 @@ internal sealed class FakeEngine : IEngineService
         }
         PositionsSent++;
         PositionSources.Add(sourceId);
+        return Task.FromResult<IReadOnlyList<PacketView>>([SentPacket(sourceId)]);
+    }
+
+    /// <summary>The objects placed and removed, in order: "place NAME", "kill ID" or "forget ID".</summary>
+    public List<string> ObjectCalls { get; } = [];
+
+    /// <summary>When set, <see cref="PlaceObjectAsync"/> throws it.</summary>
+    public Exception? PlaceFailure { get; set; }
+
+    /// <summary>The QRU groups asked for, in order.</summary>
+    public List<string> QruAsked { get; } = [];
+
+    public Task<IReadOnlyList<PacketView>> AskQruAsync(string group, CancellationToken cancellationToken = default)
+    {
+        if (SendFailure is { } failure)
+        {
+            return Task.FromException<IReadOnlyList<PacketView>>(failure);
+        }
+        QruAsked.Add(group);
+        return Task.FromResult<IReadOnlyList<PacketView>>([SentPacket("rotate"), SentPacket("tnc")]);
+    }
+
+    public Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default)
+    {
+        if (PlaceFailure is { } failure)
+        {
+            return Task.FromException(failure);
+        }
+        ObjectCalls.Add("place " + placed.Name);
+        ChangeObjects(list => [.. list.Where(o => o.Id != placed.Id), placed]);
+        return Task.CompletedTask;
+    }
+
+    public Task RemoveObjectAsync(string id, bool kill, CancellationToken cancellationToken = default)
+    {
+        ObjectCalls.Add((kill ? "kill " : "forget ") + id);
+        ChangeObjects(list =>
+            kill ? [.. list.Select(o => o.Id == id ? o with { Live = false } : o)] : [.. list.Where(o => o.Id != id)]
+        );
+        return Task.CompletedTask;
+    }
+
+    private void ChangeObjects(Func<IReadOnlyList<OwnObject>, IReadOnlyList<OwnObject>> change) =>
+        Settings = Settings with
+        {
+            Profiles =
+            [
+                .. Settings.Profiles.Select(p =>
+                    p.Id == Settings.ActiveProfileId ? p with { Objects = change(p.ObjectList) } : p
+                ),
+            ],
+        };
+
+    /// <summary>The source each <see cref="SendStatusAsync"/> was asked for (null for all), in order.</summary>
+    public List<string?> StatusSources { get; } = [];
+
+    public Task<IReadOnlyList<PacketView>> SendStatusAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (SendFailure is { } failure)
+        {
+            return Task.FromException<IReadOnlyList<PacketView>>(failure);
+        }
+        StatusSources.Add(sourceId);
         return Task.FromResult<IReadOnlyList<PacketView>>([SentPacket(sourceId)]);
     }
 

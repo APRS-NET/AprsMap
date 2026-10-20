@@ -334,6 +334,102 @@ public sealed partial class MessagesViewModel : ObservableObject
         }
     }
 
+    // ── Email and QRU (docs/features/F2.6-email-and-qru.md) ─────────────────────────────────────────────────────
+
+    /// <summary>The email gateway's address (behavior 1).</summary>
+    public const string EmailGateway = "EMAIL-2";
+
+    /// <summary>The most characters an email has, the address included: one message (behavior 2).</summary>
+    public const int MaxEmailLength = 67;
+
+    /// <summary>An email address or a shortcut (behavior 3).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EmailCount))]
+    [NotifyCanExecuteChangedFor(nameof(SendEmailCommand))]
+    public partial string EmailTo { get; set; } = string.Empty;
+
+    /// <summary>The email's text.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EmailCount))]
+    [NotifyCanExecuteChangedFor(nameof(SendEmailCommand))]
+    public partial string EmailText { get; set; } = string.Empty;
+
+    /// <summary>"23 of 67": the address, a space and the text together.</summary>
+    public string EmailCount =>
+        _text.Format(
+            "Email.Count",
+            new Dictionary<string, object?> { ["count"] = EmailLine.Length, ["max"] = MaxEmailLength }
+        );
+
+    private string EmailLine => $"{EmailTo.Trim()} {EmailText.Trim()}";
+
+    /// <summary>The QRU group to ask for; INFO by default (behavior 5).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AskQruCommand))]
+    public partial string QruGroup { get; set; } = "INFO";
+
+    /// <summary>"Asked QRU servers for INFO on 2 sources" once asked (behavior 8); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? QruText { get; private set; }
+
+    /// <summary>Why an email or a QRU question wasn't sent, in words; null when it was.</summary>
+    [ObservableProperty]
+    public partial string? ServiceError { get; private set; }
+
+    private bool CanSendEmail() => EmailTo.Trim().Length > 0 && EmailText.Trim().Length > 0;
+
+    /// <summary>Send email: one message to the gateway, then its conversation (behaviors 1–3).</summary>
+    [RelayCommand(CanExecute = nameof(CanSendEmail))]
+    private async Task SendEmailAsync()
+    {
+        ServiceError = null;
+        if (EmailTo.Trim().Contains(' ', StringComparison.Ordinal))
+        {
+            ServiceError = _text["Email.OneWord"];
+            return;
+        }
+        if (EmailLine.Length > MaxEmailLength)
+        {
+            ServiceError = _text.Format(
+                "Email.TooLong",
+                new Dictionary<string, object?> { ["over"] = EmailLine.Length - MaxEmailLength }
+            );
+            return;
+        }
+        try
+        {
+            await _engine.SendMessageAsync(EmailGateway, EmailLine);
+            EmailTo = EmailText = string.Empty;
+            Open(EmailGateway); // the gateway's notices arrive here
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            ServiceError = _text.Describe(ex);
+        }
+    }
+
+    private bool CanAskQru() => QruGroup.Trim().Length > 0;
+
+    /// <summary>Ask QRU servers: the group, once, on every source that can send (behaviors 4–8).</summary>
+    [RelayCommand(CanExecute = nameof(CanAskQru))]
+    private async Task AskQruAsync()
+    {
+        ServiceError = QruText = null;
+        var group = QruGroup.Trim().ToUpperInvariant();
+        try
+        {
+            var sent = await _engine.AskQruAsync(group);
+            QruText = _text.Format(
+                "Qru.Asked",
+                new Dictionary<string, object?> { ["group"] = group, ["count"] = sent.Count }
+            );
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            ServiceError = _text.Describe(ex);
+        }
+    }
+
     private bool CanStart() => NewCallsign.Trim().Length > 0;
 
     /// <summary>Opens a conversation with the callsign typed, empty until the first message (behavior 3).</summary>

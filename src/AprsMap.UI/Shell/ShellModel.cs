@@ -22,6 +22,16 @@ public class MapDocument : Document;
 /// </summary>
 public class DashboardDocument : Document;
 
+/// <summary>
+/// An extra map view that follows one station (docs/features/F1.16-extra-map-views.md): a document beside the map,
+/// which can be closed, tabbed or floated into its own window. Saved with the layout, so it opens again next time.
+/// </summary>
+public class WatchDocument : Document
+{
+    /// <summary>The station it follows.</summary>
+    public string Callsign { get; set; } = string.Empty;
+}
+
 /// <summary>The panels this version knows, and where each one goes in the default layout.</summary>
 public static class PanelKinds
 {

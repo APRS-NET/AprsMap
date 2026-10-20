@@ -69,6 +69,26 @@ public static class EngineErrorCodes
     /// <summary>The PHG isn't values the format carries, or comes with a compressed position (F2.2 behavior 1.4).</summary>
     public const string ProfilePhgInvalid = "settings.profile.phg-invalid";
 
+    /// <summary>A Mic-E position comes compressed or with PHG (docs/features/F2.12-mic-e-status.md, behavior 3).</summary>
+    public const string ProfileMicEInvalid = "settings.profile.mic-e-invalid";
+
+    /// <summary>An object's name doesn't fit its kind (docs/features/F2.7-objects-and-items.md, behavior 2.2).</summary>
+    public const string ObjectNameInvalid = "settings.object.name-invalid";
+
+    /// <summary>Another object in the profile has that name (F2.7 behavior 2.2).</summary>
+    public const string ObjectNameTaken = "settings.object.name-taken";
+
+    /// <summary>
+    /// An object's place, symbol, comment or interval can't be sent, or the profile has 50 already (F2.7 behavior 2).
+    /// </summary>
+    public const string ObjectInvalid = "settings.object.invalid";
+
+    /// <summary>No object in the active profile has that id (F2.7).</summary>
+    public const string ObjectUnknown = "settings.object.unknown";
+
+    /// <summary>More than 20 saved status texts, or one a status can't carry (docs/features/F2.11-status-reports.md).</summary>
+    public const string ProfileSavedStatusInvalid = "settings.profile.saved-status-invalid";
+
     /// <summary>A profile's symbol isn't a table or overlay character and a symbol code (F2.1 behavior 1).</summary>
     public const string ProfileSymbolInvalid = "settings.profile.symbol-invalid";
 
@@ -240,6 +260,12 @@ public static class EngineErrorCodes
     /// <summary>A callsign that may ping isn't one (F2.13 behavior 6.3).</summary>
     public const string PingCallsignInvalid = "settings.ping.callsign-invalid";
 
+    /// <summary>The auto-reply text isn't 1 to 67 characters a message can carry (docs/features/F2.10-auto-reply.md).</summary>
+    public const string AutoReplyTextInvalid = "settings.auto-reply.text-invalid";
+
+    /// <summary>An auto-reply time is out of its range (F2.10 behaviors 4–6).</summary>
+    public const string AutoReplyLimitInvalid = "settings.auto-reply.limit-invalid";
+
     /// <summary>A source that can't send was set TX enabled; no longer raised: such a kind is RX only (F2.1, 2026-10-18).</summary>
     public const string SourceReceiveOnly = "settings.source.receive-only";
 
@@ -294,6 +320,12 @@ public static class EngineErrorCodes
 
     /// <summary>The active profile has no location to send (F2.1 behavior 11).</summary>
     public const string TransmitNoPosition = "transmit.no-position";
+
+    /// <summary>Send status now with no status text (docs/features/F2.11-status-reports.md, behavior 5).</summary>
+    public const string TransmitNoStatus = "transmit.no-status";
+
+    /// <summary>A QRU group code isn't 1 to 9 letters, digits and - (docs/features/F2.6-email-and-qru.md, behavior 5).</summary>
+    public const string QruGroupInvalid = "message.qru-group-invalid";
 
     /// <summary>The connection failed while sending (F2.1 behavior 11).</summary>
     public const string TransmitFailed = "transmit.failed";

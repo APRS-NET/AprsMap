@@ -139,6 +139,8 @@ internal static class SettingsValidator
             }
             ValidateBeacons(profile);
             ValidatePing(profile);
+            ValidateAutoReply(profile);
+            ValidateObjects(profile);
             if (profile.Symbol is { Length: > 0 } symbol && !IsSymbol(symbol))
             {
                 throw Fail(
@@ -216,6 +218,110 @@ internal static class SettingsValidator
         if (settings.Logging is { } logging)
         {
             ValidateLogging(logging);
+        }
+    }
+
+    /// <summary>
+    /// The profile's objects and items (docs/features/F2.7-objects-and-items.md, behavior 2): names that fit their kind
+    /// and are unique, places on the globe, symbols that aren't the emergency symbol, comments a report carries, and
+    /// intervals in range.
+    /// </summary>
+    private static void ValidateObjects(StationProfile profile)
+    {
+        var objects = profile.ObjectList;
+        if (objects.Count > OwnObject.MaxPerProfile)
+        {
+            throw Fail(
+                EngineErrorCodes.ObjectInvalid,
+                $"Profile '{profile.Name}': at most {OwnObject.MaxPerProfile} objects.",
+                profile.Name
+            );
+        }
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var placed in objects)
+        {
+            if (!IsObjectName(placed.Name, placed.Kind))
+            {
+                throw Fail(
+                    EngineErrorCodes.ObjectNameInvalid,
+                    $"Profile '{profile.Name}': an object's name has 1 to 9 characters, an item's 3 to 9 without ! or "
+                        + "_, plain ASCII with no space at either end.",
+                    profile.Name
+                );
+            }
+            if (!names.Add(placed.Name))
+            {
+                throw Fail(
+                    EngineErrorCodes.ObjectNameTaken,
+                    $"Profile '{profile.Name}': two objects are named '{placed.Name}'.",
+                    profile.Name
+                );
+            }
+            if (
+                placed.Latitude is < -90 or > 90 or double.NaN
+                || placed.Longitude is < -180 or > 180 or double.NaN
+                || !IsSymbol(placed.Symbol)
+                || placed.Symbol == EmergencySymbol
+                || placed.Comment.Length > OwnObject.MaxCommentLength
+                || placed.Comment.Any(c => c is < ' ' or >= '~' or '|')
+                || placed.IntervalMinutes is < BeaconSettings.MinIntervalMinutes or > BeaconSettings.MaxIntervalMinutes
+            )
+            {
+                throw Fail(
+                    EngineErrorCodes.ObjectInvalid,
+                    $"Profile '{profile.Name}': object '{placed.Name}' needs a place on the globe, a symbol other than "
+                        + $"the emergency symbol, a comment of at most {OwnObject.MaxCommentLength} plain characters "
+                        + "and an interval of 10 minutes to 24 hours.",
+                    profile.Name
+                );
+            }
+        }
+    }
+
+    /// <summary>The emergency symbol, which the app never sends (docs/features/F2.12-mic-e-status.md, decision 3).</summary>
+    internal const string EmergencySymbol = "\\!";
+
+    /// <summary>An object's name is 1 to 9 characters, an item's 3 to 9 without ! or _ (APRS101 chapter 11).</summary>
+    internal static bool IsObjectName(string name, OwnObjectKind kind) =>
+        name.Length is >= 1 and <= 9
+        && name.All(c => c is >= ' ' and <= '~')
+        && name[0] != ' '
+        && name[^1] != ' '
+        && (kind == OwnObjectKind.Object || (name.Length >= 3 && !name.Contains('!') && !name.Contains('_')));
+
+    /// <summary>
+    /// The away message (docs/features/F2.10-auto-reply.md): its text one message of plain characters (behavior 2),
+    /// and its times in range (behaviors 4–6).
+    /// </summary>
+    private static void ValidateAutoReply(StationProfile profile)
+    {
+        if (profile.AutoReply is not { } reply)
+        {
+            return;
+        }
+        if (
+            reply.Text is { } text
+            && (text.Trim().Length is 0 or > 67 || text.Any(c => c is < ' ' or > '~' or '|' or '{'))
+        )
+        {
+            throw Fail(
+                EngineErrorCodes.AutoReplyTextInvalid,
+                $"Profile '{profile.Name}': an auto-reply has 1 to 67 plain characters, without |, ~ or {{.",
+                profile.Name
+            );
+        }
+        if (
+            reply.AwayMinutes is < 0 or > AutoReplySettings.MaxMinutes
+            || reply.OncePerMinutes is < 1 or > AutoReplySettings.MaxMinutes
+            || reply.DelaySeconds is < 0 or > AutoReplySettings.MaxDelaySeconds
+        )
+        {
+            throw Fail(
+                EngineErrorCodes.AutoReplyLimitInvalid,
+                $"Profile '{profile.Name}': auto-reply waits 0 to 1440 minutes away, once per 1 to 1440 minutes, "
+                    + "after 0 to 600 seconds.",
+                profile.Name
+            );
         }
     }
 
@@ -366,12 +472,32 @@ internal static class SettingsValidator
                 profile.Name
             );
         }
-        if (!IsSendableStatus(status.Text))
+        if (!IsSendableStatus(status.Text, status.Add))
         {
             throw Fail(
                 EngineErrorCodes.ProfileStatusInvalid,
                 $"Profile '{profile.Name}': a status has at most {StatusBeaconSettings.MaxTextLength} characters of "
                     + "printable ASCII.",
+                profile.Name
+            );
+        }
+        if (
+            status.SavedTextList.Count > StatusBeaconSettings.MaxSavedTexts
+            || status.SavedTextList.Any(t => t.Trim().Length == 0 || !IsSendableStatus(t))
+        )
+        {
+            throw Fail(
+                EngineErrorCodes.ProfileSavedStatusInvalid,
+                $"Profile '{profile.Name}': at most {StatusBeaconSettings.MaxSavedTexts} saved status texts, each one "
+                    + "a status can carry.",
+                profile.Name
+            );
+        }
+        if (position.MicE is not null && (position.Compressed || position.Phg is not null))
+        {
+            throw Fail(
+                EngineErrorCodes.ProfileMicEInvalid,
+                $"Profile '{profile.Name}': a Mic-E position isn't compressed and carries no PHG.",
                 profile.Name
             );
         }
@@ -390,8 +516,8 @@ internal static class SettingsValidator
         minutes is >= BeaconSettings.MinIntervalMinutes and <= BeaconSettings.MaxIntervalMinutes;
 
     /// <summary>Whether <paramref name="text"/> fits a status report without a timestamp (F2.2 behavior 3).</summary>
-    internal static bool IsSendableStatus(string text) =>
-        text.Length <= StatusBeaconSettings.MaxTextLength && text.All(c => c is >= ' ' and <= '~');
+    internal static bool IsSendableStatus(string text, StatusAddition add = StatusAddition.None) =>
+        text.Length <= StatusBeaconSettings.MaxTextLengthWith(add) && text.All(c => c is >= ' ' and <= '~');
 
     /// <summary>
     /// Whether APRS.NET sends <paramref name="phg"/> exactly: it rounds what the format can't carry, so the value is

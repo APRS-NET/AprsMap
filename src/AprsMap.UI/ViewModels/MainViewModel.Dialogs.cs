@@ -94,6 +94,8 @@ public sealed partial class MainViewModel
             // About shows less without it; nothing else depends on it.
         }
         about.Show(_status, geocoding, Auth);
+        about.FolderOpener = SharedStation ? null : FolderOpener; // a browser can't open a folder (F1.31 behavior 4a)
+        await about.ShowFoldersAsync(engine, SharedStation, IsOperator);
         if (!SharedStation || IsOperator)
         {
             about.UpdatesText = Updates.Summary(time.LocalTimeZone);
