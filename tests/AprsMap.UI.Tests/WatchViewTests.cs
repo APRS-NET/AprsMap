@@ -91,7 +91,7 @@ public sealed class WatchViewTests
         };
         await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
         vm.Apply(new StationBatch([new StationState("N0AAA", DateTimeOffset.UnixEpoch, 40.0, -105.0, "/>")], []));
-        var panel = new WatchPanel(vm, "N0AAA");
+        using var panel = new WatchPanel(vm, "N0AAA"); // its map's tiles released, as MapPanel's tests do
         var window = new Window
         {
             Content = panel,
