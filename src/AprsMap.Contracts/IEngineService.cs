@@ -95,6 +95,17 @@ public interface IEngineService
     Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Asks the QRU servers in range for <paramref name="group"/> (docs/features/F2.6-email-and-qru.md, behavior 4): a
+    /// message to <c>QRU</c>, without an ID, once on every source that can send now. Their answers arrive as objects
+    /// and messages.
+    /// </summary>
+    /// <returns>The copies sent, one per source.</returns>
+    /// <exception cref="ArgumentException">The group isn't 1 to 9 letters, digits and - (<c>message.qru-group-invalid</c>).</exception>
+    /// <exception cref="InvalidOperationException">Nothing could be sent; the error's <c>transmit.*</c> code says why.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task<IReadOnlyList<PacketView>> AskQruAsync(string group, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Kills the active profile's object <paramref name="id"/> (sent killed three times, then removed) or, without
     /// <paramref name="kill"/>, removes it without sending anything (F2.7 behaviors 8, 9).
     /// </summary>

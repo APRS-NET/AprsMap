@@ -1917,6 +1917,54 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Up to {count} extra map views: close one to watch another station.</value>
     <comment>count: how many extra views may be open.</comment>
   </data>
+  <data name="Messages.Services" xml:space="preserve">
+    <value>Email and QRU</value>
+  </data>
+  <data name="Email.Heading" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Email.To" xml:space="preserve">
+    <value>Email address or shortcut</value>
+  </data>
+  <data name="Email.Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="Email.Send" xml:space="preserve">
+    <value>Send email</value>
+  </data>
+  <data name="Email.Count" xml:space="preserve">
+    <value>{count} of {max}</value>
+    <comment>count: characters used, address included. max: the most one message carries.</comment>
+  </data>
+  <data name="Email.Help" xml:space="preserve">
+    <value>Goes through the EMAIL-2 gateway as one message, the address included. Its notices, and shortcut commands you send it, are in the EMAIL-2 conversation.</value>
+  </data>
+  <data name="Email.OneWord" xml:space="preserve">
+    <value>The address or shortcut is one word, without spaces.</value>
+  </data>
+  <data name="Email.TooLong" xml:space="preserve">
+    <value>{over, plural, one {One character too long} other {# characters too long}}: an email is one message of up to 67 characters, the address included.</value>
+    <comment>over: how many characters too many.</comment>
+  </data>
+  <data name="Qru.Heading" xml:space="preserve">
+    <value>QRU servers</value>
+  </data>
+  <data name="Qru.Group" xml:space="preserve">
+    <value>QRU group</value>
+  </data>
+  <data name="Qru.Ask" xml:space="preserve">
+    <value>Ask QRU servers</value>
+  </data>
+  <data name="Qru.Asked" xml:space="preserve">
+    <value>{count, plural, one {Asked QRU servers for {group} on # source} other {Asked QRU servers for {group} on # sources}}</value>
+    <comment>group: the group code asked for. count: how many sources it went out on.</comment>
+  </data>
+  <data name="Qru.Help" xml:space="preserve">
+    <value>Asks the servers in range once. INFO asks which groups they serve; what they send shows on the map and in messages.</value>
+  </data>
+  <data name="Error.message.qru-group-invalid" xml:space="preserve">
+    <value>A QRU group is 1 to 9 letters, digits and -.</value>
+  </data>
   <data name="Settings.Objects" xml:space="preserve">
     <value>Objects</value>
     <comment>Settings section: objects and items the station places on the map.</comment>

@@ -1418,6 +1418,45 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         return sent.Count == 0 ? throw SendFailed(failure!) : sent;
     }
 
+    /// <summary>The address QRU servers listen on (docs/features/F2.6-email-and-qru.md).</summary>
+    internal const string QruAddressee = "QRU";
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<PacketView>> AskQruAsync(
+        string group,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        var code = group.Trim().ToUpperInvariant();
+        if (code.Length is 0 or > 9 || !code.All(c => c is (>= 'A' and <= 'Z') or (>= '0' and <= '9') or '-'))
+        {
+            throw new EngineArgumentException(
+                new EngineError(
+                    EngineErrorCodes.QruGroupInvalid,
+                    "A QRU group is 1 to 9 letters, digits and -.",
+                    new Dictionary<string, string> { [EngineErrorArgs.Value] = group }
+                )
+            );
+        }
+        var (_, profile, targets) = await TargetsAsync(null, cancellationToken).ConfigureAwait(false);
+        // Once, without an ID: a question to whoever is in range, never acked or retried (behavior 4).
+        var query = new MessagePayload { Addressee = QruAddressee, Text = code };
+        var sent = new List<PacketView>();
+        Exception? failure = null;
+        foreach (var (source, sender) in targets)
+        {
+            var (view, error) = await SendOnAsync(source, sender, Build(profile, source, query), cancellationToken)
+                .ConfigureAwait(false);
+            if (view is not null)
+            {
+                sent.Add(view);
+            }
+            failure ??= error;
+        }
+        return sent.Count == 0 ? throw SendFailed(failure!) : sent;
+    }
+
     /// <inheritdoc />
     public Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default)
     {

@@ -324,6 +324,9 @@ public static class EngineErrorCodes
     /// <summary>Send status now with no status text (docs/features/F2.11-status-reports.md, behavior 5).</summary>
     public const string TransmitNoStatus = "transmit.no-status";
 
+    /// <summary>A QRU group code isn't 1 to 9 letters, digits and - (docs/features/F2.6-email-and-qru.md, behavior 5).</summary>
+    public const string QruGroupInvalid = "message.qru-group-invalid";
+
     /// <summary>The connection failed while sending (F2.1 behavior 11).</summary>
     public const string TransmitFailed = "transmit.failed";
 

@@ -82,6 +82,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.PlaceObjectAsync"/>.</summary>
     public const string PlaceObject = "PlaceObject";
 
+    /// <summary>Hub method for <see cref="IEngineService.AskQruAsync"/>.</summary>
+    public const string AskQru = "AskQru";
+
     /// <summary>Hub method for <see cref="IEngineService.RemoveObjectAsync"/>.</summary>
     public const string RemoveObject = "RemoveObject";
 

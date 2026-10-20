@@ -334,6 +334,56 @@ public sealed class BeaconTests
     }
 
     [Fact]
+    public async Task AskingQruServersSendsTheGroupOnceWithoutAnIdOnEverySource()
+    {
+        using var station = Create();
+        var (run, cts, aprsIs, tnc) = await Run(station);
+        using (cts)
+        {
+            var sent = await station.Engine.AskQruAsync(" info ", Ct);
+
+            Assert.Equal(2, sent.Count);
+            Assert.Equal([$"N0TEST>{Brand.Tocall}::QRU      :INFO"], aprsIs.Sent); // no {id: never acked or retried
+            Assert.EndsWith("::QRU      :INFO", Assert.Single(tnc.Sent), StringComparison.Ordinal);
+            await Advance(station, TimeSpan.FromMinutes(5));
+            Assert.Single(aprsIs.Sent);
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("TENLETTERS")]
+    [InlineData("REP{1")]
+    public async Task AQruGroupIsOneToNineLettersDigitsAndDashes(string group)
+    {
+        using var station = Create();
+
+        var error = await Assert.ThrowsAsync<EngineArgumentException>(() => station.Engine.AskQruAsync(group, Ct));
+
+        Assert.Equal(EngineErrorCodes.QruGroupInvalid, error.EngineError.Code);
+    }
+
+    [Fact]
+    public async Task WithTransmitOffNoQruQueryGoesOut()
+    {
+        using var station = Create(transmit: false);
+        var (run, cts, aprsIs, _) = await Run(station);
+        using (cts)
+        {
+            var error = await Assert.ThrowsAsync<EngineOperationException>(() =>
+                station.Engine.AskQruAsync("INFO", Ct)
+            );
+
+            Assert.Equal(EngineErrorCodes.TransmitOff, error.EngineError.Code);
+            Assert.Empty(aprsIs.Sent);
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
     public async Task SendStatusNowRefusesAnEmptyStatus()
     {
         using var station = Create(status: StatusBeaconSettings.Off);

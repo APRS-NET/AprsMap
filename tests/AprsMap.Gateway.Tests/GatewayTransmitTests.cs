@@ -30,6 +30,7 @@ public sealed class GatewayTransmitTests(TrustedGatewayFactory trusted, GatewayF
             remote.PlaceObjectAsync(new OwnObject("net", "NET", OwnObjectKind.Object, 49, -72), Ct)
         );
         var kill = await Assert.ThrowsAsync<EngineAccessException>(() => remote.RemoveObjectAsync("net", true, Ct));
+        var qru = await Assert.ThrowsAsync<EngineAccessException>(() => remote.AskQruAsync("INFO", Ct));
         var test = await Assert.ThrowsAsync<EngineAccessException>(() => remote.TestSendAsync("rotate", Ct));
 
         Assert.Equal(EngineErrorCodes.OperatorOnly, turn.EngineError.Code);
@@ -37,6 +38,7 @@ public sealed class GatewayTransmitTests(TrustedGatewayFactory trusted, GatewayF
         Assert.Equal(EngineErrorCodes.OperatorOnly, status.EngineError.Code);
         Assert.Equal(EngineErrorCodes.OperatorOnly, place.EngineError.Code);
         Assert.Equal(EngineErrorCodes.OperatorOnly, kill.EngineError.Code);
+        Assert.Equal(EngineErrorCodes.OperatorOnly, qru.EngineError.Code);
         Assert.Equal(EngineErrorCodes.OperatorOnly, test.EngineError.Code);
         Assert.False((await remote.GetSettingsAsync(Ct)).EffectiveToggles.Transmit);
     }
