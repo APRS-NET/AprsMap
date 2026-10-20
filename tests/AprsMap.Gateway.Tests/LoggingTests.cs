@@ -46,7 +46,7 @@ public sealed class LoggingTests : IDisposable
         // Serilog keeps the file open; read it shared.
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         using var reader = new StreamReader(stream);
-        return reader.ReadToEnd().Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        return reader.ReadToEnd().Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries); // CRLF on Windows
     }
 
     [Fact]
