@@ -644,7 +644,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             // Saves wait a moment to group changes; what's waiting is written before the engine stops.
             try
             {
-                await _messenger.FlushAsync().ConfigureAwait(false);
+                await _messenger.FlushPendingAsync().ConfigureAwait(false);
             }
             catch (IOException) { } // nowhere to write: nothing more to do on the way out
         }
