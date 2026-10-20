@@ -76,6 +76,18 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.SendPositionAsync"/>.</summary>
     public const string SendPosition = "SendPosition";
 
+    /// <summary>Hub method for <see cref="IEngineService.SendStatusAsync"/>.</summary>
+    public const string SendStatus = "SendStatus";
+
+    /// <summary>Hub method for <see cref="IEngineService.PlaceObjectAsync"/>.</summary>
+    public const string PlaceObject = "PlaceObject";
+
+    /// <summary>Hub method for <see cref="IEngineService.AskQruAsync"/>.</summary>
+    public const string AskQru = "AskQru";
+
+    /// <summary>Hub method for <see cref="IEngineService.RemoveObjectAsync"/>.</summary>
+    public const string RemoveObject = "RemoveObject";
+
     /// <summary>Hub method for <see cref="IEngineService.GetConversationsAsync"/>.</summary>
     public const string GetConversations = "GetConversations";
 
@@ -126,6 +138,9 @@ public static class EngineHub
 
     /// <summary>Hub method for <see cref="IEngineService.GetLoggingStatusAsync"/>.</summary>
     public const string GetLoggingStatus = "GetLoggingStatus";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetStorageFoldersAsync"/>.</summary>
+    public const string GetStorageFolders = "GetStorageFolders";
 
     /// <summary>Hub method for <see cref="IEngineService.CheckForUpdateAsync"/>.</summary>
     public const string CheckForUpdate = "CheckForUpdate";

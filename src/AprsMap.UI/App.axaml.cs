@@ -199,6 +199,7 @@ public sealed class App : Application, IDisposable
                 SharedStation = _platform.SharedStation,
                 OperatorSession = _platform.OperatorSession,
                 Installer = _platform.Installer,
+                FolderOpener = _platform.FolderOpener,
                 MenuStyle = _platform.MenuStyle,
                 SetPageTitle = _platform.SetTitle,
                 Restart = _platform.Restart,

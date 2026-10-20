@@ -240,6 +240,12 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync<LoggingStatus>(EngineHub.GetLoggingStatus, cancellationToken));
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<StorageFolder>> GetStorageFoldersAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<StorageFolder>>(EngineHub.GetStorageFolders, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<UpdateStatus>(EngineHub.CheckForUpdate, cancellationToken));
 
@@ -353,6 +359,29 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() =>
             _connection.InvokeAsync<IReadOnlyList<PacketView>>(EngineHub.SendPosition, sourceId, cancellationToken)
         );
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<PacketView>> SendStatusAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<PacketView>>(EngineHub.SendStatus, sourceId, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<PacketView>> AskQruAsync(string group, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<PacketView>>(EngineHub.AskQru, group, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.PlaceObject, placed, cancellationToken));
+
+    /// <inheritdoc />
+    public Task RemoveObjectAsync(string id, bool kill, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.RemoveObject, id, kill, cancellationToken));
 
     /// <inheritdoc />
     public Task<TestSendResult> TestSendAsync(string sourceId, CancellationToken cancellationToken = default) =>

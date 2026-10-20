@@ -22,6 +22,9 @@ public enum BeaconKind
 
     /// <summary>The status beacon.</summary>
     Status,
+
+    /// <summary>An object or item the station places (docs/features/F2.7-objects-and-items.md).</summary>
+    PlacedObject,
 }
 
 /// <summary>Why the next beacon is due when it is (F2.2 behavior 10).</summary>
@@ -41,6 +44,34 @@ public enum BeaconDueReason
 }
 
 /// <summary>
+/// The Mic-E status a position goes with (docs/features/F2.12-mic-e-status.md, APRS101 chapter 10). Emergency is
+/// deliberately absent: the app never sends it (decision 3).
+/// </summary>
+public enum MicEStatus
+{
+    /// <summary>M0: Off duty.</summary>
+    OffDuty,
+
+    /// <summary>M1: En route.</summary>
+    EnRoute,
+
+    /// <summary>M2: In service.</summary>
+    InService,
+
+    /// <summary>M3: Returning.</summary>
+    Returning,
+
+    /// <summary>M4: Committed.</summary>
+    Committed,
+
+    /// <summary>M5: Special.</summary>
+    Special,
+
+    /// <summary>M6: Priority.</summary>
+    Priority,
+}
+
+/// <summary>
 /// PHG: transmitter power, antenna height above average terrain, gain and directivity (APRS101 chapter 7), from the
 /// values the format can carry.
 /// </summary>
@@ -57,13 +88,18 @@ public sealed record PhgSettings(int PowerWatts, int HeightFeet, int GainDbi, in
 /// <param name="SourceIds">Send via: the TX-enabled sources it goes out on; null for all of them.</param>
 /// <param name="Compressed">Whether the position is sent compressed, which is shorter on air.</param>
 /// <param name="Phg">PHG, or null for none. A compressed position can't carry it.</param>
+/// <param name="MicE">
+/// Mic-E with this status (docs/features/F2.12-mic-e-status.md), or null for an uncompressed or compressed position.
+/// Mic-E is never compressed and carries no PHG.
+/// </param>
 public sealed record PositionBeaconSettings(
     bool On = false,
     PositionBeaconSchedule Schedule = PositionBeaconSchedule.Decay,
     int IntervalMinutes = PositionBeaconSettings.DefaultIntervalMinutes,
     IReadOnlyList<string>? SourceIds = null,
     bool Compressed = false,
-    PhgSettings? Phg = null
+    PhgSettings? Phg = null,
+    MicEStatus? MicE = null
 )
 {
     /// <summary>The interval a new position beacon has: 30 minutes.</summary>
@@ -83,7 +119,8 @@ public sealed record PositionBeaconSettings(
         && IntervalMinutes == other.IntervalMinutes
         && BeaconSettings.SameSources(SourceIds, other.SourceIds)
         && Compressed == other.Compressed
-        && Phg == other.Phg;
+        && Phg == other.Phg
+        && MicE == other.MicE;
 
     /// <inheritdoc />
     public override int GetHashCode() =>
@@ -93,20 +130,38 @@ public sealed record PositionBeaconSettings(
             IntervalMinutes,
             SourceIds is null ? null : string.Join(',', SourceIds),
             Compressed,
-            Phg
+            Phg,
+            MicE
         );
 }
 
-/// <summary>A profile's status beacon (F2.2 behavior 3).</summary>
+/// <summary>What a status carries besides its text (docs/features/F2.11-status-reports.md, behavior 3).</summary>
+public enum StatusAddition
+{
+    /// <summary>The text alone.</summary>
+    None,
+
+    /// <summary>The 6-character Maidenhead locator of the profile's location and its symbol.</summary>
+    GridSquare,
+
+    /// <summary>The UTC day, hour and minute it's sent.</summary>
+    Time,
+}
+
+/// <summary>A profile's status beacon (F2.2 behavior 3), and its saved texts (F2.11).</summary>
 /// <param name="On">Whether it beacons; off by default.</param>
 /// <param name="Text">Up to 62 characters of printable ASCII.</param>
 /// <param name="IntervalMinutes">10 minutes to 24 hours.</param>
 /// <param name="SourceIds">Send via: the TX-enabled sources it goes out on; null for all of them.</param>
+/// <param name="SavedTexts">Texts kept to choose from, at most 20 (F2.11 behavior 1); null for none.</param>
+/// <param name="Add">The grid square or the time, or neither (F2.11 behavior 3).</param>
 public sealed record StatusBeaconSettings(
     bool On = false,
     string Text = "",
     int IntervalMinutes = StatusBeaconSettings.DefaultIntervalMinutes,
-    IReadOnlyList<string>? SourceIds = null
+    IReadOnlyList<string>? SourceIds = null,
+    IReadOnlyList<string>? SavedTexts = null,
+    StatusAddition Add = StatusAddition.None
 )
 {
     /// <summary>The interval a new status beacon has: 60 minutes.</summary>
@@ -114,6 +169,24 @@ public sealed record StatusBeaconSettings(
 
     /// <summary>The most characters a status without a timestamp may have (APRS101 chapter 16).</summary>
     public const int MaxTextLength = 62;
+
+    /// <summary>The most saved texts (F2.11 behavior 1).</summary>
+    public const int MaxSavedTexts = 20;
+
+    /// <summary>The saved texts, none when unset.</summary>
+    public IReadOnlyList<string> SavedTextList => SavedTexts ?? [];
+
+    /// <summary>
+    /// The most characters the text may have with <paramref name="add"/> (F2.11 behavior 4): 62, 55 with the time
+    /// (seven for <c>DDHHMMz</c>), 53 with the grid square (six, the symbol's two and a space).
+    /// </summary>
+    public static int MaxTextLengthWith(StatusAddition add) =>
+        add switch
+        {
+            StatusAddition.Time => MaxTextLength - 7,
+            StatusAddition.GridSquare => MaxTextLength - 9,
+            _ => MaxTextLength,
+        };
 
     /// <summary>A status beacon that's off.</summary>
     public static readonly StatusBeaconSettings Off = new();
@@ -127,11 +200,20 @@ public sealed record StatusBeaconSettings(
         && On == other.On
         && Text == other.Text
         && IntervalMinutes == other.IntervalMinutes
-        && BeaconSettings.SameSources(SourceIds, other.SourceIds);
+        && BeaconSettings.SameSources(SourceIds, other.SourceIds)
+        && SavedTextList.SequenceEqual(other.SavedTextList)
+        && Add == other.Add;
 
     /// <inheritdoc />
     public override int GetHashCode() =>
-        HashCode.Combine(On, Text, IntervalMinutes, SourceIds is null ? null : string.Join(',', SourceIds));
+        HashCode.Combine(
+            On,
+            Text,
+            IntervalMinutes,
+            SourceIds is null ? null : string.Join(',', SourceIds),
+            string.Join('\n', SavedTextList),
+            Add
+        );
 }
 
 /// <summary>Limits shared by both beacons.</summary>

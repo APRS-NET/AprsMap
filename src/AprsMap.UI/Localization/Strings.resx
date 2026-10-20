@@ -971,6 +971,110 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.About.Credits" xml:space="preserve">
     <value>Credits</value>
   </data>
+  <data name="About.Files" xml:space="preserve">
+    <value>Files</value>
+    <comment>Help › About: the folders the app keeps things in.</comment>
+  </data>
+  <data name="About.Folder.Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="About.Folder.Settings.Holds" xml:space="preserve">
+    <value>Profiles, sources, appearance and layouts</value>
+  </data>
+  <data name="About.Folder.Settings.Copy" xml:space="preserve">
+    <value>Copy the settings folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Settings.Open" xml:space="preserve">
+    <value>Open the settings folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Data" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="About.Folder.Data.Holds" xml:space="preserve">
+    <value>Message history and packet captures</value>
+  </data>
+  <data name="About.Folder.Data.Copy" xml:space="preserve">
+    <value>Copy the data folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Data.Open" xml:space="preserve">
+    <value>Open the data folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Tiles" xml:space="preserve">
+    <value>Map tiles</value>
+  </data>
+  <data name="About.Folder.Tiles.Holds" xml:space="preserve">
+    <value>Downloaded map tiles</value>
+  </data>
+  <data name="About.Folder.Tiles.Copy" xml:space="preserve">
+    <value>Copy the map tiles folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Tiles.Open" xml:space="preserve">
+    <value>Open the map tiles folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Logs" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="About.Folder.Logs.Holds" xml:space="preserve">
+    <value>The app's log files</value>
+  </data>
+  <data name="About.Folder.Logs.Copy" xml:space="preserve">
+    <value>Copy the logs folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Logs.Open" xml:space="preserve">
+    <value>Open the logs folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Machine" xml:space="preserve">
+    <value>Defaults for every user</value>
+  </data>
+  <data name="About.Folder.Machine.Holds" xml:space="preserve">
+    <value>Read only: where an administrator puts an appsettings.json for everyone on this computer</value>
+  </data>
+  <data name="About.Folder.Machine.Copy" xml:space="preserve">
+    <value>Copy the defaults folder</value>
+    <comment>Accessible name of the Copy button.</comment>
+  </data>
+  <data name="About.Folder.Machine.Open" xml:space="preserve">
+    <value>Open the defaults folder</value>
+    <comment>Accessible name of the Open folder button.</comment>
+  </data>
+  <data name="About.Folder.Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="About.Folder.Open" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="About.Folder.Copied" xml:space="preserve">
+    <value>Copied</value>
+  </data>
+  <data name="About.Folder.OpenFailed" xml:space="preserve">
+    <value>Couldn't open the folder; its path is copied instead.</value>
+  </data>
+  <data name="About.Folder.Configured" xml:space="preserve">
+    <value>set in configuration</value>
+    <comment>A folder moved from the usual place by appsettings.json or the environment.</comment>
+  </data>
+  <data name="About.Folder.NotCreated" xml:space="preserve">
+    <value>not created yet</value>
+  </data>
+  <data name="About.Folder.NotCreatedTip" xml:space="preserve">
+    <value>Not created yet: nothing has been kept there.</value>
+  </data>
+  <data name="About.Files.Browser" xml:space="preserve">
+    <value>This browser keeps your layout and appearance in its own storage.</value>
+    <comment>Shown on a gateway to viewers, who never see the server's folders.</comment>
+  </data>
+  <data name="About.Files.DockerLogs" xml:space="preserve">
+    <value>The gateway's log is the container's output (docker logs), unless a log file is turned on in Settings › Logging.</value>
+    <comment>docker logs is a command; keep it.</comment>
+  </data>
   <data name="Settings.About.IconCredit" xml:space="preserve">
     <value>App icon: the APRS.NET icon.</value>
   </data>
@@ -1795,6 +1899,172 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Logging</value>
     <comment>Settings section: log levels, the log file and OpenTelemetry targets.</comment>
   </data>
+  <data name="Details.Watch" xml:space="preserve">
+    <value>Watch in a view</value>
+  </data>
+  <data name="Watch.Following" xml:space="preserve">
+    <value>Following {name}</value>
+    <comment>name: the station's callsign.</comment>
+  </data>
+  <data name="Watch.NotHeard" xml:space="preserve">
+    <value>{name} hasn't been heard yet</value>
+    <comment>name: the station's callsign.</comment>
+  </data>
+  <data name="Watch.FollowAgain" xml:space="preserve">
+    <value>Follow again</value>
+  </data>
+  <data name="Watch.TooMany" xml:space="preserve">
+    <value>Up to {count} extra map views: close one to watch another station.</value>
+    <comment>count: how many extra views may be open.</comment>
+  </data>
+  <data name="Messages.Services" xml:space="preserve">
+    <value>Email and QRU</value>
+  </data>
+  <data name="Email.Heading" xml:space="preserve">
+    <value>Email</value>
+  </data>
+  <data name="Email.To" xml:space="preserve">
+    <value>Email address or shortcut</value>
+  </data>
+  <data name="Email.Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="Email.Send" xml:space="preserve">
+    <value>Send email</value>
+  </data>
+  <data name="Email.Count" xml:space="preserve">
+    <value>{count} of {max}</value>
+    <comment>count: characters used, address included. max: the most one message carries.</comment>
+  </data>
+  <data name="Email.Help" xml:space="preserve">
+    <value>Goes through the EMAIL-2 gateway as one message, the address included. Its notices, and shortcut commands you send it, are in the EMAIL-2 conversation.</value>
+  </data>
+  <data name="Email.OneWord" xml:space="preserve">
+    <value>The address or shortcut is one word, without spaces.</value>
+  </data>
+  <data name="Email.TooLong" xml:space="preserve">
+    <value>{over, plural, one {One character too long} other {# characters too long}}: an email is one message of up to 67 characters, the address included.</value>
+    <comment>over: how many characters too many.</comment>
+  </data>
+  <data name="Qru.Heading" xml:space="preserve">
+    <value>QRU servers</value>
+  </data>
+  <data name="Qru.Group" xml:space="preserve">
+    <value>QRU group</value>
+  </data>
+  <data name="Qru.Ask" xml:space="preserve">
+    <value>Ask QRU servers</value>
+  </data>
+  <data name="Qru.Asked" xml:space="preserve">
+    <value>{count, plural, one {Asked QRU servers for {group} on # source} other {Asked QRU servers for {group} on # sources}}</value>
+    <comment>group: the group code asked for. count: how many sources it went out on.</comment>
+  </data>
+  <data name="Qru.Help" xml:space="preserve">
+    <value>Asks the servers in range once. INFO asks which groups they serve; what they send shows on the map and in messages.</value>
+  </data>
+  <data name="Error.message.qru-group-invalid" xml:space="preserve">
+    <value>A QRU group is 1 to 9 letters, digits and -.</value>
+  </data>
+  <data name="Settings.Objects" xml:space="preserve">
+    <value>Objects</value>
+    <comment>Settings section: objects and items the station places on the map.</comment>
+  </data>
+  <data name="Objects.Heading" xml:space="preserve">
+    <value>Objects for {profile}</value>
+    <comment>profile: the active profile's name.</comment>
+  </data>
+  <data name="Objects.Description" xml:space="preserve">
+    <value>Things you put on the map for others: a meeting point, a repeater, an aid station. Each goes out soon after you place or change it, then less and less often, until you kill it.</value>
+  </data>
+  <data name="Objects.Empty" xml:space="preserve">
+    <value>No objects yet. Add one here, or right-click the map and choose Place an object here.</value>
+  </data>
+  <data name="Objects.Add" xml:space="preserve">
+    <value>Add an object</value>
+  </data>
+  <data name="Objects.New" xml:space="preserve">
+    <value>New object</value>
+  </data>
+  <data name="Objects.Change" xml:space="preserve">
+    <value>Change {name}</value>
+    <comment>name: the object's name.</comment>
+  </data>
+  <data name="Objects.Edit" xml:space="preserve">
+    <value>Change</value>
+  </data>
+  <data name="Objects.Kill" xml:space="preserve">
+    <value>Kill</value>
+  </data>
+  <data name="Objects.Forget" xml:space="preserve">
+    <value>Forget</value>
+  </data>
+  <data name="Objects.State.Object" xml:space="preserve">
+    <value>Object</value>
+  </data>
+  <data name="Objects.State.Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Objects.State.Killing" xml:space="preserve">
+    <value>Being killed: sent killed three times, then removed</value>
+  </data>
+  <data name="Objects.Kind.Object" xml:space="preserve">
+    <value>Object</value>
+  </data>
+  <data name="Objects.Kind.Item" xml:space="preserve">
+    <value>Item</value>
+  </data>
+  <data name="Objects.Kind.Help" xml:space="preserve">
+    <value>An object goes out with the time; an item, for something that doesn't change, without.</value>
+  </data>
+  <data name="Objects.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Objects.Place" xml:space="preserve">
+    <value>Place (latitude, longitude)</value>
+  </data>
+  <data name="Objects.Symbol" xml:space="preserve">
+    <value>Symbol</value>
+  </data>
+  <data name="Objects.Comment" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+  <data name="Objects.Interval" xml:space="preserve">
+    <value>At most this long between sends</value>
+  </data>
+  <data name="Objects.Interval.Help" xml:space="preserve">
+    <value>It goes out at once, then after 30 seconds on APRS-IS or 2 minutes on a TNC, doubling up to this.</value>
+  </data>
+  <data name="Objects.Save" xml:space="preserve">
+    <value>Save and send</value>
+  </data>
+  <data name="Objects.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Objects.Rules" xml:space="preserve">
+    <value>Objects go out only with Transmit on, from a licensed profile, on sources that aren't RX only. Forget removes one without sending anything.</value>
+  </data>
+  <data name="Map.PlaceObject" xml:space="preserve">
+    <value>Place an object here</value>
+  </data>
+  <data name="Map.MoveObject" xml:space="preserve">
+    <value>Move an object here</value>
+  </data>
+  <data name="Transmit.NextObjectTip" xml:space="preserve">
+    <value>Next: an object on {source}, {reason}.</value>
+    <comment>source: a source's name. reason: one of the Transmit.BeaconReason texts.</comment>
+  </data>
+  <data name="Error.settings.object.name-invalid" xml:space="preserve">
+    <value>An object's name has 1 to 9 characters, an item's 3 to 9 without ! or _, with no space at either end.</value>
+  </data>
+  <data name="Error.settings.object.name-taken" xml:space="preserve">
+    <value>Another object in this profile has that name.</value>
+  </data>
+  <data name="Error.settings.object.invalid" xml:space="preserve">
+    <value>An object needs a place on the globe, a comment of at most 43 plain characters and an interval of 10 minutes to 24 hours; a profile has at most 50.</value>
+  </data>
+  <data name="Error.settings.object.unknown" xml:space="preserve">
+    <value>That object is no longer in this profile.</value>
+  </data>
   <data name="Settings.Messaging" xml:space="preserve">
     <value>Messaging</value>
     <comment>Settings section for automatic message replies such as ping.</comment>
@@ -1840,13 +2110,53 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>For the whole station, never less than 10. Pings in between are shown and not answered.</value>
   </data>
   <data name="Ping.Rules" xml:space="preserve">
-    <value>A pong is sent only with Transmit on, from a licensed profile, on a source that isn't RX only.</value>
+    <value>A pong or auto-reply is sent only with Transmit on, from a licensed profile, on a source that isn't RX only.</value>
   </data>
   <data name="Ping.Save" xml:space="preserve">
     <value>Save</value>
   </data>
   <data name="Ping.Saved" xml:space="preserve">
     <value>Saved</value>
+  </data>
+  <data name="AutoReply.Heading" xml:space="preserve">
+    <value>Auto-reply for {profile}</value>
+    <comment>profile: the active profile's callsign.</comment>
+  </data>
+  <data name="AutoReply.Description" xml:space="preserve">
+    <value>An away message: while you haven't sent a message for a while, a station that messages you gets this once, after a short wait, the same way its message came. Its message stays unread for when you're back.</value>
+  </data>
+  <data name="AutoReply.On" xml:space="preserve">
+    <value>Send auto-replies</value>
+  </data>
+  <data name="AutoReply.Text" xml:space="preserve">
+    <value>Auto-reply text</value>
+  </data>
+  <data name="AutoReply.Away" xml:space="preserve">
+    <value>Only after no message sent for (minutes)</value>
+  </data>
+  <data name="AutoReply.AwayHelp" xml:space="preserve">
+    <value>Messages you write count; automatic ones don't. 0 means always.</value>
+  </data>
+  <data name="AutoReply.OncePer" xml:space="preserve">
+    <value>Once per station every (minutes)</value>
+  </data>
+  <data name="AutoReply.OncePerHelp" xml:space="preserve">
+    <value>A station that messages again sooner gets no second reply.</value>
+  </data>
+  <data name="AutoReply.Delay" xml:space="preserve">
+    <value>Wait before sending (seconds)</value>
+  </data>
+  <data name="AutoReply.DelayHelp" xml:space="preserve">
+    <value>Up to 600. Messaging that station yourself in the meantime cancels it.</value>
+  </data>
+  <data name="AutoReply.Never" xml:space="preserve">
+    <value>Never sent to pings, pongs, other auto-replies or services such as ANSRVR, EMAIL-2 and WXBOT.</value>
+  </data>
+  <data name="Error.settings.auto-reply.text-invalid" xml:space="preserve">
+    <value>An auto-reply has 1 to 67 plain letters, digits and punctuation, with no vertical bar, tilde or opening curly brace.</value>
+  </data>
+  <data name="Error.settings.auto-reply.limit-invalid" xml:space="preserve">
+    <value>Auto-reply times: 0 to 1440 minutes without a message sent, once per 1 to 1440 minutes, and a wait of 0 to 600 seconds.</value>
   </data>
   <data name="Logging.WhatToLog" xml:space="preserve">
     <value>What to log</value>
@@ -3850,7 +4160,7 @@ pause 1s</value>
     <comment>profile: the profile's name.</comment>
   </data>
   <data name="Error.settings.profile.status-invalid" xml:space="preserve">
-    <value>Profile “{profile}”: a status can have up to 62 letters, digits and plain punctuation, without accents.</value>
+    <value>Profile “{profile}”: a status can have up to 62 letters, digits and plain punctuation, without accents; 55 with the time, 53 with the grid square.</value>
     <comment>profile: the profile's name. 62 is the most a status report carries.</comment>
   </data>
   <data name="Error.settings.profile.phg-invalid" xml:space="preserve">
@@ -3981,6 +4291,65 @@ pause 1s</value>
   </data>
   <data name="Beacons.SendVia" xml:space="preserve">
     <value>Send via</value>
+  </data>
+  <data name="Beacons.Format" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="Beacons.Format.Standard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="Beacons.Format.MicE" xml:space="preserve">
+    <value>Mic-E, with a status</value>
+    <comment>Mic-E: the compact position format mobile radios send, with a status code.</comment>
+  </data>
+  <data name="Beacons.MicEStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Beacons.MicEStatus.Help" xml:space="preserve">
+    <value>Sent with every position. Mic-E carries no PHG and isn't compressed; your comment goes as its text.</value>
+  </data>
+  <data name="Error.settings.profile.mic-e-invalid" xml:space="preserve">
+    <value>A Mic-E position isn't compressed and carries no PHG.</value>
+  </data>
+  <data name="Beacons.SavedTexts" xml:space="preserve">
+    <value>Saved texts</value>
+  </data>
+  <data name="Beacons.SavedTexts.Choose" xml:space="preserve">
+    <value>Choose a saved text</value>
+  </data>
+  <data name="Beacons.SavedTexts.Save" xml:space="preserve">
+    <value>Save this text</value>
+  </data>
+  <data name="Beacons.SavedTexts.Remove" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Beacons.StatusAdd" xml:space="preserve">
+    <value>Add to the status</value>
+  </data>
+  <data name="Beacons.StatusAdd.None" xml:space="preserve">
+    <value>Nothing</value>
+  </data>
+  <data name="Beacons.StatusAdd.GridSquare" xml:space="preserve">
+    <value>My grid square</value>
+  </data>
+  <data name="Beacons.StatusAdd.Time" xml:space="preserve">
+    <value>The time (UTC)</value>
+  </data>
+  <data name="Beacons.StatusAdd.Help" xml:space="preserve">
+    <value>A status can carry the grid square or the time, not both. It then has room for 53 characters with the grid square, or 55 with the time.</value>
+  </data>
+  <data name="Beacons.SendStatusNow" xml:space="preserve">
+    <value>Save and send status now</value>
+  </data>
+  <data name="Beacons.StatusSent" xml:space="preserve">
+    <value>{count, plural, one {Status sent on # source} other {Status sent on # sources}}</value>
+    <comment>count: how many sources the status went out on.</comment>
+  </data>
+  <data name="Error.transmit.no-status" xml:space="preserve">
+    <value>Write a status to send first.</value>
+  </data>
+  <data name="Error.settings.profile.saved-status-invalid" xml:space="preserve">
+    <value>At most 20 saved status texts, each one a status can carry: up to 62 letters, digits and plain punctuation.</value>
   </data>
   <data name="Beacons.Compressed" xml:space="preserve">
     <value>Compressed (shorter on air)</value>

@@ -57,6 +57,65 @@
             Command="{Binding StartCommand}"
           />
         </Grid>
+        <!-- Email through the gateway, and QRU servers (F2.6). -->
+        <Expander
+          x:Name="ServicesExpander"
+          DockPanel.Dock="Bottom"
+          Header="{l:T Messages.Services}"
+          HorizontalAlignment="Stretch"
+          Margin="8,4"
+        >
+          <StackPanel Spacing="6">
+            <TextBlock Text="{l:T Email.Heading}" FontWeight="SemiBold" />
+            <TextBox
+              x:Name="EmailToBox"
+              Text="{Binding EmailTo}"
+              PlaceholderText="{l:T Email.To}"
+              AutomationProperties.Name="{l:T Email.To}"
+            />
+            <TextBox
+              x:Name="EmailTextBox"
+              Text="{Binding EmailText}"
+              PlaceholderText="{l:T Email.Text}"
+              AutomationProperties.Name="{l:T Email.Text}"
+              TextWrapping="Wrap"
+            />
+            <WrapPanel ItemSpacing="8" LineSpacing="6">
+              <Button x:Name="SendEmailButton" Content="{l:T Email.Send}" Command="{Binding SendEmailCommand}" />
+              <TextBlock
+                Text="{Binding EmailCount}"
+                VerticalAlignment="Center"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
+            </WrapPanel>
+            <TextBlock Text="{l:T Email.Help}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+            <TextBlock Text="{l:T Qru.Heading}" FontWeight="SemiBold" Margin="0,6,0,0" />
+            <WrapPanel ItemSpacing="8" LineSpacing="6">
+              <TextBox
+                x:Name="QruGroupBox"
+                Text="{Binding QruGroup}"
+                AutomationProperties.Name="{l:T Qru.Group}"
+                FontFamily="{DynamicResource Font.Mono}"
+                MaxLength="9"
+                MinWidth="96"
+              />
+              <Button x:Name="AskQruButton" Content="{l:T Qru.Ask}" Command="{Binding AskQruCommand}" />
+            </WrapPanel>
+            <TextBlock
+              Text="{Binding QruText}"
+              IsVisible="{Binding QruText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              TextWrapping="Wrap"
+              AutomationProperties.LiveSetting="Polite"
+            />
+            <TextBlock Text="{l:T Qru.Help}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+            <TextBlock
+              Text="{Binding ServiceError}"
+              IsVisible="{Binding ServiceError, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
+        </Expander>
         <ListBox
           x:Name="ConversationList"
           ItemsSource="{Binding Conversations}"
