@@ -856,7 +856,13 @@ internal sealed partial class Messenger : IDisposable
         }
     }
 
-    /// <summary>Saves the history in the background, one save at a time; a change during a save saves again after.</summary>
+    /// <summary>How long a save waits after a change, so a burst of them (a message's acks, a busy conversation) is one write.</summary>
+    public static readonly TimeSpan SaveDelay = TimeSpan.FromSeconds(2);
+
+    /// <summary>
+    /// Saves the history in the background <see cref="SaveDelay"/> after a change, one save at a time; a change during a
+    /// save saves again after. The engine flushes what's waiting when it stops (<see cref="FlushAsync"/>).
+    /// </summary>
     private void SaveLater()
     {
         if (Interlocked.Exchange(ref _saving, 1) == 1)
@@ -867,6 +873,7 @@ internal sealed partial class Messenger : IDisposable
         {
             try
             {
+                await Task.Delay(SaveDelay, _time).ConfigureAwait(false);
                 string? profile;
                 MessageArchive archive;
                 lock (_gate)
