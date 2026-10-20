@@ -78,6 +78,23 @@ public sealed class MessageSaveTests
     }
 
     [Fact]
+    public async Task StoppingWithNothingWaitingWritesNothing()
+    {
+        var (engine, store, _) = Create();
+        using (engine)
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+            var run = engine.RunAsync(cts.Token);
+            await engine.GetSettingsAsync(Ct);
+
+            await cts.CancelAsync();
+            await run;
+
+            Assert.Equal(0, store.Saves);
+        }
+    }
+
+    [Fact]
     public async Task WhatsWaitingIsSavedWhenTheEngineStops()
     {
         var (engine, store, _) = Create();

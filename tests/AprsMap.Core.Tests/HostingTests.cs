@@ -33,6 +33,7 @@ public class HostingTests
         var services = new ServiceCollection()
             .AddLogging()
             .AddSingleton<ISettingsStore>(InMemorySettingsStore.WithProfile())
+            .AddSingleton<IMessageStore>(new InMemoryMessageStore()) // never the real Data folder
             .AddAprsMapEngine()
             .Configure<EngineOptions>(o => o.Enabled = false);
         await using var provider = services.BuildServiceProvider();
@@ -55,6 +56,7 @@ public class HostingTests
             .AddLogging()
             .AddSingleton<IPacketSourceFactory>(factory)
             .AddSingleton<ISettingsStore>(InMemorySettingsStore.WithProfile())
+            .AddSingleton<IMessageStore>(new InMemoryMessageStore()) // never the real Data folder
             .AddAprsMapEngine();
         await using var provider = services.BuildServiceProvider();
         var hosted = provider.GetRequiredService<IHostedService>();

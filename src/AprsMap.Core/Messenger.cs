@@ -899,6 +899,9 @@ internal sealed partial class Messenger : IDisposable
     }
 
     /// <summary>Saves now, for tests and for shutting down.</summary>
+    /// <summary>Saves now if a save is waiting, as the engine stops; nothing is written when nothing changed.</summary>
+    internal Task FlushPendingAsync() => Volatile.Read(ref _saving) == 1 ? FlushAsync() : Task.CompletedTask;
+
     internal async Task FlushAsync()
     {
         string? profile;
