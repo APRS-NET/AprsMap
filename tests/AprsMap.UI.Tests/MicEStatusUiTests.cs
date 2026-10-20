@@ -2,8 +2,6 @@
 using AprsMap.Contracts;
 using AprsMap.UI.Localization;
 using AprsMap.UI.Settings;
-using AprsMap.UI.ViewModels;
-using Microsoft.Extensions.Time.Testing;
 
 namespace AprsMap.UI.Tests;
 
@@ -41,7 +39,7 @@ public sealed class MicEStatusUiTests
         var (section, engine) = Create(Home());
         Assert.True(section.FormatStandard);
         Assert.Equal(
-            ["Off duty", "En route", "In service", "Returning", "Committed", "Special", "Priority", "Emergency"],
+            ["Off duty", "En route", "In service", "Returning", "Committed", "Special", "Priority"],
             section.MicEStatuses.Select(s => s.Name)
         );
         Assert.Equal(MicEStatus.OffDuty, section.SelectedMicEStatus!.Value); // the default (behavior 2)
@@ -55,57 +53,15 @@ public sealed class MicEStatusUiTests
 
         var beacon = engine.Settings.GetActiveProfile()!.EffectivePositionBeacon;
         Assert.Equal((MicEStatus.EnRoute, false, null), (beacon.MicE, beacon.Compressed, beacon.Phg));
-        Assert.Equal(0, engine.PositionsSent); // only Emergency is sent at once
+        Assert.Equal(0, engine.PositionsSent); // saving sends nothing
     }
 
     [Fact]
-    public async Task EmergencyAsksFirstAndCancelSavesNothing()
+    public void EmergencyIsNeverOfferedOrSendable()
     {
-        var (section, engine) = Create(Home(MicEStatus.EnRoute));
-        Assert.True(section.MicE);
-        Assert.Equal(MicEStatus.EnRoute, section.SelectedMicEStatus!.Value);
+        var (section, _) = Create(Home());
 
-        section.SelectedMicEStatus = section.MicEStatuses.Single(s => s.Value == MicEStatus.Emergency);
-        await section.SaveCommand.ExecuteAsync(null);
-        Assert.True(section.IsConfirmingEmergency);
-        Assert.Empty(engine.Saved);
-
-        section.CancelEmergencyCommand.Execute(null);
-
-        Assert.False(section.IsConfirmingEmergency);
-        Assert.Empty(engine.Saved);
-        Assert.Equal(0, engine.PositionsSent);
-    }
-
-    [Fact]
-    public async Task SendEmergencySavesAndSendsThePositionAtOnce()
-    {
-        var (section, engine) = Create(Home(MicEStatus.EnRoute));
-        section.SelectedMicEStatus = section.MicEStatuses.Single(s => s.Value == MicEStatus.Emergency);
-        await section.SaveCommand.ExecuteAsync(null);
-
-        await section.ConfirmEmergencyCommand.ExecuteAsync(null);
-
-        Assert.Equal(MicEStatus.Emergency, engine.Settings.GetActiveProfile()!.EffectivePositionBeacon.MicE);
-        Assert.Equal([null], engine.PositionSources); // on every source that can send (behavior 8)
-
-        await section.SaveCommand.ExecuteAsync(null); // already Emergency: saved without asking again
-        Assert.False(section.IsConfirmingEmergency);
-        Assert.Equal(1, engine.PositionsSent);
-    }
-
-    [Fact]
-    public async Task WhileEmergencyIsSetTheStatusBarSaysSoAndOpensBeacons()
-    {
-        var engine = new FakeEngine { Settings = Home(MicEStatus.Emergency) };
-        var vm = new MainViewModel(engine, new FakeTimeProvider());
-        vm.Show(engine.Settings);
-        Assert.True(vm.IsSendingEmergency);
-
-        await vm.OpenBeaconsCommand.ExecuteAsync(null);
-        Assert.True(vm.Settings!.IsBeaconsSection);
-
-        vm.Show(Home(MicEStatus.EnRoute));
-        Assert.False(vm.IsSendingEmergency);
+        Assert.DoesNotContain(section.MicEStatuses, s => s.Name == "Emergency");
+        Assert.DoesNotContain("Emergency", Enum.GetNames<MicEStatus>()); // decision 3: the app never sends it
     }
 }

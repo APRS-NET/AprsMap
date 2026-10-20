@@ -110,10 +110,6 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
     [ObservableProperty]
     public partial BeaconChoice<MicEStatus>? SelectedMicEStatus { get; set; }
 
-    /// <summary>Emergency was newly chosen and Save waits for Send Emergency or Cancel (behavior 7).</summary>
-    [ObservableProperty]
-    public partial bool IsConfirmingEmergency { get; private set; }
-
     /// <summary>Whether PHG goes with positions.</summary>
     [ObservableProperty]
     public partial bool IncludePhg { get; set; }
@@ -318,42 +314,9 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
 
     partial void OnStatusTextChanged(string value) => (Error, SavedText) = (null, null);
 
-    /// <summary>
-    /// Saves both beacons to the active profile; newly choosing Emergency asks first (F2.12 behavior 7).
-    /// </summary>
+    /// <summary>Saves both beacons to the active profile.</summary>
     [RelayCommand]
-    private async Task SaveAsync()
-    {
-        if (MicE && SelectedMicEStatus?.Value == MicEStatus.Emergency && _savedMicE != MicEStatus.Emergency)
-        {
-            IsConfirmingEmergency = true;
-            return;
-        }
-        await SaveBeaconsAsync();
-    }
-
-    /// <summary>Send Emergency: saves, then sends the position at once (behavior 8).</summary>
-    [RelayCommand]
-    private async Task ConfirmEmergencyAsync()
-    {
-        IsConfirmingEmergency = false;
-        if (!await SaveBeaconsAsync())
-        {
-            return;
-        }
-        try
-        {
-            await _engine.SendPositionAsync();
-        }
-        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
-        {
-            Error = _text.Describe(ex); // the setting stays; the beacon sends it when it can
-        }
-    }
-
-    /// <summary>Cancel: nothing is saved.</summary>
-    [RelayCommand]
-    private void CancelEmergency() => IsConfirmingEmergency = false;
+    private async Task SaveAsync() => await SaveBeaconsAsync();
 
     private async Task<bool> SaveBeaconsAsync()
     {

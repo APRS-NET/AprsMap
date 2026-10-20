@@ -360,7 +360,7 @@ internal sealed class Beaconer : IDisposable
             MicEStatus.Committed => MicEMessage.Committed,
             MicEStatus.Special => MicEMessage.Special,
             MicEStatus.Priority => MicEMessage.Priority,
-            _ => MicEMessage.Emergency,
+            _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Not a Mic-E status the app sends."),
         };
 
     /// <summary>APRS.NET's PHG for <paramref name="phg"/>.</summary>

@@ -40,7 +40,10 @@ public enum BeaconDueReason
     Spacing,
 }
 
-/// <summary>The Mic-E status a position goes with (docs/features/F2.12-mic-e-status.md, APRS101 chapter 10).</summary>
+/// <summary>
+/// The Mic-E status a position goes with (docs/features/F2.12-mic-e-status.md, APRS101 chapter 10). Emergency is
+/// deliberately absent: the app never sends it (decision 3).
+/// </summary>
 public enum MicEStatus
 {
     /// <summary>M0: Off duty.</summary>
@@ -63,9 +66,6 @@ public enum MicEStatus
 
     /// <summary>M6: Priority.</summary>
     Priority,
-
-    /// <summary>Emergency: a call for help; chosen only after a confirmation (F2.12 behavior 7).</summary>
-    Emergency,
 }
 
 /// <summary>
