@@ -469,6 +469,10 @@ public sealed partial class MainViewModel : ObservableObject
             );
         var sources = IsViewerOnly ? null : new SourcesSectionViewModel(engine, _text, Show);
         var beacons = IsViewerOnly ? null : new BeaconsSectionViewModel(engine, _text, Show);
+        var messaging =
+            IsViewerOnly || _settings is not { ReadOnly: false }
+                ? null
+                : new MessagingSectionViewModel(engine, _text, Show); // F2.13
         // Logging is the desktop user's, and on a gateway the signed-in operator's (F1.32 behavior 1).
         var logging =
             !IsViewerOnly && (!SharedStation || IsOperator) && _settings is { ReadOnly: false }
@@ -489,7 +493,8 @@ public sealed partial class MainViewModel : ObservableObject
             unitItems,
             beacons,
             Layouts,
-            logging
+            logging,
+            messaging
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
@@ -498,6 +503,7 @@ public sealed partial class MainViewModel : ObservableObject
         {
             sources?.Show(current);
             beacons?.Show(current);
+            messaging?.Show(current);
             if (logging is not null)
             {
                 await logging.ShowAsync(current);

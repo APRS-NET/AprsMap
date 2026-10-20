@@ -228,6 +228,18 @@ public static class EngineErrorCodes
     /// <summary>An OTLP target's name, endpoint or header isn't usable (F1.32 behavior 13).</summary>
     public const string LoggingTargetInvalid = "settings.logging.target-invalid";
 
+    /// <summary>A ping or pong phrase isn't 1 to 40 characters a message can carry (docs/features/F2.13-ping.md, behavior 3).</summary>
+    public const string PingPhraseInvalid = "settings.ping.phrase-invalid";
+
+    /// <summary>The ping and pong phrases are the same (F2.13 behavior 3).</summary>
+    public const string PingPhrasesSame = "settings.ping.phrases-same";
+
+    /// <summary>The ping interval is under 10 seconds or over a day (F2.13 behavior 7).</summary>
+    public const string PingIntervalTooShort = "settings.ping.interval-too-short";
+
+    /// <summary>A callsign that may ping isn't one (F2.13 behavior 6.3).</summary>
+    public const string PingCallsignInvalid = "settings.ping.callsign-invalid";
+
     /// <summary>A source that can't send was set TX enabled; no longer raised: such a kind is RX only (F2.1, 2026-10-18).</summary>
     public const string SourceReceiveOnly = "settings.source.receive-only";
 

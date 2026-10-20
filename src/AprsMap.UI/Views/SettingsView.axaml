@@ -1059,6 +1059,105 @@
               />
             </StackPanel>
           </StackPanel>
+          <!-- Messaging (docs/features/F2.13-ping.md): the active profile's ping responder, off by default. -->
+          <StackPanel x:Name="MessagingSection" IsVisible="{Binding IsMessagingSection}" Spacing="10">
+            <TextBlock Text="{Binding Messaging.Heading, FallbackValue={x:Null}}" FontWeight="SemiBold" />
+            <TextBlock Text="{l:T Ping.Description}" TextWrapping="Wrap" />
+            <ToggleSwitch
+              x:Name="PingSwitch"
+              IsChecked="{Binding Messaging.On, FallbackValue=False}"
+              OnContent="{l:T Ping.On}"
+              OffContent="{l:T Ping.On}"
+            />
+            <WrapPanel ItemSpacing="12" LineSpacing="8">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{l:T Ping.Phrase}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="PingPhraseBox"
+                  Text="{Binding Messaging.PingPhrase, FallbackValue=''}"
+                  PlaceholderText="{x:Static s:MessagingSectionViewModel.DefaultPing}"
+                  AutomationProperties.Name="{l:T Ping.Phrase}"
+                  MinWidth="240"
+                />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="{l:T Ping.PongPhrase}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="PongPhraseBox"
+                  Text="{Binding Messaging.PongPhrase, FallbackValue=''}"
+                  PlaceholderText="{x:Static s:MessagingSectionViewModel.DefaultPong}"
+                  AutomationProperties.Name="{l:T Ping.PongPhrase}"
+                  MinWidth="240"
+                />
+              </StackPanel>
+            </WrapPanel>
+            <TextBlock
+              Text="{l:T Ping.PhraseHelp}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock Text="{l:T Ping.Who}" Foreground="{DynamicResource Brush.TextMuted}" />
+            <RadioButton
+              GroupName="PingWho"
+              Content="{l:T Ping.Who.Anyone}"
+              IsChecked="{Binding Messaging.WhoAnyone, FallbackValue=True}"
+            />
+            <RadioButton
+              GroupName="PingWho"
+              Content="{l:T Ping.Who.MyCallsign}"
+              IsChecked="{Binding Messaging.WhoMyCallsign, FallbackValue=False}"
+            />
+            <RadioButton
+              GroupName="PingWho"
+              Content="{l:T Ping.Who.Callsigns}"
+              IsChecked="{Binding Messaging.WhoCallsigns, FallbackValue=False}"
+            />
+            <StackPanel Spacing="4" IsVisible="{Binding Messaging.ShowsCallsigns, FallbackValue=False}">
+              <TextBox
+                x:Name="PingCallsignsBox"
+                Text="{Binding Messaging.Callsigns, FallbackValue=''}"
+                AcceptsReturn="True"
+                MinHeight="72"
+                AutomationProperties.Name="{l:T Ping.Who.Callsigns}"
+                FontFamily="{DynamicResource Font.Mono}"
+              />
+              <TextBlock
+                Text="{l:T Ping.CallsignsHelp}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Text="{l:T Ping.Interval}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBox
+                x:Name="PingIntervalBox"
+                Text="{Binding Messaging.IntervalSeconds, FallbackValue=''}"
+                AutomationProperties.Name="{l:T Ping.Interval}"
+                MinWidth="96"
+                HorizontalAlignment="Left"
+              />
+              <TextBlock
+                Text="{l:T Ping.IntervalHelp}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+            <TextBlock Text="{l:T Ping.Rules}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+            <WrapPanel ItemSpacing="8" LineSpacing="8">
+              <Button
+                x:Name="PingSaveButton"
+                Content="{l:T Ping.Save}"
+                Command="{Binding Messaging.SaveCommand, FallbackValue={x:Null}}"
+              />
+              <TextBlock Text="{Binding Messaging.SavedText, FallbackValue={x:Null}}" VerticalAlignment="Center" />
+            </WrapPanel>
+            <TextBlock
+              Text="{Binding Messaging.Error, FallbackValue={x:Null}}"
+              IsVisible="{Binding Messaging.Error, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
           <!-- Logging (docs/features/F1.32-logging.md): levels, privacy, the log file and OTLP targets, saved with Save. -->
           <StackPanel x:Name="LoggingSection" IsVisible="{Binding IsLoggingSection}" Spacing="12">
             <TextBlock Text="{l:T Logging.WhatToLog}" FontWeight="SemiBold" />

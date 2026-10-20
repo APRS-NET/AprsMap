@@ -16,6 +16,9 @@ internal interface IMessengerHost
     /// <summary>Whether a packet can go out on <paramref name="sourceId"/> now: Transmit on and every F2.1 layer.</summary>
     bool CanSendOn(string sourceId);
 
+    /// <summary>The active profile's ping responder (docs/features/F2.13-ping.md).</summary>
+    PingSettings Ping();
+
     /// <summary>The profile's sources that may send (not RX only), in order, with whether each is RF (a TNC).</summary>
     IReadOnlyList<(string Id, string Name, bool IsRf)> TransmitSources();
 
@@ -67,6 +70,8 @@ internal sealed partial class Messenger : IDisposable
     private readonly List<string> _pending = []; // queued ids not yet handed to the station, in order
     private readonly Dictionary<OutgoingMessage, string> _inFlight = [];
     private readonly Dictionary<string, Route> _routes = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Route> _fixedRoutes = new(StringComparer.Ordinal); // pongs: the way the ping came
+    private DateTimeOffset? _lastPong;
     private readonly Dictionary<string, (string SourceId, DateTimeOffset At)> _heardOnRf = new(
         StringComparer.OrdinalIgnoreCase
     );
@@ -452,9 +457,19 @@ internal sealed partial class Messenger : IDisposable
                     continue;
                 }
                 var (via, retries) = Settings(message.Correspondent);
-                if (PlanRoute(message.Correspondent, via) is not { } route)
+                var route = _fixedRoutes.TryGetValue(id, out var fixedRoute)
+                    ? _host.CanSendOn(fixedRoute.SourceIds[0])
+                        ? fixedRoute
+                        : null // a pong goes back only the way its ping came (F2.13 behavior 9)
+                    : PlanRoute(message.Correspondent, via);
+                if (route is null)
                 {
                     continue; // nothing can send it yet: it waits (behavior 10)
+                }
+                if (fixedRoute is not null)
+                {
+                    retries = MessageRetries.Automatic; // the schedule for that source (F2.13 behavior 10)
+                    _fixedRoutes.Remove(id);
                 }
                 if (!Callsign.TryParse(message.Correspondent, out var to))
                 {
@@ -537,6 +552,7 @@ internal sealed partial class Messenger : IDisposable
         var source = message.Source;
         var route = PathAnalysis.FromPacket(message.Packet);
         var isRf = source is not null && _host.TransmitSources().Any(s => s.Id == source && s.IsRf);
+        var ping = PingResultFor(message.From.Value, message.Text, source);
         var received = new ChatMessage(
             Guid.NewGuid().ToString("N"),
             message.From.Value.ToUpperInvariant(),
@@ -549,7 +565,8 @@ internal sealed partial class Messenger : IDisposable
             HeardDirect: isRf ? route.UsedHops.Count == 0 : null,
             // No ack goes back while this station can't send there (behavior 13).
             NotAcknowledged: message.MessageId is not null && (source is null || !_host.CanSendOn(source)),
-            Read: false
+            Read: ping is not null, // a ping isn't unread (F2.13 behavior 11)
+            Ping: ping
         );
         // Who, when and its ID; the text only with Log message texts on (docs/features/F1.32-logging.md, behavior 5.2).
         LogMessageReceived(
@@ -565,8 +582,106 @@ internal sealed partial class Messenger : IDisposable
             Publish(received);
             Trim(received.Correspondent);
         }
+        if (ping is { } result)
+        {
+            LogPing(_log, received.Correspondent, source ?? "APRS-IS", result);
+            if (result == PingResult.Answered)
+            {
+                QueuePong(received.Correspondent, source!, isRf);
+            }
+        }
         SaveLater();
     }
+
+    /// <summary>
+    /// What happens to a message from <paramref name="from"/> that may be a ping (docs/features/F2.13-ping.md, behaviors
+    /// 4–9): null when it isn't one; otherwise answered, or why not. Answering takes the interval's turn.
+    /// </summary>
+    private PingResult? PingResultFor(string from, string text, string? source)
+    {
+        var settings = _host.Ping();
+        // Starts with the phrase, ignoring case and spaces at either end (behavior 4).
+        if (!text.Trim().StartsWith(settings.EffectivePing, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+        if (!settings.On)
+        {
+            return PingResult.Off;
+        }
+        if (!MayPing(settings, from))
+        {
+            return PingResult.NotAllowed;
+        }
+        var now = _time.GetUtcNow();
+        lock (_gate)
+        {
+            if (_lastPong is { } last && now - last < TimeSpan.FromSeconds(settings.IntervalSeconds))
+            {
+                return PingResult.TooSoon; // one pong in the interval, for the whole station (behavior 7)
+            }
+            if (source is null || !_host.CanSendOn(source))
+            {
+                return PingResult.CantSend; // every rule a message follows (behavior 2)
+            }
+            _lastPong = now;
+            return PingResult.Answered;
+        }
+    }
+
+    /// <summary>Whether <paramref name="from"/> may ping (behavior 6).</summary>
+    private bool MayPing(PingSettings settings, string from)
+    {
+        var sender = from.Trim().ToUpperInvariant();
+        return settings.Who switch
+        {
+            PingWho.Anyone => true,
+            PingWho.MyCallsign => _callsign is { } own && BaseCall(sender) == BaseCall(own.ToUpperInvariant()),
+            _ => settings.CallsignList.Any(entry => Matches(entry.Trim().ToUpperInvariant(), sender)),
+        };
+
+        static string BaseCall(string call) => call.Split('-')[0];
+
+        // WA0RC* any suffix; WA0RC any SSID of it; WA0RC-7 just that one.
+        static bool Matches(string entry, string sender) =>
+            entry.EndsWith('*') ? sender.StartsWith(entry[..^1], StringComparison.Ordinal)
+            : entry.Contains('-', StringComparison.Ordinal) ? sender == entry
+            : BaseCall(sender) == entry;
+    }
+
+    /// <summary>
+    /// Queues the pong to <paramref name="to"/>: the pong phrase and the UTC time with the date (behavior 8), going back
+    /// on <paramref name="source"/> alone (behavior 9), marked automatic (behavior 11). It's sent by the next pump, not
+    /// here, which is inside the station's handling of the ping.
+    /// </summary>
+    private void QueuePong(string to, string source, bool isRf)
+    {
+        var now = _time.GetUtcNow();
+        var text = string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"{_host.Ping().EffectivePong} {now.UtcDateTime:yyyy-MM-dd HH:mm:ss}Z"
+        );
+        var pong = new ChatMessage(
+            Guid.NewGuid().ToString("N"),
+            to,
+            Outgoing: true,
+            text,
+            now,
+            ChatMessageState.Queued,
+            Automatic: true
+        );
+        lock (_gate)
+        {
+            _messages.Add(pong);
+            _pending.Add(pong.Id);
+            _fixedRoutes[pong.Id] = new Route([source], Automatic: false, OverRf: isRf);
+            Publish(pong);
+        }
+        _ = Task.Run(Pump);
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Ping from {From} on {Source}: {Result}")]
+    private static partial void LogPing(ILogger logger, string from, string source, PingResult result);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Message from {From} ({Id}) on {Source}: {Text}")]
     private static partial void LogMessageReceived(ILogger logger, string from, string id, string source, string text);

@@ -1474,6 +1474,14 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
     }
 
+    PingSettings IMessengerHost.Ping()
+    {
+        lock (_gate)
+        {
+            return _settings?.GetActiveProfile()?.EffectivePing ?? PingSettings.Off;
+        }
+    }
+
     EngineError? IMessengerHost.WhyNotOn(string? sourceId)
     {
         lock (_gate)

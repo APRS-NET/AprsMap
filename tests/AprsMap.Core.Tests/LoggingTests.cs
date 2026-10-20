@@ -227,6 +227,8 @@ public sealed class LoggingTests
 
         public EngineError? WhyNotOn(string? sourceId) => null;
 
+        public PingSettings Ping() => PingSettings.Off;
+
         public Task<bool> SendAsync(string sourceId, MessagePayload payload, CancellationToken cancellationToken) =>
             Task.FromResult(false);
     }
