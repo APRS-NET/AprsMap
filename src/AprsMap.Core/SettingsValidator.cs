@@ -139,6 +139,7 @@ internal static class SettingsValidator
             }
             ValidateBeacons(profile);
             ValidatePing(profile);
+            ValidateAutoReply(profile);
             if (profile.Symbol is { Length: > 0 } symbol && !IsSymbol(symbol))
             {
                 throw Fail(
@@ -216,6 +217,42 @@ internal static class SettingsValidator
         if (settings.Logging is { } logging)
         {
             ValidateLogging(logging);
+        }
+    }
+
+    /// <summary>
+    /// The away message (docs/features/F2.10-auto-reply.md): its text one message of plain characters (behavior 2),
+    /// and its times in range (behaviors 4–6).
+    /// </summary>
+    private static void ValidateAutoReply(StationProfile profile)
+    {
+        if (profile.AutoReply is not { } reply)
+        {
+            return;
+        }
+        if (
+            reply.Text is { } text
+            && (text.Trim().Length is 0 or > 67 || text.Any(c => c is < ' ' or > '~' or '|' or '{'))
+        )
+        {
+            throw Fail(
+                EngineErrorCodes.AutoReplyTextInvalid,
+                $"Profile '{profile.Name}': an auto-reply has 1 to 67 plain characters, without |, ~ or {{.",
+                profile.Name
+            );
+        }
+        if (
+            reply.AwayMinutes is < 0 or > AutoReplySettings.MaxMinutes
+            || reply.OncePerMinutes is < 1 or > AutoReplySettings.MaxMinutes
+            || reply.DelaySeconds is < 0 or > AutoReplySettings.MaxDelaySeconds
+        )
+        {
+            throw Fail(
+                EngineErrorCodes.AutoReplyLimitInvalid,
+                $"Profile '{profile.Name}': auto-reply waits 0 to 1440 minutes away, once per 1 to 1440 minutes, "
+                    + "after 0 to 600 seconds.",
+                profile.Name
+            );
         }
     }
 

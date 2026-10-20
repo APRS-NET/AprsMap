@@ -1142,6 +1142,78 @@
                 TextWrapping="Wrap"
               />
             </StackPanel>
+            <!-- Auto-reply (docs/features/F2.10-auto-reply.md): the away message, saved with the ping settings. -->
+            <TextBlock Text="{Binding Messaging.AutoReplyHeading, FallbackValue={x:Null}}" FontWeight="SemiBold" />
+            <TextBlock Text="{l:T AutoReply.Description}" TextWrapping="Wrap" />
+            <ToggleSwitch
+              x:Name="AutoReplySwitch"
+              IsChecked="{Binding Messaging.AutoReplyOn, FallbackValue=False}"
+              OnContent="{l:T AutoReply.On}"
+              OffContent="{l:T AutoReply.On}"
+            />
+            <StackPanel Spacing="4">
+              <TextBlock Text="{l:T AutoReply.Text}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBox
+                x:Name="AutoReplyTextBox"
+                Text="{Binding Messaging.AutoReplyText, FallbackValue=''}"
+                PlaceholderText="{x:Static s:MessagingSectionViewModel.DefaultAutoReply}"
+                AutomationProperties.Name="{l:T AutoReply.Text}"
+                MaxLength="67"
+                MinWidth="240"
+              />
+            </StackPanel>
+            <StackPanel Spacing="10">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{l:T AutoReply.Away}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="AutoReplyAwayBox"
+                  Text="{Binding Messaging.AwayMinutes, FallbackValue=''}"
+                  AutomationProperties.Name="{l:T AutoReply.Away}"
+                  MinWidth="96"
+                  HorizontalAlignment="Left"
+                />
+                <TextBlock
+                  Text="{l:T AutoReply.AwayHelp}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="{l:T AutoReply.OncePer}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="AutoReplyOncePerBox"
+                  Text="{Binding Messaging.OncePerMinutes, FallbackValue=''}"
+                  AutomationProperties.Name="{l:T AutoReply.OncePer}"
+                  MinWidth="96"
+                  HorizontalAlignment="Left"
+                />
+                <TextBlock
+                  Text="{l:T AutoReply.OncePerHelp}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="{l:T AutoReply.Delay}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="AutoReplyDelayBox"
+                  Text="{Binding Messaging.DelaySeconds, FallbackValue=''}"
+                  AutomationProperties.Name="{l:T AutoReply.Delay}"
+                  MinWidth="96"
+                  HorizontalAlignment="Left"
+                />
+                <TextBlock
+                  Text="{l:T AutoReply.DelayHelp}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
+            </StackPanel>
+            <TextBlock
+              Text="{l:T AutoReply.Never}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
             <TextBlock Text="{l:T Ping.Rules}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
             <WrapPanel ItemSpacing="8" LineSpacing="8">
               <Button

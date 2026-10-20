@@ -240,6 +240,12 @@ public static class EngineErrorCodes
     /// <summary>A callsign that may ping isn't one (F2.13 behavior 6.3).</summary>
     public const string PingCallsignInvalid = "settings.ping.callsign-invalid";
 
+    /// <summary>The auto-reply text isn't 1 to 67 characters a message can carry (docs/features/F2.10-auto-reply.md).</summary>
+    public const string AutoReplyTextInvalid = "settings.auto-reply.text-invalid";
+
+    /// <summary>An auto-reply time is out of its range (F2.10 behaviors 4–6).</summary>
+    public const string AutoReplyLimitInvalid = "settings.auto-reply.limit-invalid";
+
     /// <summary>A source that can't send was set TX enabled; no longer raised: such a kind is RX only (F2.1, 2026-10-18).</summary>
     public const string SourceReceiveOnly = "settings.source.receive-only";
 
