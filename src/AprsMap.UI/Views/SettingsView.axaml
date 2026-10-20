@@ -799,7 +799,8 @@
                     IsChecked="{Binding Beacons.StatusOn}"
                     FontWeight="SemiBold"
                   />
-                  <StackPanel Spacing="8" IsEnabled="{Binding Beacons.StatusOn}">
+                  <!-- The text, saved texts, what's added and Send status now work with the beacon off too (F2.11). -->
+                  <StackPanel Spacing="8">
                     <TextBlock Text="{l:T Beacons.StatusText}" Foreground="{DynamicResource Brush.TextMuted}" />
                     <TextBox
                       x:Name="StatusTextBox"
@@ -807,11 +808,46 @@
                       MaxLength="{Binding Beacons.MaxStatusLength}"
                       AutomationProperties.Name="{l:T Beacons.StatusText}"
                     />
+                    <TextBlock Text="{l:T Beacons.SavedTexts}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <WrapPanel ItemSpacing="8" LineSpacing="8">
+                      <ComboBox
+                        x:Name="SavedTextsBox"
+                        ItemsSource="{Binding Beacons.SavedTexts}"
+                        SelectedItem="{Binding Beacons.SelectedSavedText}"
+                        PlaceholderText="{l:T Beacons.SavedTexts.Choose}"
+                        AutomationProperties.Name="{l:T Beacons.SavedTexts}"
+                        MinWidth="260"
+                      />
+                      <Button
+                        x:Name="SaveStatusTextButton"
+                        Content="{l:T Beacons.SavedTexts.Save}"
+                        Command="{Binding Beacons.SaveTextCommand}"
+                      />
+                      <Button
+                        x:Name="RemoveStatusTextButton"
+                        Content="{l:T Beacons.SavedTexts.Remove}"
+                        Command="{Binding Beacons.RemoveSavedTextCommand}"
+                      />
+                    </WrapPanel>
+                    <TextBlock Text="{l:T Beacons.StatusAdd}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <ComboBox
+                      x:Name="StatusAddBox"
+                      ItemsSource="{Binding Beacons.Additions}"
+                      SelectedItem="{Binding Beacons.SelectedAddition}"
+                      AutomationProperties.Name="{l:T Beacons.StatusAdd}"
+                      MinWidth="260"
+                    />
+                    <TextBlock
+                      Text="{l:T Beacons.StatusAdd.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
                     <TextBlock Text="{l:T Beacons.Interval}" Foreground="{DynamicResource Brush.TextMuted}" />
                     <ComboBox
                       x:Name="StatusIntervalBox"
                       ItemsSource="{Binding Beacons.StatusIntervals}"
                       SelectedItem="{Binding Beacons.SelectedStatusInterval}"
+                      IsEnabled="{Binding Beacons.StatusOn}"
                       AutomationProperties.Name="{l:T Beacons.Interval}"
                       MinWidth="260"
                     />
@@ -823,6 +859,18 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <WrapPanel ItemSpacing="8" LineSpacing="8">
+                      <Button
+                        x:Name="SendStatusNowButton"
+                        Content="{l:T Beacons.SendStatusNow}"
+                        Command="{Binding Beacons.SendStatusNowCommand}"
+                      />
+                      <TextBlock
+                        Text="{Binding Beacons.StatusSentText}"
+                        VerticalAlignment="Center"
+                        AutomationProperties.LiveSetting="Polite"
+                      />
+                    </WrapPanel>
                   </StackPanel>
                 </StackPanel>
               </Border>

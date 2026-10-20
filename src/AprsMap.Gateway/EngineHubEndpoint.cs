@@ -102,6 +102,15 @@ internal sealed class EngineHubEndpoint(
         return engine.SendPositionAsync(sourceId, Context.ConnectionAborted);
     }
 
+    /// <summary>Send status now transmits: a signed-in operator only (F2.11 behavior 5).</summary>
+    [HubMethodName(EngineHub.SendStatus)]
+    [Transmits]
+    public Task<IReadOnlyList<PacketView>> SendStatus(string? sourceId)
+    {
+        RequireOperator();
+        return engine.SendStatusAsync(sourceId, Context.ConnectionAborted);
+    }
+
     /// <summary>Test send transmits too: a signed-in operator only (F2.1 behavior 8).</summary>
     [HubMethodName(EngineHub.TestSend)]
     [Transmits]

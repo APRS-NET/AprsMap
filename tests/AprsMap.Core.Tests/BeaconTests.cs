@@ -300,6 +300,103 @@ public sealed class BeaconTests
     }
 
     [Fact]
+    public async Task SendStatusNowSendsTheTextWithTheTimeOrGridSquareOnTheStatussSources()
+    {
+        var status = new StatusBeaconSettings(Text: "QRV on 146.52", SourceIds: [AprsIs.Id], Add: StatusAddition.Time);
+        using var station = Create(status: status);
+        var (run, cts, aprsIs, tnc) = await Run(station);
+        using (cts)
+        {
+            var sent = await station.Engine.SendStatusAsync(null, Ct);
+
+            Assert.Equal(AprsIs.Id, Assert.Single(sent).SourceId); // Send via (F2.11 behavior 5)
+            Assert.Equal([$"N0TEST>{Brand.Tocall}:>171200zQRV on 146.52"], aprsIs.Sent);
+            Assert.Empty(tnc.Sent);
+
+            var settings = await station.Engine.GetSettingsAsync(Ct);
+            var profile = settings.GetActiveProfile()!;
+            await station.Engine.SaveSettingsAsync(
+                settings with
+                {
+                    Profiles = [profile with { StatusBeacon = status with { Add = StatusAddition.GridSquare } }],
+                },
+                Ct
+            );
+            await station.Engine.SendStatusAsync(null, Ct);
+
+            var grid = Assert.IsType<StatusReport>(AprsPacket.Parse(aprsIs.Sent.Last()).Payload);
+            var expected = MaidenheadLocator.FromPosition(49.0583, -72.0292, 6).Value.ToUpperInvariant();
+            Assert.Equal((expected, "QRV on 146.52"), (grid.MaidenheadLocator, grid.Text.Trim()));
+            Assert.Equal(new AprsSymbol('/', '-'), grid.Symbol);
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Fact]
+    public async Task SendStatusNowRefusesAnEmptyStatus()
+    {
+        using var station = Create(status: StatusBeaconSettings.Off);
+        var (run, cts, aprsIs, _) = await Run(station);
+        using (cts)
+        {
+            var error = await Assert.ThrowsAsync<EngineOperationException>(() =>
+                station.Engine.SendStatusAsync(null, Ct)
+            );
+
+            Assert.Equal(EngineErrorCodes.TransmitNoStatus, error.EngineError.Code);
+            Assert.Empty(aprsIs.Sent);
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
+    [Theory]
+    [InlineData(StatusAddition.None, 62, null)]
+    [InlineData(StatusAddition.Time, 55, null)]
+    [InlineData(StatusAddition.Time, 56, EngineErrorCodes.ProfileStatusInvalid)]
+    [InlineData(StatusAddition.GridSquare, 53, null)]
+    [InlineData(StatusAddition.GridSquare, 54, EngineErrorCodes.ProfileStatusInvalid)]
+    public async Task AStatusHasRoomForLessWithTheTimeOrGridSquare(StatusAddition add, int length, string? code)
+    {
+        using var station = Create();
+        var settings = await station.Engine.GetSettingsAsync(Ct);
+        var profile = settings.GetActiveProfile()! with
+        {
+            StatusBeacon = new StatusBeaconSettings(Text: new string('x', length), Add: add),
+        };
+
+        var save = station.Engine.SaveSettingsAsync(settings with { Profiles = [profile] }, Ct);
+
+        if (code is null)
+        {
+            await save;
+        }
+        else
+        {
+            Assert.Equal(code, (await Assert.ThrowsAsync<EngineArgumentException>(() => save)).EngineError.Code);
+        }
+    }
+
+    [Theory]
+    [InlineData(21, "QRV")]
+    [InlineData(1, " ")]
+    [InlineData(1, "Café")]
+    public async Task SavedStatusTextsAreAtMostTwentyEachOneAStatusCanCarry(int count, string text)
+    {
+        using var station = Create();
+        var settings = await station.Engine.GetSettingsAsync(Ct);
+        var saved = Enumerable.Range(0, count).Select(i => count == 1 ? text : $"{text} {i}").ToList();
+        var profile = settings.GetActiveProfile()! with { StatusBeacon = new StatusBeaconSettings(SavedTexts: saved) };
+
+        var error = await Assert.ThrowsAsync<EngineArgumentException>(() =>
+            station.Engine.SaveSettingsAsync(settings with { Profiles = [profile] }, Ct)
+        );
+
+        Assert.Equal(EngineErrorCodes.ProfileSavedStatusInvalid, error.EngineError.Code);
+    }
+
+    [Fact]
     public async Task AMicEPositionGoesOutWithItsStatusAndSendPositionNowSendsTheSame()
     {
         using var station = Create(Fixed with { MicE = MicEStatus.EnRoute }, uses: [AprsIs]);

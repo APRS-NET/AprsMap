@@ -264,9 +264,7 @@ internal sealed class Beaconer : IDisposable
     private async Task SendAsync(StationProfile profile, Entry entry)
     {
         AprsPayload payload =
-            entry.Kind == BeaconKind.Position
-                ? PositionReport(profile)
-                : new StatusReport { Text = profile.EffectiveStatusBeacon.Text };
+            entry.Kind == BeaconKind.Position ? PositionReport(profile) : StatusReport(profile, _time.GetUtcNow());
         if (!await _host.SendAsync(entry.SourceId, payload, _stop.Token).ConfigureAwait(false))
         {
             return; // still due: tried again shortly, once (behavior 7)
@@ -346,6 +344,31 @@ internal sealed class Beaconer : IDisposable
             IsMessagingCapable = true, // it answers messages (F2.4 behavior 15)
             IsCompressed = beacon.Compressed,
             PowerHeightGain = beacon.Phg is { } phg && !beacon.Compressed ? PowerHeightGain(phg) : null,
+        };
+    }
+
+    /// <summary>
+    /// The status a profile sends, by hand or as a beacon (docs/features/F2.11-status-reports.md, behavior 3): its text,
+    /// with the grid square and symbol or the UTC time when chosen.
+    /// </summary>
+    public static StatusReport StatusReport(StationProfile profile, DateTimeOffset now)
+    {
+        var status = profile.EffectiveStatusBeacon;
+        var symbol = profile.EffectiveSymbol;
+        return status.Add switch
+        {
+            StatusAddition.Time => new StatusReport
+            {
+                Text = status.Text,
+                Timestamp = AprsTimestamp.FromDateTimeOffset(now, AprsTimestampFormat.DayHourMinute),
+            },
+            StatusAddition.GridSquare when profile is { Latitude: { } lat, Longitude: { } lon } => new StatusReport
+            {
+                Text = " " + status.Text, // the text after a locator starts with a space (APRS101 chapter 16)
+                MaidenheadLocator = MaidenheadLocator.FromPosition(lat, lon, 6).Value.ToUpperInvariant(),
+                Symbol = new AprsSymbol(symbol[0], symbol[1]),
+            },
+            _ => new StatusReport { Text = status.Text },
         };
     }
 

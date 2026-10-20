@@ -68,6 +68,23 @@ public interface IEngineService
     );
 
     /// <summary>
+    /// Sends the active profile's status once, by hand (docs/features/F2.11-status-reports.md, behavior 5): its text,
+    /// with the grid square or time when chosen, on every source the status goes on that can send now, or on
+    /// <paramref name="sourceId"/> alone. The status beacon's schedule doesn't change.
+    /// </summary>
+    /// <param name="sourceId">The one source to send on, or null for every source the status goes on that can.</param>
+    /// <param name="cancellationToken">Cancels the send.</param>
+    /// <returns>The copies sent, one per source.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Nothing could be sent; the error's <c>transmit.*</c> code says why (<c>transmit.no-status</c> without a text).
+    /// </exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task<IReadOnlyList<PacketView>> SendStatusAsync(
+        string? sourceId = null,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
     /// Sends one status report on <paramref name="sourceId"/> alone, then listens for 30 seconds for it coming back
     /// through a digipeater or an IGate (docs/features/F2.1-own-station.md, behavior 9).
     /// </summary>
