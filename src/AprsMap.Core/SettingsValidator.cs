@@ -140,6 +140,7 @@ internal static class SettingsValidator
             ValidateBeacons(profile);
             ValidatePing(profile);
             ValidateAutoReply(profile);
+            ValidateObjects(profile);
             if (profile.Symbol is { Length: > 0 } symbol && !IsSymbol(symbol))
             {
                 throw Fail(
@@ -219,6 +220,74 @@ internal static class SettingsValidator
             ValidateLogging(logging);
         }
     }
+
+    /// <summary>
+    /// The profile's objects and items (docs/features/F2.7-objects-and-items.md, behavior 2): names that fit their kind
+    /// and are unique, places on the globe, symbols that aren't the emergency symbol, comments a report carries, and
+    /// intervals in range.
+    /// </summary>
+    private static void ValidateObjects(StationProfile profile)
+    {
+        var objects = profile.ObjectList;
+        if (objects.Count > OwnObject.MaxPerProfile)
+        {
+            throw Fail(
+                EngineErrorCodes.ObjectInvalid,
+                $"Profile '{profile.Name}': at most {OwnObject.MaxPerProfile} objects.",
+                profile.Name
+            );
+        }
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var placed in objects)
+        {
+            if (!IsObjectName(placed.Name, placed.Kind))
+            {
+                throw Fail(
+                    EngineErrorCodes.ObjectNameInvalid,
+                    $"Profile '{profile.Name}': an object's name has 1 to 9 characters, an item's 3 to 9 without ! or "
+                        + "_, plain ASCII with no space at either end.",
+                    profile.Name
+                );
+            }
+            if (!names.Add(placed.Name))
+            {
+                throw Fail(
+                    EngineErrorCodes.ObjectNameTaken,
+                    $"Profile '{profile.Name}': two objects are named '{placed.Name}'.",
+                    profile.Name
+                );
+            }
+            if (
+                placed.Latitude is < -90 or > 90 or double.NaN
+                || placed.Longitude is < -180 or > 180 or double.NaN
+                || !IsSymbol(placed.Symbol)
+                || placed.Symbol == EmergencySymbol
+                || placed.Comment.Length > OwnObject.MaxCommentLength
+                || placed.Comment.Any(c => c is < ' ' or >= '~' or '|')
+                || placed.IntervalMinutes is < BeaconSettings.MinIntervalMinutes or > BeaconSettings.MaxIntervalMinutes
+            )
+            {
+                throw Fail(
+                    EngineErrorCodes.ObjectInvalid,
+                    $"Profile '{profile.Name}': object '{placed.Name}' needs a place on the globe, a symbol other than "
+                        + $"the emergency symbol, a comment of at most {OwnObject.MaxCommentLength} plain characters "
+                        + "and an interval of 10 minutes to 24 hours.",
+                    profile.Name
+                );
+            }
+        }
+    }
+
+    /// <summary>The emergency symbol, which the app never sends (docs/features/F2.12-mic-e-status.md, decision 3).</summary>
+    internal const string EmergencySymbol = "\\!";
+
+    /// <summary>An object's name is 1 to 9 characters, an item's 3 to 9 without ! or _ (APRS101 chapter 11).</summary>
+    internal static bool IsObjectName(string name, OwnObjectKind kind) =>
+        name.Length is >= 1 and <= 9
+        && name.All(c => c is >= ' ' and <= '~')
+        && name[0] != ' '
+        && name[^1] != ' '
+        && (kind == OwnObjectKind.Object || (name.Length >= 3 && !name.Contains('!') && !name.Contains('_')));
 
     /// <summary>
     /// The away message (docs/features/F2.10-auto-reply.md): its text one message of plain characters (behavior 2),

@@ -46,7 +46,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         BeaconsSectionViewModel? beacons = null,
         Shell.SavedLayoutsViewModel? layouts = null,
         LoggingSectionViewModel? logging = null,
-        MessagingSectionViewModel? messaging = null
+        MessagingSectionViewModel? messaging = null,
+        ObjectsSectionViewModel? objects = null
     )
     {
         ArgumentNullException.ThrowIfNull(appearance);
@@ -58,6 +59,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Layouts = layouts;
         Logging = logging;
         Messaging = messaging;
+        Objects = objects;
         _time = time;
         _text = text ?? Localizer.Instance;
         AppearanceItems = [.. SettingsRegistry.Appearance(appearance, _text, showPseudoLanguage)];
@@ -88,7 +90,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsUnitsSection),
         nameof(IsLayoutSection),
         nameof(IsLoggingSection),
-        nameof(IsMessagingSection)
+        nameof(IsMessagingSection),
+        nameof(IsObjectsSection)
     )]
     public partial SettingsSection? SelectedSection { get; set; }
 
@@ -136,6 +139,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         SelectedSection = Sections.FirstOrDefault(s => s.Id == id) ?? SelectedSection;
 
     internal void ShowLayout() => SelectedSection = Sections.FirstOrDefault(s => s.Id == "layout") ?? SelectedSection;
+
+    /// <summary>Whether Objects is showing (docs/features/F2.7-objects-and-items.md).</summary>
+    public bool IsObjectsSection => SelectedSection?.Id == "objects";
+
+    /// <summary>Settings › Objects: the active profile's objects, where this viewer may transmit.</summary>
+    public ObjectsSectionViewModel? Objects { get; }
 
     /// <summary>Whether Messaging is showing (docs/features/F2.13-ping.md).</summary>
     public bool IsMessagingSection => SelectedSection?.Id == "messaging";
@@ -265,6 +274,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("beacons", _text["Settings.Beacons"]));
         }
+        if (Objects is not null)
+        {
+            Sections.Add(new SettingsSection("objects", _text["Settings.Objects"]));
+        }
         if (Messaging is not null)
         {
             Sections.Add(new SettingsSection("messaging", _text["Settings.Messaging"]));
@@ -300,6 +313,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Sources?.Retranslate();
         Logging?.Retranslate();
         Messaging?.Retranslate();
+        Objects?.Retranslate();
         Beacons?.Retranslate();
         Data?.Retranslate();
     }

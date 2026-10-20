@@ -588,6 +588,43 @@ internal sealed class FakeEngine : IEngineService
         return Task.FromResult<IReadOnlyList<PacketView>>([SentPacket(sourceId)]);
     }
 
+    /// <summary>The objects placed and removed, in order: "place NAME", "kill ID" or "forget ID".</summary>
+    public List<string> ObjectCalls { get; } = [];
+
+    /// <summary>When set, <see cref="PlaceObjectAsync"/> throws it.</summary>
+    public Exception? PlaceFailure { get; set; }
+
+    public Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default)
+    {
+        if (PlaceFailure is { } failure)
+        {
+            return Task.FromException(failure);
+        }
+        ObjectCalls.Add("place " + placed.Name);
+        ChangeObjects(list => [.. list.Where(o => o.Id != placed.Id), placed]);
+        return Task.CompletedTask;
+    }
+
+    public Task RemoveObjectAsync(string id, bool kill, CancellationToken cancellationToken = default)
+    {
+        ObjectCalls.Add((kill ? "kill " : "forget ") + id);
+        ChangeObjects(list =>
+            kill ? [.. list.Select(o => o.Id == id ? o with { Live = false } : o)] : [.. list.Where(o => o.Id != id)]
+        );
+        return Task.CompletedTask;
+    }
+
+    private void ChangeObjects(Func<IReadOnlyList<OwnObject>, IReadOnlyList<OwnObject>> change) =>
+        Settings = Settings with
+        {
+            Profiles =
+            [
+                .. Settings.Profiles.Select(p =>
+                    p.Id == Settings.ActiveProfileId ? p with { Objects = change(p.ObjectList) } : p
+                ),
+            ],
+        };
+
     /// <summary>The source each <see cref="SendStatusAsync"/> was asked for (null for all), in order.</summary>
     public List<string?> StatusSources { get; } = [];
 

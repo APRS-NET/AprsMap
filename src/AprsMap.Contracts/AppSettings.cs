@@ -189,6 +189,10 @@ public sealed record StationAging(
 /// </param>
 /// <param name="Ping">The ping responder (docs/features/F2.13-ping.md); null for off.</param>
 /// <param name="AutoReply">The away message (docs/features/F2.10-auto-reply.md); null for off.</param>
+/// <param name="Objects">
+/// The objects and items it places (docs/features/F2.7-objects-and-items.md); changed only by
+/// <see cref="IEngineService.PlaceObjectAsync"/> and <see cref="IEngineService.RemoveObjectAsync"/>.
+/// </param>
 public sealed record StationProfile(
     string Id,
     string Name,
@@ -206,9 +210,13 @@ public sealed record StationProfile(
     StatusBeaconSettings? StatusBeacon = null,
     IReadOnlyList<string>? Groups = null,
     PingSettings? Ping = null,
-    AutoReplySettings? AutoReply = null
+    AutoReplySettings? AutoReply = null,
+    IReadOnlyList<OwnObject>? Objects = null
 )
 {
+    /// <summary>The objects and items it places (docs/features/F2.7-objects-and-items.md); none when unset.</summary>
+    public IReadOnlyList<OwnObject> ObjectList => Objects ?? [];
+
     /// <summary>The away message's settings in effect (docs/features/F2.10-auto-reply.md): <see cref="AutoReply"/>, or off.</summary>
     public AutoReplySettings EffectiveAutoReply => AutoReply ?? AutoReplySettings.Off;
 
@@ -266,7 +274,8 @@ public sealed record StationProfile(
         && EffectivePositionBeacon == other.EffectivePositionBeacon
         && EffectiveStatusBeacon == other.EffectiveStatusBeacon
         && EffectivePing == other.EffectivePing
-        && EffectiveAutoReply == other.EffectiveAutoReply;
+        && EffectiveAutoReply == other.EffectiveAutoReply
+        && ObjectList.SequenceEqual(other.ObjectList);
 
     /// <inheritdoc />
     public override int GetHashCode() =>

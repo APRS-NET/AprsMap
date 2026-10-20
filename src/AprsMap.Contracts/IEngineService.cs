@@ -85,6 +85,24 @@ public interface IEngineService
     );
 
     /// <summary>
+    /// Adds <paramref name="placed"/> to the active profile's objects, or changes the one with its id, and starts its
+    /// schedule: it goes out soon on each of its sources, then less and less often (docs/features/
+    /// F2.7-objects-and-items.md, behaviors 1–7).
+    /// </summary>
+    /// <exception cref="ArgumentException">It can't be sent as it is; the <c>settings.object.*</c> code says why.</exception>
+    /// <exception cref="InvalidOperationException">The active profile may not transmit; the <c>transmit.*</c> code says why.</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Kills the active profile's object <paramref name="id"/> (sent killed three times, then removed) or, without
+    /// <paramref name="kill"/>, removes it without sending anything (F2.7 behaviors 8, 9).
+    /// </summary>
+    /// <exception cref="ArgumentException">No object has that id (<c>settings.object.unknown</c>).</exception>
+    /// <exception cref="UnauthorizedAccessException">This caller may not transmit (a gateway without operator sign-in).</exception>
+    Task RemoveObjectAsync(string id, bool kill, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Sends one status report on <paramref name="sourceId"/> alone, then listens for 30 seconds for it coming back
     /// through a digipeater or an IGate (docs/features/F2.1-own-station.md, behavior 9).
     /// </summary>

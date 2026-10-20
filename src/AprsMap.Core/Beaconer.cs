@@ -19,11 +19,18 @@ internal interface IBeaconHost
 
     /// <summary>Sends <paramref name="payload"/> on <paramref name="sourceId"/>, listed as Sent; false when it failed.</summary>
     Task<bool> SendAsync(string sourceId, AprsPayload payload, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Killed objects that have gone out killed <see cref="OwnObject.KillSends"/> times on each of their sources: the
+    /// engine takes them out of the profile (docs/features/F2.7-objects-and-items.md, behavior 8).
+    /// </summary>
+    Task ObjectsGoneAsync(IReadOnlyCollection<string> ids);
 }
 
 /// <summary>
-/// The active profile's position and status beacons (docs/features/F2.2-beacons.md) on APRS.NET's beacon schedules:
-/// one schedule per beacon and source, the spacing rules on top, and nothing sent while any F2.1 layer says no.
+/// The active profile's position and status beacons (docs/features/F2.2-beacons.md) and its objects
+/// (docs/features/F2.7-objects-and-items.md) on APRS.NET's beacon schedules: one schedule per beacon or object and
+/// source, the spacing rules on top, and nothing sent while any F2.1 layer says no.
 /// </summary>
 internal sealed class Beaconer : IDisposable
 {
@@ -42,6 +49,9 @@ internal sealed class Beaconer : IDisposable
     /// <summary>The longest random wait before a first beacon (behavior 8).</summary>
     public static readonly TimeSpan MaxStartWait = TimeSpan.FromMinutes(3);
 
+    /// <summary>An object's first decay step on a TNC (F2.7 behavior 5); 30 seconds on APRS-IS, as positions.</summary>
+    public static readonly TimeSpan ObjectRfFirstStep = TimeSpan.FromMinutes(2);
+
     /// <summary>How often a beacon that's due but can't go out yet is tried again.</summary>
     public static readonly TimeSpan RetryWait = TimeSpan.FromSeconds(5);
 
@@ -52,10 +62,9 @@ internal sealed class Beaconer : IDisposable
     private readonly SemaphoreSlim _ticking = new(1, 1);
     private readonly CancellationTokenSource _stop = new();
     private readonly ITimer _timer;
-    private readonly Dictionary<(BeaconKind Kind, string SourceId), Entry> _entries = [];
+    private readonly Dictionary<(BeaconKind Kind, string SourceId, string? ObjectId), Entry> _entries = [];
     private readonly Dictionary<string, DateTimeOffset> _lastBeacon = new(StringComparer.Ordinal);
     private readonly Dictionary<string, DateTimeOffset> _lastPosition = new(StringComparer.Ordinal);
-    private string? _plan;
     private int _disposed;
     private NextBeacon? _next;
     private EngineError? _held;
@@ -65,7 +74,9 @@ internal sealed class Beaconer : IDisposable
         string sourceId,
         bool isRf,
         BeaconSchedule schedule,
-        DateTimeOffset notBefore
+        DateTimeOffset notBefore,
+        string signature,
+        string? objectId = null
     )
     {
         public BeaconKind Kind { get; } = kind;
@@ -73,6 +84,15 @@ internal sealed class Beaconer : IDisposable
         public bool IsRf { get; } = isRf;
         public BeaconSchedule Schedule { get; } = schedule;
         public DateTimeOffset NotBefore { get; } = notBefore;
+
+        /// <summary>What it was made from: a different one makes it again, so a change starts its schedule over.</summary>
+        public string Signature { get; } = signature;
+
+        /// <summary>The object it sends, for <see cref="BeaconKind.PlacedObject"/>.</summary>
+        public string? ObjectId { get; } = objectId;
+
+        /// <summary>How many times a killed object has gone out killed here.</summary>
+        public int KillsSent { get; set; }
     }
 
     public Beaconer(IBeaconHost host, TimeProvider time, Random? random = null)
@@ -111,7 +131,7 @@ internal sealed class Beaconer : IDisposable
             {
                 _lastBeacon[id] = now;
                 _lastPosition[id] = now;
-                if (_entries.TryGetValue((BeaconKind.Position, id), out var entry))
+                if (_entries.TryGetValue((BeaconKind.Position, id, null), out var entry))
                 {
                     entry.Schedule.Sent();
                 }
@@ -160,9 +180,26 @@ internal sealed class Beaconer : IDisposable
             {
                 await SendAsync(profile!, entry).ConfigureAwait(false);
             }
+            List<string> gone;
             lock (_gate)
             {
+                // A killed object is done once it went out killed often enough on every source (F2.7 behavior 8).
+                gone =
+                [
+                    .. _entries
+                        .Values.Where(e => e.Kind == BeaconKind.PlacedObject)
+                        .GroupBy(e => e.ObjectId!)
+                        .Where(g =>
+                            g.All(e => e.KillsSent >= OwnObject.KillSends)
+                            && profile?.ObjectList.FirstOrDefault(o => o.Id == g.Key) is { Live: false }
+                        )
+                        .Select(g => g.Key),
+                ];
                 SetNext();
+            }
+            if (gone.Count > 0)
+            {
+                await _host.ObjectsGoneAsync(gone).ConfigureAwait(false);
             }
         }
         finally
@@ -171,63 +208,101 @@ internal sealed class Beaconer : IDisposable
         }
     }
 
-    /// <summary>Makes one schedule per beacon that's on and source it goes out on; a change starts them again.</summary>
+    /// <summary>
+    /// Makes one schedule per beacon that's on, or object, and source it goes out on. One whose settings or source
+    /// changed is made again, which starts its schedule over; the others carry on.
+    /// </summary>
     private void Plan(StationProfile? profile, IReadOnlyList<(string Id, bool IsRf)> sources)
     {
         var position = profile?.EffectivePositionBeacon ?? PositionBeaconSettings.Off;
         var status = profile?.EffectiveStatusBeacon ?? StatusBeaconSettings.Off;
-        var plan = string.Join(
-            '|',
-            profile?.Id,
-            position.GetHashCode(),
-            status.GetHashCode(),
-            string.Join(',', sources.Select(s => s.Id + (s.IsRf ? "/rf" : "")))
-        );
-        if (plan == _plan)
-        {
-            return;
-        }
-        _plan = plan;
-        _entries.Clear();
+        var wanted = new Dictionary<(BeaconKind, string, string?), (string Signature, Func<Entry> Make)>();
         var now = _time.GetUtcNow();
         foreach (var (id, isRf) in sources)
         {
+            var on = $"{profile?.Id}|{id}|{isRf}|";
             if (position.On && position.SendsVia(id))
             {
                 var interval = TimeSpan.FromMinutes(position.IntervalMinutes);
-                if (position.Schedule == PositionBeaconSchedule.Decay)
-                {
-                    var first = isRf ? RfFloor : IsFirstStep;
-                    var wait = StartWait(first);
-                    _entries[(BeaconKind.Position, id)] = new Entry(
-                        BeaconKind.Position,
-                        id,
-                        isRf,
-                        new DecayBeaconSchedule(first, interval, _time),
-                        now + wait
-                    );
-                }
-                else
-                {
-                    _entries[(BeaconKind.Position, id)] = new Entry(
-                        BeaconKind.Position,
-                        id,
-                        isRf,
-                        new FixedBeaconSchedule(interval, Clamp(interval / 10), _time, _random),
-                        now
-                    );
-                }
+                var signature = on + position.GetHashCode();
+                wanted[(BeaconKind.Position, id, null)] = (
+                    signature,
+                    () =>
+                    {
+                        if (position.Schedule == PositionBeaconSchedule.Decay)
+                        {
+                            var first = isRf ? RfFloor : IsFirstStep;
+                            return new Entry(
+                                BeaconKind.Position,
+                                id,
+                                isRf,
+                                new DecayBeaconSchedule(first, interval, _time),
+                                now + StartWait(first),
+                                signature
+                            );
+                        }
+                        return new Entry(
+                            BeaconKind.Position,
+                            id,
+                            isRf,
+                            new FixedBeaconSchedule(interval, Clamp(interval / 10), _time, _random),
+                            now,
+                            signature
+                        );
+                    }
+                );
             }
             if (status.On && status.SendsVia(id))
             {
                 var interval = TimeSpan.FromMinutes(status.IntervalMinutes);
-                _entries[(BeaconKind.Status, id)] = new Entry(
-                    BeaconKind.Status,
-                    id,
-                    isRf,
-                    new FixedBeaconSchedule(interval, Clamp(interval / 10), _time, _random),
-                    now
+                var signature = on + status.GetHashCode();
+                wanted[(BeaconKind.Status, id, null)] = (
+                    signature,
+                    () =>
+                        new Entry(
+                            BeaconKind.Status,
+                            id,
+                            isRf,
+                            new FixedBeaconSchedule(interval, Clamp(interval / 10), _time, _random),
+                            now,
+                            signature
+                        )
                 );
+            }
+            foreach (var placed in profile?.ObjectList ?? [])
+            {
+                if (!placed.SendsVia(id))
+                {
+                    continue;
+                }
+                // At once, then doubling from 30 s (APRS-IS) or 2 min (TNC) up to its interval (F2.7 behavior 5).
+                var signature = on + placed.GetHashCode();
+                var first = isRf ? ObjectRfFirstStep : IsFirstStep;
+                var interval = TimeSpan.FromMinutes(placed.IntervalMinutes);
+                wanted[(BeaconKind.PlacedObject, id, placed.Id)] = (
+                    signature,
+                    () =>
+                        new Entry(
+                            BeaconKind.PlacedObject,
+                            id,
+                            isRf,
+                            new DecayBeaconSchedule(first, interval, _time),
+                            now,
+                            signature,
+                            placed.Id
+                        )
+                );
+            }
+        }
+        foreach (var key in _entries.Keys.Where(k => !wanted.ContainsKey(k)).ToList())
+        {
+            _entries.Remove(key);
+        }
+        foreach (var (key, (signature, make)) in wanted)
+        {
+            if (!_entries.TryGetValue(key, out var entry) || entry.Signature != signature)
+            {
+                _entries[key] = make();
             }
         }
     }
@@ -263,15 +338,27 @@ internal sealed class Beaconer : IDisposable
 
     private async Task SendAsync(StationProfile profile, Entry entry)
     {
-        AprsPayload payload =
-            entry.Kind == BeaconKind.Position ? PositionReport(profile) : StatusReport(profile, _time.GetUtcNow());
-        if (!await _host.SendAsync(entry.SourceId, payload, _stop.Token).ConfigureAwait(false))
+        var placed =
+            entry.Kind == BeaconKind.PlacedObject
+                ? profile.ObjectList.FirstOrDefault(o => o.Id == entry.ObjectId)
+                : null;
+        AprsPayload? payload = entry.Kind switch
+        {
+            BeaconKind.Position => PositionReport(profile),
+            BeaconKind.Status => StatusReport(profile, _time.GetUtcNow()),
+            _ => placed is null ? null : ObjectReport(placed, _time.GetUtcNow()),
+        };
+        if (payload is null || !await _host.SendAsync(entry.SourceId, payload, _stop.Token).ConfigureAwait(false))
         {
             return; // still due: tried again shortly, once (behavior 7)
         }
         var now = _time.GetUtcNow();
         lock (_gate)
         {
+            if (placed is { Live: false })
+            {
+                entry.KillsSent++;
+            }
             entry.Schedule.Sent();
             _lastBeacon[entry.SourceId] = now;
             if (entry.Kind == BeaconKind.Position)
@@ -370,6 +457,34 @@ internal sealed class Beaconer : IDisposable
             },
             _ => new StatusReport { Text = status.Text },
         };
+    }
+
+    /// <summary>
+    /// What an object or item sends (docs/features/F2.7-objects-and-items.md): an object with the UTC day, hour and
+    /// minute, an item without; live or killed.
+    /// </summary>
+    public static PositionedPayload ObjectReport(OwnObject placed, DateTimeOffset now)
+    {
+        var position = new AprsPosition(placed.Latitude, placed.Longitude);
+        var symbol = new AprsSymbol(placed.Symbol[0], placed.Symbol[1]);
+        return placed.Kind == OwnObjectKind.Item
+            ? new ItemReport
+            {
+                Name = placed.Name,
+                IsLive = placed.Live,
+                Position = position,
+                Symbol = symbol,
+                Comment = placed.Comment,
+            }
+            : new ObjectReport
+            {
+                Name = placed.Name,
+                IsLive = placed.Live,
+                Position = position,
+                Symbol = symbol,
+                Comment = placed.Comment,
+                Timestamp = AprsTimestamp.FromDateTimeOffset(now, AprsTimestampFormat.DayHourMinute),
+            };
     }
 
     /// <summary>APRS.NET's Mic-E message for <paramref name="status"/>.</summary>

@@ -22,6 +22,9 @@ public enum BeaconKind
 
     /// <summary>The status beacon.</summary>
     Status,
+
+    /// <summary>An object or item the station places (docs/features/F2.7-objects-and-items.md).</summary>
+    PlacedObject,
 }
 
 /// <summary>Why the next beacon is due when it is (F2.2 behavior 10).</summary>
