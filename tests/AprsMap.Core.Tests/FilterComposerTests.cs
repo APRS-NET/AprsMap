@@ -84,4 +84,28 @@ public sealed class FilterComposerTests
         Assert.True(
             FilterComposer.Differs(new MapViewReport(40, -105, 100), new MapViewReport(40, -105, 100, "W1AW-9"))
         );
+
+    [Fact]
+    public void WatchedStationsAddAFriendRangeEachOnceWithTheFollowedOne() =>
+        Assert.Equal(
+            "r/40/-105/150 f/W1AW-9/150 f/K0K/150",
+            FilterComposer.Compose(
+                Home,
+                null,
+                [
+                    new MapViewReport(null, null, 0, "W1AW-9", ["k0k", "W1AW-9"]),
+                    new MapViewReport(null, null, 0, Watched: ["K0K"]),
+                ]
+            )
+        );
+
+    [Fact]
+    public void OpeningOrClosingAViewAlwaysCounts()
+    {
+        var one = new MapViewReport(40, -105, 100, Watched: ["K0K"]);
+
+        Assert.True(FilterComposer.Differs(new MapViewReport(40, -105, 100), one));
+        Assert.True(FilterComposer.Differs(one, new MapViewReport(40, -105, 100)));
+        Assert.False(FilterComposer.Differs(one, new MapViewReport(40, -105, 100, Watched: ["k0k"])));
+    }
 }

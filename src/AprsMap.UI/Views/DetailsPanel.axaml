@@ -83,6 +83,12 @@
         <WrapPanel Orientation="Horizontal" ItemSpacing="6" LineSpacing="6" IsEnabled="{Binding HasPosition}">
           <Button x:Name="CentreButton" Content="{l:T Details.Centre}" Command="{Binding CentreCommand}" />
           <ToggleButton x:Name="FollowButton" Content="{l:T Details.Follow}" IsChecked="{Binding IsFollowing}" />
+          <!-- Watch in a view (F1.16 behavior 1): a map of its own beside this one, following the station. -->
+          <Button
+            x:Name="WatchButton"
+            Content="{l:T Details.Watch}"
+            Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).WatchSelectedCommand}"
+          />
           <Button
             x:Name="SetDestinationButton"
             Content="{l:T Details.SetDestination}"

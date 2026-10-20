@@ -93,6 +93,7 @@ public sealed partial class MainViewModel : ObservableObject
         Layouts.Saved += OnLayoutSaved;
         Shell.Changed += OnShellChangedForMenus;
         Shell.PanelClosed += OnPanelClosed;
+        Shell.WatchedChanged += (_, _) => _ = ReportMapViewAsync(); // F1.16 behavior 6
         Dashboard = new Statistics.DashboardViewModel(
             engine,
             time,
@@ -1088,6 +1089,7 @@ public sealed partial class MainViewModel : ObservableObject
     public static readonly TimeSpan MapReportDelay = TimeSpan.FromSeconds(2);
 
     private (double Latitude, double Longitude, double RadiusKm)? _mapView;
+    private bool _reportedWatched;
     private int _mapMoves;
 
     /// <summary>The APRS-IS filter's range parts, for the map's filter circles (F1.2 behavior 6).</summary>
@@ -1114,11 +1116,19 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task ReportMapViewAsync()
     {
         var following = Details.IsFollowing ? Details.Name : null;
-        if (_mapView is null && following is null)
+        var watched = Shell.Watched;
+        if (_mapView is null && following is null && watched.Count == 0 && !_reportedWatched)
         {
             return;
         }
-        var view = new MapViewReport(_mapView?.Latitude, _mapView?.Longitude, _mapView?.RadiusKm ?? 0, following);
+        _reportedWatched = watched.Count > 0; // so closing the last view takes its station out too
+        var view = new MapViewReport(
+            _mapView?.Latitude,
+            _mapView?.Longitude,
+            _mapView?.RadiusKm ?? 0,
+            following,
+            watched.Count > 0 ? watched : null
+        );
         try
         {
             await engine.SetMapViewAsync(view);

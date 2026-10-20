@@ -1899,6 +1899,24 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Logging</value>
     <comment>Settings section: log levels, the log file and OpenTelemetry targets.</comment>
   </data>
+  <data name="Details.Watch" xml:space="preserve">
+    <value>Watch in a view</value>
+  </data>
+  <data name="Watch.Following" xml:space="preserve">
+    <value>Following {name}</value>
+    <comment>name: the station's callsign.</comment>
+  </data>
+  <data name="Watch.NotHeard" xml:space="preserve">
+    <value>{name} hasn't been heard yet</value>
+    <comment>name: the station's callsign.</comment>
+  </data>
+  <data name="Watch.FollowAgain" xml:space="preserve">
+    <value>Follow again</value>
+  </data>
+  <data name="Watch.TooMany" xml:space="preserve">
+    <value>Up to {count} extra map views: close one to watch another station.</value>
+    <comment>count: how many extra views may be open.</comment>
+  </data>
   <data name="Settings.Objects" xml:space="preserve">
     <value>Objects</value>
     <comment>Settings section: objects and items the station places on the map.</comment>

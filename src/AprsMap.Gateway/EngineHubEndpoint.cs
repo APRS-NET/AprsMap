@@ -267,6 +267,9 @@ internal sealed class EngineHubEndpoint(
             : detail;
     }
 
+    /// <summary>The most watched stations a browser's report brings into the filter: three extra views.</summary>
+    internal const int MaxWatchedPerViewer = 3;
+
     /// <summary>
     /// A browser's map view, for the station's filter (F1.2 behaviors 8 and 9): its followed station always, its map
     /// part only when this gateway follows viewers, and then at most <see cref="MaxViewerViewKm"/> wide.
@@ -275,6 +278,11 @@ internal sealed class EngineHubEndpoint(
     public Task SetMapView(MapViewReport view)
     {
         ArgumentNullException.ThrowIfNull(view);
+        // At most the views one viewer can open (F1.16 decision 1), so a browser can't fill the filter.
+        view = view with
+        {
+            Watched = view.Watched?.Take(MaxWatchedPerViewer).ToList(),
+        };
         filterEngine.SetMapView(
             Context.ConnectionId,
             options.Value.FollowViewers
