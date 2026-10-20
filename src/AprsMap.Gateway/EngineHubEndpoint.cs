@@ -433,6 +433,14 @@ internal sealed class EngineHubEndpoint(
         return engine.GetLoggingStatusAsync(Context.ConnectionAborted);
     }
 
+    /// <summary>The server's folders are the operator's (docs/features/F1.31-files.md, behavior 6); viewers are refused.</summary>
+    [HubMethodName(EngineHub.GetStorageFolders)]
+    public Task<IReadOnlyList<StorageFolder>> GetStorageFolders()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetStorageFoldersAsync(Context.ConnectionAborted);
+    }
+
     [HubMethodName(EngineHub.CheckForUpdate)]
     public Task<UpdateStatus> CheckForUpdate()
     {

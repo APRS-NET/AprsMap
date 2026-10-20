@@ -54,6 +54,9 @@ public sealed record PlatformServices
     /// <summary>Installs updates in an installed desktop build (F4.15 behavior 11); null elsewhere.</summary>
     public IAppInstaller? Installer { get; init; }
 
+    /// <summary>Open folder in Help › About (F1.31 behavior 4a): the desktop's; null in the browser.</summary>
+    public IFolderOpener? FolderOpener { get; init; }
+
     /// <summary>Whether the platform asks for reduced motion (the browser's <c>prefers-reduced-motion</c>).</summary>
     public bool SystemReducedMotion { get; init; }
 

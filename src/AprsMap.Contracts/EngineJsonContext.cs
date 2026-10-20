@@ -23,6 +23,7 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(BulletinView))]
 [JsonSerializable(typeof(UpdateStatus))]
 [JsonSerializable(typeof(LoggingStatus))]
+[JsonSerializable(typeof(IReadOnlyList<StorageFolder>))]
 [JsonSerializable(typeof(BulletinPost))]
 [JsonSerializable(typeof(SignInRequest))]
 [JsonSerializable(typeof(AuthInfo))]

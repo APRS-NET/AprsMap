@@ -221,6 +221,64 @@
                       IsVisible="{Binding CheckUpdatesCommand, Converter={x:Static ObjectConverters.IsNotNull}}"
                     />
                   </WrapPanel>
+                  <!-- Files (docs/features/F1.31-files.md): each folder with Copy and, on the desktop, Open folder. -->
+                  <TextBlock Text="{l:T About.Files}" FontWeight="SemiBold" Margin="0,8,0,0" />
+                  <TextBlock
+                    x:Name="FilesNote"
+                    Text="{Binding FilesNote}"
+                    IsVisible="{Binding FilesNote, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    TextWrapping="Wrap"
+                  />
+                  <ItemsControl x:Name="StorageFolders" ItemsSource="{Binding Folders}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="s:StorageFolderRow">
+                        <StackPanel Spacing="2" Margin="0,0,0,8">
+                          <WrapPanel ItemSpacing="8">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                            <TextBlock
+                              Text="{Binding Note}"
+                              IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}"
+                              Foreground="{DynamicResource Brush.TextMuted}"
+                            />
+                          </WrapPanel>
+                          <TextBlock
+                            Text="{Binding Holds}"
+                            Foreground="{DynamicResource Brush.TextMuted}"
+                            TextWrapping="Wrap"
+                          />
+                          <SelectableTextBlock
+                            Text="{Binding Path}"
+                            FontFamily="{DynamicResource Font.Mono}"
+                            TextWrapping="Wrap"
+                          />
+                          <WrapPanel ItemSpacing="8" LineSpacing="4">
+                            <Button
+                              Content="{l:T About.Folder.Copy}"
+                              Command="{Binding CopyCommand}"
+                              IsVisible="{Binding ShowsCopy}"
+                              AutomationProperties.Name="{Binding CopyName}"
+                            />
+                            <Button
+                              Content="{l:T About.Folder.Open}"
+                              Command="{Binding OpenCommand}"
+                              IsVisible="{Binding ShowsOpen}"
+                              IsEnabled="{Binding CanOpen}"
+                              ToolTip.Tip="{Binding OpenTip}"
+                              ToolTip.ShowOnDisabled="True"
+                              AutomationProperties.Name="{Binding OpenName}"
+                            />
+                            <TextBlock
+                              Text="{Binding Said}"
+                              IsVisible="{Binding Said, Converter={x:Static ObjectConverters.IsNotNull}}"
+                              VerticalAlignment="Center"
+                              AutomationProperties.LiveSetting="Polite"
+                            />
+                          </WrapPanel>
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
                   <TextBlock Text="{Binding LicenceText}" TextWrapping="Wrap" />
                   <HyperlinkButton
                     x:Name="SourceLink"

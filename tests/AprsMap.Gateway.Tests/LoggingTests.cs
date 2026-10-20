@@ -312,3 +312,26 @@ public sealed class GatewayLoggingTests(OperatorGatewayFactory gateway) : IClass
         Assert.Contains("secret", file, StringComparison.Ordinal);
     }
 }
+
+/// <summary>On a gateway, the server's folders are the signed-in operator's (F1.31 behavior 6).</summary>
+public sealed class GatewayFolderTests(OperatorGatewayFactory gateway) : IClassFixture<OperatorGatewayFactory>
+{
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task OnlyASignedInOperatorGetsTheServersFolders()
+    {
+        await using var viewer = gateway.CreateRemote();
+        await viewer.StartAsync(Ct);
+        var refused = await Assert.ThrowsAsync<EngineAccessException>(() => viewer.GetStorageFoldersAsync(Ct));
+        Assert.Equal(EngineErrorCodes.OperatorOnly, refused.EngineError.Code);
+
+        await using var signedIn = gateway.CreateRemote(await gateway.SignInAsync(Ct));
+        await signedIn.StartAsync(Ct);
+        var folders = await signedIn.GetStorageFoldersAsync(Ct);
+
+        Assert.Contains(folders, f => f.Kind == StorageFolderKind.Settings && f.Path == gateway.SettingsFolder);
+        Assert.Contains(folders, f => f.Kind == StorageFolderKind.Tiles);
+        Assert.DoesNotContain(folders, f => f.Kind == StorageFolderKind.Logs); // a gateway's log file is off
+    }
+}

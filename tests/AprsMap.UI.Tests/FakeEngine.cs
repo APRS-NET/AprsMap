@@ -283,6 +283,16 @@ internal sealed class FakeEngine : IEngineService
     public Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(LoggingStatus);
 
+    /// <summary>What <see cref="GetStorageFoldersAsync"/> answers.</summary>
+    public List<StorageFolder> StorageFolders { get; } =
+    [
+        new(StorageFolderKind.Settings, "/home/test/.config/aprsnet/aprsmap", false, true),
+        new(StorageFolderKind.Data, "/home/test/.local/share/aprsnet/aprsmap", false, true),
+    ];
+
+    public Task<IReadOnlyList<StorageFolder>> GetStorageFoldersAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<StorageFolder>>([.. StorageFolders]);
+
     public Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default)
     {
         UpdateChecks++;

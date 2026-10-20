@@ -335,6 +335,12 @@ public interface IEngineService
     /// </summary>
     Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The folders the app keeps things in, for Help › About (docs/features/F1.31-files.md): settings, data, map tiles,
+    /// logs and the defaults for every user. Operator-only on a gateway, so a server's paths never reach a viewer.
+    /// </summary>
+    Task<IReadOnlyList<StorageFolder>> GetStorageFoldersAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Checks for an update now (Check now, behavior 1), and says where it stands after.</summary>
     Task<UpdateStatus> CheckForUpdateAsync(CancellationToken cancellationToken = default);
 

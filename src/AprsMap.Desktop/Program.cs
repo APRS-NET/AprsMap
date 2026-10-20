@@ -39,6 +39,18 @@ internal static class Program
             new HostApplicationBuilderSettings { Args = args, ContentRootPath = AppContext.BaseDirectory }
         );
         AddMachineDefaults(builder.Configuration);
+        // The defaults for every user, for Help › About (F1.31 behavior 1.5): read only, the first place looked.
+        builder.Services.AddSingleton<AprsMap.Core.IStorageFolderSource>(
+            new AprsMap.Core.StorageFolderSource(() =>
+                [
+                    AprsMap.Core.StorageFolderSource.At(
+                        Contracts.StorageFolderKind.Machine,
+                        AppFolders.For(Brand.Slug).Machine[0],
+                        false
+                    ),
+                ]
+            )
+        );
         builder.AddAprsMapEngine().AddAprsMapTiles().AddAprsMapTelemetry("desktop");
         // An installed build is ready to update when its feed is attached, an archive build when its archive is (F4.15
         // behavior 4).
@@ -82,6 +94,7 @@ internal static class Program
             // The macOS menu bar holds the menus there; elsewhere a bar in the window, hidden until Alt (F1.29).
             MenuStyle = OperatingSystem.IsMacOS() ? UI.Shell.MenuStyle.System : UI.Shell.MenuStyle.InWindow,
             Installer = installer,
+            FolderOpener = new DesktopFolderOpener(), // Open folder in Help › About (F1.31)
         };
         // Ctrl+C or SIGTERM stops the host; close the window too rather than leave a UI with no engine behind it.
         s_host
