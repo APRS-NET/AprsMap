@@ -93,6 +93,13 @@ public sealed partial class MapPanel : UserControl, IDisposable
                 _ = _main.SetMyLocationAsync(lat, lon);
             }
         };
+        PlaceObjectItem.Click += (_, _) =>
+        {
+            if (_menuAt is var (lat, lon) && _main is not null)
+            {
+                _ = _main.PlaceObjectAtAsync(lat, lon); // F2.7 behavior 1
+            }
+        };
     }
 
     /// <summary>Releases the map's tiles.</summary>
@@ -248,6 +255,9 @@ public sealed partial class MapPanel : UserControl, IDisposable
             case Key.Oem2 or Key.Divide:
                 main.FocusStationSearch();
                 return true;
+            case Key.W when main.SelectedStation is not null:
+                main.WatchSelectedCommand.Execute(null); // Watch in a view (F1.16 behavior 1)
+                return true;
             case Key.L when main.SelectedStation is not null:
                 main.Details.IsFollowing = !main.Details.IsFollowing;
                 return true;
@@ -387,6 +397,22 @@ public sealed partial class MapPanel : UserControl, IDisposable
             return;
         }
         SetMyLocationItem.IsVisible = _main.CanSetMyLocation;
+        PlaceObjectItem.IsVisible = _main.CanPlaceObjects;
+        MoveObjectItem.IsVisible = _main.CanPlaceObjects && _main.LiveObjects.Count > 0;
+        MoveObjectItem.ItemsSource = _main
+            .LiveObjects.Select(placed =>
+            {
+                var item = new MenuItem { Header = placed.Name };
+                item.Click += (_, _) =>
+                {
+                    if (_menuAt is var (lat, lon))
+                    {
+                        _ = _main.MoveObjectAsync(placed.Id, lat, lon); // F2.7 behavior 4
+                    }
+                };
+                return item;
+            })
+            .ToList();
         var at = e.TryGetPosition(_map, out var point)
             ? point
             : new Point(_map.Bounds.Width / 2, _map.Bounds.Height / 2);

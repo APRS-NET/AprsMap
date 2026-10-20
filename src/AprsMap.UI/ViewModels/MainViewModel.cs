@@ -93,6 +93,7 @@ public sealed partial class MainViewModel : ObservableObject
         Layouts.Saved += OnLayoutSaved;
         Shell.Changed += OnShellChangedForMenus;
         Shell.PanelClosed += OnPanelClosed;
+        Shell.WatchedChanged += (_, _) => _ = ReportMapViewAsync(); // F1.16 behavior 6
         Dashboard = new Statistics.DashboardViewModel(
             engine,
             time,
@@ -476,6 +477,11 @@ public sealed partial class MainViewModel : ObservableObject
             IsViewerOnly || _settings is not { ReadOnly: false }
                 ? null
                 : new MessagingSectionViewModel(engine, _text, Show); // F2.13
+        // Objects transmit: the desktop user's, and on a gateway the signed-in operator's (F2.7).
+        var objects =
+            !IsViewerOnly && (!SharedStation || IsOperator) && _settings is { ReadOnly: false }
+                ? new ObjectsSectionViewModel(engine, _text, Show)
+                : null;
         // Logging is the desktop user's, and on a gateway the signed-in operator's (F1.32 behavior 1).
         var logging =
             !IsViewerOnly && (!SharedStation || IsOperator) && _settings is { ReadOnly: false }
@@ -497,7 +503,8 @@ public sealed partial class MainViewModel : ObservableObject
             beacons,
             Layouts,
             logging,
-            messaging
+            messaging,
+            objects
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
@@ -507,6 +514,7 @@ public sealed partial class MainViewModel : ObservableObject
             sources?.Show(current);
             beacons?.Show(current);
             messaging?.Show(current);
+            objects?.Show(current);
             if (logging is not null)
             {
                 await logging.ShowAsync(current);
@@ -1081,6 +1089,7 @@ public sealed partial class MainViewModel : ObservableObject
     public static readonly TimeSpan MapReportDelay = TimeSpan.FromSeconds(2);
 
     private (double Latitude, double Longitude, double RadiusKm)? _mapView;
+    private bool _reportedWatched;
     private int _mapMoves;
 
     /// <summary>The APRS-IS filter's range parts, for the map's filter circles (F1.2 behavior 6).</summary>
@@ -1107,11 +1116,19 @@ public sealed partial class MainViewModel : ObservableObject
     private async Task ReportMapViewAsync()
     {
         var following = Details.IsFollowing ? Details.Name : null;
-        if (_mapView is null && following is null)
+        var watched = Shell.Watched;
+        if (_mapView is null && following is null && watched.Count == 0 && !_reportedWatched)
         {
             return;
         }
-        var view = new MapViewReport(_mapView?.Latitude, _mapView?.Longitude, _mapView?.RadiusKm ?? 0, following);
+        _reportedWatched = watched.Count > 0; // so closing the last view takes its station out too
+        var view = new MapViewReport(
+            _mapView?.Latitude,
+            _mapView?.Longitude,
+            _mapView?.RadiusKm ?? 0,
+            following,
+            watched.Count > 0 ? watched : null
+        );
         try
         {
             await engine.SetMapViewAsync(view);
@@ -1276,6 +1293,8 @@ public sealed partial class MainViewModel : ObservableObject
         _settings = settings;
         PacketList.ShowSources(settings);
         Settings?.Beacons?.Show(settings); // a source's RX only changes what beacons can go out on
+        Settings?.Objects?.Show(settings); // a killed object goes once it's been sent (F2.7 behavior 8)
+        LiveObjects = [.. settings.GetActiveProfile()?.ObjectList.Where(o => o.Live) ?? []];
         Settings?.Data?.Capture?.Show(settings);
         if (_destination is { IsSet: true } destination)
         {

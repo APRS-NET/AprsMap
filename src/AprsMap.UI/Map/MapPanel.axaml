@@ -25,6 +25,8 @@
     <ContextMenu x:Key="MapMenu" x:Name="MapMenu">
       <MenuItem x:Name="SetDestinationItem" Header="{l:T Map.SetDestination}" />
       <MenuItem x:Name="SetMyLocationItem" Header="{l:T Map.SetMyLocation}" />
+      <MenuItem x:Name="PlaceObjectItem" Header="{l:T Map.PlaceObject}" />
+      <MenuItem x:Name="MoveObjectItem" Header="{l:T Map.MoveObject}" />
     </ContextMenu>
   </UserControl.Resources>
   <Panel>

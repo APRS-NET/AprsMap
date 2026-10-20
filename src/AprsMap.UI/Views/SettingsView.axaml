@@ -5,6 +5,8 @@
   xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:s="using:AprsMap.UI.Settings"
+  xmlns:vm="using:AprsMap.UI.ViewModels"
+  xmlns:p="using:AprsMap.UI.Packets"
   xmlns:sh="using:AprsMap.UI.Shell"
   xmlns:l="using:AprsMap.UI.Localization"
   x:Class="AprsMap.UI.Views.SettingsView"
@@ -894,6 +896,197 @@
                 />
               </WrapPanel>
             </StackPanel>
+          </StackPanel>
+          <!-- Objects (docs/features/F2.7-objects-and-items.md): placed, changed, killed and forgotten here. -->
+          <StackPanel x:Name="ObjectsSection" IsVisible="{Binding IsObjectsSection}" Spacing="12">
+            <TextBlock Text="{Binding Objects.Heading, FallbackValue={x:Null}}" FontWeight="SemiBold" />
+            <TextBlock Text="{l:T Objects.Description}" TextWrapping="Wrap" />
+            <TextBlock
+              Text="{Binding Objects.EmptyText, FallbackValue={x:Null}}"
+              IsVisible="{Binding Objects.EmptyText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
+            <ItemsControl x:Name="ObjectList" ItemsSource="{Binding Objects.Rows, FallbackValue={x:Null}}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="8" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="s:ObjectRow">
+                  <Border
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    Padding="12,8"
+                  >
+                    <StackPanel Spacing="6">
+                      <WrapPanel ItemSpacing="10">
+                        <Image
+                          Source="{Binding Placed.Symbol, Converter={x:Static p:SymbolIcons.Instance}}"
+                          Width="{DynamicResource Icon.Size}"
+                          Height="{DynamicResource Icon.Size}"
+                          VerticalAlignment="Center"
+                        />
+                        <TextBlock
+                          Text="{Binding Name}"
+                          FontWeight="SemiBold"
+                          FontFamily="{DynamicResource Font.Mono}"
+                        />
+                        <TextBlock Text="{Binding State}" Foreground="{DynamicResource Brush.TextMuted}" />
+                      </WrapPanel>
+                      <TextBlock Text="{Binding Details}" TextWrapping="Wrap" />
+                      <WrapPanel ItemSpacing="8" LineSpacing="6">
+                        <Button
+                          Content="{l:T Objects.Edit}"
+                          Command="{Binding $parent[UserControl].((s:SettingsViewModel)DataContext).Objects.EditCommand}"
+                          CommandParameter="{Binding}"
+                          IsVisible="{Binding IsLive}"
+                        />
+                        <Button
+                          Content="{l:T Objects.Kill}"
+                          Command="{Binding $parent[UserControl].((s:SettingsViewModel)DataContext).Objects.KillCommand}"
+                          CommandParameter="{Binding}"
+                          IsVisible="{Binding IsLive}"
+                        />
+                        <Button
+                          Content="{l:T Objects.Forget}"
+                          Command="{Binding $parent[UserControl].((s:SettingsViewModel)DataContext).Objects.ForgetCommand}"
+                          CommandParameter="{Binding}"
+                        />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button
+              x:Name="AddObjectButton"
+              Content="{l:T Objects.Add}"
+              Command="{Binding Objects.AddCommand, FallbackValue={x:Null}}"
+              IsVisible="{Binding !Objects.IsEditing, FallbackValue=False}"
+            />
+            <Border
+              x:Name="ObjectForm"
+              IsVisible="{Binding Objects.IsEditing, FallbackValue=False}"
+              Background="{DynamicResource Brush.Surface}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Control}"
+              Padding="12"
+            >
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Objects.FormHeading, FallbackValue={x:Null}}" FontWeight="SemiBold" />
+                <WrapPanel ItemSpacing="12">
+                  <RadioButton
+                    GroupName="ObjectKind"
+                    Content="{l:T Objects.Kind.Object}"
+                    IsChecked="{Binding !Objects.IsItem, FallbackValue=True}"
+                  />
+                  <RadioButton
+                    x:Name="ObjectItemBox"
+                    GroupName="ObjectKind"
+                    Content="{l:T Objects.Kind.Item}"
+                    IsChecked="{Binding Objects.IsItem, FallbackValue=False}"
+                  />
+                </WrapPanel>
+                <TextBlock
+                  Text="{l:T Objects.Kind.Help}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+                <TextBlock Text="{l:T Objects.Name}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="ObjectNameBox"
+                  Text="{Binding Objects.Name, FallbackValue=''}"
+                  MaxLength="9"
+                  FontFamily="{DynamicResource Font.Mono}"
+                  AutomationProperties.Name="{l:T Objects.Name}"
+                  MinWidth="160"
+                  HorizontalAlignment="Left"
+                />
+                <TextBlock Text="{l:T Objects.Place}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="ObjectPlaceBox"
+                  Text="{Binding Objects.CoordinatesText, FallbackValue=''}"
+                  AutomationProperties.Name="{l:T Objects.Place}"
+                  MinWidth="260"
+                  HorizontalAlignment="Left"
+                />
+                <TextBlock Text="{l:T Objects.Symbol}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <ComboBox
+                  x:Name="ObjectSymbolBox"
+                  ItemsSource="{x:Static s:ObjectsSectionViewModel.Symbols}"
+                  SelectedItem="{Binding Objects.SelectedSymbol, FallbackValue={x:Null}}"
+                  IsTextSearchEnabled="True"
+                  MaxDropDownHeight="320"
+                  MinWidth="260"
+                  AutomationProperties.Name="{l:T Objects.Symbol}"
+                >
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SymbolChoice">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Image
+                          Source="{Binding Symbol, Converter={x:Static p:SymbolIcons.Instance}}"
+                          Width="{DynamicResource Icon.Size}"
+                          Height="{DynamicResource Icon.Size}"
+                        />
+                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Text="{l:T Objects.Comment}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="ObjectCommentBox"
+                  Text="{Binding Objects.Comment, FallbackValue=''}"
+                  MaxLength="{x:Static s:ObjectsSectionViewModel.MaxCommentLength}"
+                  AutomationProperties.Name="{l:T Objects.Comment}"
+                />
+                <TextBlock Text="{l:T Objects.Interval}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <ComboBox
+                  x:Name="ObjectIntervalBox"
+                  ItemsSource="{Binding Objects.Intervals, FallbackValue={x:Null}}"
+                  SelectedItem="{Binding Objects.SelectedInterval, FallbackValue={x:Null}}"
+                  AutomationProperties.Name="{l:T Objects.Interval}"
+                  MinWidth="260"
+                />
+                <TextBlock
+                  Text="{l:T Objects.Interval.Help}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
+                <TextBlock Text="{l:T Beacons.SendVia}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <ItemsControl x:Name="ObjectViaList" ItemsSource="{Binding Objects.Via, FallbackValue={x:Null}}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="s:ViaChoice">
+                      <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <WrapPanel ItemSpacing="8">
+                  <Button
+                    x:Name="SaveObjectButton"
+                    Classes="accent"
+                    Content="{l:T Objects.Save}"
+                    Command="{Binding Objects.SaveObjectCommand, FallbackValue={x:Null}}"
+                  />
+                  <Button
+                    Content="{l:T Objects.Cancel}"
+                    Command="{Binding Objects.CancelEditCommand, FallbackValue={x:Null}}"
+                  />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+            <TextBlock
+              Text="{Binding Objects.Error, FallbackValue={x:Null}}"
+              IsVisible="{Binding Objects.Error, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+            <TextBlock Text="{l:T Objects.Rules}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
           </StackPanel>
           <StackPanel x:Name="AppearanceSection" IsVisible="{Binding IsAppearanceSection}" Spacing="20">
             <ItemsControl x:Name="AppearanceOptions" ItemsSource="{Binding AppearanceItems}">

@@ -111,6 +111,33 @@ internal sealed class EngineHubEndpoint(
         return engine.SendStatusAsync(sourceId, Context.ConnectionAborted);
     }
 
+    /// <summary>Asking QRU servers transmits: a signed-in operator only (F2.6).</summary>
+    [HubMethodName(EngineHub.AskQru)]
+    [Transmits]
+    public Task<IReadOnlyList<PacketView>> AskQru(string group)
+    {
+        RequireOperator();
+        return engine.AskQruAsync(group, Context.ConnectionAborted);
+    }
+
+    /// <summary>Objects are sent on their own: a signed-in operator only (F2.7).</summary>
+    [HubMethodName(EngineHub.PlaceObject)]
+    [Transmits]
+    public Task PlaceObject(OwnObject placed)
+    {
+        RequireOperator();
+        return engine.PlaceObjectAsync(placed, Context.ConnectionAborted);
+    }
+
+    /// <summary>Killing sends too, and forgetting changes what's sent: a signed-in operator only (F2.7).</summary>
+    [HubMethodName(EngineHub.RemoveObject)]
+    [Transmits]
+    public Task RemoveObject(string id, bool kill)
+    {
+        RequireOperator();
+        return engine.RemoveObjectAsync(id, kill, Context.ConnectionAborted);
+    }
+
     /// <summary>Test send transmits too: a signed-in operator only (F2.1 behavior 8).</summary>
     [HubMethodName(EngineHub.TestSend)]
     [Transmits]
@@ -249,6 +276,9 @@ internal sealed class EngineHubEndpoint(
             : detail;
     }
 
+    /// <summary>The most watched stations a browser's report brings into the filter: three extra views.</summary>
+    internal const int MaxWatchedPerViewer = 3;
+
     /// <summary>
     /// A browser's map view, for the station's filter (F1.2 behaviors 8 and 9): its followed station always, its map
     /// part only when this gateway follows viewers, and then at most <see cref="MaxViewerViewKm"/> wide.
@@ -257,6 +287,11 @@ internal sealed class EngineHubEndpoint(
     public Task SetMapView(MapViewReport view)
     {
         ArgumentNullException.ThrowIfNull(view);
+        // At most the views one viewer can open (F1.16 decision 1), so a browser can't fill the filter.
+        view = view with
+        {
+            Watched = view.Watched?.Take(MaxWatchedPerViewer).ToList(),
+        };
         filterEngine.SetMapView(
             Context.ConnectionId,
             options.Value.FollowViewers

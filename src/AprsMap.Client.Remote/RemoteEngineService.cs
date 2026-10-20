@@ -370,6 +370,20 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         );
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<PacketView>> AskQruAsync(string group, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<PacketView>>(EngineHub.AskQru, group, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task PlaceObjectAsync(OwnObject placed, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.PlaceObject, placed, cancellationToken));
+
+    /// <inheritdoc />
+    public Task RemoveObjectAsync(string id, bool kill, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.RemoveObject, id, kill, cancellationToken));
+
+    /// <inheritdoc />
     public Task<TestSendResult> TestSendAsync(string sourceId, CancellationToken cancellationToken = default) =>
         WithEngineErrors(() =>
             _connection.InvokeAsync<TestSendResult>(EngineHub.TestSend, sourceId, cancellationToken)

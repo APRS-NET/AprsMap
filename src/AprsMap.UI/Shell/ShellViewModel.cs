@@ -49,6 +49,10 @@ public sealed partial class ShellViewModel : ObservableObject
             {
                 PanelClosed?.Invoke(this, kind);
             }
+            if (e.Dockable is WatchDocument)
+            {
+                WatchedChanged?.Invoke(this, EventArgs.Empty); // its station leaves the filter (F1.16 behavior 6)
+            }
             OnChanged();
         };
         Factory.DockableDocked += (_, _) => OnChanged();
@@ -68,6 +72,81 @@ public sealed partial class ShellViewModel : ObservableObject
         Factory.InitLayout(Layout);
         _text.LanguageChanged += (_, _) => Retitle();
         Retitle();
+    }
+
+    /// <summary>The most extra map views, besides the main map (F1.16 decision 1).</summary>
+    public const int MaxWatchViews = 3;
+
+    /// <summary>The id of the dock extra map views open in, beside the map.</summary>
+    public const string WatchDock = "watch";
+
+    /// <summary>Raised when an extra map view opens or closes, or a layout brings others.</summary>
+    public event EventHandler? WatchedChanged;
+
+    /// <summary>The stations the extra map views follow (F1.16).</summary>
+    public IReadOnlyList<string> Watched =>
+        [
+            .. Dockables(Layout)
+                .OfType<WatchDocument>()
+                .Select(d => d.Callsign)
+                .Distinct(StringComparer.OrdinalIgnoreCase),
+        ];
+
+    /// <summary>
+    /// Watch in a view (F1.16 behavior 1): brings the view following <paramref name="callsign"/> to the front, or opens
+    /// one beside the map. False, with nothing opened, when <see cref="MaxWatchViews"/> are open already.
+    /// </summary>
+    public bool Watch(string callsign)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(callsign);
+        var open = Dockables(Layout).OfType<WatchDocument>().ToList();
+        if (
+            open.FirstOrDefault(d => string.Equals(d.Callsign, callsign, StringComparison.OrdinalIgnoreCase)) is
+            { } shown
+        )
+        {
+            if (shown.Owner is IDock owner)
+            {
+                owner.ActiveDockable = shown;
+            }
+            return true;
+        }
+        if (open.Count >= MaxWatchViews)
+        {
+            return false;
+        }
+        var view = new WatchDocument
+        {
+            Id = "watch:" + callsign,
+            Callsign = callsign,
+            Title = callsign,
+            CanClose = true,
+            CanFloat = true,
+            CanPin = false,
+        };
+        if (Dockables(Layout).OfType<IDocumentDock>().FirstOrDefault(d => d.Id == WatchDock) is { } dock)
+        {
+            Factory.AddDockable(dock, view);
+            dock.ActiveDockable = view;
+        }
+        else
+        {
+            // Beside the map, splitting its space, so both show (behavior 2).
+            var created = new Dock.Model.Mvvm.Controls.DocumentDock
+            {
+                Id = WatchDock,
+                Proportion = 0.4,
+                CanCreateDocument = false,
+                VisibleDockables = Factory.CreateList<IDockable>(view),
+                ActiveDockable = view,
+            };
+            Factory.SplitToDock(Centre(Layout), created, DockOperation.Right);
+        }
+        Factory.InitLayout(Layout);
+        Retitle();
+        WatchedChanged?.Invoke(this, EventArgs.Empty);
+        OnChanged();
+        return true;
     }
 
     /// <summary>Raised when a panel is really closed (its ×, or Close), with its kind; not when it moves.</summary>
@@ -102,6 +181,7 @@ public sealed partial class ShellViewModel : ObservableObject
         FitWindows(file.Dock, screens);
         Layout = file.Dock;
         Retitle();
+        WatchedChanged?.Invoke(this, EventArgs.Empty); // views saved with the layout (F1.16 behavior 9)
         return LayoutRestore.Restored;
     }
 
@@ -142,6 +222,7 @@ public sealed partial class ShellViewModel : ObservableObject
         CloseWindows(Layout);
         Layout = layout;
         Retitle();
+        WatchedChanged?.Invoke(this, EventArgs.Empty);
         OnChanged();
     }
 
@@ -511,6 +592,9 @@ public sealed partial class ShellViewModel : ObservableObject
                     break;
                 case DashboardDocument dashboard:
                     dashboard.Title = _text[PanelKinds.TitleKey(PanelKinds.Dashboard)];
+                    break;
+                case WatchDocument watch:
+                    watch.Title = watch.Callsign; // the station's name in any language
                     break;
             }
         }
