@@ -4126,6 +4126,41 @@ pause 1s</value>
   <data name="Beacons.SendVia" xml:space="preserve">
     <value>Send via</value>
   </data>
+  <data name="Beacons.Format" xml:space="preserve">
+    <value>Format</value>
+  </data>
+  <data name="Beacons.Format.Standard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="Beacons.Format.MicE" xml:space="preserve">
+    <value>Mic-E, with a status</value>
+    <comment>Mic-E: the compact position format mobile radios send, with a status code.</comment>
+  </data>
+  <data name="Beacons.MicEStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Beacons.MicEStatus.Help" xml:space="preserve">
+    <value>Sent with every position. Mic-E carries no PHG and isn't compressed; your comment goes as its text.</value>
+  </data>
+  <data name="Beacons.Emergency.Confirm" xml:space="preserve">
+    <value>Send Emergency? Stations and IGates treat it as a call for help. Your position goes out now on every source that can send, then with every beacon until you change it.</value>
+  </data>
+  <data name="Beacons.Emergency.Send" xml:space="preserve">
+    <value>Send Emergency</value>
+  </data>
+  <data name="Beacons.Emergency.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Error.settings.profile.mic-e-invalid" xml:space="preserve">
+    <value>A Mic-E position isn't compressed and carries no PHG.</value>
+  </data>
+  <data name="Status.Emergency" xml:space="preserve">
+    <value>Sending Emergency</value>
+    <comment>Status bar marker while the station's Mic-E status is Emergency.</comment>
+  </data>
+  <data name="Status.Emergency.Help" xml:space="preserve">
+    <value>Your position goes out with the Mic-E Emergency status. Open Beacons to change it.</value>
+  </data>
   <data name="Beacons.Compressed" xml:space="preserve">
     <value>Compressed (shorter on air)</value>
   </data>

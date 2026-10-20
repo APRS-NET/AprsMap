@@ -69,6 +69,9 @@ public static class EngineErrorCodes
     /// <summary>The PHG isn't values the format carries, or comes with a compressed position (F2.2 behavior 1.4).</summary>
     public const string ProfilePhgInvalid = "settings.profile.phg-invalid";
 
+    /// <summary>A Mic-E position comes compressed or with PHG (docs/features/F2.12-mic-e-status.md, behavior 3).</summary>
+    public const string ProfileMicEInvalid = "settings.profile.mic-e-invalid";
+
     /// <summary>A profile's symbol isn't a table or overlay character and a symbol code (F2.1 behavior 1).</summary>
     public const string ProfileSymbolInvalid = "settings.profile.symbol-invalid";
 

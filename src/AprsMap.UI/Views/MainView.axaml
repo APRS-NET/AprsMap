@@ -430,6 +430,23 @@
             >
               <TextBlock Text="{Binding UnreadText}" TextWrapping="Wrap" />
             </Button>
+            <!-- Sending Emergency (F2.12 behavior 9): never left on unnoticed; opens Settings › Beacons. -->
+            <Button
+              x:Name="EmergencyMarker"
+              Classes="toggle-marker"
+              IsVisible="{Binding IsSendingEmergency}"
+              BorderBrush="{DynamicResource Brush.Warn}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Control}"
+              Padding="8,3"
+              VerticalAlignment="Center"
+              Command="{Binding OpenBeaconsCommand}"
+              ToolTip.Tip="{l:T Status.Emergency.Help}"
+              AutomationProperties.Name="{l:T Status.Emergency}"
+              AutomationProperties.LiveSetting="Assertive"
+            >
+              <TextBlock Text="{l:T Status.Emergency}" Foreground="{DynamicResource Brush.Warn}" TextWrapping="Wrap" />
+            </Button>
             <!-- The Transmit switch (F2.1 behavior 6): the one place transmitting is turned on or off, mirrored by
                  Station › Transmit; from a gateway's browser only for a signed-in operator (F2.9). -->
             <Border

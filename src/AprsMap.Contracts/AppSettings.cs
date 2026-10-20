@@ -245,6 +245,7 @@ public sealed record StationProfile(
         || Latitude != before.Latitude
         || Longitude != before.Longitude
         || EffectivePositionBeacon.Compressed != before.EffectivePositionBeacon.Compressed
+        || EffectivePositionBeacon.MicE is null != before.EffectivePositionBeacon.MicE is null // the format, not the status
         || EffectivePositionBeacon.Phg != before.EffectivePositionBeacon.Phg;
 
     /// <summary>Equal when every field is, comparing the source ids in order.</summary>

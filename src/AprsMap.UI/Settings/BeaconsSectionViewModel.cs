@@ -32,6 +32,7 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
     private readonly Localizer _text;
     private readonly Action<AppSettings> _saved;
     private AppSettings _settings = AppSettings.Empty;
+    private MicEStatus? _savedMicE;
 
     internal BeaconsSectionViewModel(IEngineService engine, Localizer text, Action<AppSettings> saved)
     {
@@ -88,17 +89,37 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
     /// <summary>Send via for positions.</summary>
     public ObservableCollection<ViaChoice> PositionVia { get; } = [];
 
+    /// <summary>Positions go uncompressed: the Standard format (F2.12 behavior 1).</summary>
+    [ObservableProperty]
+    public partial bool FormatStandard { get; set; } = true;
+
     /// <summary>Whether positions go compressed.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanIncludePhg))]
     public partial bool Compressed { get; set; }
 
+    /// <summary>Positions go as Mic-E, with a status (docs/features/F2.12-mic-e-status.md, behaviors 1–3).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanIncludePhg))]
+    public partial bool MicE { get; set; }
+
+    /// <summary>The Mic-E statuses, named; custom codes aren't offered (behavior 2).</summary>
+    public ObservableCollection<BeaconChoice<MicEStatus>> MicEStatuses { get; } = [];
+
+    /// <summary>The Mic-E status chosen.</summary>
+    [ObservableProperty]
+    public partial BeaconChoice<MicEStatus>? SelectedMicEStatus { get; set; }
+
+    /// <summary>Emergency was newly chosen and Save waits for Send Emergency or Cancel (behavior 7).</summary>
+    [ObservableProperty]
+    public partial bool IsConfirmingEmergency { get; private set; }
+
     /// <summary>Whether PHG goes with positions.</summary>
     [ObservableProperty]
     public partial bool IncludePhg { get; set; }
 
-    /// <summary>PHG needs an uncompressed position.</summary>
-    public bool CanIncludePhg => !Compressed;
+    /// <summary>PHG needs an uncompressed, non-Mic-E position.</summary>
+    public bool CanIncludePhg => !Compressed && !MicE;
 
     /// <summary>The PHG choices, named.</summary>
     public ObservableCollection<BeaconChoice<int>> Powers { get; } = [];
@@ -171,7 +192,11 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
         PositionOn = position.On;
         SelectedSchedule = Schedules.FirstOrDefault(s => s.Value == position.Schedule);
         SelectedPositionInterval = PositionIntervals.FirstOrDefault(i => i.Value == position.IntervalMinutes);
-        Compressed = position.Compressed;
+        MicE = position.MicE is not null;
+        Compressed = !MicE && position.Compressed;
+        FormatStandard = !MicE && !Compressed;
+        _savedMicE = position.MicE;
+        SelectedMicEStatus = null; // chosen afresh from the profile when the lists fill
         IncludePhg = position.Phg is not null;
         var phg = position.Phg ?? new PhgSettings(PhgPowers[3], PhgHeights[1], 3);
         SelectedPower = Powers.FirstOrDefault(c => c.Value == phg.PowerWatts) ?? Powers[0];
@@ -221,6 +246,13 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
             Schedules.Add(new(PositionBeaconSchedule.Moving, _text["Beacons.Schedule.Moving"])); // saved elsewhere
         }
         SelectedSchedule = Schedules.FirstOrDefault(s => s.Value == schedule);
+        var status = SelectedMicEStatus?.Value ?? _savedMicE ?? MicEStatus.OffDuty;
+        MicEStatuses.Clear();
+        foreach (var each in Enum.GetValues<MicEStatus>())
+        {
+            MicEStatuses.Add(new(each, _text[$"Filter.MicE.{each}"]));
+        }
+        SelectedMicEStatus = MicEStatuses.FirstOrDefault(c => c.Value == status);
         Refill(PositionIntervals, positionMinutes, m => SelectedPositionInterval = m);
         Refill(StatusIntervals, statusMinutes, m => SelectedStatusInterval = m);
         RefillPhg(Powers, PhgPowers, SelectedPower?.Value, "Beacons.Phg.Watts", c => SelectedPower = c);
@@ -286,28 +318,64 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
 
     partial void OnStatusTextChanged(string value) => (Error, SavedText) = (null, null);
 
-    /// <summary>Saves both beacons to the active profile.</summary>
+    /// <summary>
+    /// Saves both beacons to the active profile; newly choosing Emergency asks first (F2.12 behavior 7).
+    /// </summary>
     [RelayCommand]
     private async Task SaveAsync()
     {
-        if (_settings.GetActiveProfile() is not { } profile)
+        if (MicE && SelectedMicEStatus?.Value == MicEStatus.Emergency && _savedMicE != MicEStatus.Emergency)
+        {
+            IsConfirmingEmergency = true;
+            return;
+        }
+        await SaveBeaconsAsync();
+    }
+
+    /// <summary>Send Emergency: saves, then sends the position at once (behavior 8).</summary>
+    [RelayCommand]
+    private async Task ConfirmEmergencyAsync()
+    {
+        IsConfirmingEmergency = false;
+        if (!await SaveBeaconsAsync())
         {
             return;
+        }
+        try
+        {
+            await _engine.SendPositionAsync();
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            Error = _text.Describe(ex); // the setting stays; the beacon sends it when it can
+        }
+    }
+
+    /// <summary>Cancel: nothing is saved.</summary>
+    [RelayCommand]
+    private void CancelEmergency() => IsConfirmingEmergency = false;
+
+    private async Task<bool> SaveBeaconsAsync()
+    {
+        if (_settings.GetActiveProfile() is not { } profile)
+        {
+            return false;
         }
         var position = new PositionBeaconSettings(
             PositionOn,
             SelectedSchedule?.Value ?? PositionBeaconSchedule.Decay,
             SelectedPositionInterval?.Value ?? PositionBeaconSettings.DefaultIntervalMinutes,
             Via(PositionVia),
-            Compressed,
-            IncludePhg && !Compressed
+            Compressed && !MicE,
+            IncludePhg && CanIncludePhg
                 ? new PhgSettings(
                     SelectedPower?.Value ?? 0,
                     SelectedHeight?.Value ?? PhgHeights[0],
                     SelectedGain?.Value ?? 0,
                     SelectedDirection is { Value: > 0 } d ? d.Value : null
                 )
-                : null
+                : null,
+            MicE ? SelectedMicEStatus?.Value ?? MicEStatus.OffDuty : null
         );
         var status = new StatusBeaconSettings(
             StatusOn,
@@ -328,10 +396,12 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
             Show(stored);
             _saved(stored);
             SavedText = _text["Beacons.Saved"];
+            return true;
         }
         catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
         {
             Error = _text.Describe(ex);
+            return false;
         }
     }
 
