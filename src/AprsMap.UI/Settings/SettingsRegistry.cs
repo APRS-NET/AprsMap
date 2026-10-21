@@ -353,6 +353,16 @@ public static class SettingsRegistry
                 value => Update(s => s with { ShowFilterCircles = value })
             )
         );
+        items.Add(
+            new ToggleSetting(
+                "map.dead-reckoning",
+                "Settings.Map.DeadReckoning",
+                "Settings.Map.DeadReckoning.Help",
+                text,
+                () => appearance.Current.DeadReckoning,
+                value => Update(s => s with { DeadReckoning = value })
+            )
+        );
         if (aging is var (get, save))
         {
             // Removal always after staleness, so each list offers only what fits the other's current value. The value is

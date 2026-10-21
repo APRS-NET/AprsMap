@@ -246,4 +246,25 @@ public sealed class StationStoreTests
         Assert.Null(store.Get("N0BBB"));
         Assert.NotNull(store.Get("N0AAA"));
     }
+
+    [Fact]
+    public void TheMapStreamCarriesOnlyTheLatestPositionsCourseAndSpeed()
+    {
+        var store = new StationStore();
+        Apply(store, "N0CALL-9>APRS,TCPIP*:!4903.50N/07201.75W>090/048", T0); // 48 knots on course 90
+
+        store.Subscribe(out var moving);
+        var state = Assert.Single(moving);
+        Assert.Equal(90, state.Course);
+        Assert.Equal(88.9, Math.Round(state.SpeedKmh!.Value, 1));
+
+        Apply(store, "N0CALL-9>APRS,TCPIP*:!4903.60N/07201.75W>", T0.AddMinutes(1)); // parked: no course or speed
+        store.Subscribe(out var parked);
+        Assert.Null(Assert.Single(parked).Course); // not the one before (F1.17)
+        Assert.Equal(90, store.Get("N0CALL-9")!.CourseDegrees); // the details keep what was last said
+
+        Apply(store, "WX0STN>APRS,TCPIP*:!4903.50N/07201.75W_270/010g015t068", T0); // a weather station's wind
+        store.Subscribe(out var all);
+        Assert.Null(all.Single(s => s.Name == "WX0STN").Course);
+    }
 }

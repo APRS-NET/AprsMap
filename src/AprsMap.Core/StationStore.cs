@@ -860,6 +860,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         {
             SetWeather(entry, weather, receivedAt);
             // A weather station's course and speed are the wind (APRS101 ch. 12), not how it moves.
+            entry.Motion = null;
             entry.Symbol = positioned.Symbol.ToString();
             entry.Comment = string.IsNullOrWhiteSpace(positioned.Comment) ? entry.Comment : positioned.Comment;
             entry.AltitudeMetres = positioned.AltitudeFeet is { } wxFeet
@@ -871,6 +872,9 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         entry.Comment = string.IsNullOrWhiteSpace(positioned.Comment) ? entry.Comment : positioned.Comment;
         entry.Course = positioned.Course ?? entry.Course;
         entry.SpeedKmh = positioned.SpeedKnots is { } knots ? knots * KmhPerKnot : entry.SpeedKmh;
+        entry.Motion = positioned is { Course: { } course, SpeedKnots: { } speed }
+            ? (course, speed * KmhPerKnot)
+            : null;
         entry.AltitudeMetres = positioned.AltitudeFeet is { } feet ? feet * MetresPerFoot : entry.AltitudeMetres;
     }
 
@@ -1343,6 +1347,9 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         public string? Status { get; set; }
         public int? Course { get; set; }
         public double? SpeedKmh { get; set; }
+
+        /// <summary>The latest position report's own course and speed, not carried over, for dead reckoning (F1.17).</summary>
+        public (int Course, double SpeedKmh)? Motion { get; set; }
         public double? AltitudeMetres { get; set; }
         public string? Path { get; set; }
         public string? Owner { get; set; }
@@ -1492,7 +1499,9 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                     )
                     : null,
                 Area,
-                Signpost
+                Signpost,
+                Motion?.Course,
+                Motion?.SpeedKmh
             );
         }
 

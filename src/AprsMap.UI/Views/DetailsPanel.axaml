@@ -166,6 +166,24 @@
           />
           <SelectableTextBlock x:Name="MotionValue" Grid.Column="1" Text="{Binding MotionText}" TextWrapping="Wrap" />
         </Grid>
+        <!-- Where dead reckoning puts it now (F1.17 behavior 4). -->
+        <Grid IsVisible="{Binding EstimateText, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <TextBlock
+            Text="{l:T Details.Label.Estimate}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            Margin="0,0,12,0"
+          />
+          <SelectableTextBlock
+            x:Name="EstimateValue"
+            Grid.Column="1"
+            Text="{Binding EstimateText}"
+            TextWrapping="Wrap"
+          />
+        </Grid>
         <Grid IsVisible="{Binding Comment, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
