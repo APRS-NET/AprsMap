@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.2...v0.5.0-alpha.3) (2026-10-21)
+
+
+### Features
+
+* **beacons:** the moving schedule, SmartBeaconing from the GPS ([6098941](https://github.com/APRS-NET/AprsMap/commit/6098941b265a9fd13d59c8565462db32ecfcb80d)), closes [#335](https://github.com/APRS-NET/AprsMap/issues/335)
+* **gps:** a GPS source over serial, TCP or gpsd, and the station where it says ([1ecd035](https://github.com/APRS-NET/AprsMap/commit/1ecd03512ba709194d3218544af1869a5e85dda5)), closes [#205](https://github.com/APRS-NET/AprsMap/issues/205)
+* **igate:** gate what the TNCs hear to APRS-IS, receive only ([b61ba15](https://github.com/APRS-NET/AprsMap/commit/b61ba15eb9dc537863c9c965d70364bb1522e8ea)), closes [#206](https://github.com/APRS-NET/AprsMap/issues/206)
+* **map:** dead reckoning, where moving stations probably are now ([9771a44](https://github.com/APRS-NET/AprsMap/commit/9771a4440c06cb1bf533d264a519ce1c13f5f842)), closes [#198](https://github.com/APRS-NET/AprsMap/issues/198)
+* **map:** map contrast from a map button: fade, greyscale and a backing behind symbols ([c07c657](https://github.com/APRS-NET/AprsMap/commit/c07c65757eb0fc19542ade4d56170658c8ba4198)), closes [#345](https://github.com/APRS-NET/AprsMap/issues/345)
+* **messaging:** answer APRS queries, back the way they came ([25f08fa](https://github.com/APRS-NET/AprsMap/commit/25f08fab52ab4e392510c60b3b6f2b182833072b)), closes [#200](https://github.com/APRS-NET/AprsMap/issues/200)
+* **transmit:** where others see you, from your last position's course and speed ([137d197](https://github.com/APRS-NET/AprsMap/commit/137d19737e43939d666185a91505280e6e6a890f)), closes [#197](https://github.com/APRS-NET/AprsMap/issues/197)
+
 ## [0.5.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.1...v0.5.0-alpha.2) (2026-10-21)
 
 
