@@ -267,7 +267,9 @@ public sealed class MapTests
         Assert.Contains(settings.Sections, s => s.Id == "map");
         Assert.Equal(
             [
-                "map.brightness",
+                "map.fade",
+                "map.greyscale",
+                "map.symbol-backing",
                 "map.labels",
                 "map.tracks",
                 "map.paths",

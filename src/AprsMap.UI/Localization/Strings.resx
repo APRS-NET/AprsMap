@@ -2685,23 +2685,40 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>Map tiles</value>
     <comment>Which tile provider draws the map.</comment>
   </data>
-  <data name="Settings.Map.Brightness" xml:space="preserve">
-    <value>Map brightness</value>
+  <data name="Settings.Map.Fade" xml:space="preserve">
+    <value>Map fade</value>
   </data>
-  <data name="Settings.Map.Brightness.Help" xml:space="preserve">
-    <value>A darker map makes the stations stand out.</value>
+  <data name="Settings.Map.Fade.Help" xml:space="preserve">
+    <value>Fading the map toward the background makes the stations stand out. The map's contrast button changes it too.</value>
   </data>
-  <data name="Settings.Map.Brightness.Auto" xml:space="preserve">
-    <value>Follow the theme (dimmed when dark)</value>
+  <data name="Settings.Map.Fade.Auto" xml:space="preserve">
+    <value>Follow the theme (faded when dark)</value>
   </data>
-  <data name="Settings.Map.Brightness.Normal" xml:space="preserve">
-    <value>Normal</value>
+  <data name="Settings.Map.Greyscale" xml:space="preserve">
+    <value>Greyscale map</value>
   </data>
-  <data name="Settings.Map.Brightness.Dimmed" xml:space="preserve">
-    <value>Dimmed</value>
+  <data name="Settings.Map.Greyscale.Help" xml:space="preserve">
+    <value>Takes the colour out of the map so coloured symbols aren't lost in parks, water and roads.</value>
   </data>
-  <data name="Settings.Map.Brightness.Dark" xml:space="preserve">
-    <value>Dark</value>
+  <data name="Settings.Map.SymbolBacking" xml:space="preserve">
+    <value>Backing behind symbols</value>
+  </data>
+  <data name="Settings.Map.SymbolBacking.Help" xml:space="preserve">
+    <value>A soft disc behind each station's symbol, so it reads on any part of the map.</value>
+  </data>
+  <data name="Map.Contrast" xml:space="preserve">
+    <value>Map contrast</value>
+  </data>
+  <data name="Map.Contrast.Fade" xml:space="preserve">
+    <value>Map fade: {percent} %</value>
+    <comment>percent: how far the map fades toward the background, 0 to 80.</comment>
+  </data>
+  <data name="Map.Contrast.FadeAuto" xml:space="preserve">
+    <value>Map fade: {percent} % (follows the theme)</value>
+    <comment>percent: the theme's own fade, 0 or 35.</comment>
+  </data>
+  <data name="Map.Contrast.Reset" xml:space="preserve">
+    <value>Reset</value>
   </data>
   <data name="Settings.Map.Labels" xml:space="preserve">
     <value>Station labels</value>

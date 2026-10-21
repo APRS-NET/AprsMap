@@ -57,22 +57,6 @@ public enum MotionPreference
     Reduced,
 }
 
-/// <summary>How bright the map's tiles are (F1.4 behavior 13).</summary>
-public enum MapBrightness
-{
-    /// <summary>Normal in a light theme, dimmed in a dark one (F1.4 behavior 13).</summary>
-    Auto,
-
-    /// <summary>Tiles as the provider draws them.</summary>
-    Normal,
-
-    /// <summary>Tiles darkened a little, so stations stand out.</summary>
-    Dimmed,
-
-    /// <summary>Tiles darkened a lot.</summary>
-    Dark,
-}
-
 /// <summary>Which station labels the map draws (F1.4 behavior 17).</summary>
 public enum MapLabels
 {
@@ -210,8 +194,26 @@ public sealed record AppearanceSettings
     /// <summary>The map symbol sizes Settings › Map offers.</summary>
     public static IReadOnlyList<double> MapSymbolScaleSteps { get; } = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
 
-    /// <summary>How bright the map's tiles are (F1.4 behavior 13).</summary>
-    public MapBrightness MapBrightness { get; init; } = MapBrightness.Auto;
+    /// <summary>
+    /// How far the tiles fade toward the theme's ground colour, 0 to <see cref="MapFadeMax"/>; null follows the theme
+    /// (none when light, <see cref="DarkThemeFade"/> when dark) (F1.4 behavior 13, revised for #345).
+    /// </summary>
+    public double? MapFade { get; init; }
+
+    /// <summary>Whether the tiles are drawn without colour, so coloured symbols stand out (#345).</summary>
+    public bool MapGreyscale { get; init; }
+
+    /// <summary>Whether each station symbol gets a soft disc behind it, in the label halo's colour (#345).</summary>
+    public bool SymbolBacking { get; init; }
+
+    /// <summary>The most the tiles fade: past it the map can't be read.</summary>
+    public const double MapFadeMax = 0.8;
+
+    /// <summary>The fade a dark theme gives the tiles when <see cref="MapFade"/> is null.</summary>
+    public const double DarkThemeFade = 0.35;
+
+    /// <summary>The fades Settings › Map offers; the map's own slider takes any value up to <see cref="MapFadeMax"/>.</summary>
+    public static IReadOnlyList<double> MapFadeSteps { get; } = [0, 0.2, 0.35, 0.5, 0.6, 0.8];
 
     /// <summary>Which station labels the map draws (F1.4 behavior 17).</summary>
     public MapLabels MapLabels { get; init; } = MapLabels.AllThatFit;
