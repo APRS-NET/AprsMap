@@ -189,7 +189,7 @@ public sealed class MenuTests
         vm.TogglePanel(PanelKinds.Stations);
         vm.TogglePanel(PanelKinds.Dashboard);
         vm.ShowAllPanels();
-        Assert.Empty(vm.Shell.ClosedPanels);
+        Assert.Equal([PanelKinds.Gps], vm.Shell.ClosedPanels); // on demand: opened from the GPS pill or by name
     }
 
     [Fact]

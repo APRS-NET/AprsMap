@@ -53,7 +53,7 @@ public sealed partial class MainViewModel
     /// <summary>Shows every closed panel where it was, without moving the open ones (behavior 13).</summary>
     internal void ShowAllPanels()
     {
-        foreach (var kind in Shell.ClosedPanels)
+        foreach (var kind in Shell.ClosedPanels.Where(k => !PanelKinds.OnDemand.Contains(k))) // not the GPS (F3.12)
         {
             Shell.Show(kind);
         }

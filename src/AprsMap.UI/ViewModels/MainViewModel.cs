@@ -296,6 +296,19 @@ public sealed partial class MainViewModel : ObservableObject
     /// Opens the Source console on a source, from its pill (F1.28 behavior 1), with the command line open for TNC
     /// commands (docs/features/F3.2-built-in-tncs.md, behavior 8).
     /// </summary>
+    /// <summary>The GPS panel (docs/features/F3.12-gps-status.md).</summary>
+    public Gps.GpsPanelViewModel Gps =>
+        _gpsPanel ??= new Gps.GpsPanelViewModel(_text, time, id => OpenConsoleAsync(id, commandLine: false));
+
+    private Gps.GpsPanelViewModel? _gpsPanel;
+
+    /// <summary>Opens the GPS panel, from the GPS pill's menu (F3.12 behavior 1).</summary>
+    internal void OpenGps()
+    {
+        ShowPanel(PanelKinds.Gps);
+        Gps.Show(_status?.Gps, _settings?.Units ?? UnitSettings.Metric);
+    }
+
     internal async Task OpenConsoleAsync(string sourceId, bool commandLine)
     {
         ShowPanel(PanelKinds.Console);
@@ -1041,7 +1054,8 @@ public sealed partial class MainViewModel : ObservableObject
                     on => SwitchSourceAsync(source.Id, on),
                     () => ReconnectSourceAsync(source.Id),
                     () => SendPositionOnAsync(source.Id),
-                    commandLine => OpenConsoleAsync(source.Id, commandLine)
+                    commandLine => OpenConsoleAsync(source.Id, commandLine),
+                    OpenGps
                 );
                 SourcePills.Insert(Math.Min(i, SourcePills.Count), pill);
                 pill.Switch.IsShown = !IsViewerOnly;
@@ -1463,6 +1477,7 @@ public sealed partial class MainViewModel : ObservableObject
         FilterAreas = status.FilterAreas;
         _gps = status.Gps;
         ShowHomePosition();
+        _gpsPanel?.Show(status.Gps, _settings?.Units ?? UnitSettings.Metric); // F3.12 behavior 7
         Settings?.Sources?.ShowIGate(status.IGate); // the IGate's counts move on while Settings is open (F3.4)
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();

@@ -37,7 +37,7 @@ public sealed class DashboardShellTests
         var shell = NewShell();
         shell.Factory.CloseDockable(Find(shell, PanelKinds.Dashboard));
         shell.Factory.CloseDockable(Find(shell, PanelKinds.Stations));
-        Assert.Equal([PanelKinds.Dashboard, PanelKinds.Stations], shell.ClosedPanels);
+        Assert.Equal([PanelKinds.Dashboard, PanelKinds.Stations, PanelKinds.Gps], shell.ClosedPanels); // GPS on demand
 
         shell.Show(PanelKinds.Dashboard);
 
@@ -45,7 +45,7 @@ public sealed class DashboardShellTests
         Assert.Equal(ShellFactory.CentreDock, dashboard.Owner!.Id);
         Assert.Same(dashboard, ((IDock)dashboard.Owner).ActiveDockable); // shown, not left behind the map
         Assert.Equal("Dashboard", dashboard.Title);
-        Assert.Equal([PanelKinds.Stations], shell.ClosedPanels);
+        Assert.Equal([PanelKinds.Stations, PanelKinds.Gps], shell.ClosedPanels);
     }
 
     [AvaloniaFact]
