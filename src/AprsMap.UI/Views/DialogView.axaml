@@ -279,6 +279,73 @@
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
+                  <!-- Components (docs/features/F1.34-about-components.md): each app's packages, versions and licences. -->
+                  <Expander
+                    x:Name="ComponentsExpander"
+                    Header="{Binding ComponentsHeading}"
+                    HorizontalAlignment="Stretch"
+                    Margin="0,8,0,0"
+                  >
+                    <StackPanel Spacing="8" Grid.IsSharedSizeScope="True">
+                      <ItemsControl x:Name="ComponentGroupsList" ItemsSource="{Binding ComponentGroups}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="s:ComponentGroup">
+                            <StackPanel Spacing="2" Margin="0,0,0,10">
+                              <TextBlock Text="{Binding Heading}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                              <TextBlock
+                                Text="{Binding RuntimeText}"
+                                Foreground="{DynamicResource Brush.TextMuted}"
+                                TextWrapping="Wrap"
+                              />
+                              <ItemsControl ItemsSource="{Binding Rows}">
+                                <ItemsControl.ItemTemplate>
+                                  <DataTemplate DataType="s:ComponentRow">
+                                    <Grid ColumnSpacing="12">
+                                      <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="ComponentVersion" />
+                                        <ColumnDefinition Width="Auto" SharedSizeGroup="ComponentLicence" />
+                                      </Grid.ColumnDefinitions>
+                                      <SelectableTextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+                                      <SelectableTextBlock Grid.Column="1" Text="{Binding Version}" />
+                                      <TextBlock
+                                        Grid.Column="2"
+                                        Text="{Binding Licence}"
+                                        Foreground="{DynamicResource Brush.TextMuted}"
+                                        MaxWidth="{DynamicResource Size.Tile}"
+                                        TextWrapping="Wrap"
+                                      />
+                                    </Grid>
+                                  </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                              </ItemsControl>
+                            </StackPanel>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <WrapPanel ItemSpacing="8" LineSpacing="4">
+                        <Button
+                          x:Name="CopyComponentsButton"
+                          Content="{l:T About.Components.Copy}"
+                          Command="{Binding CopyComponentsCommand}"
+                          IsVisible="{Binding CopyToClipboard, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        />
+                        <TextBlock
+                          Text="{Binding ComponentsSaid}"
+                          IsVisible="{Binding ComponentsSaid, Converter={x:Static ObjectConverters.IsNotNull}}"
+                          VerticalAlignment="Center"
+                          AutomationProperties.LiveSetting="Polite"
+                        />
+                      </WrapPanel>
+                      <HyperlinkButton
+                        x:Name="LicencesLink"
+                        NavigateUri="{x:Static s:AboutViewModel.ReleasesUri}"
+                        Padding="0"
+                      >
+                        <TextBlock Text="{l:T About.Components.Licences}" TextWrapping="Wrap" />
+                      </HyperlinkButton>
+                    </StackPanel>
+                  </Expander>
                   <TextBlock Text="{Binding LicenceText}" TextWrapping="Wrap" />
                   <HyperlinkButton
                     x:Name="SourceLink"

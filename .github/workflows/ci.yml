@@ -117,10 +117,11 @@ jobs:
     # The release's SBOMs (docs/features/F4.17-sbom.md, behavior 5): made the way the release makes them, and checked,
     # so a change that breaks them shows here rather than on release day.
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0 # MinVer needs tags
           persist-credentials: false
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
@@ -129,6 +130,16 @@ jobs:
       - run: dotnet tool restore
       - run: tools/sbom.sh 0.0.0-ci sbom
       - run: python3 tools/ci/check-sbom.py sbom/*.cdx.json
+      - name: About agrees with the SBOM
+        # Help › About's list (F1.34) is written by the build from the same restore; each app's must match its SBOM.
+        run: |
+          for app in Desktop Gateway Browser; do
+            dotnet build "src/AprsMap.$app/AprsMap.$app.csproj" -c Release -v quiet
+          done
+          python3 tools/ci/check-sbom.py --about src/AprsMap.Desktop/obj/Release/net10.0/components.json sbom/*-desktop.cdx.json
+          python3 tools/ci/check-sbom.py --about src/AprsMap.Gateway/obj/Release/net10.0/components.json sbom/*-gateway.cdx.json
+          python3 tools/ci/check-sbom.py --about src/AprsMap.Browser/obj/Release/net10.0-browser/components.json \
+            sbom/*-browser.cdx.json
 
   format:
     runs-on: ubuntu-latest

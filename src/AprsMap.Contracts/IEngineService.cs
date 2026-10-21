@@ -382,6 +382,12 @@ public interface IEngineService
     Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// What the engine's app is built from and runs on (docs/features/F1.34-about-components.md, behavior 2): the
+    /// desktop app's own, or the gateway's. On a gateway, the operator's only (behavior 3).
+    /// </summary>
+    Task<ComponentReport> GetComponentsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The folders the app keeps things in, for Help › About (docs/features/F1.31-files.md): settings, data, map tiles,
     /// logs and the defaults for every user. Operator-only on a gateway, so a server's paths never reach a viewer.
     /// </summary>
