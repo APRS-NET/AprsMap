@@ -101,7 +101,30 @@ public sealed class MapView : Control, IDisposable
         _map.Navigator.ViewportChanged += (_, _) => ViewChanged?.Invoke(this, EventArgs.Empty);
         this.GetResourceObservable("Color.Ground").Subscribe(new GroundObserver(this));
         Watch("Map.SymbolSize", v => _symbolDip = v is double d ? d : 24);
-        Watch("Map.Dimming", v => Dimming = v is double d and >= 0 ? d : null);
+        Watch(
+            "Map.Dimming",
+            v =>
+            {
+                Dimming = v is double d and >= 0 ? d : null;
+                InvalidateVisual(); // live as the contrast slider moves (#345)
+            }
+        );
+        Watch(
+            "Map.Greyscale",
+            v =>
+            {
+                Greyscale = v is true;
+                InvalidateVisual();
+            }
+        );
+        Watch(
+            "Map.SymbolBacking",
+            v =>
+            {
+                SymbolBacking = v is true;
+                InvalidateVisual();
+            }
+        );
         Watch("Map.ShowLabels", v => ShowLabels = v is not false);
         Watch(
             "Map.LabelSize",
@@ -823,6 +846,12 @@ public sealed class MapView : Control, IDisposable
     /// <summary>How much the tiles are darkened, 0 to 1: in a dark theme they are dimmed by default (behavior 13).</summary>
     public double? Dimming { get; set; }
 
+    /// <summary>Whether the tiles are drawn without colour (#345).</summary>
+    public bool Greyscale { get; set; }
+
+    /// <summary>Whether each symbol gets a soft disc behind it, in the halo colour (#345).</summary>
+    public bool SymbolBacking { get; set; }
+
     /// <summary>The centre (degrees) and resolution (metres per pixel) of the view, once it has a size.</summary>
     public (double Latitude, double Longitude, double Resolution)? View
     {
@@ -972,6 +1001,8 @@ public sealed class MapView : Control, IDisposable
                 (float)_symbolDip,
                 _dot,
                 EffectiveDimming,
+                Greyscale,
+                SymbolBacking ? _casingColour : SKColors.Transparent,
                 tracks,
                 route,
                 barbs,
@@ -1597,6 +1628,8 @@ public sealed class MapView : Control, IDisposable
         float symbolDip,
         SKColor dot,
         double dimming,
+        bool greyscale,
+        SKColor backing,
         TrackLayer.TrackFrame tracks,
         RouteFrame? route,
         WindBarbs? barbs,
@@ -1617,6 +1650,43 @@ public sealed class MapView : Control, IDisposable
 
         public bool Equals(ICustomDrawOperation? other) => false;
 
+        /// <summary>Rec. 709 luminance in each colour channel: the tiles in grey, alpha kept.</summary>
+        private static readonly float[] Luminance =
+        [
+            0.2126f,
+            0.7152f,
+            0.0722f,
+            0,
+            0,
+            0.2126f,
+            0.7152f,
+            0.0722f,
+            0,
+            0,
+            0.2126f,
+            0.7152f,
+            0.0722f,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+        ];
+
+        /// <summary>A soft disc behind each symbol (#345), half as strong for a stale station, as its symbol is.</summary>
+        private void DrawBacking(SKCanvas canvas, SKColor backing)
+        {
+            using var fill = new SKPaint { IsAntialias = true };
+            var radius = symbolDip * 0.62f;
+            for (var i = 0; i < marks.Count; i++)
+            {
+                fill.Color = backing.WithAlpha(marks[i].IsStale ? (byte)100 : (byte)200);
+                canvas.DrawCircle(screen[i], radius, fill);
+            }
+        }
+
         public bool HitTest(Point p) => bounds.Contains(p);
 
         public void Render(ImmediateDrawingContext context)
@@ -1633,6 +1703,13 @@ public sealed class MapView : Control, IDisposable
             {
                 canvas.DrawRect(0, 0, (float)bounds.Width, (float)bounds.Height, ground);
             }
+            using var grey = greyscale
+                ? new SKPaint { ColorFilter = SKColorFilter.CreateColorMatrix(Luminance) }
+                : null;
+            if (grey is not null)
+            {
+                canvas.SaveLayer(grey); // the tiles without colour (#345)
+            }
             owner._renderer.Render(
                 canvas,
                 map.Navigator.Viewport,
@@ -1643,6 +1720,10 @@ public sealed class MapView : Control, IDisposable
                 null,
                 default
             );
+            if (grey is not null)
+            {
+                canvas.Restore();
+            }
             if (dimming > 0)
             {
                 using var dim = new SKPaint { Color = owner._ground.WithAlpha((byte)(dimming * 255)) };
@@ -1654,6 +1735,10 @@ public sealed class MapView : Control, IDisposable
             links?.Draw(canvas); // the RF network (F1.21 behavior 5)
             tracks.Draw(canvas);
             route?.Draw(canvas); // the selected packet's route over the tracks (F1.21 behavior 2)
+            if (backing.Alpha > 0)
+            {
+                DrawBacking(canvas, backing);
+            }
             // Stations over the tiles (and over the dimming, so they keep their contrast).
             owner._stations.Draw(canvas, marks, screen, symbolDip, Math.Max(1f, canvas.TotalMatrix.ScaleX), dot);
             barbs?.Draw(canvas, owner._textColour, owner._casingColour); // wind over the symbols (F1.10 behavior 5)

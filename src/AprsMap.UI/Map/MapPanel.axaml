@@ -411,6 +411,62 @@
           Height="{DynamicResource Icon.Size}"
         />
       </ToggleButton>
+      <!-- Map contrast (#345): fade, greyscale and a backing behind symbols, so stations stand out on busy tiles. -->
+      <Button
+        x:Name="ContrastButton"
+        ToolTip.Tip="{l:T Map.Contrast}"
+        AutomationProperties.Name="{l:T Map.Contrast}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <!-- A circle half filled, drawn for this app: contrast. -->
+        <PathIcon
+          Data="M 12,3 A 9,9 0 1 0 12,21 A 9,9 0 1 0 12,3 Z M 12,5 L 12,19 A 7,7 0 1 1 12,5 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+        <Button.Flyout>
+          <Flyout Placement="LeftEdgeAlignedTop">
+            <StackPanel x:Name="ContrastPanel" Spacing="10" Width="260" Margin="4">
+              <TextBlock Text="{l:T Map.Contrast}" FontWeight="SemiBold" />
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding MapFadeText}" TextWrapping="Wrap" />
+                <Slider
+                  x:Name="MapFadeSlider"
+                  Minimum="0"
+                  Maximum="80"
+                  SmallChange="5"
+                  LargeChange="10"
+                  TickFrequency="5"
+                  IsSnapToTickEnabled="True"
+                  Value="{Binding MapFadePercent}"
+                  AutomationProperties.Name="{l:T Settings.Map.Fade}"
+                />
+              </StackPanel>
+              <ToggleSwitch
+                x:Name="MapGreyscaleSwitch"
+                IsChecked="{Binding MapGreyscale}"
+                OnContent="{l:T Settings.Map.Greyscale}"
+                OffContent="{l:T Settings.Map.Greyscale}"
+                AutomationProperties.Name="{l:T Settings.Map.Greyscale}"
+              />
+              <ToggleSwitch
+                x:Name="SymbolBackingSwitch"
+                IsChecked="{Binding SymbolBacking}"
+                OnContent="{l:T Settings.Map.SymbolBacking}"
+                OffContent="{l:T Settings.Map.SymbolBacking}"
+                AutomationProperties.Name="{l:T Settings.Map.SymbolBacking}"
+              />
+              <Button
+                x:Name="ResetContrastButton"
+                Content="{l:T Map.Contrast.Reset}"
+                Command="{Binding ResetMapContrastCommand}"
+              />
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
       <!-- Clear stations (F1.19): every station, object and item off the map, after a question. -->
       <Button
         x:Name="ClearStationsButton"

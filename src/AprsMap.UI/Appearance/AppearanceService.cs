@@ -172,17 +172,10 @@ public sealed class AppearanceService
         // Map symbols and their labels scale together with the map symbol size (F1.4 behavior 16).
         yield return ("Map.SymbolSize", Math.Round(24 * s.MapSymbolScale));
         yield return ("Map.LabelSize", 12 * s.MapSymbolScale);
-        // How much the tiles are darkened; negative leaves it to the theme (dimmed when dark).
-        yield return (
-            "Map.Dimming",
-            s.MapBrightness switch
-            {
-                MapBrightness.Normal => 0d,
-                MapBrightness.Dimmed => 0.35,
-                MapBrightness.Dark => 0.6,
-                _ => -1d,
-            }
-        );
+        // How far the tiles fade; negative leaves it to the theme (faded when dark).
+        yield return ("Map.Dimming", s.MapFade is { } fade ? Math.Clamp(fade, 0, AppearanceSettings.MapFadeMax) : -1d);
+        yield return ("Map.Greyscale", s.MapGreyscale);
+        yield return ("Map.SymbolBacking", s.SymbolBacking);
         yield return ("Map.ShowLabels", s.MapLabels == MapLabels.AllThatFit);
         yield return ("Map.ShowFilterCircles", s.ShowFilterCircles);
         yield return ("Map.DeadReckoning", s.DeadReckoning);

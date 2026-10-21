@@ -119,7 +119,12 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             json.WriteString("density", s.Density.ToString());
             json.WriteString("motion", s.Motion.ToString());
             json.WriteNumber("mapSymbolScale", s.MapSymbolScale);
-            json.WriteString("mapBrightness", s.MapBrightness.ToString());
+            if (s.MapFade is { } fade)
+            {
+                json.WriteNumber("mapFade", fade);
+            }
+            json.WriteBoolean("mapGreyscale", s.MapGreyscale);
+            json.WriteBoolean("symbolBacking", s.SymbolBacking);
             json.WriteString("mapLabels", s.MapLabels.ToString());
             json.WriteString("mapTracks", s.MapTracks.ToString());
             json.WriteString("mapPaths", s.MapPaths.ToString());
@@ -201,9 +206,39 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             {
                 s = s with { MapSymbolScale = mapSymbolScale };
             }
-            if (Enum<MapBrightness>(root, "mapBrightness") is { } brightness)
+            if (Number(root, "mapFade") is { } fade)
             {
-                s = s with { MapBrightness = brightness };
+                s = s with { MapFade = Math.Clamp(fade, 0, AppearanceSettings.MapFadeMax) };
+            }
+            else if (root.TryGetProperty("mapBrightness", out var brightness)) // before #345: three steps
+            {
+                s = s with
+                {
+                    MapFade =
+                        brightness.ValueKind == JsonValueKind.String
+                            ? brightness.GetString() switch
+                            {
+                                "Normal" => 0,
+                                "Dimmed" => 0.35,
+                                "Dark" => 0.6,
+                                _ => null,
+                            }
+                            : null,
+                };
+            }
+            if (
+                root.TryGetProperty("mapGreyscale", out var greyscale)
+                && greyscale.ValueKind is JsonValueKind.True or JsonValueKind.False
+            )
+            {
+                s = s with { MapGreyscale = greyscale.GetBoolean() };
+            }
+            if (
+                root.TryGetProperty("symbolBacking", out var backing)
+                && backing.ValueKind is JsonValueKind.True or JsonValueKind.False
+            )
+            {
+                s = s with { SymbolBacking = backing.GetBoolean() };
             }
             if (Enum<MapLabels>(root, "mapLabels") is { } labels)
             {

@@ -11,6 +11,9 @@ namespace AprsMap.UI.Settings;
 /// </summary>
 public static class SettingsRegistry
 {
+    /// <summary>The map fade choice that follows the theme (a null <see cref="AppearanceSettings.MapFade"/>).</summary>
+    private const double AutoFade = -1;
+
     /// <summary>The Appearance section's options, bound to <paramref name="appearance"/>.</summary>
     public static IReadOnlyList<SettingItem> Appearance(
         AppearanceService appearance,
@@ -208,21 +211,51 @@ public static class SettingsRegistry
                 )
             );
         }
+        // Map contrast (#345): the same three as the map's own button.
         items.Add(
             new ChoiceSetting(
-                "map.brightness",
-                "Settings.Map.Brightness",
-                "Settings.Map.Brightness.Help",
+                "map.fade",
+                "Settings.Map.Fade",
+                "Settings.Map.Fade.Help",
                 text,
                 () =>
                     [
-                        (MapBrightness.Auto, text["Settings.Map.Brightness.Auto"]),
-                        (MapBrightness.Normal, text["Settings.Map.Brightness.Normal"]),
-                        (MapBrightness.Dimmed, text["Settings.Map.Brightness.Dimmed"]),
-                        (MapBrightness.Dark, text["Settings.Map.Brightness.Dark"]),
+                        ((object?)AutoFade, text["Settings.Map.Fade.Auto"]),
+                        .. AppearanceSettings.MapFadeSteps.Select(step =>
+                            (
+                                (object?)step,
+                                text.Format(
+                                    "Settings.Appearance.Percent",
+                                    new Dictionary<string, object?> { ["percent"] = Math.Round(step * 100) }
+                                )
+                            )
+                        ),
                     ],
-                () => appearance.Current.MapBrightness,
-                value => Update(s => s with { MapBrightness = (MapBrightness)value! })
+                () =>
+                    appearance.Current.MapFade is { } fade
+                        ? AppearanceSettings.MapFadeSteps.MinBy(step => Math.Abs(step - fade))
+                        : AutoFade,
+                value => Update(s => s with { MapFade = value is double d and >= 0 ? d : null })
+            )
+        );
+        items.Add(
+            new ToggleSetting(
+                "map.greyscale",
+                "Settings.Map.Greyscale",
+                "Settings.Map.Greyscale.Help",
+                text,
+                () => appearance.Current.MapGreyscale,
+                value => Update(s => s with { MapGreyscale = value })
+            )
+        );
+        items.Add(
+            new ToggleSetting(
+                "map.symbol-backing",
+                "Settings.Map.SymbolBacking",
+                "Settings.Map.SymbolBacking.Help",
+                text,
+                () => appearance.Current.SymbolBacking,
+                value => Update(s => s with { SymbolBacking = value })
             )
         );
         items.Add(

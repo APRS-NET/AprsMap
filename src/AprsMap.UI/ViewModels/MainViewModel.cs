@@ -53,7 +53,11 @@ public sealed partial class MainViewModel : ObservableObject
         this.time = time;
         _deviceLocation = deviceLocation;
         _appearance = appearance ?? new AppearanceService();
-        _appearance.Changed += (_, _) => OnPropertyChanged(nameof(ShowAllLinks));
+        _appearance.Changed += (_, _) =>
+        {
+            OnPropertyChanged(nameof(ShowAllLinks));
+            OnMapContrastChanged();
+        };
         _showPseudoLanguage = showPseudoLanguage;
         _text = text ?? Localizer.Instance;
         SourceNames = new SourceNames(() => _settings);
