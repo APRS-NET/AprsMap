@@ -540,6 +540,15 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     {
         _settings = settings;
         IsReadOnly = settings.ReadOnly;
+        _showingIGate = true;
+        try
+        {
+            IGateOn = settings.GetActiveProfile()?.EffectiveIGate ?? false;
+        }
+        finally
+        {
+            _showingIGate = false;
+        }
         Rows.Clear();
         foreach (var source in settings.SourceList)
         {
@@ -555,6 +564,10 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         {
             kind.Retranslate(_text);
         }
+        IGateHeading = _settings.GetActiveProfile() is { } active
+            ? _text.Format("IGate.Heading", new Dictionary<string, object?> { ["profile"] = active.Callsign })
+            : null;
+        ShowIGate(_igate);
         foreach (var row in Rows)
         {
             var users = UsersOf(row.Source);
@@ -977,6 +990,60 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
 
     private List<string> UsersOf(SourceSettings source) =>
         [.. _settings.Profiles.Where(p => p.Uses(source)).Select(p => p.Name)];
+
+    // ── The receive-only IGate (docs/features/F3.4-rx-igate.md) ─────────────────────────────────────────────────
+
+    private bool _showingIGate;
+    private IGateStatus? _igate;
+
+    /// <summary>"IGate for NZ0P-10", or null without a profile.</summary>
+    [ObservableProperty]
+    public partial string? IGateHeading { get; private set; }
+
+    /// <summary>Whether the active profile gates what its TNCs hear to APRS-IS; saved as it's switched (behavior 1).</summary>
+    [ObservableProperty]
+    public partial bool IGateOn { get; set; }
+
+    /// <summary>"12 packets gated, 3 not", while it's on (behavior 6); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? IGateCountText { get; private set; }
+
+    /// <summary>Why it gates nothing now (behavior 3), in words; null when it gates.</summary>
+    [ObservableProperty]
+    public partial string? IGateHeldText { get; private set; }
+
+    partial void OnIGateOnChanged(bool value)
+    {
+        if (!_showingIGate && _settings.GetActiveProfile() is { } active && active.EffectiveIGate != value)
+        {
+            _ = SaveSettingsAsync(
+                _settings with
+                {
+                    Profiles =
+                    [
+                        .. _settings.Profiles.Select(p =>
+                            p.Id == active.Id ? p with { IGate = value ? true : null } : p
+                        ),
+                    ],
+                }
+            );
+        }
+    }
+
+    /// <summary>The IGate's counts and hold, from the engine's status.</summary>
+    internal void ShowIGate(IGateStatus? igate)
+    {
+        _igate = igate;
+        IGateCountText = igate is null
+            ? null
+            : _text.Format(
+                "IGate.Counts",
+                new Dictionary<string, object?> { ["gated"] = igate.Gated, ["refused"] = igate.Refused }
+            );
+        IGateHeldText = igate?.Held is { } held
+            ? _text.Format("IGate.Held", new Dictionary<string, object?> { ["reason"] = _text.Format(held) })
+            : null;
+    }
 
     private async Task<bool> SaveSettingsAsync(AppSettings settings)
     {

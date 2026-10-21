@@ -19,6 +19,7 @@
     <PackageReference Include="AprsNet.DeviceId" />
     <PackageReference Include="AprsNet.Filters" />
     <PackageReference Include="AprsNet.Gps" />
+    <PackageReference Include="AprsNet.IGate" />
     <PackageReference Include="AprsNet.Corpus" />
     <PackageReference Include="AprsNet.Kiss" />
     <PackageReference Include="AprsNet.Kiss.Serial" />

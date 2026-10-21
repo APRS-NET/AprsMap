@@ -65,6 +65,7 @@ public enum ConnectionState
 /// <param name="PacketHistory">
 /// <param name="Title">The gateway's page title (<c>Gateway:Title</c>, F1.26 behavior 10); null on the desktop.</param>
 /// <param name="Gps">The active profile's GPS and its fix (docs/features/F3.6-gps.md); null without one.</param>
+/// <param name="IGate">The receive-only IGate (docs/features/F3.4-rx-igate.md); null when the profile isn't one.</param>
 /// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
 /// </param>
 public sealed record EngineStatus(
@@ -90,8 +91,18 @@ public sealed record EngineStatus(
     int UnreadMessages = 0,
     int? CapturedToday = null,
     string? Title = null,
-    GpsStatus? Gps = null
+    GpsStatus? Gps = null,
+    IGateStatus? IGate = null
 );
+
+/// <summary>
+/// The receive-only IGate (docs/features/F3.4-rx-igate.md, behavior 6): what it has gated to APRS-IS and what it hasn't
+/// since the engine started, and why it's held, if it is.
+/// </summary>
+/// <param name="Gated">Packets heard on RF and sent to APRS-IS.</param>
+/// <param name="Refused">Packets heard on RF the IGate rules kept off APRS-IS (from the internet, NOGATE, duplicates…).</param>
+/// <param name="Held">Why nothing is gated now (no verified APRS-IS login, Transmit off…); null when it gates.</param>
+public sealed record IGateStatus(long Gated, long Refused, EngineError? Held = null);
 
 /// <summary>How much a GPS knows (docs/features/F3.6-gps.md, behavior 4).</summary>
 public enum GpsFixKind
