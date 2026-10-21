@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.3...v0.5.0-alpha.4) (2026-10-21)
+
+
+### Features
+
+* **about:** components and versions, from the build ([381e698](https://github.com/APRS-NET/AprsMap/commit/381e6985cfd0e527818bfa1ce39d688811be134a)), closes [#351](https://github.com/APRS-NET/AprsMap/issues/351)
+* **devices:** keep the device list up to date from the APRS Foundation ([6dbe074](https://github.com/APRS-NET/AprsMap/commit/6dbe074e0182b8bec1f696ae3d745365cec7f5a7)), closes [#355](https://github.com/APRS-NET/AprsMap/issues/355)
+* **gps:** GPS status panel with accuracy, a sky view and the satellites ([2168936](https://github.com/APRS-NET/AprsMap/commit/2168936d4be9fe12e98aa6c82afbe82e488ab5d0)), closes [#331](https://github.com/APRS-NET/AprsMap/issues/331)
+
 ## [0.5.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.2...v0.5.0-alpha.3) (2026-10-21)
 
 
