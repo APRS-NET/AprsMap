@@ -18,7 +18,9 @@ internal sealed record StationMark(
     int? BearingDegrees = null,
     WeatherSummary? Weather = null,
     AreaInfo? Area = null,
-    string? Signpost = null
+    string? Signpost = null,
+    int? Course = null,
+    double? SpeedKmh = null
 )
 {
     /// <summary>The mark for a station from the station stream.</summary>
@@ -40,7 +42,9 @@ internal sealed record StationMark(
             station.BearingDegrees,
             station.Weather,
             station.Area,
-            station.Signpost
+            station.Signpost,
+            station.Course,
+            station.SpeedKmh
         );
     }
 }

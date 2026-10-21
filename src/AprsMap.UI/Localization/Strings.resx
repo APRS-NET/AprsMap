@@ -266,7 +266,13 @@
     <value>Show the filter's ranges on the map</value>
   </data>
   <data name="Settings.Map.FilterCircles.Help" xml:space="preserve">
-    <value>Dashed circles show where APRS-IS sends stations from: around your location, the map and any station you follow.</value>
+    <value>Dashed circles show where APRS-IS sends stations from: around your location, and around any station you follow or watch.</value>
+  </data>
+  <data name="Settings.Map.DeadReckoning" xml:space="preserve">
+    <value>Show where moving stations probably are now</value>
+  </data>
+  <data name="Settings.Map.DeadReckoning.Help" xml:space="preserve">
+    <value>For up to 10 minutes after a moving station's last position, its symbol moves on along its course at its speed, with a dashed line back to where it was heard and a ring that shrinks as the estimate ages. Distances and sorting still use where it was heard.</value>
   </data>
   <data name="Wizard.Source" xml:space="preserve">
     <value>APRS-IS source</value>
@@ -3600,6 +3606,14 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Details.Label.Range" xml:space="preserve">
     <value>From me</value>
+  </data>
+  <data name="Details.Label.Estimate" xml:space="preserve">
+    <value>Now</value>
+    <comment>Label of where dead reckoning puts a moving station now.</comment>
+  </data>
+  <data name="Details.Estimate" xml:space="preserve">
+    <value>Probably {distance} on along its course, if it kept going</value>
+    <comment>distance: how far it has probably gone since its last position, in the viewer's unit.</comment>
   </data>
   <data name="Details.Label.Motion" xml:space="preserve">
     <value>Motion</value>

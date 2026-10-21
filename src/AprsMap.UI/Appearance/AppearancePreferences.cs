@@ -128,6 +128,7 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             json.WriteString("mapWeatherLabels", s.MapWeatherLabels.ToString());
             json.WriteString("mapWind", s.MapWind.ToString());
             json.WriteBoolean("showFilterCircles", s.ShowFilterCircles);
+            json.WriteBoolean("deadReckoning", s.DeadReckoning);
             if (s.MapProvider is { } provider)
             {
                 json.WriteString("mapProvider", provider);
@@ -252,6 +253,13 @@ public sealed class AppearancePreferences(IPreferenceStore store, TimeProvider t
             )
             {
                 s = s with { ShowFilterCircles = circles.GetBoolean() };
+            }
+            if (
+                root.TryGetProperty("deadReckoning", out var reckoning)
+                && reckoning.ValueKind is JsonValueKind.True or JsonValueKind.False
+            )
+            {
+                s = s with { DeadReckoning = reckoning.GetBoolean() };
             }
             if (root.TryGetProperty("mapProvider", out var provider) && provider.ValueKind == JsonValueKind.String)
             {

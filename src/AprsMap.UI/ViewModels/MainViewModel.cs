@@ -68,6 +68,12 @@ public sealed partial class MainViewModel : ObservableObject
             SourceNames,
             name => _settings is { ReadOnly: false } && _tracks.TryGetValue(name, out var track) && track.Count > 1
         );
+        Details.DeadReckoning = _appearance.Current.DeadReckoning;
+        _appearance.Changed += (_, settings) =>
+        {
+            Details.DeadReckoning = settings.DeadReckoning; // F1.17 behavior 4
+            Details.Refresh();
+        };
         Details.CloseRequested += (_, _) => SelectedStation = null;
         Details.MessageRequested += (_, name) => OpenConversation(name);
         Details.DestinationRequested += (_, d) => _ = Destination.SetAsync(d.Latitude, d.Longitude, d.Name);

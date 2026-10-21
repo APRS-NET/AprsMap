@@ -277,6 +277,7 @@ public sealed class MapTests
                 "map.symbol-size",
                 "map.areas",
                 "map.filter-circles",
+                "map.dead-reckoning",
                 "map.stale-after",
                 "map.remove-after",
                 "map.track-points",

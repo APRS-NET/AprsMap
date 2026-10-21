@@ -17,6 +17,11 @@ namespace AprsMap.Contracts;
 /// <param name="Weather">For a station that reports weather: what its map label and wind barb show (F1.10).</param>
 /// <param name="Area">For an area object: the shape it draws (F1.12).</param>
 /// <param name="Signpost">For a signpost: the 1–3 characters it shows (F1.12).</param>
+/// <param name="Course">
+/// The course its latest position report gave, 1–360 degrees, for dead reckoning (docs/features/F1.17-dead-reckoning.md);
+/// null when that report had none.
+/// </param>
+/// <param name="SpeedKmh">The speed its latest position report gave, with <paramref name="Course"/>; null when none.</param>
 public sealed record StationState(
     string Name,
     DateTimeOffset LastHeard,
@@ -29,7 +34,9 @@ public sealed record StationState(
     int? BearingDegrees = null,
     WeatherSummary? Weather = null,
     AreaInfo? Area = null,
-    string? Signpost = null
+    string? Signpost = null,
+    int? Course = null,
+    double? SpeedKmh = null
 );
 
 /// <summary>
