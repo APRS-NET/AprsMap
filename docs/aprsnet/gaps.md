@@ -37,7 +37,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G14 | Radios' built-in TNCs: KISS setup (`0.4.0-alpha.6`), typing over an open connection and the APRS-mode reader (`0.4.0-alpha.7`): delivered | Kiss.Serial | 2 | [APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249) |
 | G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | [APRS.NET#209](https://github.com/APRS-NET/APRS.NET/issues/209) |
 | G16 | IGate engine (RF to APRS-IS delivered, `0.5.0-alpha.1`; APRS-IS to RF open) | new: AprsNet.IGate | 3 | [APRS.NET#206](https://github.com/APRS-NET/APRS.NET/issues/206), [APRS.NET#212](https://github.com/APRS-NET/APRS.NET/issues/212) |
-| G17 | NMEA sentence parsing and `$` packets | Packets | 3 | [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
+| G17 | NMEA sentence parsing and `$` packets (delivered; GSV, GST and fix quality for F3.12 in `0.5.0-alpha.2`) | Packets | 3 | [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G18 | Raw weather station data and storm objects | Packets | 4 | — |
 | G21 | APRS-IS server side: client logins, passcode check, filter evaluation (filters delivered; server in source, not on NuGet) | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |
 | G22 | AGWPE TCP transport | new: AprsNet.Agw | 3 | — |
@@ -46,12 +46,12 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G26 | APRS-IS server presets a UI can list (delivered) | AprsIsTcpClient | 0 | — |
 | G27 | Validation errors with stable codes (delivered) | AprsIsTcpClient, Packets | 0 | — |
 | G29 | Source merge: which source a packet came from, and duplicates reported with their source (delivered) | Packets | 1 | [APRS.NET#125](https://github.com/APRS-NET/APRS.NET/issues/125) |
-| G30 | gpsd client | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
+| G30 | gpsd client (delivered; SKY reports and error estimates for F3.12 in `0.5.0-alpha.2`) | new: AprsNet.Gps (with G17) | 2 | [APRS.NET#127](https://github.com/APRS-NET/APRS.NET/issues/127), [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G31 | Corpus capture helpers: the anonymizer as a library, the corpus line format, unrecognised parts of a packet (delivered, `0.4.0-alpha.5`: `AprsNet.Corpus`, `AprsPacket.Unrecognized`) | Packets (or a small new package) | 2 | [APRS.NET#236](https://github.com/APRS-NET/APRS.NET/issues/236) |
 | G32 | A typed reason when an APRS-IS login reaches a KISS TNC (delivered, `0.4.0-alpha.5`: `KissTncLoginException`) | AprsIsTcpClient | 3 | [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) |
 | G33 | A traffic event on KISS and APRS-IS connections, for a troubleshooting console (delivered: KISS `0.4.0-alpha.6`, APRS-IS `0.4.0-alpha.7`) | Kiss, AprsIsTcpClient | 2 | [APRS.NET#262](https://github.com/APRS-NET/APRS.NET/issues/262) |
 | G34 | Bulletin repeat schedule, and ANSRVR group helpers (partly delivered, `0.4.0-alpha.9`: `BulletinSchedule`, `AnsrvrCommand`; recognising a relayed group message still open) | Messaging | 2 | [APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272) (closed), [APRS.NET#281](https://github.com/APRS-NET/APRS.NET/issues/281) (relays, paused) |
-| G35 | The device list as a loadable object, and a fetcher with an overridable default address | DeviceId | 2 | [APRS.NET#280](https://github.com/APRS-NET/APRS.NET/issues/280) |
+| G35 | The device list as a loadable object, and a fetcher with an overridable default address (delivered, `0.5.0-alpha.2`) | DeviceId | 2 | [APRS.NET#280](https://github.com/APRS-NET/APRS.NET/issues/280) |
 | G36 | Multiline objects: lines and polygons in an object's comment (WXSVR multiline protocol), decode and encode | Packets | 4 | — (not filed) |
 
 ---
@@ -385,7 +385,8 @@ count), along with the sender's position once, wrapped as third-party; rate limi
 Added 2026-10-20 for AprsMap F3.12 (GPS status): **GSV** (satellites in view: PRN, elevation, azimuth, SNR, across a
 multi-sentence group, per talker so GPS, GLONASS, Galileo and BeiDou stay apart, with the NMEA 4.1 signal ID where
 sent), **GST** (estimated position error in metres, where the receiver sends it), and the DOPs and satellites used from
-GGA and GSA, gathered into one fix-quality value next to the position fix shared with G30.
+GGA and GSA, gathered into one fix-quality value next to the position fix shared with G30. **Delivered** in `0.5.0-alpha.2`
+(`GpsQuality`, `GpsSatellite`, `GnssSystem` from `NmeaFixTracker`).
 
 **Acceptance.** APRS101 p.34 vectors; bad checksums give a warning, not an exception.
 
@@ -523,7 +524,7 @@ reconnect like the other connections. No device access in the library beyond the
 Added 2026-10-20 for AprsMap F3.12 (GPS status): TPV's error estimates (`eph`, `epv`, `epx`, `epy`, `eps`), and
 **SKY** reports (the satellites in view with PRN, elevation, azimuth, signal strength, used or not and constellation
 (`gnssid`), and the DOPs) into the same satellite and fix-quality values as G17's GSV and GSA. The raw lines read, for
-an app's console.
+an app's console. **Delivered** in `0.5.0-alpha.2` (`GpsdConnection.Quality` and `Satellites`).
 
 **Acceptance.** Recorded gpsd JSON sessions; no fix, 2D and 3D fixes; reconnect after the daemon restarts.
 

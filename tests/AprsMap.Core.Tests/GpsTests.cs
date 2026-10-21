@@ -112,7 +112,9 @@ public sealed class GpsTests
             Assert.Equal(GpsFixKind.NoFix, (await station.Engine.GetStatusAsync(Ct)).Gps?.Fix);
 
             await station.SendAsync(Second("120000"));
-            await WaitUntil(async () => (await station.Engine.GetStatusAsync(Ct)).Gps is { Satellites: 9 });
+            await WaitUntil(async () =>
+                (await station.Engine.GetStatusAsync(Ct)).Gps is { Satellites: 9, Fix: GpsFixKind.Fix3D }
+            ); // GSA, the second's last sentence, says 3D
 
             var gps = (await station.Engine.GetStatusAsync(Ct)).Gps!;
             Assert.Equal((GpsFixKind.Fix3D, true), (gps.Fix, gps.IsFresh));
@@ -151,7 +153,9 @@ public sealed class GpsTests
         using (cts)
         {
             await station.SendAsync(Second("120000"));
-            await WaitUntil(async () => (await station.Engine.GetStatusAsync(Ct)).Gps is { Satellites: 9 });
+            await WaitUntil(async () =>
+                (await station.Engine.GetStatusAsync(Ct)).Gps is { Satellites: 9, Fix: GpsFixKind.Fix3D }
+            ); // GSA, the second's last sentence, says 3D
 
             // The next second's RMC, before its GGA and GSA say the rest.
             await station.SendAsync(Nmea("GPRMC,120001,A,4903.510,N,07201.750,W,022.4,084.4,211026,,,A"));
@@ -173,7 +177,11 @@ public sealed class GpsTests
         using (cts)
         {
             await station.SendAsync(Second("120000"));
-            await WaitUntil(async () => (await station.Engine.GetStatusAsync(Ct)).Gps is { HasPosition: true });
+            // The whole second: RMC's position, then GGA's altitude and GSA's satellites.
+            await WaitUntil(async () =>
+                (await station.Engine.GetStatusAsync(Ct)).Gps
+                    is { HasPosition: true, Satellites: 9, AltitudeMeters: not null }
+            );
 
             await station.Engine.SendPositionAsync(AprsIs.Id, Ct);
             var moving = Assert.IsType<PositionReport>(AprsPacket.Parse(aprsIs.Sent.Last()).Payload);

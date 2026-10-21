@@ -106,15 +106,14 @@ public sealed class QueryTests
         var (run, cts, _, tnc) = await Run(station);
         using (cts)
         {
-            await tnc.Write("N0ABC>APRS,WIDE1-1:?APRS?");
-            await Task.Delay(TimeSpan.FromMilliseconds(100), TimeProvider.System, Ct);
+            await Heard(station, () => tnc.Write("N0ABC>APRS,WIDE1-1:?APRS?"));
             Assert.Empty(Answers(tnc)); // not straight away: every station hears it
 
             station.Time.Advance(TimeSpan.FromSeconds(61));
             await WaitUntil(() => Task.FromResult(Answers(tnc).Any(p => p.Payload is PositionReport)));
             var answered = Answers(tnc).Count;
 
-            await tnc.Write("N0ABC>APRS,WIDE1-1,WIDE2*:?APRS?"); // a digipeated copy
+            await Heard(station, () => tnc.Write("N0ABC>APRS,WIDE1-1,WIDE2*:?APRS?")); // a digipeated copy
             station.Time.Advance(TimeSpan.FromSeconds(61));
             await Task.Delay(TimeSpan.FromMilliseconds(100), TimeProvider.System, Ct);
             Assert.Equal(answered, Answers(tnc).Count);
@@ -174,6 +173,14 @@ public sealed class QueryTests
             await cts.CancelAsync();
             await run;
         }
+    }
+
+    /// <summary>Writes a packet and waits until the engine has taken it, so the clock isn't moved on before it has.</summary>
+    private static async Task Heard(Station station, Func<ValueTask> write)
+    {
+        var before = (await station.Engine.GetStatusAsync(Ct)).PacketsReceived;
+        await write();
+        await WaitUntil(async () => (await station.Engine.GetStatusAsync(Ct)).PacketsReceived > before);
     }
 
     private static async Task WaitUntil(Func<Task<bool>> condition)
