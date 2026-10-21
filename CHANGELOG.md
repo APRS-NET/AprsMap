@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.5.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.1...v0.5.0-alpha.2) (2026-10-21)
+
+
+### Features
+
+* **about:** Help › About lists where settings, data, tiles and logs are kept, each with Copy and Open folder (F1.31) ([9c603e9](https://github.com/APRS-NET/AprsMap/commit/9c603e914b9578f6858cd04466ffde9b37c58d88)), closes [#306](https://github.com/APRS-NET/AprsMap/issues/306)
+* **beacons:** Mic-E position format with a status, and Emergency ([41a1aa8](https://github.com/APRS-NET/AprsMap/commit/41a1aa819ebad930b07595b895775b501f7c3526)), closes [#204](https://github.com/APRS-NET/AprsMap/issues/204)
+* **beacons:** saved status texts, grid square or time, and Send status now ([f6a17e4](https://github.com/APRS-NET/AprsMap/commit/f6a17e45644d4a53882e7ba360c70d7537572c89)), closes [#203](https://github.com/APRS-NET/AprsMap/issues/203)
+* **filter:** 50 km by default, the map no longer changes the filter, circles on, and the filter said when adding APRS-IS ([9eca25d](https://github.com/APRS-NET/AprsMap/commit/9eca25dc27bd830199060f9307b7f8efeabc75c4))
+* **logging:** Settings › Logging with a level per area, a daily log file, and OTLP targets (F1.32) ([f290360](https://github.com/APRS-NET/AprsMap/commit/f290360072529ee95180f768f60397a464434cdf))
+* **logging:** Settings › Logging with a level per area, a daily log file, and OTLP targets (F1.32) ([8936a7f](https://github.com/APRS-NET/AprsMap/commit/8936a7f3cc3c7a370876fc19b443574a30efd994)), closes [#310](https://github.com/APRS-NET/AprsMap/issues/310)
+* **map:** extra map views that each follow one station ([cfbd5da](https://github.com/APRS-NET/AprsMap/commit/cfbd5da631fce8539109086b32d7f231d258141b)), closes [#207](https://github.com/APRS-NET/AprsMap/issues/207)
+* **messages:** answer pings, a remote check that the station is running, hearing and sending (F2.13) ([d9f2080](https://github.com/APRS-NET/AprsMap/commit/d9f2080bd1b23eaaa1510f883e01b90d665ca7af))
+* **messages:** answer pings: a remote check that the station is running, hearing and sending (F2.13) ([d77b3d9](https://github.com/APRS-NET/AprsMap/commit/d77b3d9020d63829334473b8fe0368ed10487571)), closes [#307](https://github.com/APRS-NET/AprsMap/issues/307)
+* **messaging:** auto-reply while away, once per station, after a delay ([2196145](https://github.com/APRS-NET/AprsMap/commit/219614579815afe203559b5e2f7d25be65d9ce0f)), closes [#202](https://github.com/APRS-NET/AprsMap/issues/202)
+* **messaging:** email through the gateway, and asking QRU servers ([862fbff](https://github.com/APRS-NET/AprsMap/commit/862fbffe96090c3fb18e8a4f00ec40f1044b9719)), closes [#201](https://github.com/APRS-NET/AprsMap/issues/201)
+* **objects:** place, move, kill and re-send objects and items ([a6cbd71](https://github.com/APRS-NET/AprsMap/commit/a6cbd71c0ff239cd018170448da6f23fb708131c)), closes [#199](https://github.com/APRS-NET/AprsMap/issues/199)
+
+
+### Bug Fixes
+
+* **beacons:** never send the Mic-E Emergency status ([9ef4e46](https://github.com/APRS-NET/AprsMap/commit/9ef4e4623c61483206a1d6f06712b68c1128d5a4))
+* **map:** Clear stations' Clear button clears again ([5fc2dd9](https://github.com/APRS-NET/AprsMap/commit/5fc2dd91a48a89c76d624be69b80d4d9f4f50f1c))
+* **messages:** group message history saves, and save what's waiting when the engine stops ([6ee7162](https://github.com/APRS-NET/AprsMap/commit/6ee716214797126f4c546a9e80bf80dd85eba175))
+* **messages:** group message history saves, and save what's waiting when the engine stops ([01d3ace](https://github.com/APRS-NET/AprsMap/commit/01d3ace9a440807fa4c65ce44bc33740c80b6db5))
+* **messages:** on stopping, write the history only if a save is waiting; keep hosting tests off the real Data folder ([00fc30d](https://github.com/APRS-NET/AprsMap/commit/00fc30df2fe45d5b97b125a3e630a986a9998172))
+
 ## [0.5.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.4.0-alpha.6...v0.5.0-alpha.1) (2026-10-19)
 
 
