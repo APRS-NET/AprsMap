@@ -19,6 +19,13 @@
     <KeyBinding Gesture="Escape" Command="{Binding CloseCommand}" />
   </UserControl.KeyBindings>
   <UserControl.Styles>
+    <!-- A device list check that failed (F4.16 behavior 9) reads in the warning colour. -->
+    <Style Selector="TextBlock#DeviceListChecked">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+    </Style>
+    <Style Selector="TextBlock#DeviceListChecked.warn">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
     <!-- Narrow windows: the sections become tabs across the top (set by code-behind). -->
     <Style Selector="ListBox#SectionList.narrow">
       <Setter Property="DockPanel.Dock" Value="Top" />
@@ -1516,6 +1523,79 @@
                 Text="{Binding Data.Capture.Error}"
                 IsVisible="{Binding Data.Capture.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
                 Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+            <!-- The device list (docs/features/F4.16-device-list.md, behaviors 4, 5, 9, 10). -->
+            <StackPanel
+              x:Name="DeviceListSection"
+              Spacing="8"
+              IsVisible="{Binding Data.DeviceList, Converter={x:Static ObjectConverters.IsNotNull}}"
+            >
+              <TextBlock Text="{l:T DeviceList.Title}" FontWeight="SemiBold" />
+              <TextBlock Text="{l:T DeviceList.Description}" TextWrapping="Wrap" />
+              <TextBlock x:Name="DeviceListInUse" Text="{Binding Data.DeviceList.InUseText, FallbackValue={x:Null}}" />
+              <TextBlock
+                x:Name="DeviceListChecked"
+                Text="{Binding Data.DeviceList.CheckedText, FallbackValue={x:Null}}"
+                Classes.warn="{Binding Data.DeviceList.CheckFailed, FallbackValue=False}"
+                TextWrapping="Wrap"
+                AutomationProperties.LiveSetting="Polite"
+              />
+              <WrapPanel
+                ItemSpacing="12"
+                LineSpacing="8"
+                IsVisible="{Binding Data.DeviceList.ShowsChecks, FallbackValue=False}"
+              >
+                <Button
+                  x:Name="DeviceListUpdateNow"
+                  Content="{l:T DeviceList.UpdateNow}"
+                  Command="{Binding Data.DeviceList.UpdateNowCommand, FallbackValue={x:Null}}"
+                />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBlock Text="{l:T DeviceList.Schedule}" VerticalAlignment="Center" />
+                  <ComboBox
+                    x:Name="DeviceListSchedule"
+                    ItemsSource="{Binding Data.DeviceList.ScheduleOptions, FallbackValue={x:Null}}"
+                    SelectedItem="{Binding Data.DeviceList.Schedule, FallbackValue={x:Null}}"
+                    AutomationProperties.Name="{l:T DeviceList.Schedule}"
+                  />
+                </StackPanel>
+              </WrapPanel>
+              <Expander
+                x:Name="DeviceListAdvanced"
+                Header="{l:T DeviceList.Advanced}"
+                IsVisible="{Binding Data.DeviceList.ShowsUrl, FallbackValue=False}"
+                HorizontalAlignment="Stretch"
+              >
+                <StackPanel Spacing="8">
+                  <TextBlock Text="{l:T DeviceList.UrlHelp}" TextWrapping="Wrap" />
+                  <TextBox
+                    x:Name="DeviceListUrl"
+                    Text="{Binding Data.DeviceList.Url, FallbackValue=''}"
+                    AutomationProperties.Name="{l:T DeviceList.Url}"
+                  />
+                  <WrapPanel ItemSpacing="8">
+                    <Button
+                      Content="{l:T DeviceList.SaveUrl}"
+                      Command="{Binding Data.DeviceList.SaveUrlCommand, FallbackValue={x:Null}}"
+                    />
+                    <Button
+                      Content="{l:T DeviceList.ResetUrl}"
+                      Command="{Binding Data.DeviceList.ResetUrlCommand, FallbackValue={x:Null}}"
+                    />
+                  </WrapPanel>
+                  <TextBlock
+                    Text="{Binding Data.DeviceList.UrlError, FallbackValue={x:Null}}"
+                    IsVisible="{Binding Data.DeviceList.UrlError, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+                    Foreground="{DynamicResource Brush.Warn}"
+                    TextWrapping="Wrap"
+                  />
+                </StackPanel>
+              </Expander>
+              <TextBlock
+                Text="{l:T DeviceList.Credit}"
+                Foreground="{DynamicResource Brush.TextMuted}"
                 TextWrapping="Wrap"
               />
             </StackPanel>

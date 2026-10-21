@@ -277,6 +277,24 @@ internal sealed class FakeEngine : IEngineService
     public Task<UpdateStatus> GetUpdateStatusAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(UpdateStatus);
 
+    /// <summary>What <see cref="GetDeviceListAsync"/> answers.</summary>
+    public DeviceListStatus DeviceList { get; set; } =
+        new(DeviceListOrigin.BuiltIn, new DateTimeOffset(2026, 10, 18, 4, 0, 0, TimeSpan.Zero), "a1b2c3d", 812);
+
+    /// <summary>How many times Update now ran.</summary>
+    public int DeviceListUpdates { get; private set; }
+
+    /// <inheritdoc />
+    public Task<DeviceListStatus> GetDeviceListAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(DeviceList);
+
+    /// <inheritdoc />
+    public Task<DeviceListStatus> UpdateDeviceListAsync(CancellationToken cancellationToken = default)
+    {
+        DeviceListUpdates++;
+        return Task.FromResult(DeviceList);
+    }
+
     /// <summary>What <see cref="GetComponentsAsync"/> answers.</summary>
     public ComponentReport Components { get; set; } =
         new(

@@ -240,6 +240,16 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync<LoggingStatus>(EngineHub.GetLoggingStatus, cancellationToken));
 
     /// <inheritdoc />
+    public Task<DeviceListStatus> GetDeviceListAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<DeviceListStatus>(EngineHub.GetDeviceList, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<DeviceListStatus> UpdateDeviceListAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<DeviceListStatus>(EngineHub.UpdateDeviceList, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<ComponentReport> GetComponentsAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<ComponentReport>(EngineHub.GetComponents, cancellationToken));
 

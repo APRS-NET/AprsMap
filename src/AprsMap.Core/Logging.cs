@@ -36,7 +36,12 @@ public static class LogAreas
             LogArea.Transmit => [Transmit],
             // The tile service, and the HTTP client's own lines for each tile (four at Information).
             LogArea.Tiles => ["AprsMap.Tiles", "System.Net.Http.HttpClient.AprsMap.Tiles"],
-            LogArea.Updates => [Updates, "System.Net.Http.HttpClient." + Engine.UpdatesHttpClient],
+            LogArea.Updates =>
+            [
+                Updates,
+                "System.Net.Http.HttpClient." + Engine.UpdatesHttpClient,
+                "System.Net.Http.HttpClient." + Engine.DeviceListHttpClient,
+            ],
             LogArea.Web => ["AprsMap.Gateway", "Microsoft.AspNetCore"],
             LogArea.AprsNet => ["AprsNet"],
             _ => [],

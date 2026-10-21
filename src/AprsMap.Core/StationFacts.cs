@@ -12,8 +12,15 @@ namespace AprsMap.Core;
 /// </summary>
 internal static class StationFacts
 {
-    /// <summary>The device, arrival and raw text of <paramref name="raw"/>, as received.</summary>
-    public static (StationDevice? Device, StationArrival? Arrival, string? Text) Of(byte[]? raw, bool heardHere = false)
+    /// <summary>
+    /// The device, arrival and raw text of <paramref name="raw"/>, as received; the device by <paramref name="devices"/>,
+    /// the list in use (docs/features/F4.16-device-list.md), the built-in one by default.
+    /// </summary>
+    public static (StationDevice? Device, StationArrival? Arrival, string? Text) Of(
+        byte[]? raw,
+        bool heardHere = false,
+        AprsDeviceList? devices = null
+    )
     {
         if (raw is null)
         {
@@ -25,14 +32,14 @@ internal static class StationFacts
         {
             packet = inner; // the station inside sent it, by the route inside
         }
-        return (Device(packet), Arrival(packet, heardHere), text);
+        return (Device(packet, devices), Arrival(packet, heardHere), text);
     }
 
     /// <summary>The sender's equipment from its destination (TOCALL) or Mic-E code; null when the list doesn't know it.</summary>
-    public static StationDevice? Device(AprsPacket packet)
+    public static StationDevice? Device(AprsPacket packet, AprsDeviceList? devices = null)
     {
         // The list names generic destinations (plain APRS) "Unknown": that says nothing.
-        if (AprsDevices.Identify(packet) is not { } device)
+        if ((devices ?? AprsDeviceList.BuiltIn).Identify(packet) is not { } device)
         {
             return null;
         }

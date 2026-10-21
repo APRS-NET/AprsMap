@@ -19,8 +19,10 @@ public static class EngineServiceCollectionExtensions
     {
         services.AddOptions<EngineOptions>();
         services.PostConfigure<EngineOptions>(o =>
-            o.CaptureFolder ??= Path.Combine(SettingsLocation.DataFolder(o), AppFolders.PacketCaptureFolder)
-        );
+        {
+            o.CaptureFolder ??= Path.Combine(SettingsLocation.DataFolder(o), AppFolders.PacketCaptureFolder);
+            o.DeviceList.Folder ??= Path.Combine(SettingsLocation.DataFolder(o), "deviceid"); // F4.16
+        });
         services.AddOptions<GeocodingOptions>();
         services.TryAddSingleton(TimeProvider.System);
         services.AddHttpClient(
@@ -29,6 +31,14 @@ public static class EngineServiceCollectionExtensions
         );
         services.TryAddSingleton<IGeocoder, NominatimGeocoder>();
         services.AddHttpClient(Engine.UpdatesHttpClient, client => client.Timeout = TimeSpan.FromSeconds(30)); // F4.15
+        services.AddHttpClient(
+            Engine.DeviceListHttpClient,
+            (sp, client) =>
+            {
+                client.Timeout = sp.GetRequiredService<IOptions<EngineOptions>>().Value.DeviceList.Timeout;
+                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", NominatimGeocoder.UserAgent); // F0.5 behavior 17
+            }
+        ); // F4.16
         services.TryAddSingleton<IPacketSourceFactory, AprsIsPacketSourceFactory>();
         services.TryAddSingleton<ISettingsStore>(sp =>
             SettingsLocation.CreateStore(sp.GetRequiredService<IOptions<EngineOptions>>().Value)

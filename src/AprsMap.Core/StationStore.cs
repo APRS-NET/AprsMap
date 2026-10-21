@@ -54,6 +54,37 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     // This station's callsign: where a packet its own receiver heard ends its route (F3.1 behavior 8).
     private string? _homeName;
 
+    // The device list in use (docs/features/F4.16-device-list.md): built in, or a newer one downloaded. Under the lock.
+    private AprsNet.DeviceId.AprsDeviceList _devices = AprsNet.DeviceId.AprsDeviceList.BuiltIn;
+
+    /// <summary>
+    /// Uses <paramref name="devices"/> from now on, and identifies every station's device again from its last packet,
+    /// so one the old list didn't know is named at once (F4.16 behavior 3). Returns how many changed.
+    /// </summary>
+    public int UseDeviceList(AprsNet.DeviceId.AprsDeviceList devices)
+    {
+        lock (_gate)
+        {
+            _devices = devices;
+            var changed = 0;
+            foreach (var entry in _entries.Values)
+            {
+                if (entry.LastPacket is not { } raw)
+                {
+                    continue;
+                }
+                var device = StationFacts.Of(raw, entry.HeardHere, devices).Device;
+                if (device != entry.Device)
+                {
+                    entry.Device = device;
+                    entry.DeviceClass = device?.Class;
+                    changed++;
+                }
+            }
+            return changed;
+        }
+    }
+
     public int Count
     {
         get
@@ -223,7 +254,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     {
         lock (_gate)
         {
-            var detail = _entries.TryGetValue(name, out var entry) ? entry.ToDetail(_home) : null;
+            var detail = _entries.TryGetValue(name, out var entry) ? entry.ToDetail(_home, _devices) : null;
             if (_homeName is { } me && string.Equals(name, me, StringComparison.OrdinalIgnoreCase))
             {
                 // This station: its details even before it's heard, with what its own receivers heard.
@@ -842,7 +873,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         if (packet.Destination?.Value is { } destination && destination != entry.Destination)
         {
             entry.Destination = destination; // the device changes with the destination (or Mic-E's), not every packet
-            var device = StationFacts.Device(packet);
+            var device = StationFacts.Device(packet, _devices);
             entry.DeviceClass = device?.Class;
             entry.Device = device; // for the dashboard's platforms (F1.22 behavior 10)
         }
@@ -1558,10 +1589,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             );
         }
 
-        public StationDetail ToDetail(AprsPosition? home)
+        public StationDetail ToDetail(AprsPosition? home, AprsNet.DeviceId.AprsDeviceList devices)
         {
             var (distance, bearing) = From(home);
-            var (device, arrival, text) = StationFacts.Of(LastPacket, HeardHere);
+            var (device, arrival, text) = StationFacts.Of(LastPacket, HeardHere, devices);
             return new(
                 Name,
                 Kind,

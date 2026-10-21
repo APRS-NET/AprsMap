@@ -66,6 +66,7 @@ public enum ConnectionState
 /// <param name="Title">The gateway's page title (<c>Gateway:Title</c>, F1.26 behavior 10); null on the desktop.</param>
 /// <param name="Gps">The active profile's GPS and its fix (docs/features/F3.6-gps.md); null without one.</param>
 /// <param name="IGate">The receive-only IGate (docs/features/F3.4-rx-igate.md); null when the profile isn't one.</param>
+/// <param name="DeviceList">The device list in use (docs/features/F4.16-device-list.md), so a change shows without asking.</param>
 /// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
 /// </param>
 public sealed record EngineStatus(
@@ -92,7 +93,8 @@ public sealed record EngineStatus(
     int? CapturedToday = null,
     string? Title = null,
     GpsStatus? Gps = null,
-    IGateStatus? IGate = null
+    IGateStatus? IGate = null,
+    DeviceListStatus? DeviceList = null
 );
 
 /// <summary>

@@ -360,6 +360,18 @@ public static class EngineErrorCodes
     /// <summary>A bulletin or ANSRVR group name can't be sent (F2.5 behaviors 5, 8).</summary>
     public const string BulletinGroupInvalid = "bulletins.group-invalid";
 
+    /// <summary>The device list's address couldn't be reached (docs/features/F4.16-device-list.md, behavior 9).</summary>
+    public const string DeviceListUnreachable = "devicelist.unreachable";
+
+    /// <summary>The device list's address answered with something other than the list (a 404, say).</summary>
+    public const string DeviceListUnexpectedAnswer = "devicelist.unexpected-answer";
+
+    /// <summary>The downloaded device list can't be read by this version: thrown away (behavior 8).</summary>
+    public const string DeviceListUnreadable = "devicelist.unreadable";
+
+    /// <summary>The downloaded device list is no newer than the one in use: thrown away (behavior 8).</summary>
+    public const string DeviceListNotNewer = "devicelist.not-newer";
+
     /// <summary>The release list couldn't be reached: no network, or GitHub down (F4.15 behavior 7).</summary>
     public const string UpdatesUnreachable = "updates.unreachable";
 

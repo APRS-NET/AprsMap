@@ -1064,6 +1064,90 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.About.Credits" xml:space="preserve">
     <value>Credits</value>
   </data>
+  <data name="DeviceList.Title" xml:space="preserve">
+    <value>Device list</value>
+  </data>
+  <data name="DeviceList.Description" xml:space="preserve">
+    <value>Names the radio or program each station uses, from the aprs-deviceid list. A newer list is downloaded now and then, so stations using equipment newer than this app are still named; offline, the list built into the app is used.</value>
+  </data>
+  <data name="DeviceList.BuiltIn" xml:space="preserve">
+    <value>In use: built in, from {date}</value>
+    <comment>date: when the list was generated.</comment>
+  </data>
+  <data name="DeviceList.Downloaded" xml:space="preserve">
+    <value>In use: downloaded, from {date}</value>
+    <comment>date: when the list was generated.</comment>
+  </data>
+  <data name="DeviceList.UnknownDate" xml:space="preserve">
+    <value>an unknown date</value>
+  </data>
+  <data name="DeviceList.Checked" xml:space="preserve">
+    <value>Checked {when}: {result}</value>
+    <comment>when: "today" or a date. result: up to date, or what went wrong.</comment>
+  </data>
+  <data name="DeviceList.Today" xml:space="preserve">
+    <value>today</value>
+  </data>
+  <data name="DeviceList.UpToDate" xml:space="preserve">
+    <value>up to date</value>
+  </data>
+  <data name="DeviceList.Checking" xml:space="preserve">
+    <value>Checking…</value>
+  </data>
+  <data name="DeviceList.NotChecked" xml:space="preserve">
+    <value>Not checked yet</value>
+  </data>
+  <data name="DeviceList.NoDownload" xml:space="preserve">
+    <value>Downloading is turned off: the built-in list is used.</value>
+  </data>
+  <data name="DeviceList.UpdateNow" xml:space="preserve">
+    <value>Update now</value>
+  </data>
+  <data name="DeviceList.Schedule" xml:space="preserve">
+    <value>Check automatically</value>
+  </data>
+  <data name="DeviceList.Schedule.Weekly" xml:space="preserve">
+    <value>Weekly</value>
+  </data>
+  <data name="DeviceList.Schedule.Daily" xml:space="preserve">
+    <value>Daily</value>
+  </data>
+  <data name="DeviceList.Schedule.Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="DeviceList.Advanced" xml:space="preserve">
+    <value>Advanced</value>
+  </data>
+  <data name="DeviceList.Url" xml:space="preserve">
+    <value>Device list address</value>
+  </data>
+  <data name="DeviceList.UrlHelp" xml:space="preserve">
+    <value>Where the list is downloaded from: the APRS Foundation by default, or a mirror. Leave it empty to never download.</value>
+  </data>
+  <data name="DeviceList.SaveUrl" xml:space="preserve">
+    <value>Save address</value>
+  </data>
+  <data name="DeviceList.ResetUrl" xml:space="preserve">
+    <value>Reset to the default</value>
+  </data>
+  <data name="DeviceList.UrlInvalid" xml:space="preserve">
+    <value>That isn't a web address (https://…).</value>
+  </data>
+  <data name="DeviceList.Credit" xml:space="preserve">
+    <value>Device names: the aprs-deviceid list by OH7LZB and contributors, CC BY-SA 2.0.</value>
+  </data>
+  <data name="Error.devicelist.unreachable" xml:space="preserve">
+    <value>couldn't reach the server</value>
+  </data>
+  <data name="Error.devicelist.unexpected-answer" xml:space="preserve">
+    <value>the server didn't send the list</value>
+  </data>
+  <data name="Error.devicelist.unreadable" xml:space="preserve">
+    <value>the list downloaded can't be read by this version</value>
+  </data>
+  <data name="Error.devicelist.not-newer" xml:space="preserve">
+    <value>the list downloaded is no newer than the one in use</value>
+  </data>
   <data name="About.Components" xml:space="preserve">
     <value>Components ({count})</value>
     <comment>count: the packages and frameworks listed, every app together.</comment>

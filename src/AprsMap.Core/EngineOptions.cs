@@ -59,6 +59,9 @@ public sealed class EngineOptions
     /// <summary>The update check (docs/features/F4.15-updates.md): whether it runs and what kind of install this is.</summary>
     public UpdateOptions Updates { get; set; } = new();
 
+    /// <summary>The device list (docs/features/F4.16-device-list.md): where it's fetched from.</summary>
+    public DeviceListOptions DeviceList { get; set; } = new();
+
     /// <summary>
     /// How many recent packets the engine keeps for clients that connect later, and for filtering after the fact
     /// (F1.8 behavior 9): a few minutes of a full APRS-IS feed, or hours of a filtered one.
@@ -111,6 +114,28 @@ public enum InstallKind
 
     /// <summary>A gateway: ready when the release says its container image is pushed.</summary>
     Gateway,
+}
+
+/// <summary>The device list's download, where the engine starts: <c>Engine:DeviceList:…</c> (F4.16 behavior 10).</summary>
+public sealed class DeviceListOptions
+{
+    /// <summary>Where the list is fetched from: the APRS Foundation's by default, a mirror's, or empty to never download.</summary>
+    public string? Url { get; set; } = AprsNet.DeviceId.AprsDeviceListSource.DefaultUrl.ToString();
+
+    /// <summary>
+    /// Where the downloaded list is kept (<c>tocalls.json</c>, as published); the host sets it beside the data
+    /// (<c>deviceid</c> in the data folder). Null keeps nothing: a list downloaded is used until the engine stops.
+    /// </summary>
+    public string? Folder { get; set; }
+
+    /// <summary>How long a fetch may take.</summary>
+    public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Whether the address may be changed in Settings › Data › Advanced (the desktop host sets it); otherwise only
+    /// configuration sets it, as on a gateway, where a browser mustn't change where the server fetches from.
+    /// </summary>
+    public bool UrlIsSetting { get; set; }
 }
 
 /// <summary>The update check where the engine starts: <c>Engine:Updates:…</c>.</summary>

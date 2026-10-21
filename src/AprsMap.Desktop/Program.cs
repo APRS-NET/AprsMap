@@ -58,6 +58,7 @@ internal static class Program
         {
             o.Updates.Kind = installer is null ? AprsMap.Core.InstallKind.Archive : AprsMap.Core.InstallKind.Installed;
             o.Updates.RuntimeId ??= System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
+            o.DeviceList.UrlIsSetting = true; // the address under Settings › Data › Advanced (F4.16 behavior 10)
         });
         s_host = builder.Build();
         var engineOptions = s_host.Services.GetRequiredService<IOptions<EngineOptions>>().Value;

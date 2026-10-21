@@ -24,6 +24,7 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(UpdateStatus))]
 [JsonSerializable(typeof(LoggingStatus))]
 [JsonSerializable(typeof(ComponentReport))]
+[JsonSerializable(typeof(DeviceListStatus))]
 [JsonSerializable(typeof(IReadOnlyList<StorageFolder>))]
 [JsonSerializable(typeof(BulletinPost))]
 [JsonSerializable(typeof(SignInRequest))]

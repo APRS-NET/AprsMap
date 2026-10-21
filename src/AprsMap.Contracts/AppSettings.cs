@@ -15,6 +15,7 @@ namespace AprsMap.Contracts;
 /// <param name="Aging">When stations fade and leave (F1.3 behaviors 7–9); null means the defaults.</param>
 /// <param name="Updates">The update check (docs/features/F4.15-updates.md); null means the defaults.</param>
 /// <param name="Logging">Logging and telemetry (docs/features/F1.32-logging.md); null means the defaults.</param>
+/// <param name="DeviceList">The device list's checks (docs/features/F4.16-device-list.md); null means the defaults.</param>
 /// <param name="Sources">
 /// Where traffic comes from (docs/features/F1.25-sources.md): the master list profiles pick from. Null only in settings
 /// stored before sources existed, which the engine converts on load.
@@ -29,9 +30,13 @@ public sealed record AppSettings(
     StationToggles? Toggles = null,
     CaptureSettings? Capture = null,
     UpdateSettings? Updates = null,
-    LoggingSettings? Logging = null
+    LoggingSettings? Logging = null,
+    DeviceListSettings? DeviceList = null
 )
 {
+    /// <summary>The device list's settings in effect (docs/features/F4.16-device-list.md): <see cref="DeviceList"/>, or the defaults.</summary>
+    public DeviceListSettings EffectiveDeviceList => DeviceList ?? DeviceListSettings.Default;
+
     /// <summary>Logging's settings in effect (docs/features/F1.32-logging.md): <see cref="Logging"/>, or the defaults.</summary>
     public LoggingSettings EffectiveLogging => Logging ?? LoggingSettings.Default;
 
