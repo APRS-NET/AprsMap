@@ -156,6 +156,21 @@
   <data name="Settings.Sources.Filter" xml:space="preserve">
     <value>Filter text added to the automatic filter</value>
   </data>
+  <data name="Settings.Sources.AutomaticFilter" xml:space="preserve">
+    <value>Automatic: everything within {range} km of {callsign}'s location, and stations you follow or watch, wherever they are. Moving the map doesn't change it. Text here is added to that. The circle on the map shows the range.</value>
+    <comment>range: the profile's range in km. callsign: the active profile's callsign.</comment>
+  </data>
+  <data name="Settings.Sources.AutomaticFilter.NoLocation" xml:space="preserve">
+    <value>Automatic: everything within {range} km of where APRS-IS last heard {callsign}, and stations you follow or watch. Moving the map doesn't change it. Text here is added to that.</value>
+    <comment>range: the profile's range in km. callsign: the active profile's callsign.</comment>
+  </data>
+  <data name="Settings.Sources.AutomaticFilter.MapOnly" xml:space="preserve">
+    <value>Automatic: only stations you follow or watch, since this profile's range is 0. Text here is added to that.</value>
+  </data>
+  <data name="Settings.Sources.FilterInUse" xml:space="preserve">
+    <value>In use now: {filter}</value>
+    <comment>filter: the APRS-IS filter as sent (not translated).</comment>
+  </data>
   <data name="Settings.Sources.Name" xml:space="preserve">
     <value>Name</value>
   </data>
@@ -227,7 +242,7 @@
     <value>Range around the station</value>
   </data>
   <data name="Wizard.Range.Help" xml:space="preserve">
-    <value>APRS-IS sends stations within this distance of the station's location, plus wherever the map shows. None suits an IGate, or a filter of your own.</value>
+    <value>APRS-IS sends stations within this distance of the station's location. None suits an IGate, or a filter of your own.</value>
   </data>
   <data name="Wizard.Range.None" xml:space="preserve">
     <value>None</value>
@@ -1099,7 +1114,7 @@ Start the gateway (for example with docker compose up), then open the app from t
     <comment>Label of the APRS-IS server-side filter field.</comment>
   </data>
   <data name="Wizard.Filter.Help" xml:space="preserve">
-    <value>Optional. The filter already follows your range and the map; this text is added to it as typed.</value>
+    <value>Optional. APRS-IS already sends everything within the range above, and stations you follow or watch; moving the map doesn't change it. This text is added to that as typed.</value>
   </data>
   <data name="Wizard.Filter.Link" xml:space="preserve">
     <value>Filter syntax</value>

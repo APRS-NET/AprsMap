@@ -180,6 +180,9 @@ public sealed class MapTests
         window.Show();
         try
         {
+            Assert.True(panel.View.ShowFilterCircles); // on by default: the area received shows (F1.2 behavior 6)
+            app.Appearance.Apply(app.Appearance.Current with { ShowFilterCircles = false });
+            Dispatcher.UIThread.RunJobs();
             Assert.False(panel.View.ShowFilterCircles);
             app.Appearance.Apply(app.Appearance.Current with { ShowFilterCircles = true });
             Dispatcher.UIThread.RunJobs();
@@ -342,6 +345,47 @@ public sealed class MapTests
     }
 
     /// <summary>One provider whose tiles are blank grey squares.</summary>
+    [AvaloniaFact]
+    public async Task HomeShowsTheProfilesRangeAndMovingTheMapReportsNothing()
+    {
+        var time = new FakeTimeProvider();
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, time) { Map = new MapViewModel(null, null, time) };
+        await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
+        var active = engine.Settings.GetActiveProfile()!;
+        vm.Show(
+            engine.Settings with
+            {
+                Profiles =
+                [
+                    .. engine.Settings.Profiles.Select(p =>
+                        p.Id == active.Id ? p with { Latitude = 40, Longitude = -105, RangeKm = 50 } : p
+                    ),
+                ],
+            }
+        );
+        using var panel = new MapPanel { DataContext = vm };
+        var window = new Window
+        {
+            Content = panel,
+            Width = 1000,
+            Height = 600,
+        };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        // The view's corners reach the range, so its circle frames the area received (F1.2 behaviors 1.1, 6).
+        var (lat, _, resolution) = panel.View.View!.Value;
+        var diagonal = Math.Sqrt(Math.Pow(panel.View.Bounds.Width, 2) + Math.Pow(panel.View.Bounds.Height, 2));
+        Assert.InRange(diagonal / 2 * resolution * Math.Cos(lat * Math.PI / 180) / 1000, 45, 55);
+
+        panel.View.ZoomOut();
+        time.Advance(TimeSpan.FromSeconds(10));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Empty(engine.MapViews); // the map doesn't change the filter (F1.2 behavior 1.2)
+        window.Close();
+    }
+
     internal sealed class FakeTiles : ITileSource
     {
         public Task<IReadOnlyList<TileProviderInfo>> GetProvidersAsync(CancellationToken cancellationToken = default) =>

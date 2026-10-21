@@ -1085,50 +1085,28 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    /// <summary>How long after the map stops moving its view is reported for the filter (F1.2 behavior 4).</summary>
-    public static readonly TimeSpan MapReportDelay = TimeSpan.FromSeconds(2);
-
-    private (double Latitude, double Longitude, double RadiusKm)? _mapView;
-    private bool _reportedWatched;
-    private int _mapMoves;
+    private bool _reportedTracked;
 
     /// <summary>The APRS-IS filter's range parts, for the map's filter circles (F1.2 behavior 6).</summary>
     [ObservableProperty]
     public partial IReadOnlyList<FilterArea>? FilterAreas { get; private set; }
 
-    /// <summary>The map moved: its view is reported <see cref="MapReportDelay"/> after it stops (F1.2 behavior 4).</summary>
-    internal void MapMoved(double latitude, double longitude, double radiusKm)
-    {
-        _mapView = (latitude, longitude, radiusKm);
-        _ = ReportAfterAsync(++_mapMoves);
-    }
-
-    private async Task ReportAfterAsync(int move)
-    {
-        await Task.Delay(MapReportDelay, time);
-        if (move == _mapMoves)
-        {
-            await ReportMapViewAsync(); // still: no move since
-        }
-    }
-
-    /// <summary>Tells the engine what the map shows and follows; it decides whether the filter changes.</summary>
+    /// <summary>
+    /// Tells the engine the stations the map follows and watches, for the filter (F1.2 behavior 1.3, F1.16 behavior
+    /// 6). The map's own view isn't reported: panning and zooming don't change the filter (F1.2 behavior 1.2, the
+    /// maintainer's choice on 2026-10-20).
+    /// </summary>
     private async Task ReportMapViewAsync()
     {
         var following = Details.IsFollowing ? Details.Name : null;
         var watched = Shell.Watched;
-        if (_mapView is null && following is null && watched.Count == 0 && !_reportedWatched)
+        var tracked = following is not null || watched.Count > 0;
+        if (!tracked && !_reportedTracked)
         {
             return;
         }
-        _reportedWatched = watched.Count > 0; // so closing the last view takes its station out too
-        var view = new MapViewReport(
-            _mapView?.Latitude,
-            _mapView?.Longitude,
-            _mapView?.RadiusKm ?? 0,
-            following,
-            watched.Count > 0 ? watched : null
-        );
+        _reportedTracked = tracked; // so stopping the last one takes it out too
+        var view = new MapViewReport(null, null, 0, following, watched.Count > 0 ? watched : null);
         try
         {
             await engine.SetMapViewAsync(view);
@@ -1337,6 +1315,7 @@ public sealed partial class MainViewModel : ObservableObject
             // Home is the active profile's location (behavior 3), drawn as a house with its callsign (F1.13).
             Map.Home = active is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
             Map.HomeName = active?.Callsign;
+            Map.HomeRangeKm = active?.RangeKm;
             Map.DistanceUnit = settings.Units.Distance;
             Map.Units = settings.Units;
         }

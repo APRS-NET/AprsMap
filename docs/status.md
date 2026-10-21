@@ -57,9 +57,9 @@ through that entry). See [deployment.md](deployment.md#desktop-app) for where ea
      digipeated with the hop count, duplicate, heard here, parse issues and anomalies). A row expands to the raw text
      with the faulty part marked. Filter by text, station, type, source or issues; pause (Space), and resuming jumps
      back to the newest; Copy, and Save as text, CSV, JSON or YAML.
-3. **Traffic:** the APRS-IS filter is automatic: my range around my location, plus the area the map shows (up to
-   1,000 km across), plus a followed station's surroundings, plus the source's own filter text if it has one. It
-   updates as you pan and zoom without logging in again.
+3. **Traffic:** the APRS-IS filter is automatic: my range around my location (50 km by default), plus followed and
+   watched stations wherever they are, plus the source's own filter text if it has one. Moving the map doesn't change
+   it; following a station updates it without logging in again.
 4. **Settings** (the gear, or Ctrl+, / Cmd+,):
    - **Appearance:** theme, standard, high-contrast or colour-vision-safe colours, text size up to 200 %, icon size,
      corners, density, motion, language; applied live, per viewer, with Reset and Undo.

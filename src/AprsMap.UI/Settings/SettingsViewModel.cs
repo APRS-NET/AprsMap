@@ -224,6 +224,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
     public void Show(EngineStatus? status)
     {
         Profiles?.ShowFilter(status?.Filter);
+        Sources?.ShowFilter(status?.Filter);
     }
 
     /// <inheritdoc />

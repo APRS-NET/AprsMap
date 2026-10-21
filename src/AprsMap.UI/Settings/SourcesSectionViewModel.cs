@@ -154,9 +154,47 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// What the automatic filter receives for the active profile, said beside the filter box (F1.2 behavior 7): the
+    /// profile's range around its location, and the area the map shows. Null for a source that isn't APRS-IS.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? AutomaticFilterText { get; private set; }
+
+    /// <summary>"In use now: r/40/-105/50", once APRS-IS has a filter; null before.</summary>
+    [ObservableProperty]
+    public partial string? FilterInUseText { get; private set; }
+
+    private string? _filterInUse;
+
+    /// <summary>The filter APRS-IS has now, from the engine's status.</summary>
+    internal void ShowFilter(string? filter)
+    {
+        _filterInUse = filter;
+        FilterInUseText = string.IsNullOrEmpty(filter)
+            ? null
+            : _text.Format("Settings.Sources.FilterInUse", new Dictionary<string, object?> { ["filter"] = filter });
+    }
+
+    private void ShowAutomaticFilter()
+    {
+        var profile = _settings.GetActiveProfile();
+        AutomaticFilterText =
+            !IsAprsIs || profile is null ? null
+            : profile.RangeKm <= 0 ? _text["Settings.Sources.AutomaticFilter.MapOnly"]
+            : _text.Format(
+                profile is { Latitude: not null, Longitude: not null }
+                    ? "Settings.Sources.AutomaticFilter"
+                    : "Settings.Sources.AutomaticFilter.NoLocation",
+                new Dictionary<string, object?> { ["range"] = profile.RangeKm, ["callsign"] = profile.Callsign }
+            );
+        ShowFilter(_filterInUse);
+    }
+
     /// <summary>Shows the passcode part for the kind in the form and the active profile.</summary>
     private void ShowPasscode()
     {
+        ShowAutomaticFilter();
         var profile = _settings.GetActiveProfile();
         ShowsPasscode = IsAprsIs && profile is { Licensed: true } && !ListenerId.Is(profile.Callsign);
         PasscodeForText = _text.Format(

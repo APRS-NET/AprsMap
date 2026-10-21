@@ -297,16 +297,16 @@ public sealed class SettingsTests : IDisposable
 
         Assert.True(station.NeedsNewFilter(null));
         Assert.True(station.NeedsNewFilter(station with { Source = Rotate }));
-        Assert.True(station.NeedsNewFilter(station with { Profile = station.Profile with { RangeKm = 50 } }));
+        Assert.True(station.NeedsNewFilter(station with { Profile = station.Profile with { RangeKm = 150 } }));
         Assert.True(station.NeedsNewFilter(station with { Profile = station.Profile with { Latitude = 41 } }));
         Assert.False(station.NeedsNewFilter(station with { Profile = station.Profile with { Name = "Renamed" } }));
     }
 
     [Theory]
-    [InlineData(null, 38.9991481, -94.6818162, "r/38.9991/-94.6818/150")]
-    [InlineData("  ", -33.86, 151.2, "r/-33.86/151.2/150")]
-    [InlineData(null, null, null, "m/150")]
-    [InlineData("b/N0CALL*", 40.0, -105.0, "r/40/-105/150 b/N0CALL*")] // the profile's own text is added
+    [InlineData(null, 38.9991481, -94.6818162, "r/38.9991/-94.6818/50")]
+    [InlineData("  ", -33.86, 151.2, "r/-33.86/151.2/50")]
+    [InlineData(null, null, null, "m/50")]
+    [InlineData("b/N0CALL*", 40.0, -105.0, "r/40/-105/50 b/N0CALL*")] // the profile's own text is added
     public void AProfileWithoutAFilterGetsOneAroundItsLocation(
         string? filter,
         double? latitude,

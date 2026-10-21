@@ -195,8 +195,11 @@ public sealed record AppearanceSettings
     /// <summary>Map symbol scale, 0.75 to 2.0, for symbols and their labels together (F1.4 behavior 16).</summary>
     public double MapSymbolScale { get; init; } = 1.0;
 
-    /// <summary>Whether the map draws the APRS-IS filter's range parts as circles (F1.2 behavior 6).</summary>
-    public bool ShowFilterCircles { get; init; }
+    /// <summary>
+    /// Whether the map draws the APRS-IS filter's range parts as circles (F1.2 behavior 6); on by default, so the area
+    /// received shows.
+    /// </summary>
+    public bool ShowFilterCircles { get; init; } = true;
 
     /// <summary>The map symbol sizes Settings › Map offers.</summary>
     public static IReadOnlyList<double> MapSymbolScaleSteps { get; } = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
