@@ -57,11 +57,25 @@ public sealed class MovingBeaconTests
                     + GpsTests.Nmea($"GPGGA,{hms},4903.500,N,07201.750,W,1,09,0.9,545.4,M,46.9,M,,")
                     + GpsTests.Nmea("GPGSA,A,3,04,05,09,12,24,25,29,31,32,,,,2.5,0.9,2.1");
                 await gps.Writer.WriteAsync(Encoding.ASCII.GetBytes(text), Ct);
-                await Task.Delay(TimeSpan.FromMilliseconds(30), TimeProvider.System, Ct);
+                await FixTakenAsync(); // the engine has the fix before the clock moves on
                 Time.Advance(TimeSpan.FromSeconds(step));
                 _seconds += step;
                 await Task.Delay(TimeSpan.FromMilliseconds(30), TimeProvider.System, Ct);
             }
+        }
+
+        private async Task FixTakenAsync()
+        {
+            var now = Time.GetUtcNow();
+            for (var i = 0; i < 500; i++)
+            {
+                if ((await Engine.GetStatusAsync(Ct)).Gps is { } gps && gps.At == now)
+                {
+                    return;
+                }
+                await Task.Delay(TimeSpan.FromMilliseconds(10), TimeProvider.System, Ct);
+            }
+            Assert.Fail("The engine didn't take the GPS fix.");
         }
     }
 
@@ -100,6 +114,16 @@ public sealed class MovingBeaconTests
     private static int Positions(EngineTests.FakeSource source) =>
         source.Sent.Count(l => AprsPacket.Parse(l).Payload is PositionReport);
 
+    /// <summary>Waits for the <paramref name="count"/>th position to go out (slow runners), then checks no more did.</summary>
+    private static async Task ExpectPositions(EngineTests.FakeSource source, int count)
+    {
+        for (var i = 0; i < 500 && Positions(source) < count; i++)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(10), TimeProvider.System, Ct);
+        }
+        Assert.Equal(count, Positions(source));
+    }
+
     private static async Task<(Task Run, CancellationTokenSource Cts, EngineTests.FakeSource AprsIs)> Run(
         Station station
     )
@@ -130,15 +154,15 @@ public sealed class MovingBeaconTests
         using (cts)
         {
             await station.DriveAsync(10, 60, 90); // 69 mph: the first beacon at once
-            Assert.Equal(1, Positions(aprsIs));
+            await ExpectPositions(aprsIs, 1);
 
             await station.DriveAsync(70, 60, 90);
             Assert.Equal(1, Positions(aprsIs)); // 80 s since the first: not yet
             await station.DriveAsync(20, 60, 90);
-            Assert.Equal(2, Positions(aprsIs));
+            await ExpectPositions(aprsIs, 2);
 
             await station.DriveAsync(20, 60, 180); // a right turn of 90°: at once, after the 10 s turn time
-            Assert.Equal(3, Positions(aprsIs));
+            await ExpectPositions(aprsIs, 3);
             var turned = Assert.IsType<PositionReport>(AprsPacket.Parse(aprsIs.Sent.Last()).Payload);
             Assert.Equal(180, turned.Course);
             await cts.CancelAsync();
@@ -154,12 +178,12 @@ public sealed class MovingBeaconTests
         using (cts)
         {
             await station.DriveAsync(10, 0, 0);
-            Assert.Equal(1, Positions(aprsIs));
+            await ExpectPositions(aprsIs, 1);
 
             await station.DriveAsync(25 * 60, 0, 0, step: 50);
-            Assert.Equal(1, Positions(aprsIs));
+            await ExpectPositions(aprsIs, 1);
             await station.DriveAsync(6 * 60, 0, 0, step: 50); // 30 minutes stopped
-            Assert.Equal(2, Positions(aprsIs));
+            await ExpectPositions(aprsIs, 2);
             await cts.CancelAsync();
             await run;
         }
@@ -174,13 +198,13 @@ public sealed class MovingBeaconTests
         {
             station.Time.Advance(Beaconer.MaxStartWait);
             await Task.Delay(TimeSpan.FromMilliseconds(100), TimeProvider.System, Ct);
-            Assert.Equal(1, Positions(aprsIs));
+            await ExpectPositions(aprsIs, 1);
             var fixedSpot = Assert.IsType<PositionReport>(AprsPacket.Parse(aprsIs.Sent.Last()).Payload);
             Assert.Equal(40, (int)Math.Round(fixedSpot.Position.Latitude)); // the profile's location
 
             station.Time.Advance(TimeSpan.FromMinutes(10));
             await Task.Delay(TimeSpan.FromMilliseconds(100), TimeProvider.System, Ct);
-            Assert.Equal(2, Positions(aprsIs));
+            await ExpectPositions(aprsIs, 2);
             await cts.CancelAsync();
             await run;
         }
