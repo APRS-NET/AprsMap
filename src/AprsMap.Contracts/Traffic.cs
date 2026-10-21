@@ -64,6 +64,9 @@ public enum TrafficKind
 
     /// <summary>A line a GPS sent: an NMEA sentence (docs/features/F3.6-gps.md, behavior 6).</summary>
     GpsSentence,
+
+    /// <summary>A report gpsd sent, a line of JSON (docs/features/F3.12-gps-status.md, behavior 6).</summary>
+    GpsdReport,
 }
 
 /// <summary>

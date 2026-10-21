@@ -187,7 +187,8 @@ internal sealed class AprsIsPacketSourceFactory(
                     ReconnectDelay = options.Value.InitialRetryDelay,
                     MaxReconnectDelay = options.Value.MaxRetryDelay,
                     TimeProvider = timeProvider,
-                }
+                },
+                timeProvider
             ),
             GpsLink.Tcp => new NmeaGpsSource(
                 async token =>

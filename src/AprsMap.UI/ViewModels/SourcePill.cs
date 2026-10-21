@@ -21,11 +21,13 @@ public sealed partial class SourcePill : ObservableObject
         Func<bool, Task> turn,
         Func<Task> reconnect,
         Func<Task>? sendPosition = null,
-        Func<bool, Task>? openConsole = null
+        Func<bool, Task>? openConsole = null,
+        Action? openGps = null
     )
     {
         Id = id;
         _text = text;
+        GpsStatusCommand = new RelayCommand(() => openGps?.Invoke());
         ConsoleCommand = new AsyncRelayCommand(() => openConsole?.Invoke(false) ?? Task.CompletedTask);
         TncCommandsCommand = new AsyncRelayCommand(
             () => openConsole?.Invoke(true) ?? Task.CompletedTask,
@@ -38,6 +40,13 @@ public sealed partial class SourcePill : ObservableObject
 
     /// <summary>Sends the station's position on this source alone (docs/features/F2.1-own-station.md, behavior 10).</summary>
     public IAsyncRelayCommand SendPositionCommand { get; }
+
+    /// <summary>Opens the GPS panel (docs/features/F3.12-gps-status.md, behavior 1).</summary>
+    public IRelayCommand GpsStatusCommand { get; }
+
+    /// <summary>Whether this is a GPS, whose menu offers GPS status.</summary>
+    [ObservableProperty]
+    public partial bool IsGps { get; private set; }
 
     /// <summary>Whether the menu has Send position now: the source isn't RX only and this app may transmit.</summary>
     [ObservableProperty]
@@ -138,6 +147,7 @@ public sealed partial class SourcePill : ObservableObject
                 name
             );
         // A connected GPS says what it knows (F3.6 behaviors 4, 5).
+        IsGps = status.Kind == SourceKind.Gps;
         var noFix = false;
         if (status is { Kind: SourceKind.Gps, Enabled: true, State: ConnectionState.Connected, Warning: null })
         {

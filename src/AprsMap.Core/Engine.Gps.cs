@@ -67,6 +67,53 @@ public sealed partial class Engine
     private GpsFixMode _gpsMode; // the last 2D or 3D the GPS said, so the status doesn't flicker mid-second, under _gate
     private AprsPosition? _filterCentre; // where my range was centred in the filter last sent, under _gate
 
+    // The GPS's latest quality and satellites in view (docs/features/F3.12-gps-status.md), under _gate.
+    private (string SourceId, GpsAccuracy Accuracy, IReadOnlyList<GpsSkySatellite> Sky)? _gpsSky;
+
+    /// <summary>A GPS said how good its fix is and what it can see (F3.12 behaviors 3–5): kept for the status.</summary>
+    private void OnGpsSky(string sourceId, GpsQuality quality, IReadOnlyList<GpsSatellite> satellites)
+    {
+        var accuracy = new GpsAccuracy(
+            quality.SatellitesUsed,
+            quality.SatellitesInView,
+            quality.Pdop,
+            quality.Hdop,
+            quality.Vdop,
+            quality.HorizontalErrorMeters,
+            quality.AltitudeErrorMeters,
+            quality.SpeedErrorKnots
+        );
+        GpsSkySatellite[] sky =
+        [
+            .. satellites.Select(s => new GpsSkySatellite(
+                ConstellationOf(s.System),
+                s.Id,
+                s.SignalId,
+                s.ElevationDegrees,
+                s.AzimuthDegrees,
+                s.SnrDbHz,
+                s.Used
+            )),
+        ];
+        lock (_gate)
+        {
+            _gpsSky = (sourceId, accuracy, sky);
+        }
+    }
+
+    private static GnssConstellation ConstellationOf(GnssSystem system) =>
+        system switch
+        {
+            GnssSystem.Gps => GnssConstellation.Gps,
+            GnssSystem.Glonass => GnssConstellation.Glonass,
+            GnssSystem.Galileo => GnssConstellation.Galileo,
+            GnssSystem.BeiDou => GnssConstellation.BeiDou,
+            GnssSystem.Qzss => GnssConstellation.Qzss,
+            GnssSystem.NavIC => GnssConstellation.NavIC,
+            GnssSystem.Sbas => GnssConstellation.Sbas,
+            _ => GnssConstellation.Unknown,
+        };
+
     /// <summary>A GPS source read a fix: kept, and the filter re-sent once the station has moved far enough.</summary>
     private void OnGpsFix(string sourceId, GpsFix fix)
     {
@@ -157,9 +204,10 @@ public sealed partial class Engine
         }
         // The latest fix that said where the GPS is, unless the GPS has said since that it has none.
         var latest = _gps is { Fix.Mode: GpsFixMode.NoFix } ? _gps : _gpsPositioned ?? _gps;
+        var (accuracy, sky) = _gpsSky is var (skyFrom, a, s) && skyFrom == gps.Id ? (a, s) : (null, null);
         if (latest is not var (sourceId, fix, at) || sourceId != gps.Id)
         {
-            return new GpsStatus(gps.Id, GpsFixKind.NoFix);
+            return new GpsStatus(gps.Id, GpsFixKind.NoFix, Accuracy: accuracy, Sky: sky);
         }
         var kind =
             !HasPosition(fix) ? GpsFixKind.NoFix
@@ -177,7 +225,9 @@ public sealed partial class Engine
             fix.SpeedKnots,
             fix.Course,
             fix.Satellites,
-            fix.Hdop
+            fix.Hdop,
+            accuracy,
+            sky
         );
     }
 }

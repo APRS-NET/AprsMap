@@ -294,7 +294,7 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                 "view.show-all",
                 text["Menu.View.ShowAll"],
                 vm.ShowAllPanels,
-                whyNot: closed.Count == 0 ? text["Menu.Why.AllShown"] : null
+                whyNot: closed.All(PanelKinds.OnDemand.Contains) ? text["Menu.Why.AllShown"] : null
             ),
             Run("view.reset-layout", text["Shell.Menu.ResetLayout"] + "…", vm.AskResetLayout),
             new SubmenuEntry(text["Menu.View.Layouts"], layouts),

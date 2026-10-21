@@ -175,7 +175,7 @@ public sealed class ShellViewTests
         show.Command!.Execute(show.CommandParameter);
         menu.Hide();
 
-        Assert.Empty(vm.Shell.ClosedPanels);
+        Assert.Equal([PanelKinds.Gps], vm.Shell.ClosedPanels); // on demand, never in the default layout
         window.Close();
     }
 
@@ -227,6 +227,7 @@ public sealed class ShellViewTests
                 "Packets",
                 "Console",
                 "Captured packets",
+                "GPS",
             ],
             tabs.Items.OfType<TabItem>().Select(t => t.Header?.ToString())
         );

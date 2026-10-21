@@ -542,6 +542,12 @@
                               IsVisible="{Binding CanType}"
                               Command="{Binding TncCommandsCommand}"
                             />
+                            <!-- The GPS panel (F3.12 behavior 1). -->
+                            <MenuItem
+                              Header="{l:T Gps.Open}"
+                              IsVisible="{Binding IsGps}"
+                              Command="{Binding GpsStatusCommand}"
+                            />
                             <!-- On this source alone (F2.1 behavior 10), unless it's RX only. -->
                             <MenuItem
                               Header="{l:T Transmit.SendPositionHere}"

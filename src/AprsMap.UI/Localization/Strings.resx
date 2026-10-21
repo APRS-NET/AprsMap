@@ -1354,6 +1354,9 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>GPS</value>
     <comment>A line from a GPS: an NMEA sentence.</comment>
   </data>
+  <data name="Console.Kind.GpsdReport" xml:space="preserve">
+    <value>gpsd</value>
+  </data>
   <data name="Console.Kind.Sent" xml:space="preserve">
     <value>Sent</value>
   </data>
@@ -1424,6 +1427,119 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Error.kiss.bytes-invalid" xml:space="preserve">
     <value>Bytes are pairs of hex digits, such as C0 FF C0.</value>
+  </data>
+  <data name="Shell.Panel.gps" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="Gps.Open" xml:space="preserve">
+    <value>GPS status</value>
+  </data>
+  <data name="Gps.None" xml:space="preserve">
+    <value>This profile has no GPS. Add one in Settings › Sources, then pick it in the profile.</value>
+  </data>
+  <data name="Gps.Fix.None" xml:space="preserve">
+    <value>No fix</value>
+  </data>
+  <data name="Gps.Fix.2D" xml:space="preserve">
+    <value>2D fix</value>
+  </data>
+  <data name="Gps.Fix.3D" xml:space="preserve">
+    <value>3D fix</value>
+  </data>
+  <data name="Gps.Fix.Stale" xml:space="preserve">
+    <value>Fix too old to use: the profile's location is used</value>
+  </data>
+  <data name="Gps.Age" xml:space="preserve">
+    <value>{seconds, plural, one {# second} other {# seconds}} ago</value>
+    <comment>seconds: since the fix came.</comment>
+  </data>
+  <data name="Gps.Accuracy" xml:space="preserve">
+    <value>Accuracy</value>
+  </data>
+  <data name="Gps.Error.Across" xml:space="preserve">
+    <value>±{across} m across</value>
+    <comment>across: the GPS's estimate of its horizontal error, in metres.</comment>
+  </data>
+  <data name="Gps.Error.AcrossAndUp" xml:space="preserve">
+    <value>±{across} m across, ±{up} m up</value>
+    <comment>across, up: the GPS's estimates of its horizontal and vertical error, in metres.</comment>
+  </data>
+  <data name="Gps.Satellites.UsedOf" xml:space="preserve">
+    <value>{used} of {inView, plural, one {# satellite} other {# satellites}} used</value>
+    <comment>used: satellites in the fix. inView: satellites seen.</comment>
+  </data>
+  <data name="Gps.Satellites.Used" xml:space="preserve">
+    <value>{used, plural, one {# satellite} other {# satellites}} used</value>
+  </data>
+  <data name="Gps.DopHint" xml:space="preserve">
+    <value>Dilution of precision says how well the satellites are spread across the sky: lower is better; below 2 is good, above 5 is poor.</value>
+  </data>
+  <data name="Gps.Sky" xml:space="preserve">
+    <value>Sky</value>
+  </data>
+  <data name="Gps.SkyHelp" xml:space="preserve">
+    <value>North is up; the outer ring is the horizon, the centre straight up. Filled marks are used in the fix. Circle: GPS; square: GLONASS; diamond: Galileo; triangle: BeiDou; cross: others.</value>
+  </data>
+  <data name="Gps.Compass" xml:space="preserve">
+    <value>NESW</value>
+    <comment>The compass points north, east, south and west, one letter each, in that order.</comment>
+  </data>
+  <data name="Gps.Satellites" xml:space="preserve">
+    <value>Satellites</value>
+  </data>
+  <data name="Gps.Column.System" xml:space="preserve">
+    <value>System</value>
+  </data>
+  <data name="Gps.Column.Id" xml:space="preserve">
+    <value>No.</value>
+  </data>
+  <data name="Gps.Column.Elevation" xml:space="preserve">
+    <value>Elevation</value>
+  </data>
+  <data name="Gps.Column.Azimuth" xml:space="preserve">
+    <value>Azimuth</value>
+  </data>
+  <data name="Gps.Column.Signal" xml:space="preserve">
+    <value>dB-Hz</value>
+  </data>
+  <data name="Gps.Column.Used" xml:space="preserve">
+    <value>Used</value>
+  </data>
+  <data name="Gps.Used" xml:space="preserve">
+    <value>Used</value>
+  </data>
+  <data name="Gps.NotUsed" xml:space="preserve">
+    <value>Not used</value>
+  </data>
+  <data name="Gps.Satellite.Description" xml:space="preserve">
+    <value>{system} {id}: elevation {elevation}, azimuth {azimuth}, signal {signal}, {used}</value>
+  </data>
+  <data name="Gps.OpenConsole" xml:space="preserve">
+    <value>Open console</value>
+  </data>
+  <data name="Gps.System.Unknown" xml:space="preserve">
+    <value>Other</value>
+  </data>
+  <data name="Gps.System.Gps" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="Gps.System.Glonass" xml:space="preserve">
+    <value>GLONASS</value>
+  </data>
+  <data name="Gps.System.Galileo" xml:space="preserve">
+    <value>Galileo</value>
+  </data>
+  <data name="Gps.System.BeiDou" xml:space="preserve">
+    <value>BeiDou</value>
+  </data>
+  <data name="Gps.System.Qzss" xml:space="preserve">
+    <value>QZSS</value>
+  </data>
+  <data name="Gps.System.NavIC" xml:space="preserve">
+    <value>NavIC</value>
+  </data>
+  <data name="Gps.System.Sbas" xml:space="preserve">
+    <value>SBAS</value>
   </data>
   <data name="Shell.Panel.captured" xml:space="preserve">
     <value>Captured packets</value>

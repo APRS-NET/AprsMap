@@ -554,7 +554,7 @@ public sealed partial class ShellViewModel : ObservableObject
         var present = Dockables(layout).OfType<PanelTool>().Select(p => p.Kind).ToHashSet(StringComparer.Ordinal);
         foreach (var (kind, dockId) in PanelKinds.All)
         {
-            if (present.Contains(kind) || file.Panels.Contains(kind))
+            if (present.Contains(kind) || file.Panels.Contains(kind) || PanelKinds.OnDemand.Contains(kind))
             {
                 continue;
             }
