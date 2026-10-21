@@ -36,7 +36,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 | G13 | KISS framing and transports (serial, TCP) (TCP delivered; serial published in `0.3.0-alpha.2` as `AprsNet.Kiss.Serial`, unplug and warnings in `0.4.0-alpha.4`, issue open for hardware testing) | new: AprsNet.Kiss | 3 | [APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126), [APRS.NET#160](https://github.com/APRS-NET/APRS.NET/issues/160) |
 | G14 | Radios' built-in TNCs: KISS setup (`0.4.0-alpha.6`), typing over an open connection and the APRS-mode reader (`0.4.0-alpha.7`): delivered | Kiss.Serial | 2 | [APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249) |
 | G15 | Digipeater engine | new: AprsNet.Digipeater | 3 | [APRS.NET#209](https://github.com/APRS-NET/APRS.NET/issues/209) |
-| G16 | IGate engine | new: AprsNet.IGate | 3 | [APRS.NET#206](https://github.com/APRS-NET/APRS.NET/issues/206), [APRS.NET#212](https://github.com/APRS-NET/APRS.NET/issues/212) |
+| G16 | IGate engine (RF to APRS-IS delivered, `0.5.0-alpha.1`; APRS-IS to RF open) | new: AprsNet.IGate | 3 | [APRS.NET#206](https://github.com/APRS-NET/APRS.NET/issues/206), [APRS.NET#212](https://github.com/APRS-NET/APRS.NET/issues/212) |
 | G17 | NMEA sentence parsing and `$` packets | Packets | 3 | [APRS.NET#203](https://github.com/APRS-NET/APRS.NET/issues/203) |
 | G18 | Raw weather station data and storm objects | Packets | 4 | — |
 | G21 | APRS-IS server side: client logins, passcode check, filter evaluation (filters delivered; server in source, not on NuGet) | AprsIsTcpClient (or new AprsNet.AprsIsServer) | 3 | — |

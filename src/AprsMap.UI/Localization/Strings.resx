@@ -186,6 +186,24 @@
     <value>In use now: {filter}</value>
     <comment>filter: the APRS-IS filter as sent (not translated).</comment>
   </data>
+  <data name="IGate.Heading" xml:space="preserve">
+    <value>IGate for {profile}</value>
+    <comment>profile: the active profile's callsign.</comment>
+  </data>
+  <data name="IGate.On" xml:space="preserve">
+    <value>Gate what my TNCs hear to APRS-IS (receive only)</value>
+  </data>
+  <data name="IGate.Help" xml:space="preserve">
+    <value>Packets your radios hear go to APRS-IS under the IGate rules: not what came from the internet, nor what asks not to be gated, and each once. It needs a verified APRS-IS login and Transmit on. A receive-only IGate can't pass messages back to RF, so on the shared APRS frequency nearby stations may think they can be reached through it when they can't.</value>
+  </data>
+  <data name="IGate.Counts" xml:space="preserve">
+    <value>{gated, plural, one {# packet gated} other {# packets gated}}, {refused} not</value>
+    <comment>gated: packets sent to APRS-IS since the app started. refused: packets the IGate rules kept back.</comment>
+  </data>
+  <data name="IGate.Held" xml:space="preserve">
+    <value>Gating nothing now: {reason}</value>
+    <comment>reason: why, such as Transmit being off.</comment>
+  </data>
   <data name="Settings.Sources.Name" xml:space="preserve">
     <value>Name</value>
   </data>

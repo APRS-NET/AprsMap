@@ -296,6 +296,39 @@
               Command="{Binding Sources.AddCommand}"
               IsVisible="{Binding !Sources.IsReadOnly}"
             />
+            <!-- The receive-only IGate (F3.4): what the profile's TNCs hear, to APRS-IS. -->
+            <Border
+              x:Name="IGateCard"
+              IsVisible="{Binding Sources.IGateHeading, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Background="{DynamicResource Brush.Surface}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Control}"
+              Padding="12,8"
+            >
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding Sources.IGateHeading}" FontWeight="SemiBold" />
+                <ToggleSwitch
+                  x:Name="IGateSwitch"
+                  IsChecked="{Binding Sources.IGateOn}"
+                  IsEnabled="{Binding !Sources.IsReadOnly}"
+                  OnContent="{l:T IGate.On}"
+                  OffContent="{l:T IGate.On}"
+                />
+                <TextBlock Text="{l:T IGate.Help}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+                <TextBlock
+                  Text="{Binding Sources.IGateCountText}"
+                  IsVisible="{Binding Sources.IGateCountText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  TextWrapping="Wrap"
+                />
+                <TextBlock
+                  Text="{Binding Sources.IGateHeldText}"
+                  IsVisible="{Binding Sources.IGateHeldText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  Foreground="{DynamicResource Brush.Warn}"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
+            </Border>
             <!-- Add or edit: the kind (others are coming), then the details and a name (behavior 2). -->
             <Border
               x:Name="SourceForm"

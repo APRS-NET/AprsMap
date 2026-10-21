@@ -9,6 +9,7 @@
     <PackageVersion Include="AprsNet.DeviceId" Version="0.5.0-alpha.1" />
     <PackageVersion Include="AprsNet.Filters" Version="0.5.0-alpha.1" />
     <PackageVersion Include="AprsNet.Gps" Version="0.5.0-alpha.1" />
+    <PackageVersion Include="AprsNet.IGate" Version="0.5.0-alpha.1" />
     <PackageVersion Include="AprsNet.Kiss" Version="0.5.0-alpha.1" />
     <PackageVersion Include="AprsNet.Kiss.Serial" Version="0.5.0-alpha.1" />
     <PackageVersion Include="AprsNet.Messaging" Version="0.5.0-alpha.1" />

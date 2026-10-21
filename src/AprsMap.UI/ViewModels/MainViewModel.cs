@@ -1459,6 +1459,7 @@ public sealed partial class MainViewModel : ObservableObject
         FilterAreas = status.FilterAreas;
         _gps = status.Gps;
         ShowHomePosition();
+        Settings?.Sources?.ShowIGate(status.IGate); // the IGate's counts move on while Settings is open (F3.4)
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();
         PacketCount = status.PacketsReceived;
