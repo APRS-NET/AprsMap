@@ -99,6 +99,34 @@ jobs:
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: gh release upload "$TAG" artifacts/* --clobber
 
+  sbom:
+    # Software bills of materials (docs/features/F4.17-sbom.md): CycloneDX JSON for the desktop app, the gateway and the
+    # browser app, from the same restore the build uses, checked, then attached to the release beside the files they
+    # describe. The image's own is made in the container job, from the image.
+    needs: [release-please, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ needs.release-please.outputs.tag_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          fetch-depth: 0 # MinVer needs tags
+          persist-credentials: false
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          dotnet-version: 10.0.x
+      - run: dotnet tool restore
+      - run: tools/sbom.sh "${TAG#v}" sbom
+      - run: python3 tools/ci/check-sbom.py sbom/*.cdx.json
+      - name: Attach to the GitHub release
+        run: gh release upload "$TAG" sbom/*.cdx.json --clobber --repo "$GITHUB_REPOSITORY"
+
   installers:
     # Velopack installers and update packages (docs/features/F4.15-updates.md, behavior 12), each on its own platform's
     # runner: an MSI that installs to Program Files on Windows, a .pkg on macOS and an AppImage on Linux, with full and
@@ -206,8 +234,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
-      contents: write # to attach the image marker (F4.15 behavior 4.3)
+      contents: write # to attach the image marker (F4.15 behavior 4.3) and the image's SBOM
       packages: write
+      id-token: write # the SBOM attestation's signature (F4.17)
+      attestations: write
+      artifact-metadata: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -254,3 +285,26 @@ jobs:
           marker="aprsmap-${TAG}-image.txt"
           { echo "$TAGS"; echo "digest: $DIGEST"; } > "$marker"
           gh release upload "$TAG" "$marker" --clobber --repo "$GITHUB_REPOSITORY"
+      # The image's SBOM (F4.17 behavior 3): CycloneDX, with its OS packages as well as the apps', made from the pushed
+      # image (its linux/amd64 variant: both are built from the same files), attested to the image in the registry,
+      # and attached to the release. After the marker, so a problem here never holds back the update notice.
+      - name: SBOM of the image
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          format: cyclonedx-json
+          output-file: aprsmap-${{ needs.release-please.outputs.tag_name }}-image.cdx.json
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Attest the SBOM to the image
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          sbom-path: aprsmap-${{ needs.release-please.outputs.tag_name }}-image.cdx.json
+          push-to-registry: true
+      - name: Attach the image's SBOM
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: gh release upload "$TAG" "aprsmap-${TAG}-image.cdx.json" --clobber --repo "$GITHUB_REPOSITORY"
