@@ -2128,6 +2128,13 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Map.MoveObject" xml:space="preserve">
     <value>Move an object here</value>
   </data>
+  <data name="Transmit.SeenAway" xml:space="preserve">
+    <value>Others see you {distance} from here, from your last position's course and speed.</value>
+    <comment>distance: how far off, in the viewer's unit.</comment>
+  </data>
+  <data name="Transmit.SeenHere" xml:space="preserve">
+    <value>Others see you where you are.</value>
+  </data>
   <data name="Transmit.NextObjectTip" xml:space="preserve">
     <value>Next: an object on {source}, {reason}.</value>
     <comment>source: a source's name. reason: one of the Transmit.BeaconReason texts.</comment>

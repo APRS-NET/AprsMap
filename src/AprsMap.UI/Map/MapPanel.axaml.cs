@@ -144,6 +144,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _map.Route = _main.PickedRoute;
             _map.RoutesOut = _main.RoutesOut;
             _map.SetFilterAreas(_main.FilterAreas);
+            ShowSeen();
             ShowFollowed();
             _map.Select(_main.SelectedStation);
         }
@@ -309,6 +310,10 @@ public sealed partial class MapPanel : UserControl, IDisposable
         }
     }
 
+    /// <summary>Where others see me, against my house (docs/features/F2.3-seen-as.md, behavior 3).</summary>
+    private void ShowSeen() =>
+        _map.ShowSeen(_main?.SeenAt?.Latitude, _main?.SeenAt?.Longitude, _main?.SeenAt?.DistanceKm ?? 0);
+
     private void ShowFollowed() =>
         _map.Followed = _main?.Details is { IsFollowing: true } details ? details.Name : null;
 
@@ -356,6 +361,10 @@ public sealed partial class MapPanel : UserControl, IDisposable
         else if (e.PropertyName == nameof(MainViewModel.FilterAreas) && _main is not null)
         {
             _map.SetFilterAreas(_main.FilterAreas);
+        }
+        else if (e.PropertyName == nameof(MainViewModel.SeenAt) && _main is not null)
+        {
+            ShowSeen();
         }
     }
 

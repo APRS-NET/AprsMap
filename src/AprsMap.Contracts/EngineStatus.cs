@@ -152,6 +152,7 @@ public sealed record GpsStatus(
 /// <param name="LastPosition">
 /// How the last position sent got out (docs/features/F3.3-rf-paths.md, behavior 4), or null before one was sent.
 /// </param>
+/// <param name="SeenAt">Where others see the station (docs/features/F2.3-seen-as.md); null without a fresh GPS fix.</param>
 public sealed record TransmitStatus(
     bool On,
     EngineError? Blocked = null,
@@ -159,8 +160,19 @@ public sealed record TransmitStatus(
     bool ReceiveOnly = false,
     NextBeacon? NextBeacon = null,
     EngineError? BeaconHeld = null,
-    LastPositionHeard? LastPosition = null
+    LastPositionHeard? LastPosition = null,
+    SeenPosition? SeenAt = null
 );
+
+/// <summary>
+/// Where other stations see this one now (docs/features/F2.3-seen-as.md): its last position sent, moved on along its
+/// course and speed for the time since, as their maps would.
+/// </summary>
+/// <param name="Latitude">Where they see it.</param>
+/// <param name="Longitude">Where they see it.</param>
+/// <param name="DistanceKm">How far that is from where the GPS says the station is.</param>
+/// <param name="SentAt">When the position they have was sent.</param>
+public sealed record SeenPosition(double Latitude, double Longitude, double DistanceKm, DateTimeOffset SentAt);
 
 /// <summary>One source's connection, for its status pill (F1.25 behavior 11).</summary>
 /// <param name="Id">The source's id.</param>
