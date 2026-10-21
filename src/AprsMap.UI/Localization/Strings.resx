@@ -118,6 +118,21 @@
   <data name="Settings.Sources.Kind.Gps" xml:space="preserve">
     <value>GPS</value>
   </data>
+  <data name="Settings.Sources.GpsLink" xml:space="preserve">
+    <value>Connected by</value>
+  </data>
+  <data name="Settings.Sources.GpsLink.Serial" xml:space="preserve">
+    <value>NMEA on a serial port</value>
+  </data>
+  <data name="Settings.Sources.GpsLink.Tcp" xml:space="preserve">
+    <value>NMEA over the network (TCP)</value>
+  </data>
+  <data name="Settings.Sources.GpsLink.Gpsd" xml:space="preserve">
+    <value>gpsd</value>
+  </data>
+  <data name="Settings.Sources.Gps.Help" xml:space="preserve">
+    <value>While the GPS has a fix, the station is where it says: beacons carry its position, course and speed, and the APRS-IS range follows it. Without a fix for a minute, the profile's own location is used. A profile uses one GPS.</value>
+  </data>
   <data name="Settings.Sources.Coming" xml:space="preserve">
     <value>{kind} · coming</value>
     <comment>A kind of source that isn't built yet, shown so the feature's shape is visible.</comment>
@@ -205,6 +220,30 @@
   </data>
   <data name="Status.Source.Connected" xml:space="preserve">
     <value>{source} connected</value>
+  </data>
+  <data name="Status.Gps.Fix3DSatellites" xml:space="preserve">
+    <value>{source} · 3D fix · {satellites, plural, one {# satellite} other {# satellites}}</value>
+    <comment>source: the GPS's name. satellites: how many the fix uses.</comment>
+  </data>
+  <data name="Status.Gps.Fix3D" xml:space="preserve">
+    <value>{source} · 3D fix</value>
+    <comment>source: the GPS's name.</comment>
+  </data>
+  <data name="Status.Gps.Fix2DSatellites" xml:space="preserve">
+    <value>{source} · 2D fix · {satellites, plural, one {# satellite} other {# satellites}}</value>
+    <comment>source: the GPS's name. satellites: how many the fix uses.</comment>
+  </data>
+  <data name="Status.Gps.Fix2D" xml:space="preserve">
+    <value>{source} · 2D fix</value>
+    <comment>source: the GPS's name.</comment>
+  </data>
+  <data name="Status.Gps.NoFix" xml:space="preserve">
+    <value>{source} · no fix</value>
+    <comment>source: the GPS's name.</comment>
+  </data>
+  <data name="Status.Gps.NoFixFixed" xml:space="preserve">
+    <value>{source} · no fix, using the profile's location</value>
+    <comment>source: the GPS's name.</comment>
   </data>
   <data name="Status.Source.Connecting" xml:space="preserve">
     <value>{source} connecting…</value>
@@ -1286,6 +1325,10 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Console.Kind.Unframed" xml:space="preserve">
     <value>Text</value>
     <comment>Bytes outside any KISS frame: text from a TNC not in KISS mode, or noise.</comment>
+  </data>
+  <data name="Console.Kind.GpsSentence" xml:space="preserve">
+    <value>GPS</value>
+    <comment>A line from a GPS: an NMEA sentence.</comment>
   </data>
   <data name="Console.Kind.Sent" xml:space="preserve">
     <value>Sent</value>
@@ -4118,6 +4161,16 @@ pause 1s</value>
   </data>
   <data name="Error.kiss.link-failed" xml:space="preserve">
     <value>Link to the TNC failed</value>
+  </data>
+  <data name="Error.gps.link-failed" xml:space="preserve">
+    <value>Couldn't read the GPS: {reason}</value>
+    <comment>reason: what the system said.</comment>
+  </data>
+  <data name="Error.settings.profile.two-gps" xml:space="preserve">
+    <value>A profile uses one GPS: the station is in one place.</value>
+  </data>
+  <data name="Error.settings.source.gps-invalid" xml:space="preserve">
+    <value>A GPS needs its serial port and a speed above 0, or a host and a port from 1 to 65535.</value>
   </data>
   <data name="Error.kiss.text-not-kiss" xml:space="preserve">
     <value>TNC isn't in KISS mode</value>

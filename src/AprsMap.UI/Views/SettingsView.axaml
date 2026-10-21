@@ -422,11 +422,38 @@
                 <StackPanel Spacing="8" IsVisible="{Binding Sources.IsTnc}">
                   <TextBlock
                     Text="{l:T Settings.Sources.AprsText.Help}"
-                    IsVisible="{Binding Sources.IsSerial}"
+                    IsVisible="{Binding Sources.ShowsTncSerialParts}"
                     Foreground="{DynamicResource Brush.TextMuted}"
                     TextWrapping="Wrap"
                   />
-                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsKissTcp}">
+                  <!-- A GPS (F3.6 behavior 1): NMEA on a serial port or over TCP, or gpsd. -->
+                  <StackPanel x:Name="GpsLinkChoice" Spacing="4" IsVisible="{Binding Sources.IsGps}">
+                    <TextBlock Text="{l:T Settings.Sources.GpsLink}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <RadioButton
+                      x:Name="GpsSerialBox"
+                      GroupName="GpsLink"
+                      Content="{l:T Settings.Sources.GpsLink.Serial}"
+                      IsChecked="{Binding Sources.GpsSerial}"
+                    />
+                    <RadioButton
+                      x:Name="GpsTcpBox"
+                      GroupName="GpsLink"
+                      Content="{l:T Settings.Sources.GpsLink.Tcp}"
+                      IsChecked="{Binding Sources.GpsTcp}"
+                    />
+                    <RadioButton
+                      x:Name="GpsGpsdBox"
+                      GroupName="GpsLink"
+                      Content="{l:T Settings.Sources.GpsLink.Gpsd}"
+                      IsChecked="{Binding Sources.GpsGpsd}"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.Gps.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
+                  <StackPanel Spacing="8" IsVisible="{Binding Sources.ShowsHost}">
                     <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
                     <TextBox
                       x:Name="SourceHostBox"
@@ -471,12 +498,12 @@
                     />
                   </StackPanel>
                   <WrapPanel ItemSpacing="12">
-                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKissTcp}">
+                    <StackPanel Spacing="4" IsVisible="{Binding Sources.ShowsHost}">
                       <TextBlock Text="{l:T Settings.Sources.Port}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <TextBox
                         x:Name="SourcePortBox"
                         Text="{Binding Sources.EditPort}"
-                        PlaceholderText="8001"
+                        PlaceholderText="{Binding Sources.PortPlaceholder}"
                         AutomationProperties.Name="{l:T Settings.Sources.Port}"
                         FontFamily="{DynamicResource Font.Mono}"
                         MinWidth="96"
@@ -489,7 +516,7 @@
                         IsEditable="True"
                         ItemsSource="{x:Static s:SourcesSectionViewModel.Bauds}"
                         Text="{Binding Sources.EditBaud}"
-                        PlaceholderText="9600"
+                        PlaceholderText="{Binding Sources.BaudPlaceholder}"
                         AutomationProperties.Name="{l:T Settings.Sources.Baud}"
                         FontFamily="{DynamicResource Font.Mono}"
                         MinWidth="128"
@@ -507,7 +534,7 @@
                       />
                     </StackPanel>
                   </WrapPanel>
-                  <StackPanel Spacing="4" IsVisible="{Binding Sources.IsSerial}">
+                  <StackPanel Spacing="4" IsVisible="{Binding Sources.ShowsTncSerialParts}">
                     <CheckBox
                       x:Name="SerialDtrBox"
                       Content="{l:T Settings.Sources.Dtr}"
@@ -612,9 +639,11 @@
                   Content="{l:T Settings.Sources.RxOnlyBox}"
                   IsChecked="{Binding Sources.EditRxOnly}"
                   IsEnabled="{Binding Sources.CanTransmitKind}"
+                  IsVisible="{Binding !Sources.IsGps}"
                 />
                 <TextBlock
                   Text="{l:T Settings.Sources.RxOnlyBox.Help}"
+                  IsVisible="{Binding !Sources.IsGps}"
                   Foreground="{DynamicResource Brush.TextMuted}"
                   TextWrapping="Wrap"
                 />

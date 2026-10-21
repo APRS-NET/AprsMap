@@ -61,6 +61,9 @@ public enum TrafficKind
 
     /// <summary>Another APRS-IS server command.</summary>
     CommandSent,
+
+    /// <summary>A line a GPS sent: an NMEA sentence (docs/features/F3.6-gps.md, behavior 6).</summary>
+    GpsSentence,
 }
 
 /// <summary>

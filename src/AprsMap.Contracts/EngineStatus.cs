@@ -64,6 +64,7 @@ public enum ConnectionState
 /// <param name="Stations">How many stations, objects and items the store holds, for the View filter's chip (F1.9).</param>
 /// <param name="PacketHistory">
 /// <param name="Title">The gateway's page title (<c>Gateway:Title</c>, F1.26 behavior 10); null on the desktop.</param>
+/// <param name="Gps">The active profile's GPS and its fix (docs/features/F3.6-gps.md); null without one.</param>
 /// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
 /// </param>
 public sealed record EngineStatus(
@@ -88,8 +89,52 @@ public sealed record EngineStatus(
     TransmitStatus? Transmit = null,
     int UnreadMessages = 0,
     int? CapturedToday = null,
-    string? Title = null
+    string? Title = null,
+    GpsStatus? Gps = null
 );
+
+/// <summary>How much a GPS knows (docs/features/F3.6-gps.md, behavior 4).</summary>
+public enum GpsFixKind
+{
+    /// <summary>No fix yet, or none now.</summary>
+    NoFix,
+
+    /// <summary>Position without altitude.</summary>
+    Fix2D,
+
+    /// <summary>Position with altitude.</summary>
+    Fix3D,
+}
+
+/// <summary>The active profile's GPS and its latest fix (docs/features/F3.6-gps.md, behaviors 4, 5, 7).</summary>
+/// <param name="SourceId">The GPS source.</param>
+/// <param name="Fix">How much it knows.</param>
+/// <param name="At">When the fix came; null before the first.</param>
+/// <param name="IsFresh">Whether the fix is recent enough for the station to be where it says (60 s).</param>
+/// <param name="Latitude">Where it is, with a fix.</param>
+/// <param name="Longitude">Where it is, with a fix.</param>
+/// <param name="AltitudeMeters">Height above mean sea level, with a 3D fix.</param>
+/// <param name="SpeedKnots">Speed over the ground.</param>
+/// <param name="Course">Course over the ground, in degrees true.</param>
+/// <param name="Satellites">Satellites used in the fix, where the GPS says.</param>
+/// <param name="Hdop">Horizontal dilution of precision, where the GPS says.</param>
+public sealed record GpsStatus(
+    string SourceId,
+    GpsFixKind Fix,
+    DateTimeOffset? At = null,
+    bool IsFresh = false,
+    double? Latitude = null,
+    double? Longitude = null,
+    double? AltitudeMeters = null,
+    double? SpeedKnots = null,
+    double? Course = null,
+    int? Satellites = null,
+    double? Hdop = null
+)
+{
+    /// <summary>Whether the station is where the GPS says: a fresh fix with a position.</summary>
+    public bool HasPosition => IsFresh && Fix != GpsFixKind.NoFix && Latitude is not null && Longitude is not null;
+}
 
 /// <summary>Transmitting, for the status bar (docs/features/F2.1-own-station.md, behaviors 4–13).</summary>
 /// <param name="On">Whether the Transmit switch is on.</param>

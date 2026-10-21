@@ -1036,7 +1036,13 @@ public sealed partial class MainViewModel : ObservableObject
                 SourcePills.Insert(Math.Min(i, SourcePills.Count), pill);
                 pill.Switch.IsShown = !IsViewerOnly;
             }
-            pill.Show(source, CanTransmit, TransmitOn && CanTransmit);
+            pill.Show(
+                source,
+                CanTransmit,
+                TransmitOn && CanTransmit,
+                status.Gps is { } gps && gps.SourceId == source.Id ? gps : null,
+                _settings?.GetActiveProfile() is { Latitude: not null }
+            );
         }
     }
 
@@ -1312,8 +1318,9 @@ public sealed partial class MainViewModel : ObservableObject
         }
         if (Map is not null)
         {
-            // Home is the active profile's location (behavior 3), drawn as a house with its callsign (F1.13).
-            Map.Home = active is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null;
+            // Home is the active profile's location (behavior 3), drawn as a house with its callsign (F1.13), or where
+            // its GPS says while the fix is fresh (F3.6 behavior 7.3).
+            ShowHomePosition();
             Map.HomeName = active?.Callsign;
             Map.HomeRangeKm = active?.RangeKm;
             Map.DistanceUnit = settings.Units.Distance;
@@ -1420,6 +1427,22 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    private GpsStatus? _gps;
+
+    /// <summary>The house: where the GPS says while its fix is fresh (F3.6 behavior 7.3), otherwise the profile's location.</summary>
+    private void ShowHomePosition()
+    {
+        if (Map is null)
+        {
+            return;
+        }
+        var active = _settings?.GetActiveProfile();
+        Map.Home =
+            _gps is { HasPosition: true, Latitude: { } glat, Longitude: { } glon } && active is not null ? (glat, glon)
+            : active is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon)
+            : null;
+    }
+
     internal void Show(EngineStatus status)
     {
         if (status.Title != StationTitle)
@@ -1428,6 +1451,8 @@ public sealed partial class MainViewModel : ObservableObject
             SetPageTitle?.Invoke(status.Title is { } title ? $"{title} · {Brand.DisplayName}" : Brand.DisplayName);
         }
         FilterAreas = status.FilterAreas;
+        _gps = status.Gps;
+        ShowHomePosition();
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();
         PacketCount = status.PacketsReceived;

@@ -26,10 +26,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         _engine = engine;
         _text = text;
         _saved = saved;
-        Kinds =
-        [
-            .. Enum.GetValues<SourceKind>().Select(k => new SourceKindChoice(k, k is not SourceKind.Gps, text, this)),
-        ];
+        Kinds = [.. Enum.GetValues<SourceKind>().Select(k => new SourceKindChoice(k, true, text, this))];
     }
 
     /// <summary>The kind in the form: picked for a new source, fixed for one being edited.</summary>
@@ -41,7 +38,12 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         nameof(IsKissSerial),
         nameof(IsSerial),
         nameof(IsTnc),
-        nameof(CanTransmitKind)
+        nameof(CanTransmitKind),
+        nameof(IsGps),
+        nameof(ShowsHost),
+        nameof(ShowsTncSerialParts),
+        nameof(PortPlaceholder),
+        nameof(BaudPlaceholder)
     )]
     public partial SourceKind EditKind { get; set; } = SourceKind.AprsIs;
 
@@ -218,8 +220,84 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     /// <summary>Whether the form shows a serial KISS TNC's type (docs/features/F3.2-built-in-tncs.md, behavior 4).</summary>
     public bool IsKissSerial => EditKind == SourceKind.KissSerial;
 
-    /// <summary>Whether the form shows a serial port, speed and control lines (F3.1 behavior 1.2, F3.2 behavior 1).</summary>
-    public bool IsSerial => EditKind is SourceKind.KissSerial or SourceKind.AprsTextSerial;
+    /// <summary>
+    /// Whether the form shows a serial port and speed (F3.1 behavior 1.2, F3.2 behavior 1): a serial TNC, or a GPS on a
+    /// serial port (docs/features/F3.6-gps.md, behavior 1.1).
+    /// </summary>
+    public bool IsSerial =>
+        EditKind is SourceKind.KissSerial or SourceKind.AprsTextSerial || (IsGps && EditGpsLink == GpsLink.Serial);
+
+    /// <summary>Whether the form shows a serial TNC's help and control lines, which a GPS doesn't need.</summary>
+    public bool ShowsTncSerialParts => IsSerial && !IsGps;
+
+    /// <summary>Whether the form is for a GPS (docs/features/F3.6-gps.md, behavior 1).</summary>
+    public bool IsGps => EditKind == SourceKind.Gps;
+
+    /// <summary>How the GPS in the form is reached.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(
+        nameof(IsSerial),
+        nameof(ShowsTncSerialParts),
+        nameof(ShowsHost),
+        nameof(PortPlaceholder),
+        nameof(BaudPlaceholder),
+        nameof(GpsSerial),
+        nameof(GpsTcp),
+        nameof(GpsGpsd)
+    )]
+    public partial GpsLink EditGpsLink { get; set; } = GpsLink.Serial;
+
+    /// <summary>NMEA on a serial port (behavior 1.1).</summary>
+    public bool GpsSerial
+    {
+        get => EditGpsLink == GpsLink.Serial;
+        set => SetLink(value, GpsLink.Serial);
+    }
+
+    /// <summary>NMEA over TCP (behavior 1.2).</summary>
+    public bool GpsTcp
+    {
+        get => EditGpsLink == GpsLink.Tcp;
+        set => SetLink(value, GpsLink.Tcp);
+    }
+
+    /// <summary>gpsd (behavior 1.3).</summary>
+    public bool GpsGpsd
+    {
+        get => EditGpsLink == GpsLink.Gpsd;
+        set => SetLink(value, GpsLink.Gpsd);
+    }
+
+    private void SetLink(bool chosen, GpsLink link)
+    {
+        if (chosen)
+        {
+            EditGpsLink = link;
+        }
+    }
+
+    partial void OnEditGpsLinkChanged(GpsLink value)
+    {
+        if (value == GpsLink.Serial && IsEditing && IsGps)
+        {
+            _ = RefreshSerialPortsAsync();
+        }
+    }
+
+    /// <summary>Whether the form shows a host and port: a TCP TNC, or a GPS over TCP or gpsd.</summary>
+    public bool ShowsHost => IsKissTcp || (IsGps && EditGpsLink != GpsLink.Serial);
+
+    /// <summary>The port used when none is typed, shown in the box.</summary>
+    public string PortPlaceholder =>
+        (
+            !IsGps ? SourceSettings.DefaultKissPort
+            : EditGpsLink == GpsLink.Gpsd ? SourceSettings.DefaultGpsdPort
+            : SourceSettings.DefaultNmeaPort
+        ).ToString(CultureInfo.InvariantCulture);
+
+    /// <summary>The speed used when none is typed, shown in the box.</summary>
+    public string BaudPlaceholder =>
+        (IsGps ? SourceSettings.DefaultGpsBaud : SourceSettings.DefaultBaud).ToString(CultureInfo.InvariantCulture);
 
     /// <summary>Whether it's this station's own radio, so the form asks which profiles use it.</summary>
     public bool IsTnc => EditKind is not SourceKind.AprsIs;
@@ -341,7 +419,12 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         {
             kind.Refresh();
         }
-        if (value is SourceKind.KissSerial or SourceKind.AprsTextSerial && IsEditing)
+        if (
+            (
+                value is SourceKind.KissSerial or SourceKind.AprsTextSerial
+                || (value == SourceKind.Gps && EditGpsLink == GpsLink.Serial)
+            ) && IsEditing
+        )
         {
             _ = RefreshSerialPortsAsync();
         }
@@ -526,6 +609,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         TncTypes.Clear();
         SelectedTncType = null;
         EditKind = SourceKind.AprsIs;
+        EditGpsLink = GpsLink.Serial;
         CanPickKind = true;
         EditRxOnly = false;
         EditTxPath = string.Empty;
@@ -562,6 +646,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         TncTypes.Clear();
         SelectedTncType = null;
         EditKind = row.Source.Kind;
+        EditGpsLink = row.Source.GpsLink ?? GpsLink.Serial;
         CanPickKind = false;
         EditServer = row.Source.Server ?? string.Empty;
         EditFilter = row.Source.Filter ?? string.Empty;
@@ -678,7 +763,11 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         int? tncPort = EditTncPort.Trim().Length == 0 ? null : Number(EditTncPort);
         var txPath = EditTxPath.Trim().Length > 0 ? EditTxPath.Trim().ToUpperInvariant() : null;
         SourceSettings source;
-        if (IsSerial)
+        if (IsGps)
+        {
+            source = GpsSourceFromForm();
+        }
+        else if (IsSerial)
         {
             var serialPort = EditSerialPort.Trim();
             int? baud = EditBaud.Trim().Length == 0 ? null : Number(EditBaud);
@@ -752,6 +841,32 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
 
         static int Number(string text) =>
             int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : -1;
+    }
+
+    /// <summary>The GPS the form describes (docs/features/F3.6-gps.md, behavior 1), new or the one being edited.</summary>
+    private SourceSettings GpsSourceFromForm()
+    {
+        var serial = EditGpsLink == GpsLink.Serial;
+        var where = serial ? EditSerialPort.Trim() : EditHost.Trim();
+        int? number = (serial ? EditBaud : EditPort).Trim() is { Length: > 0 } typed
+            ? int.TryParse(typed, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n)
+                ? n
+                : -1
+            : null;
+        var start =
+            _editingId is { } id ? _settings.SourceList.Single(s => s.Id == id)
+            : serial ? SourceSettings.GpsSerialFor(where)
+            : SourceSettings.GpsNetworkFor(EditGpsLink, where);
+        return start with
+        {
+            Name = EditName.Trim().Length > 0 ? EditName.Trim() : where,
+            GpsLink = EditGpsLink,
+            SerialPort = serial ? where : null,
+            Baud = serial ? number : null,
+            Host = serial ? null : where,
+            Port = serial ? null : number,
+            RxOnly = true, // a GPS never sends (behavior 3)
+        };
     }
 
     private void FillProfiles(Func<string, bool> ticked)

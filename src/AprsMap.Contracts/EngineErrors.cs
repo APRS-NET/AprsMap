@@ -39,6 +39,12 @@ public static class EngineErrorCodes
     /// <summary>A profile uses more than one APRS-IS source (F1.25 behavior 3).</summary>
     public const string ProfileTwoAprsIs = "settings.profile.two-aprs-is";
 
+    /// <summary>A profile uses more than one GPS (docs/features/F3.6-gps.md, behavior 2).</summary>
+    public const string ProfileTwoGps = "settings.profile.two-gps";
+
+    /// <summary>A GPS without its link, serial port or host (F3.6 behavior 1).</summary>
+    public const string GpsSourceInvalid = "settings.source.gps-invalid";
+
     /// <summary>Settings were sent without profiles or units.</summary>
     public const string SettingsIncomplete = "settings.incomplete";
 
@@ -199,6 +205,9 @@ public static class EngineErrorCodes
 
     /// <summary>The link to a KISS TNC failed, or it went silent and was given up as gone.</summary>
     public const string KissLinkFailed = "kiss.link-failed";
+
+    /// <summary>A GPS couldn't be opened or reached, or went away (docs/features/F3.6-gps.md); <c>reason</c> says why.</summary>
+    public const string GpsLinkFailed = "gps.link-failed";
 
     /// <summary>
     /// A KISS TNC is connected but sends text lines, not KISS frames: it isn't in KISS mode. A warning, shown while the
