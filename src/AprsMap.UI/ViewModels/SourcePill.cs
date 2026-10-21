@@ -102,7 +102,18 @@ public sealed partial class SourcePill : ObservableObject
     /// Shows <paramref name="status"/>; <paramref name="canChange"/> says whether this viewer may switch it, and
     /// <paramref name="transmitting"/> whether the station transmits and this app may send (F2.1).
     /// </summary>
-    internal void Show(SourceStatus status, bool canChange, bool transmitting = false)
+    /// <param name="status">The source's state.</param>
+    /// <param name="canChange">Whether this viewer may switch it.</param>
+    /// <param name="transmitting">Whether the station transmits and this app may send.</param>
+    /// <param name="gps">A GPS's fix (docs/features/F3.6-gps.md, behaviors 4, 5), for its words while it's connected.</param>
+    /// <param name="hasFixedLocation">Whether the profile has a location of its own to fall back on.</param>
+    internal void Show(
+        SourceStatus status,
+        bool canChange,
+        bool transmitting = false,
+        GpsStatus? gps = null,
+        bool hasFixedLocation = false
+    )
     {
         IsTransmitEnabled = status.MaySend && canChange;
         CanType = status.Kind == SourceKind.KissSerial && canChange;
@@ -126,6 +137,13 @@ public sealed partial class SourcePill : ObservableObject
                 },
                 name
             );
+        // A connected GPS says what it knows (F3.6 behaviors 4, 5).
+        var noFix = false;
+        if (status is { Kind: SourceKind.Gps, Enabled: true, State: ConnectionState.Connected, Warning: null })
+        {
+            noFix = gps is not { HasPosition: true };
+            Text = GpsText(status.Name, gps, hasFixedLocation);
+        }
         // A source that never sends says so on its pill (F2.1 behavior 5; maintainer, 2026-10-18).
         if (status.Enabled && !status.MaySend && status.Kind is not SourceKind.Gps)
         {
@@ -134,10 +152,29 @@ public sealed partial class SourcePill : ObservableObject
         SwitchName = _text.Format("Toggles.Switch.Source", name);
         // Connected with a warning, such as a TNC not in KISS mode, takes the warning colour (F3.1 behavior 13).
         var warned = status.State == ConnectionState.Connected && status.Warning is not null;
-        IsConnected = status.Enabled && status.State == ConnectionState.Connected && !warned;
+        IsConnected = status.Enabled && status.State == ConnectionState.Connected && !warned && !noFix;
         IsWarning =
-            status.Enabled && (warned || status.State == ConnectionState.Reconnecting && status.Error is not null);
+            status.Enabled
+            && (warned || noFix || status.State == ConnectionState.Reconnecting && status.Error is not null);
         CanReconnect = status.Enabled && canChange;
         Switch.Show(status.Enabled, canChange);
+    }
+
+    /// <summary>"GPS · 3D fix · 9 satellites", or "GPS · no fix, using the profile's location".</summary>
+    private string GpsText(string name, GpsStatus? gps, bool hasFixedLocation)
+    {
+        var args = new Dictionary<string, object?> { ["source"] = name, ["satellites"] = gps?.Satellites ?? 0 };
+        return gps is not { HasPosition: true }
+            ? _text.Format(hasFixedLocation ? "Status.Gps.NoFixFixed" : "Status.Gps.NoFix", args)
+            : _text.Format(
+                (gps.Fix, gps.Satellites) switch
+                {
+                    (GpsFixKind.Fix3D, not null) => "Status.Gps.Fix3DSatellites",
+                    (GpsFixKind.Fix3D, null) => "Status.Gps.Fix3D",
+                    (_, not null) => "Status.Gps.Fix2DSatellites",
+                    _ => "Status.Gps.Fix2D",
+                },
+                args
+            );
     }
 }

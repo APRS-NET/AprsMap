@@ -17,6 +17,9 @@ internal interface IBeaconHost
     /// <summary>Whether a packet can go out on <paramref name="sourceId"/> now.</summary>
     bool CanSendOn(string sourceId);
 
+    /// <summary>The fresh fix from <paramref name="profile"/>'s GPS, for course and speed (F3.6 behavior 7.1); or null.</summary>
+    GpsFix? Motion(StationProfile profile);
+
     /// <summary>Sends <paramref name="payload"/> on <paramref name="sourceId"/>, listed as Sent; false when it failed.</summary>
     Task<bool> SendAsync(string sourceId, AprsPayload payload, CancellationToken cancellationToken);
 
@@ -344,7 +347,7 @@ internal sealed class Beaconer : IDisposable
                 : null;
         AprsPayload? payload = entry.Kind switch
         {
-            BeaconKind.Position => PositionReport(profile),
+            BeaconKind.Position => PositionReport(profile, _host.Motion(profile)),
             BeaconKind.Status => StatusReport(profile, _time.GetUtcNow()),
             _ => placed is null ? null : ObjectReport(placed, _time.GetUtcNow()),
         };
@@ -408,10 +411,22 @@ internal sealed class Beaconer : IDisposable
     /// The position a profile sends, by hand or as a beacon (F2.1 behavior 10, F2.2 behavior 2): a position report, or
     /// a Mic-E report with its status (docs/features/F2.12-mic-e-status.md, behaviors 1–3).
     /// </summary>
-    public static PositionedPayload PositionReport(StationProfile profile)
+    /// <param name="profile">The profile, where it is now (its GPS position while the fix is fresh).</param>
+    /// <param name="motion">
+    /// The GPS's fresh fix, whose course, speed and altitude go with the position (docs/features/F3.6-gps.md, behavior
+    /// 7.1); null for a station without one.
+    /// </param>
+    public static PositionedPayload PositionReport(StationProfile profile, GpsFix? motion = null)
     {
         var beacon = profile.EffectivePositionBeacon;
         var symbol = profile.EffectiveSymbol;
+        // APRS courses run 1 to 360; north is 360, since 0 means unknown.
+        var course = motion?.Course is { } c
+            ? ((int)Math.Round(c) % 360 is 0 ? 360 : (int)Math.Round(c) % 360)
+            : (int?)null;
+        var speed = motion?.SpeedKnots;
+        var altitudeFeet = motion?.AltitudeMeters is { } metres ? metres / 0.3048 : (double?)null;
+        var moving = course is not null && speed is not null;
         if (beacon.MicE is { } status)
         {
             return new MicEReport
@@ -421,6 +436,9 @@ internal sealed class Beaconer : IDisposable
                 Comment = profile.Comment ?? string.Empty,
                 Message = MicEMessageFor(status),
                 IsMessagingCapable = true,
+                Course = moving ? course : null,
+                SpeedKnots = moving ? speed : null,
+                AltitudeFeet = altitudeFeet,
             };
         }
         return new PositionReport
@@ -430,7 +448,11 @@ internal sealed class Beaconer : IDisposable
             Comment = profile.Comment ?? string.Empty,
             IsMessagingCapable = true, // it answers messages (F2.4 behavior 15)
             IsCompressed = beacon.Compressed,
-            PowerHeightGain = beacon.Phg is { } phg && !beacon.Compressed ? PowerHeightGain(phg) : null,
+            // One data extension: the GPS's course and speed while it has them, otherwise PHG (APRS101 chapter 7).
+            Course = moving ? course : null,
+            SpeedKnots = moving ? speed : null,
+            PowerHeightGain = beacon.Phg is { } phg && !beacon.Compressed && !moving ? PowerHeightGain(phg) : null,
+            AltitudeFeet = altitudeFeet,
         };
     }
 

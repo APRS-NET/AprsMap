@@ -35,6 +35,10 @@ namespace AprsMap.Contracts;
 /// </param>
 /// <param name="EnterScript">For a <see cref="CustomTncType"/>: the script that switches the TNC into KISS.</param>
 /// <param name="LeaveScript">For a <see cref="CustomTncType"/>: the script that switches it out again, or null.</param>
+/// <param name="GpsLink">
+/// For a GPS (docs/features/F3.6-gps.md, behavior 1): how it's reached. Serial uses <paramref name="SerialPort"/> and
+/// <paramref name="Baud"/>; TCP and gpsd use <paramref name="Host"/> and <paramref name="Port"/>.
+/// </param>
 public sealed record SourceSettings(
     string Id,
     string Name,
@@ -52,9 +56,54 @@ public sealed record SourceSettings(
     bool? RtsEnable = null,
     string? TncType = null,
     string? EnterScript = null,
-    string? LeaveScript = null
+    string? LeaveScript = null,
+    GpsLink? GpsLink = null
 )
 {
+    /// <summary>NMEA 0183's speed, the default for a GPS on a serial port (F3.6 decision 1).</summary>
+    public const int DefaultGpsBaud = 4800;
+
+    /// <summary>The speeds offered for a serial GPS; another can be typed.</summary>
+    public static IReadOnlyList<int> CommonGpsBauds { get; } = [4800, 9600, 19200, 38400, 115200];
+
+    /// <summary>The port commonly used for NMEA over TCP (F3.6 decision 1).</summary>
+    public const int DefaultNmeaPort = 10110;
+
+    /// <summary>gpsd's port.</summary>
+    public const int DefaultGpsdPort = 2947;
+
+    /// <summary>A new GPS on <paramref name="serialPort"/>, reading NMEA, named after it.</summary>
+    public static SourceSettings GpsSerialFor(string serialPort, int? baud = null) =>
+        new(
+            Guid.NewGuid().ToString("N"),
+            serialPort.Trim(),
+            SourceKind.Gps,
+            SerialPort: serialPort.Trim(),
+            Baud: baud,
+            GpsLink: Contracts.GpsLink.Serial
+        );
+
+    /// <summary>A new GPS reached over TCP (<see cref="Contracts.GpsLink.Tcp"/>) or through gpsd, named after its host.</summary>
+    public static SourceSettings GpsNetworkFor(GpsLink link, string host, int? port = null) =>
+        new(Guid.NewGuid().ToString("N"), host.Trim(), SourceKind.Gps, Host: host.Trim(), Port: port, GpsLink: link);
+
+    /// <summary>"/dev/ttyUSB0@4800", "pi.local:10110" or "pi.local:2947": where a GPS is read; null for other kinds.</summary>
+    public string? GpsEndpoint =>
+        Kind != SourceKind.Gps ? null
+        : GpsLink == Contracts.GpsLink.Serial
+            ? SerialPort is { } serial
+                    ? string.Create(
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        $"{serial}@{Baud ?? DefaultGpsBaud}"
+                    )
+                : null
+        : Host is { } host
+            ? string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"{host}:{Port ?? (GpsLink == Contracts.GpsLink.Gpsd ? DefaultGpsdPort : DefaultNmeaPort)}"
+            )
+        : null;
+
     /// <summary>The <see cref="TncType"/> of a TNC switched with the source's own scripts (F3.2 behavior 4.3).</summary>
     public const string CustomTncType = "custom";
 
@@ -158,6 +207,19 @@ public enum SourceKind
     /// </summary>
     AprsTextSerial,
 
-    /// <summary>A GPS, over serial, TCP or gpsd (with beaconing).</summary>
+    /// <summary>A GPS, over serial, TCP or gpsd (docs/features/F3.6-gps.md).</summary>
     Gps,
+}
+
+/// <summary>How a GPS is reached (docs/features/F3.6-gps.md, behavior 1).</summary>
+public enum GpsLink
+{
+    /// <summary>NMEA sentences on a serial port.</summary>
+    Serial,
+
+    /// <summary>NMEA sentences over a TCP connection.</summary>
+    Tcp,
+
+    /// <summary>gpsd, on this machine or another.</summary>
+    Gpsd,
 }

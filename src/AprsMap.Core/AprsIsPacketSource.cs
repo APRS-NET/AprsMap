@@ -148,6 +148,10 @@ internal sealed class AprsIsPacketSourceFactory(
                 source.KissEndpoint ?? source.Name
             );
         }
+        if (source.Kind == SourceKind.Gps)
+        {
+            return GpsSource(source);
+        }
         if (source.Kind != SourceKind.AprsIs)
         {
             throw new NotSupportedException($"{source.Kind} sources aren't built yet.");
@@ -164,6 +168,73 @@ internal sealed class AprsIsPacketSourceFactory(
         return new AprsIsPacketSource(
             new AprsIsConnection(clientOptions, loggerFactory.CreateLogger<AprsIsConnection>())
         );
+    }
+
+    /// <summary>
+    /// A GPS by its link (docs/features/F3.6-gps.md, behavior 1): NMEA from a serial port or a TCP connection, read by
+    /// the app and parsed by APRS.NET, or gpsd through APRS.NET's client.
+    /// </summary>
+    private IPacketSource GpsSource(SourceSettings source)
+    {
+        var endpoint = source.GpsEndpoint ?? source.Name;
+        return source.GpsLink switch
+        {
+            GpsLink.Gpsd => new GpsdGpsSource(
+                new AprsNet.Gps.GpsdOptions
+                {
+                    Host = source.Host ?? string.Empty,
+                    Port = source.Port ?? SourceSettings.DefaultGpsdPort,
+                    ReconnectDelay = options.Value.InitialRetryDelay,
+                    MaxReconnectDelay = options.Value.MaxRetryDelay,
+                    TimeProvider = timeProvider,
+                }
+            ),
+            GpsLink.Tcp => new NmeaGpsSource(
+                async token =>
+                {
+                    var client = new System.Net.Sockets.TcpClient();
+                    try
+                    {
+                        await client
+                            .ConnectAsync(
+                                source.Host ?? string.Empty,
+                                source.Port ?? SourceSettings.DefaultNmeaPort,
+                                token
+                            )
+                            .ConfigureAwait(false);
+                        return new OwningStream(client.GetStream(), client);
+                    }
+                    catch
+                    {
+                        client.Dispose();
+                        throw;
+                    }
+                },
+                endpoint,
+                timeProvider
+            ),
+            _ => new NmeaGpsSource(
+                _ =>
+                {
+                    var port = new System.IO.Ports.SerialPort(
+                        source.SerialPort ?? string.Empty,
+                        source.Baud ?? SourceSettings.DefaultGpsBaud
+                    );
+                    try
+                    {
+                        port.Open();
+                        return Task.FromResult<Stream>(new OwningStream(port.BaseStream, port));
+                    }
+                    catch
+                    {
+                        port.Dispose();
+                        throw;
+                    }
+                },
+                endpoint,
+                timeProvider
+            ),
+        };
     }
 
     /// <summary>

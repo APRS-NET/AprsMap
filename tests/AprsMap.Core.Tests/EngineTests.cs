@@ -857,10 +857,12 @@ public class EngineTests
         };
         var engine = new Engine(
             Options.Create(new EngineOptions()),
-            new AprsIsPacketSourceFactory(
-                Options.Create(new EngineOptions()),
-                NullLoggerFactory.Instance,
-                TimeProvider.System
+            new NotBuiltFactory( // every kind is built now: one that says GPS isn't
+                new AprsIsPacketSourceFactory(
+                    Options.Create(new EngineOptions()),
+                    NullLoggerFactory.Instance,
+                    TimeProvider.System
+                )
             ),
             new InMemorySettingsStore(
                 new AppSettings(
@@ -1276,6 +1278,15 @@ public class EngineTests
         Assert.True(london.Line.Max(p => p.Latitude) > 51.5);
     }
 
+    /// <summary>A factory that says GPS isn't built, as a kind still to come would.</summary>
+    private sealed class NotBuiltFactory(IPacketSourceFactory inner) : IPacketSourceFactory
+    {
+        public IPacketSource Create(StationProfile profile, SourceSettings source, string filter) =>
+            source.Kind == SourceKind.Gps
+                ? throw new NotSupportedException("Not built.")
+                : inner.Create(profile, source, filter);
+    }
+
     internal sealed class FakeSourceFactory : IPacketSourceFactory
     {
         private readonly Queue<FakeSource?> _script = new();
@@ -1309,9 +1320,19 @@ public class EngineTests
         /// <summary>The connection a TNC-like source with <paramref name="sourceId"/> opens.</summary>
         public FakeSource EnqueueFor(string sourceId, string server) => _others[sourceId] = new FakeSource(server);
 
+        /// <summary>Any other source, such as a GPS, that <paramref name="sourceId"/> opens.</summary>
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, IPacketSource> _given = new();
+
+        /// <summary>Opens <paramref name="connection"/> for the source with <paramref name="sourceId"/>.</summary>
+        public void Give(string sourceId, IPacketSource connection) => _given[sourceId] = connection;
+
         public IPacketSource Create(StationProfile profile, SourceSettings source, string filter)
         {
             Opens.AddOrUpdate(source.Id, 1, (_, n) => n + 1);
+            if (_given.TryRemove(source.Id, out var given))
+            {
+                return given;
+            }
             if (source.Kind != SourceKind.AprsIs)
             {
                 return _others.TryGetValue(source.Id, out var other) ? other : new FakeSource(server: null);

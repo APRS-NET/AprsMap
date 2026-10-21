@@ -28,10 +28,10 @@ public class SourcesSectionTests
         Assert.Equal("Used by: Home, Portable", section.Rows[0].UsedByText);
         Assert.Equal("Not used by any profile", section.Rows[1].UsedByText);
         Assert.Equal(
-            ["APRS-IS", "KISS over TCP", "KISS over serial", "TNC text output (TNC2) over serial", "GPS · coming"],
+            ["APRS-IS", "KISS over TCP", "KISS over serial", "TNC text output (TNC2) over serial", "GPS"],
             section.Kinds.Select(k => k.Name)
         );
-        Assert.Equal([true, true, true, true, false], section.Kinds.Select(k => k.IsAvailable));
+        Assert.All(section.Kinds, k => Assert.True(k.IsAvailable)); // GPS too (docs/features/F3.6-gps.md)
     }
 
     /// <summary>First run's result: one licensed profile and no sources yet.</summary>

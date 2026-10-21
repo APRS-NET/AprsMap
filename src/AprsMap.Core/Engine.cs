@@ -190,7 +190,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                         beaconHeld,
                         LastPositionHeard()
                     ),
-                    UnreadMessages: unread
+                    UnreadMessages: unread,
+                    Gps: GpsStatusLocked()
                 )
             );
         }
@@ -770,6 +771,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             _sourceLinks.Remove(sourceId);
             _sourceAttempts.Remove(sourceId);
         }
+        ForgetGps(sourceId);
     }
 
     /// <summary>
@@ -809,6 +811,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     )
                 );
                 return;
+            }
+            if (connection is IGpsSource gps)
+            {
+                gps.Fixes = fix => OnGpsFix(source.Id, fix); // F3.6
             }
             await using (connection.ConfigureAwait(false))
             {
@@ -1328,13 +1334,15 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     )
     {
         var (_, profile, targets) = await TargetsAsync(sourceId, cancellationToken).ConfigureAwait(false);
-        if (profile is not { Latitude: not null, Longitude: not null })
+        var here = WithGps(profile); // where the GPS says while its fix is fresh (F3.6 behavior 7.1)
+        if (here is not { Latitude: not null, Longitude: not null })
         {
             throw EngineErrors.ToException(
                 new EngineError(EngineErrorCodes.TransmitNoPosition, "Set the station's location first.")
             );
         }
-        var report = Beaconer.PositionReport(profile); // what a beacon sends, PHG and format included (F2.2 behavior 2)
+        // What a beacon sends, PHG and format included (F2.2 behavior 2), with the GPS's course and speed.
+        var report = Beaconer.PositionReport(here, FreshFix(profile));
         var sent = new List<PacketView>();
         Exception? failure = null;
         foreach (var (source, sender) in targets)
@@ -1736,7 +1744,15 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         lock (_gate)
         {
             var settings = _settings ?? AppSettings.Empty;
-            var profile = settings.GetActiveProfile();
+            var profile = settings.GetActiveProfile() is { } active
+                ? FreshFixLocked(active)?.Position is { } here
+                    ? active with
+                    {
+                        Latitude = here.Latitude,
+                        Longitude = here.Longitude,
+                    } // F3.6 behavior 7.1
+                    : active
+                : null;
             var held = !settings.EffectiveToggles.Transmit
                 ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
                 : ProfileBlock(settings)
@@ -1755,6 +1771,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     }
 
     bool IBeaconHost.CanSendOn(string sourceId) => ((IMessengerHost)this).CanSendOn(sourceId);
+
+    GpsFix? IBeaconHost.Motion(StationProfile profile) => FreshFix(profile);
 
     Task<bool> IBeaconHost.SendAsync(string sourceId, AprsPayload payload, CancellationToken cancellationToken) =>
         SendPayloadAsync(sourceId, payload, cancellationToken);
@@ -2346,11 +2364,16 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             views = [.. _views.Select(v => v.View).Reverse()];
         }
+        var here = WithGps(profile.Profile); // my range follows the GPS (F3.6 behavior 7.2)
+        lock (_gate)
+        {
+            _filterCentre = here is { Latitude: { } lat, Longitude: { } lon } ? new AprsPosition(lat, lon) : null;
+        }
         return FilterComposer.ComposeParts(
-            profile.Profile,
+            here,
             profile.Filter,
             views,
-            name => _stations.Get(name) is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon) : null
+            name => _stations.Get(name) is { Latitude: { } slat, Longitude: { } slon } ? (slat, slon) : null
         );
     }
 

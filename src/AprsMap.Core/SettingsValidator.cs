@@ -57,6 +57,23 @@ internal static class SettingsValidator
                     "A KISS over serial source needs a port, a speed above 0 and a TNC port from 0 to 15."
                 );
             }
+            if (
+                source.Kind == SourceKind.Gps
+                && (
+                    source.GpsLink is not { } link
+                    || (
+                        link == GpsLink.Serial
+                            ? string.IsNullOrWhiteSpace(source.SerialPort) || source.Baud is <= 0
+                            : string.IsNullOrWhiteSpace(source.Host) || source.Port is < 1 or > 65535
+                    )
+                )
+            )
+            {
+                throw Fail(
+                    EngineErrorCodes.GpsSourceInvalid,
+                    "A GPS needs its serial port and a speed above 0, or a host and a port from 1 to 65535."
+                );
+            }
         }
 
         foreach (var source in settings.SourceList)
@@ -155,6 +172,14 @@ internal static class SettingsValidator
                 throw Fail(
                     EngineErrorCodes.SourceUnknown,
                     $"Profile '{profile.Name}' uses a source that isn't in the list.",
+                    profile.Name
+                );
+            }
+            if (profile.SourceIds.Count(id => sources[id].Kind == SourceKind.Gps) > 1)
+            {
+                throw Fail(
+                    EngineErrorCodes.ProfileTwoGps,
+                    $"Profile '{profile.Name}' uses more than one GPS; the station is in one place.",
                     profile.Name
                 );
             }
