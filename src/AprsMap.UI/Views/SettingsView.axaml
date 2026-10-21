@@ -346,6 +346,22 @@
                     AutomationProperties.Name="{l:T Settings.Sources.Filter}"
                     FontFamily="{DynamicResource Font.Mono}"
                   />
+                  <!-- What the automatic filter already receives, and the filter in use (F1.2 behavior 7). -->
+                  <TextBlock
+                    x:Name="AutomaticFilterNote"
+                    Text="{Binding Sources.AutomaticFilterText}"
+                    IsVisible="{Binding Sources.AutomaticFilterText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    TextWrapping="Wrap"
+                  />
+                  <TextBlock
+                    x:Name="FilterInUseNote"
+                    Text="{Binding Sources.FilterInUseText}"
+                    IsVisible="{Binding Sources.IsAprsIs}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                    TextWrapping="Wrap"
+                  />
                   <StackPanel x:Name="SourcePasscode" Spacing="8" IsVisible="{Binding Sources.ShowsPasscode}">
                     <TextBlock
                       Text="{Binding Sources.PasscodeForText}"

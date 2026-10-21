@@ -9,26 +9,21 @@ namespace AprsMap.UI.Tests;
 public class FilterUiTests
 {
     [Fact]
-    public async Task TheMapIsReportedTwoSecondsAfterItStopsAndFollowingAtOnce()
+    public async Task FollowingIsReportedAtOnceAndTheMapsViewNever()
     {
         var engine = new FakeEngine();
         var time = new FakeTimeProvider();
         var vm = new MainViewModel(engine, time);
         engine.Details["W1AW-9"] = FakeEngine.Detail("W1AW-9", time.GetUtcNow());
 
-        vm.MapMoved(40, -105, 80);
-        time.Advance(TimeSpan.FromSeconds(1));
-        vm.MapMoved(41, -105, 80); // still moving
-        time.Advance(TimeSpan.FromSeconds(1));
-        Assert.Empty(engine.MapViews);
-        time.Advance(MainViewModel.MapReportDelay);
-        await WaitUntil(() => engine.MapViews.Count == 1);
-        Assert.Equal(new MapViewReport(41, -105, 80), engine.MapViews[0]);
-
         await vm.Details.ShowAsync("W1AW-9");
         vm.Details.IsFollowing = true;
+        await WaitUntil(() => engine.MapViews.Count == 1);
+        Assert.Equal(new MapViewReport(null, null, 0, "W1AW-9"), engine.MapViews[0]); // no map part (F1.2 behavior 1.2)
+
+        vm.Details.IsFollowing = false;
         await WaitUntil(() => engine.MapViews.Count == 2);
-        Assert.Equal("W1AW-9", engine.MapViews[1].Following);
+        Assert.Equal(new MapViewReport(null, null, 0), engine.MapViews[1]); // stopping takes it out
     }
 
     [Fact]

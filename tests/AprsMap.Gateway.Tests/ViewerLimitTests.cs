@@ -141,7 +141,7 @@ public sealed class ViewerLimitTests(LimitedGatewayFactory factory) : IClassFixt
 
         var after = engine.PreviewFilter()!;
         Assert.DoesNotContain("r/35/-90", after, StringComparison.Ordinal);
-        Assert.EndsWith("f/W1AW-9/150", after, StringComparison.Ordinal);
+        Assert.EndsWith("f/W1AW-9/50", after, StringComparison.Ordinal);
         await remote.DisposeAsync();
         await WaitUntilAsync(() => Task.FromResult(engine.PreviewFilter() == before)); // it left: no longer counts
     }
@@ -160,7 +160,7 @@ public sealed class ViewerLimitTests(LimitedGatewayFactory factory) : IClassFixt
         );
 
         var filter = engine.PreviewFilter()!;
-        Assert.EndsWith("f/N0AAA/150 f/N0BBB/150 f/N0CCC/150", filter, StringComparison.Ordinal);
+        Assert.EndsWith("f/N0AAA/50 f/N0BBB/50 f/N0CCC/50", filter, StringComparison.Ordinal);
         Assert.DoesNotContain("N0DDD", filter, StringComparison.Ordinal);
     }
 

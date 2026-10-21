@@ -223,8 +223,8 @@ public sealed record StationProfile(
     /// <summary>The ping responder's settings in effect (docs/features/F2.13-ping.md): <see cref="Ping"/>, or off.</summary>
     public PingSettings EffectivePing => Ping ?? PingSettings.Off;
 
-    /// <summary>The range a new profile gets: 150 km.</summary>
-    public const int DefaultRangeKm = 150;
+    /// <summary>The range a new profile gets: 50 km (F1.2 behavior 1.1).</summary>
+    public const int DefaultRangeKm = 50;
 
     /// <summary>The symbol a profile without one has: a house, <c>/-</c>.</summary>
     public const string DefaultSymbol = "/-";

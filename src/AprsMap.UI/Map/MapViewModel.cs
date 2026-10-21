@@ -22,7 +22,7 @@ public sealed partial class MapViewModel : ObservableObject, IDisposable
     /// <summary>How long after the map stops moving its view is saved.</summary>
     public static readonly TimeSpan SaveDelay = TimeSpan.FromSeconds(2);
 
-    /// <summary>How much Home and a first start show around the station (behavior 2): about the stand-in filter's 150 km.</summary>
+    /// <summary>How much Home and a first start show around the station without a range (behavior 2).</summary>
     public const double HomeSpanKm = 150;
 
     private readonly IPreferenceStore? _store;
@@ -54,6 +54,27 @@ public sealed partial class MapViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasHome))]
     public partial (double Latitude, double Longitude)? Home { get; set; }
+
+    /// <summary>
+    /// The active profile's range, so Home shows the area the filter's range receives (F1.2 behavior 1.1); null or 0
+    /// for <see cref="HomeSpanKm"/>.
+    /// </summary>
+    [ObservableProperty]
+    public partial int? HomeRangeKm { get; set; }
+
+    /// <summary>
+    /// How much Home shows across the view's shorter side, so its corners reach <see cref="HomeRangeKm"/> from the
+    /// station: the map shows what the filter's range receives, its circle framed (F1.2 behaviors 1.1, 6).
+    /// </summary>
+    public double HomeSpanFor(double width, double height)
+    {
+        if (HomeRangeKm is not > 0 || width <= 0 || height <= 0)
+        {
+            return HomeSpanKm;
+        }
+        var aspect = Math.Max(width, height) / Math.Min(width, height);
+        return 2 * HomeRangeKm.Value / Math.Sqrt(1 + aspect * aspect);
+    }
 
     /// <summary>The callsign under the house drawn at <see cref="Home"/> (F1.13 behavior 3).</summary>
     [ObservableProperty]

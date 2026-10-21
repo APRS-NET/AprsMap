@@ -10,6 +10,7 @@ public sealed class FilterComposerTests
     {
         Latitude = 40,
         Longitude = -105,
+        RangeKm = 150, // a wide range, so map views inside and outside it are easy to place
     };
 
     [Fact]
@@ -108,4 +109,19 @@ public sealed class FilterComposerTests
         Assert.True(FilterComposer.Differs(one, new MapViewReport(40, -105, 100)));
         Assert.False(FilterComposer.Differs(one, new MapViewReport(40, -105, 100, Watched: ["k0k"])));
     }
+
+    [Fact]
+    public void ANewProfileReceivesFiftyKmAroundItsLocation() =>
+        Assert.Equal(
+            "r/40/-105/50",
+            FilterComposer.Compose(
+                InMemorySettingsStore.Profile("N0CALL") with
+                {
+                    Latitude = 40,
+                    Longitude = -105,
+                },
+                null,
+                []
+            )
+        );
 }

@@ -43,11 +43,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
         {
             if (_placed && _map.View is var (lat, lon, resolution))
             {
-                _state?.Remember(new MapViewState(lat, lon, resolution));
-                // Half the view's diagonal on the ground, for the filter (F1.2 behavior 1.2).
-                var diagonal = Math.Sqrt(Math.Pow(_map.Bounds.Width, 2) + Math.Pow(_map.Bounds.Height, 2));
-                var radiusKm = diagonal / 2 * resolution * Math.Cos(lat * Math.PI / 180) / 1000;
-                _main?.MapMoved(lat, lon, radiusKm);
+                _state?.Remember(new MapViewState(lat, lon, resolution)); // not the filter's: F1.2 behavior 1.2
             }
         };
         _map.SizeChanged += (_, e) =>
@@ -177,7 +173,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
         }
         else if (_state.Home is var (lat, lon))
         {
-            _map.ShowAround(lat, lon, MapViewModel.HomeSpanKm);
+            _map.ShowAround(lat, lon, _state.HomeSpanFor(_map.Bounds.Width, _map.Bounds.Height));
         }
         else
         {
@@ -189,7 +185,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
     {
         if (_state?.Home is var (lat, lon))
         {
-            _map.ShowAround(lat, lon, MapViewModel.HomeSpanKm);
+            _map.ShowAround(lat, lon, _state.HomeSpanFor(_map.Bounds.Width, _map.Bounds.Height));
         }
     }
 

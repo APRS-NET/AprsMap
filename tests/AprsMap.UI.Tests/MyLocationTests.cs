@@ -144,7 +144,7 @@ public class MyLocationTests
         };
         window.Show();
         Dispatcher.UIThread.RunJobs();
-        var at = panel.View.ScreenPoint(40.5, -104.5);
+        var at = panel.View.ScreenPoint(40.2, -104.8); // inside Home's view of the 50 km range
         var inWindow = panel.View.TranslatePoint(at, window)!.Value;
 
         window.MouseDown(inWindow, MouseButton.Right);
@@ -157,8 +157,8 @@ public class MyLocationTests
         item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await WaitUntil(() => engine.Saved.Count > 0);
         var active = engine.Saved[^1].GetActiveProfile()!;
-        Assert.Equal(40.5, active.Latitude!.Value, 2);
-        Assert.Equal(-104.5, active.Longitude!.Value, 2);
+        Assert.Equal(40.2, active.Latitude!.Value, 2);
+        Assert.Equal(-104.8, active.Longitude!.Value, 2);
         window.Close();
     }
 
@@ -181,7 +181,7 @@ public class MyLocationTests
         };
         window.Show();
         Dispatcher.UIThread.RunJobs();
-        var at = panel.View.ScreenPoint(40.5, -104.5);
+        var at = panel.View.ScreenPoint(40.2, -104.8); // inside Home's view of the 50 km range
         var inWindow = panel.View.TranslatePoint(at, window)!.Value;
 
         window.MouseDown(inWindow, MouseButton.Right);
@@ -192,8 +192,8 @@ public class MyLocationTests
         item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         await WaitUntil(() => vm.Destination.IsSet);
 
-        Assert.Equal(40.5, vm.Destination.Point!.Latitude, 2);
-        Assert.Equal(-104.5, vm.Destination.Point.Longitude, 2);
+        Assert.Equal(40.2, vm.Destination.Point!.Latitude, 2);
+        Assert.Equal(-104.8, vm.Destination.Point.Longitude, 2);
         Assert.Equal(vm.Destination.Point, panel.View.Destination.At); // the flag (F1.18 behavior 3)
         Assert.Empty(engine.Saved); // the station's settings don't change (behavior 6)
         window.Close();

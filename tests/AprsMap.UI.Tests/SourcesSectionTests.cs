@@ -330,4 +330,34 @@ public class SourcesSectionTests
         Assert.Empty(saved.SourceList);
         Assert.All(saved.Profiles, p => Assert.Empty(p.SourceIds));
     }
+
+    [Fact]
+    public void AddingAprsIsSaysWhatTheAutomaticFilterReceivesAndTheFilterInUse()
+    {
+        var settings = FakeEngine.TwoProfiles();
+        var active = settings.GetActiveProfile()!;
+        settings = settings with
+        {
+            Profiles =
+            [
+                .. settings.Profiles.Select(p =>
+                    p.Id == active.Id ? p with { Latitude = 40, Longitude = -105, RangeKm = 50 } : p
+                ),
+            ],
+        };
+        var (section, _) = Create(settings);
+
+        section.AddCommand.Execute(null);
+        section.ShowFilter("r/40/-105/50");
+
+        Assert.Equal(
+            $"Automatic: everything within 50 km of {active.Callsign}'s location, and stations you follow or watch, "
+                + "wherever they are. Moving the map doesn't change it. Text here is added to that. The circle on the "
+                + "map shows the range.",
+            section.AutomaticFilterText
+        );
+        Assert.Equal("In use now: r/40/-105/50", section.FilterInUseText);
+        section.EditKind = SourceKind.KissTcp;
+        Assert.Null(section.AutomaticFilterText); // only APRS-IS has a filter
+    }
 }

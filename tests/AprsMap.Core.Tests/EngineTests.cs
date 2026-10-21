@@ -905,13 +905,13 @@ public class EngineTests
 
         var run = engine.RunAsync(cts.Token);
         await session.Connected.Task.WaitAsync(Ct);
-        Assert.Equal("r/40/-105/150", Assert.Single(sources.LoginFilters));
-        Assert.Equal("r/40/-105/150", (await engine.GetStatusAsync(Ct)).Filter);
+        Assert.Equal("r/40/-105/50", Assert.Single(sources.LoginFilters));
+        Assert.Equal("r/40/-105/50", (await engine.GetStatusAsync(Ct)).Filter);
 
         time.Advance(TimeSpan.FromSeconds(10));
         await engine.SetMapViewAsync(new MapViewReport(39.1, -94.58, 80), Ct);
         await WaitUntil(() => Task.FromResult(session.Filters.Count == 1));
-        Assert.Equal("r/40/-105/150 r/39.1/-94.58/80", session.Filters.Single());
+        Assert.Equal("r/40/-105/50 r/39.1/-94.58/80", session.Filters.Single());
 
         // Two more changes inside the interval are merged into one send when it ends.
         await engine.SetMapViewAsync(new MapViewReport(35, -90, 80), Ct);
@@ -919,7 +919,7 @@ public class EngineTests
         Assert.Single(session.Filters);
         time.Advance(TimeSpan.FromSeconds(5));
         await WaitUntil(() => Task.FromResult(session.Filters.Count == 2));
-        Assert.Equal("r/40/-105/150 r/35/-90/80 f/W1AW-9/150", session.Filters.Last());
+        Assert.Equal("r/40/-105/50 r/35/-90/80 f/W1AW-9/50", session.Filters.Last());
         Assert.Equal(1, sources.Attempts); // never a new login
 
         await cts.CancelAsync();
