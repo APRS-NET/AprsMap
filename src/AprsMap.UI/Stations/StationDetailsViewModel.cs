@@ -165,6 +165,16 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial string? MotionText { get; private set; }
 
+    /// <summary>
+    /// "Probably 3.4 km on, along its course": where dead reckoning puts it now (docs/features/F1.17-dead-reckoning.md,
+    /// behavior 4); null while dead reckoning is off or the station isn't estimated.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? EstimateText { get; private set; }
+
+    /// <summary>Whether this viewer shows dead reckoning (Settings › Map), so the estimate is said here too.</summary>
+    internal bool DeadReckoning { get; set; }
+
     /// <summary>The latest comment, control characters shown as symbols (behavior 2.5).</summary>
     [ObservableProperty]
     public partial string? Comment { get; private set; }
@@ -601,6 +611,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         if (d is null || Name is null)
         {
             Symbol = KindText = HeardText = HeardTime = PositionText = LocatorText = RangeText = MotionText = null;
+            EstimateText = null;
             Comment = Status = ArrivalText = Path = DeviceText = LastPacket = HeardViaText = null;
             WriteWeather(null, units: UnitSettings.Metric, lastHeard: default);
             WriteProblems(null);
@@ -658,6 +669,21 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             : d.Locator;
         RangeText = Localization.RangeText.Format(d.DistanceKm, d.BearingDegrees, units.Distance, _text);
         MotionText = Motion(d, units, culture);
+        var age = _time.GetUtcNow() - d.LastHeard;
+        EstimateText =
+            DeadReckoning
+            && d is { CourseDegrees: not null, SpeedKmh: >= Map.MapView.ReckonFromKmh and var kmh }
+            && d.Weather is null
+            && age > TimeSpan.Zero
+            && age <= Map.MapView.ReckonFor
+                ? _text.Format(
+                    "Details.Estimate",
+                    new Dictionary<string, object?>
+                    {
+                        ["distance"] = Localization.RangeText.Distance(kmh * age.TotalHours, units.Distance, _text),
+                    }
+                )
+                : null;
         WriteWeather(d.Weather, units, d.LastHeard);
         WriteProblems(d.Problems);
         Comment = Visible(d.Comment);

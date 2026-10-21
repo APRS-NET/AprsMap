@@ -201,6 +201,12 @@ public sealed record AppearanceSettings
     /// </summary>
     public bool ShowFilterCircles { get; init; } = true;
 
+    /// <summary>
+    /// Whether moving stations are also drawn where they probably are now (docs/features/F1.17-dead-reckoning.md,
+    /// behavior 6); off by default.
+    /// </summary>
+    public bool DeadReckoning { get; init; }
+
     /// <summary>The map symbol sizes Settings › Map offers.</summary>
     public static IReadOnlyList<double> MapSymbolScaleSteps { get; } = [0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
 

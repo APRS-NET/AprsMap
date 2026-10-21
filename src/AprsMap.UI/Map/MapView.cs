@@ -72,6 +72,13 @@ public sealed class MapView : Control, IDisposable
     private IBrush? _labelBrush;
     private IBrush? _haloBrush;
     private IPen? _ringPen;
+    private IPen? _estimatePen;
+    private IPen? _freshnessPen;
+    private IBrush? _estimateDot;
+
+    // Where each estimated station is drawn this frame, in Web Mercator metres, for hit-testing (F1.17).
+    private Dictionary<string, (double X, double Y)> _estimated = new(StringComparer.Ordinal);
+    private readonly DispatcherTimer _reckoningTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private IPen? _filterPen;
     private ImmutablePen? _destinationPen;
     private ImmutablePen? _destinationPolePen;
@@ -137,6 +144,14 @@ public sealed class MapView : Control, IDisposable
             }
         );
         Watch("Map.ShowFilterCircles", v => ShowFilterCircles = v is true);
+        Watch("Map.DeadReckoning", v => DeadReckoning = v is true);
+        _reckoningTimer.Tick += (_, _) =>
+        {
+            if (_estimated.Count > 0)
+            {
+                InvalidateVisual(); // estimates move on with the clock
+            }
+        };
         Watch("Map.Tracks", v => Tracks = v is MapTracks tracks ? tracks : MapTracks.All);
         Watch("Map.Paths", v => Paths = v is MapPaths paths ? paths : MapPaths.SelectedStation);
         Watch(
@@ -171,6 +186,12 @@ public sealed class MapView : Control, IDisposable
             v =>
             {
                 _trackColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                // Dead reckoning's line, dot and freshness ring, in the track colour (F1.17 behavior 3).
+                _estimatePen = v is Color e
+                    ? new ImmutablePen(new ImmutableSolidColorBrush(e), 1.5, new ImmutableDashStyle([2, 3], 0))
+                    : null;
+                _freshnessPen = v is Color r ? new ImmutablePen(new ImmutableSolidColorBrush(r), 2) : null;
+                _estimateDot = v is Color d ? new ImmutableSolidColorBrush(d) : null;
                 InvalidateVisual();
             }
         );
@@ -212,6 +233,77 @@ public sealed class MapView : Control, IDisposable
 
     /// <summary>The unit the hover text gives distances from my location in (F1.13 behavior 4).</summary>
     public DistanceUnit DistanceUnit { get; set; }
+
+    /// <summary>
+    /// Whether moving stations are drawn where they probably are now (docs/features/F1.17-dead-reckoning.md): their
+    /// estimate is redrawn every second while there is one.
+    /// </summary>
+    public bool DeadReckoning
+    {
+        get;
+        set
+        {
+            field = value;
+            if (value)
+            {
+                _reckoningTimer.Start();
+            }
+            else
+            {
+                _reckoningTimer.Stop();
+                _estimated = new(StringComparer.Ordinal);
+            }
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>How long after a station's position its estimate is drawn (F1.17 behavior 2).</summary>
+    public static readonly TimeSpan ReckonFor = TimeSpan.FromMinutes(10);
+
+    /// <summary>The slowest speed estimated, in km/h; slower, a GPS's course means little (F1.17 behavior 1).</summary>
+    public const double ReckonFromKmh = 5;
+
+    /// <summary>
+    /// Where <paramref name="mark"/> probably is at <paramref name="now"/>, in Web Mercator metres, and the share of
+    /// <see cref="ReckonFor"/> left; null when it isn't estimated (F1.17 behaviors 1, 2).
+    /// </summary>
+    internal static (double X, double Y, double Left)? Estimate(StationMark mark, DateTimeOffset now)
+    {
+        var age = now - mark.LastHeard;
+        if (
+            mark is not { Course: { } course, SpeedKmh: >= ReckonFromKmh and var kmh, IsStale: false }
+            || age <= TimeSpan.Zero
+            || age > ReckonFor
+        )
+        {
+            return null;
+        }
+        var lonLat = SphericalMercator.ToLonLat(mark.X, mark.Y);
+        var (lat, lon) = PointAlong(lonLat.lat, lonLat.lon, course, kmh * age.TotalHours);
+        var (x, y) = SphericalMercator.FromLonLat(lon, lat);
+        return (x, y, 1 - age / ReckonFor);
+    }
+
+    /// <summary>The point <paramref name="km"/> from a place along <paramref name="bearing"/>, on a sphere.</summary>
+    // SHIM: G08 — APRS.NET's destination point, until the UI can use its geodesy (F1.17 decision 3).
+    internal static (double Latitude, double Longitude) PointAlong(
+        double latitude,
+        double longitude,
+        double bearing,
+        double km
+    )
+    {
+        const double EarthKm = 6371.0088;
+        var d = km / EarthKm;
+        var b = bearing * Math.PI / 180;
+        var lat1 = latitude * Math.PI / 180;
+        var lon1 = longitude * Math.PI / 180;
+        var lat2 = Math.Asin(Math.Sin(lat1) * Math.Cos(d) + Math.Cos(lat1) * Math.Sin(d) * Math.Cos(b));
+        var lon2 =
+            lon1
+            + Math.Atan2(Math.Sin(b) * Math.Sin(d) * Math.Cos(lat1), Math.Cos(d) - Math.Sin(lat1) * Math.Sin(lat2));
+        return (lat2 * 180 / Math.PI, ((lon2 * 180 / Math.PI) + 540) % 360 - 180);
+    }
 
     /// <summary>Whether the filter's range parts are drawn as dashed circles (F1.2 behavior 6).</summary>
     public bool ShowFilterCircles
@@ -807,10 +899,22 @@ public sealed class MapView : Control, IDisposable
         var viewport = _map.Navigator.Viewport;
         var marks = _drawn;
         var screen = new SKPoint[marks.Count];
+        // Dead reckoning (F1.17): a moving station is drawn where it probably is now; where it was heard keeps a dot.
+        var now = Time.GetUtcNow();
+        var estimates = new List<(SKPoint Heard, SKPoint Now, double Left)>();
+        var estimated = new Dictionary<string, (double X, double Y)>(StringComparer.Ordinal);
         for (var i = 0; i < marks.Count; i++)
         {
             screen[i] = ToScreen(viewport, marks[i]);
+            if (DeadReckoning && Estimate(marks[i], now) is var (ex, ey, left))
+            {
+                var probably = ToScreen(viewport, marks[i] with { X = ex, Y = ey });
+                estimates.Add((screen[i], probably, left));
+                estimated[marks[i].Name] = (ex, ey);
+                screen[i] = probably;
+            }
         }
+        _estimated = estimated;
         // The map and symbols first: the tiles would cover anything drawn before them.
         // Everything the render thread needs is read here, on the UI thread: styled properties such as the theme
         // variant can't be read from the render thread (on desktop that throws every frame and blanks the window).
@@ -846,6 +950,7 @@ public sealed class MapView : Control, IDisposable
         }
         DrawFilterAreas(context, viewport);
         DrawDestination(context, viewport);
+        DrawEstimates(context, estimates);
         DrawLabels(context, marks, screen);
         if (Selected is { } name && _ringPen is not null && FindIndex(marks, name) is { } selected)
         {
@@ -855,6 +960,45 @@ public sealed class MapView : Control, IDisposable
         if (_map.UpdateAnimations())
         {
             Dispatcher.UIThread.Post(InvalidateVisual, DispatcherPriority.Render);
+        }
+    }
+
+    /// <summary>
+    /// For each estimate, a dashed line back to where the station was heard, a dot there, and a ring around the symbol
+    /// whose arc is the share of the 10 minutes left (F1.17 behavior 3).
+    /// </summary>
+    private void DrawEstimates(DrawingContext context, List<(SKPoint Heard, SKPoint Now, double Left)> estimates)
+    {
+        if (_estimatePen is null || _freshnessPen is null || _estimateDot is null)
+        {
+            return;
+        }
+        var radius = _symbolDip * 0.7;
+        foreach (var (heard, now, left) in estimates)
+        {
+            var from = new Point(heard.X, heard.Y);
+            var to = new Point(now.X, now.Y);
+            context.DrawLine(_estimatePen, from, to);
+            context.DrawEllipse(_estimateDot, null, from, 3, 3);
+            var sweep = 360 * Math.Clamp(left, 0, 1);
+            if (sweep >= 359.5)
+            {
+                context.DrawEllipse(null, _freshnessPen, to, radius, radius);
+                continue;
+            }
+            var geometry = new StreamGeometry();
+            using (var arc = geometry.Open())
+            {
+                var start = new Point(to.X, to.Y - radius); // from twelve o'clock, clockwise
+                var end = new Point(
+                    to.X + radius * Math.Sin(sweep * Math.PI / 180),
+                    to.Y - radius * Math.Cos(sweep * Math.PI / 180)
+                );
+                arc.BeginFigure(start, false);
+                arc.ArcTo(end, new Size(radius, radius), 0, sweep > 180, SweepDirection.Clockwise);
+                arc.EndFigure(false);
+            }
+            context.DrawGeometry(null, _freshnessPen, geometry);
         }
     }
 
@@ -1051,7 +1195,11 @@ public sealed class MapView : Control, IDisposable
         var bestDistance = double.MaxValue;
         foreach (var mark in _marks)
         {
-            var at = ToScreen(viewport, mark);
+            // An estimated station is where it's drawn (F1.17).
+            var at = ToScreen(
+                viewport,
+                _estimated.TryGetValue(mark.Name, out var now) ? mark with { X = now.X, Y = now.Y } : mark
+            );
             var distance = Math.Sqrt(Math.Pow(at.X - point.X, 2) + Math.Pow(at.Y - point.Y, 2));
             if (distance <= reach && distance < bestDistance)
             {

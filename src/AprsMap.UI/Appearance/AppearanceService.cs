@@ -185,6 +185,7 @@ public sealed class AppearanceService
         );
         yield return ("Map.ShowLabels", s.MapLabels == MapLabels.AllThatFit);
         yield return ("Map.ShowFilterCircles", s.ShowFilterCircles);
+        yield return ("Map.DeadReckoning", s.DeadReckoning);
         yield return ("Map.Tracks", s.MapTracks);
         yield return ("Map.Paths", s.MapPaths);
         yield return ("Map.ShowAreas", s.ShowAreas);
