@@ -32,16 +32,21 @@ public sealed class SeenAsTests
             var degrees = (int)west;
             var lon = string.Create(CultureInfo.InvariantCulture, $"{degrees:000}{(west - degrees) * 60:00.000}");
             var speed = knots.ToString("000.0", CultureInfo.InvariantCulture);
+            // GGA last, with an altitude of its own, so waiting for it means the whole second has been read.
+            var altitude = 500 + (int.Parse(time, CultureInfo.InvariantCulture) % 1000 / 10.0);
+            var alt = altitude.ToString("0.0", CultureInfo.InvariantCulture);
             var text =
                 GpsTests.Nmea($"GPRMC,{time},A,4900.000,N,{lon},W,{speed},090.0,211026,,,A")
-                + GpsTests.Nmea($"GPGGA,{time},4900.000,N,{lon},W,1,09,0.9,545.4,M,46.9,M,,")
-                + GpsTests.Nmea("GPGSA,A,3,04,05,09,12,24,25,29,31,32,,,,2.5,0.9,2.1");
+                + GpsTests.Nmea("GPGSA,A,3,04,05,09,12,24,25,29,31,32,,,,2.5,0.9,2.1")
+                + GpsTests.Nmea($"GPGGA,{time},4900.000,N,{lon},W,1,09,0.9,{alt},M,46.9,M,,");
             await Gps.Writer.WriteAsync(Encoding.ASCII.GetBytes(text), Ct);
             for (var i = 0; i < 400; i++)
             {
                 if (
-                    (await Engine.GetStatusAsync(Ct)).Gps is { HasPosition: true, Longitude: var at }
+                    (await Engine.GetStatusAsync(Ct)).Gps
+                        is { HasPosition: true, Longitude: var at, AltitudeMeters: var height }
                     && Math.Abs(at!.Value + west) < 1e-4
+                    && Math.Abs((height ?? 0) - altitude) < 0.05
                 )
                 {
                     return;
