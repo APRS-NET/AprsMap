@@ -477,6 +477,18 @@ internal sealed class EngineHubEndpoint(
         return engine.GetLoggingStatusAsync(Context.ConnectionAborted);
     }
 
+    /// <summary>Which device list is in use is everyone's (docs/features/F4.16-device-list.md, behavior 12).</summary>
+    [HubMethodName(EngineHub.GetDeviceList)]
+    public Task<DeviceListStatus> GetDeviceList() => engine.GetDeviceListAsync(Context.ConnectionAborted);
+
+    /// <summary>Update now is the operator's (F4.16 behavior 12); viewers' calls are refused.</summary>
+    [HubMethodName(EngineHub.UpdateDeviceList)]
+    public Task<DeviceListStatus> UpdateDeviceList()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.UpdateDeviceListAsync(Context.ConnectionAborted);
+    }
+
     /// <summary>
     /// The gateway's components and versions are the operator's (docs/features/F1.34-about-components.md, behavior 3):
     /// exact server versions help no viewer and would help an attacker. Viewers' calls are refused.

@@ -34,6 +34,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     private readonly ILogger _connections;
     private readonly ILogger _packetsLog;
     private readonly ILogger _transmitLog;
+    private readonly ILogger _deviceListLog;
     private readonly LoggingState _logging;
     private readonly IReadOnlyList<IStorageFolderSource> _folderSources;
     private readonly Lock _gate = new();
@@ -113,6 +114,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _connections = loggerFactory?.CreateLogger(LogAreas.Connections) ?? logger;
         _packetsLog = loggerFactory?.CreateLogger(LogAreas.Packets) ?? logger;
         _transmitLog = loggerFactory?.CreateLogger(LogAreas.Transmit) ?? logger;
+        _deviceListLog = loggerFactory?.CreateLogger(LogAreas.Updates) ?? logger; // F4.16, with the update check
         _logging = logging ?? new LoggingState();
         _messenger = new Messenger(
             this,
@@ -193,7 +195,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     ),
                     UnreadMessages: unread,
                     Gps: GpsStatusLocked(),
-                    IGate: IGateStatusLocked()
+                    IGate: IGateStatusLocked(),
+                    DeviceList: DeviceListStatusLocked(_settings ?? AppSettings.Empty)
                 )
             );
         }
@@ -326,7 +329,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             CheckLogFolder(settings, old);
             var saved = KeepSecrets(
                 ForgetDeletedSources(
-                    trusted ? settings with { ReadOnly = false } : KeepObjects(KeepTransmitState(settings, old), old)
+                    trusted
+                        ? settings with
+                        {
+                            ReadOnly = false,
+                        }
+                        : KeepDeviceListState(KeepObjects(KeepTransmitState(settings, old), old), old)
                 ),
                 old
             );
@@ -449,6 +457,24 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         return settings with
         {
             Profiles = [.. settings.Profiles.Select(p => p with { Objects = stored.GetValueOrDefault(p.Id) })],
+        };
+    }
+
+    /// <summary>
+    /// Keeps what the engine owns of the device list (docs/features/F4.16-device-list.md): the last check and the
+    /// kept copy's ETag, and the address where it isn't a setting (a gateway's comes from its environment).
+    /// </summary>
+    private AppSettings KeepDeviceListState(AppSettings settings, AppSettings old)
+    {
+        var was = old.EffectiveDeviceList;
+        return settings with
+        {
+            DeviceList = settings.EffectiveDeviceList with
+            {
+                LastChecked = was.LastChecked,
+                ETag = was.ETag,
+                Url = _options.DeviceList.UrlIsSetting ? settings.EffectiveDeviceList.Url : was.Url,
+            },
         };
     }
 
@@ -686,6 +712,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         var sweeping = SweepAsync(cancellationToken);
         var others = RunOtherSourcesAsync(cancellationToken);
         var updates = RunUpdatesAsync(cancellationToken); // F4.15
+        var devices = RunDeviceListAsync(cancellationToken); // F4.16
         try
         {
             await RunConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -695,6 +722,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             await others.ConfigureAwait(false);
             await sweeping.ConfigureAwait(false);
             await updates.ConfigureAwait(false);
+            await devices.ConfigureAwait(false);
             // Saves wait a moment to group changes; what's waiting is written before the engine stops.
             try
             {

@@ -142,6 +142,12 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetComponentsAsync"/>.</summary>
     public const string GetComponents = "GetComponents";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetDeviceListAsync"/>.</summary>
+    public const string GetDeviceList = "GetDeviceList";
+
+    /// <summary>Hub method for <see cref="IEngineService.UpdateDeviceListAsync"/>.</summary>
+    public const string UpdateDeviceList = "UpdateDeviceList";
+
     /// <summary>Hub method for <see cref="IEngineService.GetStorageFoldersAsync"/>.</summary>
     public const string GetStorageFolders = "GetStorageFolders";
 

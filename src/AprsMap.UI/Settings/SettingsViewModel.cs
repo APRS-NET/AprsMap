@@ -632,6 +632,13 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     [ObservableProperty]
     public partial string LicenceText { get; set; } = string.Empty;
 
+    /// <summary>"In use: built in, from 18 October 2026": the device list (F4.16 behavior 11); null before the status.</summary>
+    [ObservableProperty]
+    public partial string? DeviceListText { get; set; }
+
+    /// <summary>The aprs-deviceid list's home, for its credit (F4.16 behavior 11).</summary>
+    public static Uri DeviceListUri { get; } = new("https://github.com/aprsorg/aprs-deviceid");
+
     /// <summary>Whether to credit OpenStreetMap and Nominatim (address lookup is on).</summary>
     [ObservableProperty]
     public partial bool ShowLookupCredit { get; set; }
@@ -684,5 +691,17 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
             )
             : null;
         ShowLookupCredit = _geocoding?.Enabled == true;
+        // The device list in use, credited (docs/features/F4.16-device-list.md, behavior 11).
+        DeviceListText = _status?.DeviceList is { } devices
+            ? text.Format(
+                devices.Origin == DeviceListOrigin.Downloaded ? "DeviceList.Downloaded" : "DeviceList.BuiltIn",
+                new Dictionary<string, object?>
+                {
+                    ["date"] = devices.GeneratedAt is { } at
+                        ? at.ToString("d MMMM yyyy", text.Culture)
+                        : text["DeviceList.UnknownDate"],
+                }
+            )
+            : null;
     }
 }

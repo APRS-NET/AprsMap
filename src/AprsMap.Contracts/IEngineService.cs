@@ -387,6 +387,15 @@ public interface IEngineService
     /// </summary>
     Task<ComponentReport> GetComponentsAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>The device list in use and its last check (docs/features/F4.16-device-list.md, behavior 9); everyone's.</summary>
+    Task<DeviceListStatus> GetDeviceListAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks for a newer device list now, whatever the schedule (F4.16 behavior 5), and answers with the list in use
+    /// then. On a gateway, the operator's only (behavior 12).
+    /// </summary>
+    Task<DeviceListStatus> UpdateDeviceListAsync(CancellationToken cancellationToken = default);
+
     /// <summary>
     /// The folders the app keeps things in, for Help › About (docs/features/F1.31-files.md): settings, data, map tiles,
     /// logs and the defaults for every user. Operator-only on a gateway, so a server's paths never reach a viewer.

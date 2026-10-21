@@ -355,6 +355,21 @@
                   />
                   <TextBlock Text="{l:T Settings.About.Credits}" FontWeight="SemiBold" Margin="0,12,0,0" />
                   <TextBlock Text="{l:T Settings.About.IconCredit}" TextWrapping="Wrap" />
+                  <!-- The device list (F4.16 behavior 11): which is in use, and its licence. -->
+                  <HyperlinkButton
+                    x:Name="DeviceListCredit"
+                    NavigateUri="{x:Static s:AboutViewModel.DeviceListUri}"
+                    Padding="0"
+                  >
+                    <TextBlock Text="{l:T DeviceList.Credit}" TextWrapping="Wrap" />
+                  </HyperlinkButton>
+                  <TextBlock
+                    x:Name="DeviceListInUseAbout"
+                    Text="{Binding DeviceListText}"
+                    IsVisible="{Binding DeviceListText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    TextWrapping="Wrap"
+                  />
                   <HyperlinkButton
                     x:Name="LookupCredit"
                     NavigateUri="{x:Static s:AboutViewModel.OpenStreetMapCopyrightUri}"

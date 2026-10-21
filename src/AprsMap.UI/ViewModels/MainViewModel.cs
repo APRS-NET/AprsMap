@@ -479,11 +479,14 @@ public sealed partial class MainViewModel : ObservableObject
             Capture = _settings is { ReadOnly: false }
                 ? new Capture.CaptureSettingsViewModel(engine, _text, Show)
                 : null,
+            DeviceList = new DeviceListViewModel(engine, _text, time, _settings is { ReadOnly: false }, Show),
         };
         if (_settings is { } shown)
         {
             data.Capture?.Show(shown);
+            data.DeviceList?.Show(shown);
         }
+        data.DeviceList?.Show(_status?.DeviceList); // F4.16
         var mapItems = Map is null
             ? null
             : SettingsRegistry.Map(
@@ -1304,6 +1307,7 @@ public sealed partial class MainViewModel : ObservableObject
         Settings?.Objects?.Show(settings); // a killed object goes once it's been sent (F2.7 behavior 8)
         LiveObjects = [.. settings.GetActiveProfile()?.ObjectList.Where(o => o.Live) ?? []];
         Settings?.Data?.Capture?.Show(settings);
+        Settings?.Data?.DeviceList?.Show(settings);
         if (_destination is { IsSet: true } destination)
         {
             _ = destination.RefreshAsync(); // my location or the units may have changed
@@ -1478,6 +1482,7 @@ public sealed partial class MainViewModel : ObservableObject
         _gps = status.Gps;
         ShowHomePosition();
         _gpsPanel?.Show(status.Gps, _settings?.Units ?? UnitSettings.Metric); // F3.12 behavior 7
+        Settings?.Data?.DeviceList?.Show(status.DeviceList); // F4.16 behavior 9
         Settings?.Sources?.ShowIGate(status.IGate); // the IGate's counts move on while Settings is open (F3.4)
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll
         StationList.Rewrite();

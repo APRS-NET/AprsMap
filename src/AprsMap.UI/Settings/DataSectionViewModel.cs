@@ -37,6 +37,9 @@ public sealed partial class DataSectionViewModel : ObservableObject
     /// </summary>
     public Capture.CaptureSettingsViewModel? Capture { get; init; }
 
+    /// <summary>The device list (docs/features/F4.16-device-list.md): for everyone; its checks for whoever may change them.</summary>
+    public DeviceListViewModel? DeviceList { get; init; }
+
     /// <summary>Whether the station's settings live on a gateway, shared with other viewers.</summary>
     public bool SharedStation { get; }
 
