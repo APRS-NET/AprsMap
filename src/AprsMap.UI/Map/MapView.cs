@@ -730,6 +730,42 @@ public sealed class MapView : Control, IDisposable
     /// <summary>My location as drawn, for tests; null when not shown.</summary>
     internal StationMark? Me => _me;
 
+    /// <summary>The closest that where others see me is drawn: GPS noise is about this, in km (F2.3 decision 2).</summary>
+    public const double SeenFromKm = 0.05;
+
+    private (double X, double Y)? _seen;
+
+    /// <summary>
+    /// Where other stations see me (docs/features/F2.3-seen-as.md, behavior 3): a ring there, joined to my house by a
+    /// dashed line; null to show none. <paramref name="distanceKm"/> under <see cref="SeenFromKm"/> shows none.
+    /// </summary>
+    public void ShowSeen(double? latitude, double? longitude, double distanceKm)
+    {
+        _seen =
+            latitude is { } lat && longitude is { } lon && distanceKm >= SeenFromKm
+                ? SphericalMercator.FromLonLat(lon, lat) is var (x, y)
+                    ? (x, y)
+                    : null
+                : null;
+        InvalidateVisual();
+    }
+
+    /// <summary>Where others see me as drawn, for tests; null when not shown.</summary>
+    internal (double X, double Y)? Seen => _seen;
+
+    private void DrawSeen(DrawingContext context, Viewport viewport)
+    {
+        if (_seen is not var (x, y) || _me is null || _ringPen is null || _destinationPen is null)
+        {
+            return;
+        }
+        var seen = ToScreen(viewport, _me with { X = x, Y = y });
+        var me = ToScreen(viewport, _me);
+        context.DrawLine(_destinationPen, new Point(me.X, me.Y), new Point(seen.X, seen.Y));
+        var radius = _symbolDip * 0.5;
+        context.DrawEllipse(null, _ringPen, new Point(seen.X, seen.Y), radius, radius);
+    }
+
     /// <summary>The house drawn at my location, APRS <c>/-</c>.</summary>
     private static readonly AprsSymbol House = AprsSymbol.TryCreate('/', '-', out var house) ? house : default;
 
@@ -951,6 +987,7 @@ public sealed class MapView : Control, IDisposable
         DrawFilterAreas(context, viewport);
         DrawDestination(context, viewport);
         DrawEstimates(context, estimates);
+        DrawSeen(context, viewport); // where others see me (F2.3)
         DrawLabels(context, marks, screen);
         if (Selected is { } name && _ringPen is not null && FindIndex(marks, name) is { } selected)
         {
