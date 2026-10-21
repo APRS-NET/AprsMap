@@ -405,6 +405,21 @@
   <data name="Error.aprs.parse.third-party-too-deep" xml:space="preserve">
     <value>Third-party packets are nested too deeply to read.</value>
   </data>
+  <data name="Error.aprs.parse.invalid-nmea-sentence" xml:space="preserve">
+    <value>A “$” packet isn't a GPS (NMEA) sentence: it needs $, a name of letters and digits, then a comma.</value>
+  </data>
+  <data name="Error.aprs.parse.nmea-checksum-mismatch" xml:space="preserve">
+    <value>The GPS (NMEA) sentence's checksum doesn't match; it was read anyway.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-nmea-field" xml:space="preserve">
+    <value>A field in the GPS (NMEA) sentence can't be read, such as a time, number or coordinate; it was left out.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-query" xml:space="preserve">
+    <value>A “?” packet isn't a query: it needs ?, a query name of letters or digits, then ?.</value>
+  </data>
+  <data name="Error.aprs.parse.invalid-query-footprint" xml:space="preserve">
+    <value>What follows the query isn't an area (latitude, longitude, radius); the query was read without it.</value>
+  </data>
   <data name="Error.aprs.parse.unpadded-object-name" xml:space="preserve">
     <value>The object name isn't padded to nine characters; the object was read anyway.</value>
   </data>
