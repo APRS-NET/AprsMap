@@ -1064,6 +1064,35 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.About.Credits" xml:space="preserve">
     <value>Credits</value>
   </data>
+  <data name="About.Components" xml:space="preserve">
+    <value>Components ({count})</value>
+    <comment>count: the packages and frameworks listed, every app together.</comment>
+  </data>
+  <data name="About.Components.Desktop" xml:space="preserve">
+    <value>Desktop app</value>
+  </data>
+  <data name="About.Components.Gateway" xml:space="preserve">
+    <value>Gateway</value>
+  </data>
+  <data name="About.Components.Browser" xml:space="preserve">
+    <value>Browser app</value>
+  </data>
+  <data name="About.Components.Other" xml:space="preserve">
+    <value>This app</value>
+  </data>
+  <data name="About.Components.NoLicence" xml:space="preserve">
+    <value>licence not stated</value>
+    <comment>The package names no licence; its own site says.</comment>
+  </data>
+  <data name="About.Components.LicenceFile" xml:space="preserve">
+    <value>licence file in the package</value>
+  </data>
+  <data name="About.Components.Copy" xml:space="preserve">
+    <value>Copy list</value>
+  </data>
+  <data name="About.Components.Licences" xml:space="preserve">
+    <value>Every licence in full is in the SBOM attached to each release</value>
+  </data>
   <data name="About.Files" xml:space="preserve">
     <value>Files</value>
     <comment>Help › About: the folders the app keeps things in.</comment>

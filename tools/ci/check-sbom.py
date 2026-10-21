@@ -7,6 +7,10 @@ NuGet package URL and a SHA-512 hash, and must include the APRS.NET packages the
 states no licence are listed, as a warning: the SBOM says what the package says.
 
     tools/ci/check-sbom.py <file>...
+    tools/ci/check-sbom.py --about <components.json> <file>
+
+The second form checks an app's Help › About list (docs/features/F1.34-about-components.md) against its SBOM: every
+package and framework the app lists must be in the SBOM at the same version, so the two never disagree.
 """
 
 import json
@@ -48,7 +52,28 @@ def check(path: str) -> list[str]:
     return problems
 
 
+def check_about(about_path: str, sbom_path: str) -> list[str]:
+    with open(about_path, encoding="utf-8") as f:
+        about = json.load(f)["components"]
+    with open(sbom_path, encoding="utf-8") as f:
+        sbom = {c.get("name"): c.get("version") for c in json.load(f).get("components") or []}
+    problems = []
+    for row in about:
+        if row["name"] not in sbom:
+            problems.append(f"{row['name']} is in About but not in the SBOM")
+        elif sbom[row["name"]] != row["version"]:
+            problems.append(f"{row['name']}: About says {row['version']}, the SBOM {sbom[row['name']]}")
+    return problems
+
+
 def main(paths: list[str]) -> int:
+    if len(paths) == 3 and paths[0] == "--about":
+        problems = check_about(paths[1], paths[2])
+        for p in problems:
+            print(f"{paths[1]}: {p}", file=sys.stderr)
+        if not problems:
+            print(f"{paths[1]}: agrees with {paths[2]}")
+        return 1 if problems else 0
     if not paths:
         print(__doc__, file=sys.stderr)
         return 2

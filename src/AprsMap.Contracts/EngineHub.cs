@@ -139,6 +139,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetLoggingStatusAsync"/>.</summary>
     public const string GetLoggingStatus = "GetLoggingStatus";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetComponentsAsync"/>.</summary>
+    public const string GetComponents = "GetComponents";
+
     /// <summary>Hub method for <see cref="IEngineService.GetStorageFoldersAsync"/>.</summary>
     public const string GetStorageFolders = "GetStorageFolders";
 
