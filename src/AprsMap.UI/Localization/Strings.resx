@@ -4364,10 +4364,37 @@ pause 1s</value>
     <value>Every interval</value>
   </data>
   <data name="Beacons.Schedule.Moving" xml:space="preserve">
-    <value>By speed and turns</value>
+    <value>By speed and turns (with a GPS)</value>
+  </data>
+  <data name="Beacons.Moving.Help" xml:space="preserve">
+    <value>Needs a GPS among the profile's sources. While it has a fix, the position goes at the fast rate at speed and the slow rate when stopped, more often as the speed rises, and at once on a turn; on a TNC too. Without a fix for a minute, every interval.</value>
+  </data>
+  <data name="Beacons.Moving.SlowSpeed" xml:space="preserve">
+    <value>Slow at or below</value>
+  </data>
+  <data name="Beacons.Moving.SlowRate" xml:space="preserve">
+    <value>Slow rate (minutes)</value>
+  </data>
+  <data name="Beacons.Moving.FastSpeed" xml:space="preserve">
+    <value>Fast at or above</value>
+  </data>
+  <data name="Beacons.Moving.FastRate" xml:space="preserve">
+    <value>Fast rate (seconds)</value>
+  </data>
+  <data name="Beacons.Moving.TurnAngle" xml:space="preserve">
+    <value>Turn angle (degrees)</value>
+  </data>
+  <data name="Beacons.Moving.TurnSlope" xml:space="preserve">
+    <value>Turn slope (degrees × speed)</value>
+  </data>
+  <data name="Beacons.Moving.TurnTime" xml:space="preserve">
+    <value>Turn time (seconds)</value>
+  </data>
+  <data name="Error.settings.profile.moving-invalid" xml:space="preserve">
+    <value>The speeds and turns can't be used: speeds above 0 with the slow one below the fast one, the fast rate shorter than the slow rate, and the turn settings 0 or more.</value>
   </data>
   <data name="Beacons.Schedule.Help" xml:space="preserve">
-    <value>After a change, the next beacons follow at 30 seconds, 1, 2, 4, 8 and 16 minutes on APRS-IS, then settle at the interval. A TNC never gets positions less than 10 minutes apart. Beaconing by speed and turns comes with GPS.</value>
+    <value>After a change, the next beacons follow at 30 seconds, 1, 2, 4, 8 and 16 minutes on APRS-IS, then settle at the interval. A TNC never gets positions less than 10 minutes apart, except by speed and turns.</value>
   </data>
   <data name="Beacons.Interval" xml:space="preserve">
     <value>Interval</value>

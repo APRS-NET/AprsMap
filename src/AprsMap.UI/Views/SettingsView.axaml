@@ -737,6 +737,118 @@
                       Foreground="{DynamicResource Brush.TextMuted}"
                       TextWrapping="Wrap"
                     />
+                    <!-- Moving (SmartBeaconing, F2.2 revised for #335): its speeds, rates and turns, in the viewer's units. -->
+                    <StackPanel x:Name="MovingSettings" Spacing="8" IsVisible="{Binding Beacons.IsMoving}">
+                      <TextBlock
+                        Text="{l:T Beacons.Moving.Help}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        TextWrapping="Wrap"
+                      />
+                      <WrapPanel ItemSpacing="12" LineSpacing="8">
+                        <StackPanel Spacing="4">
+                          <TextBlock
+                            Text="{l:T Beacons.Moving.SlowSpeed}"
+                            Foreground="{DynamicResource Brush.TextMuted}"
+                          />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox
+                              x:Name="MovingSlowSpeedBox"
+                              Text="{Binding Beacons.SlowSpeed}"
+                              AutomationProperties.Name="{l:T Beacons.Moving.SlowSpeed}"
+                              MinWidth="80"
+                            />
+                            <TextBlock Text="{Binding Beacons.SpeedUnitText}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </StackPanel>
+                        <StackPanel Spacing="4">
+                          <TextBlock
+                            Text="{l:T Beacons.Moving.SlowRate}"
+                            Foreground="{DynamicResource Brush.TextMuted}"
+                          />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox
+                              x:Name="MovingSlowRateBox"
+                              Text="{Binding Beacons.SlowRateMinutes}"
+                              AutomationProperties.Name="{l:T Beacons.Moving.SlowRate}"
+                              MinWidth="80"
+                            />
+                          </StackPanel>
+                        </StackPanel>
+                        <StackPanel Spacing="4">
+                          <TextBlock
+                            Text="{l:T Beacons.Moving.FastSpeed}"
+                            Foreground="{DynamicResource Brush.TextMuted}"
+                          />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox
+                              x:Name="MovingFastSpeedBox"
+                              Text="{Binding Beacons.FastSpeed}"
+                              AutomationProperties.Name="{l:T Beacons.Moving.FastSpeed}"
+                              MinWidth="80"
+                            />
+                            <TextBlock Text="{Binding Beacons.SpeedUnitText}" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </StackPanel>
+                        <StackPanel Spacing="4">
+                          <TextBlock
+                            Text="{l:T Beacons.Moving.FastRate}"
+                            Foreground="{DynamicResource Brush.TextMuted}"
+                          />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox
+                              x:Name="MovingFastRateBox"
+                              Text="{Binding Beacons.FastRateSeconds}"
+                              AutomationProperties.Name="{l:T Beacons.Moving.FastRate}"
+                              MinWidth="80"
+                            />
+                          </StackPanel>
+                        </StackPanel>
+                      </WrapPanel>
+                      <WrapPanel ItemSpacing="12" LineSpacing="8">
+                        <StackPanel Spacing="4">
+                          <TextBlock
+                            Text="{l:T Beacons.Moving.TurnAngle}"
+                            Foreground="{DynamicResource Brush.TextMuted}"
+                          />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox
+                              x:Name="MovingTurnAngleBox"
+                              Text="{Binding Beacons.TurnAngle}"
+                              AutomationProperties.Name="{l:T Beacons.Moving.TurnAngle}"
+                              MinWidth="80"
+                            />
+                          </StackPanel>
+                        </StackPanel>
+                        <StackPanel Spacing="4">
+                          <TextBlock
+                            Text="{l:T Beacons.Moving.TurnSlope}"
+                            Foreground="{DynamicResource Brush.TextMuted}"
+                          />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox
+                              x:Name="MovingTurnSlopeBox"
+                              Text="{Binding Beacons.TurnSlope}"
+                              AutomationProperties.Name="{l:T Beacons.Moving.TurnSlope}"
+                              MinWidth="80"
+                            />
+                          </StackPanel>
+                        </StackPanel>
+                        <StackPanel Spacing="4">
+                          <TextBlock
+                            Text="{l:T Beacons.Moving.TurnTime}"
+                            Foreground="{DynamicResource Brush.TextMuted}"
+                          />
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBox
+                              x:Name="MovingTurnTimeBox"
+                              Text="{Binding Beacons.TurnTimeSeconds}"
+                              AutomationProperties.Name="{l:T Beacons.Moving.TurnTime}"
+                              MinWidth="80"
+                            />
+                          </StackPanel>
+                        </StackPanel>
+                      </WrapPanel>
+                    </StackPanel>
                     <TextBlock Text="{l:T Beacons.Interval}" Foreground="{DynamicResource Brush.TextMuted}" />
                     <ComboBox
                       x:Name="PositionIntervalBox"

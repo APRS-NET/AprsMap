@@ -518,6 +518,22 @@ internal static class SettingsValidator
                 profile.Name
             );
         }
+        if (position.Moving is { } moving)
+        {
+            try
+            {
+                Beaconer.SmartSettings(moving).Validate();
+            }
+            catch (ArgumentException ex)
+            {
+                throw Fail(
+                    EngineErrorCodes.ProfileMovingInvalid,
+                    $"Profile '{profile.Name}': the moving schedule can't be used: {ex.Message}",
+                    profile.Name,
+                    ex
+                );
+            }
+        }
         if (position.MicE is not null && (position.Compressed || position.Phg is not null))
         {
             throw Fail(
