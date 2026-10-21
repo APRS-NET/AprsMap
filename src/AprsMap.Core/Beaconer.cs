@@ -122,6 +122,38 @@ internal sealed class Beaconer : IDisposable
     public void Poke() => _ = TickAsync();
 
     /// <summary>
+    /// The GPS has a new fix (docs/features/F3.6-gps.md): moving schedules take its speed and course, which can make a
+    /// beacon due at once (a turn, or speeding up), and a schedule starts or stops moving as the fix comes and goes.
+    /// </summary>
+    public void Moved(GpsFix fix)
+    {
+        lock (_gate)
+        {
+            foreach (var entry in _entries.Values)
+            {
+                if (entry.Schedule is SmartBeaconSchedule moving)
+                {
+                    moving.Update(fix);
+                }
+            }
+        }
+        Poke();
+    }
+
+    /// <summary>APRS.NET's SmartBeaconing settings for <paramref name="moving"/>.</summary>
+    internal static SmartBeaconSettings SmartSettings(MovingBeaconSettings moving) =>
+        new()
+        {
+            SlowSpeedKnots = moving.SlowSpeedKnots,
+            SlowRate = TimeSpan.FromSeconds(moving.SlowRateSeconds),
+            FastSpeedKnots = moving.FastSpeedKnots,
+            FastRate = TimeSpan.FromSeconds(moving.FastRateSeconds),
+            TurnAngle = moving.TurnAngle,
+            TurnSlope = moving.TurnSlope,
+            TurnTime = TimeSpan.FromSeconds(moving.TurnTimeSeconds),
+        };
+
+    /// <summary>
     /// A position was sent by hand on <paramref name="sourceIds"/> (behavior 11): it counts as that source's beacon, so the
     /// schedule carries on from it and the TNC spacing counts from it.
     /// </summary>
@@ -227,11 +259,22 @@ internal sealed class Beaconer : IDisposable
             if (position.On && position.SendsVia(id))
             {
                 var interval = TimeSpan.FromMinutes(position.IntervalMinutes);
-                var signature = on + position.GetHashCode();
+                // Moving follows speed and turns while the GPS has a fresh fix, and is Fixed without one (#335).
+                var smart =
+                    position.Schedule == PositionBeaconSchedule.Moving && profile is not null
+                        ? _host.Motion(profile)
+                        : null;
+                var signature = on + position.GetHashCode() + (smart is null ? string.Empty : "|moving");
                 wanted[(BeaconKind.Position, id, null)] = (
                     signature,
                     () =>
                     {
+                        if (smart is not null)
+                        {
+                            var schedule = new SmartBeaconSchedule(SmartSettings(position.EffectiveMoving), _time);
+                            schedule.Update(smart);
+                            return new Entry(BeaconKind.Position, id, isRf, schedule, now, signature);
+                        }
                         if (position.Schedule == PositionBeaconSchedule.Decay)
                         {
                             var first = isRf ? RfFloor : IsFirstStep;
@@ -330,6 +373,7 @@ internal sealed class Beaconer : IDisposable
         if (
             entry.Kind == BeaconKind.Position
             && entry.IsRf
+            && entry.Schedule is not SmartBeaconSchedule // moving keeps its own pace: its fast rate and turn time
             && _lastPosition.TryGetValue(entry.SourceId, out var lastPosition)
             && lastPosition + RfFloor > at
         )

@@ -40,6 +40,7 @@ public sealed partial class Engine
             }
             centre = _filterCentre;
         }
+        _beaconer.Moved(fix); // the moving schedule's speed and turns (#335)
         // My range follows the GPS once it has moved more than a quarter of the range (behavior 7.2).
         if (
             fix.Position is { } here
