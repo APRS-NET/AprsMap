@@ -227,6 +227,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     }
 
     /// <inheritdoc />
+    public Task<ComponentReport> GetComponentsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(_components ??= ComponentReport.Of()); // F1.34: the running app's own list
+
+    private ComponentReport? _components;
+
+    /// <inheritdoc />
     public Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(_logging.Status());
 

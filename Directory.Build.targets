@@ -1,4 +1,6 @@
 <Project>
+  <Import Project="build/Components.targets" />
+
   <!-- Licence per project (LICENSING.md). A project opts into MIT with <AprsMapLicense>MIT</AprsMapLicense>; everything
        else is the repository default. -->
   <PropertyGroup>

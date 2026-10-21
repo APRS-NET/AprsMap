@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Help › About lists the components this app is built from (F1.34). -->
+    <AprsMapEmbedComponents>true</AprsMapEmbedComponents>
+    <AprsMapComponentHost>Desktop</AprsMapComponentHost>
     <OutputType>WinExe</OutputType>
     <AprsMapUsesAvalonia>true</AprsMapUsesAvalonia>
     <AssemblyName>$(ProductSlug)</AssemblyName>

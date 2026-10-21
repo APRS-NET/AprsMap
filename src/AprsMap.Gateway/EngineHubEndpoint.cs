@@ -477,6 +477,17 @@ internal sealed class EngineHubEndpoint(
         return engine.GetLoggingStatusAsync(Context.ConnectionAborted);
     }
 
+    /// <summary>
+    /// The gateway's components and versions are the operator's (docs/features/F1.34-about-components.md, behavior 3):
+    /// exact server versions help no viewer and would help an attacker. Viewers' calls are refused.
+    /// </summary>
+    [HubMethodName(EngineHub.GetComponents)]
+    public Task<ComponentReport> GetComponents()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetComponentsAsync(Context.ConnectionAborted);
+    }
+
     /// <summary>The server's folders are the operator's (docs/features/F1.31-files.md, behavior 6); viewers are refused.</summary>
     [HubMethodName(EngineHub.GetStorageFolders)]
     public Task<IReadOnlyList<StorageFolder>> GetStorageFolders()

@@ -277,6 +277,23 @@ internal sealed class FakeEngine : IEngineService
     public Task<UpdateStatus> GetUpdateStatusAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(UpdateStatus);
 
+    /// <summary>What <see cref="GetComponentsAsync"/> answers.</summary>
+    public ComponentReport Components { get; set; } =
+        new(
+            ComponentHost.Gateway,
+            "0.6.0-alpha.1",
+            ".NET 10.0.12",
+            "Debian GNU/Linux 13 (X64)",
+            [
+                new ComponentInfo("Microsoft.NETCore.App", "10.0.12", "MIT", true),
+                new ComponentInfo("AprsNet.Packets", "0.5.0-alpha.2", "MIT", false),
+            ]
+        );
+
+    /// <inheritdoc />
+    public Task<ComponentReport> GetComponentsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Components);
+
     /// <summary>What <see cref="GetLoggingStatusAsync"/> answers.</summary>
     public LoggingStatus LoggingStatus { get; set; } = new("/home/test/.local/share/aprsnet/aprsmap/logs", true);
 

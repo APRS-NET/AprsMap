@@ -415,9 +415,124 @@ public sealed partial class StorageFolderRow : ObservableObject
     }
 }
 
+/// <summary>
+/// One app's components in Help › About (docs/features/F1.34-about-components.md, behaviors 1, 2): "Gateway 0.6.0", the
+/// runtime and OS, and each package with its version and licence.
+/// </summary>
+public sealed class ComponentGroup
+{
+    internal ComponentGroup(ComponentReport report, Localizer text)
+    {
+        Report = report;
+        Name = text[$"About.Components.{report.Host}"];
+        Heading = $"{Name} {AboutViewModel.ShortVersion(report.Version)}";
+        RuntimeText = $"{report.Runtime} · {report.OperatingSystem}";
+        Rows =
+        [
+            .. report.Components.Select(c => new ComponentRow(
+                c.Name,
+                c.Version,
+                c.Licence switch
+                {
+                    null => text["About.Components.NoLicence"],
+                    var l when l.StartsWith("file: ", StringComparison.Ordinal) => text["About.Components.LicenceFile"],
+                    var l => l,
+                }
+            )),
+        ];
+    }
+
+    /// <summary>The report.</summary>
+    public ComponentReport Report { get; }
+
+    /// <summary>"Gateway".</summary>
+    public string Name { get; }
+
+    /// <summary>"Gateway 0.6.0-alpha.1".</summary>
+    public string Heading { get; }
+
+    /// <summary>".NET 10.0.12 · Debian GNU/Linux 13 (X64)".</summary>
+    public string RuntimeText { get; }
+
+    /// <summary>The frameworks, then the packages by name.</summary>
+    public IReadOnlyList<ComponentRow> Rows { get; }
+}
+
+/// <summary>A component's line: name, version and licence (F1.34 behavior 1).</summary>
+/// <param name="Name">The package or framework.</param>
+/// <param name="Version">Its version.</param>
+/// <param name="Licence">What its package states, in words when it isn't an SPDX expression.</param>
+public sealed record ComponentRow(string Name, string Version, string Licence);
+
 /// <summary>About (behavior 15), now a dialog from Help › About (F1.29 behavior 10).</summary>
 public sealed partial class AboutViewModel(Localizer text) : ObservableObject
 {
+    /// <summary>
+    /// The components of each app this viewer may see (docs/features/F1.34-about-components.md, behaviors 1–3): the app
+    /// in front of them, and on a gateway, for its operator, the gateway's too.
+    /// </summary>
+    public System.Collections.ObjectModel.ObservableCollection<ComponentGroup> ComponentGroups { get; } = [];
+
+    /// <summary>"Components (98)", the expander's heading.</summary>
+    [ObservableProperty]
+    public partial string ComponentsHeading { get; private set; } = string.Empty;
+
+    /// <summary>"Copied", for a moment after Copy (behavior 4); null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? ComponentsSaid { get; private set; }
+
+    /// <summary>Where the release's SBOMs are, with every licence in full (behavior 5, F4.17).</summary>
+    public static Uri? ReleasesUri =>
+        SourceUri is { } source ? new Uri(source.ToString().TrimEnd('/') + "/releases") : null;
+
+    /// <summary>
+    /// Lists the components: on the desktop the app's (engine and UI in one); in a browser the browser app's, and the
+    /// gateway's for its operator (behaviors 2, 3).
+    /// </summary>
+    internal async Task ShowComponentsAsync(
+        IEngineService engine,
+        ComponentReport here,
+        bool sharedStation,
+        bool isOperator
+    )
+    {
+        ComponentGroups.Clear();
+        if (!sharedStation)
+        {
+            ComponentGroups.Add(new ComponentGroup(await engine.GetComponentsAsync(), text));
+        }
+        else
+        {
+            ComponentGroups.Add(new ComponentGroup(here, text));
+            if (isOperator)
+            {
+                try
+                {
+                    ComponentGroups.Add(new ComponentGroup(await engine.GetComponentsAsync(), text));
+                }
+                catch (Exception ex) when (ex is EngineAccessException or InvalidOperationException)
+                {
+                    // Signed out meanwhile: the browser app's list still stands.
+                }
+            }
+        }
+        ComponentsHeading = text.Format(
+            "About.Components",
+            new Dictionary<string, object?> { ["count"] = ComponentGroups.Sum(g => g.Rows.Count) }
+        );
+    }
+
+    /// <summary>Puts every list on the clipboard as text, for a bug report (behavior 4).</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task CopyComponentsAsync()
+    {
+        if (CopyToClipboard is { } copy)
+        {
+            await copy(string.Join("\n\n", ComponentGroups.Select(g => g.Report.ToText(g.Name))));
+            ComponentsSaid = text["About.Folder.Copied"];
+        }
+    }
+
     /// <summary>The folders the app keeps things in (docs/features/F1.31-files.md); empty where they're not this viewer's.</summary>
     public System.Collections.ObjectModel.ObservableCollection<StorageFolderRow> Folders { get; } = [];
 

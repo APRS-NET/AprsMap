@@ -1,0 +1,103 @@
+<Project>
+  <!-- The components list Help › About shows (docs/features/F1.34-about-components.md): every package an app copies to
+       its output, with its version and the licence its package states, and the .NET shared frameworks it runs on,
+       written at build time from the same restore the release's SBOM is made from (F4.17), and embedded in the app as
+       the resource AprsMap.Components.json. An app opts in with <AprsMapEmbedComponents>true</AprsMapEmbedComponents> and names itself with
+       <AprsMapComponentHost> (Desktop, Gateway or Browser). -->
+  <UsingTask
+    TaskName="AprsMapWriteComponents"
+    TaskFactory="RoslynCodeTaskFactory"
+    AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll"
+  >
+    <ParameterGroup>
+      <Packages ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <Frameworks ParameterType="Microsoft.Build.Framework.ITaskItem[]" />
+      <PackageRoot ParameterType="System.String" Required="true" />
+      <FrameworkVersion ParameterType="System.String" Required="true" />
+      <Host ParameterType="System.String" Required="true" />
+      <OutputFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Text" />
+      <Using Namespace="System.Xml.Linq" />
+      <Code Type="Fragment" Language="cs">
+        <![CDATA[
+        string Escape(string s)
+        {
+            var b = new StringBuilder();
+            foreach (var c in s)
+            {
+                switch (c)
+                {
+                    case '"': b.Append("\\\""); break;
+                    case '\\': b.Append("\\\\"); break;
+                    default:
+                        if (c < ' ') { b.Append("\\u").Append(((int)c).ToString("x4")); } else { b.Append(c); }
+                        break;
+                }
+            }
+            return b.ToString();
+        }
+        // What the package says its licence is: an SPDX expression, or the file or address it points to.
+        string Licence(string id, string version)
+        {
+            var nuspec = Path.Combine(PackageRoot, id.ToLowerInvariant(), version.ToLowerInvariant(), id.ToLowerInvariant() + ".nuspec");
+            if (!File.Exists(nuspec)) { return null; }
+            var meta = XDocument.Load(nuspec).Root?.Elements().FirstOrDefault(e => e.Name.LocalName == "metadata");
+            var licence = meta?.Elements().FirstOrDefault(e => e.Name.LocalName == "license");
+            if (licence != null && !string.IsNullOrWhiteSpace(licence.Value))
+            {
+                return (string)licence.Attribute("type") == "expression" ? licence.Value.Trim() : "file: " + licence.Value.Trim();
+            }
+            var url = meta?.Elements().FirstOrDefault(e => e.Name.LocalName == "licenseUrl")?.Value?.Trim();
+            return string.IsNullOrEmpty(url) || url.Contains("aka.ms/deprecateLicenseUrl") ? null : url;
+        }
+        var rows = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var item in Packages)
+        {
+            var id = item.GetMetadata("NuGetPackageId");
+            var version = item.GetMetadata("NuGetPackageVersion");
+            if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(version) || rows.ContainsKey(id)) { continue; }
+            var licence = Licence(id, version);
+            rows[id] = "{\"name\":\"" + Escape(id) + "\",\"version\":\"" + Escape(version) + "\",\"licence\":"
+                + (licence == null ? "null" : "\"" + Escape(licence) + "\"") + ",\"framework\":false}";
+        }
+        var frameworks = new List<string> { "Microsoft.NETCore.App" };
+        frameworks.AddRange((Frameworks ?? new Microsoft.Build.Framework.ITaskItem[0]).Select(f => f.ItemSpec).Where(f => f != "Microsoft.NETCore.App"));
+        var lines = frameworks.Distinct().Select(f => "{\"name\":\"" + Escape(f) + "\",\"version\":\"" + Escape(FrameworkVersion)
+            + "\",\"licence\":\"MIT\",\"framework\":true}").Concat(rows.Values);
+        var json = "{\"host\":\"" + Escape(Host) + "\",\"components\":[\n  " + string.Join(",\n  ", lines) + "\n]}\n";
+        Directory.CreateDirectory(Path.GetDirectoryName(OutputFile));
+        if (!File.Exists(OutputFile) || File.ReadAllText(OutputFile) != json)
+        {
+            File.WriteAllText(OutputFile, json);
+        }
+      ]]>
+      </Code>
+    </Task>
+  </UsingTask>
+
+  <Target
+    Name="AprsMapEmbedComponents"
+    Condition="'$(AprsMapEmbedComponents)' == 'true'"
+    AfterTargets="ResolvePackageAssets"
+    BeforeTargets="PrepareResources;AssignTargetPaths"
+  >
+    <AprsMapWriteComponents
+      Packages="@(RuntimeCopyLocalItems);@(NativeCopyLocalItems);@(ResourceCopyLocalItems)"
+      Frameworks="@(FrameworkReference)"
+      PackageRoot="$(NuGetPackageRoot)"
+      FrameworkVersion="$(BundledNETCoreAppPackageVersion)"
+      Host="$(AprsMapComponentHost)"
+      OutputFile="$(IntermediateOutputPath)components.json"
+    />
+    <ItemGroup>
+      <EmbeddedResource Include="$(IntermediateOutputPath)components.json" LogicalName="AprsMap.Components.json" />
+      <FileWrites Include="$(IntermediateOutputPath)components.json" />
+    </ItemGroup>
+  </Target>
+</Project>
