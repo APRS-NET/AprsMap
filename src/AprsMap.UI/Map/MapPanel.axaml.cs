@@ -63,7 +63,9 @@ public sealed partial class MapPanel : UserControl, IDisposable
         // Clear stations asks first, with the count now; either answer closes the question.
         var question = ClearStationsButton.Flyout!;
         question.Opened += (_, _) => _main?.AskClearStations();
-        ConfirmClearStationsButton.Click += (_, _) => question.Hide();
+        // Closed after the click has run Clear: closing it first takes the button out of the tree, and its command
+        // binding with it, before the click gets to run the command.
+        ConfirmClearStationsButton.Click += (_, _) => Dispatcher.UIThread.Post(question.Hide);
         KeepStationsButton.Click += (_, _) => question.Hide();
         _linkTimer.Tick += (_, _) => _ = LoadLinksAsync();
         _linkTimer.Start();
