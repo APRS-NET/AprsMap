@@ -19,6 +19,10 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     public partial string TransmitPillText { get; private set; } = string.Empty;
 
+    /// <summary>Where others see the station (docs/features/F2.3-seen-as.md); null when it isn't shown.</summary>
+    [ObservableProperty]
+    public partial SeenPosition? SeenAt { get; private set; }
+
     /// <summary>Transmit is on and nothing holds it: the pill is outlined in the transmit colour.</summary>
     [ObservableProperty]
     public partial bool IsTransmitting { get; private set; }
@@ -185,6 +189,28 @@ public sealed partial class MainViewModel
         if (TransmitOn && HeardBackText.Tip(transmit?.LastPosition, time.GetUtcNow(), _text) is { } heardBack)
         {
             TransmitTip += Environment.NewLine + heardBack; // F3.3 behavior 4
+        }
+        SeenAt = transmit?.SeenAt;
+        if (TransmitOn && SeenAt is { } seen)
+        {
+            // Where others see the station (docs/features/F2.3-seen-as.md, behavior 4).
+            TransmitTip +=
+                Environment.NewLine
+                + (
+                    seen.DistanceKm < AprsMap.UI.Map.MapView.SeenFromKm
+                        ? _text["Transmit.SeenHere"]
+                        : _text.Format(
+                            "Transmit.SeenAway",
+                            new Dictionary<string, object?>
+                            {
+                                ["distance"] = Localization.RangeText.Distance(
+                                    seen.DistanceKm,
+                                    _settings?.Units.Distance ?? DistanceUnit.Kilometres,
+                                    _text
+                                ),
+                            }
+                        )
+                );
         }
         IsTransmitting = TransmitOn && !held;
         TransmitPillText = TransmitText ?? _text["Toggles.Transmit"];

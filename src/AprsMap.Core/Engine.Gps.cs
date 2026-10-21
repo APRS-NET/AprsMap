@@ -11,6 +11,51 @@ namespace AprsMap.Core;
 /// </summary>
 public sealed partial class Engine
 {
+    /// <summary>How long after the last position sent others are shown seeing it (docs/features/F2.3-seen-as.md, decision 3).</summary>
+    public static readonly TimeSpan SeenFor = TimeSpan.FromMinutes(30);
+
+    private AprsNet.Beacons.DeadReckoning? _sent; // the last own position sent, under _gate
+
+    /// <summary>
+    /// Keeps the station's own position as it went out, with its course and speed, so where others see it can be
+    /// worked out (F2.3 behavior 1). Objects, statuses and messages aren't positions of the station.
+    /// </summary>
+    private void RememberSent(AprsPacket packet)
+    {
+        if (packet.Payload is PositionReport or MicEReport && packet.Payload is PositionedPayload sent)
+        {
+            lock (_gate)
+            {
+                _sent = new AprsNet.Beacons.DeadReckoning(
+                    sent.Position,
+                    sent.Course ?? 0,
+                    sent is { Course: not null, SpeedKnots: { } knots } ? knots : 0,
+                    _time.GetUtcNow()
+                );
+            }
+        }
+    }
+
+    /// <summary>
+    /// Where others see the station now, against where its GPS says it is (F2.3 behaviors 1, 2, 5); null without a
+    /// fresh fix or a position sent in the last <see cref="SeenFor"/>. Call under <see cref="_gate"/>.
+    /// </summary>
+    private SeenPosition? SeenAtLocked()
+    {
+        var now = _time.GetUtcNow();
+        if (
+            _sent is not { } sent
+            || now - sent.At > SeenFor
+            || (_settings ?? AppSettings.Empty).GetActiveProfile() is not { } profile
+            || FreshFixLocked(profile)?.Position is not { } here
+        )
+        {
+            return null;
+        }
+        var error = sent.ErrorAt(here, now);
+        return new SeenPosition(error.Assumed.Latitude, error.Assumed.Longitude, error.DistanceKm, sent.At);
+    }
+
     /// <summary>How long a fix stands for the station's position (F3.6 decision 3).</summary>
     public static readonly TimeSpan GpsFreshFor = TimeSpan.FromSeconds(60);
 

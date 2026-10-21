@@ -188,7 +188,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                         _options.ReceiveOnly,
                         nextBeacon,
                         beaconHeld,
-                        LastPositionHeard()
+                        LastPositionHeard(),
+                        SeenAtLocked()
                     ),
                     UnreadMessages: unread,
                     Gps: GpsStatusLocked()
@@ -1321,6 +1322,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             _lastSent = _time.GetUtcNow();
         }
         FollowSent(packet, source); // to see how it gets out (F3.3)
+        RememberSent(packet); // where others will see the station (F2.3)
         return (Accept(packet, source.Id, sent: true), null);
     }
 
