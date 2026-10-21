@@ -189,6 +189,7 @@ public sealed record StationAging(
 /// </param>
 /// <param name="Ping">The ping responder (docs/features/F2.13-ping.md); null for off.</param>
 /// <param name="AutoReply">The away message (docs/features/F2.10-auto-reply.md); null for off.</param>
+/// <param name="AnswerQueries">Whether APRS queries are answered (docs/features/F2.8-queries.md); null for on.</param>
 /// <param name="Objects">
 /// The objects and items it places (docs/features/F2.7-objects-and-items.md); changed only by
 /// <see cref="IEngineService.PlaceObjectAsync"/> and <see cref="IEngineService.RemoveObjectAsync"/>.
@@ -211,9 +212,16 @@ public sealed record StationProfile(
     IReadOnlyList<string>? Groups = null,
     PingSettings? Ping = null,
     AutoReplySettings? AutoReply = null,
-    IReadOnlyList<OwnObject>? Objects = null
+    IReadOnlyList<OwnObject>? Objects = null,
+    bool? AnswerQueries = null
 )
 {
+    /// <summary>
+    /// Whether APRS queries to the station are answered (docs/features/F2.8-queries.md, behavior 1): on unless turned
+    /// off.
+    /// </summary>
+    public bool EffectiveAnswerQueries => AnswerQueries ?? true;
+
     /// <summary>The objects and items it places (docs/features/F2.7-objects-and-items.md); none when unset.</summary>
     public IReadOnlyList<OwnObject> ObjectList => Objects ?? [];
 
@@ -275,7 +283,8 @@ public sealed record StationProfile(
         && EffectiveStatusBeacon == other.EffectiveStatusBeacon
         && EffectivePing == other.EffectivePing
         && EffectiveAutoReply == other.EffectiveAutoReply
-        && ObjectList.SequenceEqual(other.ObjectList);
+        && ObjectList.SequenceEqual(other.ObjectList)
+        && EffectiveAnswerQueries == other.EffectiveAnswerQueries;
 
     /// <inheritdoc />
     public override int GetHashCode() =>

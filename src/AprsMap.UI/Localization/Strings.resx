@@ -2196,7 +2196,7 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>For the whole station, never less than 10. Pings in between are shown and not answered.</value>
   </data>
   <data name="Ping.Rules" xml:space="preserve">
-    <value>A pong or auto-reply is sent only with Transmit on, from a licensed profile, on a source that isn't RX only.</value>
+    <value>A pong, an auto-reply or an answer to a query is sent only with Transmit on, from a licensed profile, on a source that isn't RX only.</value>
   </data>
   <data name="Ping.Save" xml:space="preserve">
     <value>Save</value>
@@ -2243,6 +2243,15 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Error.settings.auto-reply.limit-invalid" xml:space="preserve">
     <value>Auto-reply times: 0 to 1440 minutes without a message sent, once per 1 to 1440 minutes, and a wait of 0 to 600 seconds.</value>
+  </data>
+  <data name="Queries.Heading" xml:space="preserve">
+    <value>Queries</value>
+  </data>
+  <data name="Queries.On" xml:space="preserve">
+    <value>Answer APRS queries</value>
+  </data>
+  <data name="Queries.Help" xml:space="preserve">
+    <value>Other stations can ask yours where it is (?APRSP), its status (?APRSS), its objects (?APRSO), what it hears direct (?APRSD) or the way their query came (?APRST), and every station near them (?APRS?). Answers go back the way the query came, and only once your position has been sent by hand.</value>
   </data>
   <data name="Logging.WhatToLog" xml:space="preserve">
     <value>What to log</value>
