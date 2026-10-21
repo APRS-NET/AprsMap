@@ -186,6 +186,24 @@
     <value>In use now: {filter}</value>
     <comment>filter: the APRS-IS filter as sent (not translated).</comment>
   </data>
+  <data name="IGate.Heading" xml:space="preserve">
+    <value>IGate for {profile}</value>
+    <comment>profile: the active profile's callsign.</comment>
+  </data>
+  <data name="IGate.On" xml:space="preserve">
+    <value>Gate what my TNCs hear to APRS-IS (receive only)</value>
+  </data>
+  <data name="IGate.Help" xml:space="preserve">
+    <value>Packets your radios hear go to APRS-IS under the IGate rules: not what came from the internet, nor what asks not to be gated, and each once. It needs a verified APRS-IS login and Transmit on. A receive-only IGate can't pass messages back to RF, so on the shared APRS frequency nearby stations may think they can be reached through it when they can't.</value>
+  </data>
+  <data name="IGate.Counts" xml:space="preserve">
+    <value>{gated, plural, one {# packet gated} other {# packets gated}}, {refused} not</value>
+    <comment>gated: packets sent to APRS-IS since the app started. refused: packets the IGate rules kept back.</comment>
+  </data>
+  <data name="IGate.Held" xml:space="preserve">
+    <value>Gating nothing now: {reason}</value>
+    <comment>reason: why, such as Transmit being off.</comment>
+  </data>
   <data name="Settings.Sources.Name" xml:space="preserve">
     <value>Name</value>
   </data>
@@ -2128,6 +2146,13 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Map.MoveObject" xml:space="preserve">
     <value>Move an object here</value>
   </data>
+  <data name="Transmit.SeenAway" xml:space="preserve">
+    <value>Others see you {distance} from here, from your last position's course and speed.</value>
+    <comment>distance: how far off, in the viewer's unit.</comment>
+  </data>
+  <data name="Transmit.SeenHere" xml:space="preserve">
+    <value>Others see you where you are.</value>
+  </data>
   <data name="Transmit.NextObjectTip" xml:space="preserve">
     <value>Next: an object on {source}, {reason}.</value>
     <comment>source: a source's name. reason: one of the Transmit.BeaconReason texts.</comment>
@@ -2189,7 +2214,7 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>For the whole station, never less than 10. Pings in between are shown and not answered.</value>
   </data>
   <data name="Ping.Rules" xml:space="preserve">
-    <value>A pong or auto-reply is sent only with Transmit on, from a licensed profile, on a source that isn't RX only.</value>
+    <value>A pong, an auto-reply or an answer to a query is sent only with Transmit on, from a licensed profile, on a source that isn't RX only.</value>
   </data>
   <data name="Ping.Save" xml:space="preserve">
     <value>Save</value>
@@ -2236,6 +2261,15 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Error.settings.auto-reply.limit-invalid" xml:space="preserve">
     <value>Auto-reply times: 0 to 1440 minutes without a message sent, once per 1 to 1440 minutes, and a wait of 0 to 600 seconds.</value>
+  </data>
+  <data name="Queries.Heading" xml:space="preserve">
+    <value>Queries</value>
+  </data>
+  <data name="Queries.On" xml:space="preserve">
+    <value>Answer APRS queries</value>
+  </data>
+  <data name="Queries.Help" xml:space="preserve">
+    <value>Other stations can ask yours where it is (?APRSP), its status (?APRSS), its objects (?APRSO), what it hears direct (?APRSD) or the way their query came (?APRST), and every station near them (?APRS?). Answers go back the way the query came, and only once your position has been sent by hand.</value>
   </data>
   <data name="Logging.WhatToLog" xml:space="preserve">
     <value>What to log</value>

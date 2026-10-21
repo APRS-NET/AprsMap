@@ -91,6 +91,10 @@ public sealed partial class MessagingSectionViewModel(IEngineService engine, Loc
     [ObservableProperty]
     public partial string DelaySeconds { get; set; } = string.Empty;
 
+    /// <summary>Answer APRS queries (docs/features/F2.8-queries.md, behavior 1); on by default.</summary>
+    [ObservableProperty]
+    public partial bool AnswerQueries { get; set; } = true;
+
     /// <summary>"Saved", once saved; null otherwise.</summary>
     [ObservableProperty]
     public partial string? SavedText { get; private set; }
@@ -113,6 +117,7 @@ public sealed partial class MessagingSectionViewModel(IEngineService engine, Loc
         WhoCallsigns = ping.Who == PingWho.Callsigns;
         Callsigns = string.Join(Environment.NewLine, ping.CallsignList);
         IntervalSeconds = ping.IntervalSeconds.ToString(CultureInfo.InvariantCulture);
+        AnswerQueries = profile?.EffectiveAnswerQueries ?? true;
         var reply = profile?.EffectiveAutoReply ?? AutoReplySettings.Off;
         AutoReplyOn = reply.On;
         AutoReplyText = reply.Text ?? string.Empty;
@@ -186,7 +191,16 @@ public sealed partial class MessagingSectionViewModel(IEngineService engine, Loc
         {
             Profiles =
             [
-                .. _settings.Profiles.Select(p => p.Id == profile.Id ? p with { Ping = ping, AutoReply = reply } : p),
+                .. _settings.Profiles.Select(p =>
+                    p.Id == profile.Id
+                        ? p with
+                        {
+                            Ping = ping,
+                            AutoReply = reply,
+                            AnswerQueries = AnswerQueries ? null : false,
+                        }
+                        : p
+                ),
             ],
         };
         try

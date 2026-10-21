@@ -76,4 +76,19 @@ public sealed class PingUiTests
         Assert.EndsWith("Automatic reply · Delivered", messages.Thread[1].StateText, StringComparison.Ordinal);
         Assert.Equal(0, messages.UnreadTotal);
     }
+
+    [Fact]
+    public async Task AnsweringQueriesIsOnByDefaultAndSavedWithTheSection()
+    {
+        var engine = new FakeEngine();
+        var section = new MessagingSectionViewModel(engine, English(), _ => { });
+        section.Show(engine.Settings);
+        Assert.True(section.AnswerQueries); // docs/features/F2.8-queries.md, decision 1
+
+        section.AnswerQueries = false;
+        await section.SaveCommand.ExecuteAsync(null);
+
+        var profile = Assert.Single(engine.Saved).GetActiveProfile()!;
+        Assert.False(profile.EffectiveAnswerQueries);
+    }
 }
