@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using System.Collections.ObjectModel;
+using System.Globalization;
 using AprsMap.Contracts;
 using AprsMap.UI.Localization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -78,7 +79,108 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
 
     /// <summary>The schedule chosen.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMoving))]
     public partial BeaconChoice<PositionBeaconSchedule>? SelectedSchedule { get; set; }
+
+    // ── The moving schedule (SmartBeaconing, revised F2.2 for #335) ──────────────────────────────────────────────
+
+    /// <summary>Whether the moving schedule's speeds, rates and turns show.</summary>
+    public bool IsMoving => SelectedSchedule?.Value == PositionBeaconSchedule.Moving;
+
+    /// <summary>"km/h", "mph" or "kn": the speeds' unit, after the viewer's distance unit.</summary>
+    [ObservableProperty]
+    public partial string SpeedUnitText { get; private set; } = "km/h";
+
+    /// <summary>At or below this speed, the slow rate.</summary>
+    [ObservableProperty]
+    public partial string SlowSpeed { get; set; } = string.Empty;
+
+    /// <summary>The slow rate, in minutes.</summary>
+    [ObservableProperty]
+    public partial string SlowRateMinutes { get; set; } = string.Empty;
+
+    /// <summary>At or above this speed, the fast rate.</summary>
+    [ObservableProperty]
+    public partial string FastSpeed { get; set; } = string.Empty;
+
+    /// <summary>The fast rate, in seconds.</summary>
+    [ObservableProperty]
+    public partial string FastRateSeconds { get; set; } = string.Empty;
+
+    /// <summary>The smallest turn at speed, in degrees.</summary>
+    [ObservableProperty]
+    public partial string TurnAngle { get; set; } = string.Empty;
+
+    /// <summary>How much more a slow station must turn, in degrees × the speed unit.</summary>
+    [ObservableProperty]
+    public partial string TurnSlope { get; set; } = string.Empty;
+
+    /// <summary>The shortest time from the last beacon to a turn beacon, in seconds.</summary>
+    [ObservableProperty]
+    public partial string TurnTimeSeconds { get; set; } = string.Empty;
+
+    /// <summary>Knots in one of the speed unit.</summary>
+    private double _knotsPerUnit = 1 / 1.852;
+
+    private void ShowMoving(MovingBeaconSettings moving, DistanceUnit distance)
+    {
+        (_knotsPerUnit, SpeedUnitText) = distance switch
+        {
+            DistanceUnit.Miles => (1 / MovingBeaconSettings.MphPerKnot, "mph"),
+            DistanceUnit.NauticalMiles => (1.0, "kn"),
+            _ => (1 / 1.852, "km/h"),
+        };
+        SlowSpeed = Plain(moving.SlowSpeedKnots / _knotsPerUnit);
+        SlowRateMinutes = Plain(moving.SlowRateSeconds / 60.0);
+        FastSpeed = Plain(moving.FastSpeedKnots / _knotsPerUnit);
+        FastRateSeconds = Plain(moving.FastRateSeconds);
+        TurnAngle = Plain(moving.TurnAngle);
+        TurnSlope = Plain(moving.TurnSlope / _knotsPerUnit);
+        TurnTimeSeconds = Plain(moving.TurnTimeSeconds);
+
+        static string Plain(double value) => Math.Round(value, 1).ToString("0.#", CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>The moving settings as typed, in knots and seconds; null when one isn't a number.</summary>
+    private MovingBeaconSettings? MovingFromForm()
+    {
+        if (
+            !Number(SlowSpeed, out var slow)
+            || !Number(SlowRateMinutes, out var slowRate)
+            || !Number(FastSpeed, out var fast)
+            || !Number(FastRateSeconds, out var fastRate)
+            || !Number(TurnAngle, out var angle)
+            || !Number(TurnSlope, out var slope)
+            || !Number(TurnTimeSeconds, out var turnTime)
+        )
+        {
+            return null;
+        }
+        var typed = new MovingBeaconSettings(
+            slow * _knotsPerUnit,
+            (int)Math.Round(slowRate * 60),
+            fast * _knotsPerUnit,
+            (int)Math.Round(fastRate),
+            angle,
+            slope * _knotsPerUnit,
+            (int)Math.Round(turnTime)
+        );
+        // Unchanged from the defaults, as shown rounded: none of its own.
+        var shown = MovingBeaconSettings.Default;
+        return
+            Math.Abs(typed.SlowSpeedKnots - shown.SlowSpeedKnots) < 0.1 * _knotsPerUnit
+            && typed.SlowRateSeconds == shown.SlowRateSeconds
+            && Math.Abs(typed.FastSpeedKnots - shown.FastSpeedKnots) < 0.1 * _knotsPerUnit
+            && typed.FastRateSeconds == shown.FastRateSeconds
+            && Math.Abs(typed.TurnAngle - shown.TurnAngle) < 0.1
+            && Math.Abs(typed.TurnSlope - shown.TurnSlope) < 0.1 * _knotsPerUnit
+            && typed.TurnTimeSeconds == shown.TurnTimeSeconds
+            ? MovingBeaconSettings.Default
+            : typed;
+
+        static bool Number(string text, out double value) =>
+            double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+    }
 
     /// <summary>The intervals, named.</summary>
     public ObservableCollection<BeaconChoice<int>> PositionIntervals { get; } = [];
@@ -266,6 +368,7 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
         PositionOn = position.On;
         SelectedSchedule = Schedules.FirstOrDefault(s => s.Value == position.Schedule);
         SelectedPositionInterval = PositionIntervals.FirstOrDefault(i => i.Value == position.IntervalMinutes);
+        ShowMoving(position.EffectiveMoving, settings.Units.Distance);
         MicE = position.MicE is not null;
         Compressed = !MicE && position.Compressed;
         FormatStandard = !MicE && !Compressed;
@@ -325,10 +428,7 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
         Schedules.Clear();
         Schedules.Add(new(PositionBeaconSchedule.Decay, _text["Beacons.Schedule.Decay"]));
         Schedules.Add(new(PositionBeaconSchedule.Fixed, _text["Beacons.Schedule.Fixed"]));
-        if (schedule == PositionBeaconSchedule.Moving)
-        {
-            Schedules.Add(new(PositionBeaconSchedule.Moving, _text["Beacons.Schedule.Moving"])); // saved elsewhere
-        }
+        Schedules.Add(new(PositionBeaconSchedule.Moving, _text["Beacons.Schedule.Moving"])); // with a GPS (#335)
         SelectedSchedule = Schedules.FirstOrDefault(s => s.Value == schedule);
         var status = SelectedMicEStatus?.Value ?? _savedMicE ?? MicEStatus.OffDuty;
         MicEStatuses.Clear();
@@ -422,6 +522,12 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
         {
             return false;
         }
+        var moving = MovingFromForm();
+        if (moving is null)
+        {
+            Error = _text["Error.settings.profile.moving-invalid"];
+            return false;
+        }
         var position = new PositionBeaconSettings(
             PositionOn,
             SelectedSchedule?.Value ?? PositionBeaconSchedule.Decay,
@@ -436,7 +542,8 @@ public sealed partial class BeaconsSectionViewModel : ObservableObject
                     SelectedDirection is { Value: > 0 } d ? d.Value : null
                 )
                 : null,
-            MicE ? SelectedMicEStatus?.Value ?? MicEStatus.OffDuty : null
+            MicE ? SelectedMicEStatus?.Value ?? MicEStatus.OffDuty : null,
+            moving == MovingBeaconSettings.Default ? null : moving
         );
         var status = new StatusBeaconSettings(
             StatusOn,

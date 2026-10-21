@@ -10,7 +10,10 @@ public enum PositionBeaconSchedule
     /// <summary>Soon after a send, then at doubling waits up to the interval.</summary>
     Decay,
 
-    /// <summary>By speed and turns; needs a GPS (F3.6), so until then it beacons as <see cref="Fixed"/>.</summary>
+    /// <summary>
+    /// By speed and turns (SmartBeaconing) from the GPS's fixes (docs/features/F2.2-beacons.md, revised for #335); as
+    /// <see cref="Fixed"/> while there's no fresh fix.
+    /// </summary>
     Moving,
 }
 
@@ -41,6 +44,37 @@ public enum BeaconDueReason
 
     /// <summary>Held back by the 10 minutes between position beacons on a TNC, or the 10 seconds between beacons.</summary>
     Spacing,
+}
+
+/// <summary>
+/// The moving schedule (SmartBeaconing, revised F2.2 for #335): every <paramref name="SlowRateSeconds"/> at or below
+/// <paramref name="SlowSpeedKnots"/>, every <paramref name="FastRateSeconds"/> at or above
+/// <paramref name="FastSpeedKnots"/>, in between inversely to the speed, and at once on a turn sharper than
+/// <paramref name="TurnAngle"/> + <paramref name="TurnSlope"/> ÷ speed, no sooner than <paramref name="TurnTimeSeconds"/>
+/// after the last beacon. The defaults are APRS.NET's (Dire Wolf's for a car).
+/// </summary>
+/// <param name="SlowSpeedKnots">At or below it, the slow rate: 5 mph.</param>
+/// <param name="SlowRateSeconds">The interval when slow or stopped: 30 minutes.</param>
+/// <param name="FastSpeedKnots">At or above it, the fast rate: 60 mph.</param>
+/// <param name="FastRateSeconds">The interval at speed: 90 seconds.</param>
+/// <param name="TurnAngle">The smallest turn at speed, in degrees: 30.</param>
+/// <param name="TurnSlope">How much more a slow station must turn, degrees × knots: 221.6.</param>
+/// <param name="TurnTimeSeconds">The shortest time from the last beacon to a turn beacon: 10 seconds.</param>
+public sealed record MovingBeaconSettings(
+    double SlowSpeedKnots = 5 / MovingBeaconSettings.MphPerKnot,
+    int SlowRateSeconds = 30 * 60,
+    double FastSpeedKnots = 60 / MovingBeaconSettings.MphPerKnot,
+    int FastRateSeconds = 90,
+    double TurnAngle = 30,
+    double TurnSlope = 255 / MovingBeaconSettings.MphPerKnot,
+    int TurnTimeSeconds = 10
+)
+{
+    /// <summary>Miles per hour in a knot.</summary>
+    public const double MphPerKnot = 1.150779;
+
+    /// <summary>The defaults.</summary>
+    public static MovingBeaconSettings Default { get; } = new();
 }
 
 /// <summary>
@@ -88,6 +122,7 @@ public sealed record PhgSettings(int PowerWatts, int HeightFeet, int GainDbi, in
 /// <param name="SourceIds">Send via: the TX-enabled sources it goes out on; null for all of them.</param>
 /// <param name="Compressed">Whether the position is sent compressed, which is shorter on air.</param>
 /// <param name="Phg">PHG, or null for none. A compressed position can't carry it.</param>
+/// <param name="Moving">The speeds, rates and turns of the <see cref="PositionBeaconSchedule.Moving"/> schedule; null for the defaults.</param>
 /// <param name="MicE">
 /// Mic-E with this status (docs/features/F2.12-mic-e-status.md), or null for an uncompressed or compressed position.
 /// Mic-E is never compressed and carries no PHG.
@@ -99,7 +134,8 @@ public sealed record PositionBeaconSettings(
     IReadOnlyList<string>? SourceIds = null,
     bool Compressed = false,
     PhgSettings? Phg = null,
-    MicEStatus? MicE = null
+    MicEStatus? MicE = null,
+    MovingBeaconSettings? Moving = null
 )
 {
     /// <summary>The interval a new position beacon has: 30 minutes.</summary>
@@ -120,7 +156,8 @@ public sealed record PositionBeaconSettings(
         && BeaconSettings.SameSources(SourceIds, other.SourceIds)
         && Compressed == other.Compressed
         && Phg == other.Phg
-        && MicE == other.MicE;
+        && MicE == other.MicE
+        && EffectiveMoving == other.EffectiveMoving;
 
     /// <inheritdoc />
     public override int GetHashCode() =>
@@ -131,8 +168,12 @@ public sealed record PositionBeaconSettings(
             SourceIds is null ? null : string.Join(',', SourceIds),
             Compressed,
             Phg,
-            MicE
+            MicE,
+            EffectiveMoving
         );
+
+    /// <summary>The moving schedule's settings in effect: <see cref="Moving"/>, or the defaults.</summary>
+    public MovingBeaconSettings EffectiveMoving => Moving ?? MovingBeaconSettings.Default;
 }
 
 /// <summary>What a status carries besides its text (docs/features/F2.11-status-reports.md, behavior 3).</summary>

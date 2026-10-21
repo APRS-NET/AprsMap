@@ -46,7 +46,10 @@ public sealed class BeaconsUiTests
         Assert.False(section.PositionOn);
         Assert.False(section.StatusOn);
         Assert.Equal(PositionBeaconSchedule.Decay, section.SelectedSchedule!.Value);
-        Assert.Equal(["Soon after a change, then less often", "Every interval"], section.Schedules.Select(s => s.Name));
+        Assert.Equal(
+            ["Soon after a change, then less often", "Every interval", "By speed and turns (with a GPS)"],
+            section.Schedules.Select(s => s.Name)
+        );
         Assert.Equal("30 minutes", section.SelectedPositionInterval!.Name);
         Assert.Equal("1 hour", section.SelectedStatusInterval!.Name);
         Assert.Equal(["rotate.aprs2.net", "Direwolf"], section.PositionVia.Select(v => v.Name));
@@ -151,5 +154,47 @@ public sealed class BeaconsUiTests
         Assert.Equal("TX enabled · beacons waiting", vm.TransmitText);
         Assert.Equal("Beacons are waiting: Send your position once by hand to start beaconing.", vm.TransmitTip);
         Assert.False(vm.IsTransmitHeld); // a hand send is still possible: that's what starts them
+    }
+
+    [Fact]
+    public async Task MovingShowsItsSettingsInTheViewersUnitsAndSavesThemInKnots()
+    {
+        var (section, engine) = Create(
+            Licensed() with
+            {
+                Units = UnitSettings.Metric with { Distance = DistanceUnit.Miles },
+            }
+        );
+        Assert.False(section.IsMoving);
+
+        section.SelectedSchedule = section.Schedules.Single(s => s.Value == PositionBeaconSchedule.Moving);
+        Assert.True(section.IsMoving);
+        Assert.Equal(
+            ("mph", "5", "30", "60", "90"),
+            (
+                section.SpeedUnitText,
+                section.SlowSpeed,
+                section.SlowRateMinutes,
+                section.FastSpeed,
+                section.FastRateSeconds
+            )
+        );
+        Assert.Equal(("30", "255", "10"), (section.TurnAngle, section.TurnSlope, section.TurnTimeSeconds));
+
+        await section.SaveCommand.ExecuteAsync(null);
+        var unchanged = engine.Settings.GetActiveProfile()!.EffectivePositionBeacon;
+        Assert.Equal(PositionBeaconSchedule.Moving, unchanged.Schedule);
+        Assert.Null(unchanged.Moving); // the defaults: none of its own
+
+        section.FastSpeed = "45";
+        section.FastRateSeconds = "120";
+        await section.SaveCommand.ExecuteAsync(null);
+        var moving = engine.Settings.GetActiveProfile()!.EffectivePositionBeacon.EffectiveMoving;
+        Assert.Equal(45 / MovingBeaconSettings.MphPerKnot, moving.FastSpeedKnots, 3);
+        Assert.Equal(120, moving.FastRateSeconds);
+
+        section.TurnAngle = "sharp";
+        await section.SaveCommand.ExecuteAsync(null);
+        Assert.StartsWith("The speeds and turns can't be used", section.Error, StringComparison.Ordinal);
     }
 }

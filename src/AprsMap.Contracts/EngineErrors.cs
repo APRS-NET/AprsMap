@@ -42,6 +42,9 @@ public static class EngineErrorCodes
     /// <summary>A profile uses more than one GPS (docs/features/F3.6-gps.md, behavior 2).</summary>
     public const string ProfileTwoGps = "settings.profile.two-gps";
 
+    /// <summary>The moving schedule's speeds, rates or turns can't be used (F2.2, #335).</summary>
+    public const string ProfileMovingInvalid = "settings.profile.moving-invalid";
+
     /// <summary>A GPS without its link, serial port or host (F3.6 behavior 1).</summary>
     public const string GpsSourceInvalid = "settings.source.gps-invalid";
 
