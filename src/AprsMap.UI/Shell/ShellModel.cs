@@ -62,6 +62,9 @@ public static class PanelKinds
     /// <summary>The packets capture recorded (docs/features/F1.27-packet-capture.md, behavior 7).</summary>
     public const string Captured = "captured";
 
+    /// <summary>The GPS's fix, accuracy and sky (docs/features/F3.12-gps-status.md).</summary>
+    public const string Gps = "gps";
+
     /// <summary>Every panel, with the id of the dock it starts in (behavior 2).</summary>
     public static IReadOnlyList<(string Kind, string Dock)> All { get; } =
     [
@@ -72,12 +75,19 @@ public static class PanelKinds
         (Packets, ShellFactory.BottomDock),
         (Console, ShellFactory.BottomDock),
         (Captured, ShellFactory.BottomDock),
+        (Gps, ShellFactory.RightDock), // on demand: not in the default layout
     ];
+
+    /// <summary>
+    /// Panels left out of the default layout, shown only when opened (the GPS panel, from the GPS pill: most stations
+    /// have no GPS). Once open, they're saved with the layout like any other.
+    /// </summary>
+    public static IReadOnlySet<string> OnDemand { get; } = new HashSet<string>(StringComparer.Ordinal) { Gps };
 
     /// <summary>The resource key of a panel's title.</summary>
     public static string TitleKey(string kind) => "Shell.Panel." + kind;
 
     /// <summary>Every panel in the order View › Panels lists them (F1.29 behavior 12).</summary>
     public static IReadOnlyList<string> Ordered { get; } =
-    [Map, Dashboard, Stations, Details, Packets, Messages, Bulletins, Console, Captured];
+    [Map, Dashboard, Stations, Details, Packets, Messages, Bulletins, Console, Captured, Gps];
 }

@@ -129,6 +129,8 @@ public enum GpsFixKind
 /// <param name="Course">Course over the ground, in degrees true.</param>
 /// <param name="Satellites">Satellites used in the fix, where the GPS says.</param>
 /// <param name="Hdop">Horizontal dilution of precision, where the GPS says.</param>
+/// <param name="Accuracy">How good the fix is (docs/features/F3.12-gps-status.md, behavior 3), where the GPS says.</param>
+/// <param name="Sky">The satellites in view (F3.12 behaviors 4, 5); null before the GPS has said.</param>
 public sealed record GpsStatus(
     string SourceId,
     GpsFixKind Fix,
@@ -140,12 +142,80 @@ public sealed record GpsStatus(
     double? SpeedKnots = null,
     double? Course = null,
     int? Satellites = null,
-    double? Hdop = null
+    double? Hdop = null,
+    GpsAccuracy? Accuracy = null,
+    IReadOnlyList<GpsSkySatellite>? Sky = null
 )
 {
     /// <summary>Whether the station is where the GPS says: a fresh fix with a position.</summary>
     public bool HasPosition => IsFresh && Fix != GpsFixKind.NoFix && Latitude is not null && Longitude is not null;
 }
+
+/// <summary>A satellite system (docs/features/F3.12-gps-status.md, behavior 4).</summary>
+public enum GnssConstellation
+{
+    /// <summary>Not known.</summary>
+    Unknown,
+
+    /// <summary>GPS (United States).</summary>
+    Gps,
+
+    /// <summary>GLONASS (Russia).</summary>
+    Glonass,
+
+    /// <summary>Galileo (Europe).</summary>
+    Galileo,
+
+    /// <summary>BeiDou (China).</summary>
+    BeiDou,
+
+    /// <summary>QZSS (Japan).</summary>
+    Qzss,
+
+    /// <summary>NavIC (India).</summary>
+    NavIC,
+
+    /// <summary>An augmentation satellite (WAAS, EGNOS…).</summary>
+    Sbas,
+}
+
+/// <summary>How good a GPS's fix is (docs/features/F3.12-gps-status.md, behavior 3); each value null when not given.</summary>
+/// <param name="SatellitesUsed">Satellites the fix uses.</param>
+/// <param name="SatellitesInView">Satellites the GPS can see, used or not.</param>
+/// <param name="Pdop">Position (3D) dilution of precision: lower is better.</param>
+/// <param name="Hdop">Horizontal dilution of precision.</param>
+/// <param name="Vdop">Vertical dilution of precision.</param>
+/// <param name="HorizontalErrorMeters">The GPS's estimate of its horizontal error.</param>
+/// <param name="VerticalErrorMeters">The GPS's estimate of its altitude error.</param>
+/// <param name="SpeedErrorKnots">The GPS's estimate of its speed error (gpsd only).</param>
+public sealed record GpsAccuracy(
+    int? SatellitesUsed = null,
+    int? SatellitesInView = null,
+    double? Pdop = null,
+    double? Hdop = null,
+    double? Vdop = null,
+    double? HorizontalErrorMeters = null,
+    double? VerticalErrorMeters = null,
+    double? SpeedErrorKnots = null
+);
+
+/// <summary>A satellite a GPS can see (docs/features/F3.12-gps-status.md, behaviors 4, 5).</summary>
+/// <param name="System">Its system.</param>
+/// <param name="Id">Its number, as the GPS gives it.</param>
+/// <param name="SignalId">Which of its signals, when the GPS says.</param>
+/// <param name="ElevationDegrees">Above the horizon, 0–90; null when not known.</param>
+/// <param name="AzimuthDegrees">From true north, 0–359; null when not known.</param>
+/// <param name="SnrDbHz">Signal-to-noise ratio; null when it's seen but not tracked.</param>
+/// <param name="Used">Whether the fix uses it.</param>
+public sealed record GpsSkySatellite(
+    GnssConstellation System,
+    int Id,
+    int? SignalId,
+    double? ElevationDegrees,
+    double? AzimuthDegrees,
+    double? SnrDbHz,
+    bool Used
+);
 
 /// <summary>Transmitting, for the status bar (docs/features/F2.1-own-station.md, behaviors 4–13).</summary>
 /// <param name="On">Whether the Transmit switch is on.</param>

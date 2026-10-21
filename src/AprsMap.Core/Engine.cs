@@ -817,6 +817,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             if (connection is IGpsSource gps)
             {
                 gps.Fixes = fix => OnGpsFix(source.Id, fix); // F3.6
+                gps.Sky = (quality, satellites) => OnGpsSky(source.Id, quality, satellites); // F3.12
             }
             await using (connection.ConfigureAwait(false))
             {

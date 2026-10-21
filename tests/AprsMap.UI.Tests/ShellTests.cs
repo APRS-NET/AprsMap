@@ -261,11 +261,11 @@ public sealed class ShellTests
     {
         var shell = NewShell();
         shell.Factory.CloseDockable(Find(shell.Layout, PanelKinds.Stations));
-        Assert.Equal([PanelKinds.Stations], shell.ClosedPanels);
+        Assert.Equal([PanelKinds.Stations, PanelKinds.Gps], shell.ClosedPanels); // GPS starts closed: on demand
 
         shell.Show(PanelKinds.Stations);
 
-        Assert.Empty(shell.ClosedPanels);
+        Assert.Equal([PanelKinds.Gps], shell.ClosedPanels);
         var stations = Find(shell.Layout, PanelKinds.Stations);
         Assert.Equal(ShellFactory.LeftDock, stations.Owner!.Id);
         Assert.Equal("Stations", stations.Title);

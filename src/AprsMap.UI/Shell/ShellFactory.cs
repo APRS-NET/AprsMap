@@ -78,7 +78,7 @@ public sealed class ShellFactory(object context, bool managedWindows) : Factory
         var left = Side(LeftDock, Alignment.Left, 0.2);
         var right = Side(RightDock, Alignment.Right, 0.28);
         var bottom = Side(BottomDock, Alignment.Bottom, 0.3);
-        foreach (var (kind, dockId) in PanelKinds.All)
+        foreach (var (kind, dockId) in PanelKinds.All.Where(p => !PanelKinds.OnDemand.Contains(p.Kind)))
         {
             var dock = dockId switch
             {
