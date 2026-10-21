@@ -257,6 +257,27 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             Locator: _home is { } home ? MaidenheadLocator.FromPosition(home.Latitude, home.Longitude, 6).Value : null
         );
 
+    /// <summary>
+    /// The stations this station's own receivers heard direct since <paramref name="since"/>, the most recent first, for
+    /// an <c>?APRSD</c> answer (docs/features/F2.8-queries.md).
+    /// </summary>
+    public IReadOnlyList<string> HeardDirectSince(DateTimeOffset since)
+    {
+        lock (_gate)
+        {
+            return
+            [
+                .. _entries
+                    .Values.Where(e =>
+                        e is { HeardHere: true, Arrival: ArrivalKind.Direct, Kind: StationKind.Station }
+                        && e.LastHeard >= since
+                    )
+                    .OrderByDescending(e => e.LastHeard)
+                    .Select(e => e.Name),
+            ];
+        }
+    }
+
     /// <summary>The stations this station's own receivers heard in the last hour (F3.1 behavior 8), nearest first.</summary>
     private ThisStation WhatIHeard()
     {

@@ -748,7 +748,8 @@ internal sealed partial class Messenger : IDisposable
             var trimmed = text.Trim();
             hold =
                 Services.Contains(from.Split('-')[0]) ? AutoReplyHold.Service
-                : trimmed.StartsWith(settings.EffectiveText, StringComparison.OrdinalIgnoreCase)
+                : trimmed.StartsWith('?') // a query (F2.8 answers it), never an away message
+                || trimmed.StartsWith(settings.EffectiveText, StringComparison.OrdinalIgnoreCase)
                 || trimmed.StartsWith(_host.Ping().EffectivePong, StringComparison.OrdinalIgnoreCase)
                     ? AutoReplyHold.AutomaticMessage
                 : settings.AwayMinutes > 0

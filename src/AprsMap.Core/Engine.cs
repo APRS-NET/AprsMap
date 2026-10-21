@@ -2152,6 +2152,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             CheckHeardBack(packet, sourceId);
             _messenger.Receive(packet, sourceId, IsOwnReceiver(sourceId)); // messages, acks, and who was heard where
             _bulletins.Receive(packet, sourceId); // bulletins and announcements (F2.5)
+            ConsiderQuery(packet, sourceId); // queries to answer (F2.8)
         }
         var now = _time.GetUtcNow();
         var check = _duplicates.Check(packet, sourceId);

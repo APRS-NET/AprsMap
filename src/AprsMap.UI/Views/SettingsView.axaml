@@ -1642,6 +1642,15 @@
               Foreground="{DynamicResource Brush.TextMuted}"
               TextWrapping="Wrap"
             />
+            <!-- Queries (F2.8): answered as APRS expects, under every transmit rule. -->
+            <TextBlock Text="{l:T Queries.Heading}" FontWeight="SemiBold" />
+            <ToggleSwitch
+              x:Name="AnswerQueriesSwitch"
+              IsChecked="{Binding Messaging.AnswerQueries, FallbackValue=True}"
+              OnContent="{l:T Queries.On}"
+              OffContent="{l:T Queries.On}"
+            />
+            <TextBlock Text="{l:T Queries.Help}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
             <TextBlock Text="{l:T Ping.Rules}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
             <WrapPanel ItemSpacing="8" LineSpacing="8">
               <Button
