@@ -214,25 +214,79 @@ public sealed class UpdateTests
     }
 
     [Fact]
-    public async Task TheScheduleChecksAMinuteAfterStartThenDaily()
+    public async Task OnStartThenOnceInEachTwoHourWindowAtARandomMoment()
     {
-        var (engine, github, _, time) = Create();
+        var (engine, github, store, time) = Create();
+        // Checked a minute ago, before a restart: the start still checks (behavior 1).
+        await store.SaveAsync(
+            (await store.LoadAsync(Ct))! with
+            {
+                Updates = new UpdateSettings(LastChecked: time.GetUtcNow().AddMinutes(-1)),
+            },
+            Ct
+        );
+        engine.UpdateJitter = () => 0.25; // half an hour into each two-hour window
         github.Answer = _ => Json("[]");
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var running = engine.RunUpdatesAsync(cts.Token);
 
         await Settle();
-        Assert.Empty(github.Requests);
         time.Advance(Engine.FirstUpdateCheck);
-        await WaitUntil(() => github.Requests.Count == 1);
-        time.Advance(TimeSpan.FromHours(23));
+        await WaitUntil(() => github.Requests.Count == 1); // on start
+        time.Advance(TimeSpan.FromHours(2) + TimeSpan.FromMinutes(29));
         await Settle();
         Assert.Single(github.Requests);
-        time.Advance(TimeSpan.FromHours(1));
-        await WaitUntil(() => github.Requests.Count == 2);
+        time.Advance(TimeSpan.FromMinutes(1));
+        await WaitUntil(() => github.Requests.Count == 2); // 2 h 30 min after start
+        engine.UpdateJitter = () => 0.9;
+        time.Advance(TimeSpan.FromHours(1.5) + TimeSpan.FromHours(1.8));
+        await WaitUntil(() => github.Requests.Count == 3); // 4 h 48 min: the next window, at its own random moment
 
         await cts.CancelAsync();
         await running;
+    }
+
+    [Fact]
+    public async Task WithCheckForUpdatesOffNothingIsAskedOrOfferedUnlessCheckNow()
+    {
+        var (engine, github, _, time) = Create();
+        github.Answer = _ =>
+            Json("[" + Release("v0.5.0-alpha.1", false, $"{Slug}-v0.5.0-alpha.1-linux-x64.tar.gz") + "]");
+        await engine.CheckUpdatesNowAsync(Ct); // found before the setting went off
+        var settings = await engine.GetSettingsAsync(Ct);
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Updates = settings.EffectiveUpdates with { Check = false },
+            },
+            Ct
+        );
+        var status = await engine.GetUpdateStatusAsync(Ct);
+        Assert.True(status.CheckOff);
+        Assert.Null(status.Update); // nothing offered with the setting off (behavior 6)
+
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var running = engine.RunUpdatesAsync(cts.Token);
+        time.Advance(Engine.FirstUpdateCheck + TimeSpan.FromHours(6));
+        await Settle();
+        Assert.Single(github.Requests); // only the check before
+        await cts.CancelAsync();
+        await running;
+
+        Assert.Equal("0.5.0-alpha.1", (await engine.CheckForUpdateAsync(Ct)).Update?.Version); // Check now still works
+    }
+
+    [Fact]
+    public async Task AFailedCheckIsInTheStatusAndTheNextOneIsAtTheUsualTime()
+    {
+        var (engine, github, _, _) = Create();
+        github.Answer = _ => throw new HttpRequestException("No route to host");
+
+        var status = await engine.CheckForUpdateAsync(Ct);
+
+        Assert.Equal(EngineErrorCodes.UpdatesUnreachable, status.LastError?.Code);
+        Assert.NotNull(status.LastChecked);
+        Assert.Null(status.Update);
     }
 
     [Fact]

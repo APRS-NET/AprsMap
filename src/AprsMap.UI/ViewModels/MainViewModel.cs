@@ -480,11 +480,16 @@ public sealed partial class MainViewModel : ObservableObject
                 ? new Capture.CaptureSettingsViewModel(engine, _text, Show)
                 : null,
             DeviceList = new DeviceListViewModel(engine, _text, time, _settings is { ReadOnly: false }, Show),
+            UpdateChecks =
+                (!SharedStation || IsOperator) && Updates.Status is not { CheckDisabled: true }
+                    ? new Updates.UpdateSettingsViewModel(engine, _text, Updates, time.LocalTimeZone, Show)
+                    : null,
         };
         if (_settings is { } shown)
         {
             data.Capture?.Show(shown);
             data.DeviceList?.Show(shown);
+            data.UpdateChecks?.Show(shown);
         }
         data.DeviceList?.Show(_status?.DeviceList); // F4.16
         var mapItems = Map is null
@@ -1308,6 +1313,7 @@ public sealed partial class MainViewModel : ObservableObject
         LiveObjects = [.. settings.GetActiveProfile()?.ObjectList.Where(o => o.Live) ?? []];
         Settings?.Data?.Capture?.Show(settings);
         Settings?.Data?.DeviceList?.Show(settings);
+        Settings?.Data?.UpdateChecks?.Show(settings);
         if (_destination is { IsSet: true } destination)
         {
             _ = destination.RefreshAsync(); // my location or the units may have changed

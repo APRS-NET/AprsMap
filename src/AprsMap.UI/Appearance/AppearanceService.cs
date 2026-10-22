@@ -203,6 +203,8 @@ public sealed class AppearanceService
             _ => 20d,
         };
         yield return ("Icon.Size", s.IconsFollowText ? Math.Round(icon * s.TextScale) : icon);
+        // The small icon, beside text such as a notice's clear button: seven tenths of the icon size.
+        yield return ("Icon.Small", Math.Round(0.7 * (s.IconsFollowText ? icon * s.TextScale : icon)));
         var rounded = s.Corners == CornerStyle.Rounded;
         yield return ("Radius.Control", new CornerRadius(rounded ? 8 : 2));
         yield return ("Radius.Panel", new CornerRadius(rounded ? 12 : 0));

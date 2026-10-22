@@ -334,7 +334,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                         {
                             ReadOnly = false,
                         }
-                        : KeepDeviceListState(KeepObjects(KeepTransmitState(settings, old), old), old)
+                        : KeepUpdateState(
+                            KeepDeviceListState(KeepObjects(KeepTransmitState(settings, old), old), old),
+                            old
+                        )
                 ),
                 old
             );
@@ -459,6 +462,13 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             Profiles = [.. settings.Profiles.Select(p => p with { Objects = stored.GetValueOrDefault(p.Id) })],
         };
     }
+
+    /// <summary>When the update check last ran is the engine's (F4.15 behavior 1): a client's older copy can't set it.</summary>
+    private static AppSettings KeepUpdateState(AppSettings settings, AppSettings old) =>
+        settings with
+        {
+            Updates = settings.EffectiveUpdates with { LastChecked = old.EffectiveUpdates.LastChecked },
+        };
 
     /// <summary>
     /// Keeps what the engine owns of the device list (docs/features/F4.16-device-list.md): the last check and the

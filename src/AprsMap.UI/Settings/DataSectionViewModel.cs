@@ -40,6 +40,12 @@ public sealed partial class DataSectionViewModel : ObservableObject
     /// <summary>The device list (docs/features/F4.16-device-list.md): for everyone; its checks for whoever may change them.</summary>
     public DeviceListViewModel? DeviceList { get; init; }
 
+    /// <summary>
+    /// Updates (docs/features/F4.15-updates.md): Check for updates, the channel and a skipped version, where updates are
+    /// this viewer's; null otherwise, or where checking is off in the engine's configuration.
+    /// </summary>
+    public Updates.UpdateSettingsViewModel? UpdateChecks { get; init; }
+
     /// <summary>Whether the station's settings live on a gateway, shared with other viewers.</summary>
     public bool SharedStation { get; }
 
