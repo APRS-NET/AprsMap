@@ -1526,6 +1526,66 @@
                 TextWrapping="Wrap"
               />
             </StackPanel>
+            <!-- Updates (docs/features/F4.15-updates.md, behaviors 5, 6, 9.3, 10). -->
+            <StackPanel
+              x:Name="UpdatesSection"
+              Spacing="8"
+              IsVisible="{Binding Data.UpdateChecks, Converter={x:Static ObjectConverters.IsNotNull}}"
+            >
+              <TextBlock Text="{l:T Updates.Settings.Title}" FontWeight="SemiBold" />
+              <TextBlock Text="{l:T Updates.Settings.Description}" TextWrapping="Wrap" />
+              <ToggleSwitch
+                x:Name="UpdateCheckSwitch"
+                IsChecked="{Binding Data.UpdateChecks.CheckOn, FallbackValue=False}"
+                OnContent="{l:T Updates.Settings.Check}"
+                OffContent="{l:T Updates.Settings.Check}"
+              />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{l:T Updates.Settings.Channel}" VerticalAlignment="Center" />
+                <ComboBox
+                  x:Name="UpdateChannel"
+                  ItemsSource="{Binding Data.UpdateChecks.ChannelOptions, FallbackValue={x:Null}}"
+                  SelectedItem="{Binding Data.UpdateChecks.Channel, FallbackValue={x:Null}}"
+                  AutomationProperties.Name="{l:T Updates.Settings.Channel}"
+                />
+              </StackPanel>
+              <WrapPanel ItemSpacing="12" LineSpacing="8">
+                <TextBlock
+                  x:Name="UpdateStatusText"
+                  Text="{Binding Data.UpdateChecks.StatusText, FallbackValue={x:Null}}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                  VerticalAlignment="Center"
+                />
+                <Button
+                  x:Name="UpdateCheckNow"
+                  Content="{l:T Updates.CheckNow}"
+                  Command="{Binding Data.UpdateChecks.CheckNowCommand, FallbackValue={x:Null}}"
+                />
+              </WrapPanel>
+              <WrapPanel
+                ItemSpacing="12"
+                LineSpacing="8"
+                IsVisible="{Binding Data.UpdateChecks.SkippedText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              >
+                <TextBlock
+                  x:Name="UpdateSkipped"
+                  Text="{Binding Data.UpdateChecks.SkippedText, FallbackValue={x:Null}}"
+                  VerticalAlignment="Center"
+                />
+                <Button
+                  x:Name="UpdateOfferAgain"
+                  Content="{l:T Updates.OfferAgain}"
+                  Command="{Binding Data.UpdateChecks.OfferAgainCommand, FallbackValue={x:Null}}"
+                />
+              </WrapPanel>
+              <TextBlock
+                Text="{Binding Data.UpdateChecks.Error, FallbackValue={x:Null}}"
+                IsVisible="{Binding Data.UpdateChecks.Error, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
             <!-- The device list (docs/features/F4.16-device-list.md, behaviors 4, 5, 9, 10). -->
             <StackPanel
               x:Name="DeviceListSection"

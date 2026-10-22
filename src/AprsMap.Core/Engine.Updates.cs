@@ -6,17 +6,23 @@ using AprsMap.Contracts;
 namespace AprsMap.Core;
 
 /// <summary>
-/// The update check (docs/features/F4.15-updates.md, behaviors 1–7): a minute after start and every 24 hours while the
-/// engine runs, and on Check now; the last check's time is kept with the settings, so a restart within a day doesn't
-/// check again. A failed check is quiet: it's in the status for About, and the next one is at the usual time.
+/// The update check (docs/features/F4.15-updates.md, behaviors 1–7): on start, then once in every two hours at a random
+/// moment of each two-hour window, so installs started together don't all ask at once; and on Check now. A failed check
+/// is in the status, for the notice's warning and About, and the next one is at the usual time.
 /// </summary>
 public sealed partial class Engine
 {
-    /// <summary>How long after start the first check waits, so start-up isn't slowed (decision 3).</summary>
-    internal static readonly TimeSpan FirstUpdateCheck = TimeSpan.FromMinutes(1);
+    /// <summary>How long after start the first check waits: a moment, so start-up isn't slowed (behavior 1).</summary>
+    internal static readonly TimeSpan FirstUpdateCheck = TimeSpan.FromSeconds(5);
 
-    /// <summary>How often the check runs.</summary>
-    internal static readonly TimeSpan UpdateInterval = TimeSpan.FromHours(24);
+    /// <summary>The window each later check falls in, at a random moment (behavior 1, decision 3).</summary>
+    internal static readonly TimeSpan UpdateInterval = TimeSpan.FromHours(2);
+
+    /// <summary>Where in its window the next check falls, from 0 to 1; tests give their own.</summary>
+    internal Func<double> UpdateJitter { get; set; } = Random.Shared.NextDouble;
+
+    // Check now was pressed while the setting is off (behavior 6): what it found is shown anyway. Under _gate.
+    private bool _checkedByHand;
 
     private readonly List<Channel<UpdateStatus>> _updateWatchers = [];
     private readonly SemaphoreSlim _checking = new(1, 1);
@@ -51,12 +57,21 @@ public sealed partial class Engine
     {
         lock (_gate)
         {
-            return (_update ?? new UpdateStatus(RunningVersion, ChannelOf(settings))) with
+            var status = (_update ?? new UpdateStatus(RunningVersion, ChannelOf(settings))) with
             {
                 Channel = ChannelOf(settings),
                 LastChecked = settings.EffectiveUpdates.LastChecked ?? _update?.LastChecked,
                 CheckDisabled = !_options.Updates.Check,
+                CheckOff = !settings.EffectiveUpdates.Check,
             };
+            // With Check for updates off, nothing is offered or warned about unless Check now was pressed (behavior 6).
+            return settings.EffectiveUpdates.Check || _checkedByHand
+                ? status
+                : status with
+                {
+                    Update = null,
+                    LastError = null,
+                };
         }
     }
 
@@ -70,6 +85,10 @@ public sealed partial class Engine
         if (!_options.Updates.Check)
         {
             return await GetUpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+        }
+        lock (_gate)
+        {
+            _checkedByHand = true;
         }
         await CheckUpdatesNowAsync(cancellationToken).ConfigureAwait(false);
         return await GetUpdateStatusAsync(cancellationToken).ConfigureAwait(false);
@@ -194,8 +213,9 @@ public sealed partial class Engine
     }
 
     /// <summary>
-    /// The schedule (behavior 1): a minute after start, or a day after the last check when that's later, then daily. With
-    /// Check for updates off no request is made at all (behavior 6).
+    /// The schedule (behavior 1): a moment after start, then at a random moment in each two-hour window after that
+    /// (decision 3). With Check for updates off no request is made, but the windows go on, so turning it back on needs no
+    /// restart. With checking off where the engine starts, nothing runs (behavior 6).
     /// </summary>
     internal async Task RunUpdatesAsync(CancellationToken cancellationToken)
     {
@@ -205,25 +225,22 @@ public sealed partial class Engine
         }
         try
         {
-            var wait = FirstUpdateCheck;
+            await Task.Delay(FirstUpdateCheck, _time, cancellationToken).ConfigureAwait(false);
+            var window = _time.GetUtcNow();
             while (true)
             {
                 var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
-                if (settings.EffectiveUpdates.LastChecked is { } last)
-                {
-                    var due = last + UpdateInterval - _time.GetUtcNow();
-                    if (due > wait)
-                    {
-                        wait = due;
-                    }
-                }
-                await Task.Delay(wait, _time, cancellationToken).ConfigureAwait(false);
-                settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
                 if (settings.EffectiveUpdates.Check)
                 {
                     await CheckUpdatesNowAsync(cancellationToken).ConfigureAwait(false);
                 }
-                wait = settings.EffectiveUpdates.Check ? UpdateInterval : TimeSpan.FromHours(1);
+                window += UpdateInterval;
+                var next = window + (UpdateInterval * Math.Clamp(UpdateJitter(), 0, 1));
+                var wait = next - _time.GetUtcNow();
+                if (wait > TimeSpan.Zero)
+                {
+                    await Task.Delay(wait, _time, cancellationToken).ConfigureAwait(false);
+                }
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }

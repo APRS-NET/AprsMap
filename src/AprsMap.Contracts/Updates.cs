@@ -12,7 +12,7 @@ public enum UpdateChannel
 }
 
 /// <summary>The update check's settings (behaviors 5, 6, 9.3), kept with the station's.</summary>
-/// <param name="Check">Look for updates a minute after start and every day (on by default, decision 2).</param>
+/// <param name="Check">Look for updates on start and every two hours (on by default, decision 2).</param>
 /// <param name="Channel">Pre-releases or Stable; null for the running build's own (behavior 5).</param>
 /// <param name="SkippedVersion">A version the user skipped: not offered again, only a newer one.</param>
 /// <param name="LastChecked">When the last check ran, so a restart within a day doesn't check again. Set by the engine.</param>
@@ -59,6 +59,9 @@ public sealed record UpdateInfo(
 /// Checking is off where the engine starts (<c>Engine:Updates:Check</c>, behavior 6): no request, and Check now hidden.
 /// </param>
 /// <param name="Checking">Whether a check is on its way now.</param>
+/// <param name="CheckOff">
+/// The user turned Check for updates off (behavior 6): no request on the schedule, nothing offered unless Check now.
+/// </param>
 public sealed record UpdateStatus(
     string Running,
     UpdateChannel Channel,
@@ -66,5 +69,6 @@ public sealed record UpdateStatus(
     EngineError? LastError = null,
     UpdateInfo? Update = null,
     bool CheckDisabled = false,
-    bool Checking = false
+    bool Checking = false,
+    bool CheckOff = false
 );

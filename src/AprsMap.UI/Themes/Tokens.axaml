@@ -29,6 +29,7 @@
   <!-- A dashboard tile's width, growing with the text size so tiles reflow rather than clip. -->
   <x:Double x:Key="Size.Tile">300</x:Double>
   <x:Double x:Key="Icon.Size">20</x:Double>
+  <x:Double x:Key="Icon.Small">14</x:Double>
   <!-- List rows: Comfortable; AppearanceService switches density (and Fluent's own DensityStyle). -->
   <Thickness x:Key="Space.ListItem">12,8</Thickness>
   <x:Double x:Key="Size.ListItemMinHeight">36</x:Double>

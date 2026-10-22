@@ -25,12 +25,62 @@ public sealed partial class UpdatesViewModel(
     public const int NotesLines = 40;
 
     private string? _later;
+    private DateTimeOffset? _clearedFailure; // the failed check whose warning was cleared (behavior 7)
     private Action? _cancel;
 
     /// <summary>Where the check stands; null before the first answer, or for a gateway viewer.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NoticeText))]
+    [NotifyPropertyChangedFor(nameof(NoticeText), nameof(IsWarning), nameof(NoticeTip), nameof(CanClear))]
     public partial UpdateStatus? Status { get; private set; }
+
+    /// <summary>
+    /// Whether the notice is the warning that the last check failed (behavior 7): shown only with no update to offer,
+    /// until it's cleared or a check works.
+    /// </summary>
+    public bool IsWarning =>
+        Install == InstallState.None
+        && OfferedUpdate is null
+        && Status is { LastError: not null, LastChecked: var at }
+        && at != _clearedFailure;
+
+    /// <summary>The update the notice offers: found, not put off with Later; null otherwise.</summary>
+    private UpdateInfo? OfferedUpdate => Status?.Update is { } update && update.Version != _later ? update : null;
+
+    /// <summary>The notice's tooltip: why the check failed, and that clicking tries again; null otherwise.</summary>
+    public string? NoticeTip =>
+        IsWarning && Status?.LastError is { } error
+            ? text.Format("Updates.CheckFailedTip", new Dictionary<string, object?> { ["reason"] = text.Format(error) })
+            : null;
+
+    /// <summary>Whether the notice can be cleared (×): an update offered, or a failed check; not while installing.</summary>
+    public bool CanClear =>
+        Install is InstallState.None or InstallState.Failed && (OfferedUpdate is not null || IsWarning);
+
+    /// <summary>
+    /// Clears the notice (×): an update until the next start, as Later does (behavior 9.4); a failed check's warning
+    /// until a later check fails again.
+    /// </summary>
+    [RelayCommand]
+    private void Clear()
+    {
+        if (IsWarning)
+        {
+            _clearedFailure = Status?.LastChecked;
+        }
+        else if (OfferedUpdate is { } update)
+        {
+            _later = update.Version;
+        }
+        Notify();
+    }
+
+    private void Notify()
+    {
+        OnPropertyChanged(nameof(NoticeText));
+        OnPropertyChanged(nameof(IsWarning));
+        OnPropertyChanged(nameof(NoticeTip));
+        OnPropertyChanged(nameof(CanClear));
+    }
 
     /// <summary>Whether this is a gateway's browser: the dialog says how to pull the image instead (behavior 16).</summary>
     public bool Gateway { get; init; }
@@ -54,9 +104,11 @@ public sealed partial class UpdatesViewModel(
                 "Updates.ReadyNotice",
                 new Dictionary<string, object?> { ["version"] = _installing?.Version }
             ),
-            _ => Status?.Update is { } update && update.Version != _later
-                ? text.Format("Updates.Notice", new Dictionary<string, object?> { ["version"] = update.Version })
-                : null,
+            _ when OfferedUpdate is { } update => text.Format(
+                "Updates.Notice",
+                new Dictionary<string, object?> { ["version"] = update.Version }
+            ),
+            _ => IsWarning ? text["Updates.CheckFailedNotice"] : null,
         };
 
     /// <summary>Whether this build installs updates itself, rather than offering Download (behavior 11).</summary>
@@ -64,7 +116,14 @@ public sealed partial class UpdatesViewModel(
 
     /// <summary>Where installing the update stands.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NoticeText), nameof(IsDownloading), nameof(IsReady), nameof(Failed))]
+    [NotifyPropertyChangedFor(
+        nameof(NoticeText),
+        nameof(IsDownloading),
+        nameof(IsReady),
+        nameof(Failed),
+        nameof(IsWarning),
+        nameof(CanClear)
+    )]
     public partial InstallState Install { get; private set; }
 
     /// <summary>How much is downloaded, from 0 to 1.</summary>
@@ -103,8 +162,18 @@ public sealed partial class UpdatesViewModel(
         }
     }
 
-    /// <summary>Opens the update's dialog (behavior 9).</summary>
+    /// <summary>Opens the update's dialog (behavior 9); on the failed-check warning, tries again (behavior 7).</summary>
     [RelayCommand]
+    private async Task OpenAsync()
+    {
+        if (IsWarning)
+        {
+            await CheckAsync();
+            return;
+        }
+        Open();
+    }
+
     private void Open()
     {
         if ((Install is InstallState.None or InstallState.Failed ? Status?.Update : _installing) is { } update)
@@ -128,6 +197,19 @@ public sealed partial class UpdatesViewModel(
         Open();
     }
 
+    /// <summary>Checks again without opening the dialog: after a setting changed what counts (Settings › Data).</summary>
+    internal async Task RefreshAsync()
+    {
+        try
+        {
+            Status = await engine.CheckForUpdateAsync();
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException or IOException)
+        {
+            // Not this viewer's, or the engine went away: the status poll carries on.
+        }
+    }
+
     /// <summary>Skip this version: hidden until a newer one comes out (behavior 9.3).</summary>
     internal async Task SkipAsync(string version)
     {
@@ -148,7 +230,7 @@ public sealed partial class UpdatesViewModel(
     {
         Dialog = null;
         _later = version;
-        OnPropertyChanged(nameof(NoticeText));
+        Notify();
     }
 
     /// <summary>Download: the release page in the browser (behavior 9.2).</summary>
