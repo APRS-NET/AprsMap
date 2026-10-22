@@ -1,4 +1,6 @@
 <Project>
+  <!-- Every package here ships in the app or the image, so a bump is committed as fix(deps), not chore(deps):
+       release-please releases fix commits and never chore ones (.github/dependabot.yml). -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
