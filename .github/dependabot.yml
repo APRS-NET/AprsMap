@@ -16,8 +16,10 @@ updates:
     directory: /
     schedule:
       interval: daily
+    # fix(deps): the packages ship in the app, so release-please counts the bump as user-facing and opens a release
+    # PR (chore commits never do). Test-only packages share the prefix: Dependabot can't vary it by group.
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "fix(deps)"
     groups:
       aprs-net:
         patterns: ["AprsNet.*"]
@@ -44,8 +46,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # fix(deps): the base images are what the gateway image ships on, so a bump is released (see the NuGet entry).
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "fix(deps)"
 
   - package-ecosystem: dotnet-sdk
     directory: /
