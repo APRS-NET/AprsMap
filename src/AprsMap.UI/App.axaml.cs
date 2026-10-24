@@ -200,6 +200,7 @@ public sealed class App : Application, IDisposable
                 OperatorSession = _platform.OperatorSession,
                 Installer = _platform.Installer,
                 FolderOpener = _platform.FolderOpener,
+                WebViewer = _platform.WebViewer,
                 MenuStyle = _platform.MenuStyle,
                 SetPageTitle = _platform.SetTitle,
                 Restart = _platform.Restart,

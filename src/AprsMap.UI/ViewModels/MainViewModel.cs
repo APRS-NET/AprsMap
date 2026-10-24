@@ -373,6 +373,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Opens a folder in the system's file manager (F1.31 behavior 4a); null in the browser.</summary>
     public IFolderOpener? FolderOpener { get; init; }
 
+    /// <summary>The desktop's web viewer (docs/features/F1.35-desktop-web-viewer.md); null in the browser.</summary>
+    public IWebViewerHost? WebViewer { get; init; }
+
     /// <summary>Opens a page in the browser; set by the view, which has the launcher.</summary>
     public Func<Uri, Task>? OpenUri { get; set; }
 
@@ -535,7 +538,8 @@ public sealed partial class MainViewModel : ObservableObject
             Layouts,
             logging,
             messaging,
-            objects
+            objects,
+            WebViewer is { } host ? new WebViewerSectionViewModel(host, _text) : null
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
