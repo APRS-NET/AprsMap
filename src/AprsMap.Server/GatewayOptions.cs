@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-namespace AprsMap.Gateway;
+namespace AprsMap.Server;
 
 /// <summary>Gateway settings, bound from the <c>Gateway</c> configuration section.</summary>
 internal sealed class GatewayOptions

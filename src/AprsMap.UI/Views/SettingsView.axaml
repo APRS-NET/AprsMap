@@ -20,6 +20,9 @@
   </UserControl.KeyBindings>
   <UserControl.Styles>
     <!-- A device list check that failed (F4.16 behavior 9) reads in the warning colour. -->
+    <Style Selector="TextBlock#WebViewerStatus.warn">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
     <Style Selector="TextBlock#DeviceListChecked">
       <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
     </Style>
@@ -1659,6 +1662,98 @@
                 TextWrapping="Wrap"
               />
             </StackPanel>
+          </StackPanel>
+          <!-- Web viewer (docs/features/F1.35-desktop-web-viewer.md): this station served to browsers, view only. -->
+          <StackPanel x:Name="WebViewerSection" IsVisible="{Binding IsWebViewerSection}" Spacing="10">
+            <TextBlock Text="{l:T WebViewer.Title}" FontWeight="SemiBold" />
+            <TextBlock Text="{l:T WebViewer.Description}" TextWrapping="Wrap" />
+            <ToggleSwitch
+              x:Name="WebViewerSwitch"
+              IsChecked="{Binding WebViewer.On, FallbackValue=False}"
+              IsEnabled="{Binding WebViewer.Available, FallbackValue=False}"
+              OnContent="{l:T WebViewer.On}"
+              OffContent="{l:T WebViewer.On}"
+            />
+            <TextBlock
+              x:Name="WebViewerStatus"
+              Text="{Binding WebViewer.StatusText, FallbackValue={x:Null}}"
+              Classes.warn="{Binding WebViewer.HasProblem, FallbackValue=False}"
+              TextWrapping="Wrap"
+              AutomationProperties.LiveSetting="Polite"
+            />
+            <ItemsControl
+              x:Name="WebViewerAddresses"
+              ItemsSource="{Binding WebViewer.Addresses, FallbackValue={x:Null}}"
+            >
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="s:WebViewerAddress">
+                  <WrapPanel ItemSpacing="8" Margin="0,0,0,4">
+                    <SelectableTextBlock
+                      Text="{Binding Address}"
+                      FontFamily="{DynamicResource Font.Mono}"
+                      VerticalAlignment="Center"
+                    />
+                    <Button
+                      Content="{l:T About.Folder.Copy}"
+                      Command="{Binding Copy}"
+                      AutomationProperties.Name="{Binding Address}"
+                    />
+                  </WrapPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{l:T WebViewer.Who}" FontWeight="SemiBold" Margin="0,6,0,0" />
+            <RadioButton
+              x:Name="WebViewerThisComputer"
+              GroupName="WebViewerWho"
+              IsChecked="{Binding WebViewer.ThisComputerOnly, FallbackValue=True}"
+              Content="{l:T WebViewer.ThisComputer}"
+            />
+            <RadioButton
+              x:Name="WebViewerLocalNetwork"
+              GroupName="WebViewerWho"
+              IsChecked="{Binding WebViewer.LocalNetwork, FallbackValue=False}"
+            >
+              <TextBlock Text="{l:T WebViewer.LocalNetwork}" TextWrapping="Wrap" />
+            </RadioButton>
+            <WrapPanel ItemSpacing="12" LineSpacing="8">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{l:T WebViewer.Port}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <TextBox
+                  x:Name="WebViewerPort"
+                  Text="{Binding WebViewer.Port, FallbackValue=''}"
+                  AutomationProperties.Name="{l:T WebViewer.Port}"
+                  MinWidth="100"
+                />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="{l:T WebViewer.Location}" Foreground="{DynamicResource Brush.TextMuted}" />
+                <ComboBox
+                  x:Name="WebViewerLocation"
+                  ItemsSource="{Binding WebViewer.LocationOptions, FallbackValue={x:Null}}"
+                  SelectedItem="{Binding WebViewer.Location, FallbackValue={x:Null}}"
+                  AutomationProperties.Name="{l:T WebViewer.Location}"
+                />
+              </StackPanel>
+            </WrapPanel>
+            <TextBlock
+              Text="{Binding WebViewer.PortError, FallbackValue={x:Null}}"
+              IsVisible="{Binding WebViewer.PortError, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+            />
+            <Button
+              x:Name="WebViewerApply"
+              Content="{l:T WebViewer.Apply}"
+              Command="{Binding WebViewer.ApplyCommand, FallbackValue={x:Null}}"
+              HorizontalAlignment="Left"
+            />
+            <TextBlock
+              Text="{l:T WebViewer.Firewall}"
+              IsVisible="{Binding WebViewer.LocalNetwork, FallbackValue=False}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextWrapping="Wrap"
+            />
           </StackPanel>
           <!-- Messaging (docs/features/F2.13-ping.md): the active profile's ping responder, off by default. -->
           <StackPanel x:Name="MessagingSection" IsVisible="{Binding IsMessagingSection}" Spacing="10">

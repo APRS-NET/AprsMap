@@ -3,6 +3,7 @@ using System.ComponentModel;
 using AprsMap.UI.Settings;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
@@ -52,6 +53,12 @@ public sealed partial class SettingsView : UserControl
             if (_viewModel.Profiles is { } profiles)
             {
                 profiles.PropertyChanged += OnProfilesChanged;
+            }
+            // Copy for the web viewer's addresses (F1.35 behavior 4).
+            if (_viewModel.WebViewer is { } webViewer)
+            {
+                webViewer.CopyToClipboard = text =>
+                    TopLevel.GetTopLevel(this)?.Clipboard?.SetTextAsync(text) ?? Task.CompletedTask;
             }
             // Choose folder… for the log file (F1.32 behavior 8): a folder on this computer, so the desktop only.
             if (_viewModel.Logging is { } logging && !OperatingSystem.IsBrowser())

@@ -3,7 +3,7 @@ using AprsMap.Contracts;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
-namespace AprsMap.Gateway;
+namespace AprsMap.Server;
 
 /// <summary>Exposes the in-process <see cref="IEngineService"/> to remote UIs. Method names come from <see cref="EngineHub"/>.</summary>
 internal sealed class EngineHubEndpoint(

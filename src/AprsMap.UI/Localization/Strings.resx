@@ -2398,6 +2398,69 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.settings.object.unknown" xml:space="preserve">
     <value>That object is no longer in this profile.</value>
   </data>
+  <data name="Settings.WebViewer" xml:space="preserve">
+    <value>Web viewer</value>
+  </data>
+  <data name="WebViewer.Title" xml:space="preserve">
+    <value>Share this station with browsers</value>
+  </data>
+  <data name="WebViewer.Description" xml:space="preserve">
+    <value>Lets a browser on this computer, or on a phone or tablet on your network, watch this station: the map, stations, packets and messages heard. Browsers can only watch: they can't change settings or transmit.</value>
+  </data>
+  <data name="WebViewer.On" xml:space="preserve">
+    <value>Share to browsers</value>
+  </data>
+  <data name="WebViewer.Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="WebViewer.NotInBuild" xml:space="preserve">
+    <value>This build doesn't include the browser app, so it can't share. Release downloads include it.</value>
+  </data>
+  <data name="WebViewer.Serving" xml:space="preserve">
+    <value>Sharing: {viewers, plural, =0 {nobody watching yet} one {# browser watching} other {# browsers watching}}. Open one of these:</value>
+    <comment>viewers: browsers connected now.</comment>
+  </data>
+  <data name="WebViewer.PortInUse" xml:space="preserve">
+    <value>Port {port} is in use by another program. Choose another port and apply.</value>
+    <comment>port: the port chosen.</comment>
+  </data>
+  <data name="WebViewer.CantListen" xml:space="preserve">
+    <value>Couldn't start sharing: {reason}</value>
+    <comment>reason: what the system said.</comment>
+  </data>
+  <data name="WebViewer.Who" xml:space="preserve">
+    <value>Who can connect</value>
+  </data>
+  <data name="WebViewer.ThisComputer" xml:space="preserve">
+    <value>This computer only</value>
+  </data>
+  <data name="WebViewer.LocalNetwork" xml:space="preserve">
+    <value>Devices on my network (phones, tablets, other computers)</value>
+  </data>
+  <data name="WebViewer.Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="WebViewer.PortInvalid" xml:space="preserve">
+    <value>The port is a number from 1024 to 65535.</value>
+  </data>
+  <data name="WebViewer.Location" xml:space="preserve">
+    <value>Your location for viewers</value>
+  </data>
+  <data name="WebViewer.Location.Exact" xml:space="preserve">
+    <value>Exact</value>
+  </data>
+  <data name="WebViewer.Location.Grid" xml:space="preserve">
+    <value>Grid square only</value>
+  </data>
+  <data name="WebViewer.Location.Hidden" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="WebViewer.Apply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="WebViewer.Firewall" xml:space="preserve">
+    <value>The first time, your system may ask whether to allow the app on your network. Sharing uses plain HTTP: use it on networks you trust.</value>
+  </data>
   <data name="Settings.Messaging" xml:space="preserve">
     <value>Messaging</value>
     <comment>Settings section for automatic message replies such as ping.</comment>
