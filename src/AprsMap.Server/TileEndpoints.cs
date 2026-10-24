@@ -3,7 +3,7 @@ using AprsMap.Contracts;
 using AprsMap.Tiles;
 using Microsoft.Net.Http.Headers;
 
-namespace AprsMap.Gateway;
+namespace AprsMap.Server;
 
 /// <summary>
 /// The browser's map tiles (docs/features/F1.4-map.md, behavior 10): same origin, so no CORS, and one cache shared by

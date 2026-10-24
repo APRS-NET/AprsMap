@@ -9,4 +9,9 @@
     <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- The gateway's server parts live in AprsMap.Server, shared with the desktop's web viewer (F1.35). -->
+    <Using Include="AprsMap.Server" />
+  </ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
-using AprsMap.Gateway;
 using AprsMap.Hosting;
+using AprsMap.Server;
 using Microsoft.AspNetCore.SignalR;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
