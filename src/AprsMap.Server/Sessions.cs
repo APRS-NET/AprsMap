@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.SignalR;
 
-namespace AprsMap.Gateway;
+namespace AprsMap.Server;
 
 /// <summary>
 /// Signed-in operators' sessions (docs/features/F2.9-operator-sign-in.md, behaviors 3, 5, 6, 13), kept on the gateway so

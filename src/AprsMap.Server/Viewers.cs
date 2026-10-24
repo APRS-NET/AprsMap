@@ -5,7 +5,7 @@ using AprsMap.Contracts;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
-namespace AprsMap.Gateway;
+namespace AprsMap.Server;
 
 /// <summary>
 /// The browsers connected to the gateway (docs/features/F1.14-gateway.md, behaviors 3 and 11): how many, from which

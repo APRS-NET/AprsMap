@@ -48,6 +48,7 @@
     <Project Path="src/AprsMap.Desktop/AprsMap.Desktop.csproj" />
     <Project Path="src/AprsMap.Gateway/AprsMap.Gateway.csproj" />
     <Project Path="src/AprsMap.Hosting/AprsMap.Hosting.csproj" />
+    <Project Path="src/AprsMap.Server/AprsMap.Server.csproj" />
     <Project Path="src/AprsMap.Tiles/AprsMap.Tiles.csproj" />
     <Project Path="src/AprsMap.UI/AprsMap.UI.csproj" />
   </Folder>

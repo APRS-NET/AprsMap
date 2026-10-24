@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Primitives;
 
-namespace AprsMap.Gateway;
+namespace AprsMap.Server;
 
 /// <summary>
 /// The gateway's HTTP pipeline for a real network (docs/features/F1.14-gateway.md): a path base and trusted proxies,

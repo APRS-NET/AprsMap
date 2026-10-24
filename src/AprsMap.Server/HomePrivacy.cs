@@ -3,7 +3,7 @@ using AprsMap.Contracts;
 using AprsNet.Packets;
 using Microsoft.Extensions.Options;
 
-namespace AprsMap.Gateway;
+namespace AprsMap.Server;
 
 /// <summary>How much of the station's location a viewer learns (docs/features/F1.26-public-console.md, behavior 11).</summary>
 public enum HomePrivacy

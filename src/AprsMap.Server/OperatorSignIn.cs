@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 
-namespace AprsMap.Gateway;
+namespace AprsMap.Server;
 
 /// <summary>Marks a hub method that can transmit: each call by an operator is logged with their name (F2.9 behavior 15).</summary>
 [AttributeUsage(AttributeTargets.Method)]
