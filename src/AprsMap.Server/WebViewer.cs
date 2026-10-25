@@ -155,10 +155,16 @@ public sealed class WebViewer : IAsyncDisposable
         return addresses;
     }
 
-    /// <summary>Stops listening; connected browsers are told the station went away and try again.</summary>
-    public async ValueTask DisposeAsync()
-    {
-        await _app.StopAsync().ConfigureAwait(false);
-        await _app.DisposeAsync().ConfigureAwait(false);
-    }
+    /// <summary>
+    /// Stops listening; connected browsers are told the station went away and try again. It runs off the caller's
+    /// context: the server's own stop resumes on it, and a desktop app closing calls this from a UI thread whose
+    /// dispatcher has stopped, where it would wait for ever.
+    /// </summary>
+    public async ValueTask DisposeAsync() =>
+        await Task.Run(async () =>
+            {
+                await _app.StopAsync().ConfigureAwait(false);
+                await _app.DisposeAsync().ConfigureAwait(false);
+            })
+            .ConfigureAwait(false);
 }

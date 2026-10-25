@@ -123,6 +123,9 @@ internal static class Program
         }
         finally
         {
+            // The UI thread's context outlives its dispatcher: anything that resumed on it would never finish, and the
+            // update after Restart now would never start.
+            SynchronizationContext.SetSynchronizationContext(null);
             if (Application.Current is App app)
             {
                 // Off the UI thread: its dispatcher has stopped, so a save that resumed on it would never finish.
