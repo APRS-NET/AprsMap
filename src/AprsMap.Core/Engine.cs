@@ -335,7 +335,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                             ReadOnly = false,
                         }
                         : KeepUpdateState(
-                            KeepDeviceListState(KeepObjects(KeepTransmitState(settings, old), old), old),
+                            KeepDeviceListState(
+                                KeepObjects(KeepTransmitState(KeepToggles(settings, old), old), old),
+                                old
+                            ),
                             old
                         )
                 ),
@@ -487,6 +490,17 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             },
         };
     }
+
+    /// <summary>
+    /// Keeps the switches as they are (docs/features/F1.15-quick-toggles.md, behavior 3): only the switches change them
+    /// (<see cref="SetToggleAsync"/>, <see cref="SetSourceEnabledAsync"/>), so a save made from a copy taken before a
+    /// switch was flipped can't flip it back. Applied first, so a profile switch still turns Transmit off after it.
+    /// </summary>
+    private static AppSettings KeepToggles(AppSettings settings, AppSettings old) =>
+        settings with
+        {
+            Toggles = old.Toggles,
+        };
 
     private static AppSettings KeepTransmitState(AppSettings settings, AppSettings old)
     {
@@ -971,12 +985,14 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             return;
         }
-        // Saved with the toggles; the runner of other sources stops or opens it as the settings change.
-        await SaveSettingsAsync(
+        // Saved with the toggles, on a fresh read, as the switches are (F1.15 behavior 3); the runner of other sources
+        // stops or opens it as the settings change.
+        await SaveAsync(
                 settings with
                 {
                     Toggles = settings.EffectiveToggles.WithSource(sourceId, enabled),
                 },
+                trusted: true,
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -1135,7 +1151,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             LogTransmit(_transmitLog, "off");
         }
-        await SaveAsync(settings with { Toggles = toggles }, trusted: toggle == Toggle.Transmit, cancellationToken)
+        await SaveAsync(settings with { Toggles = toggles }, trusted: true, cancellationToken) // the switch is the one change here, made on a fresh read
             .ConfigureAwait(false);
     }
 
