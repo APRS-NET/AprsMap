@@ -27,6 +27,7 @@ COPY src/AprsMap.Client.Remote/*.csproj src/AprsMap.Client.Remote/
 COPY src/AprsMap.UI/*.csproj src/AprsMap.UI/
 COPY src/AprsMap.Browser/*.csproj src/AprsMap.Browser/
 COPY src/AprsMap.Hosting/*.csproj src/AprsMap.Hosting/
+COPY src/AprsMap.Server/*.csproj src/AprsMap.Server/
 COPY src/AprsMap.Gateway/*.csproj src/AprsMap.Gateway/
 RUN dotnet restore src/AprsMap.Browser/AprsMap.Browser.csproj \
     && dotnet restore src/AprsMap.Gateway/AprsMap.Gateway.csproj -a $TARGETARCH

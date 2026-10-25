@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 
-namespace AprsMap.Gateway;
+namespace AprsMap.Server;
 
 /// <summary>An operator who may sign in (docs/features/F2.9-operator-sign-in.md, behavior 1): a name and a password hash.</summary>
 internal sealed record OperatorRecord(string Name, string PasswordHash);

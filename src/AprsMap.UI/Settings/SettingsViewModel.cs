@@ -47,9 +47,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Shell.SavedLayoutsViewModel? layouts = null,
         LoggingSectionViewModel? logging = null,
         MessagingSectionViewModel? messaging = null,
-        ObjectsSectionViewModel? objects = null
+        ObjectsSectionViewModel? objects = null,
+        WebViewerSectionViewModel? webViewer = null
     )
     {
+        WebViewer = webViewer;
         ArgumentNullException.ThrowIfNull(appearance);
         _appearance = appearance;
         Profiles = profiles;
@@ -86,6 +88,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsSourcesSection),
         nameof(IsBeaconsSection),
         nameof(IsDataSection),
+        nameof(IsWebViewerSection),
         nameof(IsMapSection),
         nameof(IsUnitsSection),
         nameof(IsLayoutSection),
@@ -160,6 +163,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Whether Data is showing.</summary>
     public bool IsDataSection => SelectedSection?.Id == "data";
+
+    /// <summary>Whether Web viewer is showing (docs/features/F1.35-desktop-web-viewer.md).</summary>
+    public bool IsWebViewerSection => SelectedSection?.Id == "web-viewer";
+
+    /// <summary>The desktop's web viewer (F1.35); null in the browser.</summary>
+    public WebViewerSectionViewModel? WebViewer { get; }
 
     /// <summary>The Data section (F0.10), when the app offers Reset the app.</summary>
     public DataSectionViewModel? Data { get; }
@@ -285,6 +294,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             Sections.Add(new SettingsSection("messaging", _text["Settings.Messaging"]));
         }
         Sections.Add(new SettingsSection("appearance", _text["Settings.Appearance"]));
+        if (WebViewer is not null)
+        {
+            Sections.Add(new SettingsSection("web-viewer", _text["Settings.WebViewer"]));
+        }
         if (MapItems.Count > 0)
         {
             Sections.Add(new SettingsSection("map", _text["Settings.Map"]));

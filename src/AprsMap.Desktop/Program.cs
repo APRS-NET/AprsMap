@@ -13,6 +13,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Velopack;
 
@@ -77,6 +78,16 @@ internal static class Program
             preferences.ClearAsync().GetAwaiter().GetResult();
         }
         s_host.Start();
+        // The web viewer (F1.35): the browser app beside the program, or where configured for a development build.
+        var webViewer = new DesktopWebViewer(
+            s_host.Services,
+            preferences,
+            builder.Configuration["WebViewer:WebRoot"] is { Length: > 0 } configured
+                ? configured
+                : Path.Combine(AppContext.BaseDirectory, "browser"),
+            s_host.Services.GetRequiredService<ILogger<DesktopWebViewer>>()
+        );
+        _ = webViewer.StartAsync(CancellationToken.None); // shares again if it was on; a problem shows in Settings
         // The viewer's appearance, read before the first window so it opens in the right theme and language.
         // --reset-layout starts with the default layout (F1.0 behavior 10); the next save replaces the stored one.
         var resetLayout = args.Contains("--reset-layout", StringComparer.OrdinalIgnoreCase);
@@ -96,6 +107,7 @@ internal static class Program
             MenuStyle = OperatingSystem.IsMacOS() ? UI.Shell.MenuStyle.System : UI.Shell.MenuStyle.InWindow,
             Installer = installer,
             FolderOpener = new DesktopFolderOpener(), // Open folder in Help › About (F1.31)
+            WebViewer = webViewer,
         };
         // Ctrl+C or SIGTERM stops the host; close the window too rather than leave a UI with no engine behind it.
         s_host
@@ -117,6 +129,8 @@ internal static class Program
                 Task.Run(app.SavePreferencesAsync).GetAwaiter().GetResult();
                 app.Dispose();
             }
+            // Browsers first, then the engine they were watching.
+            webViewer.DisposeAsync().AsTask().GetAwaiter().GetResult();
             // Graceful engine shutdown when the window closes; the UI thread has nothing left to do.
             s_host.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
             s_host.Dispose();

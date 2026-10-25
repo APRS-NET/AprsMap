@@ -1,0 +1,164 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+using AprsMap.Contracts;
+using AprsMap.Tiles;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Options;
+
+namespace AprsMap.Server;
+
+/// <summary>
+/// What the desktop's web viewer is to listen on and show (docs/features/F1.35-desktop-web-viewer.md, behaviors 2–5).
+/// </summary>
+/// <param name="Port">The TCP port.</param>
+/// <param name="LocalNetwork">
+/// True to listen on every network the computer is on, so other devices can connect; false for this computer only.
+/// </param>
+/// <param name="WebRoot">The browser app's files, bundled with the desktop app.</param>
+/// <param name="HomePrivacy">What viewers are shown of the station's own location.</param>
+public sealed record WebViewerOptions(int Port, bool LocalNetwork, string WebRoot, HomePrivacy HomePrivacy);
+
+/// <summary>
+/// The desktop app's web viewer (docs/features/F1.35-desktop-web-viewer.md): the gateway's hub, tiles and browser app,
+/// served from inside the desktop app around its own engine, view only. There is no sign-in: every browser is a
+/// viewer, so nothing it sends changes the station or transmits (behavior 6), by the same rules the gateway applies to
+/// viewers.
+/// </summary>
+public sealed class WebViewer : IAsyncDisposable
+{
+    private readonly WebApplication _app;
+    private readonly Viewers _viewers;
+
+    private WebViewer(WebApplication app, IReadOnlyList<Uri> addresses)
+    {
+        _app = app;
+        _viewers = app.Services.GetRequiredService<Viewers>();
+        Addresses = addresses;
+    }
+
+    /// <summary>Where it listens, as the server bound it.</summary>
+    public IReadOnlyList<Uri> Addresses { get; }
+
+    /// <summary>How many browsers are connected now.</summary>
+    public int ViewerCount => _viewers.Count;
+
+    /// <summary>
+    /// Starts the viewer around the desktop's engine and tiles, taken from <paramref name="host"/>; fails as Kestrel
+    /// does when the port is taken (<see cref="IOException"/>).
+    /// </summary>
+    public static async Task<WebViewer> StartAsync(
+        WebViewerOptions options,
+        IServiceProvider host,
+        CancellationToken cancellationToken
+    )
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(host);
+        var builder = WebApplication.CreateEmptyBuilder(
+            new WebApplicationOptions
+            {
+                ApplicationName = typeof(WebViewer).Assembly.GetName().Name,
+                ContentRootPath = options.WebRoot,
+                WebRootPath = options.WebRoot,
+            }
+        );
+        builder.WebHost.UseKestrelCore();
+        builder.WebHost.ConfigureKestrel(kestrel =>
+        {
+            if (options.LocalNetwork)
+            {
+                kestrel.ListenAnyIP(options.Port);
+            }
+            else
+            {
+                kestrel.ListenLocalhost(options.Port);
+            }
+        });
+        builder.WebHost.UseSetting(WebHostDefaults.ServerUrlsKey, string.Empty);
+
+        // The desktop's own engine, tiles, clock and logging: one station, shown to browsers.
+        var services = builder.Services;
+        services.AddSingleton(host.GetRequiredService<IEngineService>());
+        services.AddSingleton(host.GetRequiredService<Core.Engine>());
+        services.AddSingleton(host.GetRequiredService<ITileService>());
+        services.AddSingleton(host.GetService<TimeProvider>() ?? TimeProvider.System);
+        services.AddSingleton(host.GetRequiredService<ILoggerFactory>());
+        services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
+        services.AddRouting();
+        services.Configure<GatewayOptions>(o =>
+        {
+            o.AllowSettingsChanges = false; // view only (behavior 6)
+            o.HomePrivacy = options.HomePrivacy;
+            o.MaxViewers = 20;
+        });
+
+        // No sign-in (F1.36 is later): with no session nobody is an operator, so every call is a viewer's.
+        services.AddSingleton(sp => new OperatorStore(
+            Path.Combine(options.WebRoot, "no-operators"),
+            sp.GetRequiredService<IOptionsMonitor<GatewayOptions>>()
+        ));
+        services.AddSingleton<OperatorSessions>();
+        services.AddSingleton<SignInAudit>();
+        services.AddSingleton<OperatorFilter>();
+        services.AddSingleton<HomeShields>();
+        services.AddSingleton<Viewers>();
+        services.AddSingleton<ViewerFilter>();
+        services
+            .AddSignalR(o =>
+            {
+                o.AddFilter<ViewerFilter>();
+                o.AddFilter<OperatorFilter>();
+                o.MaximumReceiveMessageSize = 64 * 1024;
+            })
+            .AddJsonProtocol(o =>
+                o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default)
+            );
+
+        var app = builder.Build();
+        app.UseGatewayFront(new GatewayOptions());
+        app.UseViewerGate();
+        app.UseBrowserApp();
+        app.UseRouting();
+        app.MapHub<EngineHubEndpoint>(EngineHub.Path);
+        app.MapTiles();
+        // AGPL-3.0 section 13: users interacting over a network are offered the corresponding source.
+        app.MapGet("/source", () => Results.Redirect(Brand.SourceUrl));
+        await app.StartAsync(cancellationToken).ConfigureAwait(false);
+
+        return new WebViewer(app, AddressesFor(options));
+    }
+
+    /// <summary>
+    /// The addresses to open (behavior 4): this computer's, and with the local network, each network address the
+    /// computer has (IPv4, interfaces that are up and not loopback), as other devices reach it.
+    /// </summary>
+    internal static IReadOnlyList<Uri> AddressesFor(WebViewerOptions options)
+    {
+        var port = options.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        List<Uri> addresses = [new($"http://localhost:{port}/")];
+        if (options.LocalNetwork)
+        {
+            addresses.AddRange(
+                System
+                    .Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()
+                    .Where(n =>
+                        n.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up
+                        && n.NetworkInterfaceType != System.Net.NetworkInformation.NetworkInterfaceType.Loopback
+                    )
+                    .SelectMany(n => n.GetIPProperties().UnicastAddresses)
+                    .Select(a => a.Address)
+                    .Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    .Distinct()
+                    .Select(a => new Uri($"http://{a}:{port}/"))
+            );
+        }
+        return addresses;
+    }
+
+    /// <summary>Stops listening; connected browsers are told the station went away and try again.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        await _app.StopAsync().ConfigureAwait(false);
+        await _app.DisposeAsync().ConfigureAwait(false);
+    }
+}
