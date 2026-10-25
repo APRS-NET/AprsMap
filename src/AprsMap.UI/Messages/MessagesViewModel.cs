@@ -220,6 +220,32 @@ public sealed partial class MessagesViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// What can send changed (Transmit turned on or off, a source able to send or not): the open conversation's route
+    /// line is worked out again, so a "Transmit is off" line goes once it's on (behavior 8).
+    /// </summary>
+    internal async Task RefreshRouteAsync()
+    {
+        if (Selected is not { } open)
+        {
+            return;
+        }
+        try
+        {
+            var conversation = (await _engine.GetConversationsAsync()).FirstOrDefault(c =>
+                Same(c.Correspondent, open.Correspondent)
+            );
+            if (Selected == open)
+            {
+                ShowRoute(conversation);
+            }
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            // The status poll carries on; the line is worked out again next time.
+        }
+    }
+
     /// <summary>Says which way the next message goes, or why it waits and what to change (behavior 8).</summary>
     private void ShowRoute(Conversation? conversation)
     {

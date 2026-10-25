@@ -43,6 +43,7 @@ public class PaletteTests
         }
         Check("Text", "AccentSoft"); // the wizard's confirmation line
         Check("Text", "OkSoft"); // the connected status pill
+        Check("Text", "TransmitSoft"); // the Transmit pill while transmitting
 
         Assert.Empty(failures);
 

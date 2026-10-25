@@ -1256,6 +1256,8 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
+    private string? _canSend;
+
     private void ShowToggles(StationToggles toggles)
     {
         InternetOn = toggles.Internet;
@@ -1510,6 +1512,18 @@ public sealed partial class MainViewModel : ObservableObject
             ? _text.Format("Capture.Status", new Dictionary<string, object?> { ["count"] = captured })
             : null;
         ShowToggles(status.Toggles ?? StationToggles.AllOn);
+        // What can send: when it changes, the open conversation's route line follows (F2.4 behavior 8).
+        var canSend = string.Join(
+            '|',
+            (status.Toggles ?? StationToggles.AllOn).Transmit,
+            status.Transmit?.Blocked?.Code,
+            string.Join(',', (status.Sources ?? []).Select(s => $"{s.Id}:{s.CanTransmit}:{s.TransmitBlocked?.Code}"))
+        );
+        if (canSend != _canSend)
+        {
+            _canSend = canSend;
+            _ = _messagesPanel?.RefreshRouteAsync();
+        }
         _engineUnreachable = false;
         ShowConnection();
         ShowSourcePills(status); // after the transmit state, which their Send position now follows
