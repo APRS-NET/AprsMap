@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0-alpha.6](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.5...v0.5.0-alpha.6) (2026-10-25)
+
+
+### Features
+
+* **gps:** a radio's GPS on its TNC port places the station ([c887ac5](https://github.com/APRS-NET/AprsMap/commit/c887ac5e78a81b393ec7a2cd2fdd3c1f1242e3a8)), closes [#362](https://github.com/APRS-NET/AprsMap/issues/362)
+
+
+### Bug Fixes
+
+* **deps:** APRS.NET 0.6.0-alpha.4 ([594b3e3](https://github.com/APRS-NET/AprsMap/commit/594b3e34b0397fdc0915fc675d05d99d2e388b97))
+* **engine:** a settings save no longer turns the switches back ([d68de54](https://github.com/APRS-NET/AprsMap/commit/d68de5412944683317efe3b0d3f567d01f4d861b))
+* **ui:** a light red Transmit pill while transmitting, and the messages route line follows Transmit ([4edee8d](https://github.com/APRS-NET/AprsMap/commit/4edee8d126e98897b71d9afc9b707f46da5e6a8b))
+* **web:** the page no longer fades in and out for viewers, and its text is Inter ([ee48362](https://github.com/APRS-NET/AprsMap/commit/ee48362e390336bb204d2fa8f175b003fbcc6cba))
+
 ## [0.5.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.4...v0.5.0-alpha.5) (2026-10-25)
 
 
