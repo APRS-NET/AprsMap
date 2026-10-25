@@ -91,6 +91,61 @@ public sealed class WebViewerTests(GatewayFactory gateway) : IClassFixture<Gatew
     }
 
     [Fact]
+    public async Task ItStopsWhileABrowserIsStillWatching()
+    {
+        var viewer = await StartAsync();
+        await using var browser = RemoteEngineService.Create(viewer.Addresses[0]);
+        await browser.StartAsync(Ct);
+        using var watching = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var streams = new[]
+        {
+            Drain(browser.WatchStationsAsync(null, watching.Token)),
+            Drain(browser.WatchPacketsAsync(null, watching.Token)),
+            Drain(browser.WatchBulletinsAsync(watching.Token)),
+        };
+        await browser.GetStatusAsync(Ct);
+
+        // The app closing with a tab still open (F4.15 behavior 11: Restart now waits for this before the update).
+        await viewer.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), Ct);
+
+        await watching.CancelAsync();
+        foreach (var stream in streams)
+        {
+            await stream.ContinueWith(_ => { }, TaskScheduler.Default);
+        }
+    }
+
+    [Fact]
+    public async Task ItStopsFromAThreadWhoseDispatcherHasStopped()
+    {
+        var viewer = await StartAsync();
+        var stopped = false;
+
+        // As the desktop app closes: the UI thread's context is still set, and nothing runs what's posted to it.
+        var thread = new Thread(() =>
+        {
+            SynchronizationContext.SetSynchronizationContext(new StoppedDispatcherContext());
+            stopped = viewer.DisposeAsync().AsTask().Wait(TimeSpan.FromSeconds(10));
+        });
+        thread.Start();
+        thread.Join();
+
+        Assert.True(stopped);
+    }
+
+    private sealed class StoppedDispatcherContext : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object? state) { }
+
+        public override void Send(SendOrPostCallback d, object? state) { }
+    }
+
+    private static async Task Drain<T>(IAsyncEnumerable<T> stream)
+    {
+        await foreach (var _ in stream) { }
+    }
+
+    [Fact]
     public async Task ATakenPortFailsToStart()
     {
         var port = FreePort();
