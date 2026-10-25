@@ -64,9 +64,10 @@
     <Style Selector="Border#ConnectionPill.warn TextBlock#ConnectionLabel">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
     </Style>
-    <!-- The Transmit switch (F2.1 behavior 6): a source pill's look, outlined in the transmit colour while it's on and in
-         the warning colour while it's held. -->
+    <!-- The Transmit switch (F2.1 behavior 6): a source pill's look; while it's on, a light red fill and the transmit
+         colour's outline, so transmitting is plain at a glance (maintainer, 2026-10-25); the warning colour while held. -->
     <Style Selector="Border#TransmitPill.transmitting">
+      <Setter Property="Background" Value="{DynamicResource Brush.TransmitSoft}" />
       <Setter Property="BorderBrush" Value="{DynamicResource Brush.Transmit}" />
     </Style>
   </UserControl.Styles>
