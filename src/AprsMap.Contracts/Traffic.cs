@@ -67,6 +67,12 @@ public enum TrafficKind
 
     /// <summary>A report gpsd sent, a line of JSON (docs/features/F3.12-gps-status.md, behavior 6).</summary>
     GpsdReport,
+
+    /// <summary>
+    /// A line that started as a GPS sentence but was cut off or had a wrong checksum, dropped
+    /// (docs/features/F3.13-tnc-gps.md, behavior 6).
+    /// </summary>
+    DamagedGpsSentence,
 }
 
 /// <summary>

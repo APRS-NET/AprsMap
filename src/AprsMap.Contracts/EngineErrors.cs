@@ -372,6 +372,12 @@ public static class EngineErrorCodes
     /// <summary>The downloaded device list is no newer than the one in use: thrown away (behavior 8).</summary>
     public const string DeviceListNotNewer = "devicelist.not-newer";
 
+    /// <summary>
+    /// A radio whose GPS is set to On sends no GPS sentences (docs/features/F3.13-tnc-gps.md, behavior 3); some radios,
+    /// such as the TH-D72A, send GPS only in their APRS mode.
+    /// </summary>
+    public const string TncGpsMissing = "source.tnc-gps-missing";
+
     /// <summary>The release list couldn't be reached: no network, or GitHub down (F4.15 behavior 7).</summary>
     public const string UpdatesUnreachable = "updates.unreachable";
 

@@ -26,6 +26,13 @@
       <StackPanel x:Name="GpsDetails" Spacing="8" IsVisible="{Binding HasGps}" Grid.IsSharedSizeScope="True">
         <TextBlock x:Name="FixLabel" Text="{Binding FixText}" FontWeight="SemiBold" TextWrapping="Wrap" />
         <TextBlock
+          x:Name="GpsFromLabel"
+          Text="{Binding FromText}"
+          IsVisible="{Binding FromText, Converter={x:Static ObjectConverters.IsNotNull}}"
+          Foreground="{DynamicResource Brush.TextMuted}"
+          TextWrapping="Wrap"
+        />
+        <TextBlock
           Text="{Binding PositionText}"
           IsVisible="{Binding PositionText, Converter={x:Static ObjectConverters.IsNotNull}}"
         />

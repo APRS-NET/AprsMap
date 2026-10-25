@@ -154,6 +154,16 @@ public sealed partial class SourcePill : ObservableObject
             noFix = gps is not { HasPosition: true };
             Text = GpsText(status.Name, gps, hasFixedLocation);
         }
+        // A radio whose GPS is the one in use says what it knows too (docs/features/F3.13-tnc-gps.md, behavior 5);
+        // without a fix it's still a working radio, so it isn't warned about.
+        else if (
+            gps is not null
+            && status
+                is { Kind: SourceKind.AprsTextSerial, Enabled: true, State: ConnectionState.Connected, Warning: null }
+        )
+        {
+            Text = GpsText(status.Name, gps, hasFixedLocation);
+        }
         // A source that never sends says so on its pill (F2.1 behavior 5; maintainer, 2026-10-18).
         if (status.Enabled && !status.MaySend && status.Kind is not SourceKind.Gps)
         {
