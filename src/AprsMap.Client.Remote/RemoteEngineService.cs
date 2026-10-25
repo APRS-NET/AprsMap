@@ -90,13 +90,21 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     public IAsyncEnumerable<PacketView> WatchPacketsAsync(
         PacketFilter? filter = null,
         CancellationToken cancellationToken = default
-    ) => _connection.StreamAsync<PacketView>(EngineHub.WatchPackets, filter, cancellationToken);
+    ) =>
+        StreamWithEngineErrors(
+            _connection.StreamAsync<PacketView>(EngineHub.WatchPackets, filter, cancellationToken),
+            cancellationToken
+        );
 
     /// <inheritdoc />
     public IAsyncEnumerable<StationBatch> WatchStationsAsync(
         StationFilter? filter = null,
         CancellationToken cancellationToken = default
-    ) => _connection.StreamAsync<StationBatch>(EngineHub.WatchStations, filter, cancellationToken);
+    ) =>
+        StreamWithEngineErrors(
+            _connection.StreamAsync<StationBatch>(EngineHub.WatchStations, filter, cancellationToken),
+            cancellationToken
+        );
 
     /// <inheritdoc />
     public Task SetToggleAsync(Toggle toggle, bool enabled, CancellationToken cancellationToken = default) =>
@@ -229,7 +237,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
 
     /// <inheritdoc />
     public IAsyncEnumerable<BulletinView> WatchBulletinsAsync(CancellationToken cancellationToken = default) =>
-        _connection.StreamAsync<BulletinView>(EngineHub.WatchBulletins, cancellationToken);
+        StreamWithEngineErrors(
+            _connection.StreamAsync<BulletinView>(EngineHub.WatchBulletins, cancellationToken),
+            cancellationToken
+        );
 
     /// <inheritdoc />
     public Task<UpdateStatus> GetUpdateStatusAsync(CancellationToken cancellationToken = default) =>
@@ -411,7 +422,12 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
 
     /// <inheritdoc />
     public IAsyncEnumerable<ChatMessage> WatchMessagesAsync(CancellationToken cancellationToken = default) =>
-        _connection.StreamAsync<ChatMessage>(EngineHub.WatchMessages, cancellationToken);
+        // A viewer is refused (messages are the operator's): decoded, so the panel says why rather than the page
+        // taking the refusal for a lost connection.
+        StreamWithEngineErrors(
+            _connection.StreamAsync<ChatMessage>(EngineHub.WatchMessages, cancellationToken),
+            cancellationToken
+        );
 
     /// <inheritdoc />
     public Task<IReadOnlyList<ChatMessage>> SendMessageAsync(
