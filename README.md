@@ -10,14 +10,15 @@ macOS, and a web app served by a Docker gateway, both running the same UI on the
 from [APRS.NET](https://github.com/APRS-NET/APRS.NET). The feature set is a clean-room reimplementation of the
 functionality of APRSIS32, redesigned with a modern UI (see [docs/clean-room.md](docs/clean-room.md)).
 
-Status: `0.5.0-alpha.1`, working towards `0.6.0`. The app receives and transmits over APRS-IS and your own TNCs: KISS
+Status: `0.6.0-alpha.1`, working towards `0.7.0`. The app receives and transmits over APRS-IS and your own TNCs: KISS
 over TCP (Direwolf, soundmodem) and on serial ports (a TH-D72A's built-in TNC, TNC-X, NinoTNC), or a TNC's text output.
-It shows the stations on a live map with their tracks and RF paths, with station and packet lists, station details
-(weather, telemetry, anomalies) and a dashboard of live numbers, on the desktop and in the browser. Licensed operators
-turn on one Transmit switch to send their position by hand or as a beacon, messages with acks and retries, and
-bulletins; unlicensed users listen with a generated listener ID. The gateway can run as a public receive-only page with
-a private operator port and operator sign-in, and the desktop app installs and updates itself. Next are objects, GPS
-and a receive-only IGate.
+It shows the stations on a live map with their tracks, RF paths and dead-reckoned positions, with station and packet
+lists, station details and a dashboard, on the desktop and in the browser. Licensed operators send their position by
+hand or as a beacon (fixed, decaying, or SmartBeaconing from a GPS), statuses, objects and items, messages with acks
+and auto-replies, and answer APRS queries; a receive-only IGate passes what their TNCs hear to APRS-IS. A GPS on serial,
+TCP or gpsd places the station, with a sky view of its satellites. The desktop app can share its station with browsers
+on the network, keeps its device list current, and checks for updates every two hours; every release carries an SBOM.
+Next are station lists, two-way IGate and a radio's GPS on its TNC port.
 See [docs/status.md](docs/status.md) for what
 to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 
