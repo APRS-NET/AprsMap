@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.4...v0.5.0-alpha.5) (2026-10-25)
+
+
+### Features
+
+* **desktop:** share the station with browsers, view only ([0b6ae9f](https://github.com/APRS-NET/AprsMap/commit/0b6ae9f4b6e0f3fbf4ecdc2525d436eae980b01b)), closes [#364](https://github.com/APRS-NET/AprsMap/issues/364)
+* **updates:** check on start and every two hours, warn when a check fails ([f8e75a7](https://github.com/APRS-NET/AprsMap/commit/f8e75a71d462b591083f7eedd2b91fc0aa20d404))
+
+
+### Bug Fixes
+
+* **deps:** release APRS.NET 0.6.0-alpha.2 and the OpenTelemetry updates ([341c23d](https://github.com/APRS-NET/AprsMap/commit/341c23d9345ad7fb9eeb8a6efd73f09c3243e9bb))
+
 ## [0.5.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.3...v0.5.0-alpha.4) (2026-10-21)
 
 
