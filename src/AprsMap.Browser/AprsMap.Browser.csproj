@@ -27,6 +27,8 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Browser" />
+    <!-- A browser has no system fonts for the app to use: Inter, a UI font (SIL Open Font Licence), is bundled. -->
+    <PackageReference Include="Avalonia.Fonts.Inter" />
   </ItemGroup>
 
   <!-- Trimming (F1.0 implementation notes). Every assembly reports its trim warnings one by one, and they fail the

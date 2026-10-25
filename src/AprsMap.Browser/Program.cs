@@ -8,6 +8,7 @@ using AprsMap.UI.Platform;
 using AprsMap.UI.Shell;
 using Avalonia;
 using Avalonia.Browser;
+using Avalonia.Media;
 
 namespace AprsMap.Browser;
 
@@ -130,6 +131,10 @@ internal static class Program
     private static AppBuilder BuildAvaloniaApp(RemoteEngineService engine, PlatformServices platform) =>
         AppBuilder
             .Configure(() => new App(engine, platform))
+            // WebAssembly has no system fonts, and Avalonia's own fallback is heavy and hard to read: Inter, a UI font,
+            // is the app's text in the browser.
+            .WithInterFont()
+            .With(new FontManagerOptions { DefaultFamilyName = "fonts:Inter#Inter" })
             .With(new SkiaOptions { MaxGpuResourceSizeBytes = GpuBudget(StartupPage.ScreenPixels()) })
             .LogToTrace();
 
