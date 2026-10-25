@@ -13,12 +13,83 @@ namespace AprsMap.Core;
 /// (reconnecting with the reason and the wait) are passed on, with any warning the connection raises (behavior 13).
 /// Frames that aren't APRS are dropped by APRS.NET.
 /// </summary>
-internal sealed class KissPacketSource(KissConnection connection, string endpoint, TncSetup? setup = null)
-    : IPacketSource,
-        IPacketSender,
-        ITrafficSource,
-        ITncConsole
+/// <param name="connection">The TNC.</param>
+/// <param name="endpoint">Where it is, for the pill.</param>
+/// <param name="setup">How it's switched into KISS, for a KISS TNC with a type.</param>
+/// <param name="gps">
+/// Whether the radio's GPS sentences (TNC text output only) place the station (docs/features/F3.13-tnc-gps.md): Off
+/// listens to none; Auto passes them on; On also warns when none arrive.
+/// </param>
+/// <param name="time">The clock the On warning waits by.</param>
+internal sealed class KissPacketSource(
+    KissConnection connection,
+    string endpoint,
+    TncSetup? setup = null,
+    TncGps gps = TncGps.Off,
+    TimeProvider? time = null
+) : IPacketSource, IPacketSender, ITrafficSource, ITncConsole, IGpsSource
 {
+    private readonly NmeaFixTracker _tracker = new();
+    private bool _gpsMissing; // On, and no GPS sentences for the connection's timeout (behavior 3), under _lock
+    private ITimer? _gpsWait;
+
+    /// <inheritdoc />
+    public Action<GpsFix>? Fixes { get; set; }
+
+    /// <inheritdoc />
+    public Action<GpsQuality, IReadOnlyList<GpsSatellite>>? Sky { get; set; }
+
+    /// <summary>A sentence from the radio's GPS (behavior 2): into the tracker, and its fix and sky to the engine.</summary>
+    private void OnSentence(object? sender, NmeaSentenceEventArgs e)
+    {
+        var (quality, satellites) = (_tracker.Quality, _tracker.Satellites);
+        if (_tracker.Update(e.Sentence))
+        {
+            Fixes?.Invoke(_tracker.Fix);
+        }
+        if (!Equals(_tracker.Quality, quality) || !ReferenceEquals(_tracker.Satellites, satellites))
+        {
+            Sky?.Invoke(_tracker.Quality, _tracker.Satellites);
+        }
+    }
+
+    /// <summary>The radio's GPS came or went: with On, gone (or never there) is a warning (behavior 3).</summary>
+    private void OnPresence(object? sender, GpsPresenceChangedEventArgs e) => SetGpsMissing(!e.IsPresent);
+
+    private void SetGpsMissing(bool missing)
+    {
+        PacketSourceEvent? last;
+        lock (_lock)
+        {
+            if (gps != TncGps.On || _gpsMissing == missing)
+            {
+                return;
+            }
+            _gpsMissing = missing;
+            last = _last;
+        }
+        Report(last ?? new PacketSourceEvent(ConnectionState.Connected, new PacketSourceLogin(endpoint, false)));
+    }
+
+    /// <summary>
+    /// Connected with On: if no sentence has come by the connection's timeout, says so (APRS.NET only reports a GPS that
+    /// went away, not one that never came).
+    /// </summary>
+    private void WaitForGps()
+    {
+        if (gps != TncGps.On)
+        {
+            return;
+        }
+        _gpsWait?.Dispose();
+        _gpsWait = (time ?? TimeProvider.System).CreateTimer(
+            _ => SetGpsMissing(!connection.IsGpsPresent),
+            null,
+            connection.GpsTimeout,
+            Timeout.InfiniteTimeSpan
+        );
+    }
+
     // The read loop runs ahead of the engine; a slow engine loses the oldest packets rather than stalling the TNC.
     private readonly Channel<AprsPacket> _packets = Channel.CreateBounded<AprsPacket>(
         new BoundedChannelOptions(1000) { FullMode = BoundedChannelFullMode.DropOldest, SingleReader = true }
@@ -43,6 +114,11 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
         _changed = stateChanged;
         connection.StateChanged += OnStateChanged;
         connection.Warning += OnWarning;
+        if (gps != TncGps.Off)
+        {
+            connection.NmeaSentenceReceived += OnSentence;
+            connection.GpsPresenceChanged += OnPresence;
+        }
         _pump = PumpAsync(_stop.Token);
         return await _first.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -82,6 +158,7 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
             if (e.State == KissConnectionState.Connected)
             {
                 _wasConnected = true;
+                WaitForGps();
                 _first.TrySetResult(new PacketSourceLogin(endpoint, Verified: false));
             }
             else if (e.State == KissConnectionState.Reconnecting)
@@ -95,6 +172,7 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
         if (e.State == KissConnectionState.Connected)
         {
             _wasConnected = true;
+            WaitForGps();
         }
         var state = e.State switch
         {
@@ -151,6 +229,11 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
             ? new EngineError(EngineErrorCodes.KissTextNotKiss, "The TNC is sending text, not KISS frames.")
         : _warnings.Contains(KissWarning.Quiet)
             ? new EngineError(EngineErrorCodes.KissQuiet, "The TNC has sent nothing for a while.")
+        : _gpsMissing
+            ? new EngineError(
+                EngineErrorCodes.TncGpsMissing,
+                "No GPS sentences from the radio: some radios, such as the TH-D72A, send GPS only in APRS mode, not KISS."
+            )
         : null;
 
     /// <summary>
@@ -218,9 +301,11 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
                 KissTrafficKind.SetupSent => TrafficKind.SetupSent,
                 KissTrafficKind.SetupReceived => TrafficKind.SetupReceived,
                 KissTrafficKind.SetupFailed => TrafficKind.SetupFailed,
+                KissTrafficKind.Nmea => TrafficKind.GpsSentence, // the radio's GPS (F3.13 behavior 6)
+                KissTrafficKind.DamagedNmea => TrafficKind.DamagedGpsSentence,
                 _ => TrafficKind.Unframed,
             },
-            e.Packet?.ToString() ?? (e.Text.Length > 0 ? e.Text : null),
+            e.Packet?.ToString() ?? e.Sentence?.Text ?? (e.Text.Length > 0 ? e.Text : null),
             bytes.ToArray(),
             e.Port,
             e.DropReason?.ToString() ?? e.SetupStep?.ToString(),
@@ -253,6 +338,9 @@ internal sealed class KissPacketSource(KissConnection connection, string endpoin
         WatchTraffic(null);
         connection.StateChanged -= OnStateChanged;
         connection.Warning -= OnWarning;
+        connection.NmeaSentenceReceived -= OnSentence;
+        connection.GpsPresenceChanged -= OnPresence;
+        _gpsWait?.Dispose();
         await _stop.CancelAsync().ConfigureAwait(false);
         await connection.DisposeAsync().ConfigureAwait(false);
         if (_pump is { } pump)

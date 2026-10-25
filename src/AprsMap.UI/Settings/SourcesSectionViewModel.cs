@@ -43,9 +43,47 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         nameof(ShowsHost),
         nameof(ShowsTncSerialParts),
         nameof(PortPlaceholder),
-        nameof(BaudPlaceholder)
+        nameof(BaudPlaceholder),
+        nameof(IsTextSerial)
     )]
     public partial SourceKind EditKind { get; set; } = SourceKind.AprsIs;
+
+    /// <summary>Whether the form is for TNC text output, which may carry the radio's GPS (F3.13 behavior 1).</summary>
+    public bool IsTextSerial => EditKind == SourceKind.AprsTextSerial;
+
+    /// <summary>The radio's GPS choice in the form: Auto, On, Off (docs/features/F3.13-tnc-gps.md, behavior 1).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TncGpsAuto), nameof(TncGpsOn), nameof(TncGpsOff))]
+    public partial TncGps EditTncGps { get; set; } = TncGps.Auto;
+
+    /// <summary>Use the radio's GPS once it's heard (the default).</summary>
+    public bool TncGpsAuto
+    {
+        get => EditTncGps == TncGps.Auto;
+        set => SetTncGps(value, TncGps.Auto);
+    }
+
+    /// <summary>Expect the radio's GPS, and warn when none comes.</summary>
+    public bool TncGpsOn
+    {
+        get => EditTncGps == TncGps.On;
+        set => SetTncGps(value, TncGps.On);
+    }
+
+    /// <summary>Ignore the radio's GPS.</summary>
+    public bool TncGpsOff
+    {
+        get => EditTncGps == TncGps.Off;
+        set => SetTncGps(value, TncGps.Off);
+    }
+
+    private void SetTncGps(bool chosen, TncGps gps)
+    {
+        if (chosen)
+        {
+            EditTncGps = gps;
+        }
+    }
 
     /// <summary>Whether the form shows APRS-IS's server and filter.</summary>
     public bool IsAprsIs => EditKind == SourceKind.AprsIs;
@@ -623,6 +661,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         SelectedTncType = null;
         EditKind = SourceKind.AprsIs;
         EditGpsLink = GpsLink.Serial;
+        EditTncGps = TncGps.Auto;
         CanPickKind = true;
         EditRxOnly = false;
         EditTxPath = string.Empty;
@@ -660,6 +699,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         SelectedTncType = null;
         EditKind = row.Source.Kind;
         EditGpsLink = row.Source.GpsLink ?? GpsLink.Serial;
+        EditTncGps = row.Source.TncGps ?? TncGps.Auto;
         CanPickKind = false;
         EditServer = row.Source.Server ?? string.Empty;
         EditFilter = row.Source.Filter ?? string.Empty;
@@ -803,6 +843,8 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 TncType = IsKissSerial ? SelectedTncType?.Id : null,
                 EnterScript = custom ? EditEnterScript.Trim() : null,
                 LeaveScript = custom && EditLeaveScript.Trim().Length > 0 ? EditLeaveScript.Trim() : null,
+                // The radio's GPS (F3.13): kept only where it means something, Auto unwritten.
+                TncGps = IsTextSerial && EditTncGps != TncGps.Auto ? EditTncGps : null,
             };
         }
         else

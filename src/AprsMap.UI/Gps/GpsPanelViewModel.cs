@@ -35,6 +35,10 @@ public sealed partial class GpsPanelViewModel : ObservableObject
     [ObservableProperty]
     public partial bool HasGps { get; private set; }
 
+    /// <summary>"From TH-D72A": the GPS in use, a GPS source or a radio (docs/features/F3.13-tnc-gps.md, behavior 5).</summary>
+    [ObservableProperty]
+    public partial string? FromText { get; private set; }
+
     /// <summary>"3D fix", "2D fix", "No fix", with "not fresh" when it's old (behavior 2).</summary>
     [ObservableProperty]
     public partial string? FixText { get; private set; }
@@ -74,9 +78,13 @@ public sealed partial class GpsPanelViewModel : ObservableObject
     public IAsyncRelayCommand OpenConsoleCommand { get; }
 
     /// <summary>Shows the GPS's status, in <paramref name="units"/>.</summary>
-    internal void Show(GpsStatus? gps, UnitSettings units)
+    internal void Show(GpsStatus? gps, UnitSettings units, string? sourceName = null)
     {
         HasGps = gps is not null;
+        FromText =
+            gps is not null && sourceName is not null
+                ? _text.Format("Gps.From", new Dictionary<string, object?> { ["source"] = sourceName })
+                : null;
         if (_sourceId != gps?.SourceId)
         {
             _sourceId = gps?.SourceId;

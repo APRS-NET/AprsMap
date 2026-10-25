@@ -469,6 +469,33 @@
                     Foreground="{DynamicResource Brush.TextMuted}"
                     TextWrapping="Wrap"
                   />
+                  <!-- The radio's GPS in its text output (F3.13 behavior 1): Auto, On or Off. -->
+                  <StackPanel x:Name="TncGpsChoice" Spacing="4" IsVisible="{Binding Sources.IsTextSerial}">
+                    <TextBlock Text="{l:T Settings.Sources.TncGps}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <RadioButton
+                      x:Name="TncGpsAutoBox"
+                      GroupName="TncGps"
+                      Content="{l:T Settings.Sources.TncGps.Auto}"
+                      IsChecked="{Binding Sources.TncGpsAuto}"
+                    />
+                    <RadioButton
+                      x:Name="TncGpsOnBox"
+                      GroupName="TncGps"
+                      Content="{l:T Settings.Sources.TncGps.On}"
+                      IsChecked="{Binding Sources.TncGpsOn}"
+                    />
+                    <RadioButton
+                      x:Name="TncGpsOffBox"
+                      GroupName="TncGps"
+                      Content="{l:T Settings.Sources.TncGps.Off}"
+                      IsChecked="{Binding Sources.TncGpsOff}"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.TncGps.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
                   <!-- A GPS (F3.6 behavior 1): NMEA on a serial port or over TCP, or gpsd. -->
                   <StackPanel x:Name="GpsLinkChoice" Spacing="4" IsVisible="{Binding Sources.IsGps}">
                     <TextBlock Text="{l:T Settings.Sources.GpsLink}" Foreground="{DynamicResource Brush.TextMuted}" />

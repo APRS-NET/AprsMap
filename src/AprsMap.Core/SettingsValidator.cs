@@ -175,7 +175,17 @@ internal static class SettingsValidator
                     profile.Name
                 );
             }
-            if (profile.SourceIds.Count(id => sources[id].Kind == SourceKind.Gps) > 1)
+            // One GPS a profile (F3.6 decision 2): a GPS source and a radio whose GPS is On would be two; a radio on Auto
+            // steps aside (docs/features/F3.13-tnc-gps.md, behavior 4).
+            if (
+                profile.SourceIds.Count(id => sources[id].Kind == SourceKind.Gps)
+                    + (
+                        profile.SourceIds.Any(id => sources[id].Kind == SourceKind.Gps)
+                            ? profile.SourceIds.Count(id => sources[id].EffectiveTncGps == TncGps.On)
+                            : 0
+                    )
+                > 1
+            )
             {
                 throw Fail(
                     EngineErrorCodes.ProfileTwoGps,

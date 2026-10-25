@@ -303,10 +303,14 @@ public sealed partial class MainViewModel : ObservableObject
     private Gps.GpsPanelViewModel? _gpsPanel;
 
     /// <summary>Opens the GPS panel, from the GPS pill's menu (F3.12 behavior 1).</summary>
+    /// <summary>The name of the GPS in use (a GPS source or a radio, F3.13 behavior 5), for the GPS panel.</summary>
+    private string? GpsSourceName(GpsStatus? gps) =>
+        gps is null ? null : _settings?.SourceList.FirstOrDefault(s => s.Id == gps.SourceId)?.Name;
+
     internal void OpenGps()
     {
         ShowPanel(PanelKinds.Gps);
-        Gps.Show(_status?.Gps, _settings?.Units ?? UnitSettings.Metric);
+        Gps.Show(_status?.Gps, _settings?.Units ?? UnitSettings.Metric, GpsSourceName(_status?.Gps));
     }
 
     internal async Task OpenConsoleAsync(string sourceId, bool commandLine)
@@ -1493,7 +1497,7 @@ public sealed partial class MainViewModel : ObservableObject
         FilterAreas = status.FilterAreas;
         _gps = status.Gps;
         ShowHomePosition();
-        _gpsPanel?.Show(status.Gps, _settings?.Units ?? UnitSettings.Metric); // F3.12 behavior 7
+        _gpsPanel?.Show(status.Gps, _settings?.Units ?? UnitSettings.Metric, GpsSourceName(status.Gps)); // F3.12 behavior 7
         Settings?.Data?.DeviceList?.Show(status.DeviceList); // F4.16 behavior 9
         Settings?.Sources?.ShowIGate(status.IGate); // the IGate's counts move on while Settings is open (F3.4)
         Details.Refresh(); // "heard 4 minutes ago" moves on with the status poll

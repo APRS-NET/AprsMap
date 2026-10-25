@@ -118,6 +118,31 @@
   <data name="Settings.Sources.Kind.Gps" xml:space="preserve">
     <value>GPS</value>
   </data>
+  <data name="Settings.Sources.TncGps" xml:space="preserve">
+    <value>The radio's GPS</value>
+  </data>
+  <data name="Settings.Sources.TncGps.Auto" xml:space="preserve">
+    <value>Use it when the radio sends it</value>
+  </data>
+  <data name="Settings.Sources.TncGps.On" xml:space="preserve">
+    <value>Expect it, and warn when none comes</value>
+  </data>
+  <data name="Settings.Sources.TncGps.Off" xml:space="preserve">
+    <value>Ignore it</value>
+  </data>
+  <data name="Settings.Sources.TncGps.Help" xml:space="preserve">
+    <value>Some radios, such as the TH-D72A, send their GPS position along with the packets in this mode. A GPS source in the profile is used first; the radio's stands in while it has no fix.</value>
+  </data>
+  <data name="Error.source.tnc-gps-missing" xml:space="preserve">
+    <value>No GPS sentences from the radio: some radios, such as the TH-D72A, send GPS only in APRS mode, not KISS.</value>
+  </data>
+  <data name="Console.Kind.DamagedGpsSentence" xml:space="preserve">
+    <value>GPS (damaged)</value>
+  </data>
+  <data name="Gps.From" xml:space="preserve">
+    <value>From {source}</value>
+    <comment>source: the GPS in use: a GPS source, or a radio.</comment>
+  </data>
   <data name="Settings.Sources.GpsLink" xml:space="preserve">
     <value>Connected by</value>
   </data>

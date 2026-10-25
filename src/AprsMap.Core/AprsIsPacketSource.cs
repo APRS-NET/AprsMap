@@ -127,7 +127,9 @@ internal sealed class AprsIsPacketSourceFactory(
             return new KissPacketSource(
                 new KissSerialConnection(SerialOptions(source, options.Value, timeProvider)),
                 source.SerialEndpoint ?? source.Name,
-                source.Kind == SourceKind.KissSerial ? SetupOf(source) : null
+                source.Kind == SourceKind.KissSerial ? SetupOf(source) : null,
+                source.EffectiveTncGps, // the radio's GPS, in its text output only (F3.13)
+                timeProvider
             );
         }
         if (source.Kind == SourceKind.KissTcp)
@@ -260,6 +262,7 @@ internal sealed class AprsIsPacketSourceFactory(
             ReconnectDelay = engine.InitialRetryDelay,
             MaxReconnectDelay = engine.MaxRetryDelay,
             QuietWarning = SerialQuietWarning,
+            GpsTimeout = engine.TncGpsTimeout, // the radio's GPS gone (F3.13 behavior 3)
             TimeProvider = time,
         };
 

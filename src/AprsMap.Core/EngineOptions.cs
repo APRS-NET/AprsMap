@@ -85,6 +85,12 @@ public sealed class EngineOptions
 
     /// <summary>The longest wait between reconnect attempts.</summary>
     public TimeSpan MaxRetryDelay { get; set; } = TimeSpan.FromMinutes(2);
+
+    /// <summary>
+    /// How long a radio's GPS may be silent before it's gone, and before a radio set to On warns that none came
+    /// (docs/features/F3.13-tnc-gps.md, behavior 3).
+    /// </summary>
+    public TimeSpan TncGpsTimeout { get; set; } = TimeSpan.FromSeconds(10);
 }
 
 /// <summary>A first-run KISS over TCP source: <c>Engine__Kiss__Host</c> and the rest.</summary>

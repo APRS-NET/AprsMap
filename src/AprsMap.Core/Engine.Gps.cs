@@ -59,16 +59,26 @@ public sealed partial class Engine
     /// <summary>How long a fix stands for the station's position (F3.6 decision 3).</summary>
     public static readonly TimeSpan GpsFreshFor = TimeSpan.FromSeconds(60);
 
-    private (string SourceId, GpsFix Fix, DateTimeOffset At)? _gps; // the latest, under _gate
+    /// <summary>What one GPS source has said (F3.6, F3.12): its latest fix, the latest with a position, and its sky.</summary>
+    private sealed class GpsTrack
+    {
+        public (GpsFix Fix, DateTimeOffset At)? Latest;
 
-    // The latest with a position: a GPS builds each second's fix sentence by sentence, so the latest can be one that
-    // hasn't said where yet. Under _gate.
-    private (string SourceId, GpsFix Fix, DateTimeOffset At)? _gpsPositioned;
-    private GpsFixMode _gpsMode; // the last 2D or 3D the GPS said, so the status doesn't flicker mid-second, under _gate
+        // The latest with a position: a GPS builds each second's fix sentence by sentence, so the latest can be one
+        // that hasn't said where yet.
+        public (GpsFix Fix, DateTimeOffset At)? Positioned;
+
+        public GpsFixMode Mode; // the last 2D or 3D it said, so the status doesn't flicker mid-second
+        public GpsAccuracy? Accuracy;
+        public IReadOnlyList<GpsSkySatellite>? Sky;
+    }
+
+    // Each GPS source's track, by source id: a GPS source, or a radio's GPS on its TNC port (F3.13). Under _gate.
+    private readonly Dictionary<string, GpsTrack> _gpsTracks = new(StringComparer.Ordinal);
     private AprsPosition? _filterCentre; // where my range was centred in the filter last sent, under _gate
 
-    // The GPS's latest quality and satellites in view (docs/features/F3.12-gps-status.md), under _gate.
-    private (string SourceId, GpsAccuracy Accuracy, IReadOnlyList<GpsSkySatellite> Sky)? _gpsSky;
+    private GpsTrack TrackLocked(string sourceId) =>
+        _gpsTracks.TryGetValue(sourceId, out var track) ? track : _gpsTracks[sourceId] = new GpsTrack();
 
     /// <summary>A GPS said how good its fix is and what it can see (F3.12 behaviors 3–5): kept for the status.</summary>
     private void OnGpsSky(string sourceId, GpsQuality quality, IReadOnlyList<GpsSatellite> satellites)
@@ -97,7 +107,9 @@ public sealed partial class Engine
         ];
         lock (_gate)
         {
-            _gpsSky = (sourceId, accuracy, sky);
+            var track = TrackLocked(sourceId);
+            track.Accuracy = accuracy;
+            track.Sky = sky;
         }
     }
 
@@ -114,23 +126,34 @@ public sealed partial class Engine
             _ => GnssConstellation.Unknown,
         };
 
-    /// <summary>A GPS source read a fix: kept, and the filter re-sent once the station has moved far enough.</summary>
+    /// <summary>
+    /// A GPS source read a fix: kept on its track. When it's the GPS in use (F3.13 behavior 4), the moving schedule
+    /// hears it and the filter is re-sent once the station has moved far enough.
+    /// </summary>
     private void OnGpsFix(string sourceId, GpsFix fix)
     {
         var now = _time.GetUtcNow();
         AprsPosition? centre;
+        bool inUse;
         lock (_gate)
         {
-            _gps = (sourceId, fix, now);
+            var track = TrackLocked(sourceId);
+            track.Latest = (fix, now);
             if (fix.Mode is GpsFixMode.Fix2D or GpsFixMode.Fix3D)
             {
-                _gpsMode = fix.Mode;
+                track.Mode = fix.Mode;
             }
             if (HasPosition(fix))
             {
-                _gpsPositioned = (sourceId, fix, now);
+                track.Positioned = (fix, now);
             }
             centre = _filterCentre;
+            var settings = _settings ?? AppSettings.Empty;
+            inUse = GpsInUseLocked(settings, settings.GetActiveProfile()).Source?.Id == sourceId;
+        }
+        if (!inUse)
+        {
+            return; // a GPS lower in priority, kept for when the one above has no fix
         }
         _beaconer.Moved(fix); // the moving schedule's speed and turns (#335)
         // My range follows the GPS once it has moved more than a quarter of the range (behavior 7.2).
@@ -149,23 +172,60 @@ public sealed partial class Engine
     {
         lock (_gate)
         {
-            if (_gps?.SourceId == sourceId)
-            {
-                _gps = null;
-                _gpsPositioned = null;
-            }
+            _gpsTracks.Remove(sourceId);
         }
     }
 
-    /// <summary>The GPS <paramref name="profile"/> uses (one at most, behavior 2), or null.</summary>
-    private static SourceSettings? GpsOf(AppSettings settings, StationProfile? profile) =>
-        profile is null ? null : settings.SourceList.FirstOrDefault(s => s.Kind == SourceKind.Gps && profile.Uses(s));
+    /// <summary>
+    /// The GPS sources <paramref name="profile"/> may be placed by, in priority (docs/features/F3.13-tnc-gps.md,
+    /// behavior 4): its GPS source, then radios whose GPS is On, then radios on Auto, each in the profile's order.
+    /// </summary>
+    private static IEnumerable<SourceSettings> GpsCandidates(AppSettings settings, StationProfile? profile)
+    {
+        if (profile is null)
+        {
+            return [];
+        }
+        var used = profile
+            .SourceIds.Select(id => settings.SourceList.FirstOrDefault(s => s.Id == id))
+            .OfType<SourceSettings>()
+            .ToList();
+        return used.Where(s => s.Kind == SourceKind.Gps)
+            .Concat(used.Where(s => s.EffectiveTncGps == TncGps.On))
+            .Concat(used.Where(s => s.EffectiveTncGps == TncGps.Auto));
+    }
 
-    /// <summary>The fresh fix with a position from <paramref name="profile"/>'s GPS, or null. Call under <see cref="_gate"/>.</summary>
+    private bool IsFresh(DateTimeOffset at) => _time.GetUtcNow() - at <= GpsFreshFor;
+
+    /// <summary>
+    /// The GPS in use (behavior 4): the first in priority with a fresh fix; without one, the first that's expected (a
+    /// GPS source, or a radio set to On) or a radio on Auto that has said something, so the status shows it; null with
+    /// none. Call under <see cref="_gate"/>.
+    /// </summary>
+    private (SourceSettings? Source, GpsTrack? Track) GpsInUseLocked(AppSettings settings, StationProfile? profile)
+    {
+        var candidates = GpsCandidates(settings, profile).ToList();
+        foreach (var source in candidates)
+        {
+            if (_gpsTracks.TryGetValue(source.Id, out var track) && track.Positioned is { At: var at } && IsFresh(at))
+            {
+                return (source, track);
+            }
+        }
+        foreach (var source in candidates)
+        {
+            var track = _gpsTracks.GetValueOrDefault(source.Id);
+            if (source.Kind == SourceKind.Gps || source.EffectiveTncGps == TncGps.On || track?.Latest is not null)
+            {
+                return (source, track);
+            }
+        }
+        return (null, null);
+    }
+
+    /// <summary>The fresh fix with a position from <paramref name="profile"/>'s GPS in use, or null. Call under <see cref="_gate"/>.</summary>
     private GpsFix? FreshFixLocked(StationProfile profile) =>
-        _gpsPositioned is var (sourceId, fix, at)
-        && _time.GetUtcNow() - at <= GpsFreshFor
-        && GpsOf(_settings ?? AppSettings.Empty, profile)?.Id == sourceId
+        GpsInUseLocked(_settings ?? AppSettings.Empty, profile) is { Track.Positioned: var (fix, at) } && IsFresh(at)
             ? fix
             : null;
 
@@ -194,31 +254,32 @@ public sealed partial class Engine
     /// <summary>Whether <paramref name="fix"/> says where the GPS is: a position, and not a GPS saying it has no fix.</summary>
     private static bool HasPosition(GpsFix fix) => fix.Position is not null && fix.Mode != GpsFixMode.NoFix;
 
-    /// <summary>The active profile's GPS and its fix, for the status (behaviors 4, 5). Call under <see cref="_gate"/>.</summary>
+    /// <summary>The active profile's GPS in use and its fix, for the status (behaviors 4, 5). Call under <see cref="_gate"/>.</summary>
     private GpsStatus? GpsStatusLocked()
     {
         var settings = _settings ?? AppSettings.Empty;
-        if (GpsOf(settings, settings.GetActiveProfile()) is not { } gps)
+        if (GpsInUseLocked(settings, settings.GetActiveProfile()) is not ({ } gps, var track))
         {
             return null;
         }
         // The latest fix that said where the GPS is, unless the GPS has said since that it has none.
-        var latest = _gps is { Fix.Mode: GpsFixMode.NoFix } ? _gps : _gpsPositioned ?? _gps;
-        var (accuracy, sky) = _gpsSky is var (skyFrom, a, s) && skyFrom == gps.Id ? (a, s) : (null, null);
-        if (latest is not var (sourceId, fix, at) || sourceId != gps.Id)
+        var latest = track?.Latest is { Fix.Mode: GpsFixMode.NoFix }
+            ? track.Latest
+            : track?.Positioned ?? track?.Latest;
+        if (latest is not var (fix, at))
         {
-            return new GpsStatus(gps.Id, GpsFixKind.NoFix, Accuracy: accuracy, Sky: sky);
+            return new GpsStatus(gps.Id, GpsFixKind.NoFix, Accuracy: track?.Accuracy, Sky: track?.Sky);
         }
         var kind =
             !HasPosition(fix) ? GpsFixKind.NoFix
-            : fix.Mode == GpsFixMode.Fix3D || (fix.Mode != GpsFixMode.Fix2D && _gpsMode == GpsFixMode.Fix3D)
+            : fix.Mode == GpsFixMode.Fix3D || (fix.Mode != GpsFixMode.Fix2D && track!.Mode == GpsFixMode.Fix3D)
                 ? GpsFixKind.Fix3D
             : GpsFixKind.Fix2D;
         return new GpsStatus(
             gps.Id,
             kind,
             at,
-            _time.GetUtcNow() - at <= GpsFreshFor,
+            IsFresh(at),
             fix.Position?.Latitude,
             fix.Position?.Longitude,
             kind == GpsFixKind.Fix3D ? fix.AltitudeMeters : null,
@@ -226,8 +287,8 @@ public sealed partial class Engine
             fix.Course,
             fix.Satellites,
             fix.Hdop,
-            accuracy,
-            sky
+            track!.Accuracy,
+            track.Sky
         );
     }
 }

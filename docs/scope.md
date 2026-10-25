@@ -147,6 +147,7 @@ milestone ([0.3.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/1), don
 | F3.10 | IS-Server: re-serve our stream to other apps/instances over TCP, with per-type pass-through and direction controls | IS-Server Port | App | G21 | scoped |
 | F3.11 | Frequency monitor: decode frequency objects and comment frequency specs, flag malformed ones, list by frequency | (observed) | App | G25 | scoped |
 | F3.12 | GPS status for a [F3.6](features/F1.25-sources.md) GPS source: the fix (position, altitude, speed and course, fix type and time), its accuracy (estimated error in metres where the receiver or gpsd gives it, otherwise HDOP/VDOP/PDOP and satellites used), a sky view (polar diagram of the satellites in view by azimuth and elevation, signal strength, used or not, by constellation), and the raw stream (NMEA lines from the serial port or TCP, or gpsd's JSON) in the Console panel ([F1.28](features/F1.28-source-console.md)) | — (maintainer request) | App | G17, G30 | built for 0.6.0 ([#331](https://github.com/APRS-NET/AprsMap/issues/331), [spec](features/F3.12-gps-status.md)) |
+| F3.13 | GPS from a TNC's port ([spec](features/F3.13-tnc-gps.md)): a radio in its APRS mode (TH-D72A) sends its GPS with its packets; Auto, On or Off per source; a GPS source wins, the radio stands in while it has no fresh fix | APRS.NET#320 | App | — | built for 0.7.0 ([#362](https://github.com/APRS-NET/AprsMap/issues/362)) |
 
 ## Phase 4: Enhancements
 

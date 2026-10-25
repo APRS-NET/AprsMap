@@ -39,6 +39,10 @@ namespace AprsMap.Contracts;
 /// For a GPS (docs/features/F3.6-gps.md, behavior 1): how it's reached. Serial uses <paramref name="SerialPort"/> and
 /// <paramref name="Baud"/>; TCP and gpsd use <paramref name="Host"/> and <paramref name="Port"/>.
 /// </param>
+/// <param name="TncGps">
+/// For TNC text output (<see cref="SourceKind.AprsTextSerial"/>): whether the radio's GPS sentences place the station
+/// (docs/features/F3.13-tnc-gps.md); null for <see cref="Contracts.TncGps.Auto"/>.
+/// </param>
 public sealed record SourceSettings(
     string Id,
     string Name,
@@ -57,9 +61,14 @@ public sealed record SourceSettings(
     string? TncType = null,
     string? EnterScript = null,
     string? LeaveScript = null,
-    GpsLink? GpsLink = null
+    GpsLink? GpsLink = null,
+    TncGps? TncGps = null
 )
 {
+    /// <summary>The radio's GPS choice in force: only TNC text output has one (F3.13 behavior 1).</summary>
+    public TncGps EffectiveTncGps =>
+        Kind == SourceKind.AprsTextSerial ? TncGps ?? Contracts.TncGps.Auto : Contracts.TncGps.Off;
+
     /// <summary>NMEA 0183's speed, the default for a GPS on a serial port (F3.6 decision 1).</summary>
     public const int DefaultGpsBaud = 4800;
 
@@ -209,6 +218,19 @@ public enum SourceKind
 
     /// <summary>A GPS, over serial, TCP or gpsd (docs/features/F3.6-gps.md).</summary>
     Gps,
+}
+
+/// <summary>Whether a radio's GPS on its TNC port is used (docs/features/F3.13-tnc-gps.md, behavior 1).</summary>
+public enum TncGps
+{
+    /// <summary>Used once its first sentence arrives (the default).</summary>
+    Auto,
+
+    /// <summary>Expected: a warning when no sentences arrive.</summary>
+    On,
+
+    /// <summary>Ignored, for when a better GPS is connected.</summary>
+    Off,
 }
 
 /// <summary>How a GPS is reached (docs/features/F3.6-gps.md, behavior 1).</summary>
