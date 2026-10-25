@@ -361,6 +361,11 @@ public sealed partial class UpdateDialogViewModel(
             update.Notes.Replace("\r", "", StringComparison.Ordinal).Split('\n').Take(UpdatesViewModel.NotesLines)
         );
 
+    /// <summary>The notes shown, formatted: headings, lists, bold and links (behavior 9.1).</summary>
+    public IReadOnlyList<NoteBlock> Blocks => _blocks ??= ReleaseNotes.Parse(Notes, update.Version);
+
+    private IReadOnlyList<NoteBlock>? _blocks;
+
     /// <summary>Whether the notes run on past what's shown, so Release notes is worth a look.</summary>
     public bool MoreNotes { get; } = update.Notes.Split('\n').Length > UpdatesViewModel.NotesLines;
 

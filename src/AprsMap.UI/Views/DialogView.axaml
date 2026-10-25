@@ -398,11 +398,8 @@
               <DataTemplate DataType="u:UpdateDialogViewModel">
                 <StackPanel x:Name="UpdateSection" Spacing="10">
                   <TextBlock Text="{Binding Heading}" FontWeight="SemiBold" />
-                  <SelectableTextBlock
-                    Text="{Binding Notes}"
-                    TextWrapping="Wrap"
-                    FontFamily="{DynamicResource Font.Mono}"
-                  />
+                  <!-- The notes as GitHub would show them: headings, lists, bold and links (F4.15 behavior 9.1). -->
+                  <u:ReleaseNotesView x:Name="ReleaseNotes" Blocks="{Binding Blocks}" />
                   <HyperlinkButton
                     Content="{l:T Updates.ReleaseNotes}"
                     Command="{Binding ReleaseNotesCommand}"
