@@ -170,6 +170,21 @@ public static class EngineErrorCodes
     /// <summary>The app and the gateway speak different contract versions: the page needs reloading (F1.14 behavior 8).</summary>
     public const string GatewayOutdated = "gateway.outdated";
 
+    /// <summary>
+    /// The gateway refused this app's API key: wrong, replaced or removed, or sent where keys aren't accepted
+    /// (docs/features/F1.38-gateway-api-key.md, behaviors 4, 5).
+    /// </summary>
+    public const string ApiKeyRefused = "gateway.api-key-refused";
+
+    /// <summary>
+    /// An API key shorter than <see cref="ApiKeys.MinLength"/>, or with characters other than printable ASCII
+    /// (F1.38 behavior 1).
+    /// </summary>
+    public const string ApiKeyTooShort = "gateway.api-key-too-short";
+
+    /// <summary>Only a gateway has an API key; the desktop's own engine has none (F1.38).</summary>
+    public const string ApiKeyNotHere = "gateway.api-key-not-here";
+
     /// <summary>Address lookup is turned off.</summary>
     public const string GeocodingDisabled = "geocoding.disabled";
 
@@ -403,7 +418,8 @@ public static class EngineErrorCodes
     public static EngineErrorKind KindOf(string code)
     {
         ArgumentNullException.ThrowIfNull(code);
-        return code.StartsWith("gateway.", StringComparison.Ordinal) ? EngineErrorKind.Access
+        return code == ApiKeyTooShort ? EngineErrorKind.Argument
+            : code.StartsWith("gateway.", StringComparison.Ordinal) ? EngineErrorKind.Access
             : code.StartsWith("auth.", StringComparison.Ordinal) ? EngineErrorKind.Access
             : code.StartsWith("geocoding.", StringComparison.Ordinal) ? EngineErrorKind.Operation
             : code.StartsWith("aprs-is.", StringComparison.Ordinal) ? EngineErrorKind.Operation

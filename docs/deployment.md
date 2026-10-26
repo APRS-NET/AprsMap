@@ -87,6 +87,16 @@ sessions are kept in memory, so restarting the gateway signs everyone out. After
 15 minutes that address waits 15 minutes; after 10 for one name in an hour that name waits an hour. Sign-ins, failures,
 waits, sign-outs and every transmitting call are logged with the operator's name and address, never the password.
 
+#### An API key for apps
+
+An app, such as the desktop app used as the gateway's client (F1.39), gets the operator's rights with the gateway's
+API key instead of a password (docs/features/F1.38-gateway-api-key.md). A signed-in operator sets it in the web app's
+**Settings › Gateway access**: **Generate**, **Copy**, then **Save key**. The key is kept only as a hash in
+`api-key.json` in the data folder, so copy it before saving; **Remove key** turns API access off, and saving a new key
+disconnects the apps using the old one. The app sends it as `Authorization: Bearer <key>`, which the gateway accepts
+only on the operator port, over HTTPS or from the gateway's own host. Wrong keys count as failed sign-ins from that
+address, and each accepted or refused key is logged, never the key.
+
 Endpoints:
 
 | Path | Purpose |
@@ -94,7 +104,7 @@ Endpoints:
 | `/` | The web app (all paths move under `Gateway__PathBase` when it's set) |
 | `/hubs/engine` | SignalR hub the web app uses |
 | `/tiles/providers`, `/tiles/{provider}/{z}/{x}/{y}` | Map tile providers and tiles for the web app, from the gateway's cache |
-| `/auth/sign-in`, `/auth/sign-out`, `/auth/me` | Operator sign-in (F2.9) |
+| `/auth/sign-in`, `/auth/sign-out`, `/auth/me` | Operator sign-in (F2.9); `/auth/me` with an API key says whether the gateway took it (F1.38) |
 | `/healthz` | Health check for orchestrators (the chiseled image has no shell, so probe it over HTTP) |
 | `/source` | Redirects to the source code, the AGPL-3.0 network-use offer |
 

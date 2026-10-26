@@ -457,4 +457,33 @@ public interface IEngineService
     /// <summary>The 6-character Maidenhead locator of a position, for showing next to coordinates.</summary>
     /// <exception cref="ArgumentException">The position is off the globe.</exception>
     Task<string> GetLocatorAsync(double latitude, double longitude, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Whether the gateway has an API key, and since when (docs/features/F1.38-gateway-api-key.md, behavior 6); the
+    /// operator's only.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">
+    /// Not the operator (<see cref="EngineErrorCodes.OperatorOnly"/>), or not a gateway
+    /// (<see cref="EngineErrorCodes.ApiKeyNotHere"/>).
+    /// </exception>
+    Task<ApiKeyStatus> GetApiKeyStatusAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>A new random key, 43 URL-safe characters (behavior 1); not saved until <see cref="SaveApiKeyAsync"/>.</summary>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
+    Task<string> GenerateApiKeyAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves <paramref name="key"/> as the gateway's API key, kept as a hash; the old key is refused from its next call
+    /// (behaviors 1, 6).
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Shorter than <see cref="ApiKeys.MinLength"/>, longer than <see cref="ApiKeys.MaxLength"/>, or with spaces or
+    /// characters outside printable ASCII (<see cref="EngineErrorCodes.ApiKeyTooShort"/>).
+    /// </exception>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
+    Task<ApiKeyStatus> SaveApiKeyAsync(string key, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes the API key: API access is off (behavior 1).</summary>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
+    Task RemoveApiKeyAsync(CancellationToken cancellationToken = default);
 }

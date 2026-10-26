@@ -2423,6 +2423,57 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.settings.object.unknown" xml:space="preserve">
     <value>That object is no longer in this profile.</value>
   </data>
+  <data name="Settings.GatewayAccess" xml:space="preserve">
+    <value>Gateway access</value>
+  </data>
+  <data name="GatewayAccess.Title" xml:space="preserve">
+    <value>API key</value>
+  </data>
+  <data name="GatewayAccess.Description" xml:space="preserve">
+    <value>Apps that connect to this gateway's admin address with the API key can do everything a signed-in operator can: transmit, and change settings and sources. Without it they can only watch. Browsers still sign in with a name and password.</value>
+  </data>
+  <data name="GatewayAccess.None" xml:space="preserve">
+    <value>No API key: apps can only watch.</value>
+  </data>
+  <data name="GatewayAccess.Set" xml:space="preserve">
+    <value>An API key is set, since {time}. It can't be shown again: generate a new one to see one.</value>
+  </data>
+  <data name="GatewayAccess.SetNoTime" xml:space="preserve">
+    <value>An API key is set. It can't be shown again: generate a new one to see one.</value>
+  </data>
+  <data name="GatewayAccess.Key" xml:space="preserve">
+    <value>New API key</value>
+  </data>
+  <data name="GatewayAccess.KeyHint" xml:space="preserve">
+    <value>Generate one, or paste one of at least 32 characters</value>
+  </data>
+  <data name="GatewayAccess.Generate" xml:space="preserve">
+    <value>Generate</value>
+  </data>
+  <data name="GatewayAccess.Copy" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="GatewayAccess.Save" xml:space="preserve">
+    <value>Save key</value>
+  </data>
+  <data name="GatewayAccess.Remove" xml:space="preserve">
+    <value>Remove key</value>
+  </data>
+  <data name="GatewayAccess.Saved" xml:space="preserve">
+    <value>Saved. Apps using the old key are disconnected and can only watch until they have this one.</value>
+  </data>
+  <data name="GatewayAccess.Removed" xml:space="preserve">
+    <value>Removed. Apps can only watch.</value>
+  </data>
+  <data name="Error.gateway.api-key-refused" xml:space="preserve">
+    <value>The gateway refused this API key. It may have been replaced or removed, or this isn't the gateway's admin address.</value>
+  </data>
+  <data name="Error.gateway.api-key-too-short" xml:space="preserve">
+    <value>An API key needs at least 32 characters, without spaces.</value>
+  </data>
+  <data name="Error.gateway.api-key-not-here" xml:space="preserve">
+    <value>Only a gateway has an API key.</value>
+  </data>
   <data name="Settings.WebViewer" xml:space="preserve">
     <value>Web viewer</value>
   </data>

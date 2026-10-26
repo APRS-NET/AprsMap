@@ -27,12 +27,30 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     }
 
     /// <summary>Creates a client for the gateway at <paramref name="gatewayBaseUri"/>, reconnecting automatically.</summary>
-    public static RemoteEngineService Create(Uri gatewayBaseUri)
+    public static RemoteEngineService Create(Uri gatewayBaseUri) => Create(gatewayBaseUri, apiKey: null);
+
+    /// <summary>
+    /// Creates a client for the gateway at <paramref name="gatewayBaseUri"/> that sends <paramref name="apiKey"/>, when
+    /// there is one, with every connection as <c>Authorization: Bearer</c>, never in the address
+    /// (docs/features/F1.38-gateway-api-key.md, behavior 5). Not for the browser, which can't send headers on a
+    /// WebSocket.
+    /// </summary>
+    public static RemoteEngineService Create(Uri gatewayBaseUri, string? apiKey)
     {
         ArgumentNullException.ThrowIfNull(gatewayBaseUri);
         var contract = new ContractCheck();
         var connection = new HubConnectionBuilder()
-            .WithUrl(HubUri(gatewayBaseUri), o => o.HttpMessageHandlerFactory = contract.Wrap)
+            .WithUrl(
+                HubUri(gatewayBaseUri),
+                o =>
+                {
+                    o.HttpMessageHandlerFactory = contract.Wrap;
+                    if (!string.IsNullOrEmpty(apiKey))
+                    {
+                        o.Headers["Authorization"] = $"{ApiKeys.Scheme} {apiKey}";
+                    }
+                }
+            )
             .WithAutomaticReconnect(new KeepTryingPolicy())
             // The browser app has no reflection-based JSON (WebAssembly publish turns it off).
             .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default))
@@ -519,6 +537,27 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
             _connection.InvokeAsync<LocatorInfo>(EngineHub.ParseLocator, locator, cancellationToken)
         );
     }
+
+    /// <inheritdoc />
+    public Task<ApiKeyStatus> GetApiKeyStatusAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<ApiKeyStatus>(EngineHub.GetApiKeyStatus, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<string> GenerateApiKeyAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<string>(EngineHub.GenerateApiKey, cancellationToken));
+
+    /// <inheritdoc />
+    public Task<ApiKeyStatus> SaveApiKeyAsync(string key, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        return WithEngineErrors(() =>
+            _connection.InvokeAsync<ApiKeyStatus>(EngineHub.SaveApiKey, key, cancellationToken)
+        );
+    }
+
+    /// <inheritdoc />
+    public Task RemoveApiKeyAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.RemoveApiKey, cancellationToken));
 
     /// <inheritdoc />
     public Task<string> GetLocatorAsync(
