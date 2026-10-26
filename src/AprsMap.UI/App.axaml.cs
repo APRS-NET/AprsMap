@@ -103,6 +103,18 @@ public sealed class App : Application, IDisposable
     /// </summary>
     private void StartLayout(MainViewModel viewModel, MainWindowLayout? main)
     {
+        // Any case, so a typed or bookmarked address works as well as Open in a new tab's.
+        if (
+            _platform.PopOutPanel is { } asked
+            && Shell.PanelKinds.All.FirstOrDefault(p => p.Kind.Equals(asked, StringComparison.OrdinalIgnoreCase)).Kind
+                is { } popOut
+        )
+        {
+            // A panel popped out of another tab (F1.24 behavior 2): it alone, and the layout left to that tab.
+            viewModel.Shell.ShowOnly(popOut);
+            viewModel.PopOutTitle = Localization.Localizer.Instance[Shell.PanelKinds.TitleKey(popOut)];
+            return;
+        }
         var screens = main?.Screens() ?? [];
         main?.Restore(screens);
         // Saved layouts (F1.23): kept beside the layout, and offered when the monitors are a setup one was used with.
@@ -204,7 +216,9 @@ public sealed class App : Application, IDisposable
                 MenuStyle = _platform.MenuStyle,
                 SetPageTitle = _platform.SetTitle,
                 Restart = _platform.Restart,
+                SelectionChannel = _platform.SelectionChannel, // F1.24 behavior 3
             };
+            viewModel.Shell.Factory.PopOutOpener = _platform.OpenPopOut; // F1.24 behavior 1
             created = viewModel;
             _map = viewModel.Map;
             Control view = new MainView { DataContext = viewModel };

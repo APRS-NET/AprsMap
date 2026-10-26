@@ -66,6 +66,19 @@
         </MultiBinding>
       </MenuItem.IsVisible>
     </MenuItem>
+    <!-- A panel in a tab of its own, in a browser (F1.24 behavior 1). -->
+    <MenuItem
+      Header="{l:T Shell.OpenInNewTab}"
+      Command="{Binding ((shell:ShellFactory)Factory).OpenInNewTab, FallbackValue={x:Null}}"
+      CommandParameter="{Binding}"
+    >
+      <MenuItem.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <Binding Converter="{x:Static shell:ShellConverters.IsPanel}" />
+          <Binding Path="((shell:ShellFactory)Factory).CanPopOut" FallbackValue="False" />
+        </MultiBinding>
+      </MenuItem.IsVisible>
+    </MenuItem>
     <!-- A panel beside the map goes back to a side (F1.0 behavior 16). -->
     <MenuItem
       Header="{l:T Shell.MoveToLeft}"

@@ -5522,4 +5522,8 @@ pause 1s</value>
   <data name="Dashboard.HeardOnRf.Row" xml:space="preserve">
     <value>{hops, plural, =0 {direct} one {# hop} other {# hops}} · {time}</value>
   </data>
+  <data name="Shell.OpenInNewTab" xml:space="preserve">
+    <value>Open in a new tab</value>
+    <comment>A panel's menu, in a browser: the panel alone in a tab of its own (F1.24).</comment>
+  </data>
 </root>

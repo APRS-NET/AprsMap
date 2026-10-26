@@ -213,6 +213,19 @@ public sealed partial class ShellViewModel : ObservableObject
     }
 
     /// <summary>Back to the default layout (behavior 10).</summary>
+    /// <summary>
+    /// Shows <paramref name="kind"/> alone, for a panel popped out of another tab (docs/features/F1.24-web-pop-out.md,
+    /// behavior 2). It isn't saved: the tab it came from keeps the layout.
+    /// </summary>
+    public void ShowOnly(string kind)
+    {
+        Factory.Mover = null; // there's nowhere to move the only panel: the panel menu's Move items do nothing
+        var layout = Factory.CreatePopOutLayout(kind);
+        Factory.InitLayout(layout);
+        Layout = layout;
+        Retitle();
+    }
+
     public void Reset()
     {
         _lastDock.Clear();

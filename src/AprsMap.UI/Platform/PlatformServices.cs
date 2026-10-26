@@ -71,4 +71,16 @@ public sealed record PlatformServices
 
     /// <summary>Whether Settings offers the pseudo-language (F0.9 behavior 6): debug builds, or when configured.</summary>
     public bool ShowPseudoLanguage { get; init; }
+
+    /// <summary>
+    /// The panel this window shows on its own, popped out of another tab (docs/features/F1.24-web-pop-out.md, behavior
+    /// 2); null for the whole app.
+    /// </summary>
+    public string? PopOutPanel { get; init; }
+
+    /// <summary>Opens a panel in a tab of its own (behavior 1); null where there are no tabs (the desktop).</summary>
+    public Action<string>? OpenPopOut { get; init; }
+
+    /// <summary>Shares the selected station with the app's other tabs (behavior 3); null where there are none.</summary>
+    public ISelectionChannel? SelectionChannel { get; init; }
 }

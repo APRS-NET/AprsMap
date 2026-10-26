@@ -144,6 +144,9 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Sets the browser tab's title; null where there's no tab.</summary>
     public Action<string>? SetPageTitle { get; init; }
 
+    /// <summary>The panel's name when this window shows one panel popped out of another tab (F1.24); null otherwise.</summary>
+    public string? PopOutTitle { get; set; }
+
     /// <summary>
     /// Deletes this viewer's own preferences (appearance, layout) and puts their defaults back, for Reset the app (F0.10).
     /// The app supplies it; without it only the in-memory appearance and layout are reset.
@@ -917,8 +920,49 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The Details panel (F1.6): the selected station, in full.</summary>
     public Stations.StationDetailsViewModel Details { get; }
 
+    private bool _selectionFromTab; // set while showing a selection another tab made, so it isn't sent back
+
+    /// <summary>
+    /// Shares the selection with the app's other tabs (docs/features/F1.24-web-pop-out.md, behavior 3); set by the app in
+    /// a browser.
+    /// </summary>
+    public UI.Platform.ISelectionChannel? SelectionChannel
+    {
+        get;
+        set
+        {
+            if (field is not null)
+            {
+                field.Received -= OnSelectionFromTab;
+            }
+            field = value;
+            if (value is not null)
+            {
+                value.Received += OnSelectionFromTab;
+            }
+        }
+    }
+
+    private void OnSelectionFromTab(string? station) =>
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            _selectionFromTab = true;
+            try
+            {
+                SelectedStation = station;
+            }
+            finally
+            {
+                _selectionFromTab = false;
+            }
+        });
+
     partial void OnSelectedStationChanged(string? value)
     {
+        if (!_selectionFromTab)
+        {
+            SelectionChannel?.Publish(value); // the other tabs follow (F1.24 behavior 3)
+        }
         _ = Details.ShowAsync(value);
         _ = ShowRouteAsync(value is null ? null : new RouteQuery(value));
         if (value is not null)
@@ -1504,7 +1548,9 @@ public sealed partial class MainViewModel : ObservableObject
         if (status.Title != StationTitle)
         {
             StationTitle = status.Title;
-            SetPageTitle?.Invoke(status.Title is { } title ? $"{title} · {Brand.DisplayName}" : Brand.DisplayName);
+            var page = status.Title is { } title ? $"{title} · {Brand.DisplayName}" : Brand.DisplayName;
+            // A panel in a tab of its own is named first, so the tabs can be told apart (F1.24 behavior 2).
+            SetPageTitle?.Invoke(PopOutTitle is { } panel ? $"{panel} · {page}" : page);
         }
         FilterAreas = status.FilterAreas;
         _gps = status.Gps;
