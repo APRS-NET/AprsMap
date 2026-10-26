@@ -22,6 +22,7 @@ public static class EngineServiceCollectionExtensions
         {
             o.CaptureFolder ??= Path.Combine(SettingsLocation.DataFolder(o), AppFolders.PacketCaptureFolder);
             o.DeviceList.Folder ??= Path.Combine(SettingsLocation.DataFolder(o), "deviceid"); // F4.16
+            o.HistoryFile ??= Path.Combine(SettingsLocation.DataFolder(o), FileHistoryStore.FileName); // #386
         });
         services.AddOptions<GeocodingOptions>();
         services.TryAddSingleton(TimeProvider.System);

@@ -135,6 +135,158 @@ internal sealed class DashboardCounters
         }
     }
 
+    /// <summary>What's counted, to keep between runs (issue #386).</summary>
+    public DashboardCountersState Export()
+    {
+        lock (_gate)
+        {
+            return new DashboardCountersState(
+                HistoryStart,
+                [
+                    .. _minutes
+                        .Where(b => b.Minute != long.MinValue)
+                        .Select(b => new DashboardMinuteState(
+                            b.Minute,
+                            b.Packets,
+                            b.Problems,
+                            b.New,
+                            new Dictionary<string, int>(b.BySource, StringComparer.Ordinal),
+                            ByName(ArrivalKinds, b.Arrivals),
+                            ByName(PacketKinds, b.Kinds)
+                        )),
+                ],
+                [
+                    .. _distinct.Select(ring =>
+                        (IReadOnlyList<long[]>)[.. ring.Where(r => r.Count > 0).Select(r => new[] { r.Slot, r.Count })]
+                    ),
+                ],
+                [
+                    .. _stations.Select(s => new HeardState(
+                        s.Key,
+                        s.Value.FirstHeard,
+                        s.Value.LastHeard,
+                        [.. s.Value.LastSlots],
+                        [
+                            .. s.Value.Tallies.Select(t => new TallyState(
+                                t.Step,
+                                t.Count,
+                                t.Problems,
+                                ArrivalKinds[t.Arrival].ToString(),
+                                PacketKinds[t.Kind].ToString()
+                            )),
+                        ]
+                    )),
+                ],
+                _relays.ToDictionary(
+                    r => r.Key,
+                    r => r.Value.Select(c => new[] { c.Step, (long)c.Count }).ToArray(),
+                    StringComparer.Ordinal
+                ),
+                new Dictionary<string, DateTimeOffset>(_sources, StringComparer.Ordinal),
+                [.. _newest]
+            );
+        }
+    }
+
+    /// <summary>
+    /// Takes up what was kept (issue #386), dropping what's older than the window at <paramref name="now"/>; what's
+    /// counted already stays, and the history starts at the earlier of the two.
+    /// </summary>
+    public void Import(DashboardCountersState state, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var minute = MinuteOf(now);
+        var oldest = minute - Minutes + 1;
+        lock (_gate)
+        {
+            foreach (var kept in state.Minutes.Where(m => m.Minute >= oldest && m.Minute <= minute))
+            {
+                var bucket = BucketAt(kept.Minute);
+                bucket.Packets += kept.Packets;
+                bucket.Problems += kept.Problems;
+                bucket.New += kept.New;
+                foreach (var (source, count) in kept.BySource)
+                {
+                    bucket.BySource[source] = bucket.BySource.GetValueOrDefault(source) + count;
+                }
+                AddByName(ArrivalKinds, bucket.Arrivals, kept.Arrivals);
+                AddByName(PacketKinds, bucket.Kinds, kept.Kinds);
+            }
+            for (var i = 0; i < PointSizes.Length && i < state.Distinct.Count; i++)
+            {
+                var ring = _distinct[i];
+                var first = oldest / PointSizes[i];
+                foreach (var pair in state.Distinct[i].Where(p => p.Length == 2 && p[0] >= first))
+                {
+                    var at = Index(pair[0], ring.Length);
+                    ring[at] =
+                        ring[at].Slot == pair[0] ? (pair[0], ring[at].Count + (int)pair[1]) : (pair[0], (int)pair[1]);
+                }
+            }
+            var cutoff = now - Window;
+            foreach (var kept in state.Stations.Where(s => s.LastHeard >= cutoff && !_stations.ContainsKey(s.Name)))
+            {
+                var heard = new Heard(kept.FirstHeard) { LastHeard = kept.LastHeard };
+                for (var i = 0; i < heard.LastSlots.Length && i < kept.LastSlots.Length; i++)
+                {
+                    heard.LastSlots[i] = kept.LastSlots[i];
+                }
+                foreach (var tally in kept.Tallies)
+                {
+                    if (
+                        Enum.TryParse<ArrivalKind>(tally.Arrival, out var arrival)
+                        && Enum.TryParse<PacketKind>(tally.Kind, out var kind)
+                    )
+                    {
+                        heard.Tallies.Add(
+                            new Tally(tally.Step, tally.Count, tally.Problems, (byte)arrival, (byte)kind)
+                        );
+                    }
+                }
+                _stations[kept.Name] = heard;
+            }
+            foreach (var (name, counts) in state.Relays.Where(r => !_relays.ContainsKey(r.Key)))
+            {
+                _relays[name] = [.. counts.Where(c => c.Length == 2).Select(c => (c[0], (int)c[1]))];
+            }
+            foreach (var (source, at) in state.Sources)
+            {
+                _sources.TryAdd(source, at);
+            }
+            foreach (var moment in state.Newest.Where(n => n.At >= cutoff)) // newest first, after this run's own
+            {
+                if (_newest.Count < NewestKept && _newest.All(n => n.Key != moment.Key))
+                {
+                    _newest.AddLast(moment);
+                }
+            }
+            if (state.HistoryStart < HistoryStart)
+            {
+                HistoryStart = state.HistoryStart;
+            }
+            _prunedAt = long.MinValue; // the next read prunes what's grown old
+        }
+    }
+
+    private static Dictionary<string, int> ByName<T>(T[] names, int[] counts)
+        where T : struct, Enum =>
+        names
+            .Select((name, i) => (name, i))
+            .Where(x => counts[x.i] > 0)
+            .ToDictionary(x => x.name.ToString(), x => counts[x.i], StringComparer.Ordinal);
+
+    private static void AddByName<T>(T[] names, int[] counts, IReadOnlyDictionary<string, int> kept)
+        where T : struct, Enum
+    {
+        foreach (var (name, count) in kept)
+        {
+            if (Enum.TryParse<T>(name, out var value) && Array.IndexOf(names, value) is var i and >= 0)
+            {
+                counts[i] += count;
+            }
+        }
+    }
+
     /// <summary>
     /// The numbers over <paramref name="range"/> up to <paramref name="now"/>: the whole feed, or with
     /// <paramref name="include"/> only the stations it says yes to (My view, behavior 7).

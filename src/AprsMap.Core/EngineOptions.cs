@@ -71,6 +71,16 @@ public sealed class EngineOptions
     /// <summary>The most stations, objects and items kept; beyond it the least recently heard goes (F1.3 behavior 12).</summary>
     public int MaxStations { get; set; } = StationStore.DefaultMaxEntries;
 
+    /// <summary>
+    /// Where the dashboard's and the GPS's history is kept between runs (issue #386): <c>dashboard-history.json</c> in
+    /// the data folder (<see cref="DataFolder"/>) when the engine is added to a host; null, as in tests that build the
+    /// engine themselves, keeps it in memory only.
+    /// </summary>
+    public string? HistoryFile { get; set; }
+
+    /// <summary>How often the history is saved while the engine runs; it's also saved as it stops.</summary>
+    public TimeSpan HistorySaveInterval { get; set; } = TimeSpan.FromMinutes(5);
+
     /// <summary>How often stale and expired stations are looked for (F1.3 behavior 10).</summary>
     public TimeSpan SweepInterval { get; set; } = TimeSpan.FromMinutes(1);
 
