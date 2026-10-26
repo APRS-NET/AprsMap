@@ -51,13 +51,16 @@ public class HostingTests
     [Fact]
     public async Task EnabledEngineStartsConnectingWithTheHost()
     {
+        var data = Directory.CreateTempSubdirectory("aprsmap-hosting-");
+        using var cleanup = new Cleanup(data);
         var factory = new BlockingSourceFactory();
         var services = new ServiceCollection()
             .AddLogging()
             .AddSingleton<IPacketSourceFactory>(factory)
             .AddSingleton<ISettingsStore>(InMemorySettingsStore.WithProfile())
             .AddSingleton<IMessageStore>(new InMemoryMessageStore()) // never the real Data folder
-            .AddAprsMapEngine();
+            .AddAprsMapEngine()
+            .Configure<EngineOptions>(o => o.DataFolder = data.FullName); // the dashboard's history too (#386)
         await using var provider = services.BuildServiceProvider();
         var hosted = provider.GetRequiredService<IHostedService>();
 
@@ -69,6 +72,12 @@ public class HostingTests
         await hosted.StopAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(ConnectionState.Connecting, status.Connection);
+        Assert.True(File.Exists(Path.Combine(data.FullName, FileHistoryStore.FileName))); // saved as it stopped
+    }
+
+    private sealed class Cleanup(DirectoryInfo folder) : IDisposable
+    {
+        public void Dispose() => folder.Delete(recursive: true);
     }
 
     [Fact]

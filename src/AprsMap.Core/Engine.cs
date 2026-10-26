@@ -737,7 +737,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         var others = RunOtherSourcesAsync(cancellationToken);
         var updates = RunUpdatesAsync(cancellationToken); // F4.15
         var devices = RunDeviceListAsync(cancellationToken); // F4.16
+        await LoadHistoryAsync(cancellationToken).ConfigureAwait(false); // #386: before anything is counted
         var gps = RunGpsHistoryAsync(cancellationToken); // F3.14
+        var saving = RunHistorySavesAsync(cancellationToken); // #386
         try
         {
             await RunConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -749,6 +751,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             await updates.ConfigureAwait(false);
             await devices.ConfigureAwait(false);
             await gps.ConfigureAwait(false);
+            await saving.ConfigureAwait(false);
+            await SaveHistoryAsync().ConfigureAwait(false); // what's counted since the last save
             // Saves wait a moment to group changes; what's waiting is written before the engine stops.
             try
             {
@@ -1978,6 +1982,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             {
                 var count = _recent.Count;
                 _dashboard.Clear(_time.GetUtcNow());
+                _ = SaveHistoryAsync(); // a restart doesn't bring the cleared counts back
                 _recent.Clear();
                 _listed.Clear();
                 _listedOrder.Clear();
