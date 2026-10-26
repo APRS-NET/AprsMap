@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.6.0-alpha.1...v0.6.0-alpha.2) (2026-10-26)
+
+
+### Bug Fixes
+
+* **desktop:** the app closes, and restarts after an update, with the web viewer on ([52266d0](https://github.com/APRS-NET/AprsMap/commit/52266d05552b6365f574933989ebcfac40dbe648))
+* **ui:** release notes in the update dialog are formatted, with links ([1915f94](https://github.com/APRS-NET/AprsMap/commit/1915f943038b683be4db05d3d95be306aaba690a))
+
 ## [0.6.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.6...v0.6.0-alpha.1) (2026-10-25)
 
 
