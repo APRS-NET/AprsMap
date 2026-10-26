@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Starts the gateway's updater when the gateway asks for an update (docs/features/F1.40-gateway-service-updates.md,
+# behavior 4): the gateway only writes the request, a version, to its data folder. Installed by install.sh.
+[Unit]
+Description=AprsMap gateway: watch for update requests
+
+[Path]
+PathExists=/var/lib/aprsmap/update-request.json
+Unit=aprsmap-gateway-update.service
+
+[Install]
+WantedBy=multi-user.target

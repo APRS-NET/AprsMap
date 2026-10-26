@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
+using AprsMap.Gateway;
 using AprsMap.Hosting;
 using AprsMap.Server;
 using Microsoft.AspNetCore.SignalR;
@@ -9,16 +10,44 @@ using OpenTelemetry.Trace;
 // aprsmap-gateway operator add|password|remove|list NAME: sets up who may sign in (F2.9 behavior 1), then exits.
 if (args is ["operator", .. var command])
 {
-    var configuration = new ConfigurationBuilder()
+    var settings = new ConfigurationBuilder()
         .SetBasePath(AppContext.BaseDirectory)
-        .AddJsonFile("appsettings.json", optional: true)
-        .AddEnvironmentVariables()
-        .Build();
-    return OperatorCommand.Run(command, GatewayData.Folder(configuration), OperatorCommand.AskPassword, Console.Out);
+        .AddJsonFile("appsettings.json", optional: true);
+    if (TomlConfiguration.PathFrom(args, Environment.GetEnvironmentVariable) is { } tomlPath)
+    {
+        settings.AddToml(tomlPath); // the service's file (F1.37 behavior 1)
+    }
+    var configuration = settings.AddEnvironmentVariables().Build();
+    return OperatorCommand.Run(
+        TomlConfiguration.WithoutConfig(command), // --config is the gateway's, not the command's
+        GatewayData.Folder(configuration),
+        OperatorCommand.AskPassword,
+        Console.Out
+    );
 }
 
 var builder = WebApplication.CreateBuilder(args);
-if (builder.Configuration.GetValue<int?>("Gateway:OperatorPort") is { } operatorPort)
+
+// The TOML file (F1.37 behavior 1): after appsettings.json, before environment variables, so those still win.
+if (TomlConfiguration.PathFrom(args, Environment.GetEnvironmentVariable) is { } toml)
+{
+    TomlConfiguration.InsertAfterJsonFiles(
+        ((IConfigurationBuilder)builder.Configuration).Sources,
+        TomlConfiguration.Read(File.ReadAllText(toml), toml)
+    );
+}
+if (GatewayListen.Urls(builder.Configuration) is { } urls)
+{
+    // Where it listens (F1.37 behavior 2): the published app, and the admin app on its own address.
+    builder.WebHost.UseUrls([.. urls.Urls]);
+    if (urls.OperatorPort is { } adminPort)
+    {
+        builder.Configuration["Gateway:OperatorPort"] = adminPort.ToString(
+            System.Globalization.CultureInfo.InvariantCulture
+        );
+    }
+}
+else if (builder.Configuration.GetValue<int?>("Gateway:OperatorPort") is { } operatorPort)
 {
     // The operator port listens beside the main one (F1.26 behavior 2).
     var ports = builder.Configuration["HTTP_PORTS"] is { Length: > 0 } main ? main : "8080";
@@ -48,8 +77,16 @@ builder
     .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default));
 builder.Services.AddOptions<GatewayOptions>().BindConfiguration(GatewayOptions.SectionName);
 
-// A gateway is told an update is ready when its image is pushed (F4.15 behavior 4.3).
-builder.Services.PostConfigure<AprsMap.Core.EngineOptions>(o => o.Updates.Kind = AprsMap.Core.InstallKind.Gateway);
+// A gateway is told an update is ready when its image is pushed (F4.15 behavior 4.3); the Linux service, whose unit
+// says so, when its tarball is attached, and it updates itself from here (F1.40 behaviors 1, 3).
+builder.Services.PostConfigure<AprsMap.Core.EngineOptions>(o =>
+{
+    if (o.Updates.Kind != AprsMap.Core.InstallKind.Service)
+    {
+        o.Updates.Kind = AprsMap.Core.InstallKind.Gateway;
+    }
+    o.Updates.RuntimeId ??= System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
+});
 var gateway = GatewayHttp.Options(builder.Configuration);
 builder.Services.AddGatewayProxies(gateway);
 builder.Services.AddHealthChecks();

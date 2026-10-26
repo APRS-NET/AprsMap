@@ -18,17 +18,44 @@ public sealed record SignInRequest(string Name, string Password);
 /// An operator is set up but this page came over plain HTTP from another machine, so sign-in isn't offered: the dialog
 /// says why (behavior 8.1).
 /// </param>
+/// <param name="ApiKey">
+/// An app's API key (docs/features/F1.38-gateway-api-key.md, behavior 8): with <paramref name="Operator"/>, the gateway
+/// let it in as the operator "API key", which has no session to end; without, the gateway refused it.
+/// </param>
 public sealed record AuthInfo(
     bool Operator,
     string? Name = null,
     DateTimeOffset? ExpiresAt = null,
     bool SignInOffered = false,
     int FailedSignIns = 0,
-    bool NeedsHttps = false
+    bool NeedsHttps = false,
+    bool ApiKey = false
 )
 {
     /// <summary>A viewer on a gateway that offers no sign-in.</summary>
     public static AuthInfo Viewer { get; } = new(false);
+}
+
+/// <summary>Whether the gateway has an API key (docs/features/F1.38-gateway-api-key.md, behavior 6).</summary>
+/// <param name="Set">A key is saved, so apps with it are let in as the operator.</param>
+/// <param name="SetAt">When it was saved.</param>
+public sealed record ApiKeyStatus(bool Set, DateTimeOffset? SetAt = null)
+{
+    /// <summary>No key: API access is off.</summary>
+    public static ApiKeyStatus None { get; } = new(false);
+}
+
+/// <summary>The gateway's API key (docs/features/F1.38-gateway-api-key.md).</summary>
+public static class ApiKeys
+{
+    /// <summary>The fewest characters a key typed or pasted may have (behavior 1).</summary>
+    public const int MinLength = 32;
+
+    /// <summary>The longest a key may be.</summary>
+    public const int MaxLength = 256;
+
+    /// <summary>The scheme the key is sent with, in the <c>Authorization</c> header (behavior 5).</summary>
+    public const string Scheme = "Bearer";
 }
 
 /// <summary>The gateway's sign-in endpoints, relative to its base (not the hub).</summary>

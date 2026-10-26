@@ -883,6 +883,54 @@ internal sealed class FakeEngine : IEngineService
             ),
         };
 
+    public List<string> InstalledVersions { get; } = [];
+
+    public int GatewayRestarts { get; private set; }
+
+    public Task InstallUpdateAsync(string version, CancellationToken cancellationToken = default)
+    {
+        InstalledVersions.Add(version);
+        UpdateStatus = UpdateStatus with { Install = new ServiceInstall(version, ServiceInstallStep.Requested) };
+        return Task.CompletedTask;
+    }
+
+    public Task RestartGatewayAsync(CancellationToken cancellationToken = default)
+    {
+        GatewayRestarts++;
+        return Task.CompletedTask;
+    }
+
+    public ApiKeyStatus ApiKey { get; set; } = ApiKeyStatus.None;
+
+    public List<string> SavedApiKeys { get; } = [];
+
+    public Exception? ApiKeyError { get; set; }
+
+    public Task<ApiKeyStatus> GetApiKeyStatusAsync(CancellationToken cancellationToken = default) =>
+        ApiKeyError is { } error ? Task.FromException<ApiKeyStatus>(error) : Task.FromResult(ApiKey);
+
+    public Task<string> GenerateApiKeyAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult("generated-key-" + new string('x', 29));
+
+    public Task<ApiKeyStatus> SaveApiKeyAsync(string key, CancellationToken cancellationToken = default)
+    {
+        if (key.Length < ApiKeys.MinLength)
+        {
+            return Task.FromException<ApiKeyStatus>(
+                EngineErrors.Create(EngineErrorCodes.ApiKeyTooShort, "An API key needs at least 32 characters.")
+            );
+        }
+        SavedApiKeys.Add(key);
+        ApiKey = new ApiKeyStatus(true, new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
+        return Task.FromResult(ApiKey);
+    }
+
+    public Task RemoveApiKeyAsync(CancellationToken cancellationToken = default)
+    {
+        ApiKey = ApiKeyStatus.None;
+        return Task.CompletedTask;
+    }
+
     public Task<string> GetLocatorAsync(
         double latitude,
         double longitude,

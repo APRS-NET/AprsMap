@@ -20,5 +20,6 @@
 
   <ItemGroup>
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="Tomlyn" />
   </ItemGroup>
 </Project>

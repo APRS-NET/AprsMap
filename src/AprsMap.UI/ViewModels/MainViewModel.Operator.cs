@@ -29,7 +29,9 @@ public sealed partial class MainViewModel
 
     /// <summary>"Signed in as Derek", for the app menu; null when not signed in.</summary>
     public string? SignedInText =>
-        IsSignedIn ? _text.Format("Auth.SignedInAs", new Dictionary<string, object?> { ["name"] = Auth!.Name }) : null;
+        !IsSignedIn ? null
+        : Auth!.ApiKey ? _text["Auth.SignedInWithKey"] // the desktop as a gateway's client (F1.39 behavior 4)
+        : _text.Format("Auth.SignedInAs", new Dictionary<string, object?> { ["name"] = Auth.Name });
 
     /// <summary>The Sign in dialog while it's open.</summary>
     [ObservableProperty]
@@ -37,6 +39,7 @@ public sealed partial class MainViewModel
 
     partial void OnAuthChanged(AuthInfo? value)
     {
+        Settings?.Connection?.ShowAuth(value);
         ShowTransmit();
         ShowViewerOnly();
     }

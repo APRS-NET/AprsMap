@@ -412,6 +412,27 @@ public interface IEngineService
     Task SkipUpdateAsync(string version, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Update and restart on the Linux service gateway (docs/features/F1.40-gateway-service-updates.md, behavior 4):
+    /// asks its updater to install <paramref name="version"/>, the update offered; where it stands is in
+    /// <see cref="UpdateStatus.Install"/>. The operator's only.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">
+    /// Not the service gateway (<see cref="EngineErrorCodes.GatewayNotService"/>), or not the operator.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// <paramref name="version"/> isn't the update offered, or an update is already under way
+    /// (<see cref="EngineErrorCodes.UpdateNotOffered"/>).
+    /// </exception>
+    Task InstallUpdateAsync(string version, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restarts the Linux service gateway (F1.40 behavior 2): it stops cleanly and systemd starts it again. The
+    /// operator's only.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="InstallUpdateAsync"/>.</exception>
+    Task RestartGatewayAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Posts a bulletin or announcement (docs/features/F2.5-bulletins.md, behaviors 5–7): sent now, then repeated on
     /// APRS.NET's bulletin schedule until it finishes or is stopped. Posting again to the same addressee replaces the
     /// text and starts the schedule again. It shows in <see cref="WatchBulletinsAsync"/> as ours, with its next send.
@@ -457,4 +478,33 @@ public interface IEngineService
     /// <summary>The 6-character Maidenhead locator of a position, for showing next to coordinates.</summary>
     /// <exception cref="ArgumentException">The position is off the globe.</exception>
     Task<string> GetLocatorAsync(double latitude, double longitude, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Whether the gateway has an API key, and since when (docs/features/F1.38-gateway-api-key.md, behavior 6); the
+    /// operator's only.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">
+    /// Not the operator (<see cref="EngineErrorCodes.OperatorOnly"/>), or not a gateway
+    /// (<see cref="EngineErrorCodes.ApiKeyNotHere"/>).
+    /// </exception>
+    Task<ApiKeyStatus> GetApiKeyStatusAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>A new random key, 43 URL-safe characters (behavior 1); not saved until <see cref="SaveApiKeyAsync"/>.</summary>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
+    Task<string> GenerateApiKeyAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves <paramref name="key"/> as the gateway's API key, kept as a hash; the old key is refused from its next call
+    /// (behaviors 1, 6).
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// Shorter than <see cref="ApiKeys.MinLength"/>, longer than <see cref="ApiKeys.MaxLength"/>, or with spaces or
+    /// characters outside printable ASCII (<see cref="EngineErrorCodes.ApiKeyTooShort"/>).
+    /// </exception>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
+    Task<ApiKeyStatus> SaveApiKeyAsync(string key, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes the API key: API access is off (behavior 1).</summary>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
+    Task RemoveApiKeyAsync(CancellationToken cancellationToken = default);
 }

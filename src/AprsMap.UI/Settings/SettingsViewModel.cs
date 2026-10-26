@@ -49,10 +49,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         MessagingSectionViewModel? messaging = null,
         ObjectsSectionViewModel? objects = null,
         WebViewerSectionViewModel? webViewer = null,
-        StationListsSectionViewModel? stationLists = null
+        StationListsSectionViewModel? stationLists = null,
+        GatewayAccessSectionViewModel? gatewayAccess = null,
+        ConnectionSectionViewModel? connection = null
     )
     {
+        Connection = connection;
         StationLists = stationLists;
+        GatewayAccess = gatewayAccess;
         WebViewer = webViewer;
         ArgumentNullException.ThrowIfNull(appearance);
         _appearance = appearance;
@@ -91,6 +95,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsBeaconsSection),
         nameof(IsDataSection),
         nameof(IsWebViewerSection),
+        nameof(IsGatewayAccessSection),
+        nameof(IsConnectionSection),
         nameof(IsMapSection),
         nameof(IsUnitsSection),
         nameof(IsLayoutSection),
@@ -175,6 +181,18 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Whether Web viewer is showing (docs/features/F1.35-desktop-web-viewer.md).</summary>
     public bool IsWebViewerSection => SelectedSection?.Id == "web-viewer";
+
+    /// <summary>Whether Connection is showing.</summary>
+    public bool IsConnectionSection => SelectedSection?.Id == "connection";
+
+    /// <summary>Connection (F1.39): the desktop's own station or a gateway's; null in the browser.</summary>
+    public ConnectionSectionViewModel? Connection { get; }
+
+    /// <summary>Whether Gateway access is showing.</summary>
+    public bool IsGatewayAccessSection => SelectedSection?.Id == "gateway-access";
+
+    /// <summary>Gateway access (F1.38), for the signed-in operator of a gateway.</summary>
+    public GatewayAccessSectionViewModel? GatewayAccess { get; }
 
     /// <summary>The desktop's web viewer (F1.35); null in the browser.</summary>
     public WebViewerSectionViewModel? WebViewer { get; }
@@ -311,6 +329,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("web-viewer", _text["Settings.WebViewer"]));
         }
+        if (Connection is not null)
+        {
+            Sections.Add(new SettingsSection("connection", _text["Settings.Connection"]));
+        }
+        if (GatewayAccess is not null)
+        {
+            Sections.Add(new SettingsSection("gateway-access", _text["Settings.GatewayAccess"]));
+        }
         if (MapItems.Count > 0)
         {
             Sections.Add(new SettingsSection("map", _text["Settings.Map"]));
@@ -338,6 +364,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             item.Retranslate();
         }
         Profiles?.Retranslate();
+        GatewayAccess?.Retranslate();
+        Connection?.Retranslate();
         Sources?.Retranslate();
         Logging?.Retranslate();
         Messaging?.Retranslate();
@@ -589,7 +617,16 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     /// Lists the folders: everyone's on the desktop, only a signed-in operator's on a gateway, where a viewer gets a note
     /// instead (behaviors 1, 6, 7).
     /// </summary>
-    internal async Task ShowFoldersAsync(IEngineService engine, bool sharedStation, bool isOperator)
+    /// <param name="engine">The engine whose folders these are.</param>
+    /// <param name="sharedStation">A gateway's station.</param>
+    /// <param name="isOperator">Whether this viewer is its operator.</param>
+    /// <param name="service">The Linux service gateway, whose log is the journal's (F1.40).</param>
+    internal async Task ShowFoldersAsync(
+        IEngineService engine,
+        bool sharedStation,
+        bool isOperator,
+        bool service = false
+    )
     {
         Folders.Clear();
         if (sharedStation && !isOperator)
@@ -611,7 +648,12 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
         }
         FilesNote =
             sharedStation && Folders.All(f => f.Folder.Kind != StorageFolderKind.Logs)
-                ? text["About.Files.DockerLogs"]
+                ? service
+                    ? text.Format(
+                        "About.Files.JournalLogs",
+                        new Dictionary<string, object?> { ["service"] = Brand.Slug + "-gateway" }
+                    )
+                    : text["About.Files.DockerLogs"]
                 : null;
     }
 
@@ -646,6 +688,12 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
 
     /// <summary>Check now; null where it's hidden (behavior 6) or not this viewer's.</summary>
     public CommunityToolkit.Mvvm.Input.IAsyncRelayCommand? CheckUpdatesCommand { get; set; }
+
+    /// <summary>
+    /// Restart gateway, for the operator of the Linux service gateway (docs/features/F1.40-gateway-service-updates.md,
+    /// behavior 2); null elsewhere.
+    /// </summary>
+    public System.Windows.Input.ICommand? RestartGatewayCommand { get; set; }
 
     /// <summary>"No failed sign-ins in the last day", to a signed-in gateway operator (F2.9 behavior 10); null otherwise.</summary>
     [ObservableProperty]

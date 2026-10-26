@@ -60,6 +60,12 @@ public sealed partial class SettingsView : UserControl
                 webViewer.CopyToClipboard = text =>
                     TopLevel.GetTopLevel(this)?.Clipboard?.SetTextAsync(text) ?? Task.CompletedTask;
             }
+            // Copy for a new API key (F1.38 behavior 1).
+            if (_viewModel.GatewayAccess is { } access)
+            {
+                access.CopyToClipboard = text =>
+                    TopLevel.GetTopLevel(this)?.Clipboard?.SetTextAsync(text) ?? Task.CompletedTask;
+            }
             // Copy list and Paste for station lists (F1.33 behavior 3).
             if (_viewModel.StationLists is { } lists)
             {

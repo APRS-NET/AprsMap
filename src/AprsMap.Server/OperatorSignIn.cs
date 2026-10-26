@@ -38,6 +38,8 @@ internal static partial class OperatorSignIn
         services.AddSingleton<OperatorSessions>();
         services.AddSingleton<SignInLimiter>();
         services.AddSingleton<SignInAudit>();
+        services.AddSingleton(sp => new ApiKeyStore(folder, sp.GetRequiredService<TimeProvider>()));
+        services.AddSingleton<ApiKeyGate>();
         services.AddSingleton<OperatorFilter>();
         services.AddSingleton<HomeShields>();
         services.TryAddTimeProvider();
@@ -251,12 +253,28 @@ internal static partial class OperatorSignIn
         OperatorStore operators,
         OperatorSessions sessions,
         SignInLimiter limiter,
+        ApiKeyGate apiKey,
         IOptionsMonitor<GatewayOptions> options
     )
     {
         if (!IsOperatorPort(context, options.CurrentValue))
         {
             return Results.Json(AuthInfo.Viewer, EngineJsonContext.Default.AuthInfo); // no sign-in here (F1.26 behavior 1)
+        }
+        // An app with the API key (docs/features/F1.38-gateway-api-key.md): told whether the gateway took it.
+        switch (apiKey.Check(context).Outcome)
+        {
+            case ApiKeyOutcome.Accepted:
+                return Results.Json(
+                    new AuthInfo(true, ApiKeyGate.OperatorName, FailedSignIns: limiter.FailedToday, ApiKey: true),
+                    EngineJsonContext.Default.AuthInfo
+                );
+            case ApiKeyOutcome.Refused:
+                return Refuse(
+                    StatusCodes.Status401Unauthorized,
+                    EngineErrorCodes.ApiKeyRefused,
+                    "The gateway refused this API key."
+                );
         }
         var offered = operators.Any && IsSecureEnough(context);
         var session = SessionId(context.User) is { } id ? sessions.Use(id) : null;
@@ -319,6 +337,26 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
 
     public void SignedOut(string name, string address) => LogSignedOut(name, address);
 
+    /// <summary>An app's API key was accepted (docs/features/F1.38-gateway-api-key.md, behavior 7).</summary>
+    public void ApiKeyAccepted(string address)
+    {
+        SignIns.Add(1, new KeyValuePair<string, object?>("outcome", "api-key"));
+        LogApiKeyAccepted(address);
+    }
+
+    /// <summary>An app's API key was refused, and why; never the key.</summary>
+    public void ApiKeyRefused(string address, string reason)
+    {
+        SignIns.Add(1, new KeyValuePair<string, object?>("outcome", "api-key-refused"));
+        LogApiKeyRefused(address, reason);
+    }
+
+    /// <summary>An operator asked the service gateway to update or restart (F1.40 behavior 6).</summary>
+    public void Administered(string name, string what) => LogAdministered(name, what);
+
+    /// <summary>The API key was saved or removed, and by whom.</summary>
+    public void ApiKeyChanged(string name, bool removed) => LogApiKeyChanged(name, removed ? "removed" : "saved");
+
     public void Transmitted(string name, string method, IReadOnlyList<object?> arguments)
     {
         if (logger.IsEnabled(LogLevel.Information))
@@ -345,6 +383,18 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
     [LoggerMessage(Level = LogLevel.Information, Message = "Operator {Name} signed out from {Address}")]
     private partial void LogSignedOut(string name, string address);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Operator {Name} asked the gateway to {What}")]
+    private partial void LogAdministered(string name, string what);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "API key accepted from {Address}")]
+    private partial void LogApiKeyAccepted(string address);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "API key refused from {Address}: {Reason}")]
+    private partial void LogApiKeyRefused(string address, string reason);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Operator {Name} {Change} the API key")]
+    private partial void LogApiKeyChanged(string name, string change);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "Operator {Name}: {Method}({Arguments})")]
     private partial void LogTransmitted(string name, string method, string arguments);
 }
@@ -356,11 +406,19 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
 internal sealed class OperatorFilter(
     OperatorSessions sessions,
     SignInAudit audit,
+    ApiKeyStore apiKeys,
+    ApiKeyGate apiKeyGate,
     IOptionsMonitor<GatewayOptions> options
 ) : IHubFilter
 {
     /// <summary>Where a call's operator name is kept while it runs; absent for a viewer.</summary>
     public const string OperatorKey = "aprsmap.operator";
+
+    /// <summary>
+    /// Where a connection let in by the API key keeps the key's stamp (docs/features/F1.38-gateway-api-key.md): checked
+    /// on every call, so a replaced or removed key is refused at once.
+    /// </summary>
+    public const string ApiKeyStampKey = "aprsmap.api-key";
 
     public async ValueTask<object?> InvokeMethodAsync(
         HubInvocationContext invocationContext,
@@ -383,10 +441,26 @@ internal sealed class OperatorFilter(
                 );
             }
             context.Items[OperatorKey] = session.Name;
-            if (invocationContext.HubMethod.GetCustomAttribute<TransmitsAttribute>() is not null)
+        }
+        else if (context.Items.TryGetValue(ApiKeyStampKey, out var stamp))
+        {
+            if (!Equals(stamp, apiKeys.Stamp))
             {
-                audit.Transmitted(session.Name, invocationContext.HubMethodName, invocationContext.HubMethodArguments);
+                context.Abort(); // the key was replaced or removed: the app connects again
+                throw new HubException(
+                    EngineHub.EncodeError(
+                        new EngineError(EngineErrorCodes.ApiKeyRefused, "The gateway refused this API key.")
+                    )
+                );
             }
+            context.Items[OperatorKey] = ApiKeyGate.OperatorName;
+        }
+        if (
+            context.Items.TryGetValue(OperatorKey, out var name)
+            && invocationContext.HubMethod.GetCustomAttribute<TransmitsAttribute>() is not null
+        )
+        {
+            audit.Transmitted((string)name!, invocationContext.HubMethodName, invocationContext.HubMethodArguments);
         }
         return await next(invocationContext);
     }
@@ -396,6 +470,15 @@ internal sealed class OperatorFilter(
         if (OperatorSignIn.SessionId(context.Context.User) is { } id && sessions.Use(id) is not null)
         {
             sessions.Attach(id, context.Context);
+        }
+        else if (
+            context.Context.GetHttpContext() is { } http
+            && apiKeyGate.Check(http) is (ApiKeyOutcome.Accepted, { } stamp)
+        )
+        {
+            // An app with the API key is the operator "API key" (F1.38 behaviors 2, 8); a refused one is a viewer.
+            context.Context.Items[ApiKeyStampKey] = stamp;
+            apiKeys.Attach(context.Context);
         }
         return next(context);
     }
@@ -407,6 +490,7 @@ internal sealed class OperatorFilter(
     )
     {
         sessions.Detach(context.Context.ConnectionId);
+        apiKeys.Detach(context.Context.ConnectionId);
         return next(context, exception);
     }
 }

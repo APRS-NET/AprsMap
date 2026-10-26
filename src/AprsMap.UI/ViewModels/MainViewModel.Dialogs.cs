@@ -95,14 +95,45 @@ public sealed partial class MainViewModel
         }
         about.Show(_status, geocoding, Auth);
         about.FolderOpener = SharedStation ? null : FolderOpener; // a browser can't open a folder (F1.31 behavior 4a)
-        await about.ShowFoldersAsync(engine, SharedStation, IsOperator);
+        await about.ShowFoldersAsync(engine, SharedStation, IsOperator, Updates.Status is { CanInstall: true });
         await about.ShowComponentsAsync(engine, ComponentReport.Of(), SharedStation, IsOperator); // F1.34
         if (!SharedStation || IsOperator)
         {
             about.UpdatesText = Updates.Summary(time.LocalTimeZone);
             about.CheckUpdatesCommand = Updates.Status is { CheckDisabled: true } ? null : Updates.CheckCommand;
         }
+        if (SharedStation && IsSignedIn && Updates.Status is { CanInstall: true, Install: not { Running: true } })
+        {
+            about.RestartGatewayCommand = new CommunityToolkit.Mvvm.Input.RelayCommand(AskRestartGateway);
+        }
         OpenDialog("Menu.Help.About.Title", about);
+    }
+
+    /// <summary>
+    /// Restart gateway (docs/features/F1.40-gateway-service-updates.md, behavior 2): asks first, as everyone watching
+    /// is disconnected for a few seconds; the app reconnects by itself.
+    /// </summary>
+    private void AskRestartGateway() =>
+        OpenDialog(
+            "Updates.RestartGateway",
+            new ConfirmViewModel(
+                _text["Updates.RestartGatewayQuestion"],
+                _text["Updates.RestartGateway"],
+                () => _ = RestartGatewayAsync(),
+                () => Dialog = null
+            )
+        );
+
+    private async Task RestartGatewayAsync()
+    {
+        try
+        {
+            await engine.RestartGatewayAsync();
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            ShowError(ex);
+        }
     }
 
     /// <summary>Help › Keyboard shortcuts.</summary>

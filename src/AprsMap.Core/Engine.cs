@@ -135,6 +135,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     /// <inheritdoc />
     public void Dispose()
     {
+        _stopping.Cancel(); // an update's progress watch (F1.40), which then ends by itself
         _messenger.Dispose();
         _beaconer.Dispose();
         _groupTimer.Dispose();
@@ -2653,9 +2654,34 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 string.IsNullOrWhiteSpace(_options.Kiss.Name) ? kiss : kiss with { Name = _options.Kiss.Name.Trim() }
             );
         }
-        if (sources.Count == 0)
+        if (_options.KissSerial.Port is { Length: > 0 } serialPort)
         {
-            LogDefaultsUnusable(_logger, "Neither Engine:Server nor Engine:Kiss:Host is set.");
+            // A USB TNC from the gateway's configuration (docs/features/F1.37-gateway-service.md, behavior 4).
+            var serial = SourceSettings.KissSerialFor(
+                serialPort.Trim(),
+                _options.KissSerial.Baud,
+                _options.KissSerial.TncPort
+            );
+            sources.Add(
+                string.IsNullOrWhiteSpace(_options.KissSerial.Name)
+                    ? serial
+                    : serial with
+                    {
+                        Name = _options.KissSerial.Name.Trim(),
+                    }
+            );
+        }
+        if (_options.Gpsd.Host is { Length: > 0 } gpsdHost)
+        {
+            var gpsd = SourceSettings.GpsNetworkFor(GpsLink.Gpsd, gpsdHost.Trim(), _options.Gpsd.Port);
+            sources.Add(
+                string.IsNullOrWhiteSpace(_options.Gpsd.Name) ? gpsd : gpsd with { Name = _options.Gpsd.Name.Trim() }
+            );
+        }
+        if (sources.All(s => s.Kind == SourceKind.Gps))
+        {
+            // A GPS alone hears nothing: a station needs APRS-IS or a TNC.
+            LogDefaultsUnusable(_logger, "None of Engine:Server, Engine:Kiss:Host or Engine:KissSerial:Port is set.");
             return AppSettings.Empty;
         }
         var profile = new StationProfile(

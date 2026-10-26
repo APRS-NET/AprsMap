@@ -197,6 +197,16 @@ internal sealed class UpdateChecker(HttpClient http, UpdateOptions options)
         {
             InstallKind.Gateway => [.. assets.Where(a => a.Name == $"{prefix}-image.txt")],
             InstallKind.Installed => [.. assets.Where(a => a.Name == $"releases.{options.RuntimeId}.json")],
+            // The tarball and its checksum, both or neither (F1.40 behavior 3).
+            InstallKind.Service => assets
+                .Where(a =>
+                    a.Name == $"{Brand.Slug}-gateway-v{version}-{options.RuntimeId}.tar.gz"
+                    || a.Name == $"{Brand.Slug}-gateway-v{version}-{options.RuntimeId}.tar.gz.sha256"
+                )
+                .ToList()
+                is { Count: 2 } both
+                ? both
+                : [],
             _ =>
             [
                 .. assets.Where(a =>

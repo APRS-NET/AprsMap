@@ -134,6 +134,55 @@ jobs:
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: gh release upload "$TAG" artifacts/* --clobber
 
+  gateway:
+    # The gateway for a Linux service (docs/features/F1.37-gateway-service.md, behavior 6): self-contained, with the
+    # browser app in wwwroot and the systemd unit, sample TOML and install script beside it (deploy/linux).
+    needs: [release-please, test, browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [linux-x64, linux-arm64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          fetch-depth: 0 # MinVer needs tags
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          dotnet-version: 10.0.x
+      - name: Publish
+        run: |
+          dotnet publish src/AprsMap.Gateway/AprsMap.Gateway.csproj -c Release -r ${{ matrix.rid }} \
+            --self-contained -o "publish/${{ matrix.rid }}"
+          cp LICENSE LICENSING.md deploy/linux/* "publish/${{ matrix.rid }}/"
+          # What the updater needs (F1.40): the installed version, and where its releases come from.
+          echo "${{ needs.release-please.outputs.tag_name }}" > "publish/${{ matrix.rid }}/version"
+          echo "${{ github.server_url }}/${{ github.repository }}" > "publish/${{ matrix.rid }}/release-source"
+      - name: The browser app
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: browser
+          path: publish/${{ matrix.rid }}/wwwroot
+      - name: Archive
+        env:
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: |
+          mkdir -p artifacts
+          tar -C "publish/${{ matrix.rid }}" -czf "artifacts/aprsmap-gateway-${TAG}-${{ matrix.rid }}.tar.gz" .
+          # Its checksum beside it: a service release is ready with both (F1.40 behavior 3).
+          (cd artifacts && sha256sum "aprsmap-gateway-${TAG}-${{ matrix.rid }}.tar.gz" \
+            > "aprsmap-gateway-${TAG}-${{ matrix.rid }}.tar.gz.sha256")
+      - name: Attach to the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.release-please.outputs.tag_name }}
+        run: gh release upload "$TAG" artifacts/* --clobber
+
   sbom:
     # Software bills of materials (docs/features/F4.17-sbom.md): CycloneDX JSON for the desktop app, the gateway and the
     # browser app, from the same restore the build uses, checked, then attached to the release beside the files they

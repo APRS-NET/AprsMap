@@ -55,9 +55,14 @@ public static class EngineServiceCollectionExtensions
     }
 }
 
-/// <summary>Runs the engine for the lifetime of the host, unless <see cref="EngineOptions.Enabled"/> is off.</summary>
+/// <summary>
+/// Runs the engine for the lifetime of the host, unless <see cref="EngineOptions.Enabled"/> is off; with
+/// <see cref="EngineOptions.UpdatesOnly"/>, only its update checks.
+/// </summary>
 internal sealed class EngineHostedService(Engine engine, IOptions<EngineOptions> options) : BackgroundService
 {
     protected override Task ExecuteAsync(CancellationToken stoppingToken) =>
-        options.Value.Enabled ? engine.RunAsync(stoppingToken) : Task.CompletedTask;
+        options.Value.UpdatesOnly ? engine.RunUpdatesAsync(stoppingToken)
+        : options.Value.Enabled ? engine.RunAsync(stoppingToken)
+        : Task.CompletedTask;
 }

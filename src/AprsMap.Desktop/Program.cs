@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+using AprsMap.Client.Remote;
 using AprsMap.Contracts;
 using AprsMap.Core;
 using AprsMap.Hosting;
@@ -23,6 +24,7 @@ internal static class Program
 {
     private static IHost? s_host;
     private static PlatformServices? s_platform;
+    private static IEngineService? s_engine;
 
     [STAThread]
     public static int Main(string[] args)
@@ -77,24 +79,43 @@ internal static class Program
             new FileSettingsStore(folder).DeleteAsync(CancellationToken.None).GetAwaiter().GetResult();
             preferences.ClearAsync().GetAwaiter().GetResult();
         }
+        // A gateway's client (F1.39): the gateway's station, and this computer's engine only for its own update checks.
+        // The options are read once and shared, so this is in force before the engine starts.
+        var gatewayClient = DesktopGatewayClient.Load(folder, args);
+        var client = gatewayClient.Connected is { } gateway
+            ? new GatewayConnection(gateway, gatewayClient.ApiKey)
+            : null;
+        if (client is not null)
+        {
+            engineOptions.UpdatesOnly = true;
+        }
         s_host.Start();
+        client?.Start(s_host.Services.GetRequiredService<ILogger<GatewayConnection>>());
         // The web viewer (F1.35): the browser app beside the program, or where configured for a development build.
-        var webViewer = new DesktopWebViewer(
-            s_host.Services,
-            preferences,
-            builder.Configuration["WebViewer:WebRoot"] is { Length: > 0 } configured
-                ? configured
-                : Path.Combine(AppContext.BaseDirectory, "browser"),
-            s_host.Services.GetRequiredService<ILogger<DesktopWebViewer>>()
-        );
-        _ = webViewer.StartAsync(CancellationToken.None); // shares again if it was on; a problem shows in Settings
+        // Off as a gateway's client, which serves browsers itself (F1.39 behavior 5).
+        var webViewer = client is null
+            ? new DesktopWebViewer(
+                s_host.Services,
+                preferences,
+                builder.Configuration["WebViewer:WebRoot"] is { Length: > 0 } configured
+                    ? configured
+                    : Path.Combine(AppContext.BaseDirectory, "browser"),
+                s_host.Services.GetRequiredService<ILogger<DesktopWebViewer>>()
+            )
+            : null;
+        if (webViewer is not null)
+        {
+            _ = webViewer.StartAsync(CancellationToken.None); // shares again if it was on; a problem shows in Settings
+        }
         // The viewer's appearance, read before the first window so it opens in the right theme and language.
         // --reset-layout starts with the default layout (F1.0 behavior 10); the next save replaces the stored one.
         var resetLayout = args.Contains("--reset-layout", StringComparer.OrdinalIgnoreCase);
         s_platform = new PlatformServices
         {
             Preferences = preferences,
-            Tiles = new DesktopTileSource(s_host.Services.GetRequiredService<AprsMap.Tiles.ITileService>()),
+            Tiles =
+                client?.Tiles
+                ?? new DesktopTileSource(s_host.Services.GetRequiredService<AprsMap.Tiles.ITileService>()),
             SavedLayout = resetLayout
                 ? null
                 : new LayoutPreferences(preferences, TimeProvider.System).LoadAsync().GetAwaiter().GetResult(),
@@ -106,9 +127,15 @@ internal static class Program
             // The macOS menu bar holds the menus there; elsewhere a bar in the window, hidden until Alt (F1.29).
             MenuStyle = OperatingSystem.IsMacOS() ? UI.Shell.MenuStyle.System : UI.Shell.MenuStyle.InWindow,
             Installer = installer,
-            FolderOpener = new DesktopFolderOpener(), // Open folder in Help › About (F1.31)
+            // Open folder in Help › About (F1.31); a gateway's folders are on another computer.
+            FolderOpener = client is null ? new DesktopFolderOpener() : null,
             WebViewer = webViewer,
+            GatewayClient = gatewayClient,
+            SharedStation = client is not null,
+            OperatorSession = client?.OperatorSession,
+            UpdateEngine = client is null ? null : s_host.Services.GetRequiredService<IEngineService>(),
         };
+        s_engine = client?.Engine ?? s_host.Services.GetRequiredService<IEngineService>();
         // Ctrl+C or SIGTERM stops the host; close the window too rather than leave a UI with no engine behind it.
         s_host
             .Services.GetRequiredService<IHostApplicationLifetime>()
@@ -133,12 +160,14 @@ internal static class Program
                 app.Dispose();
             }
             // Browsers first, then the engine they were watching.
-            webViewer.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            webViewer?.DisposeAsync().AsTask().GetAwaiter().GetResult();
+            client?.DisposeAsync().AsTask().GetAwaiter().GetResult();
             // Graceful engine shutdown when the window closes; the UI thread has nothing left to do.
             s_host.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
             s_host.Dispose();
             // Last: a downloaded update goes in once this process has ended, reopening it after Restart now.
             installer?.Finish();
+            gatewayClient.Finish(); // after Apply and restart in Settings › Connection (F1.39 behavior 1)
         }
     }
 
@@ -185,9 +214,7 @@ internal static class Program
     /// <summary>Also used by the XAML previewer, which runs without a host.</summary>
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder
-            .Configure(() =>
-                s_host is null ? new App() : new App(s_host.Services.GetRequiredService<IEngineService>(), s_platform)
-            )
+            .Configure(() => s_engine is null ? new App() : new App(s_engine, s_platform))
             .UsePlatformDetect()
             .LogToTrace();
 }
