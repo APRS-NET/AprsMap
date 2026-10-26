@@ -50,11 +50,17 @@ public class GatewayFactory : WebApplicationFactory<Program>
 
     // TestServer has no real sockets; long polling runs through its in-memory handler. JSON uses only the
     // source-generated metadata, as in the published browser app, so a missing hub type fails here and not in a browser.
-    public RemoteEngineService CreateRemote(string? cookie = null, string? origin = null, int? localPort = null)
+    public RemoteEngineService CreateRemote(
+        string? cookie = null,
+        string? origin = null,
+        int? localPort = null,
+        string? apiKey = null,
+        bool https = false
+    )
     {
         var connection = new HubConnectionBuilder()
             .WithUrl(
-                RemoteEngineService.HubUri(Server.BaseAddress),
+                RemoteEngineService.HubUri(https ? new Uri("https://localhost/") : Server.BaseAddress),
                 o =>
                 {
                     o.HttpMessageHandlerFactory = _ => Server.CreateHandler();
@@ -66,6 +72,10 @@ public class GatewayFactory : WebApplicationFactory<Program>
                     if (origin is not null)
                     {
                         o.Headers["Origin"] = origin;
+                    }
+                    if (apiKey is not null)
+                    {
+                        o.Headers["Authorization"] = "Bearer " + apiKey; // an app with the API key (F1.38)
                     }
                     if (localPort is { } port)
                     {

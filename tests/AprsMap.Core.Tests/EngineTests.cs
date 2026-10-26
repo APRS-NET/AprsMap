@@ -368,6 +368,62 @@ public class EngineTests
         Assert.Equal([source.Id], Assert.Single(settings.Profiles).SourceIds);
     }
 
+    [Fact]
+    public async Task AFirstRunUsbTncAndGpsdJoinTheFirstProfile()
+    {
+        // The gateway service's first-run station (docs/features/F1.37-gateway-service.md, behavior 4).
+        var store = new InMemorySettingsStore();
+        var engine = new Engine(
+            Options.Create(
+                new EngineOptions
+                {
+                    Callsign = "N0CALL-10",
+                    Server = "",
+                    KissSerial = new KissSerialSeedOptions
+                    {
+                        Port = "/dev/ttyUSB0",
+                        Baud = 9600,
+                        Name = "USB TNC",
+                    },
+                    Gpsd = new GpsdSeedOptions { Host = "localhost" },
+                }
+            ),
+            new FakeSourceFactory(),
+            store,
+            new FakeTimeProvider(),
+            NullLogger<Engine>.Instance
+        );
+
+        var settings = await engine.GetSettingsAsync(Ct);
+
+        var tnc = settings.SourceList.Single(s => s.Kind == SourceKind.KissSerial);
+        Assert.Equal(("/dev/ttyUSB0", 9600, "USB TNC"), (tnc.SerialPort, tnc.Baud, tnc.Name));
+        var gps = settings.SourceList.Single(s => s.Kind == SourceKind.Gps);
+        Assert.Equal((GpsLink.Gpsd, "localhost"), (gps.GpsLink, gps.Host));
+        Assert.Equal([tnc.Id, gps.Id], Assert.Single(settings.Profiles).SourceIds);
+    }
+
+    [Fact]
+    public async Task AFirstRunGpsAloneIsNoStation()
+    {
+        var engine = new Engine(
+            Options.Create(
+                new EngineOptions
+                {
+                    Callsign = "N0CALL-10",
+                    Server = "",
+                    Gpsd = new GpsdSeedOptions { Host = "localhost" },
+                }
+            ),
+            new FakeSourceFactory(),
+            new InMemorySettingsStore(),
+            new FakeTimeProvider(),
+            NullLogger<Engine>.Instance
+        );
+
+        Assert.Empty((await engine.GetSettingsAsync(Ct)).Profiles); // hears nothing: waits for setup
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("N0CALL-TOOLONGSSID")]

@@ -99,6 +99,13 @@ public sealed class WebViewer : IAsyncDisposable
         ));
         services.AddSingleton<OperatorSessions>();
         services.AddSingleton<SignInAudit>();
+        // Nor an API key (F1.38 is the gateway's): an empty folder, so no key is ever accepted.
+        services.AddSingleton(sp => new ApiKeyStore(
+            Path.Combine(options.WebRoot, "no-api-key"),
+            sp.GetRequiredService<TimeProvider>()
+        ));
+        services.AddSingleton<SignInLimiter>();
+        services.AddSingleton<ApiKeyGate>();
         services.AddSingleton<OperatorFilter>();
         services.AddSingleton<HomeShields>();
         services.AddSingleton<Viewers>();

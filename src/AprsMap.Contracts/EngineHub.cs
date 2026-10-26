@@ -223,6 +223,18 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetLocatorAsync"/>.</summary>
     public const string GetLocator = "GetLocator";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetApiKeyStatusAsync"/>.</summary>
+    public const string GetApiKeyStatus = "GetApiKeyStatus";
+
+    /// <summary>Hub method for <see cref="IEngineService.GenerateApiKeyAsync"/>.</summary>
+    public const string GenerateApiKey = "GenerateApiKey";
+
+    /// <summary>Hub method for <see cref="IEngineService.SaveApiKeyAsync"/>.</summary>
+    public const string SaveApiKey = "SaveApiKey";
+
+    /// <summary>Hub method for <see cref="IEngineService.RemoveApiKeyAsync"/>.</summary>
+    public const string RemoveApiKey = "RemoveApiKey";
+
     /// <summary>English text of <see cref="EngineErrorCodes.OperatorOnly"/>: address lookup, the passcode calculator and reconnecting.</summary>
     public const string OperatorOnlyMessage =
         "Only this gateway's operator can do that. An operator signs in from the app menu.";

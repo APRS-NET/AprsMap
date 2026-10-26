@@ -8,7 +8,7 @@
     <AssemblyName>$(ProductSlug)</AssemblyName>
     <!-- The executable's icon on Windows; generated from build/branding/icon.svg by tools/make-icons.sh. -->
     <ApplicationIcon>../../build/branding/icon.ico</ApplicationIcon>
-    <Description>The standalone desktop app (Windows, Linux, macOS). Runs the engine in-process.</Description>
+    <Description>The standalone desktop app (Windows, Linux, macOS). Runs the engine in-process, or shows a gateway's as its client.</Description>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
 
@@ -17,6 +17,8 @@
     <ProjectReference Include="../AprsMap.Hosting/AprsMap.Hosting.csproj" />
     <!-- The web viewer (F1.35): the gateway's server parts, run around the desktop's own engine. -->
     <ProjectReference Include="../AprsMap.Server/AprsMap.Server.csproj" />
+    <!-- A gateway's client (F1.39): its hub, as the browser app reaches it. -->
+    <ProjectReference Include="../AprsMap.Client.Remote/AprsMap.Client.Remote.csproj" />
   </ItemGroup>
 
   <ItemGroup>

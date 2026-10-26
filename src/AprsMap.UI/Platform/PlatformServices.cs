@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+using AprsMap.Contracts;
 using AprsMap.UI.Appearance;
 
 namespace AprsMap.UI.Platform;
@@ -53,6 +54,18 @@ public sealed record PlatformServices
 
     /// <summary>Installs updates in an installed desktop build (F4.15 behavior 11); null elsewhere.</summary>
     public IAppInstaller? Installer { get; init; }
+
+    /// <summary>
+    /// The app's own engine for its update checks when the station is a gateway's: the desktop as the gateway's client
+    /// (F1.39 behavior 5); null elsewhere.
+    /// </summary>
+    public IEngineService? UpdateEngine { get; init; }
+
+    /// <summary>
+    /// Settings › Connection on the desktop (F1.39 behavior 1): this computer's own engine or a gateway; null in the
+    /// browser, which is always a gateway's client.
+    /// </summary>
+    public IGatewayClientHost? GatewayClient { get; init; }
 
     /// <summary>The desktop's web viewer (F1.35): its station served to browsers; null in the browser.</summary>
     public IWebViewerHost? WebViewer { get; init; }

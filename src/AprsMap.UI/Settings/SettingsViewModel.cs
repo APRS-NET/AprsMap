@@ -49,10 +49,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         MessagingSectionViewModel? messaging = null,
         ObjectsSectionViewModel? objects = null,
         WebViewerSectionViewModel? webViewer = null,
-        StationListsSectionViewModel? stationLists = null
+        StationListsSectionViewModel? stationLists = null,
+        GatewayAccessSectionViewModel? gatewayAccess = null,
+        ConnectionSectionViewModel? connection = null
     )
     {
+        Connection = connection;
         StationLists = stationLists;
+        GatewayAccess = gatewayAccess;
         WebViewer = webViewer;
         ArgumentNullException.ThrowIfNull(appearance);
         _appearance = appearance;
@@ -91,6 +95,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsBeaconsSection),
         nameof(IsDataSection),
         nameof(IsWebViewerSection),
+        nameof(IsGatewayAccessSection),
+        nameof(IsConnectionSection),
         nameof(IsMapSection),
         nameof(IsUnitsSection),
         nameof(IsLayoutSection),
@@ -175,6 +181,18 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Whether Web viewer is showing (docs/features/F1.35-desktop-web-viewer.md).</summary>
     public bool IsWebViewerSection => SelectedSection?.Id == "web-viewer";
+
+    /// <summary>Whether Connection is showing.</summary>
+    public bool IsConnectionSection => SelectedSection?.Id == "connection";
+
+    /// <summary>Connection (F1.39): the desktop's own station or a gateway's; null in the browser.</summary>
+    public ConnectionSectionViewModel? Connection { get; }
+
+    /// <summary>Whether Gateway access is showing.</summary>
+    public bool IsGatewayAccessSection => SelectedSection?.Id == "gateway-access";
+
+    /// <summary>Gateway access (F1.38), for the signed-in operator of a gateway.</summary>
+    public GatewayAccessSectionViewModel? GatewayAccess { get; }
 
     /// <summary>The desktop's web viewer (F1.35); null in the browser.</summary>
     public WebViewerSectionViewModel? WebViewer { get; }
@@ -311,6 +329,14 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("web-viewer", _text["Settings.WebViewer"]));
         }
+        if (Connection is not null)
+        {
+            Sections.Add(new SettingsSection("connection", _text["Settings.Connection"]));
+        }
+        if (GatewayAccess is not null)
+        {
+            Sections.Add(new SettingsSection("gateway-access", _text["Settings.GatewayAccess"]));
+        }
         if (MapItems.Count > 0)
         {
             Sections.Add(new SettingsSection("map", _text["Settings.Map"]));
@@ -338,6 +364,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
             item.Retranslate();
         }
         Profiles?.Retranslate();
+        GatewayAccess?.Retranslate();
+        Connection?.Retranslate();
         Sources?.Retranslate();
         Logging?.Retranslate();
         Messaging?.Retranslate();

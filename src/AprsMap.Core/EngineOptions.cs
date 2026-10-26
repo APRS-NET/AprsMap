@@ -11,6 +11,13 @@ public sealed class EngineOptions
     public bool Enabled { get; set; } = true;
 
     /// <summary>
+    /// Runs nothing but the update checks (docs/features/F4.15-updates.md): the desktop app as a gateway's client
+    /// (docs/features/F1.39-desktop-gateway-client.md, behavior 5), whose station is the gateway's but whose updates are
+    /// its own. No source, beacon, history or listener starts.
+    /// </summary>
+    public bool UpdatesOnly { get; set; }
+
+    /// <summary>
     /// Where settings are stored. Empty means the user's own settings folder (<see cref="SettingsLocation"/>); the
     /// gateway's container points it at a volume.
     /// </summary>
@@ -55,6 +62,15 @@ public sealed class EngineOptions
     /// profile. With <see cref="Server"/> empty the first profile has no APRS-IS source: a TNC-only station.
     /// </summary>
     public KissSeedOptions Kiss { get; set; } = new();
+
+    /// <summary>
+    /// First-run default: a TNC on a serial port, such as a USB one (docs/features/F1.37-gateway-service.md, behavior
+    /// 4), added to the first profile.
+    /// </summary>
+    public KissSerialSeedOptions KissSerial { get; set; } = new();
+
+    /// <summary>First-run default: gpsd, for the station's position (F1.37 behavior 4), added to the first profile.</summary>
+    public GpsdSeedOptions Gpsd { get; set; } = new();
 
     /// <summary>The update check (docs/features/F4.15-updates.md): whether it runs and what kind of install this is.</summary>
     public UpdateOptions Updates { get; set; } = new();
@@ -116,6 +132,35 @@ public sealed class KissSeedOptions
     public int? TncPort { get; set; }
 
     /// <summary>The source's name; null for the host and port.</summary>
+    public string? Name { get; set; }
+}
+
+/// <summary>A first-run TNC on a serial port (docs/features/F1.37-gateway-service.md, behavior 4).</summary>
+public sealed class KissSerialSeedOptions
+{
+    /// <summary>The serial port, such as <c>/dev/serial/by-id/usb-…</c>; empty for none.</summary>
+    public string? Port { get; set; }
+
+    /// <summary>The speed; null for 9600.</summary>
+    public int? Baud { get; set; }
+
+    /// <summary>The TNC's radio port, 0–15; null for 0.</summary>
+    public int? TncPort { get; set; }
+
+    /// <summary>The source's name; null for the port.</summary>
+    public string? Name { get; set; }
+}
+
+/// <summary>A first-run gpsd (docs/features/F1.37-gateway-service.md, behavior 4).</summary>
+public sealed class GpsdSeedOptions
+{
+    /// <summary>gpsd's host, such as <c>localhost</c>; empty for none.</summary>
+    public string? Host { get; set; }
+
+    /// <summary>gpsd's port; null for 2947.</summary>
+    public int? Port { get; set; }
+
+    /// <summary>The source's name; null for the host.</summary>
     public string? Name { get; set; }
 }
 

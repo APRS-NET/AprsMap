@@ -28,8 +28,12 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | First-run server | `Engine__Server` | `rotate.aprs2.net:14580` |
 | First-run server-side filter | `Engine__Filter` | none |
 | First-run KISS over TCP source: host, port, radio port, name (with `Engine__Server` empty, a TNC-only station) | `Engine__Kiss__Host`, `__Port`, `__TncPort`, `__Name` | none |
+| First-run USB TNC source (KISS over serial): port, baud, radio port, name | `Engine__KissSerial__Port`, `__Baud`, `__TncPort`, `__Name` | none (baud `9600`) |
+| First-run gpsd source: host, port, name | `Engine__Gpsd__Host`, `__Port`, `__Name` | none (port `2947`) |
 | Receive only for good: nothing is sent, and APRS-IS logs in unverified | `Engine__ReceiveOnly` | `false` |
 | A second port where an operator signs in; the main port then never offers sign-in | `Gateway__OperatorPort` | none |
+| Where the published app listens, `address:port` (with either of these, they replace the ports above) | `Gateway__Listen` | `0.0.0.0:8080` |
+| Where the operator (admin) app listens, `address:port`; wins over `Gateway__OperatorPort` | `Gateway__OperatorListen` | none |
 | How much of the station's location viewers learn: `Exact`, `Grid` (its 4-character square) or `Hidden` | `Gateway__HomePrivacy` | `Grid` with an operator port, `Exact` without |
 | The page's title, beside the product name and on the browser tab | `Gateway__Title` | none |
 | Let browsers change settings and switch profiles, with no operator set up | `Gateway__AllowSettingsChanges` | `false` |
@@ -83,6 +87,16 @@ sessions are kept in memory, so restarting the gateway signs everyone out. After
 15 minutes that address waits 15 minutes; after 10 for one name in an hour that name waits an hour. Sign-ins, failures,
 waits, sign-outs and every transmitting call are logged with the operator's name and address, never the password.
 
+#### An API key for apps
+
+An app, such as the desktop app used as the gateway's client (F1.39), gets the operator's rights with the gateway's
+API key instead of a password (docs/features/F1.38-gateway-api-key.md). A signed-in operator sets it in the web app's
+**Settings › Gateway access**: **Generate**, **Copy**, then **Apply**. The key is kept only as a hash in
+`api-key.json` in the data folder, so copy it before applying. Switching **Let apps in with an API key** off and
+applying removes the key; applying a new key disconnects the apps using the old one. The app sends it as `Authorization: Bearer <key>`, which the gateway accepts
+only on the operator port, over HTTPS or from the gateway's own host. Wrong keys count as failed sign-ins from that
+address, and each accepted or refused key is logged, never the key.
+
 Endpoints:
 
 | Path | Purpose |
@@ -90,7 +104,7 @@ Endpoints:
 | `/` | The web app (all paths move under `Gateway__PathBase` when it's set) |
 | `/hubs/engine` | SignalR hub the web app uses |
 | `/tiles/providers`, `/tiles/{provider}/{z}/{x}/{y}` | Map tile providers and tiles for the web app, from the gateway's cache |
-| `/auth/sign-in`, `/auth/sign-out`, `/auth/me` | Operator sign-in (F2.9) |
+| `/auth/sign-in`, `/auth/sign-out`, `/auth/me` | Operator sign-in (F2.9); `/auth/me` with an API key says whether the gateway took it (F1.38) |
 | `/healthz` | Health check for orchestrators (the chiseled image has no shell, so probe it over HTTP) |
 | `/source` | Redirects to the source code, the AGPL-3.0 network-use offer |
 
@@ -225,6 +239,51 @@ connection: &tnc
 
 To pass a USB TNC into the container instead, see "A TNC on a serial port".
 
+## Gateway as a Linux service
+
+Without Docker, the gateway runs as a systemd service on a Linux PC, for example one with the TNC on USB and gpsd
+already running. Each release has `aprsmap-gateway-<version>-linux-x64.tar.gz` and `…-linux-arm64.tar.gz`:
+self-contained, with the web app in it, so nothing else needs installing.
+
+```sh
+mkdir aprsmap-gateway && tar -xzf aprsmap-gateway-v0.8.0-linux-x64.tar.gz -C aprsmap-gateway
+sudo aprsmap-gateway/install.sh aprsmap-gateway-v0.8.0-linux-x64.tar.gz
+sudoedit /etc/aprsmap/gateway.toml   # your callsign, TNC and gpsd, before the first start
+sudo systemctl start aprsmap-gateway
+sudo -u aprsmap /opt/aprsmap-gateway/aprsmap-gateway operator add YOURNAME --config /etc/aprsmap/gateway.toml
+journalctl -u aprsmap-gateway -f
+```
+
+The script installs the gateway in `/opt/aprsmap-gateway`, creates the `aprsmap` user (in `dialout`, for the TNC),
+installs `aprsmap-gateway.service` and a commented `/etc/aprsmap/gateway.toml` (never over one you already have), and
+enables the service. On a first install it doesn't start it: the first start stores the station (callsign, sources)
+from the file, and after that the admin web app changes them. Run the script again with a newer tarball to update;
+it keeps the file and the data in `/var/lib/aprsmap`, and restarts the service.
+
+The TOML file holds the same settings as the table above: each table is a section and `snake_case` keys are the
+settings' names, so `[gateway] operator_listen` is `Gateway__OperatorListen` and `[engine.kiss_serial] port` is
+`Engine__KissSerial__Port`. It's read after `appsettings.json`, so environment variables still win. Use it anywhere
+with `--config PATH` or `APRSMAP_CONFIG`; a file that isn't valid TOML stops the gateway with the line at fault.
+
+```toml
+[gateway]
+listen = "0.0.0.0:8080"            # the published, read-only app, on every address
+operator_listen = "127.0.0.1:8081" # the admin app: only on this PC; 0.0.0.0:8081 to reach it from the network
+
+[engine]
+settings_folder = "/var/lib/aprsmap"
+callsign = "N0CALL-10"             # first run only, as are the sources below
+
+[engine.kiss_serial]
+port = "/dev/serial/by-id/usb-Silicon_Labs_CP2102-if00-port0"
+
+[engine.gpsd]
+host = "localhost"
+```
+
+The ports are 8080 and 8081, and the desktop app's web viewer uses 8090, so a desktop app can run beside the service on
+the same PC.
+
 ## Desktop app
 
 ### Installing
@@ -248,6 +307,20 @@ Each release attaches an installer for every platform, built with Velopack. An i
 
 The self-contained archives (`aprsmap-v<version>-<rid>.zip` or `.tar.gz`) are still attached. Unpack one anywhere and run
 `aprsmap` (`aprsmap.exe` on Windows). An archive can't update itself, so it offers **Download** instead.
+
+### The desktop app as a gateway's client
+
+The desktop app can show a gateway's station instead of running its own (docs/features/F1.39-desktop-gateway-client.md),
+for example on the PC that runs the gateway service, or on another one. In **Settings › Connection** choose **A
+gateway**, enter its admin address (`http://127.0.0.1:8081/` on the gateway's own PC) and, to transmit and change the
+gateway's settings, its API key (above); then **Apply and restart**. `--gateway URL` does the same for one run.
+
+As a client the app runs no station of its own: no APRS-IS or TNC connection, GPS, beacons or history, and its web
+viewer is off. Everything is received and processed once, by the gateway; the map's tiles come through it too. Without
+the key, or with one the gateway refuses, the app only watches, and Settings › Connection says why. The app still
+checks for its own updates. The choice and the key are kept in `gateway-client.json` in the app's settings folder,
+readable by your user only; **This computer** and **Apply and restart** go back to the app's own station, whose settings
+are untouched.
 
 ### Where the app keeps its files
 
