@@ -175,6 +175,7 @@ internal static class SettingsValidator
                     profile.Name
                 );
             }
+            ValidateStationLists(profile);
             // One GPS a profile (F3.6 decision 2): a GPS source and a radio whose GPS is On would be two; a radio on Auto
             // steps aside (docs/features/F3.13-tnc-gps.md, behavior 4).
             if (
@@ -616,6 +617,66 @@ internal static class SettingsValidator
     /// <summary>Whether <paramref name="symbol"/> is a table or overlay character and a code APRS.NET accepts.</summary>
     internal static bool IsSymbol(string symbol) =>
         symbol.Length == 2 && AprsSymbol.TryCreate(symbol[0], symbol[1], out _);
+
+    /// <summary>
+    /// A profile's station lists (docs/features/F1.33-station-lists.md, behaviors 1–3): each named, names not repeated,
+    /// every line an entry, and no more than the limits (decision 6).
+    /// </summary>
+    private static void ValidateStationLists(StationProfile profile)
+    {
+        var lists = profile.StationListSet;
+        if (lists.Count > StationList.MaxLists)
+        {
+            throw Fail(
+                EngineErrorCodes.StationListTooMany,
+                $"Profile '{profile.Name}' has more than {StationList.MaxLists} station lists.",
+                profile.Name
+            );
+        }
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var list in lists)
+        {
+            if (string.IsNullOrWhiteSpace(list.Name) || !names.Add(list.Name.Trim()))
+            {
+                throw new EngineArgumentException(
+                    new EngineError(
+                        EngineErrorCodes.StationListNameTaken,
+                        $"Each station list needs a name of its own; '{list.Name}' is taken or empty.",
+                        new Dictionary<string, string> { [EngineErrorArgs.List] = list.Name }
+                    )
+                );
+            }
+            var read = StationListText.Parse(list.Text);
+            if (read.Errors.Count > 0)
+            {
+                var first = read.Errors[0];
+                throw new EngineArgumentException(
+                    new EngineError(
+                        EngineErrorCodes.StationListEntryInvalid,
+                        $"Line {first.Line} of '{list.Name}' isn't a callsign, a prefix with * or an object name: {first.Text}",
+                        new Dictionary<string, string>
+                        {
+                            [EngineErrorArgs.List] = list.Name,
+                            [EngineErrorArgs.Line] = first.Line.ToString(
+                                System.Globalization.CultureInfo.InvariantCulture
+                            ),
+                            [EngineErrorArgs.Value] = first.Text.Trim(),
+                        }
+                    )
+                );
+            }
+            if (read.Entries.Count > StationList.MaxEntries)
+            {
+                throw new EngineArgumentException(
+                    new EngineError(
+                        EngineErrorCodes.StationListTooMany,
+                        $"'{list.Name}' has more than {StationList.MaxEntries} entries.",
+                        new Dictionary<string, string> { [EngineErrorArgs.List] = list.Name }
+                    )
+                );
+            }
+        }
+    }
 
     private static EngineArgumentException Fail(
         string code,

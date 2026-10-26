@@ -93,6 +93,10 @@ public sealed record StationPage(IReadOnlyList<StationRow> Rows, int Total);
 /// <param name="DeviceClasses">Device classes shown (aprs-deviceid's, such as <c>Tracker</c>); null or empty for all.</param>
 /// <param name="MicEStatuses">Mic-E statuses shown (APRS.NET's <c>MicEMessage</c> names); null or empty for all.</param>
 /// <param name="Tags">Comment and status tags shown (<c>!word!</c> and <c>#word</c>, as written); null or empty for all.</param>
+/// <param name="Lists">
+/// Only stations in these station lists of the active profile, by id (docs/features/F1.33-station-lists.md, behavior 6);
+/// null or empty for all. Lists that no longer exist are ignored.
+/// </param>
 public sealed record StationFilter(
     StationKinds Kinds = StationKinds.All,
     IReadOnlyList<string>? Categories = null,
@@ -105,7 +109,8 @@ public sealed record StationFilter(
     IReadOnlyList<string>? MicEStatuses = null,
     IReadOnlyList<string>? Tags = null,
     bool WithTelemetry = false,
-    bool HasProblems = false
+    bool HasProblems = false,
+    IReadOnlyList<string>? Lists = null
 )
 {
     /// <summary>Shows everything.</summary>
@@ -124,7 +129,8 @@ public sealed record StationFilter(
         && MicEStatuses is null or { Count: 0 }
         && Tags is null or { Count: 0 }
         && !WithTelemetry
-        && !HasProblems;
+        && !HasProblems
+        && Lists is null or { Count: 0 };
 }
 
 /// <summary>How a station's last packet arrived, for the View filter (F1.9 behavior 1.4).</summary>

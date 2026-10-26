@@ -141,6 +141,16 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial string? KindText { get; private set; }
 
+    /// <summary>
+    /// The station lists it's in, with its notes there: "In Spotters: Sweep 2" (docs/features/F1.33-station-lists.md,
+    /// behavior 2); null when it's in none.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? ListsText { get; private set; }
+
+    /// <summary>The active profile's station lists; set by the main view model.</summary>
+    internal Func<IReadOnlyList<StationList>>? StationLists { get; set; }
+
     /// <summary>"Heard 4 minutes ago · 12 packets" (behavior 2.2).</summary>
     [ObservableProperty]
     public partial string? HeardText { get; private set; }
@@ -611,6 +621,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         if (d is null || Name is null)
         {
             Symbol = KindText = HeardText = HeardTime = PositionText = LocatorText = RangeText = MotionText = null;
+            ListsText = null;
             EstimateText = null;
             Comment = Status = ArrivalText = Path = DeviceText = LastPacket = HeardViaText = null;
             WriteWeather(null, units: UnitSettings.Metric, lastHeard: default);
@@ -621,6 +632,19 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         var culture = _text.Culture;
         var units = _units();
         Symbol = d.Symbol;
+        var inLists = (StationLists?.Invoke() ?? [])
+            .Select(l => (l.Name, Entry: l.Entries.FirstOrDefault(e => e.Matches(Name))))
+            .Where(x => x.Entry is not null)
+            .Select(x =>
+                x.Entry!.Note is { } note
+                    ? _text.Format(
+                        "Details.InListWithNote",
+                        new Dictionary<string, object?> { ["list"] = x.Name, ["note"] = note }
+                    )
+                    : _text.Format("Details.InList", new Dictionary<string, object?> { ["list"] = x.Name })
+            )
+            .ToList();
+        ListsText = inLists.Count > 0 ? string.Join(" · ", inLists) : null;
         KindText = d.Kind switch
         {
             StationKind.Object or StationKind.Item => _text.Format(

@@ -42,6 +42,15 @@ public static class EngineErrorCodes
     /// <summary>A profile uses more than one GPS (docs/features/F3.6-gps.md, behavior 2).</summary>
     public const string ProfileTwoGps = "settings.profile.two-gps";
 
+    /// <summary>A station list has a line that can't be an entry (docs/features/F1.33-station-lists.md, behavior 3).</summary>
+    public const string StationListEntryInvalid = "settings.station-list.entry-invalid";
+
+    /// <summary>A profile has more lists, or a list more entries, than allowed (F1.33 decision 6).</summary>
+    public const string StationListTooMany = "settings.station-list.too-many";
+
+    /// <summary>Two station lists of a profile have the same name, or one has none (F1.33).</summary>
+    public const string StationListNameTaken = "settings.station-list.name-taken";
+
     /// <summary>The moving schedule's speeds, rates or turns can't be used (F2.2, #335).</summary>
     public const string ProfileMovingInvalid = "settings.profile.moving-invalid";
 
@@ -434,6 +443,12 @@ public static class EngineErrorArgs
 
     /// <summary>A server's own words, such as why it refused a login (not translated).</summary>
     public const string Reason = "reason";
+
+    /// <summary>A station list's name (docs/features/F1.33-station-lists.md).</summary>
+    public const string List = "list";
+
+    /// <summary>A line's number, from 1.</summary>
+    public const string Line = "line";
 
     /// <summary>
     /// Which pair of a Maidenhead locator a character belongs to: <c>field</c>, <c>square</c>, <c>subsquare</c>,

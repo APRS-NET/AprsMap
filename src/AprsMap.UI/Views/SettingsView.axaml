@@ -1315,6 +1315,114 @@
             />
             <TextBlock Text="{l:T Objects.Rules}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
           </StackPanel>
+          <!-- Settings › Station lists (F1.33): the profile's lists, and a plain-text editor with Copy and Paste. -->
+          <StackPanel x:Name="StationListsSection" IsVisible="{Binding IsStationListsSection}" Spacing="12">
+            <TextBlock Text="{Binding StationLists.Heading, FallbackValue={x:Null}}" FontWeight="SemiBold" />
+            <TextBlock Text="{l:T StationLists.Description}" TextWrapping="Wrap" />
+            <ListBox
+              x:Name="StationListPicker"
+              ItemsSource="{Binding StationLists.Lists, FallbackValue={x:Null}}"
+              SelectedItem="{Binding StationLists.Selected, FallbackValue={x:Null}}"
+              AutomationProperties.Name="{l:T Settings.StationLists}"
+              MaxHeight="240"
+            >
+              <ListBox.ItemTemplate>
+                <DataTemplate DataType="s:StationListRow">
+                  <TextBlock TextWrapping="Wrap">
+                    <Run Text="{Binding Name}" FontWeight="SemiBold" />
+                    <Run Text=" · " />
+                    <Run Text="{Binding Count}" />
+                  </TextBlock>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <Button
+              x:Name="NewStationListButton"
+              Content="{l:T StationLists.New}"
+              Command="{Binding StationLists.NewCommand, FallbackValue={x:Null}}"
+              HorizontalAlignment="Left"
+            />
+            <StackPanel Spacing="8" IsVisible="{Binding StationLists.IsEditing, FallbackValue=False}">
+              <TextBlock Text="{l:T StationLists.Name}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBox
+                x:Name="StationListNameBox"
+                Text="{Binding StationLists.Name, FallbackValue=''}"
+                AutomationProperties.Name="{l:T StationLists.Name}"
+                MinWidth="260"
+                HorizontalAlignment="Left"
+              />
+              <TextBlock Text="{l:T StationLists.Entries}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBlock
+                Text="{l:T StationLists.EntriesHelp}"
+                TextWrapping="Wrap"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
+              <TextBox
+                x:Name="StationListTextBox"
+                Text="{Binding StationLists.Text, FallbackValue=''}"
+                AcceptsReturn="True"
+                TextWrapping="NoWrap"
+                FontFamily="{DynamicResource Font.Mono}"
+                MinHeight="160"
+                MaxHeight="360"
+                AutomationProperties.Name="{l:T StationLists.Entries}"
+              />
+              <TextBlock
+                x:Name="StationListSummary"
+                Text="{Binding StationLists.Summary, FallbackValue={x:Null}}"
+                TextWrapping="Wrap"
+                AutomationProperties.LiveSetting="Polite"
+              />
+              <WrapPanel Orientation="Horizontal">
+                <Button
+                  x:Name="SaveStationListButton"
+                  Classes="accent"
+                  Content="{l:T StationLists.Save}"
+                  Command="{Binding StationLists.SaveListCommand, FallbackValue={x:Null}}"
+                  IsEnabled="{Binding StationLists.CanSave, FallbackValue=False}"
+                  Margin="0,0,8,8"
+                />
+                <Button
+                  Content="{l:T StationLists.CopyList}"
+                  Command="{Binding StationLists.CopyListCommand, FallbackValue={x:Null}}"
+                  Margin="0,0,8,8"
+                />
+                <Button
+                  Content="{l:T StationLists.Paste}"
+                  Command="{Binding StationLists.PasteCommand, FallbackValue={x:Null}}"
+                  Margin="0,0,8,8"
+                />
+                <Button
+                  Content="{l:T StationLists.Delete}"
+                  Command="{Binding StationLists.DeleteCommand, FallbackValue={x:Null}}"
+                  Margin="0,0,8,8"
+                />
+              </WrapPanel>
+              <WrapPanel
+                Orientation="Horizontal"
+                IsVisible="{Binding !!StationLists.OtherProfiles.Count, FallbackValue=False}"
+              >
+                <ComboBox
+                  x:Name="CopyToProfileBox"
+                  ItemsSource="{Binding StationLists.OtherProfiles, FallbackValue={x:Null}}"
+                  SelectedItem="{Binding StationLists.CopyTarget, FallbackValue={x:Null}}"
+                  AutomationProperties.Name="{l:T StationLists.CopyToProfile}"
+                  MinWidth="160"
+                  Margin="0,0,8,8"
+                />
+                <Button
+                  Content="{l:T StationLists.CopyToProfile}"
+                  Command="{Binding StationLists.CopyToProfileCommand, FallbackValue={x:Null}}"
+                  Margin="0,0,8,8"
+                />
+              </WrapPanel>
+            </StackPanel>
+            <TextBlock
+              Text="{Binding StationLists.Message, FallbackValue={x:Null}}"
+              IsVisible="{Binding StationLists.Message, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
           <StackPanel x:Name="AppearanceSection" IsVisible="{Binding IsAppearanceSection}" Spacing="20">
             <ItemsControl x:Name="AppearanceOptions" ItemsSource="{Binding AppearanceItems}">
               <ItemsControl.ItemsPanel>
