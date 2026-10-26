@@ -97,6 +97,18 @@ function prefClear(prefix) {
   }
 }
 
+// A panel in a tab of its own (F1.24 behavior 1), and the selection shared between the app's tabs (behavior 3).
+const openTab = (url) => { globalThis.open(url, '_blank', 'noopener'); };
+let selection = null;
+const selectionOpen = (name, receive) => {
+  if (!('BroadcastChannel' in globalThis)) {
+    return;
+  }
+  selection = new BroadcastChannel(name);
+  selection.onmessage = (event) => receive(typeof event.data === 'string' ? event.data : '');
+};
+const selectionPublish = (station) => { selection?.postMessage(station); };
+
 const prefersReducedMotion = () => globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const coarsePointer = () => globalThis.matchMedia?.('(pointer: coarse)').matches ?? false;
 
@@ -115,6 +127,9 @@ try {
       (globalThis.screen?.width ?? 1280) * (globalThis.screen?.height ?? 800) * (globalThis.devicePixelRatio ?? 1) ** 2,
     prefersReducedMotion,
     coarsePointer,
+    openTab,
+    selectionOpen,
+    selectionPublish,
     appStarted: () => {
       started = true;
       clearTimeout(slow);

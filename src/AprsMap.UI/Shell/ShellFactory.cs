@@ -41,6 +41,49 @@ public sealed class ShellFactory(object context, bool managedWindows) : Factory
     /// <summary>Moves a panel to a tab beside the map (F1.0 behavior 16).</summary>
     public IRelayCommand<IDockable?> MoveBesideMap => field ??= MoveCommand(CentreDock);
 
+    /// <summary>Opens a panel in a tab of its own (docs/features/F1.24-web-pop-out.md, behavior 1); null without tabs.</summary>
+    internal Action<string>? PopOutOpener { get; set; } // set by the app before any view shows
+
+    /// <summary>Whether a panel can open in a tab of its own: in a browser.</summary>
+    public bool CanPopOut => PopOutOpener is not null;
+
+    /// <summary>Opens the panel in a tab of its own (the panel menu's Open in a new tab).</summary>
+    public IRelayCommand<IDockable?> OpenInNewTab =>
+        field ??= new RelayCommand<IDockable?>(panel =>
+        {
+            if (panel is PanelTool { Kind: var kind })
+            {
+                PopOutOpener?.Invoke(kind);
+            }
+        });
+
+    /// <summary>
+    /// A layout of <paramref name="kind"/> alone, filling the window, for a panel popped out of another tab (F1.24
+    /// behavior 2): it can't be closed, floated or moved, since there's nowhere else for it to go.
+    /// </summary>
+    public IRootDock CreatePopOutLayout(string kind)
+    {
+        var panel = CreatePanel(kind);
+        panel.CanClose = false;
+        panel.CanFloat = false;
+        panel.CanDrag = false;
+        panel.CanPin = false; // pinned, the only panel would hide and leave the tab empty
+        var dock = new ToolDock
+        {
+            Id = "popout",
+            IsCollapsable = false,
+            VisibleDockables = CreateList<IDockable>(panel),
+            ActiveDockable = panel,
+        };
+        var root = CreateRootDock();
+        root.Id = "root";
+        root.IsCollapsable = false;
+        root.VisibleDockables = CreateList<IDockable>(dock);
+        root.ActiveDockable = dock;
+        root.DefaultDockable = dock;
+        return root;
+    }
+
     /// <summary>Set by the shell: puts the floating dashboard back beside the map.</summary>
     internal Action<IDockable>? Returner { get; set; }
 

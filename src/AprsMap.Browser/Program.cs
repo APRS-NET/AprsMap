@@ -47,6 +47,10 @@ internal static class Program
             Restart = BrowserPreferenceStore.ReloadPage,
             SetTitle = BrowserPreferenceStore.SetTitle,
             SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
+            // A panel in a tab of its own, and the selection shared between tabs (F1.24).
+            PopOutPanel = BrowserPopOut.PanelOf(pageUri),
+            OpenPopOut = kind => BrowserPopOut.OpenTab(BrowserPopOut.PageFor(gateway, kind).ToString()),
+            SelectionChannel = new BrowserPopOut.Channel(),
             CoarsePointer = BrowserPreferenceStore.IsCoarsePointer(),
 #if DEBUG
             ShowPseudoLanguage = true,
