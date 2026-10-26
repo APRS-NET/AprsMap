@@ -2445,7 +2445,7 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>New API key</value>
   </data>
   <data name="GatewayAccess.KeyHint" xml:space="preserve">
-    <value>Generate one, or paste one of at least 32 characters</value>
+    <value>Generate one, or paste one of at least 32 characters, then Apply</value>
   </data>
   <data name="GatewayAccess.Generate" xml:space="preserve">
     <value>Generate</value>
@@ -2453,11 +2453,8 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="GatewayAccess.Copy" xml:space="preserve">
     <value>Copy</value>
   </data>
-  <data name="GatewayAccess.Save" xml:space="preserve">
-    <value>Save key</value>
-  </data>
-  <data name="GatewayAccess.Remove" xml:space="preserve">
-    <value>Remove key</value>
+  <data name="GatewayAccess.On" xml:space="preserve">
+    <value>Let apps in with an API key</value>
   </data>
   <data name="GatewayAccess.Saved" xml:space="preserve">
     <value>Saved. Apps using the old key are disconnected and can only watch until they have this one.</value>

@@ -8,8 +8,9 @@ namespace AprsMap.UI.Settings;
 
 /// <summary>
 /// Settings › Gateway access (docs/features/F1.38-gateway-api-key.md, behaviors 1, 6): the gateway's API key, for apps
-/// that control it. Generate, Copy, Save and Remove; a saved key is never shown again, only that one is set and since
-/// when. The signed-in operator's, on a gateway only.
+/// that control it. API access on or off, the key (Generate, Copy) and Apply: on with a key in the field saves it, off
+/// removes the saved one. A saved key is never shown again, only that one is set and since when. The signed-in
+/// operator's, on a gateway only.
 /// </summary>
 public sealed partial class GatewayAccessSectionViewModel : ObservableObject
 {
@@ -31,16 +32,21 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
 
     /// <summary>The key being set: generated, typed or pasted; empty once it's saved.</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(CopyCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyCommand), nameof(CopyCommand))]
     public partial string Key { get; set; } = string.Empty;
+
+    /// <summary>Apps may connect with an API key; turned off and applied, the saved key is removed.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ApplyCommand))]
+    public partial bool On { get; set; }
 
     /// <summary>"No API key: apps can only watch." or "An API key is set, since 26/10/2026 12:00."</summary>
     [ObservableProperty]
     public partial string StatusText { get; private set; }
 
-    /// <summary>Whether a key is saved, so Remove is offered.</summary>
+    /// <summary>Whether a key is saved.</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(RemoveCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyCommand))]
     public partial bool IsSet { get; private set; }
 
     /// <summary>What went wrong, or that the key was saved and is to be copied now; null for nothing.</summary>
@@ -68,6 +74,13 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
     {
         _status = status;
         IsSet = status.Set;
+        On = status.Set;
+        ShowStatusText();
+    }
+
+    private void ShowStatusText()
+    {
+        var status = _status;
         StatusText =
             status is { Set: true, SetAt: { } at }
                 ? _text.Format(
@@ -88,6 +101,7 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
         try
         {
             Key = await _engine.GenerateApiKeyAsync();
+            On = true;
             Message = null;
         }
         catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
@@ -102,35 +116,33 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(HasKey))]
     private Task CopyAsync() => CopyToClipboard?.Invoke(Key) ?? Task.CompletedTask;
 
-    /// <summary>Saves the key in the field; the old one stops working at once.</summary>
-    [RelayCommand(CanExecute = nameof(HasKey))]
-    private async Task SaveAsync()
+    /// <summary>
+    /// Whether Apply would change something: a key in the field to save while on, or the saved key to remove while off.
+    /// </summary>
+    private bool CanApply => On ? HasKey : IsSet;
+
+    /// <summary>Saves the key in the field (the old one stops working at once), or with access off removes the key.</summary>
+    [RelayCommand(CanExecute = nameof(CanApply))]
+    private async Task ApplyAsync()
     {
         try
         {
-            Show(await _engine.SaveApiKeyAsync(Key.Trim()));
-            Key = string.Empty;
+            if (On)
+            {
+                Show(await _engine.SaveApiKeyAsync(Key.Trim()));
+                Key = string.Empty;
+                Message = _text["GatewayAccess.Saved"];
+            }
+            else
+            {
+                await _engine.RemoveApiKeyAsync();
+                Show(ApiKeyStatus.None);
+                Key = string.Empty;
+                Message = _text["GatewayAccess.Removed"];
+            }
             HasProblem = false;
-            Message = _text["GatewayAccess.Saved"];
         }
         catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
-        {
-            Problem(ex);
-        }
-    }
-
-    /// <summary>Removes the key: apps can only watch.</summary>
-    [RelayCommand(CanExecute = nameof(IsSet))]
-    private async Task RemoveAsync()
-    {
-        try
-        {
-            await _engine.RemoveApiKeyAsync();
-            Show(ApiKeyStatus.None);
-            HasProblem = false;
-            Message = _text["GatewayAccess.Removed"];
-        }
-        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
         {
             Problem(ex);
         }
@@ -143,5 +155,5 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
     }
 
     /// <summary>The texts again, in the new language.</summary>
-    internal void Retranslate() => Show(_status);
+    internal void Retranslate() => ShowStatusText();
 }
