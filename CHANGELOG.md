@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.6.0-alpha.2...v0.6.0-alpha.3) (2026-10-26)
+
+
+### Features
+
+* **dashboard:** expand a tile's chart into a plot with a cursor and its time and value ([e44aafc](https://github.com/APRS-NET/AprsMap/commit/e44aafc5269fb8672dc459648b906e5b699b8165))
+* **dashboard:** GPS statistics, and the GPS in use's fix time and losses as metrics (F3.14) ([c8b2d3b](https://github.com/APRS-NET/AprsMap/commit/c8b2d3ba61f20aa25ae27fad2a23e2737f6edff5))
+
+
+### Bug Fixes
+
+* **desktop:** closing with a browser still watching doesn't wait for it ([01e7cce](https://github.com/APRS-NET/AprsMap/commit/01e7cceb02f16d7062f1b7aee1fd0019a8320614))
+* **engine:** a network TNC that goes quiet warns, as a serial one does ([f4e2a60](https://github.com/APRS-NET/AprsMap/commit/f4e2a60980c971e5aff8ce541eb8bb0a07479c9d))
+
 ## [0.6.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.6.0-alpha.1...v0.6.0-alpha.2) (2026-10-26)
 
 
