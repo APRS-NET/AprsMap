@@ -105,8 +105,9 @@ public sealed class WebViewerTests(GatewayFactory gateway) : IClassFixture<Gatew
         };
         await browser.GetStatusAsync(Ct);
 
-        // The app closing with a tab still open (F4.15 behavior 11: Restart now waits for this before the update).
-        await viewer.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10), Ct);
+        // The app closing with a tab still open (F4.15 behavior 11: Restart now waits for this before the update): the
+        // browser is cut off after the grace period rather than waited for.
+        await viewer.DisposeAsync().AsTask().WaitAsync(WebViewer.StopGrace + TimeSpan.FromSeconds(5), Ct);
 
         await watching.CancelAsync();
         foreach (var stream in streams)

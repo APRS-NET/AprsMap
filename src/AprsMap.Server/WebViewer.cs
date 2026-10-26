@@ -163,8 +163,14 @@ public sealed class WebViewer : IAsyncDisposable
     public async ValueTask DisposeAsync() =>
         await Task.Run(async () =>
             {
-                await _app.StopAsync().ConfigureAwait(false);
+                // Browsers still connected get a moment to close, then they're cut off: the server would otherwise wait
+                // up to 30 seconds for them, and the app with it.
+                using var grace = new CancellationTokenSource(StopGrace);
+                await _app.StopAsync(grace.Token).ConfigureAwait(false);
                 await _app.DisposeAsync().ConfigureAwait(false);
             })
             .ConfigureAwait(false);
+
+    /// <summary>How long connected browsers get to close as the viewer stops.</summary>
+    internal static readonly TimeSpan StopGrace = TimeSpan.FromSeconds(2);
 }
