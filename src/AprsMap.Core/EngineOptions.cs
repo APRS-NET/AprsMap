@@ -175,6 +175,12 @@ public enum InstallKind
 
     /// <summary>A gateway: ready when the release says its container image is pushed.</summary>
     Gateway,
+
+    /// <summary>
+    /// The Linux service gateway (docs/features/F1.40-gateway-service-updates.md): ready when its tarball for this
+    /// architecture and the tarball's checksum are attached; updated by its updater, from here.
+    /// </summary>
+    Service,
 }
 
 /// <summary>The device list's download, where the engine starts: <c>Engine:DeviceList:…</c> (F4.16 behavior 10).</summary>

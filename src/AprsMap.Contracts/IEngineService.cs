@@ -412,6 +412,27 @@ public interface IEngineService
     Task SkipUpdateAsync(string version, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Update and restart on the Linux service gateway (docs/features/F1.40-gateway-service-updates.md, behavior 4):
+    /// asks its updater to install <paramref name="version"/>, the update offered; where it stands is in
+    /// <see cref="UpdateStatus.Install"/>. The operator's only.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">
+    /// Not the service gateway (<see cref="EngineErrorCodes.GatewayNotService"/>), or not the operator.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// <paramref name="version"/> isn't the update offered, or an update is already under way
+    /// (<see cref="EngineErrorCodes.UpdateNotOffered"/>).
+    /// </exception>
+    Task InstallUpdateAsync(string version, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restarts the Linux service gateway (F1.40 behavior 2): it stops cleanly and systemd starts it again. The
+    /// operator's only.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="InstallUpdateAsync"/>.</exception>
+    Task RestartGatewayAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Posts a bulletin or announcement (docs/features/F2.5-bulletins.md, behaviors 5–7): sent now, then repeated on
     /// APRS.NET's bulletin schedule until it finishes or is stopped. Posting again to the same addressee replaces the
     /// text and starts the schedule again. It shows in <see cref="WatchBulletinsAsync"/> as ours, with its next send.

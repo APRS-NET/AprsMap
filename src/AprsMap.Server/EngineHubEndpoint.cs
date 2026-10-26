@@ -14,7 +14,9 @@ internal sealed class EngineHubEndpoint(
     OperatorStore operators,
     HomeShields shields,
     ApiKeyStore apiKeys,
-    SignInAudit audit
+    SignInAudit audit,
+    IOptions<Core.EngineOptions> engineOptions,
+    IHostApplicationLifetime lifetime
 ) : Hub
 {
     /// <summary>The widest a viewer's map part may be on a gateway that follows viewers (F1.2 behavior 9).</summary>
@@ -571,6 +573,51 @@ internal sealed class EngineHubEndpoint(
     {
         Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
         return engine.SkipUpdateAsync(version, Context.ConnectionAborted);
+    }
+
+    /// <summary>
+    /// Update and restart on the Linux service gateway (docs/features/F1.40-gateway-service-updates.md, behavior 4): a
+    /// signed-in operator or an app with the key only, whatever <c>AllowSettingsChanges</c> says, since it reaches root.
+    /// </summary>
+    [HubMethodName(EngineHub.InstallUpdate)]
+    public async Task InstallUpdate(string version)
+    {
+        RequireOperator();
+        try
+        {
+            await engine.InstallUpdateAsync(version, Context.ConnectionAborted).ConfigureAwait(false);
+            audit.Administered(OperatorName, $"update to {version}");
+        }
+        catch (Exception ex) when (ToHubException(ex) is { } hub)
+        {
+            throw hub;
+        }
+    }
+
+    /// <summary>
+    /// Restart on the Linux service gateway (F1.40 behavior 2): answers, then stops cleanly; systemd starts it again
+    /// (<c>Restart=always</c>). Browsers and apps reconnect by themselves.
+    /// </summary>
+    [HubMethodName(EngineHub.RestartGateway)]
+    public Task RestartGateway()
+    {
+        RequireOperator();
+        if (engineOptions.Value.Updates.Kind != Core.InstallKind.Service)
+        {
+            throw new HubException(
+                EngineHub.EncodeError(
+                    new EngineError(
+                        EngineErrorCodes.GatewayNotService,
+                        "Only the Linux service gateway restarts itself from here."
+                    )
+                )
+            );
+        }
+        audit.Administered(OperatorName, "restart");
+        // After this answer has gone: the stop closes every connection, this one too.
+        _ = Task.Delay(TimeSpan.FromMilliseconds(500), TimeProvider.System)
+            .ContinueWith(_ => lifetime.StopApplication(), TaskScheduler.Default);
+        return Task.CompletedTask;
     }
 
     [HubMethodName(EngineHub.WatchBulletins)]

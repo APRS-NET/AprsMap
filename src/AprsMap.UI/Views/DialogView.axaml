@@ -220,6 +220,13 @@
                       Command="{Binding CheckUpdatesCommand}"
                       IsVisible="{Binding CheckUpdatesCommand, Converter={x:Static ObjectConverters.IsNotNull}}"
                     />
+                    <!-- The Linux service gateway's operator (F1.40 behavior 2). -->
+                    <Button
+                      x:Name="RestartGatewayButton"
+                      Content="{l:T Updates.RestartGateway}"
+                      Command="{Binding RestartGatewayCommand}"
+                      IsVisible="{Binding RestartGatewayCommand, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    />
                   </WrapPanel>
                   <!-- Files (docs/features/F1.31-files.md): each folder with Copy and, on the desktop, Open folder. -->
                   <TextBlock Text="{l:T About.Files}" FontWeight="SemiBold" Margin="0,8,0,0" />

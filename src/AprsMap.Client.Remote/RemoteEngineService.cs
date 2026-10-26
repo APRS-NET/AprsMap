@@ -539,6 +539,17 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     }
 
     /// <inheritdoc />
+    public Task InstallUpdateAsync(string version, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(version);
+        return WithEngineErrors(() => _connection.InvokeAsync(EngineHub.InstallUpdate, version, cancellationToken));
+    }
+
+    /// <inheritdoc />
+    public Task RestartGatewayAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.RestartGateway, cancellationToken));
+
+    /// <inheritdoc />
     public Task<ApiKeyStatus> GetApiKeyStatusAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<ApiKeyStatus>(EngineHub.GetApiKeyStatus, cancellationToken));
 

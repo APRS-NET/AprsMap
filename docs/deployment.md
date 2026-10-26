@@ -89,13 +89,13 @@ waits, sign-outs and every transmitting call are logged with the operator's name
 
 #### An API key for apps
 
-An app, such as the desktop app used as the gateway's client (F1.39), gets the operator's rights with the gateway's
-API key instead of a password (docs/features/F1.38-gateway-api-key.md). A signed-in operator sets it in the web app's
-**Settings › Gateway access**: **Generate**, **Copy**, then **Apply**. The key is kept only as a hash in
-`api-key.json` in the data folder, so copy it before applying. Switching **Let apps in with an API key** off and
-applying removes the key; applying a new key disconnects the apps using the old one. The app sends it as `Authorization: Bearer <key>`, which the gateway accepts
-only on the operator port, over HTTPS or from the gateway's own host. Wrong keys count as failed sign-ins from that
-address, and each accepted or refused key is logged, never the key.
+An app, such as the desktop app used as the gateway's client (F1.39), gets the operator's rights with the gateway's API
+key instead of a password (docs/features/F1.38-gateway-api-key.md). A signed-in operator sets it in the web app's
+**Settings › Gateway access**: **Generate**, **Copy**, then **Apply**. The key is kept only as a hash in `api-key.json`
+in the data folder, so copy it before applying. Switching **Let apps in with an API key** off and applying removes the
+key; applying a new key disconnects the apps using the old one. The app sends it as `Authorization: Bearer <key>`, which
+the gateway accepts only on the operator port, over HTTPS or from the gateway's own host. Wrong keys count as failed
+sign-ins from that address, and each accepted or refused key is logged, never the key.
 
 Endpoints:
 
@@ -255,10 +255,10 @@ journalctl -u aprsmap-gateway -f
 ```
 
 The script installs the gateway in `/opt/aprsmap-gateway`, creates the `aprsmap` user (in `dialout`, for the TNC),
-installs `aprsmap-gateway.service` and a commented `/etc/aprsmap/gateway.toml` (never over one you already have), and
-enables the service. On a first install it doesn't start it: the first start stores the station (callsign, sources)
-from the file, and after that the admin web app changes them. Run the script again with a newer tarball to update;
-it keeps the file and the data in `/var/lib/aprsmap`, and restarts the service.
+installs `aprsmap-gateway.service`, the updater (below) and a commented `/etc/aprsmap/gateway.toml` (never over one you
+already have), and enables the service. On a first install it doesn't start it: the first start stores the station
+(callsign, sources) from the file, and after that the admin web app changes them. Run the script again with a newer
+tarball to update; it keeps the file and the data in `/var/lib/aprsmap`, and restarts the service.
 
 The TOML file holds the same settings as the table above: each table is a section and `snake_case` keys are the
 settings' names, so `[gateway] operator_listen` is `Gateway__OperatorListen` and `[engine.kiss_serial] port` is
@@ -280,6 +280,15 @@ port = "/dev/serial/by-id/usb-Silicon_Labs_CP2102-if00-port0"
 [engine.gpsd]
 host = "localhost"
 ```
+
+**Updating and restarting.** When a new version is out, the operator sees it in the admin web app's status bar; its
+dialog has **Update and restart** (docs/features/F1.40-gateway-service-updates.md). The gateway only leaves a request
+in `/var/lib/aprsmap`; `aprsmap-gateway-update.path` starts the updater as root, which downloads the release's tarball
+for this machine and its `.sha256`, checks it, swaps it into `/opt/aprsmap-gateway` (keeping the old one as
+`/opt/aprsmap-gateway.previous`) and restarts the service. If the new version doesn't stay up for 30 seconds, the old
+one is put back. Your TOML file and data are kept. Help › About has **Restart gateway**. Its log:
+`journalctl -u aprsmap-gateway-update`. A Docker gateway has neither: Docker restarts it, and you update it by pulling
+the new image.
 
 The ports are 8080 and 8081, and the desktop app's web viewer uses 8090, so a desktop app can run beside the service on
 the same PC.

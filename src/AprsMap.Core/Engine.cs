@@ -135,6 +135,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     /// <inheritdoc />
     public void Dispose()
     {
+        _stopping.Cancel(); // an update's progress watch (F1.40), which then ends by itself
         _messenger.Dispose();
         _beaconer.Dispose();
         _groupTimer.Dispose();

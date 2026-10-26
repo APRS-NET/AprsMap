@@ -36,8 +36,14 @@ if [ ! -f /etc/aprsmap/gateway.toml ]; then
   fresh=true
 fi
 install -m 0644 "$here/aprsmap-gateway.service" /etc/systemd/system/aprsmap-gateway.service
+# The updater (F1.40): the admin web app's Update and restart, run as root when the gateway asks.
+install -m 0644 "$here/aprsmap-gateway-update.path" /etc/systemd/system/aprsmap-gateway-update.path
+install -m 0644 "$here/aprsmap-gateway-update.service" /etc/systemd/system/aprsmap-gateway-update.service
+install -d /usr/local/libexec
+install -m 0755 "$here/aprsmap-gateway-update.sh" /usr/local/libexec/aprsmap-gateway-update
 systemctl daemon-reload
 systemctl enable aprsmap-gateway
+systemctl enable --now aprsmap-gateway-update.path
 if $fresh; then
   # The first start stores the station from the file, so it waits until the file is the station's.
   echo "Installed /etc/aprsmap/gateway.toml: set your callsign, TNC and gpsd there, then: sudo systemctl start aprsmap-gateway"

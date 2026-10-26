@@ -20,7 +20,10 @@ StateDirectory=aprsmap
 ConfigurationDirectory=aprsmap
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=DOTNET_NOLOGO=1
-Restart=on-failure
+# The Linux service: updated and restarted from the admin web app (docs/features/F1.40-gateway-service-updates.md).
+Environment=Engine__Updates__Kind=Service
+# Always, so Restart gateway (a clean exit) brings it back; systemctl stop still stops it.
+Restart=always
 RestartSec=5
 # Hardening that still lets it reach serial ports and the network.
 NoNewPrivileges=true

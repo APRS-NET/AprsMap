@@ -63,6 +63,8 @@ public sealed partial class Engine
                 LastChecked = settings.EffectiveUpdates.LastChecked ?? _update?.LastChecked,
                 CheckDisabled = !_options.Updates.Check,
                 CheckOff = !settings.EffectiveUpdates.Check,
+                CanInstall = _options.Updates.Kind == InstallKind.Service, // F1.40
+                Install = ServiceInstallNow(),
             };
             // With Check for updates off, nothing is offered or warned about unless Check now was pressed (behavior 6).
             return settings.EffectiveUpdates.Check || _checkedByHand

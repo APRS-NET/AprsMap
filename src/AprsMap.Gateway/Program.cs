@@ -77,8 +77,16 @@ builder
     .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default));
 builder.Services.AddOptions<GatewayOptions>().BindConfiguration(GatewayOptions.SectionName);
 
-// A gateway is told an update is ready when its image is pushed (F4.15 behavior 4.3).
-builder.Services.PostConfigure<AprsMap.Core.EngineOptions>(o => o.Updates.Kind = AprsMap.Core.InstallKind.Gateway);
+// A gateway is told an update is ready when its image is pushed (F4.15 behavior 4.3); the Linux service, whose unit
+// says so, when its tarball is attached, and it updates itself from here (F1.40 behaviors 1, 3).
+builder.Services.PostConfigure<AprsMap.Core.EngineOptions>(o =>
+{
+    if (o.Updates.Kind != AprsMap.Core.InstallKind.Service)
+    {
+        o.Updates.Kind = AprsMap.Core.InstallKind.Gateway;
+    }
+    o.Updates.RuntimeId ??= System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier;
+});
 var gateway = GatewayHttp.Options(builder.Configuration);
 builder.Services.AddGatewayProxies(gateway);
 builder.Services.AddHealthChecks();

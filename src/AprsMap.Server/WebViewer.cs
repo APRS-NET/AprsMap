@@ -80,6 +80,7 @@ public sealed class WebViewer : IAsyncDisposable
         var services = builder.Services;
         services.AddSingleton(host.GetRequiredService<IEngineService>());
         services.AddSingleton(host.GetRequiredService<Core.Engine>());
+        services.AddSingleton(host.GetRequiredService<IOptions<Core.EngineOptions>>()); // the desktop's: never Service
         services.AddSingleton(host.GetRequiredService<ITileService>());
         services.AddSingleton(host.GetService<TimeProvider>() ?? TimeProvider.System);
         services.AddSingleton(host.GetRequiredService<ILoggerFactory>());
