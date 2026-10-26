@@ -5386,4 +5386,92 @@ pause 1s</value>
   <data name="Dashboard.PlotHelp" xml:space="preserve">
     <value>Move the pointer along the line, or use Left, Right, Home and End, to read each point. Escape closes.</value>
   </data>
+  <data name="Settings.StationLists" xml:space="preserve">
+    <value>Station lists</value>
+  </data>
+  <data name="StationLists.Heading" xml:space="preserve">
+    <value>Station lists for {profile}</value>
+  </data>
+  <data name="StationLists.Description" xml:space="preserve">
+    <value>Lists of callsigns and objects, such as an event's volunteers or the weather spotters you work with. Show only a list with the View filter's "Only stations in"; while it's shown, its stations are received wherever they are.</value>
+  </data>
+  <data name="StationLists.New" xml:space="preserve">
+    <value>New list</value>
+  </data>
+  <data name="StationLists.NewName" xml:space="preserve">
+    <value>New list</value>
+    <comment>The name a new station list gets.</comment>
+  </data>
+  <data name="StationLists.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="StationLists.Entries" xml:space="preserve">
+    <value>Entries</value>
+  </data>
+  <data name="StationLists.EntriesHelp" xml:space="preserve">
+    <value>One a line: a callsign (KD0XYZ-7), a callsign without an SSID for all of them (KD0XYZ), a prefix and * (WA0RC*), or an object or item name (AID-3). A note can follow after a space. Lines starting with # and blank lines are kept and ignored.</value>
+  </data>
+  <data name="StationLists.Count" xml:space="preserve">
+    <value>{count, plural, =0 {No entries} one {# entry} other {# entries}}</value>
+  </data>
+  <data name="StationLists.BadLine" xml:space="preserve">
+    <value>Line {line} isn't a callsign, a prefix with * or an object name: {text}</value>
+  </data>
+  <data name="StationLists.FilterPart" xml:space="preserve">
+    <value>only the first {count} are asked for from APRS-IS</value>
+  </data>
+  <data name="StationLists.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="StationLists.Saved" xml:space="preserve">
+    <value>Saved.</value>
+  </data>
+  <data name="StationLists.CopyList" xml:space="preserve">
+    <value>Copy list</value>
+  </data>
+  <data name="StationLists.Copied" xml:space="preserve">
+    <value>Copied to the clipboard.</value>
+  </data>
+  <data name="StationLists.Paste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="StationLists.Delete" xml:space="preserve">
+    <value>Delete list</value>
+  </data>
+  <data name="StationLists.CopyToProfile" xml:space="preserve">
+    <value>Copy to profile</value>
+  </data>
+  <data name="StationLists.CopiedTo" xml:space="preserve">
+    <value>Copied to {profile}.</value>
+  </data>
+  <data name="Error.settings.station-list.entry-invalid" xml:space="preserve">
+    <value>Line {line} of {list} isn't a callsign, a prefix with * or an object name.</value>
+  </data>
+  <data name="Error.settings.station-list.too-many" xml:space="preserve">
+    <value>A profile has up to 20 station lists of up to 500 entries.</value>
+  </data>
+  <data name="Error.settings.station-list.name-taken" xml:space="preserve">
+    <value>Each station list needs a name of its own.</value>
+  </data>
+  <data name="Filter.Label.Lists" xml:space="preserve">
+    <value>Only stations in</value>
+    <comment>The View filter's station lists (F1.33): only the stations and objects in the lists ticked.</comment>
+  </data>
+  <data name="Filter.ChipLists" xml:space="preserve">
+    <value>{lists} · {shown, plural, other {#}} of {total, plural, other {#}} · emergencies always shown</value>
+  </data>
+  <data name="Details.AddToList" xml:space="preserve">
+    <value>Add to list</value>
+  </data>
+  <data name="Details.InList" xml:space="preserve">
+    <value>In {list}</value>
+    <comment>A station list the station is in (F1.33).</comment>
+  </data>
+  <data name="Details.InListWithNote" xml:space="preserve">
+    <value>In {list}: {note}</value>
+    <comment>A station list the station is in, with its note there (F1.33).</comment>
+  </data>
+  <data name="Map.AddToList" xml:space="preserve">
+    <value>Add {name} to list</value>
+  </data>
 </root>

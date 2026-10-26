@@ -38,7 +38,8 @@ internal static class FilterComposer
         StationProfile profile,
         string? ownFilter,
         IReadOnlyList<MapViewReport> views,
-        Func<string, (double Latitude, double Longitude)?> positionOf
+        Func<string, (double Latitude, double Longitude)?> positionOf,
+        IReadOnlyList<StationListEntry>? listed = null
     )
     {
         ArgumentNullException.ThrowIfNull(profile);
@@ -86,6 +87,29 @@ internal static class FilterComposer
             {
                 areas.Add(new FilterArea(flat, flon, friend));
             }
+        }
+
+        // The station lists shown (F1.33 behavior 9): callsigns as a buddy list, every SSID of a bare callsign, and
+        // object and item names, wherever they are; at most StationList.MaxFilterEntries of them.
+        var entries = (listed ?? []).Take(StationList.MaxFilterEntries).ToList();
+        string[] buddies =
+        [
+            .. entries
+                .Where(e => e.IsCallsign)
+                .Select(e => e.IsEverySsid ? e.Pattern + "*" : e.Pattern)
+                .Distinct(StringComparer.Ordinal),
+        ];
+        string[] objects =
+        [
+            .. entries.Where(e => !e.IsCallsign).Select(e => e.Pattern).Distinct(StringComparer.Ordinal),
+        ];
+        if (buddies.Length > 0)
+        {
+            terms.Add(AprsFilterTerm.Buddies(buddies));
+        }
+        if (objects.Length > 0)
+        {
+            terms.Add(AprsFilterTerm.Objects(objects));
         }
 
         var own = string.IsNullOrWhiteSpace(ownFilter) ? null : ownFilter.Trim();

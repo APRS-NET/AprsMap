@@ -47,6 +47,12 @@
               FontWeight="SemiBold"
             />
             <TextBlock Text="{Binding KindText}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+            <TextBlock
+              x:Name="ListsText"
+              Text="{Binding ListsText}"
+              IsVisible="{Binding ListsText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              TextWrapping="Wrap"
+            />
           </StackPanel>
           <Button
             x:Name="CloseButton"
@@ -95,6 +101,30 @@
             Command="{Binding SetDestinationCommand}"
           />
           <Button x:Name="CopyPositionButton" Content="{l:T Details.CopyPosition}" />
+          <!-- Add to a station list of the active profile (F1.33 behavior 5). -->
+          <Button
+            x:Name="AddToListButton"
+            Content="{l:T Details.AddToList}"
+            IsVisible="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CanAddToList}"
+          >
+            <Button.Flyout>
+              <Flyout Placement="Bottom">
+                <ItemsControl ItemsSource="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).AddToListChoices}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ListAction">
+                      <Button
+                        Content="{Binding Name}"
+                        Command="{Binding Add}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Left"
+                        Margin="0,0,0,4"
+                      />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
           <Button
             x:Name="SendMessageButton"
             Content="{l:T Details.SendMessage}"

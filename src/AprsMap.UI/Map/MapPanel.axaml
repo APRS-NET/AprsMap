@@ -27,6 +27,7 @@
       <MenuItem x:Name="SetMyLocationItem" Header="{l:T Map.SetMyLocation}" />
       <MenuItem x:Name="PlaceObjectItem" Header="{l:T Map.PlaceObject}" />
       <MenuItem x:Name="MoveObjectItem" Header="{l:T Map.MoveObject}" />
+      <MenuItem x:Name="AddToListItem" />
     </ContextMenu>
   </UserControl.Resources>
   <Panel>
@@ -337,6 +338,19 @@
                     IsVisible="{Binding !ViewFilter.DeviceClasses.Count}"
                   />
                   <ItemsControl x:Name="FilterDevices" ItemsSource="{Binding ViewFilter.DeviceClasses}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <!-- Only stations in the profile's station lists (F1.33 behavior 6). -->
+                <StackPanel Spacing="2" IsVisible="{Binding !!ViewFilter.Lists.Count}">
+                  <TextBlock Text="{l:T Filter.Label.Lists}" FontWeight="SemiBold" />
+                  <ItemsControl x:Name="FilterLists" ItemsSource="{Binding ViewFilter.Lists}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="st:FacetChoice">
                         <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">

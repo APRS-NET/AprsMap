@@ -34,6 +34,25 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     // Least recently heard first, for the cap.
     private readonly LinkedList<Entry> _byLastHeard = new();
     private readonly List<StationWatcher> _watchers = [];
+
+    /// <summary>
+    /// Turns a View filter's station lists into a test of a name (F1.33 behavior 6), from the active profile's lists;
+    /// the engine sets it. Null, or a null answer, ignores the condition.
+    /// </summary>
+    internal Func<IReadOnlyList<string>, Func<string, bool>?>? ListResolver { get; set; }
+
+    private Func<string, bool>? InLists(StationFilter? filter) =>
+        filter?.Lists is { Count: > 0 } lists ? ListResolver?.Invoke(lists) : null;
+
+    /// <summary>The station lists the viewers' filters show now, by id (F1.33 behavior 9).</summary>
+    internal IReadOnlyList<string> ListsInUse()
+    {
+        lock (_gate)
+        {
+            return [.. _watchers.SelectMany(w => w.Filter?.Lists ?? []).Distinct(StringComparer.Ordinal)];
+        }
+    }
+
     private AprsPosition? _home;
     private StationAging _aging = StationAging.Default;
 
@@ -389,7 +408,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 {
                     continue;
                 }
-                if (query.Filter is { IsEmpty: false } filter && !entry.Matches(filter, _now))
+                if (query.Filter is { IsEmpty: false } filter && !entry.Matches(filter, _now, InLists(filter)))
                 {
                     continue; // the View filter applies to the list too (F1.9 behavior 6)
                 }
@@ -633,7 +652,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     /// <remarks>Only what passes <paramref name="filter"/> (F1.9), and later only its changes.</remarks>
     public StationWatcher Subscribe(StationFilter? filter, out StationState[] snapshot, out TrackUpdate[] tracks)
     {
-        var watcher = new StationWatcher(filter is { IsEmpty: false } ? filter : null);
+        var watcher = new StationWatcher(filter is { IsEmpty: false } ? filter : null, InLists);
         lock (_gate)
         {
             var shown = _entries.Values.Where(e => e.HasPosition && watcher.Wants(e, _now)).ToList();
@@ -677,7 +696,8 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     {
         lock (_gate)
         {
-            var entries = _entries.Values.Where(e => filter is null || e.Matches(filter, now)).ToList();
+            var inLists = InLists(filter);
+            var entries = _entries.Values.Where(e => filter is null || e.Matches(filter, now, inLists)).ToList();
             static List<DashboardCount> Counts(IEnumerable<string> keys) =>
                 [
                     .. keys.GroupBy(k => k, StringComparer.Ordinal)
@@ -723,7 +743,8 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     {
         lock (_gate)
         {
-            return [.. _entries.Values.Where(e => e.Matches(filter, now)).Select(e => e.Name)];
+            var inLists = InLists(filter);
+            return [.. _entries.Values.Where(e => e.Matches(filter, now, inLists)).Select(e => e.Name)];
         }
     }
 
@@ -1459,8 +1480,11 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
             }
         }
 
-        /// <summary>Whether <paramref name="filter"/> shows it at <paramref name="now"/> (F1.9 behaviors 1, 3).</summary>
-        public bool Matches(StationFilter filter, DateTimeOffset now)
+        /// <summary>
+        /// Whether <paramref name="filter"/> shows it at <paramref name="now"/> (F1.9 behaviors 1, 3); with station lists,
+        /// <paramref name="inLists"/> says whether a name is in them (F1.33 behavior 6), and null ignores the condition.
+        /// </summary>
+        public bool Matches(StationFilter filter, DateTimeOffset now, Func<string, bool>? inLists = null)
         {
             if (IsEmergency)
             {
@@ -1492,7 +1516,8 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                     filter.MicEStatuses is not { Count: > 0 } statuses
                     || MicE is { } status && statuses.Contains(status.ToString())
                 )
-                && (filter.Tags is not { Count: > 0 } tags || tags.Any(Tags.Contains));
+                && (filter.Tags is not { Count: > 0 } tags || tags.Any(Tags.Contains))
+                && (filter.Lists is not { Count: > 0 } || inLists is null || inLists(Name));
         }
 
         /// <summary>The shape it draws, for an area object (F1.12).</summary>
@@ -1644,7 +1669,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
     }
 
     /// <summary>One watcher's uncollected changes. Only touched under the store's lock.</summary>
-    internal sealed class StationWatcher(StationFilter? filter = null)
+    internal sealed class StationWatcher(
+        StationFilter? filter = null,
+        Func<StationFilter?, Func<string, bool>?>? lists = null
+    )
     {
         private readonly Dictionary<string, StationState> _changed = new(StringComparer.Ordinal);
         private readonly HashSet<string> _removed = new(StringComparer.Ordinal);
@@ -1656,7 +1684,10 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         /// <summary>The View filter, or null to show everything.</summary>
         public StationFilter? Filter { get; } = filter;
 
-        internal bool Wants(Entry entry, DateTimeOffset now) => Filter is null || entry.Matches(Filter, now);
+        internal bool Wants(Entry entry, DateTimeOffset now) => Filter is null || Matches(entry, now);
+
+        // The lists are looked up as they are now, so editing a list shown changes what's shown at the next change.
+        private bool Matches(Entry entry, DateTimeOffset now) => entry.Matches(Filter!, now, lists?.Invoke(Filter));
 
         internal void Showing(IEnumerable<string> names) => _shown.UnionWith(names);
 
@@ -1670,7 +1701,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
                 Change(state);
                 return;
             }
-            if (entry.Matches(Filter, now))
+            if (Matches(entry, now))
             {
                 if (_shown.Add(entry.Name))
                 {
@@ -1687,7 +1718,7 @@ internal sealed partial class StationStore(int maxEntries = StationStore.Default
         /// <summary>Takes the entry off if it no longer matches (time-based conditions).</summary>
         internal void Recheck(Entry entry, DateTimeOffset now)
         {
-            if (Filter is not null && _shown.Contains(entry.Name) && !entry.Matches(Filter, now))
+            if (Filter is not null && _shown.Contains(entry.Name) && !Matches(entry, now))
             {
                 Remove(entry.Name);
             }

@@ -60,6 +60,16 @@ public sealed partial class SettingsView : UserControl
                 webViewer.CopyToClipboard = text =>
                     TopLevel.GetTopLevel(this)?.Clipboard?.SetTextAsync(text) ?? Task.CompletedTask;
             }
+            // Copy list and Paste for station lists (F1.33 behavior 3).
+            if (_viewModel.StationLists is { } lists)
+            {
+                lists.CopyToClipboard = text =>
+                    TopLevel.GetTopLevel(this)?.Clipboard?.SetTextAsync(text) ?? Task.CompletedTask;
+                lists.PasteFromClipboard = async () =>
+                    TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard
+                        ? await Avalonia.Input.Platform.ClipboardExtensions.TryGetTextAsync(clipboard)
+                        : null;
+            }
             // Choose folder… for the log file (F1.32 behavior 8): a folder on this computer, so the desktop only.
             if (_viewModel.Logging is { } logging && !OperatingSystem.IsBrowser())
             {

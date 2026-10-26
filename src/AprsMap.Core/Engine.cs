@@ -103,7 +103,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _httpClients = httpClients;
         ArgumentNullException.ThrowIfNull(options);
         _options = options.Value;
-        _stations = new StationStore(_options.MaxStations);
+        _stations = new StationStore(_options.MaxStations) { ListResolver = ResolveLists }; // F1.33
         _sources = sources;
         _settingsStore = settingsStore;
         _geocoder = geocoder ?? NoGeocoder.Instance;
@@ -685,6 +685,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     )
     {
         var watcher = _stations.Subscribe(filter, out var snapshot, out var tracks);
+        if (filter?.Lists is { Count: > 0 })
+        {
+            RefreshFilter(); // the lists it shows join the APRS-IS filter (F1.33 behavior 9)
+        }
         try
         {
             foreach (var chunk in snapshot.Chunk(SnapshotBatchSize))
@@ -722,6 +726,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         finally
         {
             _stations.Unsubscribe(watcher);
+            if (filter?.Lists is { Count: > 0 })
+            {
+                RefreshFilter(); // and leave it with the viewer
+            }
         }
     }
 
@@ -2448,7 +2456,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             here,
             profile.Filter,
             views,
-            name => _stations.Get(name) is { Latitude: { } slat, Longitude: { } slon } ? (slat, slon) : null
+            name => _stations.Get(name) is { Latitude: { } slat, Longitude: { } slon } ? (slat, slon) : null,
+            ListsInUseEntries(profile.Profile) // F1.33 behavior 9
         );
     }
 
