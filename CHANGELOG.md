@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.6.0-alpha.3...v0.6.0-alpha.4) (2026-10-26)
+
+
+### Features
+
+* **dashboard:** the dashboard's and the GPS's history is kept across restarts ([605ee0e](https://github.com/APRS-NET/AprsMap/commit/605ee0e25139e65ed2b98b68ecc38c7d645801ee))
+* **rf:** a KISS TNC can digipeat, as a fill-in or wide-area digipeater (F3.5) ([36c3159](https://github.com/APRS-NET/AprsMap/commit/36c3159634312f72fd81a3a7e8e270edc575b229))
+* **rf:** the IGate can pass messages from APRS-IS to stations heard on RF (F3.4) ([d244286](https://github.com/APRS-NET/AprsMap/commit/d2442860d085a45af3bb597e98643e02fc119835))
+* **stations:** station lists, to show only an event's volunteers or the spotters you work with (F1.33) ([11fbedd](https://github.com/APRS-NET/AprsMap/commit/11fbedd4aa96a9397d11a0e7170f0fc282e9dfaa))
+* **web:** a panel can open in a browser tab of its own, the selection shared between tabs (F1.24) ([5520d7c](https://github.com/APRS-NET/AprsMap/commit/5520d7c50b8177bdc2183dcc42b4c4a01ac75c6d))
+
+
+### Bug Fixes
+
+* **deps:** APRS.NET 0.7.0-alpha.1 ([d070994](https://github.com/APRS-NET/AprsMap/commit/d07099402ec3425cb6c6089dd967378c7d349e88))
+
 ## [0.6.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.6.0-alpha.2...v0.6.0-alpha.3) (2026-10-26)
 
 
