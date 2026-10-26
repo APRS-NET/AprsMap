@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The AprsMap gateway's configuration (docs/features/F1.37-gateway-service.md). Each table is a section of the
+# gateway's settings and each key one setting, snake_case for the setting's name; docs/deployment.md lists them all.
+# Environment variables still win over this file. Restart the service after changing it:
+#   sudo systemctl restart aprsmap-gateway
+
+[gateway]
+# The published, read-only web app: every address on port 8080.
+listen = "0.0.0.0:8080"
+# The admin web app, where operators sign in and apps connect with the API key. Only on this PC by default; use
+# "0.0.0.0:8081" (or this PC's LAN address) to reach it from the network, still behind sign-in or the API key.
+operator_listen = "127.0.0.1:8081"
+# How much of the station's location viewers on the published app learn: "Exact", "Grid" or "Hidden".
+home_privacy = "Grid"
+# The page's title, beside the product name.
+# title = "What N0CALL's TNC hears"
+
+[engine]
+# Where the station keeps its settings, operators, API key, message and dashboard history, and map tiles.
+settings_folder = "/var/lib/aprsmap"
+
+# The first-run station: used only when the folder above has no settings yet. After that, change the station in
+# the admin web app. APRS-IS refuses N0CALL: use your own callsign.
+callsign = "N0CALL-10"
+# Your APRS-IS passcode, or -1 for a receive-only login.
+passcode = -1
+server = "rotate.aprs2.net:14580"
+# filter = "r/39.0/-94.7/50"
+
+# The TNC on USB, at first run. Use its /dev/serial/by-id/ name so it survives being plugged into another port.
+[engine.kiss_serial]
+port = "/dev/serial/by-id/usb-REPLACE-WITH-YOUR-TNC"
+baud = 9600
+name = "USB TNC"
+
+# gpsd on this PC, at first run, for the station's position.
+[engine.gpsd]
+host = "localhost"
+port = 2947
+name = "gpsd"
+
+[tiles]
+cache_folder = "/var/lib/aprsmap/tiles"
