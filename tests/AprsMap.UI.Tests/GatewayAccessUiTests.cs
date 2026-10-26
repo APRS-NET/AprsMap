@@ -43,37 +43,43 @@ public sealed class GatewayAccessUiTests
             return Task.CompletedTask;
         };
         Assert.Equal("No API key: apps can only watch.", section.StatusText);
-        Assert.False(section.SaveCommand.CanExecute(null));
-        Assert.False(section.RemoveCommand.CanExecute(null));
+        Assert.False(section.On);
+        Assert.False(section.ApplyCommand.CanExecute(null));
 
         await section.GenerateCommand.ExecuteAsync(null);
         await section.CopyCommand.ExecuteAsync(null);
         var key = section.Key;
-        await section.SaveCommand.ExecuteAsync(null);
+        Assert.True(section.On); // generating turns it on
+        await section.ApplyCommand.ExecuteAsync(null);
 
         Assert.Equal([key], copied);
         Assert.Equal([key], engine.SavedApiKeys);
         Assert.Empty(section.Key);
         Assert.False(section.CopyCommand.CanExecute(null));
+        Assert.False(section.ApplyCommand.CanExecute(null)); // nothing left to apply
         Assert.True(section.IsSet);
         Assert.StartsWith("An API key is set, since 10/26/2026 12:00", section.StatusText, StringComparison.Ordinal);
         Assert.False(section.HasProblem);
     }
 
     [Fact]
-    public async Task AShortKeySaysWhyAndRemoveTurnsAccessOff()
+    public async Task AShortKeySaysWhyAndApplyingOffRemovesTheKey()
     {
         var engine = new FakeEngine();
         var section = await Section(engine);
 
+        section.On = true;
         section.Key = "too-short";
-        await section.SaveCommand.ExecuteAsync(null);
+        await section.ApplyCommand.ExecuteAsync(null);
         Assert.True(section.HasProblem);
         Assert.Equal("An API key needs at least 32 characters, without spaces.", section.Message);
 
         section.Key = new string('k', 40);
-        await section.SaveCommand.ExecuteAsync(null);
-        await section.RemoveCommand.ExecuteAsync(null);
+        await section.ApplyCommand.ExecuteAsync(null);
+        Assert.Equal([new string('k', 40)], engine.SavedApiKeys);
+        section.On = false;
+        Assert.True(section.ApplyCommand.CanExecute(null));
+        await section.ApplyCommand.ExecuteAsync(null);
 
         Assert.False(section.IsSet);
         Assert.Equal(ApiKeyStatus.None, engine.ApiKey);

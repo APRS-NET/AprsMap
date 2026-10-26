@@ -1861,13 +1861,19 @@
           <StackPanel x:Name="GatewayAccessSection" IsVisible="{Binding IsGatewayAccessSection}" Spacing="10">
             <TextBlock Text="{l:T GatewayAccess.Title}" FontWeight="SemiBold" />
             <TextBlock Text="{l:T GatewayAccess.Description}" TextWrapping="Wrap" />
+            <ToggleSwitch
+              x:Name="GatewayAccessSwitch"
+              IsChecked="{Binding GatewayAccess.On, FallbackValue=False}"
+              OnContent="{l:T GatewayAccess.On}"
+              OffContent="{l:T GatewayAccess.On}"
+            />
             <TextBlock
               x:Name="GatewayAccessStatus"
               Text="{Binding GatewayAccess.StatusText, FallbackValue={x:Null}}"
               TextWrapping="Wrap"
               AutomationProperties.LiveSetting="Polite"
             />
-            <StackPanel Spacing="4">
+            <StackPanel Spacing="4" IsEnabled="{Binding GatewayAccess.On, FallbackValue=False}">
               <TextBlock Text="{l:T GatewayAccess.Key}" Foreground="{DynamicResource Brush.TextMuted}" />
               <TextBox
                 x:Name="GatewayAccessKey"
@@ -1876,29 +1882,25 @@
                 FontFamily="{DynamicResource Font.Mono}"
                 AutomationProperties.Name="{l:T GatewayAccess.Key}"
               />
+              <WrapPanel ItemSpacing="8" Margin="0,4,0,0">
+                <Button
+                  x:Name="GatewayAccessGenerate"
+                  Content="{l:T GatewayAccess.Generate}"
+                  Command="{Binding GatewayAccess.GenerateCommand, FallbackValue={x:Null}}"
+                />
+                <Button
+                  x:Name="GatewayAccessCopy"
+                  Content="{l:T GatewayAccess.Copy}"
+                  Command="{Binding GatewayAccess.CopyCommand, FallbackValue={x:Null}}"
+                />
+              </WrapPanel>
             </StackPanel>
-            <WrapPanel ItemSpacing="8">
-              <Button
-                x:Name="GatewayAccessGenerate"
-                Content="{l:T GatewayAccess.Generate}"
-                Command="{Binding GatewayAccess.GenerateCommand, FallbackValue={x:Null}}"
-              />
-              <Button
-                x:Name="GatewayAccessCopy"
-                Content="{l:T GatewayAccess.Copy}"
-                Command="{Binding GatewayAccess.CopyCommand, FallbackValue={x:Null}}"
-              />
-              <Button
-                x:Name="GatewayAccessSave"
-                Content="{l:T GatewayAccess.Save}"
-                Command="{Binding GatewayAccess.SaveCommand, FallbackValue={x:Null}}"
-              />
-              <Button
-                x:Name="GatewayAccessRemove"
-                Content="{l:T GatewayAccess.Remove}"
-                Command="{Binding GatewayAccess.RemoveCommand, FallbackValue={x:Null}}"
-              />
-            </WrapPanel>
+            <Button
+              x:Name="GatewayAccessApply"
+              Content="{l:T WebViewer.Apply}"
+              Command="{Binding GatewayAccess.ApplyCommand, FallbackValue={x:Null}}"
+              HorizontalAlignment="Left"
+            />
             <TextBlock
               x:Name="GatewayAccessMessage"
               Text="{Binding GatewayAccess.Message, FallbackValue={x:Null}}"
