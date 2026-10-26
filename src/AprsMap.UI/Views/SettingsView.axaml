@@ -20,6 +20,9 @@
   </UserControl.KeyBindings>
   <UserControl.Styles>
     <!-- A device list check that failed (F4.16 behavior 9) reads in the warning colour. -->
+    <Style Selector="TextBlock#GatewayAccessMessage.warn">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
     <Style Selector="TextBlock#WebViewerStatus.warn">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
     </Style>
@@ -1853,6 +1856,57 @@
                 TextWrapping="Wrap"
               />
             </StackPanel>
+          </StackPanel>
+          <!-- Gateway access (docs/features/F1.38-gateway-api-key.md): the API key for apps that control the gateway. -->
+          <StackPanel x:Name="GatewayAccessSection" IsVisible="{Binding IsGatewayAccessSection}" Spacing="10">
+            <TextBlock Text="{l:T GatewayAccess.Title}" FontWeight="SemiBold" />
+            <TextBlock Text="{l:T GatewayAccess.Description}" TextWrapping="Wrap" />
+            <TextBlock
+              x:Name="GatewayAccessStatus"
+              Text="{Binding GatewayAccess.StatusText, FallbackValue={x:Null}}"
+              TextWrapping="Wrap"
+              AutomationProperties.LiveSetting="Polite"
+            />
+            <StackPanel Spacing="4">
+              <TextBlock Text="{l:T GatewayAccess.Key}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBox
+                x:Name="GatewayAccessKey"
+                Text="{Binding GatewayAccess.Key, FallbackValue=''}"
+                PlaceholderText="{l:T GatewayAccess.KeyHint}"
+                FontFamily="{DynamicResource Font.Mono}"
+                AutomationProperties.Name="{l:T GatewayAccess.Key}"
+              />
+            </StackPanel>
+            <WrapPanel ItemSpacing="8">
+              <Button
+                x:Name="GatewayAccessGenerate"
+                Content="{l:T GatewayAccess.Generate}"
+                Command="{Binding GatewayAccess.GenerateCommand, FallbackValue={x:Null}}"
+              />
+              <Button
+                x:Name="GatewayAccessCopy"
+                Content="{l:T GatewayAccess.Copy}"
+                Command="{Binding GatewayAccess.CopyCommand, FallbackValue={x:Null}}"
+              />
+              <Button
+                x:Name="GatewayAccessSave"
+                Content="{l:T GatewayAccess.Save}"
+                Command="{Binding GatewayAccess.SaveCommand, FallbackValue={x:Null}}"
+              />
+              <Button
+                x:Name="GatewayAccessRemove"
+                Content="{l:T GatewayAccess.Remove}"
+                Command="{Binding GatewayAccess.RemoveCommand, FallbackValue={x:Null}}"
+              />
+            </WrapPanel>
+            <TextBlock
+              x:Name="GatewayAccessMessage"
+              Text="{Binding GatewayAccess.Message, FallbackValue={x:Null}}"
+              IsVisible="{Binding GatewayAccess.Message, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              Classes.warn="{Binding GatewayAccess.HasProblem, FallbackValue=False}"
+              TextWrapping="Wrap"
+              AutomationProperties.LiveSetting="Polite"
+            />
           </StackPanel>
           <!-- Web viewer (docs/features/F1.35-desktop-web-viewer.md): this station served to browsers, view only. -->
           <StackPanel x:Name="WebViewerSection" IsVisible="{Binding IsWebViewerSection}" Spacing="10">

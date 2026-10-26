@@ -534,6 +534,9 @@ public sealed partial class MainViewModel : ObservableObject
             !IsViewerOnly && (!SharedStation || IsOperator) && _settings is { ReadOnly: false }
                 ? new LoggingSectionViewModel(engine, _text, Show)
                 : null;
+        // The gateway's API key is its signed-in operator's (F1.38 behavior 1); the desktop's own engine has none.
+        var gatewayAccess =
+            SharedStation && IsOperator ? new GatewayAccessSectionViewModel(engine, _text, time.LocalTimeZone) : null;
         var unitItems = _settings is { ReadOnly: false }
             ? SettingsRegistry.Units(_text, () => _settings?.Units ?? UnitSettings.Metric, SaveUnits)
             : null;
@@ -553,11 +556,16 @@ public sealed partial class MainViewModel : ObservableObject
             messaging,
             objects,
             WebViewer is { } host ? new WebViewerSectionViewModel(host, _text) : null,
-            stationLists
+            stationLists,
+            gatewayAccess
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
         settings.Show(_status);
+        if (gatewayAccess is not null)
+        {
+            await gatewayAccess.ShowAsync();
+        }
         if (_settings is { } current)
         {
             sources?.Show(current);

@@ -192,14 +192,32 @@ internal sealed class SignInLimiter(TimeProvider time)
         }
     }
 
-    /// <summary>A failed sign-in from <paramref name="address"/> for <paramref name="name"/>.</summary>
-    public void Failed(string address, string name)
+    /// <summary>How long <paramref name="address"/> must wait before trying again, whatever the name; null for none.</summary>
+    public TimeSpan? Wait(string address)
+    {
+        var now = time.GetUtcNow();
+        lock (_gate)
+        {
+            var until = _addresses.GetValueOrDefault(address)?.WaitUntil ?? DateTimeOffset.MinValue;
+            return until > now ? until - now : null;
+        }
+    }
+
+    /// <summary>
+    /// A failed sign-in from <paramref name="address"/> for <paramref name="name"/>; for a wrong API key, no name, so
+    /// guessing from one address can't lock the key out for everyone (docs/features/F1.38-gateway-api-key.md,
+    /// behavior 7).
+    /// </summary>
+    public void Failed(string address, string? name)
     {
         var now = time.GetUtcNow();
         lock (_gate)
         {
             Count(_addresses, address, now, AddressWindow, AddressLimit);
-            Count(_names, name, now, NameWindow, NameLimit);
+            if (name is not null)
+            {
+                Count(_names, name, now, NameWindow, NameLimit);
+            }
             _failures.Enqueue(now);
             while (_failures.TryPeek(out var oldest) && now - oldest > Day)
             {

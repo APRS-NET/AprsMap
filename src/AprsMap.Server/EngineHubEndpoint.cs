@@ -12,7 +12,9 @@ internal sealed class EngineHubEndpoint(
     Viewers viewers,
     Core.Engine filterEngine,
     OperatorStore operators,
-    HomeShields shields
+    HomeShields shields,
+    ApiKeyStore apiKeys,
+    SignInAudit audit
 ) : Hub
 {
     /// <summary>The widest a viewer's map part may be on a gateway that follows viewers (F1.2 behavior 9).</summary>
@@ -219,6 +221,48 @@ internal sealed class EngineHubEndpoint(
             );
         }
     }
+
+    /// <summary>The API key is the operator's to see and change (docs/features/F1.38-gateway-api-key.md, behavior 1).</summary>
+    [HubMethodName(EngineHub.GetApiKeyStatus)]
+    public ApiKeyStatus GetApiKeyStatus()
+    {
+        RequireOperator();
+        return apiKeys.Status;
+    }
+
+    [HubMethodName(EngineHub.GenerateApiKey)]
+    public string GenerateApiKey()
+    {
+        RequireOperator();
+        return ApiKeyStore.Generate();
+    }
+
+    [HubMethodName(EngineHub.SaveApiKey)]
+    public ApiKeyStatus SaveApiKey(string key)
+    {
+        RequireOperator();
+        try
+        {
+            var status = apiKeys.Save(key);
+            audit.ApiKeyChanged(OperatorName, removed: false);
+            return status;
+        }
+        catch (Exception ex) when (ToHubException(ex) is { } hub)
+        {
+            throw hub;
+        }
+    }
+
+    [HubMethodName(EngineHub.RemoveApiKey)]
+    public void RemoveApiKey()
+    {
+        RequireOperator();
+        apiKeys.Remove();
+        audit.ApiKeyChanged(OperatorName, removed: true);
+    }
+
+    private string OperatorName =>
+        Context.Items.TryGetValue(OperatorFilter.OperatorKey, out var name) ? (string)name! : "";
 
     [HubMethodName(EngineHub.GetViewFacets)]
     public Task<ViewFacets> GetViewFacets() => engine.GetViewFacetsAsync(Context.ConnectionAborted);
