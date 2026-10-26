@@ -160,6 +160,7 @@ internal sealed record GpsStatState(double Sum, int Count, double Lowest, double
 /// <summary>A time without a fix.</summary>
 internal sealed record GpsOutageState(DateTimeOffset Start, DateTimeOffset? End);
 
+[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage] // generated code
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
 [JsonSerializable(typeof(HistorySnapshot))]
 internal sealed partial class HistoryJsonContext : JsonSerializerContext;
