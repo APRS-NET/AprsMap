@@ -20,6 +20,9 @@
   </UserControl.KeyBindings>
   <UserControl.Styles>
     <!-- A device list check that failed (F4.16 behavior 9) reads in the warning colour. -->
+    <Style Selector="TextBlock#ConnectionStatus.warn">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
     <Style Selector="TextBlock#GatewayAccessMessage.warn">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
     </Style>
@@ -1856,6 +1859,78 @@
                 TextWrapping="Wrap"
               />
             </StackPanel>
+          </StackPanel>
+          <!-- Connection (docs/features/F1.39-desktop-gateway-client.md): this computer's station, or a gateway's. -->
+          <StackPanel x:Name="ConnectionSection" IsVisible="{Binding IsConnectionSection}" Spacing="10">
+            <TextBlock Text="{l:T Connection.Title}" FontWeight="SemiBold" />
+            <TextBlock Text="{l:T Connection.Description}" TextWrapping="Wrap" />
+            <TextBlock
+              x:Name="ConnectionStatus"
+              Text="{Binding Connection.StatusText, FallbackValue={x:Null}}"
+              Classes.warn="{Binding Connection.HasProblem, FallbackValue=False}"
+              TextWrapping="Wrap"
+              AutomationProperties.LiveSetting="Polite"
+            />
+            <RadioButton
+              x:Name="ConnectionThisComputer"
+              GroupName="ConnectionChoice"
+              IsChecked="{Binding Connection.ThisComputer, FallbackValue=True}"
+              Content="{l:T Connection.ThisComputer}"
+            />
+            <RadioButton
+              x:Name="ConnectionGateway"
+              GroupName="ConnectionChoice"
+              IsChecked="{Binding Connection.UseGateway, FallbackValue=False}"
+              Content="{l:T Connection.Gateway}"
+            />
+            <StackPanel Spacing="4" IsEnabled="{Binding Connection.UseGateway, FallbackValue=False}">
+              <TextBlock Text="{l:T Connection.Address}" Foreground="{DynamicResource Brush.TextMuted}" />
+              <TextBox
+                x:Name="ConnectionAddress"
+                Text="{Binding Connection.Address, FallbackValue=''}"
+                PlaceholderText="{l:T Connection.AddressHint}"
+                AutomationProperties.Name="{l:T Connection.Address}"
+              />
+              <TextBlock
+                x:Name="ConnectionAddressError"
+                Text="{Binding Connection.AddressError, FallbackValue={x:Null}}"
+                IsVisible="{Binding Connection.AddressError, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+              <TextBlock
+                Text="{l:T Connection.ApiKey}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                Margin="0,6,0,0"
+              />
+              <TextBox
+                x:Name="ConnectionApiKey"
+                Text="{Binding Connection.ApiKey, FallbackValue=''}"
+                PasswordChar="•"
+                RevealPassword="{Binding Connection.ShowKey, FallbackValue=False}"
+                PlaceholderText="{l:T Connection.ApiKeyHint}"
+                FontFamily="{DynamicResource Font.Mono}"
+                AutomationProperties.Name="{l:T Connection.ApiKey}"
+              />
+              <CheckBox
+                x:Name="ConnectionShowKey"
+                IsChecked="{Binding Connection.ShowKey, FallbackValue=False}"
+                Content="{l:T Connection.ShowKey}"
+              />
+            </StackPanel>
+            <Button
+              x:Name="ConnectionApply"
+              Content="{l:T Connection.Apply}"
+              Command="{Binding Connection.ApplyCommand, FallbackValue={x:Null}}"
+              HorizontalAlignment="Left"
+            />
+            <TextBlock
+              x:Name="ConnectionMessage"
+              Text="{Binding Connection.Message, FallbackValue={x:Null}}"
+              IsVisible="{Binding Connection.Message, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              TextWrapping="Wrap"
+              AutomationProperties.LiveSetting="Polite"
+            />
           </StackPanel>
           <!-- Gateway access (docs/features/F1.38-gateway-api-key.md): the API key for apps that control the gateway. -->
           <StackPanel x:Name="GatewayAccessSection" IsVisible="{Binding IsGatewayAccessSection}" Spacing="10">

@@ -75,6 +75,36 @@ public class HostingTests
         Assert.True(File.Exists(Path.Combine(data.FullName, FileHistoryStore.FileName))); // saved as it stopped
     }
 
+    [Fact]
+    public async Task AnEngineForUpdatesOnlyOpensNoSourceAndKeepsNoHistory()
+    {
+        // The desktop as a gateway's client (F1.39 behavior 5): its own engine checks for updates and nothing else.
+        var data = Directory.CreateTempSubdirectory("aprsmap-hosting-");
+        using var cleanup = new Cleanup(data);
+        var factory = new BlockingSourceFactory();
+        var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<IPacketSourceFactory>(factory)
+            .AddSingleton<ISettingsStore>(InMemorySettingsStore.WithProfile())
+            .AddSingleton<IMessageStore>(new InMemoryMessageStore())
+            .AddAprsMapEngine()
+            .Configure<EngineOptions>(o =>
+            {
+                o.DataFolder = data.FullName;
+                o.UpdatesOnly = true;
+                o.Updates.Check = false; // no request to GitHub from a test
+            });
+        await using var provider = services.BuildServiceProvider();
+        var hosted = provider.GetRequiredService<IHostedService>();
+
+        await hosted.StartAsync(TestContext.Current.CancellationToken);
+        await Task.Delay(TimeSpan.FromMilliseconds(200), TimeProvider.System, TestContext.Current.CancellationToken);
+        await hosted.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.False(factory.Created.Task.IsCompleted);
+        Assert.False(File.Exists(Path.Combine(data.FullName, FileHistoryStore.FileName)));
+    }
+
     private sealed class Cleanup(DirectoryInfo folder) : IDisposable
     {
         public void Dispose() => folder.Delete(recursive: true);

@@ -19,8 +19,8 @@ public sealed record SignInRequest(string Name, string Password);
 /// says why (behavior 8.1).
 /// </param>
 /// <param name="ApiKey">
-/// The operator is an app let in by the gateway's API key (docs/features/F1.38-gateway-api-key.md, behavior 8), not a
-/// signed-in person: it has no session to end.
+/// An app's API key (docs/features/F1.38-gateway-api-key.md, behavior 8): with <paramref name="Operator"/>, the gateway
+/// let it in as the operator "API key", which has no session to end; without, the gateway refused it.
 /// </param>
 public sealed record AuthInfo(
     bool Operator,

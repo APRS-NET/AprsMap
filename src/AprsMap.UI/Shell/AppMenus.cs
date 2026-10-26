@@ -240,7 +240,10 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
         {
             items.Add(SeparatorEntry.Instance);
             items.Add(Run("file.signed-in", Literal(vm.SignedInText ?? string.Empty), () => { }, whyNot: string.Empty));
-            items.Add(new CommandEntry("file.sign-out", text["Auth.SignOut"], vm.SignOutCommand));
+            if (vm.Auth is not { ApiKey: true })
+            {
+                items.Add(new CommandEntry("file.sign-out", text["Auth.SignOut"], vm.SignOutCommand)); // a key has none
+            }
         }
         else if (vm.CanSignIn)
         {

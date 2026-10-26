@@ -2423,6 +2423,60 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.settings.object.unknown" xml:space="preserve">
     <value>That object is no longer in this profile.</value>
   </data>
+  <data name="Auth.SignedInWithKey" xml:space="preserve">
+    <value>Operator, with the gateway's API key</value>
+  </data>
+  <data name="Settings.Connection" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="Connection.Title" xml:space="preserve">
+    <value>Which station this app shows</value>
+  </data>
+  <data name="Connection.Description" xml:space="preserve">
+    <value>This app can run its own station, or show a gateway's. As a gateway's client it runs no station of its own: everything is received and processed once, by the gateway. With the gateway's API key it can transmit and change the gateway's settings; without it, it only watches.</value>
+  </data>
+  <data name="Connection.ThisComputer" xml:space="preserve">
+    <value>This computer</value>
+  </data>
+  <data name="Connection.Gateway" xml:space="preserve">
+    <value>A gateway</value>
+  </data>
+  <data name="Connection.Address" xml:space="preserve">
+    <value>Gateway address</value>
+  </data>
+  <data name="Connection.AddressHint" xml:space="preserve">
+    <value>Its admin address, such as http://127.0.0.1:8081/</value>
+  </data>
+  <data name="Connection.AddressInvalid" xml:space="preserve">
+    <value>Enter the gateway's address, starting with http:// or https://.</value>
+  </data>
+  <data name="Connection.ApiKey" xml:space="preserve">
+    <value>API key</value>
+  </data>
+  <data name="Connection.ApiKeyHint" xml:space="preserve">
+    <value>From the gateway's Settings › Gateway access; leave empty to only watch</value>
+  </data>
+  <data name="Connection.ShowKey" xml:space="preserve">
+    <value>Show key</value>
+  </data>
+  <data name="Connection.Apply" xml:space="preserve">
+    <value>Apply and restart</value>
+  </data>
+  <data name="Connection.RestartToSwitch" xml:space="preserve">
+    <value>Saved. Restart the app to switch.</value>
+  </data>
+  <data name="Connection.Status.ThisComputer" xml:space="preserve">
+    <value>Now showing this computer's own station.</value>
+  </data>
+  <data name="Connection.Status.Operator" xml:space="preserve">
+    <value>Now showing the gateway at {address}, as its operator with the API key.</value>
+  </data>
+  <data name="Connection.Status.Viewing" xml:space="preserve">
+    <value>Now watching the gateway at {address}. Add its API key to transmit and change its settings.</value>
+  </data>
+  <data name="Connection.Status.KeyRefused" xml:space="preserve">
+    <value>Now watching the gateway at {address}: it refused the API key. Check the key, and that this is the gateway's admin address.</value>
+  </data>
   <data name="Settings.GatewayAccess" xml:space="preserve">
     <value>Gateway access</value>
   </data>

@@ -43,7 +43,7 @@ internal static class Program
             Tiles = new GatewayTileSource(new HttpClient { BaseAddress = gateway }),
             SharedStation = true,
             MenuStyle = UI.Shell.MenuStyle.Hamburger, // Alt is the browser's (F1.29 behavior 6)
-            OperatorSession = new BrowserOperatorSession(new HttpClient { BaseAddress = gateway }),
+            OperatorSession = new GatewayOperatorSession(new HttpClient { BaseAddress = gateway }),
             Restart = BrowserPreferenceStore.ReloadPage,
             SetTitle = BrowserPreferenceStore.SetTitle,
             SystemReducedMotion = BrowserPreferenceStore.PrefersReducedMotion(),
