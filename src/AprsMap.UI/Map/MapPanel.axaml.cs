@@ -424,6 +424,24 @@ public sealed partial class MapPanel : UserControl, IDisposable
             ? point
             : new Point(_map.Bounds.Width / 2, _map.Bounds.Height / 2);
         _menuAt = _map.PlaceAt(at);
+        // Add the station pointed at to a station list (F1.33 behavior 5).
+        var hit = e.TryGetPosition(_map, out _) ? _map.HitTest(at)?.Name : null;
+        AddToListItem.IsVisible = hit is not null && _main.CanAddToList;
+        if (hit is not null)
+        {
+            AddToListItem.Header = Localization.Localizer.Instance.Format(
+                "Map.AddToList",
+                new Dictionary<string, object?> { ["name"] = hit }
+            );
+            AddToListItem.ItemsSource = _main
+                .StationLists.Select(list =>
+                {
+                    var item = new MenuItem { Header = list.Name };
+                    item.Click += (_, _) => _ = _main.AddToListAsync(list.Id, hit);
+                    return item;
+                })
+                .ToList();
+        }
         MapMenu.Open(_map);
         e.Handled = true;
     }

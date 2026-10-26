@@ -220,9 +220,13 @@ public sealed record StationProfile(
     AutoReplySettings? AutoReply = null,
     IReadOnlyList<OwnObject>? Objects = null,
     bool? AnswerQueries = null,
-    bool? IGate = null
+    bool? IGate = null,
+    IReadOnlyList<StationList>? StationLists = null
 )
 {
+    /// <summary>Its station lists (docs/features/F1.33-station-lists.md, behavior 1); none when unset.</summary>
+    public IReadOnlyList<StationList> StationListSet => StationLists ?? [];
+
     /// <summary>
     /// Whether the profile gates what its TNCs hear to APRS-IS, as a receive-only IGate (docs/features/F3.4-rx-igate.md,
     /// behavior 1); off unless turned on.

@@ -95,6 +95,33 @@ public sealed partial class ViewFilterViewModel : ObservableObject
     /// <summary>Tags heard, with counts.</summary>
     public ObservableCollection<FacetChoice> Tags { get; } = [];
 
+    /// <summary>The active profile's station lists (docs/features/F1.33-station-lists.md, behavior 6), by name.</summary>
+    public ObservableCollection<FacetChoice> Lists { get; } = [];
+
+    // Lists ticked in a kept filter before the profile's lists are known.
+    private HashSet<string> _tickedLists = new(StringComparer.Ordinal);
+
+    /// <summary>Offers the active profile's <paramref name="lists"/> (behavior 6), keeping what was ticked.</summary>
+    internal void ShowLists(IReadOnlyList<StationList> lists)
+    {
+        _tickedLists.UnionWith(Lists.Where(c => c.IsChecked).Select(c => c.Value));
+        var ticked = _tickedLists;
+        foreach (var choice in Lists)
+        {
+            choice.PropertyChanged -= OnChoiceChanged;
+        }
+        Lists.Clear();
+        foreach (var list in lists)
+        {
+            var choice = new FacetChoice(list.Id, null, list.Name) { IsChecked = ticked.Contains(list.Id) };
+            choice.Retranslate(_text, 0);
+            choice.PropertyChanged += OnChoiceChanged;
+            Lists.Add(choice);
+        }
+        _tickedLists = new HashSet<string>(StringComparer.Ordinal);
+        OnPropertyChanged(nameof(Current));
+    }
+
     /// <summary>The conditions as chosen, whether or not they're in effect.</summary>
     public StationFilter Conditions =>
         new(
@@ -109,7 +136,10 @@ public sealed partial class ViewFilterViewModel : ObservableObject
             Checked(MicEStatuses),
             Checked(Tags),
             WithTelemetry,
-            HasProblems
+            HasProblems,
+            Lists.Count > 0 ? Checked(Lists)
+                : _tickedLists.Count > 0 ? [.. _tickedLists]
+                : null
         );
 
     /// <summary>The filter in effect: the conditions with My filter on, otherwise none.</summary>
@@ -123,10 +153,24 @@ public sealed partial class ViewFilterViewModel : ObservableObject
     public partial string? ChipText { get; private set; }
 
     /// <summary>Writes the chip for <paramref name="shown"/> of <paramref name="total"/> stations.</summary>
-    internal void ShowCounts(int shown, int total) =>
-        ChipText = IsFiltered
-            ? _text.Format("Filter.Chip", new Dictionary<string, object?> { ["shown"] = shown, ["total"] = total })
-            : null;
+    internal void ShowCounts(int shown, int total)
+    {
+        // With station lists, the chip names them (F1.33 behavior 8).
+        var lists = string.Join(", ", Lists.Where(c => c.IsChecked).Select(c => c.Label));
+        ChipText =
+            !IsFiltered ? null
+            : lists.Length > 0
+                ? _text.Format(
+                    "Filter.ChipLists",
+                    new Dictionary<string, object?>
+                    {
+                        ["lists"] = lists,
+                        ["shown"] = shown,
+                        ["total"] = total,
+                    }
+                )
+            : _text.Format("Filter.Chip", new Dictionary<string, object?> { ["shown"] = shown, ["total"] = total });
+    }
 
     /// <summary>Shows everything, keeping the conditions for next time (behavior 5).</summary>
     [RelayCommand]
@@ -141,10 +185,11 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         Heard = HeardOptions[0];
         ReceptionChoice = ReceptionOptions[0];
         MessageCapable = WithWeather = WithTrack = WithTelemetry = HasProblems = false;
-        foreach (var choice in Categories.Concat(DeviceClasses).Concat(MicEStatuses).Concat(Tags))
+        foreach (var choice in Categories.Concat(DeviceClasses).Concat(MicEStatuses).Concat(Tags).Concat(Lists))
         {
             choice.IsChecked = false;
         }
+        _tickedLists.Clear();
         _loading = false;
         Apply();
     }
@@ -220,6 +265,15 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         Fill(DeviceClasses, [], filter.DeviceClasses, v => $"Filter.DeviceClass.{v}");
         Fill(MicEStatuses, [], filter.MicEStatuses, v => $"Filter.MicE.{v}");
         Fill(Tags, [], filter.Tags, null);
+        _tickedLists = new HashSet<string>(filter.Lists ?? [], StringComparer.Ordinal);
+        foreach (var choice in Lists)
+        {
+            choice.IsChecked = _tickedLists.Contains(choice.Value);
+        }
+        if (Lists.Count > 0)
+        {
+            _tickedLists.Clear();
+        }
         IsOn = on;
         _loading = false;
         Changed?.Invoke(this, EventArgs.Empty);
@@ -368,7 +422,8 @@ public sealed partial class ViewFilterViewModel : ObservableObject
 }
 
 /// <summary>One choice in a View filter list, such as a device class with how many stations have it.</summary>
-public sealed partial class FacetChoice(string value, Func<string, string>? labelKey) : ObservableObject
+public sealed partial class FacetChoice(string value, Func<string, string>? labelKey, string? name = null)
+    : ObservableObject
 {
     /// <summary>The value as the engine names it.</summary>
     public string Value { get; } = value;
@@ -386,11 +441,11 @@ public sealed partial class FacetChoice(string value, Func<string, string>? labe
     internal void Retranslate(Localizer text, int count)
     {
         Count = count;
-        var name = labelKey is null ? Value : text[labelKey(Value)];
+        var shown = name ?? (labelKey is null ? Value : text[labelKey(Value)]);
         Label =
             count > 0
-                ? text.Format("Filter.Counted", new Dictionary<string, object?> { ["name"] = name, ["count"] = count })
-                : name;
+                ? text.Format("Filter.Counted", new Dictionary<string, object?> { ["name"] = shown, ["count"] = count })
+                : shown;
     }
 }
 

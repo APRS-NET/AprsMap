@@ -48,9 +48,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         LoggingSectionViewModel? logging = null,
         MessagingSectionViewModel? messaging = null,
         ObjectsSectionViewModel? objects = null,
-        WebViewerSectionViewModel? webViewer = null
+        WebViewerSectionViewModel? webViewer = null,
+        StationListsSectionViewModel? stationLists = null
     )
     {
+        StationLists = stationLists;
         WebViewer = webViewer;
         ArgumentNullException.ThrowIfNull(appearance);
         _appearance = appearance;
@@ -94,7 +96,8 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsLayoutSection),
         nameof(IsLoggingSection),
         nameof(IsMessagingSection),
-        nameof(IsObjectsSection)
+        nameof(IsObjectsSection),
+        nameof(IsStationListsSection)
     )]
     public partial SettingsSection? SelectedSection { get; set; }
 
@@ -148,6 +151,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Settings › Objects: the active profile's objects, where this viewer may transmit.</summary>
     public ObjectsSectionViewModel? Objects { get; }
+
+    /// <summary>Whether Station lists is showing (docs/features/F1.33-station-lists.md).</summary>
+    public bool IsStationListsSection => SelectedSection?.Id == "station-lists";
+
+    /// <summary>Settings › Station lists: the active profile's lists, where this viewer may change settings.</summary>
+    public StationListsSectionViewModel? StationLists { get; }
 
     /// <summary>Whether Messaging is showing (docs/features/F2.13-ping.md).</summary>
     public bool IsMessagingSection => SelectedSection?.Id == "messaging";
@@ -289,6 +298,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("objects", _text["Settings.Objects"]));
         }
+        if (StationLists is not null)
+        {
+            Sections.Add(new SettingsSection("station-lists", _text["Settings.StationLists"]));
+        }
         if (Messaging is not null)
         {
             Sections.Add(new SettingsSection("messaging", _text["Settings.Messaging"]));
@@ -329,6 +342,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         Logging?.Retranslate();
         Messaging?.Retranslate();
         Objects?.Retranslate();
+        StationLists?.Retranslate();
         Beacons?.Retranslate();
         Data?.Retranslate();
     }

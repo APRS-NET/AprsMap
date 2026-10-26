@@ -81,6 +81,7 @@ public sealed partial class MainViewModel : ObservableObject
         Details.CloseRequested += (_, _) => SelectedStation = null;
         Details.MessageRequested += (_, name) => OpenConversation(name);
         Details.DestinationRequested += (_, d) => _ = Destination.SetAsync(d.Latitude, d.Longitude, d.Name);
+        Details.StationLists = () => StationLists; // "In Spotters: Sweep 2" (F1.33)
         Details.SelectRequested += (_, name) => SelectedStation = name;
         Details.PropertyChanged += (_, e) =>
         {
@@ -520,6 +521,11 @@ public sealed partial class MainViewModel : ObservableObject
             !IsViewerOnly && (!SharedStation || IsOperator) && _settings is { ReadOnly: false }
                 ? new ObjectsSectionViewModel(engine, _text, Show)
                 : null;
+        // Station lists are settings: whoever may change them (F1.33, F2.9).
+        var stationLists =
+            !IsViewerOnly && _settings is { ReadOnly: false }
+                ? new StationListsSectionViewModel(engine, _text, Show)
+                : null;
         // Logging is the desktop user's, and on a gateway the signed-in operator's (F1.32 behavior 1).
         var logging =
             !IsViewerOnly && (!SharedStation || IsOperator) && _settings is { ReadOnly: false }
@@ -543,7 +549,8 @@ public sealed partial class MainViewModel : ObservableObject
             logging,
             messaging,
             objects,
-            WebViewer is { } host ? new WebViewerSectionViewModel(host, _text) : null
+            WebViewer is { } host ? new WebViewerSectionViewModel(host, _text) : null,
+            stationLists
         );
         settings.Closed += OnSettingsClosed;
         Settings = settings;
@@ -554,6 +561,7 @@ public sealed partial class MainViewModel : ObservableObject
             beacons?.Show(current);
             messaging?.Show(current);
             objects?.Show(current);
+            stationLists?.Show(current);
             if (logging is not null)
             {
                 await logging.ShowAsync(current);
@@ -1320,6 +1328,10 @@ public sealed partial class MainViewModel : ObservableObject
         PacketList.ShowSources(settings);
         Settings?.Beacons?.Show(settings); // a source's RX only changes what beacons can go out on
         Settings?.Objects?.Show(settings); // a killed object goes once it's been sent (F2.7 behavior 8)
+        Settings?.StationLists?.Show(settings);
+        ViewFilter.ShowLists(settings.GetActiveProfile()?.StationListSet ?? []); // F1.33 behavior 6
+        ShowListChoices(); // F1.33 behavior 5
+        Details.Refresh(); // the lists a station is in
         LiveObjects = [.. settings.GetActiveProfile()?.ObjectList.Where(o => o.Live) ?? []];
         Settings?.Data?.Capture?.Show(settings);
         Settings?.Data?.DeviceList?.Show(settings);
