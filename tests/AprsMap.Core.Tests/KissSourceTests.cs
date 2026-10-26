@@ -7,6 +7,7 @@ using AprsNet.Kiss;
 using AprsNet.Packets;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Time.Testing;
 
 namespace AprsMap.Core.Tests;
 
@@ -25,7 +26,7 @@ public sealed class KissSourceTests
     private static byte[] Frame(string tnc2) =>
         new KissFrame(0, KissCommand.Data, Ax25Frame.FromAprsPacket(AprsPacket.Parse(tnc2)).GetBytes()).Encode();
 
-    private static (Engine Engine, SourceSettings Tnc) Create(int port)
+    private static (Engine Engine, SourceSettings Tnc) Create(int port, TimeProvider? tncTime = null)
     {
         var tnc = new SourceSettings("tnc", "Direwolf", SourceKind.KissTcp, Host: "127.0.0.1", Port: port);
         // The profile's APRS-IS server can't be reached: everything here comes from the TNC.
@@ -35,7 +36,11 @@ public sealed class KissSourceTests
         };
         var engine = new Engine(
             Options.Create(Quick),
-            new AprsIsPacketSourceFactory(Options.Create(Quick), NullLoggerFactory.Instance, TimeProvider.System),
+            new AprsIsPacketSourceFactory(
+                Options.Create(Quick),
+                NullLoggerFactory.Instance,
+                tncTime ?? TimeProvider.System
+            ),
             new InMemorySettingsStore(
                 new AppSettings(
                     [profile],
@@ -164,6 +169,35 @@ public sealed class KissSourceTests
         );
 
         await stream.WriteAsync(Frame("N0CAR-9>APRS,WIDE1-1:!4903.50N/07201.75W>"), Ct); // switched to KISS
+        await WaitUntil(async () =>
+            (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Connected, Warning: null }
+        );
+
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
+    public async Task ATcpTncThatGoesQuietWarnsUntilItSendsAgain()
+    {
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var time = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        var (engine, tnc) = Create(((IPEndPoint)listener.LocalEndpoint).Port, time);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var run = engine.RunAsync(cts.Token);
+        using var client = await listener.AcceptTcpClientAsync(Ct);
+        var stream = client.GetStream();
+        await WaitUntil(async () => (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Connected });
+
+        // A TNC server (Dire Wolf, tnc share) keeps the link up while the radio behind it is switched off.
+        time.Advance(AprsIsPacketSourceFactory.TncQuietWarning);
+        await WaitUntil(async () =>
+            (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Connected } s
+            && s.Warning?.Code == EngineErrorCodes.KissQuiet
+        );
+
+        await stream.WriteAsync(Frame("N0CAR-9>APRS,WIDE1-1:!4903.50N/07201.75W>"), Ct); // the radio's back
         await WaitUntil(async () =>
             (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Connected, Warning: null }
         );

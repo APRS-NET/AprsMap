@@ -144,6 +144,8 @@ internal sealed class AprsIsPacketSourceFactory(
                         TncPort = source.TncPort ?? 0,
                         ReconnectDelay = options.Value.InitialRetryDelay,
                         MaxReconnectDelay = options.Value.MaxRetryDelay,
+                        // A TNC server keeps the link up while the radio behind it is off (F3.1 decision 5).
+                        QuietWarning = TncQuietWarning,
                         TimeProvider = timeProvider,
                     }
                 ),
@@ -261,7 +263,7 @@ internal sealed class AprsIsPacketSourceFactory(
             RtsEnable = source.RtsEnable ?? true,
             ReconnectDelay = engine.InitialRetryDelay,
             MaxReconnectDelay = engine.MaxRetryDelay,
-            QuietWarning = SerialQuietWarning,
+            QuietWarning = TncQuietWarning,
             GpsTimeout = engine.TncGpsTimeout, // the radio's GPS gone (F3.13 behavior 3)
             TimeProvider = time,
         };
@@ -285,8 +287,8 @@ internal sealed class AprsIsPacketSourceFactory(
             var id => TncSetup.Find(id) ?? throw new ArgumentException($"No TNC type '{id}'.", nameof(source)),
         };
 
-    /// <summary>How long a serial TNC may send nothing before its pill asks whether it's switched on (F3.1 decision 5).</summary>
-    internal static readonly TimeSpan SerialQuietWarning = TimeSpan.FromMinutes(30);
+    /// <summary>How long a TNC may send nothing before its pill asks whether it's switched on (F3.1 decision 5).</summary>
+    internal static readonly TimeSpan TncQuietWarning = TimeSpan.FromMinutes(30);
 
     /// <summary>
     /// The APRS.NET client options for <paramref name="profile"/>, validated by APRS.NET (which owns the login rules).
