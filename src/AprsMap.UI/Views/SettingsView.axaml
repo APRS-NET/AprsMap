@@ -326,6 +326,21 @@
                   OffContent="{l:T IGate.On}"
                 />
                 <TextBlock Text="{l:T IGate.Help}" Foreground="{DynamicResource Brush.TextMuted}" TextWrapping="Wrap" />
+                <!-- Two-way (F3.4 two-way, behavior 1): messages from APRS-IS to stations heard here. -->
+                <ToggleSwitch
+                  x:Name="IGateToRfSwitch"
+                  IsChecked="{Binding Sources.IGateToRfOn}"
+                  IsEnabled="{Binding !Sources.IsReadOnly}"
+                  IsVisible="{Binding Sources.IGateOn}"
+                  OnContent="{l:T IGate.ToRf}"
+                  OffContent="{l:T IGate.ToRf}"
+                />
+                <TextBlock
+                  Text="{l:T IGate.ToRfHelp}"
+                  IsVisible="{Binding Sources.IGateOn}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
                 <TextBlock
                   Text="{Binding Sources.IGateCountText}"
                   IsVisible="{Binding Sources.IGateCountText, Converter={x:Static ObjectConverters.IsNotNull}}"

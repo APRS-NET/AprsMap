@@ -104,6 +104,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         ArgumentNullException.ThrowIfNull(options);
         _options = options.Value;
         _stations = new StationStore(_options.MaxStations) { ListResolver = ResolveLists }; // F1.33
+        _heard = new AprsNet.IGate.HeardStations(new AprsNet.IGate.HeardStationsOptions { TimeProvider = time }); // F3.4 two-way
         _sources = sources;
         _settingsStore = settingsStore;
         _geocoder = geocoder ?? NoGeocoder.Instance;
@@ -2013,6 +2014,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         // My view (F1.22 behavior 7): only the stations the viewer's filter shows now; an empty filter is the whole feed.
         Func<string, bool>? include = filter is { IsEmpty: false } ? _stations.Matching(filter, now).Contains : null;
         var dashboard = _dashboard.Read(range, now, include);
+        var heard = HeardOnRf();
         // The counters cover the range; the rest is read from the stations held (F1.22 behaviors 4.10, 4.11, 10).
         return Task.FromResult(
             dashboard with
@@ -2022,6 +2024,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 Tables = _stations.Statistics(include is null ? null : filter, now),
                 // The station's own GPS, whatever the view (F3.14 behavior 9).
                 Gps = _gpsHistory.Read(dashboard.Start, dashboard.Step, dashboard.Packets.Count, now),
+                HeardOnRf = heard.Recent, // F3.4 two-way, behavior 7
+                HeardOnRfTotal = heard.Total,
             }
         );
     }
@@ -2236,6 +2240,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             ConsiderQuery(packet, sourceId); // queries to answer (F2.8)
             ConsiderGating(packet, sourceId); // RF to APRS-IS (F3.4)
             digipeated = ConsiderDigipeat(packet, sourceId); // repeated on RF (F3.5)
+            ConsiderGatingToRf(packet, sourceId); // APRS-IS to RF (F3.4 two-way)
         }
         var now = _time.GetUtcNow();
         var check = _duplicates.Check(packet, sourceId);

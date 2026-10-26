@@ -5502,4 +5502,24 @@ pause 1s</value>
   <data name="Dashboard.Source.Digipeated" xml:space="preserve">
     <value>{count, plural, one {# digipeated} other {# digipeated}}</value>
   </data>
+  <data name="IGate.ToRf" xml:space="preserve">
+    <value>Pass messages from APRS-IS to RF</value>
+  </data>
+  <data name="IGate.ToRfHelp" xml:space="preserve">
+    <value>Messages for stations your TNCs hear nearby go out on the TNC that heard them, at most 6 a minute, only while Transmit is on. Packets gated to APRS-IS then say the IGate can pass messages back.</value>
+  </data>
+  <data name="IGate.CountsToRf" xml:space="preserve">
+    <value>{gated, plural, one {# sent to RF} other {# sent to RF}}, {refused} not</value>
+    <comment>gated: packets from APRS-IS sent on RF since the app started. refused: messages the rules kept off RF.</comment>
+  </data>
+  <data name="Dashboard.HeardOnRf" xml:space="preserve">
+    <value>Heard on RF</value>
+    <comment>Tile title: stations heard on the station's TNCs.</comment>
+  </data>
+  <data name="Dashboard.HeardOnRf.Count" xml:space="preserve">
+    <value>{count, plural, one {# station heard on the TNCs} other {# stations heard on the TNCs}}</value>
+  </data>
+  <data name="Dashboard.HeardOnRf.Row" xml:space="preserve">
+    <value>{hops, plural, =0 {direct} one {# hop} other {# hops}} · {time}</value>
+  </data>
 </root>

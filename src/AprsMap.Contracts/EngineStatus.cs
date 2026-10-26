@@ -104,7 +104,17 @@ public sealed record EngineStatus(
 /// <param name="Gated">Packets heard on RF and sent to APRS-IS.</param>
 /// <param name="Refused">Packets heard on RF the IGate rules kept off APRS-IS (from the internet, NOGATE, duplicates…).</param>
 /// <param name="Held">Why nothing is gated now (no verified APRS-IS login, Transmit off…); null when it gates.</param>
-public sealed record IGateStatus(long Gated, long Refused, EngineError? Held = null);
+/// <param name="ToRf">Whether it also passes messages from APRS-IS to RF (docs/features/F3.4-two-way-igate.md).</param>
+/// <param name="GatedToRf">Packets from APRS-IS sent on RF.</param>
+/// <param name="RefusedToRf">Messages from APRS-IS the rules kept off RF (not local, rate limited, duplicates…).</param>
+public sealed record IGateStatus(
+    long Gated,
+    long Refused,
+    EngineError? Held = null,
+    bool ToRf = false,
+    long GatedToRf = 0,
+    long RefusedToRf = 0
+);
 
 /// <summary>How much a GPS knows (docs/features/F3.6-gps.md, behavior 4).</summary>
 public enum GpsFixKind

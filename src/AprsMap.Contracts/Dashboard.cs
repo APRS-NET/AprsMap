@@ -57,6 +57,11 @@ public enum DashboardRange
 /// <param name="Gps">
 /// The station's GPS over the range (docs/features/F3.14-gps-dashboard.md); null when the profile had no GPS in it.
 /// </param>
+/// <param name="HeardOnRf">
+/// The stations heard on the profile's TNCs, most recent first, at most ten (docs/features/F3.4-two-way-igate.md,
+/// behavior 7).
+/// </param>
+/// <param name="HeardOnRfTotal">How many stations the TNCs have heard.</param>
 public sealed record Dashboard(
     DateTimeOffset At,
     DashboardRange Range,
@@ -82,8 +87,13 @@ public sealed record Dashboard(
     DashboardWeather? Weather = null,
     DashboardTables? Tables = null,
     bool MyView = false,
-    DashboardGps? Gps = null
+    DashboardGps? Gps = null,
+    IReadOnlyList<DashboardHeard>? HeardOnRf = null,
+    int HeardOnRfTotal = 0
 );
+
+/// <summary>A station heard on RF: over how many hops, and when last.</summary>
+public sealed record DashboardHeard(string Station, int Hops, DateTimeOffset LastHeard);
 
 /// <summary>A station heard directly by an IGate, and how far apart they are.</summary>
 public sealed record DashboardHop(string Station, string Gateway, double DistanceKm, DateTimeOffset At);

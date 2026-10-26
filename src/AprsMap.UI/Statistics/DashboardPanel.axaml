@@ -366,6 +366,15 @@
             </StackPanel>
           </Border>
 
+          <!-- Heard on the TNCs (F3.4 two-way, behavior 7): who's local, most recent first. -->
+          <Border Classes="tile" IsVisible="{Binding HeardOnRfText, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{l:T Dashboard.HeardOnRf}" />
+              <TextBlock Classes="detail" Text="{Binding HeardOnRfText}" Margin="0,4,0,4" />
+              <ItemsControl ItemsSource="{Binding HeardOnRf}" />
+            </StackPanel>
+          </Border>
+
           <!-- Weather (behavior 4.11). -->
           <Border Classes="tile">
             <StackPanel>

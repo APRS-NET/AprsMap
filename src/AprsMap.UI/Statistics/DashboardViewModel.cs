@@ -188,6 +188,16 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     /// <summary>The farthest direct RF hops (behavior 4.10): each station, its distance and the IGate.</summary>
     public ObservableCollection<CountRow> FarthestDirect { get; } = [];
 
+    /// <summary>
+    /// The stations heard on the profile's TNCs, most recent first (docs/features/F3.4-two-way-igate.md, behavior 7),
+    /// each selectable.
+    /// </summary>
+    public ObservableCollection<CountRow> HeardOnRf { get; } = [];
+
+    /// <summary>"12 stations heard on the TNCs", or null when none have been.</summary>
+    [ObservableProperty]
+    public partial string? HeardOnRfText { get; private set; }
+
     /// <summary>"8 weather stations reporting"; null before the first numbers.</summary>
     [ObservableProperty]
     public partial string? WeatherText { get; private set; }
@@ -416,6 +426,25 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
 
         ShowExtras(dashboard);
         ShowGps(dashboard, range, Clock);
+        HeardOnRfText =
+            dashboard.HeardOnRfTotal > 0
+                ? _text.Format(
+                    "Dashboard.HeardOnRf.Count",
+                    new Dictionary<string, object?> { ["count"] = dashboard.HeardOnRfTotal }
+                )
+                : null;
+        Replace(
+            HeardOnRf,
+            (dashboard.HeardOnRf ?? []).Select(h => new CountRow(
+                h.Station,
+                _text.Format(
+                    "Dashboard.HeardOnRf.Row",
+                    new Dictionary<string, object?> { ["hops"] = h.Hops, ["time"] = Clock(h.LastHeard) }
+                ),
+                0,
+                Select(h.Station)
+            ))
+        );
         foreach (var tile in new[] { GpsFix, GpsSatellites, GpsDilution, GpsAccuracy })
         {
             tile.Times(_text, dashboard.Start, dashboard.Step, Clock);
