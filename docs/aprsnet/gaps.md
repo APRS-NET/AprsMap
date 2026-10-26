@@ -428,6 +428,9 @@ unproto/raw frames, multi-port enumeration (`G`). It feeds G12 `Ax25Frame` so pa
 
 **Acceptance.** Recorded sessions; Direwolf AGW interop smoke test (manual).
 
+Tracked as [APRS.NET#224](https://github.com/APRS-NET/APRS.NET/issues/224) (the connection is #225), milestone 0.8.0-alpha.1;
+AprsMap's side is [#384](https://github.com/APRS-NET/AprsMap/issues/384).
+
 ## G24: Station track anomaly analysis
 
 **Need.** AprsMap F1.20 and the packet-list anomaly flags; useful to any tracker or map.
