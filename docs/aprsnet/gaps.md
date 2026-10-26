@@ -642,3 +642,29 @@ spec folder), so the first step is getting that page into `docs/spec` with its s
 
 **Acceptance.** Round trips of lines and polygons; received examples (WXSVR warning areas) decode to their vertices.
 
+
+## G37: GPS quality metrics
+
+**Need.** AprsMap F3.14 (GPS statistics on the dashboard): the maintainer wants a GPS's health watched from a
+monitoring system over OTLP, as `aprsnet.kiss.nmea.*` already does for NMEA on a TNC port. The numbers belong to each
+GPS connection, so any app using the library gets them; AprsMap keeps only what's its own (the GPS *in use* among
+several, its dashboard history and wander).
+
+**Scope.** Metrics on the GPS meter, per connection (`GpsdConnection`, and serial or TCP NMEA read through
+`NmeaFixTracker` where the library owns the connection), from the fix and quality the library already works out
+(G17, G30):
+
+- the time in each fix state (counter, seconds; 3D, 2D, no fix) and fix losses (counter);
+- satellites used and in view (gauges), tagged by constellation;
+- the dilutions (gauge), tagged PDOP, HDOP, VDOP, TDOP, GDOP;
+- the estimated errors (gauge, metres), tagged horizontal, vertical, latitude, longitude, with the confidence the source
+  gives (gpsd 95%, GST one sigma) said in the description or a tag;
+- the average signal of the satellites used (gauge, dB-Hz).
+
+Tags identify the connection the way the library's other metrics do (no positions). Names and units are the library's
+choice; the above is what AprsMap would read.
+
+Tracked as [APRS.NET#328](https://github.com/APRS-NET/APRS.NET/issues/328).
+
+**Acceptance.** A `MeterListener` over recorded gpsd and NMEA sessions sees each metric, including a fix lost and
+regained, and a constellation with satellites in view but none used.

@@ -34,4 +34,16 @@ public static class EngineTelemetry
         unit: "{failure}",
         description: "Failed APRS-IS connection attempts and dropped connections."
     );
+
+    internal static readonly Counter<double> GpsFixTime = Meter.CreateCounter<double>(
+        "aprsmap.gps.fix.time",
+        unit: "s",
+        description: "Time the station's GPS in use spent in each fix state, tagged fix: 3d, 2d, none or silent."
+    );
+
+    internal static readonly Counter<long> GpsFixLosses = Meter.CreateCounter<long>(
+        "aprsmap.gps.fix.losses",
+        unit: "{loss}",
+        description: "Fixes the station's GPS in use lost: no fix, or silent, straight after a fix."
+    );
 }

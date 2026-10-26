@@ -407,6 +407,11 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             : _text.Format("Dashboard.Reconnects", new Dictionary<string, object?> { ["count"] = status.Reconnects });
 
         ShowExtras(dashboard);
+        ShowGps(dashboard, range, Clock);
+        foreach (var tile in new[] { GpsFix, GpsSatellites, GpsDilution, GpsAccuracy })
+        {
+            tile.Times(_text, dashboard.Start, dashboard.Step, Clock);
+        }
 
         var top = dashboard.BusiestStations.Count > 0 ? dashboard.BusiestStations[0].Count : 0;
         Replace(
@@ -708,6 +713,7 @@ public sealed partial class Tile : ObservableObject
     public partial IReadOnlyList<string> PointLabels { get; private set; } = [];
 
     private IReadOnlyList<string> _times = [];
+    private string _format = "#,0";
 
     /// <summary>Gives the sparkline's points their times: the first at <paramref name="start"/>, one each <paramref name="step"/>.</summary>
     internal void Times(Localizer text, DateTimeOffset start, TimeSpan step, Func<DateTimeOffset, string> clock)
@@ -721,7 +727,7 @@ public sealed partial class Tile : ObservableObject
                         "Dashboard.Point",
                         new Dictionary<string, object?>
                         {
-                            ["value"] = value is { } v ? v.ToString("#,0", text.Culture) : "–",
+                            ["value"] = value is { } v ? v.ToString(_format, text.Culture) : "–",
                             ["time"] = _times[i],
                         }
                     )
@@ -754,13 +760,32 @@ public sealed partial class Tile : ObservableObject
         int? percent = null
     )
     {
-        Title = text[key];
-        Number =
+        var written =
             percent is { } p ? text.Format("Dashboard.Percent", new Dictionary<string, object?> { ["percent"] = p })
             : number is { } n ? text.Format("Dashboard.Number", new Dictionary<string, object?> { ["count"] = n })
             : string.Empty;
+        Set(text, text[key], written, detail, [.. series.Select(v => (double?)v)], range);
+    }
+
+    /// <summary>
+    /// Sets the tile from a number already written and a series that may have gaps (F3.14 behavior 8), its points
+    /// written with <paramref name="format"/>.
+    /// </summary>
+    internal void Set(
+        Localizer text,
+        string title,
+        string number,
+        string? detail,
+        IReadOnlyList<double?> series,
+        string range,
+        string format = "#,0"
+    )
+    {
+        Title = title;
+        Number = number;
         Detail = detail;
-        Series = [.. series.Select(v => (double?)v)];
+        Series = series;
+        _format = format;
         Spoken = text.Format(
             "Dashboard.Spoken",
             new Dictionary<string, object?>

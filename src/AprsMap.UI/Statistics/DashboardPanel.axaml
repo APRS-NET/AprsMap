@@ -80,6 +80,13 @@
         />
       </Grid>
     </DataTemplate>
+    <!-- A row with long values (F3.14): the name, then its values wrapped under it. -->
+    <DataTemplate DataType="d:ValueRow">
+      <StackPanel Margin="0,2">
+        <TextBlock Text="{Binding Name}" TextWrapping="Wrap" />
+        <TextBlock Classes="detail" Text="{Binding Value}" />
+      </StackPanel>
+    </DataTemplate>
     <DataTemplate DataType="d:SourceRow">
       <StackPanel Margin="0,2">
         <Grid ColumnDefinitions="*,Auto">
@@ -318,6 +325,87 @@
             <TextBlock Classes="title" Text="{l:T Dashboard.WeatherTile}" />
             <TextBlock Classes="detail" Text="{Binding WeatherText}" Margin="0,4,0,4" />
             <ItemsControl ItemsSource="{Binding WeatherExtremes}" />
+          </StackPanel>
+        </Border>
+
+        <!-- The station's GPS over the range (F3.14 behavior 7): a heading, then four tiles, or how to add a GPS. -->
+        <StackPanel Width="{Binding $parent[WrapPanel].Bounds.Width}" Margin="0,8,12,8">
+          <TextBlock Text="{l:T Dashboard.Gps.Group}" FontSize="{DynamicResource Text.Title}" FontWeight="SemiBold" />
+          <TextBlock Classes="detail" Text="{Binding GpsSourceText}" IsVisible="{Binding HasGps}" />
+          <TextBlock Classes="detail" Text="{l:T Dashboard.Gps.None}" IsVisible="{Binding !HasGps}" />
+        </StackPanel>
+        <Border Classes="tile" AutomationProperties.Name="{Binding GpsFix.Spoken}" IsVisible="{Binding HasGps}">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{Binding GpsFix.Title}" />
+            <TextBlock Classes="number" Text="{Binding GpsFix.Number}" />
+            <TextBlock Classes="detail" Text="{Binding GpsFix.Detail}" />
+            <s:Sparkline Values="{Binding GpsFix.Series}" Labels="{Binding GpsFix.PointLabels}" />
+            <Button
+              Classes="copy-tile"
+              DataContext="{Binding GpsFix}"
+              Content="{l:T Dashboard.Table.Copy}"
+              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+              HorizontalAlignment="Left"
+              Padding="6,2"
+            />
+            <ItemsControl ItemsSource="{Binding GpsFixRows}" />
+            <TextBlock Classes="detail" Text="{Binding GpsOutageText}" Margin="0,4,0,0" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="tile" AutomationProperties.Name="{Binding GpsSatellites.Spoken}" IsVisible="{Binding HasGps}">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{Binding GpsSatellites.Title}" />
+            <TextBlock Classes="number" Text="{Binding GpsSatellites.Number}" />
+            <TextBlock Classes="detail" Text="{Binding GpsSatellites.Detail}" />
+            <s:Sparkline Values="{Binding GpsSatellites.Series}" Labels="{Binding GpsSatellites.PointLabels}" />
+            <Button
+              Classes="copy-tile"
+              DataContext="{Binding GpsSatellites}"
+              Content="{l:T Dashboard.Table.Copy}"
+              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+              HorizontalAlignment="Left"
+              Padding="6,2"
+            />
+            <ItemsControl ItemsSource="{Binding GpsSystemRows}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="tile" AutomationProperties.Name="{Binding GpsDilution.Spoken}" IsVisible="{Binding HasGps}">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{Binding GpsDilution.Title}" />
+            <TextBlock Classes="number" Text="{Binding GpsDilution.Number}" />
+            <TextBlock Classes="detail" Text="{Binding GpsDilution.Detail}" />
+            <s:Sparkline Values="{Binding GpsDilution.Series}" Labels="{Binding GpsDilution.PointLabels}" />
+            <Button
+              Classes="copy-tile"
+              DataContext="{Binding GpsDilution}"
+              Content="{l:T Dashboard.Table.Copy}"
+              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+              HorizontalAlignment="Left"
+              Padding="6,2"
+            />
+            <ItemsControl ItemsSource="{Binding GpsDilutionRows}" />
+          </StackPanel>
+        </Border>
+
+        <Border Classes="tile" AutomationProperties.Name="{Binding GpsAccuracy.Spoken}" IsVisible="{Binding HasGps}">
+          <StackPanel>
+            <TextBlock Classes="title" Text="{Binding GpsAccuracy.Title}" />
+            <TextBlock Classes="number" Text="{Binding GpsAccuracy.Number}" />
+            <TextBlock Classes="detail" Text="{Binding GpsAccuracy.Detail}" />
+            <s:Sparkline Values="{Binding GpsAccuracy.Series}" Labels="{Binding GpsAccuracy.PointLabels}" />
+            <Button
+              Classes="copy-tile"
+              DataContext="{Binding GpsAccuracy}"
+              Content="{l:T Dashboard.Table.Copy}"
+              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+              HorizontalAlignment="Left"
+              Padding="6,2"
+            />
+            <ItemsControl ItemsSource="{Binding GpsErrorRows}" />
+            <TextBlock Classes="detail" Text="{Binding GpsSignalText}" Margin="0,4,0,0" />
+            <TextBlock Classes="detail" Text="{Binding GpsWanderText}" Margin="0,4,0,0" />
           </StackPanel>
         </Border>
 
