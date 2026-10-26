@@ -10,15 +10,18 @@ macOS, and a web app served by a Docker gateway, both running the same UI on the
 from [APRS.NET](https://github.com/APRS-NET/APRS.NET). The feature set is a clean-room reimplementation of the
 functionality of APRSIS32, redesigned with a modern UI (see [docs/clean-room.md](docs/clean-room.md)).
 
-Status: `0.6.0-alpha.1`, working towards `0.7.0`. The app receives and transmits over APRS-IS and your own TNCs: KISS
+Status: `0.7.0-alpha.1`, working towards `0.8.0`. The app receives and transmits over APRS-IS and your own TNCs: KISS
 over TCP (Direwolf, soundmodem) and on serial ports (a TH-D72A's built-in TNC, TNC-X, NinoTNC), or a TNC's text output.
 It shows the stations on a live map with their tracks, RF paths and dead-reckoned positions, with station and packet
-lists, station details and a dashboard, on the desktop and in the browser. Licensed operators send their position by
-hand or as a beacon (fixed, decaying, or SmartBeaconing from a GPS), statuses, objects and items, messages with acks
-and auto-replies, and answer APRS queries; a receive-only IGate passes what their TNCs hear to APRS-IS. A GPS on serial,
-TCP or gpsd places the station, with a sky view of its satellites. The desktop app can share its station with browsers
-on the network, keeps its device list current, and checks for updates every two hours; every release carries an SBOM.
-Next are station lists, two-way IGate and a radio's GPS on its TNC port.
+lists, station details and a dashboard whose history survives a restart and whose charts open into plots, on the
+desktop and in the browser, where a panel can open in a tab of its own. Licensed operators send their position by hand
+or as a beacon (fixed, decaying, or SmartBeaconing from a GPS), statuses, objects and items, messages with acks and
+auto-replies, and answer APRS queries. Their TNCs can digipeat (fill-in or wide-area) and act as a two-way IGate,
+passing messages from APRS-IS to stations heard nearby. A GPS on serial, TCP, gpsd or a radio's TNC port places the
+station, with a sky view and statistics over time. Station lists show only an event's volunteers or the spotters you
+work with, wherever they are. The desktop app can share its station with browsers on the network, keeps its device
+list current, and checks for updates every two hours; every release carries an SBOM.
+Next are TNCs over AGWPE and transmitting with the registered TOCALL.
 See [docs/status.md](docs/status.md) for what
 to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 
