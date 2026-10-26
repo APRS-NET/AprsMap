@@ -267,6 +267,144 @@ internal sealed class GpsHistory
         }
     }
 
+    /// <summary>What's kept, to keep between runs (issue #386); the latest sample isn't, so "now" starts empty.</summary>
+    public GpsHistoryState Export()
+    {
+        lock (_gate)
+        {
+            return new GpsHistoryState(
+                [
+                    .. _minutes
+                        .Where(m => m.Number != long.MinValue)
+                        .Select(m => new GpsMinuteState(
+                            m.Number,
+                            Enum.GetValues<GpsSampleState>()
+                                .Where(state => m.Seconds[(int)state] > 0)
+                                .ToDictionary(
+                                    state => state.ToString(),
+                                    state => m.Seconds[(int)state],
+                                    StringComparer.Ordinal
+                                ),
+                            new Dictionary<string, double>(m.BySource, StringComparer.Ordinal),
+                            m.Losses,
+                            m.FixSamples,
+                            m.Used.ToState(),
+                            m.InView.ToState(),
+                            m.Signal.ToState(),
+                            Systems
+                                .Select((system, i) => (system, i))
+                                .Where(x => m.UsedBySystem[x.i] > 0 || m.SeenBySystem[x.i] > 0)
+                                .ToDictionary(
+                                    x => x.system.ToString(),
+                                    x => m.UsedBySystem[x.i],
+                                    StringComparer.Ordinal
+                                ),
+                            Systems
+                                .Select((system, i) => (system, i))
+                                .Where(x => m.SeenBySystem[x.i] > 0)
+                                .ToDictionary(
+                                    x => x.system.ToString(),
+                                    x => m.SeenBySystem[x.i],
+                                    StringComparer.Ordinal
+                                ),
+                            DilutionKeys
+                                .Select((key, i) => (key, i))
+                                .Where(x => m.Dilutions[x.i].Count > 0)
+                                .ToDictionary(x => x.key, x => m.Dilutions[x.i].ToState(), StringComparer.Ordinal),
+                            ErrorKeys
+                                .Select((key, i) => (key, i))
+                                .Where(x => m.Errors[x.i].Count > 0)
+                                .ToDictionary(x => x.key, x => m.Errors[x.i].ToState(), StringComparer.Ordinal),
+                            m.Wander.ToArray()
+                        )),
+                ],
+                [.. _outages.Select(o => new GpsOutageState(o.Start, o.End))],
+                _origin?.Latitude,
+                _origin?.Longitude
+            );
+        }
+    }
+
+    /// <summary>
+    /// Takes up what was kept (issue #386), dropping what's older than 24 hours at <paramref name="now"/>. An outage
+    /// that was going on when the app stopped ends there: the time it was down isn't known.
+    /// </summary>
+    public void Import(GpsHistoryState state, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var last = MinuteOf(now);
+        var oldest = last - Minutes + 1;
+        lock (_gate)
+        {
+            foreach (var kept in state.Minutes.Where(m => m.Minute >= oldest && m.Minute <= last))
+            {
+                var minute = BucketAt(kept.Minute);
+                foreach (var (name, seconds) in kept.Seconds)
+                {
+                    if (Enum.TryParse<GpsSampleState>(name, out var sampleState))
+                    {
+                        minute.Seconds[(int)sampleState] += seconds;
+                    }
+                }
+                foreach (var (source, seconds) in kept.BySource)
+                {
+                    minute.BySource[source] = minute.BySource.GetValueOrDefault(source) + seconds;
+                }
+                minute.Losses += kept.Losses;
+                minute.FixSamples += kept.FixSamples;
+                minute.Used.Merge(Stat.Of(kept.Used));
+                minute.InView.Merge(Stat.Of(kept.InView));
+                minute.Signal.Merge(Stat.Of(kept.Signal));
+                foreach (var (name, used) in kept.UsedBySystem)
+                {
+                    if (Enum.TryParse<GnssConstellation>(name, out var system))
+                    {
+                        minute.UsedBySystem[(int)system] += used;
+                    }
+                }
+                foreach (var (name, seen) in kept.SeenBySystem)
+                {
+                    if (Enum.TryParse<GnssConstellation>(name, out var system))
+                    {
+                        minute.SeenBySystem[(int)system] += seen;
+                    }
+                }
+                foreach (var (key, stat) in kept.Dilutions)
+                {
+                    if (Array.IndexOf(DilutionKeys, key) is var i and >= 0)
+                    {
+                        minute.Dilutions[i].Merge(Stat.Of(stat));
+                    }
+                }
+                foreach (var (key, stat) in kept.Errors)
+                {
+                    if (Array.IndexOf(ErrorKeys, key) is var i and >= 0)
+                    {
+                        minute.Errors[i].Merge(Stat.Of(stat));
+                    }
+                }
+                minute.Wander.Merge(Spread.Of(kept.Wander));
+            }
+            var since = now - TimeSpan.FromHours(24);
+            var savedAt = DateTimeOffset.UnixEpoch.AddMinutes(
+                state.Minutes.Count > 0 ? state.Minutes.Max(m => m.Minute) + 1 : last
+            );
+            var keptOutages = state
+                .Outages.Select(o => (o.Start, End: o.End ?? (savedAt < now ? savedAt : now)))
+                .Where(o => o.End >= since)
+                .Select(o => (o.Start, (DateTimeOffset?)o.End));
+            _outages.InsertRange(0, keptOutages);
+            if (_outages.Count > OutagesKept)
+            {
+                _outages.RemoveRange(0, _outages.Count - OutagesKept);
+            }
+            if (_origin is null && state is { OriginLatitude: { } lat, OriginLongitude: { } lon })
+            {
+                _origin = (lat, lon);
+            }
+        }
+    }
+
     private static DashboardValue[] Values(string[] keys, Stat[] stats, double?[] now) =>
         [
             .. keys.Select((key, i) => (key, i))
@@ -401,6 +539,21 @@ internal sealed class GpsHistory
             Count += other.Count;
         }
 
+        public readonly GpsStatState ToState() => new(_sum, Count, _lowest, _highest);
+
+        public static Stat Of(GpsStatState state)
+        {
+            var stat = default(Stat);
+            if (state.Count > 0)
+            {
+                stat._sum = state.Sum;
+                stat._lowest = state.Lowest;
+                stat._highest = state.Highest;
+                stat.Count = state.Count;
+            }
+            return stat;
+        }
+
         public readonly DashboardStat ToStat(double? now) =>
             new(now, Average, Count > 0 ? _lowest : null, Count > 0 ? _highest : null);
     }
@@ -432,6 +585,20 @@ internal sealed class GpsHistory
             _yy += other._yy;
             Count += other.Count;
         }
+
+        public readonly double[] ToArray() => [_x, _y, _xx, _yy, Count];
+
+        public static Spread Of(double[] kept) =>
+            kept is [var x, var y, var xx, var yy, var count]
+                ? new Spread
+                {
+                    _x = x,
+                    _y = y,
+                    _xx = xx,
+                    _yy = yy,
+                    Count = (int)count,
+                }
+                : default;
 
         /// <summary>2DRMS: twice the root-mean-square distance from the average, about 95% of fixes within it.</summary>
         public readonly double TwiceRms()
