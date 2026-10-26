@@ -75,6 +75,22 @@ public sealed class IGateToRfTests
         [.. tnc.Sent.Where(l => l.Contains(":}", StringComparison.Ordinal))];
 
     /// <summary>Gives APRS-IS a packet, then one that's never gated, so whatever was going to be sent has been.</summary>
+    /// <summary>
+    /// Writes <paramref name="lines"/> on the TNC and waits until the engine has heard them, so what's gated next
+    /// knows they're local: the TNC and APRS-IS are read on their own threads.
+    /// </summary>
+    private static async Task Hear(Engine engine, EngineTests.FakeSource tnc, params string[] lines)
+    {
+        var before = (await engine.GetDashboardAsync(DashboardRange.Hour, null, Ct)).HeardOnRfTotal;
+        foreach (var line in lines)
+        {
+            await tnc.Write(line);
+        }
+        await WaitUntil(async () =>
+            (await engine.GetDashboardAsync(DashboardRange.Hour, null, Ct)).HeardOnRfTotal >= before + lines.Length
+        );
+    }
+
     private static async Task Settle(Engine engine, EngineTests.FakeSource aprsIs, string line)
     {
         var before = (await engine.GetStatusAsync(Ct)).PacketsReceived;
@@ -91,7 +107,7 @@ public sealed class IGateToRfTests
         var (run, cts, aprsIs, tnc) = await Run(engine, factory);
         using (cts)
         {
-            await tnc.Write("W1AW-9>APRS,WIDE1-1:!4903.50N/07201.75W>Mobile"); // heard directly: local
+            await Hear(engine, tnc, "W1AW-9>APRS,WIDE1-1:!4903.50N/07201.75W>Mobile"); // heard directly: local
             await WaitUntil(() =>
                 Task.FromResult(aprsIs.Sent.Any(l => l.Contains(",qAR,NZ0P-10", StringComparison.Ordinal)))
             );
@@ -127,8 +143,12 @@ public sealed class IGateToRfTests
         var (run, cts, aprsIs, tnc) = await Run(engine, factory);
         using (cts)
         {
-            await tnc.Write("W1AW-9>APRS,WIDE1-1:!4903.50N/07201.75W>Mobile");
-            await tnc.Write("N0NEAR>APRS,WIDE1-1:!4904.50N/07201.75W>Near");
+            await Hear(
+                engine,
+                tnc,
+                "W1AW-9>APRS,WIDE1-1:!4903.50N/07201.75W>Mobile",
+                "N0NEAR>APRS,WIDE1-1:!4904.50N/07201.75W>Near"
+            );
             await WaitUntil(() =>
                 Task.FromResult(aprsIs.Sent.Count(l => l.Contains(",qAR,", StringComparison.Ordinal)) == 2)
             );
@@ -155,7 +175,7 @@ public sealed class IGateToRfTests
         var (run, cts, aprsIs, tnc) = await Run(engine, factory);
         using (cts)
         {
-            await tnc.Write("W1AW-9>APRS,WIDE1-1:!4903.50N/07201.75W>Mobile");
+            await Hear(engine, tnc, "W1AW-9>APRS,WIDE1-1:!4903.50N/07201.75W>Mobile");
             await Settle(engine, aprsIs, "N0NET>APRS,TCPIP*,qAC,T2TEST::W1AW-9   :Are you there?{1");
 
             Assert.Empty(ToRf(tnc));
@@ -176,7 +196,7 @@ public sealed class IGateToRfTests
         var (run, cts, aprsIs, tnc) = await Run(engine, factory);
         using (cts)
         {
-            await tnc.Write("W1AW-9>APRS,WIDE1-1:!4903.50N/07201.75W>Mobile");
+            await Hear(engine, tnc, "W1AW-9>APRS,WIDE1-1:!4903.50N/07201.75W>Mobile");
             for (var i = 1; i <= 7; i++)
             {
                 await Settle(engine, aprsIs, $"N0NET>APRS,TCPIP*,qAC,T2TEST::W1AW-9   :Message {i}{{{i}");
