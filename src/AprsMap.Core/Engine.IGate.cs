@@ -26,6 +26,7 @@ public sealed partial class Engine
         {
             return; // only what this station's radios hear (behavior 2)
         }
+        RecordHeard(packet, sourceId!); // who is local, for the two-way IGate and the dashboard
         RfToInternetGate gate;
         IPacketSender? sender;
         lock (_gate)
@@ -40,9 +41,14 @@ public sealed partial class Engine
             {
                 return; // held: the status says why (behavior 3)
             }
-            if (_igate?.IGate != igate)
+            // Receive only (qAO) unless it also passes messages to RF (qAR, docs/features/F3.4-two-way-igate.md).
+            var receiveOnly = !profile.EffectiveIGateToRf;
+            if (_igate?.IGate != igate || _igate.ReceiveOnly != receiveOnly)
             {
-                _igate = new RfToInternetGate(igate, new RfToInternetGateOptions { TimeProvider = _time });
+                _igate = new RfToInternetGate(
+                    igate,
+                    new RfToInternetGateOptions { TimeProvider = _time, ReceiveOnly = receiveOnly }
+                );
             }
             gate = _igate;
             sender = SenderFor(aprsIs);
@@ -98,7 +104,10 @@ public sealed partial class Engine
             ? new IGateStatus(
                 Interlocked.Read(ref _gated),
                 Interlocked.Read(ref _refused),
-                IGateHeldLocked(settings, profile)
+                IGateHeldLocked(settings, profile),
+                profile.EffectiveIGateToRf,
+                Interlocked.Read(ref _gatedToRf),
+                Interlocked.Read(ref _refusedToRf)
             )
             : null;
     }

@@ -221,9 +221,16 @@ public sealed record StationProfile(
     IReadOnlyList<OwnObject>? Objects = null,
     bool? AnswerQueries = null,
     bool? IGate = null,
-    IReadOnlyList<StationList>? StationLists = null
+    IReadOnlyList<StationList>? StationLists = null,
+    bool? IGateToRf = null
 )
 {
+    /// <summary>
+    /// Whether the IGate also passes messages from APRS-IS to RF (docs/features/F3.4-two-way-igate.md, behavior 1): off
+    /// unless turned on, and only with <see cref="EffectiveIGate"/>.
+    /// </summary>
+    public bool EffectiveIGateToRf => EffectiveIGate && (IGateToRf ?? false);
+
     /// <summary>Its station lists (docs/features/F1.33-station-lists.md, behavior 1); none when unset.</summary>
     public IReadOnlyList<StationList> StationListSet => StationLists ?? [];
 

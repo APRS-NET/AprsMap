@@ -620,6 +620,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         try
         {
             IGateOn = settings.GetActiveProfile()?.EffectiveIGate ?? false;
+            IGateToRfOn = settings.GetActiveProfile()?.EffectiveIGateToRf ?? false;
         }
         finally
         {
@@ -1094,6 +1095,31 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IGateOn { get; set; }
 
+    /// <summary>
+    /// Whether the IGate also passes messages from APRS-IS to RF (docs/features/F3.4-two-way-igate.md, behavior 1);
+    /// saved as it's switched.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool IGateToRfOn { get; set; }
+
+    partial void OnIGateToRfOnChanged(bool value)
+    {
+        if (!_showingIGate && _settings.GetActiveProfile() is { } active && active.EffectiveIGateToRf != value)
+        {
+            _ = SaveSettingsAsync(
+                _settings with
+                {
+                    Profiles =
+                    [
+                        .. _settings.Profiles.Select(p =>
+                            p.Id == active.Id ? p with { IGateToRf = value ? true : null } : p
+                        ),
+                    ],
+                }
+            );
+        }
+    }
+
     /// <summary>"12 packets gated, 3 not", while it's on (behavior 6); null otherwise.</summary>
     [ObservableProperty]
     public partial string? IGateCountText { get; private set; }
@@ -1129,7 +1155,20 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
             : _text.Format(
                 "IGate.Counts",
                 new Dictionary<string, object?> { ["gated"] = igate.Gated, ["refused"] = igate.Refused }
-            );
+            )
+                + (
+                    igate.ToRf
+                        ? " · "
+                            + _text.Format(
+                                "IGate.CountsToRf",
+                                new Dictionary<string, object?>
+                                {
+                                    ["gated"] = igate.GatedToRf,
+                                    ["refused"] = igate.RefusedToRf,
+                                }
+                            )
+                        : string.Empty
+                );
         IGateHeldText = igate?.Held is { } held
             ? _text.Format("IGate.Held", new Dictionary<string, object?> { ["reason"] = _text.Format(held) })
             : null;
