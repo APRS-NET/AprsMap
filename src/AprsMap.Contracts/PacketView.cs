@@ -137,6 +137,9 @@ public enum PacketMarkers
 
     /// <summary>Sent by this station (docs/features/F2.1-own-station.md, behavior 13).</summary>
     Sent = 32,
+
+    /// <summary>Repeated by this station as a digipeater (docs/features/F3.5-digipeater.md, behavior 5).</summary>
+    DigipeatedHere = 64,
 }
 
 /// <summary>

@@ -85,6 +85,44 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         }
     }
 
+    /// <summary>Whether the TNC digipeats, and how (docs/features/F3.5-digipeater.md, behavior 1).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DigipeatOff), nameof(DigipeatFillIn), nameof(DigipeatWide))]
+    public partial DigipeatMode EditDigipeat { get; set; }
+
+    /// <summary>Doesn't digipeat (the default).</summary>
+    public bool DigipeatOff
+    {
+        get => EditDigipeat == DigipeatMode.Off;
+        set => SetDigipeat(value, DigipeatMode.Off);
+    }
+
+    /// <summary>A fill-in digipeater.</summary>
+    public bool DigipeatFillIn
+    {
+        get => EditDigipeat == DigipeatMode.FillIn;
+        set => SetDigipeat(value, DigipeatMode.FillIn);
+    }
+
+    /// <summary>A wide-area digipeater.</summary>
+    public bool DigipeatWide
+    {
+        get => EditDigipeat == DigipeatMode.Wide;
+        set => SetDigipeat(value, DigipeatMode.Wide);
+    }
+
+    private void SetDigipeat(bool chosen, DigipeatMode mode)
+    {
+        if (chosen)
+        {
+            EditDigipeat = mode;
+        }
+    }
+
+    /// <summary>Other names the digipeater answers to, separated by spaces or commas.</summary>
+    [ObservableProperty]
+    public partial string EditDigipeatAliases { get; set; } = string.Empty;
+
     /// <summary>Whether the form shows APRS-IS's server and filter.</summary>
     public bool IsAprsIs => EditKind == SourceKind.AprsIs;
 
@@ -662,6 +700,8 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditKind = SourceKind.AprsIs;
         EditGpsLink = GpsLink.Serial;
         EditTncGps = TncGps.Auto;
+        EditDigipeat = DigipeatMode.Off;
+        EditDigipeatAliases = string.Empty;
         CanPickKind = true;
         EditRxOnly = false;
         EditTxPath = string.Empty;
@@ -700,6 +740,8 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditKind = row.Source.Kind;
         EditGpsLink = row.Source.GpsLink ?? GpsLink.Serial;
         EditTncGps = row.Source.TncGps ?? TncGps.Auto;
+        EditDigipeat = row.Source.Digipeat ?? DigipeatMode.Off;
+        EditDigipeatAliases = row.Source.DigipeatAliases ?? string.Empty;
         CanPickKind = false;
         EditServer = row.Source.Server ?? string.Empty;
         EditFilter = row.Source.Filter ?? string.Empty;
@@ -869,6 +911,12 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                     TxPath = txPath,
                 };
         }
+        // The digipeater (F3.5): a KISS TNC's, Off and no aliases unwritten.
+        source = source with
+        {
+            Digipeat = IsKiss && EditDigipeat != DigipeatMode.Off ? EditDigipeat : null,
+            DigipeatAliases = IsKiss && EditDigipeatAliases.Trim().Length > 0 ? EditDigipeatAliases.Trim() : null,
+        };
         var ticked = EditProfiles.Where(p => p.IsChecked).Select(p => p.Id).ToHashSet(StringComparer.Ordinal);
         var settings = _settings with
         {

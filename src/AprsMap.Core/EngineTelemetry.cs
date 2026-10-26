@@ -46,4 +46,10 @@ public static class EngineTelemetry
         unit: "{loss}",
         description: "Fixes the station's GPS in use lost: no fix, or silent, straight after a fix."
     );
+
+    internal static readonly Counter<long> Digipeated = Meter.CreateCounter<long>(
+        "aprsmap.digipeated",
+        unit: "{frame}",
+        description: "Frames the station repeated on RF as a digipeater (F3.5)."
+    );
 }

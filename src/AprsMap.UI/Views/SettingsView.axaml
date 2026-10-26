@@ -496,6 +496,47 @@
                       TextWrapping="Wrap"
                     />
                   </StackPanel>
+                  <!-- The digipeater (F3.5 behavior 1): a KISS TNC's, Off by default. -->
+                  <StackPanel x:Name="DigipeatChoice" Spacing="4" IsVisible="{Binding Sources.IsKiss}">
+                    <TextBlock Text="{l:T Settings.Sources.Digipeat}" Foreground="{DynamicResource Brush.TextMuted}" />
+                    <RadioButton
+                      x:Name="DigipeatOffBox"
+                      GroupName="Digipeat"
+                      Content="{l:T Settings.Sources.Digipeat.Off}"
+                      IsChecked="{Binding Sources.DigipeatOff}"
+                    />
+                    <RadioButton
+                      x:Name="DigipeatFillInBox"
+                      GroupName="Digipeat"
+                      Content="{l:T Settings.Sources.Digipeat.FillIn}"
+                      IsChecked="{Binding Sources.DigipeatFillIn}"
+                    />
+                    <RadioButton
+                      x:Name="DigipeatWideBox"
+                      GroupName="Digipeat"
+                      Content="{l:T Settings.Sources.Digipeat.Wide}"
+                      IsChecked="{Binding Sources.DigipeatWide}"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.Digipeat.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.Digipeat.Aliases}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      IsVisible="{Binding !Sources.DigipeatOff}"
+                    />
+                    <TextBox
+                      x:Name="DigipeatAliasesBox"
+                      Text="{Binding Sources.EditDigipeatAliases}"
+                      IsVisible="{Binding !Sources.DigipeatOff}"
+                      AutomationProperties.Name="{l:T Settings.Sources.Digipeat.Aliases}"
+                      FontFamily="{DynamicResource Font.Mono}"
+                      MinWidth="200"
+                      HorizontalAlignment="Left"
+                    />
+                  </StackPanel>
                   <!-- A GPS (F3.6 behavior 1): NMEA on a serial port or over TCP, or gpsd. -->
                   <StackPanel x:Name="GpsLinkChoice" Spacing="4" IsVisible="{Binding Sources.IsGps}">
                     <TextBlock Text="{l:T Settings.Sources.GpsLink}" Foreground="{DynamicResource Brush.TextMuted}" />

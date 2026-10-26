@@ -189,6 +189,16 @@
                   ToolTip.Tip="{l:T Packets.Sent}"
                   AutomationProperties.Name="{l:T Packets.Sent}"
                 />
+                <!-- Repeated by this station as a digipeater (F3.5 behavior 5): two arrows passing each other. -->
+                <PathIcon
+                  IsVisible="{Binding IsDigipeatedHere}"
+                  Data="M 4,7 L 16,7 L 16,4 L 21,8.5 L 16,13 L 16,10 L 4,10 Z M 20,17 L 8,17 L 8,20 L 3,15.5 L 8,11 L 8,14 L 20,14 Z"
+                  Foreground="{DynamicResource Brush.Accent}"
+                  Width="{DynamicResource Icon.Size}"
+                  Height="{DynamicResource Icon.Size}"
+                  ToolTip.Tip="{l:T Packets.Marker.DigipeatedHere}"
+                  AutomationProperties.Name="{l:T Packets.Marker.DigipeatedHere}"
+                />
                 <PathIcon
                   IsVisible="{Binding IsDirect}"
                   Data="F0 M 12,2 A 10,10 0 1 1 12,22 A 10,10 0 1 1 12,2 Z M 12,5 A 7,7 0 1 0 12,19 A 7,7 0 1 0 12,5 Z M 12,9 A 3,3 0 1 1 12,15 A 3,3 0 1 1 12,9 Z"

@@ -284,6 +284,10 @@ public sealed record SeenPosition(double Latitude, double Longitude, double Dist
 /// <param name="Manual">
 /// Whether a serial TNC is in manual mode, taking typed commands (docs/features/F3.2-built-in-tncs.md, behavior 9).
 /// </param>
+/// <param name="Digipeated">
+/// Frames the station repeated on this source as a digipeater since the engine started (docs/features/F3.5-digipeater.md,
+/// behavior 5).
+/// </param>
 /// <param name="Warning">
 /// Something wrong while it is connected, such as a TNC that isn't in KISS mode (a <c>kiss.*</c> code;
 /// docs/features/F3.1-kiss-sources.md, behavior 13), or null.
@@ -300,7 +304,8 @@ public sealed record SourceStatus(
     bool MaySend = false,
     EngineError? TransmitBlocked = null,
     EngineError? Warning = null,
-    bool Manual = false
+    bool Manual = false,
+    int Digipeated = 0
 )
 {
     /// <summary>Whether the station can send on this source now.</summary>

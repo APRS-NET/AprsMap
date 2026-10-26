@@ -865,6 +865,16 @@ public sealed record SourceRow(
                         _ => "Dashboard.State.Disconnected",
                     }
             ];
+        if (source.Digipeated > 0)
+        {
+            // What it repeated as a digipeater since the app started (F3.5 behavior 5).
+            state +=
+                " · "
+                + text.Format(
+                    "Dashboard.Source.Digipeated",
+                    new Dictionary<string, object?> { ["count"] = source.Digipeated }
+                );
+        }
         var quiet =
             source.Enabled
             && source.State == ConnectionState.Connected

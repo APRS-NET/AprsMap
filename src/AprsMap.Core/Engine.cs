@@ -1090,7 +1090,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 Warning: v.Link.Warning,
                 Manual: IsManual(v.Source.Id),
                 MaySend: v.Source.MaySend,
-                TransmitBlocked: v.Source.MaySend && _settings is not null ? SourceBlock(_settings, v.Source) : null
+                TransmitBlocked: v.Source.MaySend && _settings is not null ? SourceBlock(_settings, v.Source) : null,
+                Digipeated: DigipeatedOn(v.Source.Id) // F3.5 behavior 5
             ))
         );
         // A source switched off stays listed, so its pill can switch it on again (F3.1 behavior 6).
@@ -2215,6 +2216,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             return null; // server comments and noise
         }
 
+        var digipeated = false;
         if (!sent && _logging.Current.Packets)
         {
             if (_packetsLog.IsEnabled(LogLevel.Debug))
@@ -2233,6 +2235,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             _bulletins.Receive(packet, sourceId); // bulletins and announcements (F2.5)
             ConsiderQuery(packet, sourceId); // queries to answer (F2.8)
             ConsiderGating(packet, sourceId); // RF to APRS-IS (F3.4)
+            digipeated = ConsiderDigipeat(packet, sourceId); // repeated on RF (F3.5)
         }
         var now = _time.GetUtcNow();
         var check = _duplicates.Check(packet, sourceId);
@@ -2255,6 +2258,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         if (sent)
         {
             view = view with { Markers = PacketMarkers.Sent }; // not heard from anywhere: ours
+        }
+        else if (digipeated)
+        {
+            view = view with { Markers = view.Markers | PacketMarkers.DigipeatedHere }; // F3.5 behavior 5
         }
         if (!duplicate)
         {

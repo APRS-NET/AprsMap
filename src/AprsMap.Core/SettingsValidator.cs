@@ -23,6 +23,7 @@ internal static class SettingsValidator
         var sources = new Dictionary<string, SourceSettings>(StringComparer.Ordinal);
         foreach (var source in settings.SourceList)
         {
+            ValidateDigipeat(source); // F3.5
             if (
                 string.IsNullOrWhiteSpace(source.Id)
                 || string.IsNullOrWhiteSpace(source.Name)
@@ -672,6 +673,28 @@ internal static class SettingsValidator
                         EngineErrorCodes.StationListTooMany,
                         $"'{list.Name}' has more than {StationList.MaxEntries} entries.",
                         new Dictionary<string, string> { [EngineErrorArgs.List] = list.Name }
+                    )
+                );
+            }
+        }
+    }
+
+    /// <summary>A TNC's digipeater aliases (docs/features/F3.5-digipeater.md, behavior 1): each an AX.25 call.</summary>
+    private static void ValidateDigipeat(SourceSettings source)
+    {
+        foreach (var alias in source.DigipeatAliasList)
+        {
+            if (!AprsNet.Ax25.Ax25Address.TryParse(alias, out _))
+            {
+                throw new EngineArgumentException(
+                    new EngineError(
+                        EngineErrorCodes.DigipeatAliasInvalid,
+                        $"'{alias}' can't be a digipeater alias: up to six letters and digits, and an SSID.",
+                        new Dictionary<string, string>
+                        {
+                            [EngineErrorArgs.Source] = source.Name,
+                            [EngineErrorArgs.Value] = alias,
+                        }
                     )
                 );
             }
