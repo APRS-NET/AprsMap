@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.6.0-alpha.4...v0.6.0-alpha.5) (2026-10-26)
+
+
+### Features
+
+* **desktop:** the desktop app as a gateway's client (F1.39) ([66ef656](https://github.com/APRS-NET/AprsMap/commit/66ef6561503d387eadfab84835967e6b75d16295)), closes [#400](https://github.com/APRS-NET/AprsMap/issues/400)
+* **gateway:** an API key for apps, set in Settings › Gateway access (F1.38) ([eb713e7](https://github.com/APRS-NET/AprsMap/commit/eb713e70ddd0a6ee26cde03c41bcbf6c198ea0a8)), closes [#399](https://github.com/APRS-NET/AprsMap/issues/399)
+* **gateway:** one Apply for the API key, with Let apps in on or off (F1.38) ([a281af9](https://github.com/APRS-NET/AprsMap/commit/a281af979e751cffb92701c5b5848cb2daa1c4a4))
+* **gateway:** run as a Linux service, configured in TOML (F1.37) ([27c8593](https://github.com/APRS-NET/AprsMap/commit/27c8593c5bec47a6b4a8b1a97f42951810372515)), closes [#398](https://github.com/APRS-NET/AprsMap/issues/398)
+* **gateway:** update and restart the Linux service from the admin web app (F1.40) ([89b0261](https://github.com/APRS-NET/AprsMap/commit/89b0261cd92efebaf8e5ad1532d55c7ddf0ad0cf)), closes [#407](https://github.com/APRS-NET/AprsMap/issues/407)
+
 ## [0.6.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.6.0-alpha.3...v0.6.0-alpha.4) (2026-10-26)
 
 
