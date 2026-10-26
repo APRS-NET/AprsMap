@@ -5474,4 +5474,32 @@ pause 1s</value>
   <data name="Map.AddToList" xml:space="preserve">
     <value>Add {name} to list</value>
   </data>
+  <data name="Settings.Sources.Digipeat" xml:space="preserve">
+    <value>Digipeat</value>
+  </data>
+  <data name="Settings.Sources.Digipeat.Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Settings.Sources.Digipeat.FillIn" xml:space="preserve">
+    <value>Fill-in (WIDE1-1)</value>
+  </data>
+  <data name="Settings.Sources.Digipeat.Wide" xml:space="preserve">
+    <value>Wide-area (WIDEn-N, up to 2 hops)</value>
+  </data>
+  <data name="Settings.Sources.Digipeat.Help" xml:space="preserve">
+    <value>Repeats what the TNC hears, with your callsign, only while Transmit is on and the profile may send here. Wide-area digipeating needs the local network's agreement.</value>
+  </data>
+  <data name="Settings.Sources.Digipeat.Aliases" xml:space="preserve">
+    <value>Aliases (optional)</value>
+  </data>
+  <data name="Error.settings.source.digipeat-alias-invalid" xml:space="preserve">
+    <value>A digipeater alias is up to six letters and digits, with an optional SSID.</value>
+  </data>
+  <data name="Packets.Marker.DigipeatedHere" xml:space="preserve">
+    <value>Digipeated here</value>
+    <comment>A packet this station repeated as a digipeater (F3.5).</comment>
+  </data>
+  <data name="Dashboard.Source.Digipeated" xml:space="preserve">
+    <value>{count, plural, one {# digipeated} other {# digipeated}}</value>
+  </data>
 </root>

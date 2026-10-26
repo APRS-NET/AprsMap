@@ -62,12 +62,29 @@ public sealed record SourceSettings(
     string? EnterScript = null,
     string? LeaveScript = null,
     GpsLink? GpsLink = null,
-    TncGps? TncGps = null
+    TncGps? TncGps = null,
+    DigipeatMode? Digipeat = null,
+    string? DigipeatAliases = null
 )
 {
     /// <summary>The radio's GPS choice in force: only TNC text output has one (F3.13 behavior 1).</summary>
     public TncGps EffectiveTncGps =>
         Kind == SourceKind.AprsTextSerial ? TncGps ?? Contracts.TncGps.Auto : Contracts.TncGps.Off;
+
+    /// <summary>
+    /// Whether this TNC digipeats, and how (docs/features/F3.5-digipeater.md, behavior 1): Off unless set, and always Off
+    /// for a source that isn't a KISS TNC.
+    /// </summary>
+    public DigipeatMode EffectiveDigipeat =>
+        Kind is SourceKind.KissTcp or SourceKind.KissSerial ? Digipeat ?? DigipeatMode.Off : DigipeatMode.Off;
+
+    /// <summary>The digipeater's aliases as written, upper-cased: names separated by spaces or commas.</summary>
+    public IReadOnlyList<string> DigipeatAliasList =>
+        [
+            .. (DigipeatAliases ?? string.Empty)
+                .Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(a => a.ToUpperInvariant()),
+        ];
 
     /// <summary>NMEA 0183's speed, the default for a GPS on a serial port (F3.6 decision 1).</summary>
     public const int DefaultGpsBaud = 4800;
@@ -244,4 +261,17 @@ public enum GpsLink
 
     /// <summary>gpsd, on this machine or another.</summary>
     Gpsd,
+}
+
+/// <summary>Whether a TNC digipeats, and how (docs/features/F3.5-digipeater.md, behavior 1).</summary>
+public enum DigipeatMode
+{
+    /// <summary>Doesn't digipeat.</summary>
+    Off,
+
+    /// <summary>A fill-in digipeater: <c>WIDE1-1</c>, the station's call and its aliases.</summary>
+    FillIn,
+
+    /// <summary>A wide-area digipeater: <c>WIDEn-N</c> too, up to 2 hops, by agreement with the local network.</summary>
+    Wide,
 }

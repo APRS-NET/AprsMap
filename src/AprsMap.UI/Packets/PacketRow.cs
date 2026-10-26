@@ -117,6 +117,9 @@ public sealed partial class PacketRow : ObservableObject
     /// <summary>Whether this station sent it (the sent marker, docs/features/F2.1-own-station.md behavior 13).</summary>
     public bool IsSent => Packet.Markers.HasFlag(PacketMarkers.Sent);
 
+    /// <summary>Whether this station repeated it as a digipeater (docs/features/F3.5-digipeater.md, behavior 5).</summary>
+    public bool IsDigipeatedHere => Packet.Markers.HasFlag(PacketMarkers.DigipeatedHere);
+
     /// <summary>Whether an IGate heard it on RF straight from the sender (the direct marker).</summary>
     public bool IsDirect => Packet.Markers.HasFlag(PacketMarkers.Direct);
 

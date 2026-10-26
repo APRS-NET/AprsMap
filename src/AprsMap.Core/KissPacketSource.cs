@@ -27,7 +27,7 @@ internal sealed class KissPacketSource(
     TncSetup? setup = null,
     TncGps gps = TncGps.Off,
     TimeProvider? time = null
-) : IPacketSource, IPacketSender, ITrafficSource, ITncConsole, IGpsSource
+) : IPacketSource, IPacketSender, ITrafficSource, ITncConsole, IGpsSource, IFrameSender
 {
     private readonly NmeaFixTracker _tracker = new();
     private bool _gpsMissing; // On, and no GPS sentences for the connection's timeout (behavior 3), under _lock
@@ -255,6 +255,10 @@ internal sealed class KissPacketSource(
     /// <summary>Sends <paramref name="packet"/> to the TNC as a KISS data frame (docs/features/F2.1-own-station.md, behavior 5.2).</summary>
     public ValueTask SendAsync(AprsPacket packet, CancellationToken cancellationToken) =>
         connection.SendAsync(packet, cancellationToken);
+
+    /// <summary>Sends a frame with its path as it is, for the digipeater (docs/features/F3.5-digipeater.md).</summary>
+    public ValueTask SendFrameAsync(AprsNet.Ax25.Ax25Frame frame, CancellationToken cancellationToken) =>
+        connection.SendFrameAsync(frame, cancellationToken);
 
     private Action<TrafficEntry>? _traffic;
 

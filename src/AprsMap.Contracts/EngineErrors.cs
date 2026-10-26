@@ -54,6 +54,9 @@ public static class EngineErrorCodes
     /// <summary>The moving schedule's speeds, rates or turns can't be used (F2.2, #335).</summary>
     public const string ProfileMovingInvalid = "settings.profile.moving-invalid";
 
+    /// <summary>A digipeater alias that can't be an AX.25 call (docs/features/F3.5-digipeater.md, behavior 1).</summary>
+    public const string DigipeatAliasInvalid = "settings.source.digipeat-alias-invalid";
+
     /// <summary>A GPS without its link, serial port or host (F3.6 behavior 1).</summary>
     public const string GpsSourceInvalid = "settings.source.gps-invalid";
 
