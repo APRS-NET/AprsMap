@@ -91,7 +91,11 @@ public sealed partial class Engine
             quality.Vdop,
             quality.HorizontalErrorMeters,
             quality.AltitudeErrorMeters,
-            quality.SpeedErrorKnots
+            quality.SpeedErrorKnots,
+            quality.Tdop,
+            quality.Gdop,
+            quality.LatitudeErrorMeters,
+            quality.LongitudeErrorMeters
         );
         GpsSkySatellite[] sky =
         [
@@ -289,6 +293,83 @@ public sealed partial class Engine
             fix.Hdop,
             track!.Accuracy,
             track.Sky
+        );
+    }
+
+    private readonly GpsHistory _gpsHistory = new(); // F3.14
+
+    /// <summary>Samples the GPS in use once a second for the dashboard and the metrics (F3.14 behaviors 1, 10).</summary>
+    private async Task RunGpsHistoryAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(GpsHistory.SampleInterval, _time);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                SampleGps();
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    /// <summary>One sample of the GPS in use (F3.14 behavior 1); nothing with no GPS in the profile.</summary>
+    internal void SampleGps()
+    {
+        var now = _time.GetUtcNow();
+        GpsSample? sample;
+        lock (_gate)
+        {
+            sample = GpsSampleLocked(now);
+        }
+        if (sample is null)
+        {
+            return;
+        }
+        var lost = _gpsHistory.Record(sample, now, GpsHistory.SampleInterval);
+        EngineTelemetry.GpsFixTime.Add(
+            GpsHistory.SampleInterval.TotalSeconds,
+            new KeyValuePair<string, object?>(
+                "fix",
+                sample.State switch
+                {
+                    GpsSampleState.Fix3D => "3d",
+                    GpsSampleState.Fix2D => "2d",
+                    GpsSampleState.NoFix => "none",
+                    _ => "silent",
+                }
+            )
+        );
+        if (lost)
+        {
+            EngineTelemetry.GpsFixLosses.Add(1);
+        }
+    }
+
+    /// <summary>The GPS in use as one sample, or null without one. Call under <see cref="_gate"/>.</summary>
+    private GpsSample? GpsSampleLocked(DateTimeOffset now)
+    {
+        var settings = _settings ?? AppSettings.Empty;
+        if (GpsInUseLocked(settings, settings.GetActiveProfile()) is not ({ } source, var track))
+        {
+            return null;
+        }
+        if (track?.Latest is not { At: var at } || now - at > GpsHistory.SilentAfter)
+        {
+            return new GpsSample(source.Id, GpsSampleState.Silent);
+        }
+        var status = GpsStatusLocked();
+        var state =
+            status is not { HasPosition: true } ? GpsSampleState.NoFix
+            : status.Fix == GpsFixKind.Fix3D ? GpsSampleState.Fix3D
+            : GpsSampleState.Fix2D;
+        return new GpsSample(
+            source.Id,
+            state,
+            track.Accuracy,
+            track.Sky,
+            status?.Latitude,
+            status?.Longitude,
+            status?.SpeedKnots
         );
     }
 }

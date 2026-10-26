@@ -5240,4 +5240,137 @@ pause 1s</value>
   <data name="Error.updates.unexpected-answer" xml:space="preserve">
     <value>The release list's answer couldn't be read.</value>
   </data>
+  <data name="Dashboard.Gps.Group" xml:space="preserve">
+    <value>GPS</value>
+  </data>
+  <data name="Dashboard.Gps.None" xml:space="preserve">
+    <value>No GPS in this profile. Add one under Settings › Sources to see here how it does over time.</value>
+  </data>
+  <data name="Dashboard.Gps.SourceOther" xml:space="preserve">
+    <value>{source}, and another GPS for part of the range</value>
+    <comment>Which GPS the tiles are for, when a radio's GPS stood in for part of the range.</comment>
+  </data>
+  <data name="Dashboard.Gps.Fix" xml:space="preserve">
+    <value>GPS fix</value>
+    <comment>Tile title: the share of time the GPS had a fix.</comment>
+  </data>
+  <data name="Dashboard.Gps.Fix3D" xml:space="preserve">
+    <value>3D fix</value>
+  </data>
+  <data name="Dashboard.Gps.Fix2D" xml:space="preserve">
+    <value>2D fix</value>
+  </data>
+  <data name="Dashboard.Gps.NoFix" xml:space="preserve">
+    <value>No fix</value>
+  </data>
+  <data name="Dashboard.Gps.Silent" xml:space="preserve">
+    <value>Silent</value>
+    <comment>The GPS sent nothing for 5 seconds or more.</comment>
+  </data>
+  <data name="Dashboard.Gps.Share" xml:space="preserve">
+    <value>{percent} % · {time}</value>
+    <comment>A fix state's share of the range and its time.</comment>
+  </data>
+  <data name="Dashboard.Gps.Losses" xml:space="preserve">
+    <value>{count, plural, =0 {No fix lost} one {# fix lost} other {# fixes lost}}</value>
+  </data>
+  <data name="Dashboard.Gps.Longest" xml:space="preserve">
+    <value>Longest outage {time}</value>
+  </data>
+  <data name="Dashboard.Gps.LastLost" xml:space="preserve">
+    <value>Last lost at {time} for {length}</value>
+  </data>
+  <data name="Dashboard.Gps.LostSince" xml:space="preserve">
+    <value>No fix since {time} ({length})</value>
+  </data>
+  <data name="Dashboard.Gps.Seconds" xml:space="preserve">
+    <value>{value} s</value>
+  </data>
+  <data name="Dashboard.Gps.Minutes" xml:space="preserve">
+    <value>{value} min</value>
+  </data>
+  <data name="Dashboard.Gps.HoursMinutes" xml:space="preserve">
+    <value>{hours} h {minutes} min</value>
+  </data>
+  <data name="Dashboard.Gps.Satellites" xml:space="preserve">
+    <value>Satellites used</value>
+    <comment>Tile title.</comment>
+  </data>
+  <data name="Dashboard.Gps.UsedOf" xml:space="preserve">
+    <value>{used} of {inView}</value>
+    <comment>Satellites used of those in view, as the tile's big number.</comment>
+  </data>
+  <data name="Dashboard.Gps.UsedRange" xml:space="preserve">
+    <value>Average {average} · lowest {lowest} · highest {highest}</value>
+    <comment>Satellites used over the range.</comment>
+  </data>
+  <data name="Dashboard.Gps.SystemRow" xml:space="preserve">
+    <value>{used} of {inView} now · {average} average</value>
+    <comment>A satellite system's row: used of in view now, and the average used.</comment>
+  </data>
+  <data name="Dashboard.Gps.Dilution" xml:space="preserve">
+    <value>Dilution of precision</value>
+    <comment>Tile title.</comment>
+  </data>
+  <data name="Dashboard.Gps.Hdop" xml:space="preserve">
+    <value>HDOP {value}</value>
+    <comment>The tile's big number.</comment>
+  </data>
+  <data name="Dashboard.Gps.Dop.pdop" xml:space="preserve">
+    <value>PDOP (3D)</value>
+  </data>
+  <data name="Dashboard.Gps.Dop.hdop" xml:space="preserve">
+    <value>HDOP (horizontal)</value>
+  </data>
+  <data name="Dashboard.Gps.Dop.vdop" xml:space="preserve">
+    <value>VDOP (vertical)</value>
+  </data>
+  <data name="Dashboard.Gps.Dop.tdop" xml:space="preserve">
+    <value>TDOP (time)</value>
+  </data>
+  <data name="Dashboard.Gps.Dop.gdop" xml:space="preserve">
+    <value>GDOP (overall)</value>
+  </data>
+  <data name="Dashboard.Gps.StatRow" xml:space="preserve">
+    <value>{now} now · {average} average · {worst} worst</value>
+  </data>
+  <data name="Dashboard.Gps.Accuracy" xml:space="preserve">
+    <value>GPS accuracy</value>
+    <comment>Tile title: the GPS's own estimate of its error.</comment>
+  </data>
+  <data name="Dashboard.Gps.Error.horizontal" xml:space="preserve">
+    <value>Horizontal</value>
+  </data>
+  <data name="Dashboard.Gps.Error.vertical" xml:space="preserve">
+    <value>Vertical</value>
+  </data>
+  <data name="Dashboard.Gps.Error.latitude" xml:space="preserve">
+    <value>North–south</value>
+  </data>
+  <data name="Dashboard.Gps.Error.longitude" xml:space="preserve">
+    <value>East–west</value>
+  </data>
+  <data name="Dashboard.Gps.Metres" xml:space="preserve">
+    <value>±{value} m</value>
+  </data>
+  <data name="Dashboard.Gps.Feet" xml:space="preserve">
+    <value>±{value} ft</value>
+  </data>
+  <data name="Dashboard.Gps.ErrorNote" xml:space="preserve">
+    <value>The GPS's own estimates: gpsd gives them at 95 %, NMEA (GST) at one standard deviation, so compare a GPS only with itself.</value>
+  </data>
+  <data name="Dashboard.Gps.Signal" xml:space="preserve">
+    <value>Average signal of the satellites used: {value} dB-Hz</value>
+  </data>
+  <data name="Dashboard.Gps.Wander" xml:space="preserve">
+    <value>While still, 95 % of fixes within {distance} ({count, plural, one {# fix} other {# fixes}})</value>
+    <comment>How far the position wandered while the station stood still.</comment>
+  </data>
+  <data name="Dashboard.Gps.WanderNone" xml:space="preserve">
+    <value>Wander: not enough fixes while still yet</value>
+  </data>
+  <data name="Dashboard.Gps.NoValue" xml:space="preserve">
+    <value>–</value>
+    <comment>A value the GPS hasn't given.</comment>
+  </data>
 </root>

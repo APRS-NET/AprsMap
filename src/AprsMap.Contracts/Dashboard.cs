@@ -54,6 +54,9 @@ public enum DashboardRange
 /// Counted only for the stations a view filter shows (behavior 7), with points of at least 5 minutes. Packets by
 /// source, the busiest relays and each source's last packet are the whole feed's, since they aren't kept per station.
 /// </param>
+/// <param name="Gps">
+/// The station's GPS over the range (docs/features/F3.14-gps-dashboard.md); null when the profile had no GPS in it.
+/// </param>
 public sealed record Dashboard(
     DateTimeOffset At,
     DashboardRange Range,
@@ -78,7 +81,8 @@ public sealed record Dashboard(
     IReadOnlyList<DashboardHop>? FarthestDirect = null,
     DashboardWeather? Weather = null,
     DashboardTables? Tables = null,
-    bool MyView = false
+    bool MyView = false,
+    DashboardGps? Gps = null
 );
 
 /// <summary>A station heard directly by an IGate, and how far apart they are.</summary>
@@ -130,3 +134,70 @@ public sealed record DashboardCount(string Key, int Count);
 
 /// <summary>A name and a time.</summary>
 public sealed record DashboardMoment(string Key, DateTimeOffset At);
+
+/// <summary>
+/// The station's GPS over the dashboard's range (docs/features/F3.14-gps-dashboard.md, behaviors 1–8): the GPS in use
+/// sampled once a second. Times and counts cover the range; "now" values are the latest sample's. Each series has a
+/// value a point like the dashboard's other series, null for a point with no samples (or none with a fix).
+/// </summary>
+/// <param name="SourceId">The GPS in use for most of the range.</param>
+/// <param name="OtherInUse">Whether another GPS was in use for part of the range (behavior 5).</param>
+/// <param name="Fix3D">Time with a 3D fix.</param>
+/// <param name="Fix2D">Time with a 2D fix.</param>
+/// <param name="NoFix">Time reporting without a fix.</param>
+/// <param name="Silent">Time with nothing from the GPS for 5 seconds or more (behavior 1.3).</param>
+/// <param name="Losses">Fixes lost in the range (behavior 2).</param>
+/// <param name="LongestOutage">The longest time without a fix of the outages in the range; null with none.</param>
+/// <param name="LastOutage">The latest outage in the range; null with none.</param>
+/// <param name="SatellitesUsed">Satellites used: now, and the average, lowest and highest with a fix over the range.</param>
+/// <param name="SatellitesInView">Satellites in view: now, and over the range.</param>
+/// <param name="Constellations">Each system seen in the range, in the order of <see cref="GnssConstellation"/>.</param>
+/// <param name="Dilutions">PDOP, HDOP, VDOP, TDOP and GDOP, keyed by lower-case name; those the GPS never gave are absent.</param>
+/// <param name="Errors">
+/// The GPS's estimated errors in metres, keyed horizontal, vertical, latitude and longitude; those never given are absent.
+/// </param>
+/// <param name="Signal">The average signal of the satellites used, in dB-Hz.</param>
+/// <param name="WanderMeters">
+/// The radius holding about 95% of the fixes while still, twice their root-mean-square distance from their average
+/// (behavior 4); null with fewer than 10 such fixes.
+/// </param>
+/// <param name="WanderFixes">The fixes the wander is worked out from.</param>
+/// <param name="FixShare">The share of each point's samples with a fix, 0 to 100.</param>
+/// <param name="SatellitesSeries">The average satellites used a point.</param>
+/// <param name="HdopSeries">The average HDOP a point.</param>
+/// <param name="ErrorSeries">The average estimated horizontal error a point, in metres.</param>
+public sealed record DashboardGps(
+    string SourceId,
+    bool OtherInUse,
+    TimeSpan Fix3D,
+    TimeSpan Fix2D,
+    TimeSpan NoFix,
+    TimeSpan Silent,
+    int Losses,
+    TimeSpan? LongestOutage,
+    DashboardOutage? LastOutage,
+    DashboardStat SatellitesUsed,
+    DashboardStat SatellitesInView,
+    IReadOnlyList<DashboardConstellation> Constellations,
+    IReadOnlyList<DashboardValue> Dilutions,
+    IReadOnlyList<DashboardValue> Errors,
+    DashboardStat Signal,
+    double? WanderMeters,
+    int WanderFixes,
+    IReadOnlyList<double?> FixShare,
+    IReadOnlyList<double?> SatellitesSeries,
+    IReadOnlyList<double?> HdopSeries,
+    IReadOnlyList<double?> ErrorSeries
+);
+
+/// <summary>A time without a fix: when it began, how long it lasted (so far, while it goes on).</summary>
+public sealed record DashboardOutage(DateTimeOffset Start, TimeSpan Length, bool Ongoing);
+
+/// <summary>A value now and over a range; each null when not known.</summary>
+public sealed record DashboardStat(double? Now, double? Average, double? Lowest, double? Highest);
+
+/// <summary>A named <see cref="DashboardStat"/>.</summary>
+public sealed record DashboardValue(string Key, DashboardStat Stat);
+
+/// <summary>A satellite system seen in the range: used and in view now, and the average used with a fix.</summary>
+public sealed record DashboardConstellation(GnssConstellation System, int UsedNow, int InViewNow, double? AverageUsed);

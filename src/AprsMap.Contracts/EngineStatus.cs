@@ -190,6 +190,10 @@ public enum GnssConstellation
 /// <param name="HorizontalErrorMeters">The GPS's estimate of its horizontal error.</param>
 /// <param name="VerticalErrorMeters">The GPS's estimate of its altitude error.</param>
 /// <param name="SpeedErrorKnots">The GPS's estimate of its speed error (gpsd only).</param>
+/// <param name="Tdop">Time dilution of precision (gpsd only).</param>
+/// <param name="Gdop">Geometric dilution of precision, position and time together (gpsd only).</param>
+/// <param name="LatitudeErrorMeters">The GPS's estimate of its error in latitude.</param>
+/// <param name="LongitudeErrorMeters">The GPS's estimate of its error in longitude.</param>
 public sealed record GpsAccuracy(
     int? SatellitesUsed = null,
     int? SatellitesInView = null,
@@ -198,7 +202,11 @@ public sealed record GpsAccuracy(
     double? Vdop = null,
     double? HorizontalErrorMeters = null,
     double? VerticalErrorMeters = null,
-    double? SpeedErrorKnots = null
+    double? SpeedErrorKnots = null,
+    double? Tdop = null,
+    double? Gdop = null,
+    double? LatitudeErrorMeters = null,
+    double? LongitudeErrorMeters = null
 );
 
 /// <summary>A satellite a GPS can see (docs/features/F3.12-gps-status.md, behaviors 4, 5).</summary>

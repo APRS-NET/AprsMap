@@ -737,6 +737,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         var others = RunOtherSourcesAsync(cancellationToken);
         var updates = RunUpdatesAsync(cancellationToken); // F4.15
         var devices = RunDeviceListAsync(cancellationToken); // F4.16
+        var gps = RunGpsHistoryAsync(cancellationToken); // F3.14
         try
         {
             await RunConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -747,6 +748,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             await sweeping.ConfigureAwait(false);
             await updates.ConfigureAwait(false);
             await devices.ConfigureAwait(false);
+            await gps.ConfigureAwait(false);
             // Saves wait a moment to group changes; what's waiting is written before the engine stops.
             try
             {
@@ -2004,6 +2006,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5, include),
                 Weather = _stations.WeatherSince(dashboard.Start, include),
                 Tables = _stations.Statistics(include is null ? null : filter, now),
+                // The station's own GPS, whatever the view (F3.14 behavior 9).
+                Gps = _gpsHistory.Read(dashboard.Start, dashboard.Step, dashboard.Packets.Count, now),
             }
         );
     }
