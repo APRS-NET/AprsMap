@@ -62,6 +62,11 @@ public sealed record UpdateInfo(
 /// <param name="CheckOff">
 /// The user turned Check for updates off (behavior 6): no request on the schedule, nothing offered unless Check now.
 /// </param>
+/// <param name="CanInstall">
+/// The engine installs updates itself, from here: the Linux service gateway (docs/features/F1.40-gateway-service-updates.md,
+/// behavior 1). The installed desktop installs through its own installer instead.
+/// </param>
+/// <param name="Install">Where the service gateway's update stands (F1.40 behavior 5); null with none.</param>
 public sealed record UpdateStatus(
     string Running,
     UpdateChannel Channel,
@@ -70,5 +75,42 @@ public sealed record UpdateStatus(
     UpdateInfo? Update = null,
     bool CheckDisabled = false,
     bool Checking = false,
-    bool CheckOff = false
+    bool CheckOff = false,
+    bool CanInstall = false,
+    ServiceInstall? Install = null
 );
+
+/// <summary>A step of the service gateway's update (docs/features/F1.40-gateway-service-updates.md, behavior 4).</summary>
+public enum ServiceInstallStep
+{
+    /// <summary>Asked for; waiting for the updater to pick it up.</summary>
+    Requested,
+
+    /// <summary>Downloading the release.</summary>
+    Downloading,
+
+    /// <summary>Checking the download against the release's checksum.</summary>
+    Checking,
+
+    /// <summary>Putting it in place.</summary>
+    Installing,
+
+    /// <summary>Restarting the service on it.</summary>
+    Restarting,
+
+    /// <summary>Running the new version.</summary>
+    Done,
+
+    /// <summary>Failed; the previous version is still running.</summary>
+    Failed,
+}
+
+/// <summary>Where the service gateway's update stands (F1.40 behaviors 4, 5).</summary>
+/// <param name="Version">The version being installed.</param>
+/// <param name="Step">How far it has got.</param>
+/// <param name="Reason">Why it failed, in the updater's words (not translated); null otherwise.</param>
+public sealed record ServiceInstall(string Version, ServiceInstallStep Step, string? Reason = null)
+{
+    /// <summary>Whether it's still under way, so Update and Restart aren't offered (behavior 7).</summary>
+    public bool Running => Step is not (ServiceInstallStep.Done or ServiceInstallStep.Failed);
+}

@@ -318,4 +318,165 @@ public sealed class UpdateTests
         }
         Assert.True(condition());
     }
+
+    [Fact]
+    public void AServiceReleaseIsReadyWithItsTarballAndChecksumBoth()
+    {
+        UpdateInfo? Pick(params string[] assets) =>
+            UpdateChecker.Pick(
+                [
+                    System.Text.Json.JsonSerializer.Deserialize(
+                        "[" + Release("v0.9.0", false, assets) + "]",
+                        GitHubJson.Default.ListGitHubRelease
+                    )![0],
+                ],
+                "0.8.0",
+                UpdateChannel.PreReleases,
+                null,
+                new UpdateOptions { Kind = InstallKind.Service, RuntimeId = "linux-arm64" }
+            );
+        var tarball = $"{Slug}-gateway-v0.9.0-linux-arm64.tar.gz";
+
+        Assert.Null(Pick(tarball)); // the checksum isn't up yet
+        Assert.Null(Pick(tarball + ".sha256"));
+        Assert.Null(Pick($"{Slug}-gateway-v0.9.0-linux-x64.tar.gz", $"{Slug}-gateway-v0.9.0-linux-x64.tar.gz.sha256"));
+        var ready = Pick(tarball, tarball + ".sha256", $"{Slug}-v0.9.0-image.txt");
+        Assert.Equal([tarball, tarball + ".sha256"], ready!.Files.Select(f => f.Name));
+        Assert.Null(ready.ImageTag); // no docker pull for the service
+    }
+
+    /// <summary>A service gateway's engine (F1.40), its data in <paramref name="data"/>, offered 0.9.0.</summary>
+    private static async Task<(Engine Engine, FakeTimeProvider Time)> ServiceAsync(DirectoryInfo data)
+    {
+        var github = new FakeGitHub
+        {
+            Answer = _ =>
+                Json(
+                    "["
+                        + Release(
+                            "v0.9.0",
+                            false,
+                            $"{Slug}-gateway-v0.9.0-linux-x64.tar.gz",
+                            $"{Slug}-gateway-v0.9.0-linux-x64.tar.gz.sha256"
+                        )
+                        + "]"
+                ),
+        };
+        var time = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        var engine = new Engine(
+            Options.Create(
+                new EngineOptions
+                {
+                    DataFolder = data.FullName,
+                    Updates = new UpdateOptions { Kind = InstallKind.Service, RuntimeId = "linux-x64" },
+                }
+            ),
+            new EngineTests.FakeSourceFactory(),
+            InMemorySettingsStore.WithProfile(),
+            time,
+            NullLogger<Engine>.Instance
+        )
+        {
+            UpdateHttp = new HttpClient(github),
+            RunningVersion = "0.8.0",
+        };
+        await engine.CheckForUpdateAsync(Ct);
+        return (engine, time);
+    }
+
+    [Fact]
+    public async Task UpdateAndRestartOnTheServiceWritesTheVersionOnlyAndFollowsTheUpdater()
+    {
+        var data = Directory.CreateTempSubdirectory("aprsmap-service-");
+        try
+        {
+            var (engine, _) = await ServiceAsync(data);
+            using (engine)
+            {
+                Assert.True((await engine.GetUpdateStatusAsync(Ct)).CanInstall);
+
+                await engine.InstallUpdateAsync("0.9.0", Ct);
+
+                var request = Path.Combine(data.FullName, Engine.UpdateRequestFile);
+                Assert.Equal("""{"version":"0.9.0"}""", await File.ReadAllTextAsync(request, Ct));
+                Assert.Equal(
+                    new ServiceInstall("0.9.0", ServiceInstallStep.Requested),
+                    (await engine.GetUpdateStatusAsync(Ct)).Install
+                );
+                var busy = await Assert.ThrowsAsync<EngineOperationException>(() =>
+                    engine.InstallUpdateAsync("0.9.0", Ct)
+                );
+                Assert.Equal(EngineErrorCodes.UpdateNotOffered, busy.EngineError.Code);
+
+                // The updater picks it up and reports, as aprsmap-gateway-update.sh writes it.
+                File.Delete(request);
+                var report = Path.Combine(data.FullName, Engine.UpdateStatusFile);
+                await File.WriteAllTextAsync(report, """{"version":"0.9.0","step":"downloading","reason":""}""", Ct);
+                Assert.Equal(ServiceInstallStep.Downloading, (await engine.GetUpdateStatusAsync(Ct)).Install!.Step);
+                await File.WriteAllTextAsync(
+                    report,
+                    """{"version":"0.9.0","step":"failed","reason":"the download doesn't match its checksum"}""",
+                    Ct
+                );
+                var failed = (await engine.GetUpdateStatusAsync(Ct)).Install!;
+                Assert.Equal(
+                    new ServiceInstall("0.9.0", ServiceInstallStep.Failed, "the download doesn't match its checksum"),
+                    failed
+                );
+                Assert.False(File.Exists(report)); // read once, kept until the next start
+                Assert.Equal(failed, (await engine.GetUpdateStatusAsync(Ct)).Install);
+            }
+        }
+        finally
+        {
+            data.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task OnlyTheOfferedVersionOnTheServiceIsInstalledAndARequestNeverPickedUpIsDropped()
+    {
+        var data = Directory.CreateTempSubdirectory("aprsmap-service-");
+        try
+        {
+            var (engine, time) = await ServiceAsync(data);
+            using (engine)
+            {
+                var other = await Assert.ThrowsAsync<EngineOperationException>(() =>
+                    engine.InstallUpdateAsync("0.8.5", Ct)
+                );
+                Assert.Equal(EngineErrorCodes.UpdateNotOffered, other.EngineError.Code);
+
+                await engine.InstallUpdateAsync("0.9.0", Ct);
+                File.SetLastWriteTimeUtc(
+                    Path.Combine(data.FullName, Engine.UpdateRequestFile),
+                    time.GetUtcNow().UtcDateTime - Engine.StaleRequest - TimeSpan.FromMinutes(1)
+                );
+
+                var stale = (await engine.GetUpdateStatusAsync(Ct)).Install!;
+                Assert.Equal(ServiceInstallStep.Failed, stale.Step);
+                Assert.Contains("aprsmap-gateway-update.path", stale.Reason, StringComparison.Ordinal);
+                Assert.False(File.Exists(Path.Combine(data.FullName, Engine.UpdateRequestFile)));
+            }
+        }
+        finally
+        {
+            data.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ADesktopOrContainerEngineNeitherInstallsNorRestarts()
+    {
+        var (engine, _, _, _) = Create();
+        using (engine)
+        {
+            Assert.False((await engine.GetUpdateStatusAsync(Ct)).CanInstall);
+            var install = await Assert.ThrowsAsync<EngineAccessException>(() => engine.InstallUpdateAsync("0.5.0", Ct));
+            var restart = await Assert.ThrowsAsync<EngineAccessException>(() => engine.RestartGatewayAsync(Ct));
+
+            Assert.Equal(EngineErrorCodes.GatewayNotService, install.EngineError.Code);
+            Assert.Equal(EngineErrorCodes.GatewayNotService, restart.EngineError.Code);
+        }
+    }
 }

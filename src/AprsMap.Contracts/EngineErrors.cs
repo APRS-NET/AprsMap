@@ -182,6 +182,15 @@ public static class EngineErrorCodes
     /// </summary>
     public const string ApiKeyTooShort = "gateway.api-key-too-short";
 
+    /// <summary>
+    /// Only the Linux service gateway updates and restarts itself from here (docs/features/F1.40-gateway-service-updates.md,
+    /// behavior 1); a container is updated and restarted by Docker.
+    /// </summary>
+    public const string GatewayNotService = "gateway.not-a-service";
+
+    /// <summary>That version isn't the update offered, or an update is already under way (F1.40 behaviors 4, 7).</summary>
+    public const string UpdateNotOffered = "updates.not-offered";
+
     /// <summary>Only a gateway has an API key; the desktop's own engine has none (F1.38).</summary>
     public const string ApiKeyNotHere = "gateway.api-key-not-here";
 

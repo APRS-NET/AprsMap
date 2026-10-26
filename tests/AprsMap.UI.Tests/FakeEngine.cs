@@ -883,6 +883,23 @@ internal sealed class FakeEngine : IEngineService
             ),
         };
 
+    public List<string> InstalledVersions { get; } = [];
+
+    public int GatewayRestarts { get; private set; }
+
+    public Task InstallUpdateAsync(string version, CancellationToken cancellationToken = default)
+    {
+        InstalledVersions.Add(version);
+        UpdateStatus = UpdateStatus with { Install = new ServiceInstall(version, ServiceInstallStep.Requested) };
+        return Task.CompletedTask;
+    }
+
+    public Task RestartGatewayAsync(CancellationToken cancellationToken = default)
+    {
+        GatewayRestarts++;
+        return Task.CompletedTask;
+    }
+
     public ApiKeyStatus ApiKey { get; set; } = ApiKeyStatus.None;
 
     public List<string> SavedApiKeys { get; } = [];

@@ -54,7 +54,17 @@ public sealed partial class UpdatesViewModel(
 
     /// <summary>Whether the notice can be cleared (×): an update offered, or a failed check; not while installing.</summary>
     public bool CanClear =>
-        Install is InstallState.None or InstallState.Failed && (OfferedUpdate is not null || IsWarning);
+        FinishedOnService is not null
+        || Status?.Install is not { Running: true }
+            && Install is InstallState.None or InstallState.Failed
+            && (OfferedUpdate is not null || IsWarning);
+
+    // The service update's result cleared with × (F1.40 behavior 5), so it isn't shown again.
+    private ServiceInstall? _clearedInstall;
+
+    /// <summary>The service gateway's finished update, done or failed, while it's shown.</summary>
+    private ServiceInstall? FinishedOnService =>
+        Gateway && Status?.Install is { Running: false } install && install != _clearedInstall ? install : null;
 
     /// <summary>
     /// Clears the notice (×): an update until the next start, as Later does (behavior 9.4); a failed check's warning
@@ -63,7 +73,11 @@ public sealed partial class UpdatesViewModel(
     [RelayCommand]
     private void Clear()
     {
-        if (IsWarning)
+        if (FinishedOnService is { } finished)
+        {
+            _clearedInstall = finished;
+        }
+        else if (IsWarning)
         {
             _clearedFailure = Status?.LastChecked;
         }
@@ -90,7 +104,8 @@ public sealed partial class UpdatesViewModel(
     /// it's ready; null with none, or after Later.
     /// </summary>
     public string? NoticeText =>
-        Install switch
+        ServiceNotice()
+        ?? Install switch
         {
             InstallState.Downloading => text.Format(
                 "Updates.Downloading",
@@ -111,8 +126,37 @@ public sealed partial class UpdatesViewModel(
             _ => IsWarning ? text["Updates.CheckFailedNotice"] : null,
         };
 
-    /// <summary>Whether this build installs updates itself, rather than offering Download (behavior 11).</summary>
-    public bool CanInstall => installer?.CanInstall == true && !Gateway;
+    /// <summary>
+    /// The Linux service gateway's update (docs/features/F1.40-gateway-service-updates.md, behavior 5): its step while
+    /// it runs, then Updated to, or why it failed; null with none.
+    /// </summary>
+    private string? ServiceNotice()
+    {
+        if (!Gateway || Status?.Install is not { } install || install == _clearedInstall)
+        {
+            return null;
+        }
+        var args = new Dictionary<string, object?>
+        {
+            ["version"] = install.Version,
+            ["step"] = text[$"Updates.Service.{install.Step}"],
+            ["reason"] = install.Reason ?? string.Empty,
+            ["running"] = Status.Running,
+        };
+        return install.Step switch
+        {
+            ServiceInstallStep.Done => text.Format("Updates.Service.DoneNotice", args),
+            ServiceInstallStep.Failed => text.Format("Updates.Service.FailedNotice", args),
+            _ => text.Format("Updates.Service.Notice", args),
+        };
+    }
+
+    /// <summary>
+    /// Whether this build installs updates itself, rather than offering Download (behavior 11): the installed desktop,
+    /// or the Linux service gateway for its operator (F1.40 behavior 4), when no update is under way.
+    /// </summary>
+    public bool CanInstall =>
+        Gateway ? Status is { CanInstall: true, Install: not { Running: true } } : installer?.CanInstall == true;
 
     /// <summary>Where installing the update stands.</summary>
     [ObservableProperty]
@@ -246,6 +290,11 @@ public sealed partial class UpdatesViewModel(
     /// </summary>
     internal async Task InstallAsync(UpdateInfo update)
     {
+        if (Gateway)
+        {
+            await InstallOnServiceAsync(update);
+            return;
+        }
         if (installer is null || IsDownloading)
         {
             return;
@@ -286,6 +335,28 @@ public sealed partial class UpdatesViewModel(
         finally
         {
             _cancel = null;
+        }
+    }
+
+    /// <summary>
+    /// Update and restart on the Linux service gateway (F1.40 behavior 4): its updater does the work; the notice follows
+    /// the update status the gateway sends.
+    /// </summary>
+    private async Task InstallOnServiceAsync(UpdateInfo update)
+    {
+        try
+        {
+            await engine.InstallUpdateAsync(update.Version);
+            Status = await engine.GetUpdateStatusAsync();
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            Status = Status is null
+                ? null
+                : Status with
+                {
+                    Install = new ServiceInstall(update.Version, ServiceInstallStep.Failed, text.Describe(ex)),
+                };
         }
     }
 

@@ -223,6 +223,12 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetLocatorAsync"/>.</summary>
     public const string GetLocator = "GetLocator";
 
+    /// <summary>Hub method for <see cref="IEngineService.InstallUpdateAsync"/>.</summary>
+    public const string InstallUpdate = "InstallUpdate";
+
+    /// <summary>Hub method for <see cref="IEngineService.RestartGatewayAsync"/>.</summary>
+    public const string RestartGateway = "RestartGateway";
+
     /// <summary>Hub method for <see cref="IEngineService.GetApiKeyStatusAsync"/>.</summary>
     public const string GetApiKeyStatus = "GetApiKeyStatus";
 

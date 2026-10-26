@@ -351,6 +351,9 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
         LogApiKeyRefused(address, reason);
     }
 
+    /// <summary>An operator asked the service gateway to update or restart (F1.40 behavior 6).</summary>
+    public void Administered(string name, string what) => LogAdministered(name, what);
+
     /// <summary>The API key was saved or removed, and by whom.</summary>
     public void ApiKeyChanged(string name, bool removed) => LogApiKeyChanged(name, removed ? "removed" : "saved");
 
@@ -379,6 +382,9 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Operator {Name} signed out from {Address}")]
     private partial void LogSignedOut(string name, string address);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Operator {Name} asked the gateway to {What}")]
+    private partial void LogAdministered(string name, string what);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "API key accepted from {Address}")]
     private partial void LogApiKeyAccepted(string address);

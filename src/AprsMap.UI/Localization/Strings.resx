@@ -1302,6 +1302,10 @@ Start the gateway (for example with docker compose up), then open the app from t
     <value>This browser keeps your layout and appearance in its own storage.</value>
     <comment>Shown on a gateway to viewers, who never see the server's folders.</comment>
   </data>
+  <data name="About.Files.JournalLogs" xml:space="preserve">
+    <value>The gateway's log is in the system journal (journalctl -u {service}), unless a log file is turned on in Settings › Logging.</value>
+    <comment>journalctl -u is a command; keep it. service: the service's name, such as aprsmap-gateway.</comment>
+  </data>
   <data name="About.Files.DockerLogs" xml:space="preserve">
     <value>The gateway's log is the container's output (docker logs), unless a log file is turned on in Settings › Logging.</value>
     <comment>docker logs is a command; keep it.</comment>
@@ -5234,6 +5238,51 @@ pause 1s</value>
   </data>
   <data name="Updates.Clear" xml:space="preserve">
     <value>Clear this notice</value>
+  </data>
+  <data name="Updates.Service.Notice" xml:space="preserve">
+    <value>Updating the gateway to {version}: {step}</value>
+    <comment>version: a version such as 0.8.0-alpha.2; step: one of Updates.Service.Requested to Restarting.</comment>
+  </data>
+  <data name="Updates.Service.DoneNotice" xml:space="preserve">
+    <value>The gateway is updated to {version}</value>
+    <comment>version: a version such as 0.8.0-alpha.2.</comment>
+  </data>
+  <data name="Updates.Service.FailedNotice" xml:space="preserve">
+    <value>The update to {version} failed: {reason} The gateway is still on {running}.</value>
+    <comment>version: the version it tried; reason: the updater's words, in English; running: the version still running.</comment>
+  </data>
+  <data name="Updates.Service.Requested" xml:space="preserve">
+    <value>starting…</value>
+  </data>
+  <data name="Updates.Service.Downloading" xml:space="preserve">
+    <value>downloading…</value>
+  </data>
+  <data name="Updates.Service.Checking" xml:space="preserve">
+    <value>checking the download…</value>
+  </data>
+  <data name="Updates.Service.Installing" xml:space="preserve">
+    <value>installing…</value>
+  </data>
+  <data name="Updates.Service.Restarting" xml:space="preserve">
+    <value>restarting…</value>
+  </data>
+  <data name="Updates.Service.Done" xml:space="preserve">
+    <value>done</value>
+  </data>
+  <data name="Updates.Service.Failed" xml:space="preserve">
+    <value>failed</value>
+  </data>
+  <data name="Updates.RestartGateway" xml:space="preserve">
+    <value>Restart gateway</value>
+  </data>
+  <data name="Updates.RestartGatewayQuestion" xml:space="preserve">
+    <value>Restart the gateway now? Everyone watching is disconnected for a few seconds, then reconnects.</value>
+  </data>
+  <data name="Error.gateway.not-a-service" xml:space="preserve">
+    <value>Only a gateway installed as the Linux service updates and restarts itself from here. A Docker gateway is updated and restarted by Docker.</value>
+  </data>
+  <data name="Error.updates.not-offered" xml:space="preserve">
+    <value>That isn't the update offered, or an update is already under way.</value>
   </data>
   <data name="Updates.Notice" xml:space="preserve">
     <value>Update available: {version}</value>

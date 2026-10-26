@@ -617,7 +617,16 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     /// Lists the folders: everyone's on the desktop, only a signed-in operator's on a gateway, where a viewer gets a note
     /// instead (behaviors 1, 6, 7).
     /// </summary>
-    internal async Task ShowFoldersAsync(IEngineService engine, bool sharedStation, bool isOperator)
+    /// <param name="engine">The engine whose folders these are.</param>
+    /// <param name="sharedStation">A gateway's station.</param>
+    /// <param name="isOperator">Whether this viewer is its operator.</param>
+    /// <param name="service">The Linux service gateway, whose log is the journal's (F1.40).</param>
+    internal async Task ShowFoldersAsync(
+        IEngineService engine,
+        bool sharedStation,
+        bool isOperator,
+        bool service = false
+    )
     {
         Folders.Clear();
         if (sharedStation && !isOperator)
@@ -639,7 +648,12 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
         }
         FilesNote =
             sharedStation && Folders.All(f => f.Folder.Kind != StorageFolderKind.Logs)
-                ? text["About.Files.DockerLogs"]
+                ? service
+                    ? text.Format(
+                        "About.Files.JournalLogs",
+                        new Dictionary<string, object?> { ["service"] = Brand.Slug + "-gateway" }
+                    )
+                    : text["About.Files.DockerLogs"]
                 : null;
     }
 
@@ -674,6 +688,12 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
 
     /// <summary>Check now; null where it's hidden (behavior 6) or not this viewer's.</summary>
     public CommunityToolkit.Mvvm.Input.IAsyncRelayCommand? CheckUpdatesCommand { get; set; }
+
+    /// <summary>
+    /// Restart gateway, for the operator of the Linux service gateway (docs/features/F1.40-gateway-service-updates.md,
+    /// behavior 2); null elsewhere.
+    /// </summary>
+    public System.Windows.Input.ICommand? RestartGatewayCommand { get; set; }
 
     /// <summary>"No failed sign-ins in the last day", to a signed-in gateway operator (F2.9 behavior 10); null otherwise.</summary>
     [ObservableProperty]

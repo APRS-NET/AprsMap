@@ -160,6 +160,9 @@ jobs:
           dotnet publish src/AprsMap.Gateway/AprsMap.Gateway.csproj -c Release -r ${{ matrix.rid }} \
             --self-contained -o "publish/${{ matrix.rid }}"
           cp LICENSE LICENSING.md deploy/linux/* "publish/${{ matrix.rid }}/"
+          # What the updater needs (F1.40): the installed version, and where its releases come from.
+          echo "${{ needs.release-please.outputs.tag_name }}" > "publish/${{ matrix.rid }}/version"
+          echo "${{ github.server_url }}/${{ github.repository }}" > "publish/${{ matrix.rid }}/release-source"
       - name: The browser app
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -171,6 +174,9 @@ jobs:
         run: |
           mkdir -p artifacts
           tar -C "publish/${{ matrix.rid }}" -czf "artifacts/aprsmap-gateway-${TAG}-${{ matrix.rid }}.tar.gz" .
+          # Its checksum beside it: a service release is ready with both (F1.40 behavior 3).
+          (cd artifacts && sha256sum "aprsmap-gateway-${TAG}-${{ matrix.rid }}.tar.gz" \
+            > "aprsmap-gateway-${TAG}-${{ matrix.rid }}.tar.gz.sha256")
       - name: Attach to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
