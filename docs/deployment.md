@@ -28,8 +28,12 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | First-run server | `Engine__Server` | `rotate.aprs2.net:14580` |
 | First-run server-side filter | `Engine__Filter` | none |
 | First-run KISS over TCP source: host, port, radio port, name (with `Engine__Server` empty, a TNC-only station) | `Engine__Kiss__Host`, `__Port`, `__TncPort`, `__Name` | none |
+| First-run USB TNC source (KISS over serial): port, baud, radio port, name | `Engine__KissSerial__Port`, `__Baud`, `__TncPort`, `__Name` | none (baud `9600`) |
+| First-run gpsd source: host, port, name | `Engine__Gpsd__Host`, `__Port`, `__Name` | none (port `2947`) |
 | Receive only for good: nothing is sent, and APRS-IS logs in unverified | `Engine__ReceiveOnly` | `false` |
 | A second port where an operator signs in; the main port then never offers sign-in | `Gateway__OperatorPort` | none |
+| Where the published app listens, `address:port` (with either of these, they replace the ports above) | `Gateway__Listen` | `0.0.0.0:8080` |
+| Where the operator (admin) app listens, `address:port`; wins over `Gateway__OperatorPort` | `Gateway__OperatorListen` | none |
 | How much of the station's location viewers learn: `Exact`, `Grid` (its 4-character square) or `Hidden` | `Gateway__HomePrivacy` | `Grid` with an operator port, `Exact` without |
 | The page's title, beside the product name and on the browser tab | `Gateway__Title` | none |
 | Let browsers change settings and switch profiles, with no operator set up | `Gateway__AllowSettingsChanges` | `false` |
@@ -224,6 +228,51 @@ connection: &tnc
 ```
 
 To pass a USB TNC into the container instead, see "A TNC on a serial port".
+
+## Gateway as a Linux service
+
+Without Docker, the gateway runs as a systemd service on a Linux PC, for example one with the TNC on USB and gpsd
+already running. Each release has `aprsmap-gateway-<version>-linux-x64.tar.gz` and `…-linux-arm64.tar.gz`:
+self-contained, with the web app in it, so nothing else needs installing.
+
+```sh
+mkdir aprsmap-gateway && tar -xzf aprsmap-gateway-v0.8.0-linux-x64.tar.gz -C aprsmap-gateway
+sudo aprsmap-gateway/install.sh aprsmap-gateway-v0.8.0-linux-x64.tar.gz
+sudoedit /etc/aprsmap/gateway.toml   # your callsign, TNC and gpsd, before the first start
+sudo systemctl start aprsmap-gateway
+sudo -u aprsmap /opt/aprsmap-gateway/aprsmap-gateway operator add YOURNAME --config /etc/aprsmap/gateway.toml
+journalctl -u aprsmap-gateway -f
+```
+
+The script installs the gateway in `/opt/aprsmap-gateway`, creates the `aprsmap` user (in `dialout`, for the TNC),
+installs `aprsmap-gateway.service` and a commented `/etc/aprsmap/gateway.toml` (never over one you already have), and
+enables the service. On a first install it doesn't start it: the first start stores the station (callsign, sources)
+from the file, and after that the admin web app changes them. Run the script again with a newer tarball to update;
+it keeps the file and the data in `/var/lib/aprsmap`, and restarts the service.
+
+The TOML file holds the same settings as the table above: each table is a section and `snake_case` keys are the
+settings' names, so `[gateway] operator_listen` is `Gateway__OperatorListen` and `[engine.kiss_serial] port` is
+`Engine__KissSerial__Port`. It's read after `appsettings.json`, so environment variables still win. Use it anywhere
+with `--config PATH` or `APRSMAP_CONFIG`; a file that isn't valid TOML stops the gateway with the line at fault.
+
+```toml
+[gateway]
+listen = "0.0.0.0:8080"            # the published, read-only app, on every address
+operator_listen = "127.0.0.1:8081" # the admin app: only on this PC; 0.0.0.0:8081 to reach it from the network
+
+[engine]
+settings_folder = "/var/lib/aprsmap"
+callsign = "N0CALL-10"             # first run only, as are the sources below
+
+[engine.kiss_serial]
+port = "/dev/serial/by-id/usb-Silicon_Labs_CP2102-if00-port0"
+
+[engine.gpsd]
+host = "localhost"
+```
+
+The ports are 8080 and 8081, and the desktop app's web viewer uses 8090, so a desktop app can run beside the service on
+the same PC.
 
 ## Desktop app
 
