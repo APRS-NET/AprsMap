@@ -358,16 +358,28 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>Updates (docs/features/F4.15-updates.md): the notice, its dialog and Check now.</summary>
     public Updates.UpdatesViewModel Updates => _updates ??= CreateUpdates();
 
+    /// <summary>
+    /// The app's own engine for its update checks, when the station is a gateway's: the desktop app as the gateway's
+    /// client (docs/features/F1.39-desktop-gateway-client.md, behavior 5) checks for its own updates, not the gateway's.
+    /// </summary>
+    public IEngineService? UpdateEngine { get; init; }
+
+    /// <summary>Where the update checks come from: the app's own engine, or the station's.</summary>
+    private IEngineService UpdatesFrom => UpdateEngine ?? engine;
+
+    /// <summary>Whether the updates offered are this app's own: the desktop's, also as a gateway's client.</summary>
+    private bool OwnUpdates => !SharedStation || UpdateEngine is not null;
+
     private Updates.UpdatesViewModel CreateUpdates()
     {
         var updates = new Updates.UpdatesViewModel(
-            engine,
+            UpdatesFrom,
             _text,
             uri => OpenUri?.Invoke(uri) ?? Task.CompletedTask,
-            SharedStation ? null : Installer
+            OwnUpdates ? Installer : null
         )
         {
-            Gateway = SharedStation,
+            Gateway = !OwnUpdates,
         };
         updates.PropertyChanged += OnUpdatesChanged;
         return updates;
@@ -383,6 +395,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>The desktop's web viewer (docs/features/F1.35-desktop-web-viewer.md); null in the browser.</summary>
     public IWebViewerHost? WebViewer { get; init; }
+
+    /// <summary>
+    /// The desktop's choice of station, its own or a gateway's (docs/features/F1.39-desktop-gateway-client.md); null in
+    /// the browser.
+    /// </summary>
+    public IGatewayClientHost? GatewayClient { get; init; }
 
     /// <summary>Opens a page in the browser; set by the view, which has the launcher.</summary>
     public Func<Uri, Task>? OpenUri { get; set; }
@@ -492,15 +510,28 @@ public sealed partial class MainViewModel : ObservableObject
                 : null,
             DeviceList = new DeviceListViewModel(engine, _text, time, _settings is { ReadOnly: false }, Show),
             UpdateChecks =
-                (!SharedStation || IsOperator) && Updates.Status is not { CheckDisabled: true }
-                    ? new Updates.UpdateSettingsViewModel(engine, _text, Updates, time.LocalTimeZone, Show)
+                (OwnUpdates || IsOperator) && Updates.Status is not { CheckDisabled: true }
+                    ? new Updates.UpdateSettingsViewModel(
+                        UpdatesFrom,
+                        _text,
+                        Updates,
+                        time.LocalTimeZone,
+                        UpdateEngine is null ? Show : _ => { }
+                    )
                     : null,
         };
         if (_settings is { } shown)
         {
             data.Capture?.Show(shown);
             data.DeviceList?.Show(shown);
-            data.UpdateChecks?.Show(shown);
+            if (UpdateEngine is null)
+            {
+                data.UpdateChecks?.Show(shown);
+            }
+        }
+        if (UpdateEngine is not null && data.UpdateChecks is { } ownChecks)
+        {
+            ownChecks.Show(await UpdateEngine.GetSettingsAsync()); // the app's own settings, not the gateway's
         }
         data.DeviceList?.Show(_status?.DeviceList); // F4.16
         var mapItems = Map is null
@@ -557,8 +588,10 @@ public sealed partial class MainViewModel : ObservableObject
             objects,
             WebViewer is { } host ? new WebViewerSectionViewModel(host, _text) : null,
             stationLists,
-            gatewayAccess
+            gatewayAccess,
+            GatewayClient is { } client ? new ConnectionSectionViewModel(client, _text) : null
         );
+        settings.Connection?.ShowAuth(Auth);
         settings.Closed += OnSettingsClosed;
         Settings = settings;
         settings.Show(_status);
@@ -861,8 +894,7 @@ public sealed partial class MainViewModel : ObservableObject
         await Bulletins.LoadAsync();
         var bulletins = KeepAsync(Bulletins.WatchAsync, cancellationToken);
         // Updates are the operator's (F4.15 behavior 15): the desktop's user, or a signed-in gateway operator.
-        var updates =
-            !SharedStation || IsOperator ? KeepAsync(Updates.WatchAsync, cancellationToken) : Task.CompletedTask;
+        var updates = OwnUpdates || IsOperator ? KeepAsync(Updates.WatchAsync, cancellationToken) : Task.CompletedTask;
         await Task.WhenAll(packets, stations, status, countdown, messages, bulletins, updates);
     }
 
@@ -1387,7 +1419,10 @@ public sealed partial class MainViewModel : ObservableObject
         LiveObjects = [.. settings.GetActiveProfile()?.ObjectList.Where(o => o.Live) ?? []];
         Settings?.Data?.Capture?.Show(settings);
         Settings?.Data?.DeviceList?.Show(settings);
-        Settings?.Data?.UpdateChecks?.Show(settings);
+        if (UpdateEngine is null)
+        {
+            Settings?.Data?.UpdateChecks?.Show(settings);
+        }
         if (_destination is { IsSet: true } destination)
         {
             _ = destination.RefreshAsync(); // my location or the units may have changed

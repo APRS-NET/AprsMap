@@ -308,6 +308,20 @@ Each release attaches an installer for every platform, built with Velopack. An i
 The self-contained archives (`aprsmap-v<version>-<rid>.zip` or `.tar.gz`) are still attached. Unpack one anywhere and run
 `aprsmap` (`aprsmap.exe` on Windows). An archive can't update itself, so it offers **Download** instead.
 
+### The desktop app as a gateway's client
+
+The desktop app can show a gateway's station instead of running its own (docs/features/F1.39-desktop-gateway-client.md),
+for example on the PC that runs the gateway service, or on another one. In **Settings › Connection** choose **A
+gateway**, enter its admin address (`http://127.0.0.1:8081/` on the gateway's own PC) and, to transmit and change the
+gateway's settings, its API key (above); then **Apply and restart**. `--gateway URL` does the same for one run.
+
+As a client the app runs no station of its own: no APRS-IS or TNC connection, GPS, beacons or history, and its web
+viewer is off. Everything is received and processed once, by the gateway; the map's tiles come through it too. Without
+the key, or with one the gateway refuses, the app only watches, and Settings › Connection says why. The app still
+checks for its own updates. The choice and the key are kept in `gateway-client.json` in the app's settings folder,
+readable by your user only; **This computer** and **Apply and restart** go back to the app's own station, whose settings
+are untouched.
+
 ### Where the app keeps its files
 
 Nothing is kept beside the program, so an update or an uninstall leaves your settings alone. Each kind of file goes

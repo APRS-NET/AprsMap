@@ -213,6 +213,8 @@ public sealed class App : Application, IDisposable
                 Installer = _platform.Installer,
                 FolderOpener = _platform.FolderOpener,
                 WebViewer = _platform.WebViewer,
+                UpdateEngine = _platform.UpdateEngine, // F1.39 behavior 5
+                GatewayClient = _platform.GatewayClient,
                 MenuStyle = _platform.MenuStyle,
                 SetPageTitle = _platform.SetTitle,
                 Restart = _platform.Restart,

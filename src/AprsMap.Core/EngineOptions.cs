@@ -11,6 +11,13 @@ public sealed class EngineOptions
     public bool Enabled { get; set; } = true;
 
     /// <summary>
+    /// Runs nothing but the update checks (docs/features/F4.15-updates.md): the desktop app as a gateway's client
+    /// (docs/features/F1.39-desktop-gateway-client.md, behavior 5), whose station is the gateway's but whose updates are
+    /// its own. No source, beacon, history or listener starts.
+    /// </summary>
+    public bool UpdatesOnly { get; set; }
+
+    /// <summary>
     /// Where settings are stored. Empty means the user's own settings folder (<see cref="SettingsLocation"/>); the
     /// gateway's container points it at a volume.
     /// </summary>

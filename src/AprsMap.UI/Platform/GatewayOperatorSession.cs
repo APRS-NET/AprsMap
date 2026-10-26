@@ -2,22 +2,36 @@
 using System.Net;
 using System.Net.Http.Json;
 using AprsMap.Contracts;
-using AprsMap.UI.Platform;
 
-namespace AprsMap.Browser;
+namespace AprsMap.UI.Platform;
 
 /// <summary>
-/// The gateway's <c>/auth</c> endpoints (docs/features/F2.9-operator-sign-in.md), from the page's own origin, so the
-/// browser keeps the session cookie and sends it with every request and the hub's connection.
+/// The gateway's <c>/auth</c> endpoints (docs/features/F2.9-operator-sign-in.md). In the browser, from the page's own
+/// origin, so the browser keeps the session cookie and sends it with every request and the hub's connection; on the
+/// desktop as the gateway's client, with the API key in <paramref name="gateway"/>'s headers
+/// (docs/features/F1.39-desktop-gateway-client.md), where <paramref name="passwordSignIn"/> is off: its hub connection
+/// carries the key, not a browser's session cookie, so signing in with a password isn't offered.
 /// </summary>
-internal sealed class BrowserOperatorSession(HttpClient gateway) : IOperatorSession
+public sealed class GatewayOperatorSession(HttpClient gateway, bool passwordSignIn = true) : IOperatorSession
 {
+    /// <summary>
+    /// Who this app is on the gateway. A refused API key is a viewer with <see cref="AuthInfo.ApiKey"/> set, so the app
+    /// can say why it's only watching (F1.38 behavior 7).
+    /// </summary>
     public async Task<AuthInfo> GetAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            return await gateway.GetFromJsonAsync(AuthPaths.Me, EngineJsonContext.Default.AuthInfo, cancellationToken)
+            using var response = await gateway.GetAsync(new Uri(AuthPaths.Me, UriKind.Relative), cancellationToken);
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return new AuthInfo(false, ApiKey: true);
+            }
+            response.EnsureSuccessStatusCode();
+            var info =
+                await response.Content.ReadFromJsonAsync(EngineJsonContext.Default.AuthInfo, cancellationToken)
                 ?? AuthInfo.Viewer;
+            return passwordSignIn ? info : info with { SignInOffered = false, NeedsHttps = false };
         }
         catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException)
         {
@@ -25,6 +39,7 @@ internal sealed class BrowserOperatorSession(HttpClient gateway) : IOperatorSess
         }
     }
 
+    /// <inheritdoc />
     public async Task SignInAsync(SignInRequest request, CancellationToken cancellationToken = default)
     {
         using var response = await gateway.PostAsJsonAsync(
@@ -52,6 +67,7 @@ internal sealed class BrowserOperatorSession(HttpClient gateway) : IOperatorSess
         );
     }
 
+    /// <inheritdoc />
     public async Task SignOutAsync(CancellationToken cancellationToken = default)
     {
         using var response = await gateway.PostAsync(AuthPaths.SignOut, content: null, cancellationToken);

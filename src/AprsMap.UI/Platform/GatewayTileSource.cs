@@ -2,16 +2,17 @@
 using System.Globalization;
 using System.Net.Http.Json;
 using AprsMap.Contracts;
-using AprsMap.UI.Platform;
 
-namespace AprsMap.Browser;
+namespace AprsMap.UI.Platform;
 
 /// <summary>
-/// The browser map's tiles: the gateway's same-origin <c>/tiles</c> (F1.4 behavior 10), so the browser never talks to a
-/// tile server itself. The browser sends its own Referer, which the gateway passes on.
+/// A gateway client's map tiles: the gateway's <c>/tiles</c> (F1.4 behavior 10), so the app never talks to a tile
+/// server itself: the browser app, from its own origin with its own Referer, which the gateway passes on, and the
+/// desktop app as the gateway's client (docs/features/F1.39-desktop-gateway-client.md).
 /// </summary>
-internal sealed class GatewayTileSource(HttpClient http) : ITileSource
+public sealed class GatewayTileSource(HttpClient http) : ITileSource
 {
+    /// <inheritdoc />
     public async Task<IReadOnlyList<TileProviderInfo>> GetProvidersAsync(
         CancellationToken cancellationToken = default
     ) =>
@@ -21,6 +22,7 @@ internal sealed class GatewayTileSource(HttpClient http) : ITileSource
             cancellationToken
         ) ?? [];
 
+    /// <inheritdoc />
     public async Task<byte[]?> GetTileAsync(
         string provider,
         int z,

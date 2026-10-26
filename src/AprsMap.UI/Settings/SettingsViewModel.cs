@@ -50,9 +50,11 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         ObjectsSectionViewModel? objects = null,
         WebViewerSectionViewModel? webViewer = null,
         StationListsSectionViewModel? stationLists = null,
-        GatewayAccessSectionViewModel? gatewayAccess = null
+        GatewayAccessSectionViewModel? gatewayAccess = null,
+        ConnectionSectionViewModel? connection = null
     )
     {
+        Connection = connection;
         StationLists = stationLists;
         GatewayAccess = gatewayAccess;
         WebViewer = webViewer;
@@ -94,6 +96,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         nameof(IsDataSection),
         nameof(IsWebViewerSection),
         nameof(IsGatewayAccessSection),
+        nameof(IsConnectionSection),
         nameof(IsMapSection),
         nameof(IsUnitsSection),
         nameof(IsLayoutSection),
@@ -178,6 +181,12 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
 
     /// <summary>Whether Web viewer is showing (docs/features/F1.35-desktop-web-viewer.md).</summary>
     public bool IsWebViewerSection => SelectedSection?.Id == "web-viewer";
+
+    /// <summary>Whether Connection is showing.</summary>
+    public bool IsConnectionSection => SelectedSection?.Id == "connection";
+
+    /// <summary>Connection (F1.39): the desktop's own station or a gateway's; null in the browser.</summary>
+    public ConnectionSectionViewModel? Connection { get; }
 
     /// <summary>Whether Gateway access is showing.</summary>
     public bool IsGatewayAccessSection => SelectedSection?.Id == "gateway-access";
@@ -320,6 +329,10 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         {
             Sections.Add(new SettingsSection("web-viewer", _text["Settings.WebViewer"]));
         }
+        if (Connection is not null)
+        {
+            Sections.Add(new SettingsSection("connection", _text["Settings.Connection"]));
+        }
         if (GatewayAccess is not null)
         {
             Sections.Add(new SettingsSection("gateway-access", _text["Settings.GatewayAccess"]));
@@ -352,6 +365,7 @@ public sealed partial class SettingsViewModel : ObservableObject, IDisposable
         }
         Profiles?.Retranslate();
         GatewayAccess?.Retranslate();
+        Connection?.Retranslate();
         Sources?.Retranslate();
         Logging?.Retranslate();
         Messaging?.Retranslate();
