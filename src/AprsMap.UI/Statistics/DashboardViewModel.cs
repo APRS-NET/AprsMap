@@ -125,6 +125,14 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             : _viewFilter() is null ? _text["Dashboard.MyView.NoFilter"]
             : _text["Dashboard.MyView.Note"];
 
+    /// <summary>The tile whose series is open as a large plot (behavior 6.1); null for the tiles.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsExpanded))]
+    public partial Tile? Expanded { get; set; }
+
+    /// <summary>Whether a tile's plot is open.</summary>
+    public bool IsExpanded => Expanded is not null;
+
     /// <summary>"As of 14:32:10", or "Waiting for the engine" before the first answer.</summary>
     [ObservableProperty]
     public partial string AsOfText { get; private set; } = string.Empty;
@@ -712,13 +720,19 @@ public sealed partial class Tile : ObservableObject
     [ObservableProperty]
     public partial IReadOnlyList<string> PointLabels { get; private set; } = [];
 
-    private IReadOnlyList<string> _times = [];
     private string _format = "#,0";
+
+    /// <summary>Each point's time, for the expanded plot's time axis (behavior 6.1).</summary>
+    [ObservableProperty]
+    public partial IReadOnlyList<string> PointTimes { get; private set; } = [];
+
+    /// <summary>How the expanded plot writes the tile's values.</summary>
+    public string Format => _format;
 
     /// <summary>Gives the sparkline's points their times: the first at <paramref name="start"/>, one each <paramref name="step"/>.</summary>
     internal void Times(Localizer text, DateTimeOffset start, TimeSpan step, Func<DateTimeOffset, string> clock)
     {
-        _times = [.. Series.Select((_, i) => clock(start + (step * i)))];
+        PointTimes = [.. Series.Select((_, i) => clock(start + (step * i)))];
         PointLabels =
         [
             .. Series.Select(
@@ -728,7 +742,7 @@ public sealed partial class Tile : ObservableObject
                         new Dictionary<string, object?>
                         {
                             ["value"] = value is { } v ? v.ToString(_format, text.Culture) : "–",
-                            ["time"] = _times[i],
+                            ["time"] = PointTimes[i],
                         }
                     )
             ),
@@ -740,9 +754,9 @@ public sealed partial class Tile : ObservableObject
     {
         var copy = new System.Text.StringBuilder();
         copy.Append(Title).Append('\t').Append(Number).Append('\n');
-        for (var i = 0; i < Series.Count && i < _times.Count; i++)
+        for (var i = 0; i < Series.Count && i < PointTimes.Count; i++)
         {
-            copy.Append(_times[i])
+            copy.Append(PointTimes[i])
                 .Append('\t')
                 .Append(Series[i]?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)
                 .Append('\n');
@@ -786,6 +800,7 @@ public sealed partial class Tile : ObservableObject
         Detail = detail;
         Series = series;
         _format = format;
+        OnPropertyChanged(nameof(Format));
         Spoken = text.Format(
             "Dashboard.Spoken",
             new Dictionary<string, object?>

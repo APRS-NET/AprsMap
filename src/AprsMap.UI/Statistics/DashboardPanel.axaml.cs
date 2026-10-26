@@ -17,6 +17,43 @@ public sealed partial class DashboardPanel : UserControl
         InitializeComponent();
         // Each table's Copy button: the table as tab-separated text (behavior 14).
         AddHandler(Button.ClickEvent, OnClick);
+        // Escape closes a tile's plot (behavior 6.1).
+        AddHandler(KeyDownEvent, OnKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+    }
+
+    private Button? _expandedFrom; // the Expand button that opened the plot, for focus when it closes
+
+    private void OnKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (e.Key == Avalonia.Input.Key.Escape && Model is { IsExpanded: true })
+        {
+            ClosePlot();
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>Opens <paramref name="tile"/>'s plot with the cursor's keys ready (behavior 6.1).</summary>
+    private void Expand(Tile tile, Button from)
+    {
+        if (Model is not { } model)
+        {
+            return;
+        }
+        _expandedFrom = from;
+        model.Expanded = tile;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => Plot.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
+    }
+
+    /// <summary>Back to the tiles, with focus on the Expand button that opened the plot.</summary>
+    private void ClosePlot()
+    {
+        if (Model is { } model)
+        {
+            model.Expanded = null;
+        }
+        var from = _expandedFrom;
+        _expandedFrom = null;
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => from?.Focus(), Avalonia.Threading.DispatcherPriority.Loaded);
     }
 
     private void OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -38,6 +75,19 @@ public sealed partial class DashboardPanel : UserControl
         )
         {
             _ = tileClipboard.SetTextAsync(tile.CopyText());
+            e.Handled = true;
+        }
+        else if (
+            e.Source is Button { Classes: var expand, DataContext: Tile opened } button
+            && expand.Contains("expand-tile")
+        )
+        {
+            Expand(opened, button);
+            e.Handled = true;
+        }
+        else if (e.Source is Button { Name: "ClosePlotButton" })
+        {
+            ClosePlot();
             e.Handled = true;
         }
     }

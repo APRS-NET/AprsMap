@@ -5373,4 +5373,17 @@ pause 1s</value>
     <value>–</value>
     <comment>A value the GPS hasn't given.</comment>
   </data>
+  <data name="Dashboard.Expand" xml:space="preserve">
+    <value>Expand</value>
+    <comment>Opens a tile's chart as a large plot.</comment>
+  </data>
+  <data name="Dashboard.ExpandTile" xml:space="preserve">
+    <value>Expand the chart</value>
+  </data>
+  <data name="Dashboard.ClosePlot" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Dashboard.PlotHelp" xml:space="preserve">
+    <value>Move the pointer along the line, or use Left, Right, Home and End, to read each point. Escape closes.</value>
+  </data>
 </root>

@@ -43,6 +43,12 @@
       <Setter Property="FromZero" Value="True" />
       <Setter Property="Stroke" Value="{DynamicResource Brush.Accent}" />
     </Style>
+    <Style Selector="d|TimePlot">
+      <Setter Property="Stroke" Value="{DynamicResource Brush.Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource Brush.TextMuted}" />
+      <Setter Property="GridBrush" Value="{DynamicResource Brush.Border}" />
+      <Setter Property="CursorBrush" Value="{DynamicResource Brush.Text}" />
+    </Style>
     <Style Selector="ProgressBar.share">
       <Setter Property="Minimum" Value="0" />
       <Setter Property="Maximum" Value="1" />
@@ -178,347 +184,473 @@
       Margin="12,4"
     />
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-      <WrapPanel Margin="12,8,0,0" Orientation="Horizontal">
-        <!-- Stations heard (behavior 4.1). -->
-        <Border Classes="tile" AutomationProperties.Name="{Binding Stations.Spoken}">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{Binding Stations.Title}" />
-            <TextBlock Classes="number" Text="{Binding Stations.Number}" />
-            <TextBlock Classes="detail" Text="{Binding Stations.Detail}" />
-            <s:Sparkline Values="{Binding Stations.Series}" Labels="{Binding Stations.PointLabels}" />
-            <Button
-              Classes="copy-tile"
-              DataContext="{Binding Stations}"
-              Content="{l:T Dashboard.Table.Copy}"
-              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
-              HorizontalAlignment="Left"
-              Padding="6,2"
-            />
-          </StackPanel>
-        </Border>
+    <Grid>
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding !IsExpanded}">
+        <WrapPanel Margin="12,8,0,0" Orientation="Horizontal">
+          <!-- Stations heard (behavior 4.1). -->
+          <Border Classes="tile" AutomationProperties.Name="{Binding Stations.Spoken}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding Stations.Title}" />
+              <TextBlock Classes="number" Text="{Binding Stations.Number}" />
+              <TextBlock Classes="detail" Text="{Binding Stations.Detail}" />
+              <s:Sparkline Values="{Binding Stations.Series}" Labels="{Binding Stations.PointLabels}" />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                  Classes="copy-tile"
+                  DataContext="{Binding Stations}"
+                  Content="{l:T Dashboard.Table.Copy}"
+                  AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                  Padding="6,2"
+                />
+                <Button
+                  Classes="expand-tile"
+                  DataContext="{Binding Stations}"
+                  Content="{l:T Dashboard.Expand}"
+                  AutomationProperties.Name="{l:T Dashboard.ExpandTile}"
+                  Padding="6,2"
+                />
+              </StackPanel>
+            </StackPanel>
+          </Border>
 
-        <!-- New stations (behavior 4.2), with the newest. -->
-        <Border Classes="tile" AutomationProperties.Name="{Binding NewStations.Spoken}">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{Binding NewStations.Title}" />
-            <TextBlock Classes="number" Text="{Binding NewStations.Number}" />
-            <s:Sparkline Values="{Binding NewStations.Series}" Labels="{Binding NewStations.PointLabels}" />
-            <Button
-              Classes="copy-tile"
-              DataContext="{Binding NewStations}"
-              Content="{l:T Dashboard.Table.Copy}"
-              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
-              HorizontalAlignment="Left"
-              Padding="6,2"
-            />
-            <TextBlock Classes="detail" Text="{l:T Dashboard.NewStations.Help}" />
-            <ItemsControl ItemsSource="{Binding Newest}" />
-          </StackPanel>
-        </Border>
+          <!-- New stations (behavior 4.2), with the newest. -->
+          <Border Classes="tile" AutomationProperties.Name="{Binding NewStations.Spoken}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding NewStations.Title}" />
+              <TextBlock Classes="number" Text="{Binding NewStations.Number}" />
+              <s:Sparkline Values="{Binding NewStations.Series}" Labels="{Binding NewStations.PointLabels}" />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                  Classes="copy-tile"
+                  DataContext="{Binding NewStations}"
+                  Content="{l:T Dashboard.Table.Copy}"
+                  AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                  Padding="6,2"
+                />
+                <Button
+                  Classes="expand-tile"
+                  DataContext="{Binding NewStations}"
+                  Content="{l:T Dashboard.Expand}"
+                  AutomationProperties.Name="{l:T Dashboard.ExpandTile}"
+                  Padding="6,2"
+                />
+              </StackPanel>
+              <TextBlock Classes="detail" Text="{l:T Dashboard.NewStations.Help}" />
+              <ItemsControl ItemsSource="{Binding Newest}" />
+            </StackPanel>
+          </Border>
 
-        <!-- Packets received (behavior 4.3), by source when there are several. -->
-        <Border Classes="tile" AutomationProperties.Name="{Binding Packets.Spoken}">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{Binding Packets.Title}" />
-            <TextBlock Classes="number" Text="{Binding Packets.Number}" />
-            <TextBlock Classes="detail" Text="{Binding Packets.Detail}" />
-            <s:Sparkline Values="{Binding Packets.Series}" Labels="{Binding Packets.PointLabels}" />
-            <Button
-              Classes="copy-tile"
-              DataContext="{Binding Packets}"
-              Content="{l:T Dashboard.Table.Copy}"
-              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
-              HorizontalAlignment="Left"
-              Padding="6,2"
-            />
-            <ItemsControl ItemsSource="{Binding BySource}" />
-          </StackPanel>
-        </Border>
+          <!-- Packets received (behavior 4.3), by source when there are several. -->
+          <Border Classes="tile" AutomationProperties.Name="{Binding Packets.Spoken}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding Packets.Title}" />
+              <TextBlock Classes="number" Text="{Binding Packets.Number}" />
+              <TextBlock Classes="detail" Text="{Binding Packets.Detail}" />
+              <s:Sparkline Values="{Binding Packets.Series}" Labels="{Binding Packets.PointLabels}" />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                  Classes="copy-tile"
+                  DataContext="{Binding Packets}"
+                  Content="{l:T Dashboard.Table.Copy}"
+                  AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                  Padding="6,2"
+                />
+                <Button
+                  Classes="expand-tile"
+                  DataContext="{Binding Packets}"
+                  Content="{l:T Dashboard.Expand}"
+                  AutomationProperties.Name="{l:T Dashboard.ExpandTile}"
+                  Padding="6,2"
+                />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding BySource}" />
+            </StackPanel>
+          </Border>
 
-        <!-- How packets arrive (behavior 4.4). -->
-        <Border Classes="tile" AutomationProperties.Name="{Binding Arrivals.Spoken}">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{Binding Arrivals.Title}" />
-            <TextBlock Classes="number" Text="{Binding Arrivals.Number}" />
-            <TextBlock Classes="detail" Text="{Binding Arrivals.Detail}" />
-            <s:Sparkline Values="{Binding Arrivals.Series}" Labels="{Binding Arrivals.PointLabels}" />
-            <Button
-              Classes="copy-tile"
-              DataContext="{Binding Arrivals}"
-              Content="{l:T Dashboard.Table.Copy}"
-              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
-              HorizontalAlignment="Left"
-              Padding="6,2"
-            />
-            <ItemsControl ItemsSource="{Binding ArrivalRows}" />
-          </StackPanel>
-        </Border>
+          <!-- How packets arrive (behavior 4.4). -->
+          <Border Classes="tile" AutomationProperties.Name="{Binding Arrivals.Spoken}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding Arrivals.Title}" />
+              <TextBlock Classes="number" Text="{Binding Arrivals.Number}" />
+              <TextBlock Classes="detail" Text="{Binding Arrivals.Detail}" />
+              <s:Sparkline Values="{Binding Arrivals.Series}" Labels="{Binding Arrivals.PointLabels}" />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                  Classes="copy-tile"
+                  DataContext="{Binding Arrivals}"
+                  Content="{l:T Dashboard.Table.Copy}"
+                  AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                  Padding="6,2"
+                />
+                <Button
+                  Classes="expand-tile"
+                  DataContext="{Binding Arrivals}"
+                  Content="{l:T Dashboard.Expand}"
+                  AutomationProperties.Name="{l:T Dashboard.ExpandTile}"
+                  Padding="6,2"
+                />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding ArrivalRows}" />
+            </StackPanel>
+          </Border>
 
-        <!-- Packet types (behavior 4.5). -->
-        <Border Classes="tile">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{l:T Dashboard.Kinds}" />
-            <ItemsControl ItemsSource="{Binding Kinds}" Margin="0,4,0,0" />
-          </StackPanel>
-        </Border>
+          <!-- Packet types (behavior 4.5). -->
+          <Border Classes="tile">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{l:T Dashboard.Kinds}" />
+              <ItemsControl ItemsSource="{Binding Kinds}" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
 
-        <!-- Problems (behavior 4.6). -->
-        <Border Classes="tile" AutomationProperties.Name="{Binding Problems.Spoken}">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{Binding Problems.Title}" />
-            <TextBlock Classes="number" Text="{Binding Problems.Number}" />
-            <TextBlock Classes="detail" Text="{l:T Dashboard.Problems.Help}" />
-            <s:Sparkline Values="{Binding Problems.Series}" Labels="{Binding Problems.PointLabels}" />
-            <Button
-              Classes="copy-tile"
-              DataContext="{Binding Problems}"
-              Content="{l:T Dashboard.Table.Copy}"
-              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
-              HorizontalAlignment="Left"
-              Padding="6,2"
-            />
-            <Button
-              x:Name="ShowProblems"
-              Content="{l:T Dashboard.Problems.Show}"
-              Command="{Binding ShowProblemsCommand}"
-            />
-          </StackPanel>
-        </Border>
+          <!-- Problems (behavior 4.6). -->
+          <Border Classes="tile" AutomationProperties.Name="{Binding Problems.Spoken}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding Problems.Title}" />
+              <TextBlock Classes="number" Text="{Binding Problems.Number}" />
+              <TextBlock Classes="detail" Text="{l:T Dashboard.Problems.Help}" />
+              <s:Sparkline Values="{Binding Problems.Series}" Labels="{Binding Problems.PointLabels}" />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                  Classes="copy-tile"
+                  DataContext="{Binding Problems}"
+                  Content="{l:T Dashboard.Table.Copy}"
+                  AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                  Padding="6,2"
+                />
+                <Button
+                  Classes="expand-tile"
+                  DataContext="{Binding Problems}"
+                  Content="{l:T Dashboard.Expand}"
+                  AutomationProperties.Name="{l:T Dashboard.ExpandTile}"
+                  Padding="6,2"
+                />
+              </StackPanel>
+              <Button
+                x:Name="ShowProblems"
+                Content="{l:T Dashboard.Problems.Show}"
+                Command="{Binding ShowProblemsCommand}"
+              />
+            </StackPanel>
+          </Border>
 
-        <!-- Connection (behavior 4.7). -->
-        <Border Classes="tile">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{l:T Dashboard.Connection}" />
-            <ItemsControl ItemsSource="{Binding Connections}" Margin="0,4,0,0" />
-            <TextBlock Classes="detail" Text="{Binding ReconnectsText}" Margin="0,4,0,0" />
-          </StackPanel>
-        </Border>
+          <!-- Connection (behavior 4.7). -->
+          <Border Classes="tile">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{l:T Dashboard.Connection}" />
+              <ItemsControl ItemsSource="{Binding Connections}" Margin="0,4,0,0" />
+              <TextBlock Classes="detail" Text="{Binding ReconnectsText}" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
 
-        <!-- Busiest stations (behavior 4.8). -->
-        <Border Classes="tile">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{l:T Dashboard.BusiestStations}" />
-            <ItemsControl ItemsSource="{Binding BusiestStations}" Margin="0,4,0,0" />
-          </StackPanel>
-        </Border>
+          <!-- Busiest stations (behavior 4.8). -->
+          <Border Classes="tile">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{l:T Dashboard.BusiestStations}" />
+              <ItemsControl ItemsSource="{Binding BusiestStations}" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
 
-        <!-- Busiest digipeaters and IGates (behavior 4.9). -->
-        <Border Classes="tile">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{l:T Dashboard.BusiestRelays}" />
-            <ItemsControl ItemsSource="{Binding BusiestRelays}" Margin="0,4,0,0" />
-          </StackPanel>
-        </Border>
+          <!-- Busiest digipeaters and IGates (behavior 4.9). -->
+          <Border Classes="tile">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{l:T Dashboard.BusiestRelays}" />
+              <ItemsControl ItemsSource="{Binding BusiestRelays}" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
 
-        <!-- Farthest heard directly (behavior 4.10). -->
-        <Border Classes="tile">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{l:T Dashboard.Farthest}" />
-            <ItemsControl ItemsSource="{Binding FarthestDirect}" Margin="0,4,0,0" />
-          </StackPanel>
-        </Border>
+          <!-- Farthest heard directly (behavior 4.10). -->
+          <Border Classes="tile">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{l:T Dashboard.Farthest}" />
+              <ItemsControl ItemsSource="{Binding FarthestDirect}" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
 
-        <!-- Weather (behavior 4.11). -->
-        <Border Classes="tile">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{l:T Dashboard.WeatherTile}" />
-            <TextBlock Classes="detail" Text="{Binding WeatherText}" Margin="0,4,0,4" />
-            <ItemsControl ItemsSource="{Binding WeatherExtremes}" />
-          </StackPanel>
-        </Border>
+          <!-- Weather (behavior 4.11). -->
+          <Border Classes="tile">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{l:T Dashboard.WeatherTile}" />
+              <TextBlock Classes="detail" Text="{Binding WeatherText}" Margin="0,4,0,4" />
+              <ItemsControl ItemsSource="{Binding WeatherExtremes}" />
+            </StackPanel>
+          </Border>
 
-        <!-- The station's GPS over the range (F3.14 behavior 7): a heading, then four tiles, or how to add a GPS. -->
-        <StackPanel Width="{Binding $parent[WrapPanel].Bounds.Width}" Margin="0,8,12,8">
-          <TextBlock Text="{l:T Dashboard.Gps.Group}" FontSize="{DynamicResource Text.Title}" FontWeight="SemiBold" />
-          <TextBlock Classes="detail" Text="{Binding GpsSourceText}" IsVisible="{Binding HasGps}" />
-          <TextBlock Classes="detail" Text="{l:T Dashboard.Gps.None}" IsVisible="{Binding !HasGps}" />
-        </StackPanel>
-        <Border Classes="tile" AutomationProperties.Name="{Binding GpsFix.Spoken}" IsVisible="{Binding HasGps}">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{Binding GpsFix.Title}" />
-            <TextBlock Classes="number" Text="{Binding GpsFix.Number}" />
-            <TextBlock Classes="detail" Text="{Binding GpsFix.Detail}" />
-            <s:Sparkline Values="{Binding GpsFix.Series}" Labels="{Binding GpsFix.PointLabels}" />
-            <Button
-              Classes="copy-tile"
-              DataContext="{Binding GpsFix}"
-              Content="{l:T Dashboard.Table.Copy}"
-              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
-              HorizontalAlignment="Left"
-              Padding="6,2"
-            />
-            <ItemsControl ItemsSource="{Binding GpsFixRows}" />
-            <TextBlock Classes="detail" Text="{Binding GpsOutageText}" Margin="0,4,0,0" />
+          <!-- The station's GPS over the range (F3.14 behavior 7): a heading, then four tiles, or how to add a GPS. -->
+          <StackPanel Width="{Binding $parent[WrapPanel].Bounds.Width}" Margin="0,8,12,8">
+            <TextBlock Text="{l:T Dashboard.Gps.Group}" FontSize="{DynamicResource Text.Title}" FontWeight="SemiBold" />
+            <TextBlock Classes="detail" Text="{Binding GpsSourceText}" IsVisible="{Binding HasGps}" />
+            <TextBlock Classes="detail" Text="{l:T Dashboard.Gps.None}" IsVisible="{Binding !HasGps}" />
           </StackPanel>
-        </Border>
+          <Border Classes="tile" AutomationProperties.Name="{Binding GpsFix.Spoken}" IsVisible="{Binding HasGps}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding GpsFix.Title}" />
+              <TextBlock Classes="number" Text="{Binding GpsFix.Number}" />
+              <TextBlock Classes="detail" Text="{Binding GpsFix.Detail}" />
+              <s:Sparkline Values="{Binding GpsFix.Series}" Labels="{Binding GpsFix.PointLabels}" />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                  Classes="copy-tile"
+                  DataContext="{Binding GpsFix}"
+                  Content="{l:T Dashboard.Table.Copy}"
+                  AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                  Padding="6,2"
+                />
+                <Button
+                  Classes="expand-tile"
+                  DataContext="{Binding GpsFix}"
+                  Content="{l:T Dashboard.Expand}"
+                  AutomationProperties.Name="{l:T Dashboard.ExpandTile}"
+                  Padding="6,2"
+                />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding GpsFixRows}" />
+              <TextBlock Classes="detail" Text="{Binding GpsOutageText}" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
 
-        <Border Classes="tile" AutomationProperties.Name="{Binding GpsSatellites.Spoken}" IsVisible="{Binding HasGps}">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{Binding GpsSatellites.Title}" />
-            <TextBlock Classes="number" Text="{Binding GpsSatellites.Number}" />
-            <TextBlock Classes="detail" Text="{Binding GpsSatellites.Detail}" />
-            <s:Sparkline Values="{Binding GpsSatellites.Series}" Labels="{Binding GpsSatellites.PointLabels}" />
-            <Button
-              Classes="copy-tile"
-              DataContext="{Binding GpsSatellites}"
-              Content="{l:T Dashboard.Table.Copy}"
-              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
-              HorizontalAlignment="Left"
-              Padding="6,2"
-            />
-            <ItemsControl ItemsSource="{Binding GpsSystemRows}" />
+          <Border
+            Classes="tile"
+            AutomationProperties.Name="{Binding GpsSatellites.Spoken}"
+            IsVisible="{Binding HasGps}"
+          >
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding GpsSatellites.Title}" />
+              <TextBlock Classes="number" Text="{Binding GpsSatellites.Number}" />
+              <TextBlock Classes="detail" Text="{Binding GpsSatellites.Detail}" />
+              <s:Sparkline Values="{Binding GpsSatellites.Series}" Labels="{Binding GpsSatellites.PointLabels}" />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                  Classes="copy-tile"
+                  DataContext="{Binding GpsSatellites}"
+                  Content="{l:T Dashboard.Table.Copy}"
+                  AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                  Padding="6,2"
+                />
+                <Button
+                  Classes="expand-tile"
+                  DataContext="{Binding GpsSatellites}"
+                  Content="{l:T Dashboard.Expand}"
+                  AutomationProperties.Name="{l:T Dashboard.ExpandTile}"
+                  Padding="6,2"
+                />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding GpsSystemRows}" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="tile" AutomationProperties.Name="{Binding GpsDilution.Spoken}" IsVisible="{Binding HasGps}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding GpsDilution.Title}" />
+              <TextBlock Classes="number" Text="{Binding GpsDilution.Number}" />
+              <TextBlock Classes="detail" Text="{Binding GpsDilution.Detail}" />
+              <s:Sparkline Values="{Binding GpsDilution.Series}" Labels="{Binding GpsDilution.PointLabels}" />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                  Classes="copy-tile"
+                  DataContext="{Binding GpsDilution}"
+                  Content="{l:T Dashboard.Table.Copy}"
+                  AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                  Padding="6,2"
+                />
+                <Button
+                  Classes="expand-tile"
+                  DataContext="{Binding GpsDilution}"
+                  Content="{l:T Dashboard.Expand}"
+                  AutomationProperties.Name="{l:T Dashboard.ExpandTile}"
+                  Padding="6,2"
+                />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding GpsDilutionRows}" />
+            </StackPanel>
+          </Border>
+
+          <Border Classes="tile" AutomationProperties.Name="{Binding GpsAccuracy.Spoken}" IsVisible="{Binding HasGps}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding GpsAccuracy.Title}" />
+              <TextBlock Classes="number" Text="{Binding GpsAccuracy.Number}" />
+              <TextBlock Classes="detail" Text="{Binding GpsAccuracy.Detail}" />
+              <s:Sparkline Values="{Binding GpsAccuracy.Series}" Labels="{Binding GpsAccuracy.PointLabels}" />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <Button
+                  Classes="copy-tile"
+                  DataContext="{Binding GpsAccuracy}"
+                  Content="{l:T Dashboard.Table.Copy}"
+                  AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                  Padding="6,2"
+                />
+                <Button
+                  Classes="expand-tile"
+                  DataContext="{Binding GpsAccuracy}"
+                  Content="{l:T Dashboard.Expand}"
+                  AutomationProperties.Name="{l:T Dashboard.ExpandTile}"
+                  Padding="6,2"
+                />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding GpsErrorRows}" />
+              <TextBlock Classes="detail" Text="{Binding GpsSignalText}" Margin="0,4,0,0" />
+              <TextBlock Classes="detail" Text="{Binding GpsWanderText}" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
+
+          <!-- What's on the air (behaviors 10–14): the tables over the stations held now. -->
+          <StackPanel Width="{Binding $parent[WrapPanel].Bounds.Width}" Margin="0,8,12,8">
+            <TextBlock Text="{l:T Dashboard.Tables}" FontSize="{DynamicResource Text.Title}" FontWeight="SemiBold" />
+            <TextBlock Classes="detail" Text="{Binding TablesText}" />
           </StackPanel>
-        </Border>
-
-        <Border Classes="tile" AutomationProperties.Name="{Binding GpsDilution.Spoken}" IsVisible="{Binding HasGps}">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{Binding GpsDilution.Title}" />
-            <TextBlock Classes="number" Text="{Binding GpsDilution.Number}" />
-            <TextBlock Classes="detail" Text="{Binding GpsDilution.Detail}" />
-            <s:Sparkline Values="{Binding GpsDilution.Series}" Labels="{Binding GpsDilution.PointLabels}" />
-            <Button
-              Classes="copy-tile"
-              DataContext="{Binding GpsDilution}"
-              Content="{l:T Dashboard.Table.Copy}"
-              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
-              HorizontalAlignment="Left"
-              Padding="6,2"
-            />
-            <ItemsControl ItemsSource="{Binding GpsDilutionRows}" />
-          </StackPanel>
-        </Border>
-
-        <Border Classes="tile" AutomationProperties.Name="{Binding GpsAccuracy.Spoken}" IsVisible="{Binding HasGps}">
-          <StackPanel>
-            <TextBlock Classes="title" Text="{Binding GpsAccuracy.Title}" />
-            <TextBlock Classes="number" Text="{Binding GpsAccuracy.Number}" />
-            <TextBlock Classes="detail" Text="{Binding GpsAccuracy.Detail}" />
-            <s:Sparkline Values="{Binding GpsAccuracy.Series}" Labels="{Binding GpsAccuracy.PointLabels}" />
-            <Button
-              Classes="copy-tile"
-              DataContext="{Binding GpsAccuracy}"
-              Content="{l:T Dashboard.Table.Copy}"
-              AutomationProperties.Name="{l:T Dashboard.CopyTile}"
-              HorizontalAlignment="Left"
-              Padding="6,2"
-            />
-            <ItemsControl ItemsSource="{Binding GpsErrorRows}" />
-            <TextBlock Classes="detail" Text="{Binding GpsSignalText}" Margin="0,4,0,0" />
-            <TextBlock Classes="detail" Text="{Binding GpsWanderText}" Margin="0,4,0,0" />
-          </StackPanel>
-        </Border>
-
-        <!-- What's on the air (behaviors 10–14): the tables over the stations held now. -->
-        <StackPanel Width="{Binding $parent[WrapPanel].Bounds.Width}" Margin="0,8,12,8">
-          <TextBlock Text="{l:T Dashboard.Tables}" FontSize="{DynamicResource Text.Title}" FontWeight="SemiBold" />
-          <TextBlock Classes="detail" Text="{Binding TablesText}" />
-        </StackPanel>
-        <ItemsControl ItemsSource="{Binding Tables}">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <WrapPanel Orientation="Horizontal" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate DataType="d:StatTable">
-              <Border Classes="tile">
-                <StackPanel>
-                  <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                      <ToggleButton
-                        Content="{l:T Dashboard.Table.ByCount}"
-                        IsChecked="{Binding !ByName}"
-                        Command="{Binding SortByCountCommand}"
-                        Padding="6,2"
-                      />
-                      <ToggleButton
-                        Content="{l:T Dashboard.Table.Name}"
-                        IsChecked="{Binding ByName}"
-                        Command="{Binding SortByNameCommand}"
-                        Padding="6,2"
-                      />
-                      <Button Classes="copy-table" Content="{l:T Dashboard.Table.Copy}" Padding="6,2" />
-                    </StackPanel>
-                  </Grid>
-                  <ItemsControl ItemsSource="{Binding Rows}" Margin="0,4,0,0">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate DataType="d:StatRow">
-                        <Panel>
-                          <!-- The whole row applies its View filter (behavior 12); read as one sentence. -->
-                          <Button
-                            Command="{Binding Apply}"
-                            IsVisible="{Binding CanApply}"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Stretch"
-                            Background="{x:Null}"
-                            BorderThickness="0"
-                            Padding="2"
-                            AutomationProperties.Name="{Binding Spoken}"
-                          >
-                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                              <TextBlock TextTrimming="CharacterEllipsis">
-                                <Run Text="{Binding Name}" />
-                                <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
-                              </TextBlock>
-                              <TextBlock
-                                Grid.Column="1"
-                                Margin="8,0,0,0"
-                                Foreground="{DynamicResource Brush.TextMuted}"
-                              >
-                                <Run Text="{Binding CountText}" />
-                                <Run Text=" · " />
-                                <Run Text="{Binding ShareText}" />
-                              </TextBlock>
-                              <ProgressBar
-                                Grid.Row="1"
-                                Grid.ColumnSpan="2"
-                                Classes="share"
-                                Value="{Binding Fraction}"
-                                AutomationProperties.AccessibilityView="Raw"
-                              />
-                            </Grid>
-                          </Button>
-                          <!-- A row no View filter fits (an unknown device): the same line, not a button. -->
-                          <Border
-                            IsVisible="{Binding !CanApply}"
-                            Padding="2"
-                            AutomationProperties.Name="{Binding Spoken}"
-                          >
-                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                              <TextBlock TextTrimming="CharacterEllipsis">
-                                <Run Text="{Binding Name}" />
-                                <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
-                              </TextBlock>
-                              <TextBlock
-                                Grid.Column="1"
-                                Margin="8,0,0,0"
-                                Foreground="{DynamicResource Brush.TextMuted}"
-                              >
-                                <Run Text="{Binding CountText}" />
-                                <Run Text=" · " />
-                                <Run Text="{Binding ShareText}" />
-                              </TextBlock>
-                              <ProgressBar
-                                Grid.Row="1"
-                                Grid.ColumnSpan="2"
-                                Classes="share"
-                                Value="{Binding Fraction}"
-                                AutomationProperties.AccessibilityView="Raw"
-                              />
-                            </Grid>
-                          </Border>
-                        </Panel>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-              </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </WrapPanel>
-    </ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Tables}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="d:StatTable">
+                <Border Classes="tile">
+                  <StackPanel>
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Classes="title" Text="{Binding Title}" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                        <ToggleButton
+                          Content="{l:T Dashboard.Table.ByCount}"
+                          IsChecked="{Binding !ByName}"
+                          Command="{Binding SortByCountCommand}"
+                          Padding="6,2"
+                        />
+                        <ToggleButton
+                          Content="{l:T Dashboard.Table.Name}"
+                          IsChecked="{Binding ByName}"
+                          Command="{Binding SortByNameCommand}"
+                          Padding="6,2"
+                        />
+                        <Button Classes="copy-table" Content="{l:T Dashboard.Table.Copy}" Padding="6,2" />
+                      </StackPanel>
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding Rows}" Margin="0,4,0,0">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="d:StatRow">
+                          <Panel>
+                            <!-- The whole row applies its View filter (behavior 12); read as one sentence. -->
+                            <Button
+                              Command="{Binding Apply}"
+                              IsVisible="{Binding CanApply}"
+                              HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Stretch"
+                              Background="{x:Null}"
+                              BorderThickness="0"
+                              Padding="2"
+                              AutomationProperties.Name="{Binding Spoken}"
+                            >
+                              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                <TextBlock TextTrimming="CharacterEllipsis">
+                                  <Run Text="{Binding Name}" />
+                                  <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
+                                </TextBlock>
+                                <TextBlock
+                                  Grid.Column="1"
+                                  Margin="8,0,0,0"
+                                  Foreground="{DynamicResource Brush.TextMuted}"
+                                >
+                                  <Run Text="{Binding CountText}" />
+                                  <Run Text=" · " />
+                                  <Run Text="{Binding ShareText}" />
+                                </TextBlock>
+                                <ProgressBar
+                                  Grid.Row="1"
+                                  Grid.ColumnSpan="2"
+                                  Classes="share"
+                                  Value="{Binding Fraction}"
+                                  AutomationProperties.AccessibilityView="Raw"
+                                />
+                              </Grid>
+                            </Button>
+                            <!-- A row no View filter fits (an unknown device): the same line, not a button. -->
+                            <Border
+                              IsVisible="{Binding !CanApply}"
+                              Padding="2"
+                              AutomationProperties.Name="{Binding Spoken}"
+                            >
+                              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                <TextBlock TextTrimming="CharacterEllipsis">
+                                  <Run Text="{Binding Name}" />
+                                  <Run Text="{Binding DetailSuffix}" Foreground="{DynamicResource Brush.TextMuted}" />
+                                </TextBlock>
+                                <TextBlock
+                                  Grid.Column="1"
+                                  Margin="8,0,0,0"
+                                  Foreground="{DynamicResource Brush.TextMuted}"
+                                >
+                                  <Run Text="{Binding CountText}" />
+                                  <Run Text=" · " />
+                                  <Run Text="{Binding ShareText}" />
+                                </TextBlock>
+                                <ProgressBar
+                                  Grid.Row="1"
+                                  Grid.ColumnSpan="2"
+                                  Classes="share"
+                                  Value="{Binding Fraction}"
+                                  AutomationProperties.AccessibilityView="Raw"
+                                />
+                              </Grid>
+                            </Border>
+                          </Panel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </WrapPanel>
+      </ScrollViewer>
+      <!-- A tile's series as a large plot (behavior 6.1), over the tiles; the range switches above still work. -->
+      <Border
+        x:Name="PlotOverlay"
+        IsVisible="{Binding IsExpanded}"
+        Margin="12,8,12,12"
+        Padding="12"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        CornerRadius="{DynamicResource Radius.Panel}"
+      >
+        <DockPanel DataContext="{Binding Expanded}" x:DataType="d:Tile">
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{Binding Title}" />
+              <TextBlock Classes="number" Text="{Binding Number}" />
+              <TextBlock Classes="detail" Text="{Binding Detail}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
+              <Button
+                Classes="copy-tile"
+                Content="{l:T Dashboard.Table.Copy}"
+                AutomationProperties.Name="{l:T Dashboard.CopyTile}"
+                Padding="6,2"
+              />
+              <Button x:Name="ClosePlotButton" Content="{l:T Dashboard.ClosePlot}" Padding="6,2" />
+            </StackPanel>
+          </Grid>
+          <TextBlock
+            DockPanel.Dock="Top"
+            x:Name="PlotReadout"
+            Text="{Binding #Plot.Readout}"
+            Margin="0,8,0,4"
+            FontWeight="SemiBold"
+            AutomationProperties.LiveSetting="Polite"
+          />
+          <TextBlock DockPanel.Dock="Bottom" Classes="detail" Text="{l:T Dashboard.PlotHelp}" Margin="0,4,0,0" />
+          <d:TimePlot
+            x:Name="Plot"
+            Values="{Binding Series}"
+            Labels="{Binding PointLabels}"
+            Times="{Binding PointTimes}"
+            Format="{Binding Format}"
+            MinHeight="200"
+            AutomationProperties.Name="{Binding Title}"
+          />
+        </DockPanel>
+      </Border>
+    </Grid>
   </DockPanel>
 </UserControl>
