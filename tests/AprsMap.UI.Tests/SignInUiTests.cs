@@ -153,6 +153,18 @@ public sealed class SignInUiTests
     }
 
     [Fact]
+    public async Task OverPlainHttpAllowedByTheGatewayTheDialogWarnsButSignsIn()
+    {
+        var (vm, _, _) = Browser(new AuthInfo(false, SignInOffered: true, Unencrypted: true)); // #414
+        await vm.LoadAuthAsync();
+
+        vm.OpenSignInCommand.Execute(null);
+
+        Assert.True(vm.SignIn!.CanSignIn);
+        Assert.True(vm.SignIn.Unencrypted);
+    }
+
+    [Fact]
     public async Task WithNoOperatorYetTheDialogSaysHowToSetOneUp()
     {
         var (vm, _, _) = Browser(new AuthInfo(false, NoOperator: true)); // the admin port of a fresh install (#413)

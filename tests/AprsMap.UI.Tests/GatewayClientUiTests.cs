@@ -129,6 +129,10 @@ public sealed class GatewayClientUiTests
         section.ShowAuth(new AuthInfo(false, ApiKey: true));
         Assert.True(section.HasProblem);
         Assert.StartsWith("Now watching the gateway at http://127.0.0.1:8081/: it refused", section.StatusText);
+        section.ShowAuth(new AuthInfo(false, ApiKey: true, NeedsHttps: true)); // plain HTTP from another computer
+        Assert.True(section.HasProblem);
+        Assert.Contains("accepts the API key only over https://", section.StatusText, StringComparison.Ordinal);
+        Assert.Contains("ssh -L 8081:127.0.0.1:8081", section.StatusText, StringComparison.Ordinal);
         section.ShowAuth(AuthInfo.Viewer);
         Assert.False(section.HasProblem);
         Assert.StartsWith("Now watching the gateway at http://127.0.0.1:8081/. Add its API key", section.StatusText);

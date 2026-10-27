@@ -27,6 +27,11 @@ public sealed class GatewayOperatorSession(HttpClient gateway, bool passwordSign
             {
                 return new AuthInfo(false, ApiKey: true);
             }
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                // Over plain HTTP from another computer the gateway won't take the key at all (#414).
+                return new AuthInfo(false, ApiKey: true, NeedsHttps: true);
+            }
             response.EnsureSuccessStatusCode();
             var info =
                 await response.Content.ReadFromJsonAsync(EngineJsonContext.Default.AuthInfo, cancellationToken)

@@ -18,9 +18,16 @@ public sealed partial class SignInViewModel(
     bool needsHttps,
     Action signedIn,
     Action closed,
-    bool noOperator = false
+    bool noOperator = false,
+    bool unencrypted = false
 ) : ObservableObject
 {
+    /// <summary>
+    /// The gateway allows sign-in over plain HTTP and this page came that way (#414): the dialog warns that the password
+    /// crosses the network unencrypted.
+    /// </summary>
+    public bool Unencrypted { get; } = unencrypted && !needsHttps && !noOperator;
+
     /// <summary>The page came over plain HTTP from another machine: the dialog says why it can't sign in.</summary>
     public bool NeedsHttps { get; } = needsHttps;
 

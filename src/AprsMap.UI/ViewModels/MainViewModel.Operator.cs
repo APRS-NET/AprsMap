@@ -93,7 +93,8 @@ public sealed partial class MainViewModel
             Auth?.NeedsHttps == true,
             SignedIn,
             () => SignIn = null,
-            noOperator: Auth?.NoOperator == true
+            noOperator: Auth?.NoOperator == true,
+            unencrypted: Auth?.Unencrypted == true
         );
     }
 

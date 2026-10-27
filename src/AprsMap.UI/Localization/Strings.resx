@@ -2427,6 +2427,9 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.settings.object.unknown" xml:space="preserve">
     <value>That object is no longer in this profile.</value>
   </data>
+  <data name="Auth.Unencrypted" xml:space="preserve">
+    <value>This page isn't encrypted (http://): your password crosses the network as it is. This gateway allows that; use it only on a network you trust.</value>
+  </data>
   <data name="Auth.NoOperator" xml:space="preserve">
     <value>No operator is set up on this gateway yet, so nobody can sign in. On the gateway's computer, set one up, then reload this page:
 
@@ -2487,6 +2490,10 @@ In a Docker container:
   </data>
   <data name="Connection.Status.Viewing" xml:space="preserve">
     <value>Now watching the gateway at {address}. Add its API key to transmit and change its settings.</value>
+  </data>
+  <data name="Connection.Status.KeyNeedsHttps" xml:space="preserve">
+    <value>Now watching the gateway at {address}: it accepts the API key only over https://, or from the gateway's own computer, so the key isn't sent across the network unencrypted. Reach it through an SSH tunnel (ssh -L 8081:127.0.0.1:8081 you@gateway, then http://127.0.0.1:8081/ here), or, on a network you trust, set allow_insecure_sign_in = true in the gateway's configuration.</value>
+    <comment>The ssh command and allow_insecure_sign_in are to type; keep them.</comment>
   </data>
   <data name="Connection.Status.KeyRefused" xml:space="preserve">
     <value>Now watching the gateway at {address}: it refused the API key. Check the key, and that this is the gateway's admin address.</value>
