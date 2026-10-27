@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+using AprsMap.Contracts;
 using Microsoft.Extensions.Configuration;
 
 namespace AprsMap.Gateway.Tests;
@@ -123,4 +124,32 @@ public sealed class GatewayServiceTests
         new ConfigurationBuilder()
             .AddInMemoryCollection(settings.Select(s => new KeyValuePair<string, string?>(s.Key, s.Value)))
             .Build();
+
+    [Fact]
+    public void FirstRunStationValuesTheFileSetsThatDifferAreFoundAndOthersAreNot()
+    {
+        // #429: on 10.10.20.191, the stored station is NZ0P-4 on noam with passcode 3560.
+        var rotate = new SourceSettings("is", "noam", SourceKind.AprsIs, "noam.aprs2.net:14580", "r/39/-94.7/25");
+        var profile = new StationProfile("p", "NZ0P-4", "nz0p-4", 3560, ["is"], null, null);
+        var settings = new AppSettings([profile], "p", UnitSettings.Metric, Sources: [rotate]);
+        var file = TomlConfiguration.Read(
+            "[engine]\ncallsign = \"NZ0P-5\"\npasscode = 1234\nserver = \"noam.aprs2.net:14580\"\n",
+            "g.toml"
+        );
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["Engine:Filter"] = "r/1/1/1" }) // not in the file
+            .AddInMemoryCollection(file)
+            .Build();
+
+        var differences = TomlStationCheck
+            .Differences(new HashSet<string>(file.Keys, StringComparer.OrdinalIgnoreCase), configuration, settings)
+            .ToList();
+
+        Assert.Equal(
+            [("Engine:Callsign", "NZ0P-5", "nz0p-4"), ("Engine:Passcode", null, null)],
+            differences.Select(d => (d.Key, d.Configured, d.Stored))
+        ); // the same server and a filter only from elsewhere aren't; the passcode's values never come out
+        Assert.True(TomlStationCheck.Applies(new HashSet<string> { "Engine:Callsign" }));
+        Assert.False(TomlStationCheck.Applies(new HashSet<string> { "Gateway:Listen", "Engine:KissSerial:Baud" }));
+    }
 }
