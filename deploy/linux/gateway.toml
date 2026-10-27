@@ -29,6 +29,8 @@ callsign = "N0CALL-10"
 passcode = -1
 server = "rotate.aprs2.net:14580"
 # filter = "r/39.0/-94.7/50"
+# Not first-run only: false starts with APRS-IS off every time, to connect it by hand with its switch.
+# aprs_is_on_start = true
 
 # The TNC on USB, at first run. Use its /dev/serial/by-id/ name so it survives being plugged into another port.
 [engine.kiss_serial]

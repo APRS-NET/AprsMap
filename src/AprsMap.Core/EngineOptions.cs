@@ -54,6 +54,12 @@ public sealed class EngineOptions
     /// </summary>
     public bool ReceiveOnly { get; set; }
 
+    /// <summary>
+    /// Whether the APRS-IS switch keeps its last state when the engine starts (#415). False turns it off as the engine
+    /// starts, before connecting, so APRS-IS is connected only by hand; the switch still turns it on while it runs.
+    /// </summary>
+    public bool AprsIsOnStart { get; set; } = true;
+
     /// <summary>First-run default: the server-side filter sent at login.</summary>
     public string? Filter { get; set; }
 

@@ -31,6 +31,7 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | First-run USB TNC source (KISS over serial): port, baud, radio port, name | `Engine__KissSerial__Port`, `__Baud`, `__TncPort`, `__Name` | none (baud `9600`) |
 | First-run gpsd source: host, port, name | `Engine__Gpsd__Host`, `__Port`, `__Name` | none (port `2947`) |
 | Receive only for good: nothing is sent, and APRS-IS logs in unverified | `Engine__ReceiveOnly` | `false` |
+| Start with the APRS-IS switch off every time, to connect it by hand (it otherwise keeps its last state) | `Engine__AprsIsOnStart` | `true` |
 | A second port where an operator signs in; the main port then never offers sign-in | `Gateway__OperatorPort` | none |
 | Where the published app listens, `address:port` (with either of these, they replace the ports above) | `Gateway__Listen` | `0.0.0.0:8080` |
 | Where the operator (admin) app listens, `address:port`; wins over `Gateway__OperatorPort` | `Gateway__OperatorListen` | none |
