@@ -280,7 +280,13 @@ internal static partial class OperatorSignIn
         var session = SessionId(context.User) is { } id ? sessions.Use(id) : null;
         var needsHttps = operators.Any && !IsSecureEnough(context);
         var info = session is null
-            ? new AuthInfo(false, SignInOffered: offered, NeedsHttps: needsHttps)
+            ? new AuthInfo(
+                false,
+                SignInOffered: offered,
+                NeedsHttps: needsHttps,
+                // Only where there's an admin port to set one up for, never to every viewer of a public gateway (#413).
+                NoOperator: !operators.Any && options.CurrentValue.OperatorPort is not null
+            )
             : new AuthInfo(true, session.Name, session.ExpiresAt, offered, limiter.FailedToday);
         return Results.Json(info, EngineJsonContext.Default.AuthInfo);
     }

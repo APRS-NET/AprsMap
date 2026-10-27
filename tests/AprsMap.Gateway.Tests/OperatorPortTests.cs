@@ -108,3 +108,44 @@ public sealed class OperatorPortTests(OperatorPortGatewayFactory gateway) : ICla
         Assert.Equal("What N0GATE hears", (await remote.GetStatusAsync(Ct)).Title);
     }
 }
+
+/// <summary>A gateway with an operator port and no operator yet: a fresh service install (#413).</summary>
+public sealed class FreshOperatorPortGatewayFactory : GatewayFactory
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder
+            .UseSetting("Gateway:OperatorPort", "8081")
+            .ConfigureTestServices(s => s.AddSingleton<Microsoft.AspNetCore.Hosting.IStartupFilter, LocalPortFilter>());
+    }
+}
+
+/// <summary>The admin port says when no operator is set up (#413); the public port doesn't.</summary>
+public sealed class NoOperatorYetTests(FreshOperatorPortGatewayFactory gateway)
+    : IClassFixture<FreshOperatorPortGatewayFactory>
+{
+    private async Task<AuthInfo> Me(int? port)
+    {
+        using var browser = gateway.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, AuthPaths.Me);
+        if (port is { } p)
+        {
+            request.Headers.Add(LocalPortFilter.Header, p.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+        using var response = await browser.SendAsync(request, TestContext.Current.CancellationToken);
+        return (
+            await response.Content.ReadFromJsonAsync(
+                EngineJsonContext.Default.AuthInfo,
+                TestContext.Current.CancellationToken
+            )
+        )!;
+    }
+
+    [Fact]
+    public async Task OnlyTheAdminPortSaysNoOperatorIsSetUp()
+    {
+        Assert.True((await Me(8081)).NoOperator);
+        Assert.Equal(AuthInfo.Viewer, await Me(port: null));
+    }
+}

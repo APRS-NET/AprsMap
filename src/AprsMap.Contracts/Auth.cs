@@ -22,6 +22,10 @@ public sealed record SignInRequest(string Name, string Password);
 /// An app's API key (docs/features/F1.38-gateway-api-key.md, behavior 8): with <paramref name="Operator"/>, the gateway
 /// let it in as the operator "API key", which has no session to end; without, the gateway refused it.
 /// </param>
+/// <param name="NoOperator">
+/// This is the gateway's operator port, but no operator is set up yet, so sign-in can't be offered: the dialog says how
+/// to set one up on the gateway's computer (#413).
+/// </param>
 public sealed record AuthInfo(
     bool Operator,
     string? Name = null,
@@ -29,7 +33,8 @@ public sealed record AuthInfo(
     bool SignInOffered = false,
     int FailedSignIns = 0,
     bool NeedsHttps = false,
-    bool ApiKey = false
+    bool ApiKey = false,
+    bool NoOperator = false
 )
 {
     /// <summary>A viewer on a gateway that offers no sign-in.</summary>

@@ -2427,6 +2427,16 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.settings.object.unknown" xml:space="preserve">
     <value>That object is no longer in this profile.</value>
   </data>
+  <data name="Auth.NoOperator" xml:space="preserve">
+    <value>No operator is set up on this gateway yet, so nobody can sign in. On the gateway's computer, set one up, then reload this page:
+
+{command}
+
+In a Docker container:
+
+{docker}</value>
+    <comment>command, docker: commands to type; keep them as they are. NAME is the operator's name, to replace.</comment>
+  </data>
   <data name="Auth.SignedInWithKey" xml:space="preserve">
     <value>Operator, with the gateway's API key</value>
   </data>
