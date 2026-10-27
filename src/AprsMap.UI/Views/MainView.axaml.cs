@@ -49,6 +49,12 @@ public sealed partial class MainView : UserControl
     {
         base.OnSizeChanged(e);
         var narrow = e.NewSize.Width < NarrowWidth;
+        // The header (#440): the titles on their own line, the rest one line that scrolls sideways.
+        NarrowTitle.IsVisible = narrow;
+        WideTitle.IsVisible = !narrow;
+        StatusScroll.HorizontalScrollBarVisibility = narrow
+            ? Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden
+            : Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
         if (narrow == NarrowShell.IsVisible)
         {
             return;
@@ -72,7 +78,9 @@ public sealed partial class MainView : UserControl
             object panel;
             if (kind == PanelKinds.Map)
             {
-                panel = ShellFactory.CreateMap();
+                var map = ShellFactory.CreateMap();
+                map.Context = DataContext; // without it, the map's placeholder (#440)
+                panel = map;
             }
             else if (kind == PanelKinds.Dashboard)
             {
