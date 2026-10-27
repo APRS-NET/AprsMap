@@ -22,7 +22,9 @@ public sealed partial class MainViewModel
 
     /// <summary>Whether the app menu offers Sign in…: an operator is set up on this gateway.</summary>
     public bool CanSignIn =>
-        OperatorSession is not null && Auth is { Operator: false } a && (a.SignInOffered || a.NeedsHttps);
+        OperatorSession is not null
+        && Auth is { Operator: false } a
+        && (a.SignInOffered || a.NeedsHttps || a.NoOperator);
 
     /// <summary>Whether this browser is signed in as an operator.</summary>
     public bool IsSignedIn => OperatorSession is not null && Auth?.Operator == true;
@@ -85,7 +87,14 @@ public sealed partial class MainViewModel
         {
             return;
         }
-        SignIn = new SignInViewModel(OperatorSession, _text, Auth?.NeedsHttps == true, SignedIn, () => SignIn = null);
+        SignIn = new SignInViewModel(
+            OperatorSession,
+            _text,
+            Auth?.NeedsHttps == true,
+            SignedIn,
+            () => SignIn = null,
+            noOperator: Auth?.NoOperator == true
+        );
     }
 
     /// <summary>Signed in: the page starts again, so the hub connects with the session and the settings open up.</summary>

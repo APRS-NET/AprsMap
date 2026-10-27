@@ -9,24 +9,45 @@ namespace AprsMap.UI.ViewModels;
 
 /// <summary>
 /// The Sign in dialog (docs/features/F2.9-operator-sign-in.md, behaviors 4, 7, 8): a name and password posted to the
-/// gateway, its refusal in words, and why it isn't offered over plain HTTP. The password is cleared after every try.
+/// gateway, its refusal in words, and why it isn't offered over plain HTTP, or with no operator set up yet (#413). The
+/// password is cleared after every try.
 /// </summary>
 public sealed partial class SignInViewModel(
     IOperatorSession session,
     Localizer text,
     bool needsHttps,
     Action signedIn,
-    Action closed
+    Action closed,
+    bool noOperator = false
 ) : ObservableObject
 {
     /// <summary>The page came over plain HTTP from another machine: the dialog says why it can't sign in.</summary>
     public bool NeedsHttps { get; } = needsHttps;
 
-    /// <summary>Whether the name and password fields show.</summary>
-    public bool CanSignIn => !NeedsHttps;
+    /// <summary>No operator is set up on this gateway yet: the dialog says how to set one up.</summary>
+    public bool NoOperator { get; } = noOperator;
 
-    /// <summary>The explanation shown instead of the form over plain HTTP.</summary>
-    public string? NeedsHttpsText { get; } = needsHttps ? text["Error.auth.needs-https"] : null;
+    /// <summary>Whether the dialog explains why it can't sign in, instead of the form.</summary>
+    public bool HasNotice => NeedsHttps || NoOperator;
+
+    /// <summary>Whether the name and password fields show.</summary>
+    public bool CanSignIn => !HasNotice;
+
+    /// <summary>The explanation shown instead of the form: no operator yet, or plain HTTP.</summary>
+    public string? NoticeText { get; } =
+        noOperator
+            ? text.Format(
+                "Auth.NoOperator",
+                new Dictionary<string, object?>
+                {
+                    ["command"] =
+                        $"sudo -u {Brand.Slug} /opt/{Brand.Slug}-gateway/{Brand.Slug}-gateway operator add NAME"
+                        + $" --config /etc/{Brand.Slug}/gateway.toml",
+                    ["docker"] = $"docker exec -it {Brand.Slug} {Brand.Slug}-gateway operator add NAME",
+                }
+            )
+        : needsHttps ? text["Error.auth.needs-https"]
+        : null;
 
     /// <summary>The operator's name.</summary>
     [ObservableProperty]
