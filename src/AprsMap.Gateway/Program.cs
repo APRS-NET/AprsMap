@@ -29,12 +29,12 @@ if (args is ["operator", .. var command])
 var builder = WebApplication.CreateBuilder(args);
 
 // The TOML file (F1.37 behavior 1): after appsettings.json, before environment variables, so those still win.
+IReadOnlySet<string> tomlKeys = new HashSet<string>();
 if (TomlConfiguration.PathFrom(args, Environment.GetEnvironmentVariable) is { } toml)
 {
-    TomlConfiguration.InsertAfterJsonFiles(
-        ((IConfigurationBuilder)builder.Configuration).Sources,
-        TomlConfiguration.Read(File.ReadAllText(toml), toml)
-    );
+    var fromFile = TomlConfiguration.Read(File.ReadAllText(toml), toml);
+    tomlKeys = new HashSet<string>(fromFile.Keys, StringComparer.OrdinalIgnoreCase);
+    TomlConfiguration.InsertAfterJsonFiles(((IConfigurationBuilder)builder.Configuration).Sources, fromFile);
 }
 if (GatewayListen.Urls(builder.Configuration) is { } urls)
 {
@@ -93,6 +93,21 @@ builder.Services.AddHealthChecks();
 builder.Services.AddOperatorSignIn(GatewayData.Folder(builder.Configuration));
 
 var app = builder.Build();
+
+// The file's first-run station, when it no longer matches the stored one (#429): said, not applied. Only when the
+// file sets any of it, so a gateway without one (a container, the tests) reads nothing extra at start.
+if (TomlStationCheck.Applies(tomlKeys))
+{
+    app.Lifetime.ApplicationStarted.Register(() =>
+        _ = TomlStationCheck.WarnAsync(
+            tomlKeys,
+            app.Configuration,
+            app.Services.GetRequiredService<IEngineService>(),
+            app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AprsMap.Gateway"),
+            app.Lifetime.ApplicationStopping
+        )
+    );
+}
 app.UseGatewayFront(gateway);
 app.UseOperatorSignIn();
 app.UseViewerGate();
