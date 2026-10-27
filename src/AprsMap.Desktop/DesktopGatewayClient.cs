@@ -76,6 +76,13 @@ internal sealed class DesktopGatewayClient : IGatewayClientHost
     }
 
     /// <inheritdoc />
+    public Task<ConnectionTestOutcome> TestAsync(
+        Uri gateway,
+        string? apiKey,
+        CancellationToken cancellationToken = default
+    ) => GatewayConnectionTest.RunAsync(gateway, apiKey, cancellationToken: cancellationToken);
+
+    /// <inheritdoc />
     public bool Restart()
     {
         if (Executable() is null)

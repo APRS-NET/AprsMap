@@ -195,7 +195,7 @@ internal sealed class ApiKeyGate(
             return (ApiKeyOutcome.None, null); // the viewer port ignores it (behavior 4)
         }
         var address = Viewers.AddressOf(context);
-        if (!OperatorSignIn.IsSecureEnough(context))
+        if (!OperatorSignIn.IsSecureEnough(context, options.CurrentValue))
         {
             audit.ApiKeyRefused(address, "plain HTTP from another machine");
             return (ApiKeyOutcome.Refused, null);

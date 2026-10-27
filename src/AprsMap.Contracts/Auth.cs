@@ -22,6 +22,14 @@ public sealed record SignInRequest(string Name, string Password);
 /// An app's API key (docs/features/F1.38-gateway-api-key.md, behavior 8): with <paramref name="Operator"/>, the gateway
 /// let it in as the operator "API key", which has no session to end; without, the gateway refused it.
 /// </param>
+/// <param name="NoOperator">
+/// This is the gateway's operator port, but no operator is set up yet, so sign-in can't be offered: the dialog says how
+/// to set one up on the gateway's computer (#413).
+/// </param>
+/// <param name="Unencrypted">
+/// Sign-in is offered here over plain HTTP from another computer, because the gateway allows it (#414): the dialog warns
+/// that the password crosses the network unencrypted.
+/// </param>
 public sealed record AuthInfo(
     bool Operator,
     string? Name = null,
@@ -29,7 +37,9 @@ public sealed record AuthInfo(
     bool SignInOffered = false,
     int FailedSignIns = 0,
     bool NeedsHttps = false,
-    bool ApiKey = false
+    bool ApiKey = false,
+    bool NoOperator = false,
+    bool Unencrypted = false
 )
 {
     /// <summary>A viewer on a gateway that offers no sign-in.</summary>
@@ -58,6 +68,32 @@ public static class ApiKeys
     public const string Scheme = "Bearer";
 }
 
+/// <summary>What a gateway made of an app's API key, in a connection test (#419).</summary>
+public enum ApiKeyCheck
+{
+    /// <summary>No key was sent: the app would only watch.</summary>
+    None,
+
+    /// <summary>The gateway's key: the app would be its operator.</summary>
+    Accepted,
+
+    /// <summary>Not the gateway's key, or the address is waiting after wrong ones.</summary>
+    Refused,
+
+    /// <summary>Sent over plain HTTP from another computer, which the gateway doesn't allow (F1.38 behavior 5).</summary>
+    NeedsHttps,
+
+    /// <summary>Sent to an address that isn't the gateway's admin (operator) port, where keys aren't taken.</summary>
+    NotAdminPort,
+}
+
+/// <summary>A gateway's answer to a connection test (#419), from <see cref="AuthPaths.Test"/>.</summary>
+/// <param name="Product">The gateway's product slug, so an app can tell it's reached a gateway of its own kind.</param>
+/// <param name="Version">The gateway's build version, such as <c>0.8.0-alpha.2</c>.</param>
+/// <param name="ContractVersion">The hub contract's version; an app on another one can't connect (F1.14 behavior 8).</param>
+/// <param name="Key">What the gateway made of the key sent.</param>
+public sealed record GatewayTest(string Product, string Version, int ContractVersion, ApiKeyCheck Key);
+
 /// <summary>The gateway's sign-in endpoints, relative to its base (not the hub).</summary>
 public static class AuthPaths
 {
@@ -69,4 +105,7 @@ public static class AuthPaths
 
     /// <summary><c>GET</c>: this browser's <see cref="AuthInfo"/>.</summary>
     public const string Me = "auth/me";
+
+    /// <summary><c>GET</c>: a <see cref="GatewayTest"/> of the address and the API key sent, saving nothing (#419).</summary>
+    public const string Test = "auth/test";
 }

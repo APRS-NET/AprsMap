@@ -16,6 +16,14 @@ internal sealed class GatewayOptions
     public bool AllowSettingsChanges { get; set; }
 
     /// <summary>
+    /// Lets operators sign in, and apps send the API key, over plain HTTP from other computers (#414). Off by default:
+    /// the password or key then crosses the network unencrypted, so turn it on only on a network you trust. Still only
+    /// on the operator port, when there is one; the session cookie is then a plain host-only one, as a
+    /// <c>__Host-</c> cookie needs HTTPS.
+    /// </summary>
+    public bool AllowInsecureSignIn { get; set; }
+
+    /// <summary>
     /// Operators set up in configuration, each a name and a password hash from <c>operator add</c> (F2.9 behavior 1).
     /// Most gateways keep them in <c>operators.json</c> in the data folder instead.
     /// </summary>

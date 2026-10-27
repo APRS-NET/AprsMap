@@ -28,10 +28,17 @@
       <StackPanel Spacing="10">
         <TextBlock Text="{l:T Auth.Title}" FontWeight="SemiBold" FontSize="{DynamicResource Text.Title}" />
         <TextBlock Text="{l:T Auth.Help}" TextWrapping="Wrap" Foreground="{DynamicResource Brush.TextMuted}" />
+        <SelectableTextBlock
+          x:Name="SignInNotice"
+          Text="{Binding NoticeText}"
+          IsVisible="{Binding HasNotice}"
+          TextWrapping="Wrap"
+          Foreground="{DynamicResource Brush.Warn}"
+        />
         <TextBlock
-          x:Name="NeedsHttpsText"
-          Text="{Binding NeedsHttpsText}"
-          IsVisible="{Binding NeedsHttps}"
+          x:Name="SignInUnencrypted"
+          Text="{l:T Auth.Unencrypted}"
+          IsVisible="{Binding Unencrypted}"
           TextWrapping="Wrap"
           Foreground="{DynamicResource Brush.Warn}"
         />

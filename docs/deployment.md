@@ -31,12 +31,14 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | USB TNC source (KISS over serial): port, baud, radio port, name. Set from here on every start | `Engine__KissSerial__Port`, `__Baud`, `__TncPort`, `__Name` | none (baud `9600`) |
 | gpsd source: host, port, name. Set from here on every start | `Engine__Gpsd__Host`, `__Port`, `__Name` | none (port `2947`) |
 | Receive only for good: nothing is sent, and APRS-IS logs in unverified | `Engine__ReceiveOnly` | `false` |
+| Start with the APRS-IS switch off every time, to connect it by hand (it otherwise keeps its last state) | `Engine__AprsIsOnStart` | `true` |
 | A second port where an operator signs in; the main port then never offers sign-in | `Gateway__OperatorPort` | none |
 | Where the published app listens, `address:port` (with either of these, they replace the ports above) | `Gateway__Listen` | `0.0.0.0:8080` |
 | Where the operator (admin) app listens, `address:port`; wins over `Gateway__OperatorPort` | `Gateway__OperatorListen` | none |
 | How much of the station's location viewers learn: `Exact`, `Grid` (its 4-character square) or `Hidden` | `Gateway__HomePrivacy` | `Grid` with an operator port, `Exact` without |
 | The page's title, beside the product name and on the browser tab | `Gateway__Title` | none |
 | Let browsers change settings and switch profiles, with no operator set up | `Gateway__AllowSettingsChanges` | `false` |
+| Let operators sign in, and apps use the API key, over plain HTTP from other computers (a trusted network only) | `Gateway__AllowInsecureSignIn` | `false` |
 | Operators set up in configuration: a name and a hash from `operator add` | `Gateway__Operators__0__Name`, `…__PasswordHash` | none (use `operators.json`) |
 | Other sites whose pages may use the hub and sign-in | `Gateway__AllowedOrigins__0`, `__1`… | none (the gateway's own only) |
 | Serve under a path, for a proxy that maps one to the gateway | `Gateway__PathBase` | none (the root) |
@@ -323,7 +325,8 @@ The self-contained archives (`aprsmap-v<version>-<rid>.zip` or `.tar.gz`) are st
 The desktop app can show a gateway's station instead of running its own (docs/features/F1.39-desktop-gateway-client.md),
 for example on the PC that runs the gateway service, or on another one. In **Settings › Connection** choose **A
 gateway**, enter its admin address (`http://127.0.0.1:8081/` on the gateway's own PC) and, to transmit and change the
-gateway's settings, its API key (above); then **Apply and restart**. `--gateway URL` does the same for one run.
+gateway's settings, its API key (above); then **Test**, which checks the address, the key and the two versions
+without saving, and **Apply and restart**. `--gateway URL` does the same for one run.
 
 As a client the app runs no station of its own: no APRS-IS or TNC connection, GPS, beacons or history, and its web
 viewer is off. Everything is received and processed once, by the gateway; the map's tiles come through it too. Without

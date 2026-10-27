@@ -153,6 +153,32 @@ public sealed class SignInUiTests
     }
 
     [Fact]
+    public async Task OverPlainHttpAllowedByTheGatewayTheDialogWarnsButSignsIn()
+    {
+        var (vm, _, _) = Browser(new AuthInfo(false, SignInOffered: true, Unencrypted: true)); // #414
+        await vm.LoadAuthAsync();
+
+        vm.OpenSignInCommand.Execute(null);
+
+        Assert.True(vm.SignIn!.CanSignIn);
+        Assert.True(vm.SignIn.Unencrypted);
+    }
+
+    [Fact]
+    public async Task WithNoOperatorYetTheDialogSaysHowToSetOneUp()
+    {
+        var (vm, _, _) = Browser(new AuthInfo(false, NoOperator: true)); // the admin port of a fresh install (#413)
+        await vm.LoadAuthAsync();
+        Assert.True(vm.CanSignIn);
+
+        vm.OpenSignInCommand.Execute(null);
+
+        Assert.False(vm.SignIn!.CanSignIn);
+        Assert.StartsWith("No operator is set up on this gateway yet", vm.SignIn.NoticeText, StringComparison.Ordinal);
+        Assert.Contains("-gateway operator add NAME --config /etc/", vm.SignIn.NoticeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task OverPlainHttpTheDialogSaysWhyInsteadOfAskingForAPassword()
     {
         var (vm, _, _) = Browser(new AuthInfo(false, NeedsHttps: true));
@@ -164,7 +190,7 @@ public sealed class SignInUiTests
         Assert.False(vm.SignIn!.CanSignIn);
         Assert.StartsWith(
             "Signing in needs a secure (https://) address",
-            vm.SignIn.NeedsHttpsText,
+            vm.SignIn.NoticeText,
             StringComparison.Ordinal
         );
         Assert.False(vm.SignIn.SignInCommand.CanExecute(null));

@@ -61,6 +61,16 @@ public class OperatorGatewayFactory : GatewayFactory
     }
 }
 
+/// <summary>An operator gateway that allows sign-in over plain HTTP (#414).</summary>
+public sealed class InsecureOperatorGatewayFactory : OperatorGatewayFactory
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.UseSetting("Gateway:AllowInsecureSignIn", "true");
+    }
+}
+
 /// <summary>An operator gateway where settings changes were allowed before operators existed.</summary>
 public sealed class TrustedOperatorGatewayFactory : OperatorGatewayFactory
 {
@@ -334,6 +344,36 @@ public sealed class OperatorSignInTests
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal(EngineErrorCodes.AuthNeedsHttps, await CodeOf(response));
         Assert.Equal(new AuthInfo(false, NeedsHttps: true), await Me(browser, null));
+    }
+
+    [Fact]
+    public async Task WithInsecureSignInAllowedItWorksOverPlainHttpWithAWarning()
+    {
+        // #414: an explicit setting, for a trusted LAN.
+        await using var gateway = new InsecureOperatorGatewayFactory();
+        using var browser = gateway.Browser("http"); // the test server's caller isn't loopback
+        Assert.Equal(new AuthInfo(false, SignInOffered: true, Unencrypted: true), await Me(browser, null));
+
+        using var response = await SignIn(browser, OperatorGatewayFactory.Name, OperatorGatewayFactory.Password);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var cookie = response.Headers.GetValues("Set-Cookie").Single();
+        Assert.StartsWith(OperatorSignIn.UnencryptedCookieName + "=", cookie, StringComparison.Ordinal);
+        Assert.DoesNotContain("secure", cookie, StringComparison.OrdinalIgnoreCase); // a browser keeps it over http
+        Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.True((await Me(browser, cookie.Split(';')[0])).Operator);
+        Assert.Contains(
+            gateway.Logs.Messages,
+            m => m.StartsWith("Gateway:AllowInsecureSignIn is on", StringComparison.Ordinal)
+        );
+
+        // The API key too.
+        var key = AprsMap.Server.ApiKeyStore.Generate();
+        gateway.Services.GetRequiredService<AprsMap.Server.ApiKeyStore>().Save(key);
+        using var me = new HttpRequestMessage(HttpMethod.Get, AuthPaths.Me);
+        me.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
+        using var keyed = await browser.SendAsync(me, Ct);
+        Assert.True((await keyed.Content.ReadFromJsonAsync(EngineJsonContext.Default.AuthInfo, Ct))!.ApiKey);
     }
 
     [Fact]

@@ -4,6 +4,7 @@
      its Console. -->
 <UserControl
   xmlns="https://github.com/avaloniaui"
+  xmlns:views="using:AprsMap.UI.Views"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:AprsMap.UI.ViewModels"
   xmlns:t="using:AprsMap.UI.Traffic"
@@ -46,6 +47,7 @@
       />
       <TextBox
         x:Name="FilterTextBox"
+        views:Clearable.IsOn="True"
         Text="{Binding FilterText}"
         PlaceholderText="{l:T Console.FilterText}"
         AutomationProperties.Name="{l:T Console.FilterText}"

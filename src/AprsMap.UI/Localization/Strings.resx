@@ -2431,8 +2431,24 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Error.settings.object.unknown" xml:space="preserve">
     <value>That object is no longer in this profile.</value>
   </data>
+  <data name="Auth.Unencrypted" xml:space="preserve">
+    <value>This page isn't encrypted (http://): your password crosses the network as it is. This gateway allows that; use it only on a network you trust.</value>
+  </data>
+  <data name="Auth.NoOperator" xml:space="preserve">
+    <value>No operator is set up on this gateway yet, so nobody can sign in. On the gateway's computer, set one up, then reload this page:
+
+{command}
+
+In a Docker container:
+
+{docker}</value>
+    <comment>command, docker: commands to type; keep them as they are. NAME is the operator's name, to replace.</comment>
+  </data>
   <data name="Auth.SignedInWithKey" xml:space="preserve">
     <value>Operator, with the gateway's API key</value>
+  </data>
+  <data name="Search.Clear" xml:space="preserve">
+    <value>Clear search</value>
   </data>
   <data name="Settings.Connection" xml:space="preserve">
     <value>Connection</value>
@@ -2473,6 +2489,44 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Connection.RestartToSwitch" xml:space="preserve">
     <value>Saved. Restart the app to switch.</value>
   </data>
+  <data name="Connection.Test" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="Connection.Test.Hint" xml:space="preserve">
+    <value>Test the gateway and key before applying.</value>
+  </data>
+  <data name="Connection.Test.Testing" xml:space="preserve">
+    <value>Testing…</value>
+  </data>
+  <data name="Connection.Test.Unreachable" xml:space="preserve">
+    <value>Nothing answered at {address}: {detail} Check the address, and that the gateway is running.</value>
+    <comment>detail: the system's reason, in English.</comment>
+  </data>
+  <data name="Connection.Test.NotAGateway" xml:space="preserve">
+    <value>{address} doesn't answer as a gateway this app can show, or the gateway is older than this test. Check the address, or update the gateway.</value>
+  </data>
+  <data name="Connection.Test.Incompatible" xml:space="preserve">
+    <value>The gateway runs {version}, which this app ({app}) can't work with. Update whichever of the two is older.</value>
+  </data>
+  <data name="Connection.Test.KeyRefused" xml:space="preserve">
+    <value>The gateway at {address} refused the API key. Copy it again from the gateway's Settings › Gateway access.</value>
+  </data>
+  <data name="Connection.Test.KeyNeedsHttps" xml:space="preserve">
+    <value>The gateway accepts the API key only over https://, or from its own computer. Reach it through an SSH tunnel (ssh -L 8081:127.0.0.1:8081 you@gateway, then http://127.0.0.1:8081/ here), or, on a network you trust, set allow_insecure_sign_in = true in the gateway's configuration.</value>
+    <comment>The ssh command and allow_insecure_sign_in are to type; keep them.</comment>
+  </data>
+  <data name="Connection.Test.NotAdminPort" xml:space="preserve">
+    <value>{address} is the gateway's public address, which doesn't take API keys. Use its admin address (port 8081 by default).</value>
+  </data>
+  <data name="Connection.Test.Operator" xml:space="preserve">
+    <value>Reached the gateway ({version}) with the API key: this app will be its operator.</value>
+  </data>
+  <data name="Connection.Test.WatchOnly" xml:space="preserve">
+    <value>Reached the gateway ({version}). Without an API key, this app will only watch.</value>
+  </data>
+  <data name="Connection.Test.VersionsDiffer" xml:space="preserve">
+    <value>Its version differs from this app's ({app}), so some features may be missing on one side.</value>
+  </data>
   <data name="Connection.Status.ThisComputer" xml:space="preserve">
     <value>Now showing this computer's own station.</value>
   </data>
@@ -2481,6 +2535,10 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Connection.Status.Viewing" xml:space="preserve">
     <value>Now watching the gateway at {address}. Add its API key to transmit and change its settings.</value>
+  </data>
+  <data name="Connection.Status.KeyNeedsHttps" xml:space="preserve">
+    <value>Now watching the gateway at {address}: it accepts the API key only over https://, or from the gateway's own computer, so the key isn't sent across the network unencrypted. Reach it through an SSH tunnel (ssh -L 8081:127.0.0.1:8081 you@gateway, then http://127.0.0.1:8081/ here), or, on a network you trust, set allow_insecure_sign_in = true in the gateway's configuration.</value>
+    <comment>The ssh command and allow_insecure_sign_in are to type; keep them.</comment>
   </data>
   <data name="Connection.Status.KeyRefused" xml:space="preserve">
     <value>Now watching the gateway at {address}: it refused the API key. Check the key, and that this is the gateway's admin address.</value>

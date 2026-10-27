@@ -745,6 +745,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     /// </summary>
     public async Task RunAsync(CancellationToken cancellationToken)
     {
+        if (!_options.AprsIsOnStart)
+        {
+            await TurnAprsIsOffAsync(cancellationToken).ConfigureAwait(false); // #415: before anything connects
+        }
         var sweeping = SweepAsync(cancellationToken);
         var others = RunOtherSourcesAsync(cancellationToken);
         var updates = RunUpdatesAsync(cancellationToken); // F4.15
@@ -1173,6 +1177,23 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         await SaveAsync(settings with { Toggles = toggles }, trusted: true, cancellationToken) // the switch is the one change here, made on a fresh read
             .ConfigureAwait(false);
     }
+
+    /// <summary>The APRS-IS switch off as the engine starts, with <see cref="EngineOptions.AprsIsOnStart"/> off (#415).</summary>
+    private async Task TurnAprsIsOffAsync(CancellationToken cancellationToken)
+    {
+        var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+        if (settings.Profiles.Count > 0 && settings.EffectiveToggles.AprsIs)
+        {
+            await SetToggleAsync(Toggle.AprsIs, false, cancellationToken).ConfigureAwait(false);
+            LogAprsIsOffOnStart(_logger);
+        }
+    }
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "APRS-IS is off as the engine starts (Engine:AprsIsOnStart); turn it on with its switch"
+    )]
+    private static partial void LogAprsIsOffOnStart(ILogger logger);
 
     /// <summary>
     /// Why the station couldn't transmit now, leaving the switch aside (docs/features/F2.1-own-station.md, behavior
