@@ -375,6 +375,14 @@
             >
               <StackPanel Spacing="8">
                 <TextBlock Text="{Binding Sources.EditTitle}" FontWeight="SemiBold" />
+                <!-- Set in the gateway's configuration file (#424): changed there, not here. -->
+                <TextBlock
+                  x:Name="SourceConfiguredNote"
+                  Text="{l:T Settings.Sources.Configured}"
+                  IsVisible="{Binding Sources.EditConfigured}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  TextWrapping="Wrap"
+                />
                 <ItemsControl ItemsSource="{Binding Sources.Kinds}" IsEnabled="{Binding Sources.CanPickKind}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="s:SourceKindChoice">
@@ -566,18 +574,21 @@
                     <TextBlock Text="{l:T Settings.Sources.GpsLink}" Foreground="{DynamicResource Brush.TextMuted}" />
                     <RadioButton
                       x:Name="GpsSerialBox"
+                      IsEnabled="{Binding !Sources.EditConfigured}"
                       GroupName="GpsLink"
                       Content="{l:T Settings.Sources.GpsLink.Serial}"
                       IsChecked="{Binding Sources.GpsSerial}"
                     />
                     <RadioButton
                       x:Name="GpsTcpBox"
+                      IsEnabled="{Binding !Sources.EditConfigured}"
                       GroupName="GpsLink"
                       Content="{l:T Settings.Sources.GpsLink.Tcp}"
                       IsChecked="{Binding Sources.GpsTcp}"
                     />
                     <RadioButton
                       x:Name="GpsGpsdBox"
+                      IsEnabled="{Binding !Sources.EditConfigured}"
                       GroupName="GpsLink"
                       Content="{l:T Settings.Sources.GpsLink.Gpsd}"
                       IsChecked="{Binding Sources.GpsGpsd}"
@@ -592,6 +603,7 @@
                     <TextBlock Text="{l:T Settings.Sources.Host}" Foreground="{DynamicResource Brush.TextMuted}" />
                     <TextBox
                       x:Name="SourceHostBox"
+                      IsEnabled="{Binding !Sources.EditConfigured}"
                       Text="{Binding Sources.EditHost}"
                       PlaceholderText="{l:T Settings.Sources.HostExample}"
                       AutomationProperties.Name="{l:T Settings.Sources.Host}"
@@ -606,6 +618,7 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                       <ComboBox
                         x:Name="SerialPortBox"
+                        IsEnabled="{Binding !Sources.EditConfigured}"
                         IsEditable="True"
                         ItemsSource="{Binding Sources.SerialPorts}"
                         Text="{Binding Sources.EditSerialPort}"
@@ -637,6 +650,7 @@
                       <TextBlock Text="{l:T Settings.Sources.Port}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <TextBox
                         x:Name="SourcePortBox"
+                        IsEnabled="{Binding !Sources.EditConfigured}"
                         Text="{Binding Sources.EditPort}"
                         PlaceholderText="{Binding Sources.PortPlaceholder}"
                         AutomationProperties.Name="{l:T Settings.Sources.Port}"
@@ -648,6 +662,7 @@
                       <TextBlock Text="{l:T Settings.Sources.Baud}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <ComboBox
                         x:Name="SerialBaudBox"
+                        IsEnabled="{Binding !Sources.EditConfigured}"
                         IsEditable="True"
                         ItemsSource="{x:Static s:SourcesSectionViewModel.Bauds}"
                         Text="{Binding Sources.EditBaud}"
@@ -661,6 +676,7 @@
                       <TextBlock Text="{l:T Settings.Sources.TncPort}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <TextBox
                         x:Name="SourceTncPortBox"
+                        IsEnabled="{Binding !Sources.EditConfigured}"
                         Text="{Binding Sources.EditTncPort}"
                         PlaceholderText="0"
                         AutomationProperties.Name="{l:T Settings.Sources.TncPort}"
@@ -785,6 +801,7 @@
                 <TextBlock Text="{l:T Settings.Sources.Name}" Foreground="{DynamicResource Brush.TextMuted}" />
                 <TextBox
                   x:Name="SourceNameBox"
+                  IsEnabled="{Binding !Sources.EditConfigured}"
                   Text="{Binding Sources.EditName}"
                   PlaceholderText="{l:T Settings.Sources.NameDefault}"
                   AutomationProperties.Name="{l:T Settings.Sources.Name}"

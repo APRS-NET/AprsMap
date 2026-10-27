@@ -331,18 +331,20 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             CheckLogFolder(settings, old);
             var saved = KeepSecrets(
                 ForgetDeletedSources(
-                    trusted
-                        ? settings with
-                        {
-                            ReadOnly = false,
-                        }
-                        : KeepUpdateState(
-                            KeepDeviceListState(
-                                KeepObjects(KeepTransmitState(KeepToggles(settings, old), old), old),
+                    WithConfiguredSources(
+                        trusted
+                            ? settings with
+                            {
+                                ReadOnly = false,
+                            }
+                            : KeepUpdateState(
+                                KeepDeviceListState(
+                                    KeepObjects(KeepTransmitState(KeepToggles(settings, old), old), old),
+                                    old
+                                ),
                                 old
-                            ),
-                            old
-                        )
+                            )
+                    )
                 ),
                 old
             );
@@ -2619,6 +2621,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 await _settingsStore.SaveAsync(settings, cancellationToken).ConfigureAwait(false);
             }
         }
+        else if (WithConfiguredSources(settings) is var configured && configured != settings)
+        {
+            // The configuration's devices win on every start (#424): a fixed baud or a moved TNC takes effect.
+            settings = configured;
+            await _settingsStore.SaveAsync(settings, cancellationToken).ConfigureAwait(false);
+        }
         lock (_gate)
         {
             _settings = settings;
@@ -2670,7 +2678,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         if (_options.Kiss.Host is { Length: > 0 } host)
         {
             // A TNC from the environment, for a headless first start (F1.26 behavior 14).
-            var kiss = SourceSettings.KissTcpFor(host.Trim(), _options.Kiss.Port, _options.Kiss.TncPort);
+            var kiss = SourceSettings.KissTcpFor(host.Trim(), _options.Kiss.Port, _options.Kiss.TncPort) with
+            {
+                Id = ConfiguredKissId,
+                Configured = true,
+            };
             sources.Add(
                 string.IsNullOrWhiteSpace(_options.Kiss.Name) ? kiss : kiss with { Name = _options.Kiss.Name.Trim() }
             );
@@ -2682,7 +2694,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 serialPort.Trim(),
                 _options.KissSerial.Baud,
                 _options.KissSerial.TncPort
-            );
+            ) with
+            {
+                Id = ConfiguredKissSerialId,
+                Configured = true,
+            };
             sources.Add(
                 string.IsNullOrWhiteSpace(_options.KissSerial.Name)
                     ? serial
@@ -2694,7 +2710,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
         if (_options.Gpsd.Host is { Length: > 0 } gpsdHost)
         {
-            var gpsd = SourceSettings.GpsNetworkFor(GpsLink.Gpsd, gpsdHost.Trim(), _options.Gpsd.Port);
+            var gpsd = SourceSettings.GpsNetworkFor(GpsLink.Gpsd, gpsdHost.Trim(), _options.Gpsd.Port) with
+            {
+                Id = ConfiguredGpsdId,
+                Configured = true,
+            };
             sources.Add(
                 string.IsNullOrWhiteSpace(_options.Gpsd.Name) ? gpsd : gpsd with { Name = _options.Gpsd.Name.Trim() }
             );

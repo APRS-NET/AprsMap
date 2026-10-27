@@ -34,6 +34,23 @@ public class SourcesSectionTests
         Assert.All(section.Kinds, k => Assert.True(k.IsAvailable)); // GPS too (docs/features/F3.6-gps.md)
     }
 
+    [Fact]
+    public void ASourceSetInTheGatewaysConfigurationSaysSoAndItsConnectionCantBeEdited()
+    {
+        // #424: gateway.toml's [engine.kiss_serial] wins on every start.
+        var tnc = SourceSettings.KissSerialFor("/dev/ttyUSB0", 1200) with
+        {
+            Name = "USB TNC-X",
+            Configured = true,
+        };
+        var (section, _) = Create(BothOnRotate() with { Sources = [FakeEngine.Rotate, Euro, tnc] });
+
+        section.Edit(section.Rows[^1]);
+        Assert.True(section.EditConfigured);
+        section.Edit(section.Rows[1]);
+        Assert.False(section.EditConfigured);
+    }
+
     /// <summary>First run's result: one licensed profile and no sources yet.</summary>
     private static AppSettings LicensedWithNoSources() =>
         new([new("home", "NZ0P-10", "NZ0P-10", -1, [], null, null, Licensed: true)], "home", UnitSettings.Metric);

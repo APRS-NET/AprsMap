@@ -32,13 +32,14 @@ server = "rotate.aprs2.net:14580"
 # Not first-run only: false starts with APRS-IS off every time, to connect it by hand with its switch.
 # aprs_is_on_start = true
 
-# The TNC on USB, at first run. Use its /dev/serial/by-id/ name so it survives being plugged into another port.
+# The TNC on USB. Unlike the station above, its port, baud, radio port and name come from here on every start: edit
+# them and restart to fix them. Use its /dev/serial/by-id/ name so it survives being plugged into another port.
 [engine.kiss_serial]
 port = "/dev/serial/by-id/usb-REPLACE-WITH-YOUR-TNC"
 baud = 9600
 name = "USB TNC"
 
-# gpsd on this PC, at first run, for the station's position.
+# gpsd on this PC, for the station's position; like the TNC, set from here on every start.
 [engine.gpsd]
 host = "localhost"
 port = 2947

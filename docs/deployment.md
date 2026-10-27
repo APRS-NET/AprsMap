@@ -27,9 +27,9 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | First-run passcode (`-1` = receive-only) | `Engine__Passcode` | `-1` |
 | First-run server | `Engine__Server` | `rotate.aprs2.net:14580` |
 | First-run server-side filter | `Engine__Filter` | none |
-| First-run KISS over TCP source: host, port, radio port, name (with `Engine__Server` empty, a TNC-only station) | `Engine__Kiss__Host`, `__Port`, `__TncPort`, `__Name` | none |
-| First-run USB TNC source (KISS over serial): port, baud, radio port, name | `Engine__KissSerial__Port`, `__Baud`, `__TncPort`, `__Name` | none (baud `9600`) |
-| First-run gpsd source: host, port, name | `Engine__Gpsd__Host`, `__Port`, `__Name` | none (port `2947`) |
+| KISS over TCP source: host, port, radio port, name (with `Engine__Server` empty, a TNC-only station). Set from here on every start, not only the first | `Engine__Kiss__Host`, `__Port`, `__TncPort`, `__Name` | none |
+| USB TNC source (KISS over serial): port, baud, radio port, name. Set from here on every start | `Engine__KissSerial__Port`, `__Baud`, `__TncPort`, `__Name` | none (baud `9600`) |
+| gpsd source: host, port, name. Set from here on every start | `Engine__Gpsd__Host`, `__Port`, `__Name` | none (port `2947`) |
 | Receive only for good: nothing is sent, and APRS-IS logs in unverified | `Engine__ReceiveOnly` | `false` |
 | Start with the APRS-IS switch off every time, to connect it by hand (it otherwise keeps its last state) | `Engine__AprsIsOnStart` | `true` |
 | A second port where an operator signs in; the main port then never offers sign-in | `Gateway__OperatorPort` | none |
@@ -259,7 +259,8 @@ journalctl -u aprsmap-gateway -f
 The script installs the gateway in `/opt/aprsmap-gateway`, creates the `aprsmap` user (in `dialout`, for the TNC),
 installs `aprsmap-gateway.service`, the updater (below) and a commented `/etc/aprsmap/gateway.toml` (never over one you
 already have), and enables the service. On a first install it doesn't start it: the first start stores the station
-(callsign, sources) from the file, and after that the admin web app changes them. Run the script again with a newer
+(callsign, passcode, server) from the file, and after that the admin web app changes them. The TNC and gpsd follow the
+file on every start. Run the script again with a newer
 tarball to update; it keeps the file and the data in `/var/lib/aprsmap`, and restarts the service.
 
 The TOML file holds the same settings as the table above: each table is a section and `snake_case` keys are the
@@ -274,7 +275,7 @@ operator_listen = "127.0.0.1:8081" # the admin app: only on this PC; 0.0.0.0:808
 
 [engine]
 settings_folder = "/var/lib/aprsmap"
-callsign = "N0CALL-10"             # first run only, as are the sources below
+callsign = "N0CALL-10"             # first run only; the devices below are set from here on every start
 
 [engine.kiss_serial]
 port = "/dev/serial/by-id/usb-Silicon_Labs_CP2102-if00-port0"
