@@ -1922,6 +1922,14 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Auth.SignInMenu" xml:space="preserve">
     <value>Sign in…</value>
   </data>
+  <data name="Auth.SignInButton" xml:space="preserve">
+    <value>Sign in</value>
+    <comment>The toolbar's button that opens the Sign in dialog.</comment>
+  </data>
+  <data name="Auth.ApiKeyShort" xml:space="preserve">
+    <value>API key</value>
+    <comment>On the toolbar, for an app let in by the gateway's API key instead of a person's name.</comment>
+  </data>
   <data name="Auth.SignOut" xml:space="preserve">
     <value>Sign out</value>
   </data>
@@ -2526,6 +2534,20 @@ In a Docker container:
   </data>
   <data name="Connection.Test.VersionsDiffer" xml:space="preserve">
     <value>Its version differs from this app's ({app}), so some features may be missing on one side.</value>
+  </data>
+  <data name="Connection.Bar.Viewing" xml:space="preserve">
+    <value>Viewing {gateway}</value>
+    <comment>Status bar, the desktop showing a gateway without its API key. gateway: its address, such as pi.local:8081.</comment>
+  </data>
+  <data name="Connection.Bar.Operator" xml:space="preserve">
+    <value>{gateway} · operator</value>
+    <comment>Status bar, the desktop as a gateway's operator with its API key.</comment>
+  </data>
+  <data name="Connection.Bar.KeyRefused" xml:space="preserve">
+    <value>The gateway refused the API key, so this app only watches. Open Settings › Connection to test it.</value>
+  </data>
+  <data name="Connection.Bar.KeyNeedsHttps" xml:space="preserve">
+    <value>The gateway takes the API key only over https:// or from its own computer, so this app only watches. Open Settings › Connection for how to reach it.</value>
   </data>
   <data name="Connection.Status.ThisComputer" xml:space="preserve">
     <value>Now showing this computer's own station.</value>
