@@ -25,6 +25,12 @@ internal static partial class OperatorSignIn
     /// <summary>The session cookie: <c>__Host-</c> prefixed, so it's Secure, for this host only and the whole path.</summary>
     public static readonly string CookieName = "__Host-" + Brand.Slug + "-session";
 
+    /// <summary>
+    /// The session cookie when sign-in over plain HTTP is allowed (#414): a browser keeps a <c>__Host-</c> cookie only
+    /// over HTTPS, so this one has no prefix; it's still for this host only, the whole path, and HttpOnly.
+    /// </summary>
+    public static readonly string UnencryptedCookieName = Brand.Slug + "-session";
+
     /// <summary>The claim holding the session's id.</summary>
     public const string SessionClaim = "sid";
 
@@ -42,6 +48,19 @@ internal static partial class OperatorSignIn
         services.AddSingleton<ApiKeyGate>();
         services.AddSingleton<OperatorFilter>();
         services.AddSingleton<HomeShields>();
+        // Sign-in over plain HTTP, when allowed (#414): a cookie the browser keeps without HTTPS.
+        services
+            .AddOptions<CookieAuthenticationOptions>(CookieAuthenticationDefaults.AuthenticationScheme)
+            .PostConfigure<IOptions<GatewayOptions>>(
+                (o, gateway) =>
+                {
+                    if (gateway.Value.AllowInsecureSignIn)
+                    {
+                        o.Cookie.Name = UnencryptedCookieName;
+                        o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                    }
+                }
+            );
         services.TryAddTimeProvider();
         // The cookie's keys outlive a restart, in the data folder (behavior 5).
         services
@@ -124,6 +143,10 @@ internal static partial class OperatorSignIn
         );
         app.UseAuthentication();
         var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AprsMap.Gateway");
+        if (options.CurrentValue.AllowInsecureSignIn)
+        {
+            LogInsecureSignIn(logger);
+        }
         if (app.Services.GetRequiredService<OperatorStore>().Any && options.CurrentValue.AllowSettingsChanges)
         {
             LogSettingsChangesIgnored(logger);
@@ -146,8 +169,15 @@ internal static partial class OperatorSignIn
     internal static bool IsOperatorPort(HttpContext context, GatewayOptions options) =>
         options.OperatorPort is not { } port || context.Connection.LocalPort == port;
 
-    /// <summary>Over HTTPS (directly or through a trusted proxy), or from the gateway's own host (behavior 8.1).</summary>
-    internal static bool IsSecureEnough(HttpContext context) =>
+    /// <summary>
+    /// Over HTTPS (directly or through a trusted proxy), or from the gateway's own host (behavior 8.1); or anywhere when
+    /// the gateway allows sign-in over plain HTTP (#414).
+    /// </summary>
+    internal static bool IsSecureEnough(HttpContext context, GatewayOptions options) =>
+        options.AllowInsecureSignIn || IsEncryptedOrLocal(context);
+
+    /// <summary>Over HTTPS, or from the gateway's own host: nothing crosses the network unencrypted.</summary>
+    internal static bool IsEncryptedOrLocal(HttpContext context) =>
         context.Request.IsHttps || context.Connection.RemoteIpAddress is { } address && IPAddress.IsLoopback(address);
 
     /// <summary>Maps <c>/auth/sign-in</c>, <c>/auth/sign-out</c> and <c>/auth/me</c>.</summary>
@@ -171,7 +201,7 @@ internal static partial class OperatorSignIn
         {
             return Refuse(StatusCodes.Status404NotFound, EngineErrorCodes.AuthNotOfferedHere, "No operator is set up.");
         }
-        if (!IsSecureEnough(context))
+        if (!IsSecureEnough(context, options.CurrentValue))
         {
             return Refuse(
                 StatusCodes.Status403Forbidden,
@@ -261,7 +291,17 @@ internal static partial class OperatorSignIn
         {
             return Results.Json(AuthInfo.Viewer, EngineJsonContext.Default.AuthInfo); // no sign-in here (F1.26 behavior 1)
         }
-        // An app with the API key (docs/features/F1.38-gateway-api-key.md): told whether the gateway took it.
+        // An app with the API key (docs/features/F1.38-gateway-api-key.md): told whether the gateway took it, and when
+        // it can't over plain HTTP from another computer, that that's why (#414), not that the key is wrong.
+        if (ApiKeyGate.KeyIn(context) is not null && !IsSecureEnough(context, options.CurrentValue))
+        {
+            _ = apiKey.Check(context); // logged as refused, as the hub's connection is
+            return Refuse(
+                StatusCodes.Status403Forbidden,
+                EngineErrorCodes.AuthNeedsHttps,
+                "The API key is accepted over HTTPS, or from the gateway's own computer."
+            );
+        }
         switch (apiKey.Check(context).Outcome)
         {
             case ApiKeyOutcome.Accepted:
@@ -276,16 +316,17 @@ internal static partial class OperatorSignIn
                     "The gateway refused this API key."
                 );
         }
-        var offered = operators.Any && IsSecureEnough(context);
+        var offered = operators.Any && IsSecureEnough(context, options.CurrentValue);
         var session = SessionId(context.User) is { } id ? sessions.Use(id) : null;
-        var needsHttps = operators.Any && !IsSecureEnough(context);
+        var needsHttps = operators.Any && !IsSecureEnough(context, options.CurrentValue);
         var info = session is null
             ? new AuthInfo(
                 false,
                 SignInOffered: offered,
                 NeedsHttps: needsHttps,
                 // Only where there's an admin port to set one up for, never to every viewer of a public gateway (#413).
-                NoOperator: !operators.Any && options.CurrentValue.OperatorPort is not null
+                NoOperator: !operators.Any && options.CurrentValue.OperatorPort is not null,
+                Unencrypted: offered && !IsEncryptedOrLocal(context)
             )
             : new AuthInfo(true, session.Name, session.ExpiresAt, offered, limiter.FailedToday);
         return Results.Json(info, EngineJsonContext.Default.AuthInfo);
@@ -293,6 +334,12 @@ internal static partial class OperatorSignIn
 
     private static IResult Refuse(int status, string code, string message, Dictionary<string, string>? args = null) =>
         Results.Json(new EngineError(code, message, args), EngineJsonContext.Default.EngineError, statusCode: status);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "Gateway:AllowInsecureSignIn is on: operators' passwords and the API key may cross the network unencrypted"
+    )]
+    private static partial void LogInsecureSignIn(ILogger logger);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

@@ -26,6 +26,10 @@ public sealed record SignInRequest(string Name, string Password);
 /// This is the gateway's operator port, but no operator is set up yet, so sign-in can't be offered: the dialog says how
 /// to set one up on the gateway's computer (#413).
 /// </param>
+/// <param name="Unencrypted">
+/// Sign-in is offered here over plain HTTP from another computer, because the gateway allows it (#414): the dialog warns
+/// that the password crosses the network unencrypted.
+/// </param>
 public sealed record AuthInfo(
     bool Operator,
     string? Name = null,
@@ -34,7 +38,8 @@ public sealed record AuthInfo(
     int FailedSignIns = 0,
     bool NeedsHttps = false,
     bool ApiKey = false,
-    bool NoOperator = false
+    bool NoOperator = false,
+    bool Unencrypted = false
 )
 {
     /// <summary>A viewer on a gateway that offers no sign-in.</summary>

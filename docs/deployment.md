@@ -37,6 +37,7 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | How much of the station's location viewers learn: `Exact`, `Grid` (its 4-character square) or `Hidden` | `Gateway__HomePrivacy` | `Grid` with an operator port, `Exact` without |
 | The page's title, beside the product name and on the browser tab | `Gateway__Title` | none |
 | Let browsers change settings and switch profiles, with no operator set up | `Gateway__AllowSettingsChanges` | `false` |
+| Let operators sign in, and apps use the API key, over plain HTTP from other computers (a trusted network only) | `Gateway__AllowInsecureSignIn` | `false` |
 | Operators set up in configuration: a name and a hash from `operator add` | `Gateway__Operators__0__Name`, `…__PasswordHash` | none (use `operators.json`) |
 | Other sites whose pages may use the hub and sign-in | `Gateway__AllowedOrigins__0`, `__1`… | none (the gateway's own only) |
 | Serve under a path, for a proxy that maps one to the gateway | `Gateway__PathBase` | none (the root) |

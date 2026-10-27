@@ -175,6 +175,20 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
     }
 
     [Fact]
+    public async Task OverPlainHttpFromAnotherComputerTheAppIsToldWhyNotThatTheKeyIsWrong()
+    {
+        var key = await SaveNewKeyAsync();
+
+        using var response = await MeAsync(key, scheme: "http"); // the test server's caller isn't loopback
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal(
+            EngineErrorCodes.AuthNeedsHttps,
+            (await response.Content.ReadFromJsonAsync(EngineJsonContext.Default.EngineError, Ct))!.Code
+        );
+    }
+
+    [Fact]
     public async Task ANewKeyRefusesTheOldOneAtItsNextCall()
     {
         var old = await SaveNewKeyAsync();

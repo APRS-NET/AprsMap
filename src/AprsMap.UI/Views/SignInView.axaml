@@ -35,6 +35,13 @@
           TextWrapping="Wrap"
           Foreground="{DynamicResource Brush.Warn}"
         />
+        <TextBlock
+          x:Name="SignInUnencrypted"
+          Text="{l:T Auth.Unencrypted}"
+          IsVisible="{Binding Unencrypted}"
+          TextWrapping="Wrap"
+          Foreground="{DynamicResource Brush.Warn}"
+        />
         <StackPanel Spacing="10" IsVisible="{Binding CanSignIn}">
           <TextBox
             x:Name="SignInName"

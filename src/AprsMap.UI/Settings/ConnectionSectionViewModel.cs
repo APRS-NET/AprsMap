@@ -156,6 +156,7 @@ public sealed partial class ConnectionSectionViewModel : ObservableObject
         {
             (null, _) => (_text["Connection.Status.ThisComputer"], false),
             (_, { Operator: true }) => (_text.Format("Connection.Status.Operator", address), false),
+            (_, { ApiKey: true, NeedsHttps: true }) => (_text.Format("Connection.Status.KeyNeedsHttps", address), true),
             (_, { ApiKey: true }) => (_text.Format("Connection.Status.KeyRefused", address), true),
             _ => (_text.Format("Connection.Status.Viewing", address), false),
         };
