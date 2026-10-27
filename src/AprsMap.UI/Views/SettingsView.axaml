@@ -38,9 +38,17 @@
     <Style Selector="TextBlock#DeviceListChecked.warn">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
     </Style>
-    <!-- Narrow windows: the sections become tabs across the top (set by code-behind). -->
+    <!-- The sections down the left; in a narrow window, tabs across the top (set by code-behind). The dock is set by
+         styles only: set on the list itself it would win over the narrow style (#440). -->
+    <Style Selector="ListBox#SectionList">
+      <Setter Property="DockPanel.Dock" Value="Left" />
+      <Setter Property="MinWidth" Value="180" />
+    </Style>
     <Style Selector="ListBox#SectionList.narrow">
       <Setter Property="DockPanel.Dock" Value="Top" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Hidden" />
+      <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
       <Setter Property="ItemsPanel">
         <ItemsPanelTemplate>
           <StackPanel Orientation="Horizontal" />
@@ -83,13 +91,11 @@
     <DockPanel>
       <ListBox
         x:Name="SectionList"
-        DockPanel.Dock="Left"
         ItemsSource="{Binding Sections}"
         SelectedItem="{Binding SelectedSection}"
         Background="{DynamicResource Brush.Surface}"
         BorderBrush="{DynamicResource Brush.Border}"
         BorderThickness="{DynamicResource Thickness.Border}"
-        MinWidth="180"
         AutomationProperties.Name="{Binding Title}"
       />
 
