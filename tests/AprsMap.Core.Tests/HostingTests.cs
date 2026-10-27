@@ -105,6 +105,40 @@ public class HostingTests
         Assert.False(File.Exists(Path.Combine(data.FullName, FileHistoryStore.FileName)));
     }
 
+    [Fact]
+    public async Task WithAprsIsOffOnStartTheSwitchIsTurnedOffBeforeConnecting()
+    {
+        // #415: APRS-IS only by hand.
+        var data = Directory.CreateTempSubdirectory("aprsmap-hosting-");
+        using var cleanup = new Cleanup(data);
+        var factory = new BlockingSourceFactory();
+        var store = InMemorySettingsStore.WithProfile();
+        var services = new ServiceCollection()
+            .AddLogging()
+            .AddSingleton<IPacketSourceFactory>(factory)
+            .AddSingleton<ISettingsStore>(store)
+            .AddSingleton<IMessageStore>(new InMemoryMessageStore())
+            .AddAprsMapEngine()
+            .Configure<EngineOptions>(o =>
+            {
+                o.DataFolder = data.FullName;
+                o.AprsIsOnStart = false;
+            });
+        await using var provider = services.BuildServiceProvider();
+        var hosted = provider.GetRequiredService<IHostedService>();
+
+        await hosted.StartAsync(TestContext.Current.CancellationToken);
+        await Task.Delay(TimeSpan.FromMilliseconds(200), TimeProvider.System, TestContext.Current.CancellationToken);
+        var settings = await provider
+            .GetRequiredService<IEngineService>()
+            .GetSettingsAsync(TestContext.Current.CancellationToken);
+        await hosted.StopAsync(TestContext.Current.CancellationToken);
+
+        Assert.False(settings.EffectiveToggles.AprsIs);
+        Assert.False(factory.Created.Task.IsCompleted); // APRS-IS never opened
+        Assert.False((await store.LoadAsync(TestContext.Current.CancellationToken))!.EffectiveToggles.AprsIs);
+    }
+
     private sealed class Cleanup(DirectoryInfo folder) : IDisposable
     {
         public void Dispose() => folder.Delete(recursive: true);
