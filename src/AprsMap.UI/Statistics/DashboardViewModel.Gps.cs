@@ -45,6 +45,14 @@ public sealed partial class DashboardViewModel
     /// <summary>A row an axis: now, average and worst.</summary>
     public ObservableCollection<ValueRow> GpsErrorRows { get; } = [];
 
+    /// <summary>Whether the GPS reported any dilution of precision in the range; a tile isn't shown for none (#430).</summary>
+    [ObservableProperty]
+    public partial bool GpsHasDilution { get; private set; }
+
+    /// <summary>Whether the GPS reported any error estimate in the range (#430).</summary>
+    [ObservableProperty]
+    public partial bool GpsHasAccuracy { get; private set; }
+
     /// <summary>The average signal of the satellites used and the wander while still.</summary>
     [ObservableProperty]
     public partial string? GpsSignalText { get; private set; }
@@ -74,7 +82,9 @@ public sealed partial class DashboardViewModel
             _text.Format("Dashboard.Percent", new Dictionary<string, object?> { ["percent"] = withFix }),
             _text.Format("Dashboard.Gps.Losses", new Dictionary<string, object?> { ["count"] = gps.Losses }),
             gps.FixShare,
-            range
+            range,
+            write: v =>
+                _text.Format("Dashboard.Percent", new Dictionary<string, object?> { ["percent"] = (int)Math.Round(v) })
         );
         Replace(
             GpsFixRows,
@@ -143,25 +153,32 @@ public sealed partial class DashboardViewModel
                 ),
             gps.SatellitesSeries,
             range,
-            "0.#"
+            "0.#",
+            v =>
+                _text.Format(
+                    "Dashboard.Gps.SatellitesPoint",
+                    new Dictionary<string, object?> { ["value"] = Decimal(v) }
+                )
         );
         var mostUsed = gps.Constellations.Count > 0 ? gps.Constellations.Max(c => c.AverageUsed ?? 0) : 0;
         Replace(
             GpsSystemRows,
-            gps.Constellations.Select(c => new CountRow(
-                _text[$"Gps.System.{c.System}"],
-                _text.Format(
-                    "Dashboard.Gps.SystemRow",
-                    new Dictionary<string, object?>
-                    {
-                        ["used"] = c.UsedNow,
-                        ["inView"] = c.InViewNow,
-                        ["average"] = Decimal(c.AverageUsed),
-                    }
-                ),
-                mostUsed > 0 ? (c.AverageUsed ?? 0) / mostUsed : 0,
-                null
-            ))
+            // A system the receiver never reported a satellite of isn't listed (#430).
+            gps.Constellations.Where(c => c.InViewNow > 0 || c.UsedNow > 0 || c.AverageUsed > 0)
+                .Select(c => new CountRow(
+                    _text[$"Gps.System.{c.System}"],
+                    _text.Format(
+                        "Dashboard.Gps.SystemRow",
+                        new Dictionary<string, object?>
+                        {
+                            ["used"] = c.UsedNow,
+                            ["inView"] = c.InViewNow,
+                            ["average"] = Decimal(c.AverageUsed),
+                        }
+                    ),
+                    mostUsed > 0 ? (c.AverageUsed ?? 0) / mostUsed : 0,
+                    null
+                ))
         );
 
         var hdop = gps.Dilutions.FirstOrDefault(d => d.Key == "hdop")?.Stat;
@@ -174,14 +191,18 @@ public sealed partial class DashboardViewModel
             _text["Gps.DopHint"],
             gps.HdopSeries,
             range,
-            "0.0"
+            "0.0",
+            v =>
+                _text.Format(
+                    "Dashboard.Gps.HdopPoint",
+                    new Dictionary<string, object?> { ["value"] = Decimal(v, "0.0") }
+                )
         );
+        GpsHasDilution = gps.Dilutions.Any(d => Reported(d.Stat));
         Replace(
             GpsDilutionRows,
-            gps.Dilutions.Select(d => new ValueRow(
-                _text[$"Dashboard.Gps.Dop.{d.Key}"],
-                StatRow(d.Stat, v => Decimal(v, "0.0"))
-            ))
+            gps.Dilutions.Where(d => Reported(d.Stat))
+                .Select(d => new ValueRow(_text[$"Dashboard.Gps.Dop.{d.Key}"], StatRow(d.Stat, v => Decimal(v, "0.0"))))
         );
 
         var feet = units.Altitude == AltitudeUnit.Feet;
@@ -210,11 +231,14 @@ public sealed partial class DashboardViewModel
                 ),
             ],
             range,
-            "0.0"
+            "0.0",
+            v => Length(feet ? AprsUnits.Convert(v, LengthUnit.Feet, LengthUnit.Meters) : v) // the series is in its unit
         );
+        GpsHasAccuracy = gps.Errors.Any(e => Reported(e.Stat));
         Replace(
             GpsErrorRows,
-            gps.Errors.Select(e => new ValueRow(_text[$"Dashboard.Gps.Error.{e.Key}"], StatRow(e.Stat, Length)))
+            gps.Errors.Where(e => Reported(e.Stat))
+                .Select(e => new ValueRow(_text[$"Dashboard.Gps.Error.{e.Key}"], StatRow(e.Stat, Length)))
         );
         GpsSignalText = gps.Signal.Average is { } signal
             ? _text.Format("Dashboard.Gps.Signal", new Dictionary<string, object?> { ["value"] = Decimal(signal, "0") })
@@ -232,6 +256,10 @@ public sealed partial class DashboardViewModel
     }
 
     private string NoValue => _text["Dashboard.Gps.NoValue"];
+
+    /// <summary>Whether the receiver reported the value at all in the range: one it never sends is left out (#430).</summary>
+    private static bool Reported(DashboardStat stat) =>
+        stat.Now is not null || stat.Average is not null || stat.Highest is not null || stat.Lowest is not null;
 
     /// <summary>"now · average · worst" for a row; the worst is the highest, since lower is better for each.</summary>
     private string StatRow(DashboardStat stat, Func<double?, string> write) =>
