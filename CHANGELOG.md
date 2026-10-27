@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.3...v0.7.0-alpha.4) (2026-10-27)
+
+
+### Bug Fixes
+
+* **deps:** APRS.NET 0.7.0-alpha.3 ([e726352](https://github.com/APRS-NET/AprsMap/commit/e72635240a2e71874c87059bc27f90f236b2683e))
+* **web:** a usable phone layout: the map, a two-line header, one row of tabs, and Settings full width ([dd99840](https://github.com/APRS-NET/AprsMap/commit/dd998405b9801ee42348dd766ad0c569a6268638)), closes [#440](https://github.com/APRS-NET/AprsMap/issues/440)
+
 ## [0.7.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.2...v0.7.0-alpha.3) (2026-10-27)
 
 
