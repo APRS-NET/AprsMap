@@ -43,6 +43,11 @@ namespace AprsMap.Contracts;
 /// For TNC text output (<see cref="SourceKind.AprsTextSerial"/>): whether the radio's GPS sentences place the station
 /// (docs/features/F3.13-tnc-gps.md); null for <see cref="Contracts.TncGps.Auto"/>.
 /// </param>
+/// <param name="Configured">
+/// Its connection is set in the gateway's configuration (#424): <c>[engine.kiss_serial]</c>, <c>[engine.gpsd]</c> or
+/// <c>[engine.kiss]</c> in <c>gateway.toml</c>. The port, baud, host, radio port and name come from there on every start
+/// and can't be changed in the app; the rest of the source can.
+/// </param>
 public sealed record SourceSettings(
     string Id,
     string Name,
@@ -64,7 +69,8 @@ public sealed record SourceSettings(
     GpsLink? GpsLink = null,
     TncGps? TncGps = null,
     DigipeatMode? Digipeat = null,
-    string? DigipeatAliases = null
+    string? DigipeatAliases = null,
+    bool Configured = false
 )
 {
     /// <summary>The radio's GPS choice in force: only TNC text output has one (F3.13 behavior 1).</summary>

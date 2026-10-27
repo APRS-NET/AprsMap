@@ -683,6 +683,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     private void Add()
     {
         _editingId = null;
+        EditConfigured = false; // a new source is the app's
         EditTitle = _text["Settings.Sources.Add"];
         EditName =
             EditServer =
@@ -721,9 +722,17 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditKind = kind;
     }
 
+    /// <summary>
+    /// Whether the source being edited is set in the gateway's configuration file (#424): its connection and name show
+    /// but can't be changed here.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool EditConfigured { get; private set; }
+
     internal void Edit(SourceRow row)
     {
         _editingId = row.Source.Id;
+        EditConfigured = row.Source.Configured;
         EditTitle = _text.Format(
             "Settings.Sources.EditNamed",
             new Dictionary<string, object?> { ["source"] = row.Name }

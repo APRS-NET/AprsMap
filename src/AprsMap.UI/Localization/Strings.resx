@@ -229,6 +229,10 @@
     <value>Gating nothing now: {reason}</value>
     <comment>reason: why, such as Transmit being off.</comment>
   </data>
+  <data name="Settings.Sources.Configured" xml:space="preserve">
+    <value>Its connection and name are set in the gateway's configuration file (gateway.toml). Change them there and restart the gateway.</value>
+    <comment>gateway.toml is a file name; keep it.</comment>
+  </data>
   <data name="Settings.Sources.Name" xml:space="preserve">
     <value>Name</value>
   </data>
