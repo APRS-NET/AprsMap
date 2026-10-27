@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.2...v0.7.0-alpha.3) (2026-10-27)
+
+
+### Features
+
+* **dashboard:** hide GPS values a receiver never reports; units in the plot readout ([3ef2b8c](https://github.com/APRS-NET/AprsMap/commit/3ef2b8c415f6a8e988bb32e435c8bd4bf7a9161c)), closes [#430](https://github.com/APRS-NET/AprsMap/issues/430)
+* **desktop:** the status bar says which gateway the app shows ([2aeb091](https://github.com/APRS-NET/AprsMap/commit/2aeb091007fbdcadc7a2797d40c9a87a82ce3e14)), closes [#428](https://github.com/APRS-NET/AprsMap/issues/428)
+* **gateway:** warn when gateway.toml's first-run station no longer matches ([a964972](https://github.com/APRS-NET/AprsMap/commit/a964972b8baabdc7fb8ea1a5ed3b987c8e6af27d)), closes [#429](https://github.com/APRS-NET/AprsMap/issues/429)
+* **web:** sign-in and the signed-in operator on the toolbar ([3b9362a](https://github.com/APRS-NET/AprsMap/commit/3b9362a8a02adec03de13ce74e6a62c902e63f36)), closes [#423](https://github.com/APRS-NET/AprsMap/issues/423)
+
+
+### Bug Fixes
+
+* **deps:** APRS.NET 0.7.0-alpha.2 ([ee6061a](https://github.com/APRS-NET/AprsMap/commit/ee6061a5db4a17248995c26f67963607c720dcf8))
+
 ## [0.7.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.1...v0.7.0-alpha.2) (2026-10-27)
 
 
