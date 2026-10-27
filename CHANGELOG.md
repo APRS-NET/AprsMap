@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.1...v0.7.0-alpha.2) (2026-10-27)
+
+
+### Features
+
+* **desktop:** test the gateway and API key before applying, with a version check ([17ba35a](https://github.com/APRS-NET/AprsMap/commit/17ba35aa473e3fe759753e164705a81afd130013)), closes [#419](https://github.com/APRS-NET/AprsMap/issues/419)
+* **engine:** start with APRS-IS off, as a setting ([5be5a5a](https://github.com/APRS-NET/AprsMap/commit/5be5a5a21b590f26062885d740395da94b55a44a)), closes [#415](https://github.com/APRS-NET/AprsMap/issues/415)
+* **gateway:** allow sign-in over plain HTTP, as an explicit setting ([a005207](https://github.com/APRS-NET/AprsMap/commit/a0052074c8a02cc28ced0a3d8011e4ba9737e8e2)), closes [#414](https://github.com/APRS-NET/AprsMap/issues/414)
+* **ui:** a clear button in search and filter boxes ([27f4c41](https://github.com/APRS-NET/AprsMap/commit/27f4c41e1ad83062a4fbbb29737edf01f83924ad)), closes [#420](https://github.com/APRS-NET/AprsMap/issues/420)
+
+
+### Bug Fixes
+
+* **gateway:** the admin web app says when no operator is set up ([ecdc108](https://github.com/APRS-NET/AprsMap/commit/ecdc1085f617377b22ae494d208de75e80f79380)), closes [#413](https://github.com/APRS-NET/AprsMap/issues/413)
+* **gateway:** the TOML's TNC and gpsd settings apply on every start, not only the first ([15a8ee7](https://github.com/APRS-NET/AprsMap/commit/15a8ee7c228d5596498e28e2084e2cc55e076ff5)), closes [#424](https://github.com/APRS-NET/AprsMap/issues/424)
+
 ## [0.7.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.6.0-alpha.5...v0.7.0-alpha.1) (2026-10-26)
 
 
