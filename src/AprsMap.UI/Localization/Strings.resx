@@ -1922,6 +1922,14 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Auth.SignInMenu" xml:space="preserve">
     <value>Sign in…</value>
   </data>
+  <data name="Auth.SignInButton" xml:space="preserve">
+    <value>Sign in</value>
+    <comment>The toolbar's button that opens the Sign in dialog.</comment>
+  </data>
+  <data name="Auth.ApiKeyShort" xml:space="preserve">
+    <value>API key</value>
+    <comment>On the toolbar, for an app let in by the gateway's API key instead of a person's name.</comment>
+  </data>
   <data name="Auth.SignOut" xml:space="preserve">
     <value>Sign out</value>
   </data>

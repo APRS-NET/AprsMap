@@ -14,7 +14,14 @@ public sealed partial class MainViewModel
 
     /// <summary>Who this viewer is on the gateway; null before it's known, and on the desktop.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsOperator), nameof(CanSignIn), nameof(IsSignedIn), nameof(SignedInText))]
+    [NotifyPropertyChangedFor(
+        nameof(IsOperator),
+        nameof(CanSignIn),
+        nameof(IsSignedIn),
+        nameof(SignedInText),
+        nameof(OperatorShortName),
+        nameof(CanSignOut)
+    )]
     public partial AuthInfo? Auth { get; private set; }
 
     /// <summary>Whether this viewer acts for the station: the desktop's user, or a signed-in gateway operator.</summary>
@@ -34,6 +41,15 @@ public sealed partial class MainViewModel
         !IsSignedIn ? null
         : Auth!.ApiKey ? _text["Auth.SignedInWithKey"] // the desktop as a gateway's client (F1.39 behavior 4)
         : _text.Format("Auth.SignedInAs", new Dictionary<string, object?> { ["name"] = Auth.Name });
+
+    /// <summary>The operator's name on the toolbar (#423): theirs, or "API key" for an app let in by the key.</summary>
+    public string? OperatorShortName =>
+        !IsSignedIn ? null
+        : Auth!.ApiKey ? _text["Auth.ApiKeyShort"]
+        : Auth.Name;
+
+    /// <summary>Whether Sign out is offered: a signed-in person, not an app with the key, which has no session.</summary>
+    public bool CanSignOut => IsSignedIn && Auth is { ApiKey: false };
 
     /// <summary>The Sign in dialog while it's open.</summary>
     [ObservableProperty]
