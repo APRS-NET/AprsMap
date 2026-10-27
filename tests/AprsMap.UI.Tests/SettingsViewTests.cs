@@ -103,10 +103,16 @@ public class SettingsViewTests
         await vm.OpenSettingsCommand.ExecuteAsync(null);
         await Settle();
 
-        Assert.Contains("narrow", Find<ListBox>(window, "SectionList").Classes);
+        var list = Find<ListBox>(window, "SectionList");
+        Assert.Contains("narrow", list.Classes);
+        // Across the top, the content full width below it, not wedged into the left column (#440).
+        Assert.Equal(Avalonia.Controls.Dock.Top, DockPanel.GetDock(list));
+        Assert.True(list.Bounds.Height < 100, $"the tabs are {list.Bounds.Height} high");
+        Assert.True(Find<ScrollViewer>(window, "SectionScroll").Bounds.Width > 500);
         window.Width = 1100;
         await Settle();
-        Assert.DoesNotContain("narrow", Find<ListBox>(window, "SectionList").Classes);
+        Assert.DoesNotContain("narrow", list.Classes);
+        Assert.Equal(Avalonia.Controls.Dock.Left, DockPanel.GetDock(list));
         window.Close();
     }
 

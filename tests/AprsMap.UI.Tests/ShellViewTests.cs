@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+using AprsMap.Contracts;
 using AprsMap.UI.Localization;
 using AprsMap.UI.Shell;
 using AprsMap.UI.ViewModels;
@@ -236,6 +237,48 @@ public sealed class ShellViewTests
         Dispatcher.UIThread.RunJobs();
         Assert.False(view.IsNarrow);
         Assert.Contains(ShellViewModel.Dockables(vm.Shell.Layout), d => d.Id == PanelKinds.Packets);
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void OnAPhoneTheMapShowsTheHeaderIsTwoLinesAndTheTabsOneRow()
+    {
+        // #440: a 412 × 915 phone in touch mode.
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider())
+        {
+            SharedStation = true,
+            Map = new AprsMap.UI.Map.MapViewModel(null, null, new FakeTimeProvider()),
+        };
+        vm.Show(
+            engine.Status with
+            {
+                Title = "NZ0P V71A TNC",
+                Sources =
+                [
+                    new SourceStatus("rotate", "noam.aprs2.net", SourceKind.AprsIs, ConnectionState.Disconnected),
+                    new SourceStatus("tnc", "USB TNC-X", SourceKind.KissSerial, ConnectionState.Connected),
+                    new SourceStatus("gps", "gpsd", SourceKind.Gps, ConnectionState.Connected),
+                ],
+            }
+        );
+        var view = new MainView { DataContext = vm };
+        view.Classes.Add("touch");
+        var window = new Window
+        {
+            Content = view,
+            Width = 412,
+            Height = 915,
+        };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var tabs = window.GetVisualDescendants().OfType<TabControl>().Single(t => t.Name == "NarrowShell");
+        Assert.IsType<AprsMap.UI.Map.MapPanel>(((TabItem)tabs.Items[0]!).Content); // not the placeholder
+        var header = window.GetVisualDescendants().OfType<ScrollViewer>().Single(s => s.Name == "StatusScroll");
+        Assert.True(header.Bounds.Bottom < 140, $"the header ends at {header.Bounds.Bottom}");
+        var strip = tabs.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ItemsPresenter>().First();
+        Assert.True(strip.Bounds.Height < 60, $"the tabs are {strip.Bounds.Height} high"); // one row
         window.Close();
     }
 
