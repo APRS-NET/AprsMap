@@ -103,8 +103,43 @@ public sealed class GpsDashboardTests
         Assert.Equal("±3.6 m now · ±4.0 m average · ±14.0 m worst", vm.GpsErrorRows[1].Value);
         Assert.Equal("Average signal of the satellites used: 38 dB-Hz", vm.GpsSignalText);
         Assert.Equal("While still, 95 % of fixes within 3.2 m (3,300 fixes)", vm.GpsWanderText);
-        Assert.Equal("0.9 at 12:00 PM", vm.GpsDilution.PointLabels[^1].Replace('\u202f', ' '));
+        // The expanded plot's readout says what each value is (#430).
+        Assert.Equal("HDOP 0.9 at 12:00 PM", vm.GpsDilution.PointLabels[^1].Replace('\u202f', ' '));
+        Assert.Equal("12.4 satellites at 12:00 PM", vm.GpsSatellites.PointLabels[^1].Replace('\u202f', ' '));
+        Assert.Equal("±2.5 m at 12:00 PM", vm.GpsAccuracy.PointLabels[^1].Replace('\u202f', ' '));
+        Assert.Equal("92 % at 12:00 PM", vm.GpsFix.PointLabels[^1].Replace('\u202f', ' '));
         Assert.StartsWith("GPS fix, Last hour: 92 %.", vm.GpsFix.Spoken, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValuesTheReceiverNeverReportsAreLeftOut()
+    {
+        // #430: a receiver without error estimates, without VDOP, and listing Galileo with nothing in view.
+        var none = new DashboardStat(null, null, null, null);
+        var sample = Sample();
+        var vm = Create();
+
+        vm.Show(
+            sample with
+            {
+                Gps = sample.Gps! with
+                {
+                    Constellations =
+                    [
+                        new(GnssConstellation.Gps, 10, 12, 9.6),
+                        new(GnssConstellation.Galileo, 0, 0, null),
+                    ],
+                    Dilutions = [new("hdop", new DashboardStat(0.8, 0.9, 0.7, 2.5)), new("vdop", none)],
+                    Errors = [new("horizontal", none), new("vertical", none)],
+                },
+            }
+        );
+
+        Assert.Equal(["GPS"], vm.GpsSystemRows.Select(r => r.Name));
+        Assert.Single(vm.GpsDilutionRows);
+        Assert.True(vm.GpsHasDilution);
+        Assert.False(vm.GpsHasAccuracy);
+        Assert.Empty(vm.GpsErrorRows);
     }
 
     [Fact]
@@ -116,6 +151,7 @@ public sealed class GpsDashboardTests
 
         Assert.Equal("±6.9 ft", vm.GpsAccuracy.Number);
         Assert.Equal(8.2, vm.GpsAccuracy.Series[^1]!.Value, 1);
+        Assert.StartsWith("±8.2 ft at", vm.GpsAccuracy.PointLabels[^1], StringComparison.Ordinal);
         Assert.Equal("While still, 95 % of fixes within 10.5 ft (3,300 fixes)", vm.GpsWanderText);
     }
 

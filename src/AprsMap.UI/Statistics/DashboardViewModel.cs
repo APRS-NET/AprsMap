@@ -751,6 +751,9 @@ public sealed partial class Tile : ObservableObject
 
     private string _format = "#,0";
 
+    // Writes a point's value with its unit for the readout ("2.3 m", "9 satellites", #430); null writes the number.
+    private Func<double, string>? _write;
+
     /// <summary>Each point's time, for the expanded plot's time axis (behavior 6.1).</summary>
     [ObservableProperty]
     public partial IReadOnlyList<string> PointTimes { get; private set; } = [];
@@ -770,7 +773,7 @@ public sealed partial class Tile : ObservableObject
                         "Dashboard.Point",
                         new Dictionary<string, object?>
                         {
-                            ["value"] = value is { } v ? v.ToString(_format, text.Culture) : "–",
+                            ["value"] = value is { } v ? _write?.Invoke(v) ?? v.ToString(_format, text.Culture) : "–",
                             ["time"] = PointTimes[i],
                         }
                     )
@@ -812,7 +815,7 @@ public sealed partial class Tile : ObservableObject
 
     /// <summary>
     /// Sets the tile from a number already written and a series that may have gaps (F3.14 behavior 8), its points
-    /// written with <paramref name="format"/>.
+    /// written with <paramref name="format"/>, or with <paramref name="write"/> and its unit in the readout (#430).
     /// </summary>
     internal void Set(
         Localizer text,
@@ -821,9 +824,11 @@ public sealed partial class Tile : ObservableObject
         string? detail,
         IReadOnlyList<double?> series,
         string range,
-        string format = "#,0"
+        string format = "#,0",
+        Func<double, string>? write = null
     )
     {
+        _write = write;
         Title = title;
         Number = number;
         Detail = detail;
