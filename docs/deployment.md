@@ -324,7 +324,8 @@ The self-contained archives (`aprsmap-v<version>-<rid>.zip` or `.tar.gz`) are st
 The desktop app can show a gateway's station instead of running its own (docs/features/F1.39-desktop-gateway-client.md),
 for example on the PC that runs the gateway service, or on another one. In **Settings › Connection** choose **A
 gateway**, enter its admin address (`http://127.0.0.1:8081/` on the gateway's own PC) and, to transmit and change the
-gateway's settings, its API key (above); then **Apply and restart**. `--gateway URL` does the same for one run.
+gateway's settings, its API key (above); then **Test**, which checks the address, the key and the two versions
+without saving, and **Apply and restart**. `--gateway URL` does the same for one run.
 
 As a client the app runs no station of its own: no APRS-IS or TNC connection, GPS, beacons or history, and its web
 viewer is off. Everything is received and processed once, by the gateway; the map's tiles come through it too. Without

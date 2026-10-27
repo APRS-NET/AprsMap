@@ -30,6 +30,7 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(SignInRequest))]
 [JsonSerializable(typeof(AuthInfo))]
 [JsonSerializable(typeof(ApiKeyStatus))]
+[JsonSerializable(typeof(GatewayTest))]
 [JsonSerializable(typeof(CaptureQuery))]
 [JsonSerializable(typeof(CaptureView))]
 [JsonSerializable(typeof(CaptureExport))]

@@ -20,6 +20,9 @@
   </UserControl.KeyBindings>
   <UserControl.Styles>
     <!-- A device list check that failed (F4.16 behavior 9) reads in the warning colour. -->
+    <Style Selector="TextBlock#ConnectionTestResult.warn">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
     <Style Selector="TextBlock#ConnectionStatus.warn">
       <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
     </Style>
@@ -1918,12 +1921,27 @@
                 Content="{l:T Connection.ShowKey}"
               />
             </StackPanel>
-            <Button
-              x:Name="ConnectionApply"
-              Content="{l:T Connection.Apply}"
-              Command="{Binding Connection.ApplyCommand, FallbackValue={x:Null}}"
-              HorizontalAlignment="Left"
+            <TextBlock
+              x:Name="ConnectionTestResult"
+              Text="{Binding Connection.TestText, FallbackValue={x:Null}}"
+              IsVisible="{Binding Connection.TestText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              Classes.warn="{Binding Connection.TestNeedsAttention, FallbackValue=False}"
+              TextWrapping="Wrap"
+              AutomationProperties.LiveSetting="Polite"
             />
+            <WrapPanel ItemSpacing="8">
+              <Button
+                x:Name="ConnectionTest"
+                Content="{l:T Connection.Test}"
+                Command="{Binding Connection.TestCommand, FallbackValue={x:Null}}"
+                ToolTip.Tip="{l:T Connection.Test.Hint}"
+              />
+              <Button
+                x:Name="ConnectionApply"
+                Content="{l:T Connection.Apply}"
+                Command="{Binding Connection.ApplyCommand, FallbackValue={x:Null}}"
+              />
+            </WrapPanel>
             <TextBlock
               x:Name="ConnectionMessage"
               Text="{Binding Connection.Message, FallbackValue={x:Null}}"

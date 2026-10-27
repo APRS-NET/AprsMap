@@ -27,4 +27,7 @@ public interface IGatewayClientHost
 
     /// <summary>Closes the app and opens it again, into the saved choice; false when it can't open itself again.</summary>
     bool Restart();
+
+    /// <summary>Tests a gateway's address and API key without saving them (#419).</summary>
+    Task<ConnectionTestOutcome> TestAsync(Uri gateway, string? apiKey, CancellationToken cancellationToken = default);
 }

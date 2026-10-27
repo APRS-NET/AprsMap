@@ -2482,6 +2482,44 @@ In a Docker container:
   <data name="Connection.RestartToSwitch" xml:space="preserve">
     <value>Saved. Restart the app to switch.</value>
   </data>
+  <data name="Connection.Test" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="Connection.Test.Hint" xml:space="preserve">
+    <value>Test the gateway and key before applying.</value>
+  </data>
+  <data name="Connection.Test.Testing" xml:space="preserve">
+    <value>Testing…</value>
+  </data>
+  <data name="Connection.Test.Unreachable" xml:space="preserve">
+    <value>Nothing answered at {address}: {detail} Check the address, and that the gateway is running.</value>
+    <comment>detail: the system's reason, in English.</comment>
+  </data>
+  <data name="Connection.Test.NotAGateway" xml:space="preserve">
+    <value>{address} doesn't answer as a gateway this app can show, or the gateway is older than this test. Check the address, or update the gateway.</value>
+  </data>
+  <data name="Connection.Test.Incompatible" xml:space="preserve">
+    <value>The gateway runs {version}, which this app ({app}) can't work with. Update whichever of the two is older.</value>
+  </data>
+  <data name="Connection.Test.KeyRefused" xml:space="preserve">
+    <value>The gateway at {address} refused the API key. Copy it again from the gateway's Settings › Gateway access.</value>
+  </data>
+  <data name="Connection.Test.KeyNeedsHttps" xml:space="preserve">
+    <value>The gateway accepts the API key only over https://, or from its own computer. Reach it through an SSH tunnel (ssh -L 8081:127.0.0.1:8081 you@gateway, then http://127.0.0.1:8081/ here), or, on a network you trust, set allow_insecure_sign_in = true in the gateway's configuration.</value>
+    <comment>The ssh command and allow_insecure_sign_in are to type; keep them.</comment>
+  </data>
+  <data name="Connection.Test.NotAdminPort" xml:space="preserve">
+    <value>{address} is the gateway's public address, which doesn't take API keys. Use its admin address (port 8081 by default).</value>
+  </data>
+  <data name="Connection.Test.Operator" xml:space="preserve">
+    <value>Reached the gateway ({version}) with the API key: this app will be its operator.</value>
+  </data>
+  <data name="Connection.Test.WatchOnly" xml:space="preserve">
+    <value>Reached the gateway ({version}). Without an API key, this app will only watch.</value>
+  </data>
+  <data name="Connection.Test.VersionsDiffer" xml:space="preserve">
+    <value>Its version differs from this app's ({app}), so some features may be missing on one side.</value>
+  </data>
   <data name="Connection.Status.ThisComputer" xml:space="preserve">
     <value>Now showing this computer's own station.</value>
   </data>

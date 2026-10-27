@@ -36,6 +36,22 @@ public sealed class GatewayClientUiTests
             Restarts += canRestart ? 1 : 0;
             return canRestart;
         }
+
+        /// <summary>What the next test finds: a gateway like this app that takes the key, unless set.</summary>
+        public ConnectionTestOutcome Outcome { get; set; } =
+            new(new GatewayTest(Brand.Slug, "0.8.0-alpha.2", EngineHub.ContractVersion, ApiKeyCheck.Accepted));
+
+        public List<(Uri Gateway, string? Key)> Tests { get; } = [];
+
+        public Task<ConnectionTestOutcome> TestAsync(
+            Uri gateway,
+            string? apiKey,
+            CancellationToken cancellationToken = default
+        )
+        {
+            Tests.Add((gateway, apiKey));
+            return Task.FromResult(Outcome);
+        }
     }
 
     private sealed class Session(AuthInfo info) : IOperatorSession
@@ -79,6 +95,8 @@ public sealed class GatewayClientUiTests
 
         section.UseGateway = true;
         section.ApiKey = " the-key ";
+        Assert.False(section.ApplyCommand.CanExecute(null)); // not before a test (#419)
+        await section.TestCommand.ExecuteAsync(null);
         await section.ApplyCommand.ExecuteAsync(null);
 
         Assert.Equal(new GatewayClientSettings(Gateway, "the-key"), host.Settings);
@@ -111,9 +129,100 @@ public sealed class GatewayClientUiTests
         Assert.False(section.ApplyCommand.CanExecute(null));
 
         section.Address = "https://gateway.local/aprs/";
+        await section.TestCommand.ExecuteAsync(null);
         await section.ApplyCommand.ExecuteAsync(null);
         Assert.Equal(new Uri("https://gateway.local/aprs/"), host.Settings.Gateway);
         Assert.Equal("Saved. Restart the app to switch.", section.Message);
+    }
+
+    private static async Task<ConnectionSectionViewModel> TestedAsync(ConnectionTestOutcome outcome, string key = "k")
+    {
+        var host = new FakeHost(new GatewayClientSettings(), connected: null) { Outcome = outcome };
+        var section = new ConnectionSectionViewModel(host, English(), appVersion: "0.8.0-alpha.5+abc");
+        section.UseGateway = true;
+        section.ApiKey = key;
+        await section.TestCommand.ExecuteAsync(null);
+        return section;
+    }
+
+    private static ConnectionTestOutcome Answer(
+        ApiKeyCheck key,
+        string version = "0.8.0-alpha.2",
+        int? contract = null
+    ) => new(new GatewayTest(Brand.Slug, version, contract ?? EngineHub.ContractVersion, key));
+
+    [Fact]
+    public async Task ATestThatPassesAllowsApplyUntilTheFieldsChange()
+    {
+        var section = await TestedAsync(Answer(ApiKeyCheck.Accepted));
+
+        Assert.Equal(
+            "Reached the gateway (0.8.0-alpha.2) with the API key: this app will be its operator.",
+            section.TestText
+        );
+        Assert.False(section.TestFailed || section.TestWarned);
+        Assert.True(section.ApplyCommand.CanExecute(null));
+
+        section.ApiKey = "another";
+        Assert.Null(section.TestText);
+        Assert.False(section.ApplyCommand.CanExecute(null)); // test again
+    }
+
+    [Theory]
+    [InlineData(ApiKeyCheck.Refused, "refused the API key")]
+    [InlineData(ApiKeyCheck.NeedsHttps, "ssh -L 8081:127.0.0.1:8081")]
+    [InlineData(ApiKeyCheck.NotAdminPort, "public address, which doesn't take API keys")]
+    public async Task AKeyTheGatewayWontTakeStopsApplyAndSaysWhy(ApiKeyCheck key, string why)
+    {
+        var section = await TestedAsync(Answer(key));
+
+        Assert.True(section.TestFailed);
+        Assert.Contains(why, section.TestText, StringComparison.Ordinal);
+        Assert.False(section.ApplyCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task WithoutAKeyItMayApplyToWatch()
+    {
+        var section = await TestedAsync(Answer(ApiKeyCheck.None), key: "");
+
+        Assert.EndsWith("this app will only watch.", section.TestText, StringComparison.Ordinal);
+        Assert.True(section.ApplyCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task AnotherContractStopsApplyAndAnotherMinorVersionOnlyWarns()
+    {
+        var incompatible = await TestedAsync(Answer(ApiKeyCheck.Accepted, "0.9.0", EngineHub.ContractVersion + 1));
+        Assert.True(incompatible.TestFailed);
+        Assert.Equal(
+            "The gateway runs 0.9.0, which this app (0.8.0-alpha.5) can't work with. Update whichever of the two is older.",
+            incompatible.TestText
+        );
+        Assert.False(incompatible.ApplyCommand.CanExecute(null));
+
+        var older = await TestedAsync(Answer(ApiKeyCheck.Accepted, "0.7.3"));
+        Assert.True(older.TestWarned);
+        Assert.EndsWith(
+            "Its version differs from this app's (0.8.0-alpha.5), so some features may be missing on one side.",
+            older.TestText
+        );
+        Assert.True(older.ApplyCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task NothingAnsweringOrSomethingElseAnsweringStopsApply()
+    {
+        var down = await TestedAsync(new ConnectionTestOutcome(null, Unreachable: true, "Connection refused"));
+        Assert.StartsWith("Nothing answered at http://127.0.0.1:8081/: Connection refused", down.TestText);
+        Assert.False(down.ApplyCommand.CanExecute(null));
+
+        var other = await TestedAsync(new ConnectionTestOutcome(null));
+        Assert.Contains("doesn't answer as a gateway", other.TestText, StringComparison.Ordinal);
+        var stranger = await TestedAsync(
+            new(new GatewayTest("other", "1.0.0", EngineHub.ContractVersion, ApiKeyCheck.None))
+        );
+        Assert.True(stranger.TestFailed);
     }
 
     [Fact]

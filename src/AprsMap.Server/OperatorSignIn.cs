@@ -186,6 +186,7 @@ internal static partial class OperatorSignIn
         app.MapPost("/" + AuthPaths.SignIn, SignInAsync);
         app.MapPost("/" + AuthPaths.SignOut, SignOutAsync);
         app.MapGet("/" + AuthPaths.Me, Me);
+        app.MapGet("/" + AuthPaths.Test, Test);
     }
 
     private static async Task<IResult> SignInAsync(
@@ -330,6 +331,28 @@ internal static partial class OperatorSignIn
             )
             : new AuthInfo(true, session.Name, session.ExpiresAt, offered, limiter.FailedToday);
         return Results.Json(info, EngineJsonContext.Default.AuthInfo);
+    }
+
+    /// <summary>
+    /// A connection test (#419): this gateway's product, version and contract, and what it makes of the API key sent,
+    /// counted and logged as any key is. Saves nothing.
+    /// </summary>
+    private static IResult Test(HttpContext context, ApiKeyGate apiKey, IOptionsMonitor<GatewayOptions> options)
+    {
+        var key =
+            ApiKeyGate.KeyIn(context) is null ? ApiKeyCheck.None
+            : !IsOperatorPort(context, options.CurrentValue) ? ApiKeyCheck.NotAdminPort
+            : !IsSecureEnough(context, options.CurrentValue) ? ApiKeyCheck.NeedsHttps
+            : apiKey.Check(context).Outcome == ApiKeyOutcome.Accepted ? ApiKeyCheck.Accepted
+            : ApiKeyCheck.Refused;
+        if (key == ApiKeyCheck.NeedsHttps)
+        {
+            _ = apiKey.Check(context); // logged as refused, as the hub's connection is
+        }
+        return Results.Json(
+            new GatewayTest(Brand.Slug, Brand.Version.Split('+')[0], EngineHub.ContractVersion, key),
+            EngineJsonContext.Default.GatewayTest
+        );
     }
 
     private static IResult Refuse(int status, string code, string message, Dictionary<string, string>? args = null) =>

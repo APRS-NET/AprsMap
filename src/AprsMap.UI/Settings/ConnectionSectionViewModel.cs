@@ -16,13 +16,18 @@ public sealed partial class ConnectionSectionViewModel : ObservableObject
 {
     private readonly IGatewayClientHost _host;
     private readonly Localizer _text;
+    private readonly string _appVersion;
     private AuthInfo? _auth;
     private bool _showing;
 
-    internal ConnectionSectionViewModel(IGatewayClientHost host, Localizer text)
+    // What the last test passed for (#419): Apply needs a pass for exactly what's in the fields.
+    private GatewayClientSettings? _passed;
+
+    internal ConnectionSectionViewModel(IGatewayClientHost host, Localizer text, string? appVersion = null)
     {
         _host = host;
         _text = text;
+        _appVersion = (appVersion ?? Brand.Version).Split('+')[0];
         StatusText = string.Empty;
         Show();
     }
@@ -68,11 +73,42 @@ public sealed partial class ConnectionSectionViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ApplyCommand))]
     public partial bool Changed { get; private set; }
 
+    /// <summary>What the last test found (#419); null before one, or after an edit.</summary>
+    [ObservableProperty]
+    public partial string? TestText { get; private set; }
+
+    /// <summary>Whether the last test found something that stops Apply.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TestNeedsAttention))]
+    public partial bool TestFailed { get; private set; }
+
+    /// <summary>Whether the last test passed with a warning (versions differ).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TestNeedsAttention))]
+    public partial bool TestWarned { get; private set; }
+
+    /// <summary>A failure or a warning: the result in the warning colour.</summary>
+    public bool TestNeedsAttention => TestFailed || TestWarned;
+
+    /// <summary>Whether a test is on its way.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TestCommand))]
+    public partial bool Testing { get; private set; }
+
+    /// <summary>Whether Apply may save: a change, and for a gateway a test passed for exactly these fields (#419).</summary>
+    private bool CanApply => Changed && (!UseGateway || (Wanted() is { } wanted && wanted == _passed));
+
+    private bool CanTest() => UseGateway && !Testing;
+
     /// <summary>Said after Apply when the app can't restart itself.</summary>
     [ObservableProperty]
     public partial string? Message { get; private set; }
 
-    partial void OnUseGatewayChanged(bool value) => Edited();
+    partial void OnUseGatewayChanged(bool value)
+    {
+        Edited();
+        TestCommand.NotifyCanExecuteChanged();
+    }
 
     partial void OnAddressChanged(string value) => Edited();
 
@@ -82,7 +118,14 @@ public sealed partial class ConnectionSectionViewModel : ObservableObject
     {
         if (!_showing)
         {
-            Changed = Wanted() is { } wanted && wanted != _host.Settings;
+            var wanted = Wanted();
+            Changed = wanted is not null && wanted != _host.Settings;
+            if (wanted != _passed)
+            {
+                TestText = null; // an edit asks for a new test
+                TestFailed = TestWarned = false;
+            }
+            ApplyCommand.NotifyCanExecuteChanged();
         }
     }
 
@@ -106,8 +149,79 @@ public sealed partial class ConnectionSectionViewModel : ObservableObject
         return new GatewayClientSettings(address, key.Length > 0 ? key : null);
     }
 
+    /// <summary>
+    /// Tests the address and key without saving them (#419): whether a gateway answers, whether this app can work with
+    /// it, what it makes of the key, and whether their versions differ.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanTest))]
+    private async Task TestAsync()
+    {
+        if (Wanted() is not { Gateway: { } gateway } wanted)
+        {
+            return;
+        }
+        Testing = true;
+        TestText = _text["Connection.Test.Testing"];
+        TestFailed = TestWarned = false;
+        try
+        {
+            var outcome = await _host.TestAsync(gateway, wanted.ApiKey);
+            var (text, failed, warned) = Judge(gateway, outcome);
+            (TestText, TestFailed, TestWarned) = (text, failed, warned);
+            _passed = failed ? null : wanted;
+        }
+        finally
+        {
+            Testing = false;
+            ApplyCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    /// <summary>The verdict (#419): what the test found, whether it stops Apply, and whether it warns.</summary>
+    private (string Text, bool Failed, bool Warned) Judge(Uri gateway, ConnectionTestOutcome outcome)
+    {
+        var args = new Dictionary<string, object?>
+        {
+            ["address"] = gateway.ToString(),
+            ["detail"] = outcome.Detail ?? string.Empty,
+            ["version"] = outcome.Gateway?.Version ?? string.Empty,
+            ["app"] = _appVersion,
+        };
+        if (outcome.Unreachable)
+        {
+            return (_text.Format("Connection.Test.Unreachable", args), true, false);
+        }
+        if (outcome.Gateway is not { } answer || answer.Product != Brand.Slug)
+        {
+            return (_text.Format("Connection.Test.NotAGateway", args), true, false);
+        }
+        if (answer.ContractVersion != EngineHub.ContractVersion)
+        {
+            return (_text.Format("Connection.Test.Incompatible", args), true, false);
+        }
+        switch (answer.Key)
+        {
+            case ApiKeyCheck.Refused:
+                return (_text.Format("Connection.Test.KeyRefused", args), true, false);
+            case ApiKeyCheck.NeedsHttps:
+                return (_text.Format("Connection.Test.KeyNeedsHttps", args), true, false);
+            case ApiKeyCheck.NotAdminPort:
+                return (_text.Format("Connection.Test.NotAdminPort", args), true, false);
+        }
+        var reached = _text.Format(
+            answer.Key == ApiKeyCheck.Accepted ? "Connection.Test.Operator" : "Connection.Test.WatchOnly",
+            args
+        );
+        return MajorMinor(answer.Version) == MajorMinor(_appVersion)
+            ? (reached, false, false)
+            : (reached + " " + _text.Format("Connection.Test.VersionsDiffer", args), false, true);
+    }
+
+    /// <summary>"0.8" of "0.8.0-alpha.2".</summary>
+    private static string MajorMinor(string version) => string.Join('.', version.Split('-')[0].Split('.').Take(2));
+
     /// <summary>Saves the choice and restarts the app into it (behavior 1).</summary>
-    [RelayCommand(CanExecute = nameof(Changed))]
+    [RelayCommand(CanExecute = nameof(CanApply))]
     private async Task ApplyAsync()
     {
         if (Wanted() is not { } wanted)

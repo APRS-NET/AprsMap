@@ -68,6 +68,32 @@ public static class ApiKeys
     public const string Scheme = "Bearer";
 }
 
+/// <summary>What a gateway made of an app's API key, in a connection test (#419).</summary>
+public enum ApiKeyCheck
+{
+    /// <summary>No key was sent: the app would only watch.</summary>
+    None,
+
+    /// <summary>The gateway's key: the app would be its operator.</summary>
+    Accepted,
+
+    /// <summary>Not the gateway's key, or the address is waiting after wrong ones.</summary>
+    Refused,
+
+    /// <summary>Sent over plain HTTP from another computer, which the gateway doesn't allow (F1.38 behavior 5).</summary>
+    NeedsHttps,
+
+    /// <summary>Sent to an address that isn't the gateway's admin (operator) port, where keys aren't taken.</summary>
+    NotAdminPort,
+}
+
+/// <summary>A gateway's answer to a connection test (#419), from <see cref="AuthPaths.Test"/>.</summary>
+/// <param name="Product">The gateway's product slug, so an app can tell it's reached a gateway of its own kind.</param>
+/// <param name="Version">The gateway's build version, such as <c>0.8.0-alpha.2</c>.</param>
+/// <param name="ContractVersion">The hub contract's version; an app on another one can't connect (F1.14 behavior 8).</param>
+/// <param name="Key">What the gateway made of the key sent.</param>
+public sealed record GatewayTest(string Product, string Version, int ContractVersion, ApiKeyCheck Key);
+
 /// <summary>The gateway's sign-in endpoints, relative to its base (not the hub).</summary>
 public static class AuthPaths
 {
@@ -79,4 +105,7 @@ public static class AuthPaths
 
     /// <summary><c>GET</c>: this browser's <see cref="AuthInfo"/>.</summary>
     public const string Me = "auth/me";
+
+    /// <summary><c>GET</c>: a <see cref="GatewayTest"/> of the address and the API key sent, saving nothing (#419).</summary>
+    public const string Test = "auth/test";
 }
