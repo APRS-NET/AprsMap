@@ -122,6 +122,47 @@
               <MenuFlyout Placement="BottomEdgeAlignedRight" />
             </Button.Flyout>
           </Button>
+          <!-- Sign-in on a gateway, on the toolbar (#423): Sign in while it's offered; once signed in, the operator,
+               whose menu signs out. Nothing on the desktop or for a viewer who can never sign in. -->
+          <Button
+            x:Name="ToolbarSignIn"
+            DockPanel.Dock="Right"
+            IsVisible="{Binding CanSignIn}"
+            Content="{l:T Auth.SignInButton}"
+            Command="{Binding OpenSignInCommand}"
+            VerticalAlignment="Center"
+            Margin="0,0,8,0"
+          />
+          <Button
+            x:Name="ToolbarOperator"
+            DockPanel.Dock="Right"
+            IsVisible="{Binding IsSignedIn}"
+            ToolTip.Tip="{Binding SignedInText}"
+            AutomationProperties.Name="{Binding SignedInText}"
+            VerticalAlignment="Center"
+            Margin="0,0,8,0"
+          >
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <!-- A person: head and shoulders. -->
+              <PathIcon
+                Data="M 12,3 A 4,4 0 1 0 12,11 A 4,4 0 1 0 12,3 Z M 4,21 C 4,16.6 7.6,13.5 12,13.5 C 16.4,13.5 20,16.6 20,21 Z"
+                Width="{DynamicResource Icon.Small}"
+                Height="{DynamicResource Icon.Small}"
+              />
+              <TextBlock x:Name="ToolbarOperatorName" Text="{Binding OperatorShortName}" VerticalAlignment="Center" />
+            </StackPanel>
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedRight">
+                <MenuItem Header="{Binding SignedInText}" IsEnabled="False" />
+                <MenuItem
+                  x:Name="ToolbarSignOut"
+                  Header="{l:T Auth.SignOut}"
+                  Command="{Binding SignOutCommand}"
+                  IsVisible="{Binding CanSignOut}"
+                />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
           <!-- After a gateway upgrade: this page is older than the gateway (F1.14 behavior 8). -->
           <DockPanel x:Name="OutdatedBar" DockPanel.Dock="Bottom" IsVisible="{Binding IsOutdated}" Margin="0,6,0,0">
             <Button
@@ -577,6 +618,19 @@
               x:Name="StationCountLabel"
               Text="{Binding StationCountText}"
               Foreground="{DynamicResource Brush.TextMuted}"
+              VerticalAlignment="Center"
+            />
+            <!-- The desktop as a gateway's client (#428): which gateway, and as whom; opens Settings › Connection. -->
+            <Button
+              x:Name="GatewayClientNotice"
+              Classes="update-notice"
+              Classes.warn="{Binding GatewayClientWarn}"
+              Content="{Binding GatewayClientText}"
+              IsVisible="{Binding GatewayClientText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Command="{Binding OpenConnectionCommand}"
+              ToolTip.Tip="{Binding GatewayClientTip}"
+              AutomationProperties.HelpText="{Binding GatewayClientTip}"
+              Background="{x:Null}"
               VerticalAlignment="Center"
             />
             <!-- An update (F4.15 behavior 8): quiet, in the normal text colour, never a pop-up; a failed check is a
