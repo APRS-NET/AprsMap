@@ -221,6 +221,50 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
     }
 }
 
+/// <summary>
+/// The connection test (#419), on a gateway of its own: its wrong key counts toward the address's wait, which the other
+/// tests' sign-ins mustn't run into.
+/// </summary>
+public sealed class ConnectionTestTests(ApiKeyGatewayFactory gateway) : IClassFixture<ApiKeyGatewayFactory>
+{
+    private const int Admin = OperatorPortGatewayFactory.OperatorPort;
+
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    private async Task<GatewayTest> TestAsync(string? key, int port = Admin, string scheme = "https")
+    {
+        using var browser = gateway.Browser(scheme);
+        using var request = new HttpRequestMessage(HttpMethod.Get, AuthPaths.Test);
+        if (key is not null)
+        {
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
+        }
+        request.Headers.Add(LocalPortFilter.Header, port.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        using var response = await browser.SendAsync(request, Ct);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync(EngineJsonContext.Default.GatewayTest, Ct))!;
+    }
+
+    [Fact]
+    public async Task TheConnectionTestSaysTheVersionAndWhatTheKeyComesTo()
+    {
+        // #419: an app tests the address and key before saving them.
+        var key = ApiKeyStore.Generate();
+        gateway.Services.GetRequiredService<ApiKeyStore>().Save(key);
+
+        var accepted = await TestAsync(key);
+
+        Assert.Equal(Brand.Slug, accepted.Product);
+        Assert.Equal(EngineHub.ContractVersion, accepted.ContractVersion);
+        Assert.False(string.IsNullOrEmpty(accepted.Version));
+        Assert.Equal(ApiKeyCheck.Accepted, accepted.Key);
+        Assert.Equal(ApiKeyCheck.None, (await TestAsync(null)).Key);
+        Assert.Equal(ApiKeyCheck.Refused, (await TestAsync(ApiKeyStore.Generate())).Key);
+        Assert.Equal(ApiKeyCheck.NeedsHttps, (await TestAsync(key, scheme: "http")).Key);
+        Assert.Equal(ApiKeyCheck.NotAdminPort, (await TestAsync(key, port: 8080)).Key);
+    }
+}
+
 /// <summary>Guessing the key (F1.38 behavior 7), on a gateway of its own so the wait doesn't reach other tests.</summary>
 public sealed class ApiKeyGuessingTests(ApiKeyGatewayFactory gateway) : IClassFixture<ApiKeyGatewayFactory>
 {
