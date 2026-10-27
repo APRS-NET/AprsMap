@@ -23,7 +23,7 @@ home_privacy = "Grid"
 settings_folder = "/var/lib/aprsmap"
 
 # The first-run station: used only when the folder above has no settings yet. After that, change the station in
-# the admin web app. APRS-IS refuses N0CALL: use your own callsign.
+# the admin web app; the gateway logs a warning at start for each of these that no longer matches it. APRS-IS refuses N0CALL: use your own callsign.
 callsign = "N0CALL-10"
 # Your APRS-IS passcode, or -1 for a receive-only login.
 passcode = -1
