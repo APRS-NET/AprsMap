@@ -5,6 +5,7 @@
      Bulletins. -->
 <UserControl
   xmlns="https://github.com/avaloniaui"
+  xmlns:views="using:AprsMap.UI.Views"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:AprsMap.UI.ViewModels"
   xmlns:b="using:AprsMap.UI.Bulletins"
@@ -28,6 +29,7 @@
       />
       <TextBox
         x:Name="BulletinSearchBox"
+        views:Clearable.IsOn="True"
         Text="{Binding Search}"
         PlaceholderText="{l:T Bulletins.Search}"
         AutomationProperties.Name="{l:T Bulletins.Search}"
