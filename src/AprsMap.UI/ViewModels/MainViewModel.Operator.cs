@@ -20,7 +20,10 @@ public sealed partial class MainViewModel
         nameof(IsSignedIn),
         nameof(SignedInText),
         nameof(OperatorShortName),
-        nameof(CanSignOut)
+        nameof(CanSignOut),
+        nameof(GatewayClientText),
+        nameof(GatewayClientWarn),
+        nameof(GatewayClientTip)
     )]
     public partial AuthInfo? Auth { get; private set; }
 
@@ -50,6 +53,32 @@ public sealed partial class MainViewModel
 
     /// <summary>Whether Sign out is offered: a signed-in person, not an app with the key, which has no session.</summary>
     public bool CanSignOut => IsSignedIn && Auth is { ApiKey: false };
+
+    /// <summary>
+    /// The desktop as a gateway's client (#428): "Viewing pi.local:8081", or "pi.local:8081 · operator" with the API key,
+    /// on the status bar; null for the desktop's own station and in the browser.
+    /// </summary>
+    public string? GatewayClientText =>
+        GatewayClient?.Connected is not { } gateway
+            ? null
+            : _text.Format(
+                Auth is { Operator: true } ? "Connection.Bar.Operator" : "Connection.Bar.Viewing",
+                new Dictionary<string, object?> { ["gateway"] = gateway.Authority }
+            );
+
+    /// <summary>Whether the gateway refused the key (or it went over plain HTTP), for the warning colour.</summary>
+    public bool GatewayClientWarn => GatewayClient?.Connected is not null && Auth is { Operator: false, ApiKey: true };
+
+    /// <summary>Why it's only watching, when the gateway refused the key; the gateway's address otherwise.</summary>
+    public string? GatewayClientTip =>
+        GatewayClient?.Connected is not { } gateway ? null
+        : Auth is { Operator: false, ApiKey: true, NeedsHttps: true } ? _text["Connection.Bar.KeyNeedsHttps"]
+        : Auth is { Operator: false, ApiKey: true } ? _text["Connection.Bar.KeyRefused"]
+        : gateway.ToString();
+
+    /// <summary>The status bar's gateway notice opens Settings › Connection.</summary>
+    [RelayCommand]
+    private Task OpenConnectionAsync() => OpenSettingsSectionAsync("connection");
 
     /// <summary>The Sign in dialog while it's open.</summary>
     [ObservableProperty]

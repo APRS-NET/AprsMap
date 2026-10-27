@@ -620,6 +620,19 @@
               Foreground="{DynamicResource Brush.TextMuted}"
               VerticalAlignment="Center"
             />
+            <!-- The desktop as a gateway's client (#428): which gateway, and as whom; opens Settings › Connection. -->
+            <Button
+              x:Name="GatewayClientNotice"
+              Classes="update-notice"
+              Classes.warn="{Binding GatewayClientWarn}"
+              Content="{Binding GatewayClientText}"
+              IsVisible="{Binding GatewayClientText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Command="{Binding OpenConnectionCommand}"
+              ToolTip.Tip="{Binding GatewayClientTip}"
+              AutomationProperties.HelpText="{Binding GatewayClientTip}"
+              Background="{x:Null}"
+              VerticalAlignment="Center"
+            />
             <!-- An update (F4.15 behavior 8): quiet, in the normal text colour, never a pop-up; a failed check is a
                  warning that tries again when clicked (behavior 7). Either can be cleared with ×. -->
             <StackPanel

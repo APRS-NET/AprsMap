@@ -263,6 +263,50 @@ public sealed class GatewayClientUiTests
         return (vm, gateway, own);
     }
 
+    [Theory]
+    [InlineData(true, false, false, "127.0.0.1:8081 · operator", false)]
+    [InlineData(false, false, false, "Viewing 127.0.0.1:8081", false)]
+    [InlineData(false, true, false, "Viewing 127.0.0.1:8081", true)]
+    [InlineData(false, true, true, "Viewing 127.0.0.1:8081", true)]
+    public async Task TheStatusBarSaysWhichGatewayAndAsWhom(
+        bool op,
+        bool keySent,
+        bool needsHttps,
+        string text,
+        bool warn
+    )
+    {
+        // #428
+        var (vm, _, _) = await Client(
+            new AuthInfo(op, op ? "API key" : null, ApiKey: keySent || op, NeedsHttps: needsHttps)
+        );
+
+        Assert.Equal(text, vm.GatewayClientText);
+        Assert.Equal(warn, vm.GatewayClientWarn);
+        if (needsHttps)
+        {
+            Assert.StartsWith(
+                "The gateway takes the API key only over https://",
+                vm.GatewayClientTip,
+                StringComparison.Ordinal
+            );
+        }
+        await vm.OpenConnectionCommand.ExecuteAsync(null);
+        Assert.True(vm.Settings!.IsConnectionSection);
+    }
+
+    [Fact]
+    public async Task ItsOwnStationHasNoGatewayOnTheStatusBar()
+    {
+        var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider())
+        {
+            GatewayClient = new FakeHost(new GatewayClientSettings(), connected: null),
+        };
+        await vm.LoadAuthAsync();
+
+        Assert.Null(vm.GatewayClientText);
+    }
+
     [Fact]
     public async Task WithTheKeyItIsTheOperatorWithNoSignOut()
     {

@@ -2535,6 +2535,20 @@ In a Docker container:
   <data name="Connection.Test.VersionsDiffer" xml:space="preserve">
     <value>Its version differs from this app's ({app}), so some features may be missing on one side.</value>
   </data>
+  <data name="Connection.Bar.Viewing" xml:space="preserve">
+    <value>Viewing {gateway}</value>
+    <comment>Status bar, the desktop showing a gateway without its API key. gateway: its address, such as pi.local:8081.</comment>
+  </data>
+  <data name="Connection.Bar.Operator" xml:space="preserve">
+    <value>{gateway} · operator</value>
+    <comment>Status bar, the desktop as a gateway's operator with its API key.</comment>
+  </data>
+  <data name="Connection.Bar.KeyRefused" xml:space="preserve">
+    <value>The gateway refused the API key, so this app only watches. Open Settings › Connection to test it.</value>
+  </data>
+  <data name="Connection.Bar.KeyNeedsHttps" xml:space="preserve">
+    <value>The gateway takes the API key only over https:// or from its own computer, so this app only watches. Open Settings › Connection for how to reach it.</value>
+  </data>
   <data name="Connection.Status.ThisComputer" xml:space="preserve">
     <value>Now showing this computer's own station.</value>
   </data>
