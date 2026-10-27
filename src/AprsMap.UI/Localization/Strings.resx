@@ -5582,6 +5582,14 @@ pause 1s</value>
   <data name="Dashboard.Gps.WanderNone" xml:space="preserve">
     <value>Wander: not enough fixes while still yet</value>
   </data>
+  <data name="Dashboard.Gps.SatellitesPoint" xml:space="preserve">
+    <value>{value} satellites</value>
+    <comment>A point of the satellites-used plot: an average over its minutes, so it may have a decimal (9.5 satellites).</comment>
+  </data>
+  <data name="Dashboard.Gps.HdopPoint" xml:space="preserve">
+    <value>HDOP {value}</value>
+    <comment>A point of the horizontal dilution of precision plot. HDOP is the usual abbreviation; keep it.</comment>
+  </data>
   <data name="Dashboard.Gps.NoValue" xml:space="preserve">
     <value>–</value>
     <comment>A value the GPS hasn't given.</comment>

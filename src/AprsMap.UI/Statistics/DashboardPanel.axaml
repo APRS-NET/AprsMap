@@ -447,7 +447,11 @@
             </StackPanel>
           </Border>
 
-          <Border Classes="tile" AutomationProperties.Name="{Binding GpsDilution.Spoken}" IsVisible="{Binding HasGps}">
+          <Border
+            Classes="tile"
+            AutomationProperties.Name="{Binding GpsDilution.Spoken}"
+            IsVisible="{Binding GpsHasDilution}"
+          >
             <StackPanel>
               <TextBlock Classes="title" Text="{Binding GpsDilution.Title}" />
               <TextBlock Classes="number" Text="{Binding GpsDilution.Number}" />
@@ -473,7 +477,11 @@
             </StackPanel>
           </Border>
 
-          <Border Classes="tile" AutomationProperties.Name="{Binding GpsAccuracy.Spoken}" IsVisible="{Binding HasGps}">
+          <Border
+            Classes="tile"
+            AutomationProperties.Name="{Binding GpsAccuracy.Spoken}"
+            IsVisible="{Binding GpsHasAccuracy}"
+          >
             <StackPanel>
               <TextBlock Classes="title" Text="{Binding GpsAccuracy.Title}" />
               <TextBlock Classes="number" Text="{Binding GpsAccuracy.Number}" />
