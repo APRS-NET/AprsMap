@@ -2443,6 +2443,9 @@ In a Docker container:
   <data name="Auth.SignedInWithKey" xml:space="preserve">
     <value>Operator, with the gateway's API key</value>
   </data>
+  <data name="Search.Clear" xml:space="preserve">
+    <value>Clear search</value>
+  </data>
   <data name="Settings.Connection" xml:space="preserve">
     <value>Connection</value>
   </data>

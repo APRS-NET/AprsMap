@@ -3,6 +3,7 @@
      the main view model; everything inside works on its station list. -->
 <UserControl
   xmlns="https://github.com/avaloniaui"
+  xmlns:views="using:AprsMap.UI.Views"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:AprsMap.UI.ViewModels"
   xmlns:s="using:AprsMap.UI.Stations"
@@ -28,6 +29,7 @@
     <StackPanel DockPanel.Dock="Top" Margin="8,6" Spacing="6">
       <TextBox
         x:Name="SearchBox"
+        views:Clearable.IsOn="True"
         Text="{Binding Search}"
         PlaceholderText="{l:T Stations.Search}"
         AutomationProperties.Name="{l:T Stations.Search}"

@@ -3,6 +3,7 @@
      main view model; everything inside works on its packet list. -->
 <UserControl
   xmlns="https://github.com/avaloniaui"
+  xmlns:views="using:AprsMap.UI.Views"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:AprsMap.UI.ViewModels"
   xmlns:p="using:AprsMap.UI.Packets"
@@ -21,6 +22,7 @@
     <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" ItemSpacing="8" LineSpacing="6" Margin="8,6">
       <TextBox
         x:Name="SearchBox"
+        views:Clearable.IsOn="True"
         Text="{Binding FilterText}"
         PlaceholderText="{l:T Packets.Search}"
         AutomationProperties.Name="{l:T Packets.Search}"
@@ -28,6 +30,7 @@
       />
       <TextBox
         x:Name="StationBox"
+        views:Clearable.IsOn="True"
         Text="{Binding Station}"
         PlaceholderText="{l:T Packets.Station}"
         AutomationProperties.Name="{l:T Packets.Station}"
