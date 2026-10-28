@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-alpha.9](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.8...v0.7.0-alpha.9) (2026-10-28)
+
+
+### Features
+
+* **filters:** saved filters, switched in one click ([3e377ca](https://github.com/APRS-NET/AprsMap/commit/3e377ca2df4c34d5999ceb4d2488cf49c6818334)), closes [#457](https://github.com/APRS-NET/AprsMap/issues/457)
+
 ## [0.7.0-alpha.8](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.7...v0.7.0-alpha.8) (2026-10-28)
 
 
