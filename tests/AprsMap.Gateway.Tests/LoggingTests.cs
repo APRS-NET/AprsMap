@@ -117,8 +117,10 @@ public sealed class LoggingTests : IDisposable
             Path.Combine(_folder, "aprsmap-2026-10-19.log")
         );
 
+        // Both sides sorted: with another product name (tools/rename-product.py), its files sort elsewhere.
+        string[] kept = ["aprsmap-2026-10-18.log", "aprsmap-2026-10-19.log", "aprsmap-backup.log", "notes.log"];
         Assert.Equal(
-            ["aprsmap-2026-10-18.log", "aprsmap-2026-10-19.log", "aprsmap-backup.log", "notes.log"],
+            kept.Order(StringComparer.Ordinal),
             Directory.GetFiles(_folder).Select(Path.GetFileName).Order(StringComparer.Ordinal)
         );
     }
