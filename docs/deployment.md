@@ -293,6 +293,20 @@ one is put back. Your TOML file and data are kept. Help › About has **Restart 
 `journalctl -u aprsmap-gateway-update`. A Docker gateway has neither: Docker restarts it, and you update it by pulling
 the new image.
 
+**Reaching the admin web app from another computer.** Signing in, the API key, and copy and paste all need a secure
+page: HTTPS, or the gateway's own computer. Over plain `http://` from elsewhere, the browser gives the web app no
+clipboard, so Copy and pasting do nothing, and the gateway won't take a password or key (#446). Any of these fixes it:
+
+- **An SSH tunnel** (no changes anywhere): `ssh -L 8081:127.0.0.1:8081 you@gateway`, then open
+  `http://127.0.0.1:8081/`. To the browser and the gateway it's the gateway's own computer.
+- **HTTPS** through a reverse proxy, as for the Docker gateway (above).
+- **On a network you trust:** `allow_insecure_sign_in = true` under `[gateway]` lets the gateway take passwords and the key
+  over plain HTTP. For copy and paste, tell the browser the address is safe as well:
+  - **Firefox:** in `about:config`, set `dom.securecontext.allowlist` to the gateway's address, for example
+    `10.10.20.191` (several are separated by commas).
+  - **Chrome or Chromium:** at `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, add
+    `http://10.10.20.191:8081` and relaunch.
+
 The ports are 8080 and 8081, and the desktop app's web viewer uses 8090, so a desktop app can run beside the service on
 the same PC.
 

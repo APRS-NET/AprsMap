@@ -81,6 +81,11 @@ public sealed record SendVia(IReadOnlyList<string>? SourceIds = null)
 /// <param name="Read">For a received message: its conversation was open since it came.</param>
 /// <param name="Automatic">Sent by the station itself: a pong (docs/features/F2.13-ping.md, behavior 11).</param>
 /// <param name="Ping">For a received ping: what happened to it (F2.13 behavior 11); null for any other message.</param>
+/// <param name="Group">
+/// The ANSRVR group it belongs to (docs/features/F2.5-bulletins.md, behaviors 8, 9): a member's post relayed to this
+/// station (from that member), ANSRVR's notice about the group (from ANSRVR), or this station's post (to ANSRVR, its
+/// text the post's whole <c>CQ GROUP text</c>); null for any other message.
+/// </param>
 public sealed record ChatMessage(
     string Id,
     string Correspondent,
@@ -97,7 +102,8 @@ public sealed record ChatMessage(
     bool NotAcknowledged = false,
     bool Read = true,
     bool Automatic = false,
-    PingResult? Ping = null
+    PingResult? Ping = null,
+    string? Group = null
 );
 
 /// <summary>A conversation with one station (behavior 1).</summary>
@@ -111,6 +117,10 @@ public sealed record ChatMessage(
 /// Why nothing can send it now, naming the source (a <c>transmit.*</c> code; behavior 8), or null when
 /// <paramref name="Route"/> is set.
 /// </param>
+/// <param name="Group">
+/// For an ANSRVR group's conversation (F2.5 behavior 8): the group; its <paramref name="Correspondent"/> is then
+/// <see cref="ForGroup"/> of it, and what's sent to it is posted to the group.
+/// </param>
 public sealed record Conversation(
     string Correspondent,
     int Unread,
@@ -118,5 +128,23 @@ public sealed record Conversation(
     SendVia SendVia,
     MessageRetries Retries,
     string? Route = null,
-    EngineError? Waiting = null
-);
+    EngineError? Waiting = null,
+    string? Group = null
+)
+{
+    /// <summary>The prefix of a group conversation's correspondent: no callsign starts with it.</summary>
+    public const string GroupPrefix = "#";
+
+    /// <summary>The correspondent of <paramref name="group"/>'s conversation, such as <c>#NEDR</c>.</summary>
+    public static string ForGroup(string group)
+    {
+        ArgumentNullException.ThrowIfNull(group);
+        return GroupPrefix + group.Trim().ToUpperInvariant();
+    }
+
+    /// <summary>The group a conversation's <paramref name="correspondent"/> stands for; null for a station.</summary>
+    public static string? GroupOf(string correspondent) =>
+        correspondent is { Length: > 1 } && correspondent.StartsWith(GroupPrefix, StringComparison.Ordinal)
+            ? correspondent[GroupPrefix.Length..].Trim().ToUpperInvariant()
+            : null;
+}

@@ -736,6 +736,75 @@ public sealed class TransmitTests
         }
     }
 
+    [Fact]
+    public async Task AJoinedGroupHasAConversationOfItsRelaysNoticesAndPosts()
+    {
+        // F2.5 behaviors 8, 9 (#285), from the relay captured on APRS-IS on 2026-10-27 (APRS-NET/APRS.NET#281): ANSRVR's
+        // host relays a member's post in the member's name, as N:<GROUP> <text>, with no message ID.
+        var station = Create(Home(sources: [AprsIs]));
+        var (run, cts, aprsIs, _) = await Run(station);
+        using (cts)
+        {
+            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.JoinGroupAsync("NEDR", Ct);
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, ":ANSRVR   :J NEDR{") == 1));
+            await AnsrvrAcks(aprsIs, ":ANSRVR   :J NEDR{");
+            var group = Conversation.ForGroup("NEDR");
+            Assert.Contains(
+                await station.Engine.GetConversationsAsync(Ct),
+                c => c.Correspondent == group && c.Group == "NEDR"
+            );
+
+            // A member's post, relayed; then ANSRVR's notice; and a group this station isn't in stays an ordinary message.
+            await aprsIs.Write("N1KXJ-14>APWW11,qAO,KJ4ERJ-15::N0TEST   :N:NEDR Pretty quiet ot here...");
+            await aprsIs.Write(
+                "ANSRVR>APWW11,KJ4ERJ-15*,TCPIP*,qAS,KJ4ERJ-15::N0TEST   :N:NEDR Now Monitoring with 3 Members{HU"
+            );
+            await aprsIs.Write("W1AW>APWW11,qAO,KJ4ERJ-15::N0TEST   :N:OTHER Not for us");
+            await aprsIs.Write("N1ABC>APRS,TCPIP*,qAC,T2TEST::N0TEST   :N:NEDR typed by a person{12"); // has an ID
+            await WaitUntil(async () =>
+                (await station.Engine.GetConversationsAsync(Ct)).Any(c => c.Correspondent == "W1AW")
+            );
+
+            var conversation = (await station.Engine.GetConversationsAsync(Ct)).Single(c => c.Correspondent == group);
+            Assert.Equal(2, conversation.Unread);
+            var messages = new List<ChatMessage>();
+            using (var watch = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
+            {
+                try
+                {
+                    await foreach (var m in station.Engine.WatchMessagesAsync(watch.Token))
+                    {
+                        messages.Add(m);
+                    }
+                }
+                catch (OperationCanceledException) { }
+            }
+            var relay = messages.Single(m => m.Correspondent == "N1KXJ-14");
+            Assert.Equal(("NEDR", "Pretty quiet ot here..."), (relay.Group, relay.Text)); // from the member who posted
+            Assert.Equal(
+                "Now Monitoring with 3 Members",
+                messages.Single(m => m.Correspondent == "ANSRVR" && !m.Outgoing && m.Group == "NEDR").Text
+            );
+            Assert.Null(messages.Single(m => m.Correspondent == "W1AW").Group);
+            Assert.Null(messages.Single(m => m.Correspondent == "N1ABC").Group);
+            Assert.DoesNotContain(aprsIs.Sent, l => l.Contains("::N1KXJ-14", StringComparison.Ordinal)); // no ack, no away reply
+
+            // Writing in the group's conversation posts to the group.
+            var posted = await station.Engine.SendMessageAsync(group, "Hello NEDR", Ct);
+            await WaitUntil(() => Task.FromResult(Count(aprsIs, ":ANSRVR   :CQ NEDR Hello NEDR{") == 1));
+            Assert.Equal("NEDR", Assert.Single(posted).Group);
+            await station.Engine.MarkReadAsync(group, Ct);
+            Assert.Equal(
+                0,
+                (await station.Engine.GetConversationsAsync(Ct)).Single(c => c.Correspondent == group).Unread
+            );
+
+            await cts.CancelAsync();
+            await run;
+        }
+    }
+
     [Theory]
     [InlineData(BulletinKind.Bulletin, "7", null, "BLN7", null)]
     [InlineData(BulletinKind.Announcement, "z", " wx ", "BLNZWX", null)]
