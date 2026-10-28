@@ -160,6 +160,7 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
 
         Assert.True(await IsOperatorAsync(withKey));
         Assert.False((await withKey.GetSettingsAsync(Ct)).ReadOnly); // it may change settings
+        Assert.True((await withKey.GetHistoryStatusAsync(Ct)).Available); // and see the history (F1.41)
         var engineSays = await Assert.ThrowsAnyAsync<Exception>(() => withKey.SendPositionAsync(null, Ct));
         Assert.NotEqual(EngineErrorCodes.OperatorOnly, (engineSays as IHasEngineError)?.EngineError.Code);
         Assert.False(await IsOperatorAsync(without));

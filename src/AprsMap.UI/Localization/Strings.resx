@@ -349,6 +349,9 @@
   <data name="Error.settings.incomplete" xml:space="preserve">
     <value>The settings are incomplete.</value>
   </data>
+  <data name="Error.settings.history-invalid" xml:space="preserve">
+    <value>History is kept for 0 to 30 days, within 100 to 102,400 MB.</value>
+  </data>
   <data name="Error.settings.profile.id-duplicate" xml:space="preserve">
     <value>Every profile needs its own id.</value>
     <comment>A program error rather than a user one; keep it short.</comment>
@@ -1696,6 +1699,68 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="Capture.Description" xml:space="preserve">
     <value>Records the packets that couldn't be read or were only partly understood, exactly as received, so they can be sent to the developers to add to the test corpus. Off unless switched on.</value>
+  </data>
+  <data name="History.Title" xml:space="preserve">
+    <value>History</value>
+  </data>
+  <data name="History.Description" xml:space="preserve">
+    <value>Keep every packet received for a number of days, so stations and their tracks come back after a restart or an upgrade. The oldest days go first when the size limit is reached.</value>
+  </data>
+  <data name="History.Switch" xml:space="preserve">
+    <value>Keep packet history</value>
+  </data>
+  <data name="History.Days" xml:space="preserve">
+    <value>Keep for (days, up to 30)</value>
+  </data>
+  <data name="History.MaxMegabytes" xml:space="preserve">
+    <value>Use at most (MB)</value>
+  </data>
+  <data name="History.Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="History.Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="History.LimitsInvalid" xml:space="preserve">
+    <value>Keep for 1 to 30 days, within 100 to 102,400 MB.</value>
+  </data>
+  <data name="History.ConfirmOff" xml:space="preserve">
+    <value>Turning history off deletes the packets kept so far. Press Save again to turn it off.</value>
+  </data>
+  <data name="History.Kept" xml:space="preserve">
+    <value>{days, plural, one {# day kept} other {# days kept}}, {megabytes, plural, other {# MB}}, since {since}.</value>
+    <comment>since: a date and time, such as 21/10/2026 14:02.</comment>
+  </data>
+  <data name="History.Empty" xml:space="preserve">
+    <value>Nothing kept yet: packets are kept from now on.</value>
+  </data>
+  <data name="History.Off" xml:space="preserve">
+    <value>History is off: stations are kept in memory only, and start empty after a restart.</value>
+  </data>
+  <data name="History.OffConfigured" xml:space="preserve">
+    <value>History is off in the gateway's configuration.</value>
+  </data>
+  <data name="History.Configured" xml:space="preserve">
+    <value>The length and size limit are set in the gateway's configuration ([engine.history]).</value>
+    <comment>[engine.history] is a section of the configuration file; keep it.</comment>
+  </data>
+  <data name="History.NotAvailable" xml:space="preserve">
+    <value>This station keeps no history.</value>
+  </data>
+  <data name="History.SizeLimitShortens" xml:space="preserve">
+    <value>The size limit keeps about {fit, plural, one {# day} other {# days}} of the {wanted} asked for. Raise it to keep them all.</value>
+  </data>
+  <data name="History.TodayFull" xml:space="preserve">
+    <value>Today's packets alone reached the size limit, so no more are kept until tomorrow. Raise the limit to keep them.</value>
+  </data>
+  <data name="History.InUseElsewhere" xml:space="preserve">
+    <value>Another copy of the app is using this history folder, so this one keeps no history until it's restarted on its own.</value>
+  </data>
+  <data name="History.CantWrite" xml:space="preserve">
+    <value>The history folder can't be written to, so no history is kept.</value>
+  </data>
+  <data name="History.SetAside" xml:space="preserve">
+    <value>Days that couldn't be read were set aside: {days}.</value>
   </data>
   <data name="Capture.Switch" xml:space="preserve">
     <value>Capture unexpected packets</value>
