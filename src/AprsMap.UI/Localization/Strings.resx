@@ -1082,6 +1082,23 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Settings.About.Viewers" xml:space="preserve">
     <value>{count, plural, one {# viewer connected to this gateway} other {# viewers connected to this gateway}}</value>
   </data>
+  <data name="Settings.About.Gateway" xml:space="preserve">
+    <value>Gateway {version} · APRS.NET {aprsnet}</value>
+    <comment>The gateway this app is connected to (#453). version, aprsnet: version numbers.</comment>
+  </data>
+  <data name="Settings.About.GatewayInstall" xml:space="preserve">
+    <value>Gateway {version} ({install}) · APRS.NET {aprsnet}</value>
+    <comment>install: how the gateway is installed, such as "Linux service".</comment>
+  </data>
+  <data name="Gateway.Install.Service" xml:space="preserve">
+    <value>Linux service</value>
+  </data>
+  <data name="Gateway.Install.Container" xml:space="preserve">
+    <value>container</value>
+  </data>
+  <data name="Gateway.Install.Other" xml:space="preserve">
+    <value>run by hand</value>
+  </data>
   <data name="Settings.About.Engine" xml:space="preserve">
     <value>Engine {version} · APRS.NET {aprsnet}</value>
     <comment>version, aprsnet: version numbers.</comment>
@@ -2613,6 +2630,14 @@ In a Docker container:
   <data name="Connection.Bar.Operator" xml:space="preserve">
     <value>{gateway} · operator</value>
     <comment>Status bar, the desktop as a gateway's operator with its API key.</comment>
+  </data>
+  <data name="Connection.Bar.Tip" xml:space="preserve">
+    <value>{gateway} · gateway {version}.</value>
+    <comment>Status bar tip, the desktop as a gateway's client (#453).</comment>
+  </data>
+  <data name="Connection.Bar.TipInstall" xml:space="preserve">
+    <value>{gateway} · gateway {version} ({install}).</value>
+    <comment>install: how the gateway is installed, such as "Linux service".</comment>
   </data>
   <data name="Connection.Bar.KeyRefused" xml:space="preserve">
     <value>The gateway refused the API key, so this app only watches. Open Settings › Connection to test it.</value>

@@ -334,6 +334,23 @@ public sealed class GatewayClientUiTests
     }
 
     [Fact]
+    public async Task TheStatusBarsTipNamesTheGatewaysVersionAndSaysWhenItDiffers()
+    {
+        // #453
+        var (vm, _, _) = await Client(new AuthInfo(true, "API key", ApiKey: true));
+        var app = Brand.Version.Split('+')[0];
+
+        vm.Show(new EngineStatus(ConnectionState.Connected, null, 0, app, Install: EngineInstall.Service));
+        Assert.Equal($"http://127.0.0.1:8081/ · gateway {app} (Linux service).", vm.GatewayClientTip);
+
+        vm.Show(new EngineStatus(ConnectionState.Connected, null, 0, "99.1.0", Install: EngineInstall.Container));
+        Assert.Equal(
+            $"http://127.0.0.1:8081/ · gateway 99.1.0 (container). Its version differs from this app's ({app}), so some features may be missing on one side.",
+            vm.GatewayClientTip
+        );
+    }
+
+    [Fact]
     public async Task ItsOwnStationHasNoGatewayOnTheStatusBar()
     {
         var vm = new MainViewModel(new FakeEngine(), new FakeTimeProvider())
