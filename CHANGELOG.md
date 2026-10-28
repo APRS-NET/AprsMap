@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.0-alpha.6](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.5...v0.7.0-alpha.6) (2026-10-28)
+
+
+### Features
+
+* **about:** name the gateway's version, how it's installed, and when it differs ([9e90236](https://github.com/APRS-NET/AprsMap/commit/9e902362d70fd1b2807aaa99c0e2fc9ce78f2af0)), closes [#453](https://github.com/APRS-NET/AprsMap/issues/453)
+* **dashboard:** a 7 days range, from hours kept 90 days ([17db18d](https://github.com/APRS-NET/AprsMap/commit/17db18d6a3af4c07def96561df4dfdea300efc56)), closes [#314](https://github.com/APRS-NET/AprsMap/issues/314)
+* **dashboard:** each source's numbers, and the sources compared ([465ab86](https://github.com/APRS-NET/AprsMap/commit/465ab86666508b60d487f3553656f6a67aa25ff8)), closes [#454](https://github.com/APRS-NET/AprsMap/issues/454)
+* **dashboard:** the Connection tile says when the history's size limit cuts it short ([f84249a](https://github.com/APRS-NET/AprsMap/commit/f84249a8aeda1d917f536884d94b6211dcbed50f)), closes [#314](https://github.com/APRS-NET/AprsMap/issues/314)
+* **details:** a station's track over 24 hours or 7 days, and its kept packets ([5cdb4e9](https://github.com/APRS-NET/AprsMap/commit/5cdb4e9d484b9f166dde025f70f6a93b729217dd)), closes [#314](https://github.com/APRS-NET/AprsMap/issues/314)
+* **engine:** keep every packet for up to 7 days, one SQLite file a day ([2d62dd0](https://github.com/APRS-NET/AprsMap/commit/2d62dd00ed9d398973149364a845a63381a2fd29)), closes [#314](https://github.com/APRS-NET/AprsMap/issues/314)
+* **engine:** stations, tracks and the packet list come back after a restart ([4b1d2bf](https://github.com/APRS-NET/AprsMap/commit/4b1d2bf9b04e4eee652928948c7b8503c4e962c2)), closes [#314](https://github.com/APRS-NET/AprsMap/issues/314)
+* **map:** also show stations heard in the last 24 hours, 3 days or 7 days ([2961636](https://github.com/APRS-NET/AprsMap/commit/2961636a3db52af45ee2609f489be2a57d02f19b)), closes [#455](https://github.com/APRS-NET/AprsMap/issues/455)
+
 ## [0.7.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.4...v0.7.0-alpha.5) (2026-10-28)
 
 
