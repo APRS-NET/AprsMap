@@ -81,8 +81,10 @@ public sealed record SourceSettings(
     /// Whether this TNC digipeats, and how (docs/features/F3.5-digipeater.md, behavior 1): Off unless set, and always Off
     /// for a source that isn't a KISS TNC.
     /// </summary>
-    public DigipeatMode EffectiveDigipeat =>
-        Kind is SourceKind.KissTcp or SourceKind.KissSerial ? Digipeat ?? DigipeatMode.Off : DigipeatMode.Off;
+    public DigipeatMode EffectiveDigipeat => IsTnc ? Digipeat ?? DigipeatMode.Off : DigipeatMode.Off;
+
+    /// <summary>Whether it's a TNC that sends and receives AX.25 frames: KISS over TCP or serial, or AGWPE (F3.8).</summary>
+    public bool IsTnc => Kind is SourceKind.KissTcp or SourceKind.KissSerial or SourceKind.Agwpe;
 
     /// <summary>The digipeater's aliases as written, upper-cased: names separated by spaces or commas.</summary>
     public IReadOnlyList<string> DigipeatAliasList =>
@@ -143,7 +145,7 @@ public sealed record SourceSettings(
     public bool IsSerial => Kind is SourceKind.KissSerial or SourceKind.AprsTextSerial;
 
     /// <summary>Whether its kind can ever send: not TNC text output (F3.2 behavior 3), nor a GPS.</summary>
-    public bool CanTransmit => Kind is SourceKind.AprsIs or SourceKind.KissTcp or SourceKind.KissSerial;
+    public bool CanTransmit => Kind == SourceKind.AprsIs || IsTnc;
 
     /// <summary>Whether the station may send on it: a kind that can, not ticked RX only (F2.1 behavior 5).</summary>
     public bool MaySend => CanTransmit && !RxOnly;
@@ -207,6 +209,29 @@ public sealed record SourceSettings(
             ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{host}:{Port ?? DefaultKissPort}")
             : null;
 
+    /// <summary>An AGWPE server's port: 8000, as Dire Wolf and SoundModem use (docs/features/F3.8-agwpe.md).</summary>
+    public const int DefaultAgwpePort = 8000;
+
+    /// <summary>A new AGWPE source for <paramref name="host"/>'s radio port <paramref name="radioPort"/>, named after it.</summary>
+    public static SourceSettings AgwpeFor(string host, int? port = null, int? radioPort = null) =>
+        new(
+            Guid.NewGuid().ToString("N"),
+            host.Trim(),
+            SourceKind.Agwpe,
+            Host: host.Trim(),
+            Port: port,
+            TncPort: radioPort
+        );
+
+    /// <summary>"localhost:8000 port 1": where an AGWPE source connects, its radio port as the server numbers it.</summary>
+    public string? AgwpeEndpoint =>
+        Kind == SourceKind.Agwpe && Host is { } host
+            ? string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"{host}:{Port ?? DefaultAgwpePort} port {(TncPort ?? 0) + 1}"
+            )
+            : null;
+
     /// <summary>A new APRS-IS source for <paramref name="server"/>, named after it.</summary>
     public static SourceSettings AprsIsFor(string server, string? filter = null) =>
         new(Guid.NewGuid().ToString("N"), NameFor(server), SourceKind.AprsIs, server, filter);
@@ -222,6 +247,21 @@ public sealed record SourceSettings(
 }
 
 /// <summary>The kinds of source (F1.25 behavior 1).</summary>
+/// <summary>An AGWPE server as it answered (docs/features/F3.8-agwpe.md, behaviors 1, 5).</summary>
+/// <param name="Reached">Whether it answered with its ports in time.</param>
+/// <param name="Version">The version it reports, such as <c>2005.127</c>; null when it didn't say.</param>
+/// <param name="Ports">Its radio ports, in its order.</param>
+public sealed record AgwpeServer(bool Reached, string? Version, IReadOnlyList<AgwpeRadioPort> Ports)
+{
+    /// <summary>Nothing answered.</summary>
+    public static readonly AgwpeServer Unreached = new(false, null, []);
+}
+
+/// <summary>One of an AGWPE server's radio ports.</summary>
+/// <param name="Number">From 0, as <see cref="SourceSettings.TncPort"/> keeps it; the server calls it <c>Port</c> plus one.</param>
+/// <param name="Description">How the server describes it; empty when it doesn't.</param>
+public sealed record AgwpeRadioPort(int Number, string Description);
+
 public enum SourceKind
 {
     /// <summary>An APRS-IS server: at most one in use at a time.</summary>
@@ -241,6 +281,12 @@ public enum SourceKind
 
     /// <summary>A GPS, over serial, TCP or gpsd (docs/features/F3.6-gps.md).</summary>
     Gps,
+
+    /// <summary>
+    /// A TNC through an AGWPE server over TCP, such as Dire Wolf's AGW port or UZ7HO SoundModem: one radio port, the
+    /// <see cref="SourceSettings.TncPort"/> (docs/features/F3.8-agwpe.md).
+    /// </summary>
+    Agwpe,
 }
 
 /// <summary>Whether a radio's GPS on its TNC port is used (docs/features/F3.13-tnc-gps.md, behavior 1).</summary>

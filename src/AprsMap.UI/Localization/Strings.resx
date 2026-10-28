@@ -112,6 +112,32 @@
   <data name="Settings.Sources.Kind.KissTcp" xml:space="preserve">
     <value>KISS over TCP</value>
   </data>
+  <data name="Settings.Sources.Kind.Agwpe" xml:space="preserve">
+    <value>AGWPE TNC</value>
+    <comment>A TNC reached through an AGWPE server, such as Dire Wolf's AGW port or UZ7HO SoundModem (F3.8).</comment>
+  </data>
+  <data name="Settings.Sources.Agwpe.RadioPort" xml:space="preserve">
+    <value>Radio port</value>
+    <comment>Numbered from 1, as the AGWPE server numbers its ports.</comment>
+  </data>
+  <data name="Settings.Sources.Agwpe.Refresh" xml:space="preserve">
+    <value>Ask the server</value>
+  </data>
+  <data name="Settings.Sources.Agwpe.Asking" xml:space="preserve">
+    <value>Asking the server for its radio ports…</value>
+  </data>
+  <data name="Settings.Sources.Agwpe.NoHost" xml:space="preserve">
+    <value>Type the server's host first.</value>
+  </data>
+  <data name="Settings.Sources.Agwpe.Unreached" xml:space="preserve">
+    <value>No AGWPE server answered at {address}. Type the radio port, or check the host and port and ask again.</value>
+  </data>
+  <data name="Settings.Sources.Agwpe.Answered" xml:space="preserve">
+    <value>The server (version {version}) has {count, plural, one {# radio port} other {# radio ports}}.</value>
+  </data>
+  <data name="Settings.Sources.Agwpe.Help" xml:space="preserve">
+    <value>For a modem that offers only AGWPE. Where it offers KISS over TCP too, as Dire Wolf and SoundModem do, KISS over TCP is the simpler choice.</value>
+  </data>
   <data name="Settings.Sources.Kind.KissSerial" xml:space="preserve">
     <value>KISS over serial</value>
   </data>
@@ -5040,6 +5066,12 @@ pause 1s</value>
   </data>
   <data name="Error.transmit.failed" xml:space="preserve">
     <value>The packet couldn't be sent.</value>
+  </data>
+  <data name="Error.settings.source.agwpe-invalid" xml:space="preserve">
+    <value>An AGWPE source needs a host, a port from 1 to 65535, and a radio port from 1 to 16.</value>
+  </data>
+  <data name="Error.agwpe.port-missing" xml:space="preserve">
+    <value>Port {port} isn't on this AGWPE server. Pick one of its ports in Settings › Sources.</value>
   </data>
   <data name="Error.settings.source.kiss-invalid" xml:space="preserve">
     <value>A KISS source needs a host, a port from 1 to 65535, and a TNC port from 0 to 15.</value>

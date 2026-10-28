@@ -48,8 +48,12 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
         await remote.StartAsync(Ct);
 
         var ex = await Assert.ThrowsAsync<EngineAccessException>(() => remote.GetSerialPortsAsync(Ct));
+        var agwpe = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.GetAgwpePortsAsync("localhost", 8000, Ct)
+        );
 
         Assert.Equal(EngineErrorCodes.OperatorOnly, ex.EngineError.Code); // F3.1 behavior 12
+        Assert.Equal(EngineErrorCodes.OperatorOnly, agwpe.EngineError.Code); // and AGWPE servers (F3.8)
     }
 
     [Fact]

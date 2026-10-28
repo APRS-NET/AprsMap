@@ -261,6 +261,12 @@ public static class EngineErrorCodes
     public const string KissQuiet = "kiss.quiet";
 
     /// <summary>
+    /// An AGWPE source's radio port isn't in the server's list of ports (docs/features/F3.8-agwpe.md, behavior 5). A
+    /// warning, with the port as the server numbers it in <see cref="EngineErrorArgs.Port"/>.
+    /// </summary>
+    public const string AgwpePortMissing = "agwpe.port-missing";
+
+    /// <summary>
     /// The TNC didn't switch into KISS when its port opened (docs/features/F3.2-built-in-tncs.md, behavior 6); the
     /// <see cref="EngineErrorArgs.Reason"/> says why, with the type's hint.
     /// </summary>
@@ -325,6 +331,9 @@ public static class EngineErrorCodes
 
     /// <summary>A KISS source's host, port or TNC port isn't usable.</summary>
     public const string KissSourceInvalid = "settings.source.kiss-invalid";
+
+    /// <summary>An AGWPE source needs a host, a port and a radio port (docs/features/F3.8-agwpe.md).</summary>
+    public const string AgwpeSourceInvalid = "settings.source.agwpe-invalid";
 
     /// <summary>The Transmit switch is off (docs/features/F2.1-own-station.md, behavior 11).</summary>
     public const string TransmitOff = "transmit.off";
@@ -447,6 +456,9 @@ public static class EngineErrorArgs
 {
     /// <summary>The name of the profile the error is about.</summary>
     public const string Profile = "profile";
+
+    /// <summary>A TNC's radio port as its server numbers it, from 1 (F3.8 behavior 5).</summary>
+    public const string Port = "port";
 
     /// <summary>The name of the source a <c>transmit.*</c> refusal is about (F2.1 behavior 7a).</summary>
     public const string Source = "source";

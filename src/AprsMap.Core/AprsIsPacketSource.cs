@@ -152,6 +152,25 @@ internal sealed class AprsIsPacketSourceFactory(
                 source.KissEndpoint ?? source.Name
             );
         }
+        if (source.Kind == SourceKind.Agwpe)
+        {
+            // Raw frames on one radio port, sent with the same gates as a KISS TNC (docs/features/F3.8-agwpe.md).
+            return new KissPacketSource(
+                new AgwpeConnection(
+                    new AgwpeOptions
+                    {
+                        Host = source.Host ?? string.Empty,
+                        Port = source.Port ?? SourceSettings.DefaultAgwpePort,
+                        TncPort = source.TncPort ?? 0,
+                        ReconnectDelay = options.Value.InitialRetryDelay,
+                        MaxReconnectDelay = options.Value.MaxRetryDelay,
+                        QuietWarning = TncQuietWarning, // as for KISS over TCP (#378)
+                        TimeProvider = timeProvider,
+                    }
+                ),
+                source.AgwpeEndpoint ?? source.Name
+            );
+        }
         if (source.Kind == SourceKind.Gps)
         {
             return GpsSource(source);

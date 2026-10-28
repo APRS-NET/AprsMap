@@ -241,6 +241,13 @@ connection: &tnc
 
 To pass a USB TNC into the container instead, see "A TNC on a serial port".
 
+**A modem that offers AGWPE.** Dire Wolf, UZ7HO SoundModem and AGWPE itself serve their radios over the AGWPE
+protocol, on TCP port 8000 by default (Dire Wolf's `AGWPORT`). Add an **AGWPE TNC** source in Settings › Sources with
+the modem's host and port, then **Ask the server** to pick the radio port from its list (docs/features/F3.8-agwpe.md).
+On the gateway's own PC the host is `localhost`; in the container, it's the host's address (`host.docker.internal`
+with `extra_hosts: ["host.docker.internal:host-gateway"]`). Where the modem offers KISS over TCP too, as Dire Wolf and
+SoundModem do on port 8001, KISS over TCP is the simpler choice; AGWPE is for set-ups that offer only it.
+
 ## Gateway as a Linux service
 
 Without Docker, the gateway runs as a systemd service on a Linux PC, for example one with the TNC on USB and gpsd

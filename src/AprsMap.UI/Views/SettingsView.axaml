@@ -678,7 +678,7 @@
                         MinWidth="128"
                       />
                     </StackPanel>
-                    <StackPanel Spacing="4" IsVisible="{Binding Sources.IsKiss}">
+                    <StackPanel Spacing="4" IsVisible="{Binding Sources.ShowsTncPort}">
                       <TextBlock Text="{l:T Settings.Sources.TncPort}" Foreground="{DynamicResource Brush.TextMuted}" />
                       <TextBox
                         x:Name="SourceTncPortBox"
@@ -691,6 +691,42 @@
                       />
                     </StackPanel>
                   </WrapPanel>
+                  <!-- An AGWPE source's radio port, picked from the server's list or typed (F3.8 behavior 1). -->
+                  <StackPanel Spacing="8" IsVisible="{Binding Sources.IsAgwpe}">
+                    <TextBlock
+                      Text="{l:T Settings.Sources.Agwpe.RadioPort}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                    />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <ComboBox
+                        x:Name="AgwpePortBox"
+                        IsEnabled="{Binding !Sources.EditConfigured}"
+                        IsEditable="True"
+                        ItemsSource="{Binding Sources.AgwpePorts}"
+                        Text="{Binding Sources.EditAgwpePort}"
+                        PlaceholderText="1"
+                        AutomationProperties.Name="{l:T Settings.Sources.Agwpe.RadioPort}"
+                        HorizontalAlignment="Stretch"
+                      />
+                      <Button
+                        x:Name="AgwpeRefreshButton"
+                        Grid.Column="1"
+                        Content="{l:T Settings.Sources.Agwpe.Refresh}"
+                        Command="{Binding Sources.RefreshAgwpePortsCommand}"
+                      />
+                    </Grid>
+                    <TextBlock
+                      Text="{Binding Sources.AgwpeNote}"
+                      IsVisible="{Binding Sources.AgwpeNote, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                    <TextBlock
+                      Text="{l:T Settings.Sources.Agwpe.Help}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
                   <StackPanel Spacing="4" IsVisible="{Binding Sources.ShowsTncSerialParts}">
                     <CheckBox
                       x:Name="SerialDtrBox"
