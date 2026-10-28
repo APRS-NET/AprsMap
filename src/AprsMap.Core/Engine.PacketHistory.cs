@@ -248,6 +248,89 @@ public sealed partial class Engine
     }
 
     /// <inheritdoc />
+    public async Task<KeptStations> GetKeptStationsAsync(
+        KeptStationsQuery query,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        if (_history is not { Usable: true, Settings.On: true })
+        {
+            return KeptStations.None;
+        }
+        var last = await _history
+            .LastPositionsAsync(query.Since, query.South, query.West, query.North, query.East, cancellationToken)
+            .ConfigureAwait(false);
+        var added = last.Where(r => _stations.Get(r.Name!) is null) // drawn live already
+            .OrderByDescending(r => r.ReceivedAt)
+            .ToList();
+        var stations = new List<StationState>();
+        foreach (var record in added.Take(Math.Max(0, query.Max)))
+        {
+            string symbol;
+            try
+            {
+                symbol =
+                    PacketSummarizer
+                        .Summarize(
+                            AprsPacket.Parse(Encoding.Latin1.GetString(record.Raw)),
+                            record.ReceivedAt,
+                            false,
+                            false
+                        )
+                        .Symbol
+                    ?? "/.";
+            }
+            catch (ArgumentException)
+            {
+                continue;
+            }
+            stations.Add(
+                new StationState(
+                    record.Name!,
+                    record.ReceivedAt,
+                    record.Latitude!.Value,
+                    record.Longitude!.Value,
+                    symbol,
+                    record.Kind,
+                    IsStale: true
+                )
+            );
+        }
+        return new KeptStations(stations, added.Count);
+    }
+
+    /// <inheritdoc />
+    public async Task<StationDetail?> GetKeptStationAsync(string name, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        if (_history is not { Usable: true })
+        {
+            return null;
+        }
+        // Its last packets, applied in order to a store of their own, describe it as the station store would have.
+        var records = await _history.PacketsOfAsync(name, null, 50, cancellationToken).ConfigureAwait(false);
+        var store = new StationStore();
+        foreach (var record in records.Reverse())
+        {
+            try
+            {
+                store.Apply(
+                    AprsPacket.Parse(Encoding.Latin1.GetString(record.Raw)),
+                    record.ReceivedAt,
+                    record.SourceId,
+                    IsOwnReceiver(record.SourceId)
+                );
+            }
+            catch (ArgumentException)
+            {
+                // kept as received; one that can't be read now adds nothing
+            }
+        }
+        return store.Get(name) is { } detail ? detail with { IsStale = true } : null;
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<PacketView>> GetStationPacketsAsync(
         string name,
         DateTimeOffset? before,

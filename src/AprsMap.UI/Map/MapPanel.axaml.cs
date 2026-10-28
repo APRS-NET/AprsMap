@@ -45,7 +45,17 @@ public sealed partial class MapPanel : UserControl, IDisposable
             {
                 _state?.Remember(new MapViewState(lat, lon, resolution)); // not the filter's: F1.2 behavior 1.2
             }
+            // The history's stations for the new area, once the map stops moving (F1.43 behavior 3).
+            _alsoHeardSettle.Stop();
+            _alsoHeardSettle.Start();
         };
+        _alsoHeardSettle.Tick += (_, _) =>
+        {
+            _alsoHeardSettle.Stop();
+            _ = LoadAlsoHeardAsync();
+        };
+        _alsoHeardTimer.Tick += (_, _) => _ = LoadAlsoHeardAsync();
+        _alsoHeardTimer.Start();
         _map.SizeChanged += (_, e) =>
         {
             if (e.NewSize.Width > 0)
@@ -104,6 +114,8 @@ public sealed partial class MapPanel : UserControl, IDisposable
     public void Dispose()
     {
         _linkTimer.Stop();
+        _alsoHeardTimer.Stop();
+        _alsoHeardSettle.Stop();
         _map.Dispose();
     }
 
@@ -127,6 +139,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.CentreOnStationRequested -= OnCentreOnStation;
             _main.DestinationRequested -= OnDestinationRequested;
             _main.Destination.PropertyChanged -= OnDestinationChanged;
+            _main.ViewFilter.AlsoHeardChanged -= OnAlsoHeardChanged;
         }
         _main = DataContext as MainViewModel;
         if (_main is not null)
@@ -138,6 +151,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.CentreOnStationRequested += OnCentreOnStation;
             _main.DestinationRequested += OnDestinationRequested;
             _main.Destination.PropertyChanged += OnDestinationChanged;
+            _main.ViewFilter.AlsoHeardChanged += OnAlsoHeardChanged; // F1.43 behavior 1
             ShowDestination();
             _map.SetStations(_main.Stations);
             _map.SetTracks(_main.Tracks);
@@ -291,6 +305,23 @@ public sealed partial class MapPanel : UserControl, IDisposable
     }
 
     private readonly DispatcherTimer _linkTimer = new() { Interval = TimeSpan.FromSeconds(30) };
+
+    // The history's stations (F1.43 behavior 3): half a second after the map stops moving, and every minute.
+    private readonly DispatcherTimer _alsoHeardSettle = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    private readonly DispatcherTimer _alsoHeardTimer = new() { Interval = TimeSpan.FromMinutes(1) };
+
+    private void OnAlsoHeardChanged(object? sender, EventArgs e) => _ = LoadAlsoHeardAsync();
+
+    private async Task LoadAlsoHeardAsync()
+    {
+        if (_main is null || _main.ViewFilter.AlsoHeardDays is null || _map.Area is not { } area)
+        {
+            _map.SetAlsoHeard([]);
+            return;
+        }
+        var kept = await _main.LoadAlsoHeardAsync(area.South, area.West, area.North, area.East);
+        _map.SetAlsoHeard(kept.Stations);
+    }
 
     private async Task LoadLinksAsync()
     {

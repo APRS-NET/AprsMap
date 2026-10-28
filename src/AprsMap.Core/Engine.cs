@@ -203,7 +203,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     Gps: GpsStatusLocked(),
                     IGate: IGateStatusLocked(),
                     DeviceList: DeviceListStatusLocked(_settings ?? AppSettings.Empty),
-                    Install: Install
+                    Install: Install,
+                    HistoryDays: _history is { Usable: true, Settings: { On: true, Days: var days } } ? days : null
                 )
             );
         }

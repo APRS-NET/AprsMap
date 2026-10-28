@@ -72,6 +72,7 @@ public sealed partial class MainViewModel : ObservableObject
             SourceNames,
             name => _settings is { ReadOnly: false } && _tracks.TryGetValue(name, out var track) && track.Count > 1
         );
+        Details.IsAlsoHeard = name => _alsoHeard.Contains(name); // F1.43 behavior 4
         Details.DeadReckoning = _appearance.Current.DeadReckoning;
         _appearance.Changed += (_, settings) =>
         {
@@ -1623,6 +1624,7 @@ public sealed partial class MainViewModel : ObservableObject
             ? _text.Format("Capture.Status", new Dictionary<string, object?> { ["count"] = captured })
             : null;
         ShowToggles(status.Toggles ?? StationToggles.AllOn);
+        ViewFilter.OfferAlsoHeard(status.HistoryDays); // F1.43 behavior 6
         // What can send: when it changes, the open conversation's route line follows (F2.4 behavior 8).
         var canSend = string.Join(
             '|',

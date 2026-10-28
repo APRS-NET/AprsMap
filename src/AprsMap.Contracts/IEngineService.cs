@@ -54,6 +54,18 @@ public interface IEngineService
     );
 
     /// <summary>
+    /// The stations the packet history has a position for in the query's time and box that the store doesn't hold now
+    /// (docs/features/F1.43-map-history-range.md, behaviors 2, 3); none without a history.
+    /// </summary>
+    Task<KeptStations> GetKeptStationsAsync(KeptStationsQuery query, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// <paramref name="name"/> as its last kept packets describe it (F1.43 behavior 4), marked stale; null when the
+    /// history has none of its packets.
+    /// </summary>
+    Task<StationDetail?> GetKeptStationAsync(string name, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Up to <paramref name="count"/> of <paramref name="name"/>'s packets from the packet history, received before
     /// <paramref name="before"/> (the newest with null), newest first (F1.41 behavior 9); empty without a history.
     /// </summary>

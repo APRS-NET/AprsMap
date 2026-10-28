@@ -34,6 +34,8 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(CaptureQuery))]
 [JsonSerializable(typeof(CaptureView))]
 [JsonSerializable(typeof(HistoryStatus))]
+[JsonSerializable(typeof(KeptStations))]
+[JsonSerializable(typeof(KeptStationsQuery))]
 [JsonSerializable(typeof(CaptureExport))]
 [JsonSerializable(typeof(CaptureExportResult))]
 [JsonSerializable(typeof(TncCommand))]

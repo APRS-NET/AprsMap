@@ -79,6 +79,13 @@
           FontWeight="SemiBold"
         />
         <TextBlock
+          x:Name="FromHistoryNote"
+          Text="{l:T Details.FromHistory}"
+          IsVisible="{Binding FromHistory}"
+          Foreground="{DynamicResource Brush.TextMuted}"
+          TextWrapping="Wrap"
+        />
+        <TextBlock
           x:Name="HeardLine"
           Text="{Binding HeardText}"
           ToolTip.Tip="{Binding HeardTime}"

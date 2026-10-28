@@ -67,6 +67,10 @@ public enum ConnectionState
 /// <param name="Gps">The active profile's GPS and its fix (docs/features/F3.6-gps.md); null without one.</param>
 /// <param name="IGate">The receive-only IGate (docs/features/F3.4-rx-igate.md); null when the profile isn't one.</param>
 /// <param name="DeviceList">The device list in use (docs/features/F4.16-device-list.md), so a change shows without asking.</param>
+/// <param name="HistoryDays">
+/// How many days of packets the history keeps, so a viewer can offer the map's longer range
+/// (docs/features/F1.43-map-history-range.md, behavior 6); null without a history.
+/// </param>
 /// <param name="Install">
 /// How the engine is installed, so an app connected to a gateway can say which it reached (#453); null from an older
 /// engine.
@@ -99,7 +103,8 @@ public sealed record EngineStatus(
     GpsStatus? Gps = null,
     IGateStatus? IGate = null,
     DeviceListStatus? DeviceList = null,
-    EngineInstall? Install = null
+    EngineInstall? Install = null,
+    int? HistoryDays = null
 );
 
 /// <summary>How an engine is installed (#453), for "Gateway 0.8.0 (Linux service)".</summary>

@@ -56,6 +56,13 @@ public sealed partial class StationDetailsViewModel : ObservableObject
     /// <summary>A station in this station's heard lists was picked: select it (F3.1 behavior 8).</summary>
     public event EventHandler<string>? SelectRequested;
 
+    /// <summary>Whether a name is on the map from the packet history, not the store (F1.43 behavior 4); set by the app.</summary>
+    internal Func<string, bool> IsAlsoHeard { get; set; } = _ => false;
+
+    /// <summary>Whether the station shown is the history's, not the store's: "From the history" (F1.43 behavior 4).</summary>
+    [ObservableProperty]
+    public partial bool FromHistory { get; private set; }
+
     /// <summary>Whether this is this station, the active profile's callsign (F3.1 behavior 8).</summary>
     [ObservableProperty]
     public partial bool IsMe { get; private set; }
@@ -528,6 +535,24 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         {
             return; // a later selection or refresh won
         }
+        var fromHistory = false;
+        if (detail is null && IsAlsoHeard(name))
+        {
+            // Not in the store: added to the map from the packet history (F1.43 behavior 4).
+            try
+            {
+                detail = await _engine.GetKeptStationAsync(name);
+                fromHistory = detail is not null;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
+            {
+                return;
+            }
+            if (load != _loads || name != Name)
+            {
+                return;
+            }
+        }
         if (detail is null)
         {
             IsGone = _detail is not null;
@@ -536,6 +561,7 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         }
         _detail = detail;
         IsGone = false;
+        FromHistory = fromHistory;
         Write();
         if (IsFollowing && HasPosition)
         {
