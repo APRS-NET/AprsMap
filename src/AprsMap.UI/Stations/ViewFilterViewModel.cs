@@ -221,6 +221,7 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         {
             return;
         }
+        await LoadAlsoHeardAsync(store); // F1.43 behavior 1
         string? json;
         try
         {
@@ -415,6 +416,7 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         {
             choice.Retranslate(_text, choice.Count);
         }
+        RetranslateAlsoHeard();
     }
 
     private static List<string>? Checked(IEnumerable<FacetChoice> choices) =>

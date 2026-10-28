@@ -3699,6 +3699,25 @@ In a Docker container:
   <data name="Filter.Heard.Any" xml:space="preserve">
     <value>At any time</value>
   </data>
+  <data name="Filter.Label.AlsoHeard" xml:space="preserve">
+    <value>Also show stations heard in the last</value>
+    <comment>From the packet history (F1.43), followed by a choice: Off, 1 day, 3 days, 7 days.</comment>
+  </data>
+  <data name="Filter.AlsoHeard.Off" xml:space="preserve">
+    <value>Off: the live map only</value>
+  </data>
+  <data name="Filter.AlsoHeard.Days" xml:space="preserve">
+    <value>{days, plural, one {24 hours} other {# days}}</value>
+  </data>
+  <data name="Filter.AlsoHeard.Added" xml:space="preserve">
+    <value>{count, plural, =0 {None more heard} one {+# heard} other {+# heard}} in the last {days, plural, one {24 hours} other {# days}}, from the history</value>
+  </data>
+  <data name="Filter.AlsoHeard.Limited" xml:space="preserve">
+    <value>+{count} heard in the last {days, plural, one {24 hours} other {# days}}: the most recent, as there are more</value>
+  </data>
+  <data name="Details.FromHistory" xml:space="preserve">
+    <value>From the history: not heard since the time below.</value>
+  </data>
   <data name="Filter.Heard.Within" xml:space="preserve">
     <value>In the last {minutes, plural, one {# minute} other {# minutes}}</value>
   </data>

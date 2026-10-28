@@ -56,6 +56,9 @@ public sealed class MapView : Control, IDisposable
     private readonly Dictionary<string, StationMark> _byName = new(StringComparer.Ordinal);
     private IReadOnlyList<StationMark> _marks = [];
     private IReadOnlyList<StationMark> _drawn = [];
+
+    // Stations from the packet history the store doesn't hold, drawn faded (docs/features/F1.43-map-history-range.md).
+    private IReadOnlyList<StationMark> _alsoHeard = [];
     private StationMark? _me;
     private Point? _pressedAt;
     private double _wheel;
@@ -733,12 +736,33 @@ public sealed class MapView : Control, IDisposable
             _tracks.Apply(update);
         }
         _marks = [.. _byName.Values];
-        _drawn = _me is null ? _marks : [.. _marks, _me];
-        if (Selected is { } selected && !_byName.ContainsKey(selected))
+        Compose();
+        if (Selected is { } selected && !_byName.ContainsKey(selected) && !_alsoHeard.Any(m => m.Name == selected))
         {
             Select(null);
         }
         InvalidateVisual();
+    }
+
+    /// <summary>
+    /// The stations the packet history adds (F1.43 behavior 2), drawn faded; those the store holds are drawn live
+    /// instead. Empty takes them away.
+    /// </summary>
+    public void SetAlsoHeard(IEnumerable<StationState> stations)
+    {
+        ArgumentNullException.ThrowIfNull(stations);
+        _alsoHeard = [.. stations.Select(StationMark.From)];
+        Compose();
+        InvalidateVisual();
+    }
+
+    /// <summary>The added stations held, for tests.</summary>
+    internal IReadOnlyList<StationMark> AlsoHeard => _alsoHeard;
+
+    private void Compose()
+    {
+        var added = _alsoHeard.Count == 0 ? [] : _alsoHeard.Where(m => !_byName.ContainsKey(m.Name)).ToList();
+        _drawn = [.. added, .. _marks, .. _me is null ? Array.Empty<StationMark>() : [_me]];
     }
 
     /// <summary>
@@ -756,7 +780,7 @@ public sealed class MapView : Control, IDisposable
         {
             _me = null;
         }
-        _drawn = _me is null ? _marks : [.. _marks, _me];
+        Compose();
         InvalidateVisual();
     }
 
@@ -863,6 +887,37 @@ public sealed class MapView : Control, IDisposable
     public bool SymbolBacking { get; set; }
 
     /// <summary>The centre (degrees) and resolution (metres per pixel) of the view, once it has a size.</summary>
+    /// <summary>
+    /// The area shown, in degrees; west is past east when it crosses the antimeridian. Null before the map is laid out.
+    /// </summary>
+    public (double South, double West, double North, double East)? Area
+    {
+        get
+        {
+            var viewport = _map.Navigator.Viewport;
+            if (viewport.Width <= 0 || viewport.Height <= 0)
+            {
+                return null;
+            }
+            var halfX = viewport.Width / 2 * viewport.Resolution;
+            var halfY = viewport.Height / 2 * viewport.Resolution;
+            var (west, south) = SphericalMercator.ToLonLat(viewport.CenterX - halfX, viewport.CenterY - halfY);
+            var (east, north) = SphericalMercator.ToLonLat(viewport.CenterX + halfX, viewport.CenterY + halfY);
+            if (halfX * 2 >= 2 * Math.PI * 6378137)
+            {
+                (west, east) = (-180, 180); // the whole world across
+            }
+            return (Math.Max(-90, south), Normalise(west), Math.Min(90, north), Normalise(east));
+
+            // Into -180..180, keeping 180 itself as the east edge.
+            static double Normalise(double lon)
+            {
+                var wrapped = (((lon + 180) % 360) + 360) % 360 - 180;
+                return wrapped == -180 && lon > 0 ? 180 : wrapped;
+            }
+        }
+    }
+
     public (double Latitude, double Longitude, double Resolution)? View
     {
         get
@@ -1271,7 +1326,7 @@ public sealed class MapView : Control, IDisposable
         var reach = _symbolDip / 2 + HitSlop;
         StationMark? best = null;
         var bestDistance = double.MaxValue;
-        foreach (var mark in _marks)
+        foreach (var mark in _marks.Concat(_alsoHeard))
         {
             // An estimated station is where it's drawn (F1.17).
             var at = ToScreen(

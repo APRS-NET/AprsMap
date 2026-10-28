@@ -83,6 +83,7 @@ public sealed partial class StationDetailsViewModel
     {
         TrackSpan = TrackSpan.Live;
         LongTrack = null;
+        FromHistory = false;
         KeptPackets.Clear();
         KeptPacketsShown = false;
         HasOlderPackets = false;

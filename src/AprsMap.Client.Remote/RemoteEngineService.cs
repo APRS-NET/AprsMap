@@ -365,6 +365,21 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         );
 
     /// <inheritdoc />
+    public Task<KeptStations> GetKeptStationsAsync(
+        KeptStationsQuery query,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<KeptStations>(EngineHub.GetKeptStations, query, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task<StationDetail?> GetKeptStationAsync(string name, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<StationDetail?>(EngineHub.GetKeptStation, name, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<PacketView>> GetStationPacketsAsync(
         string name,
         DateTimeOffset? before,

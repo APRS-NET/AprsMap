@@ -36,6 +36,38 @@ public sealed record HistorySettings(
     public bool IsValid => Days is >= 0 and <= MaxDays && MaxMegabytes is >= MinMegabytes and <= MaxMegabytesLimit;
 }
 
+/// <summary>
+/// The stations to add to the map from the packet history (docs/features/F1.43-map-history-range.md, behavior 2): heard
+/// since <paramref name="Since"/> inside the box, at most <paramref name="Max"/>.
+/// </summary>
+/// <param name="Since">How far back.</param>
+/// <param name="South">The box's southern edge, degrees.</param>
+/// <param name="West">Its western edge; past <paramref name="East"/> when the box crosses the antimeridian.</param>
+/// <param name="North">Its northern edge.</param>
+/// <param name="East">Its eastern edge.</param>
+/// <param name="Max">The most to return, the most recently heard first.</param>
+public sealed record KeptStationsQuery(
+    DateTimeOffset Since,
+    double South,
+    double West,
+    double North,
+    double East,
+    int Max = KeptStationsQuery.DefaultMax
+)
+{
+    /// <summary>The most added at once (decision 4).</summary>
+    public const int DefaultMax = 2_000;
+}
+
+/// <summary>The stations the history adds to the map (F1.43 behavior 3).</summary>
+/// <param name="Stations">Each at its last kept position, marked stale, the most recently heard first.</param>
+/// <param name="Total">How many there were before the limit.</param>
+public sealed record KeptStations(IReadOnlyList<StationState> Stations, int Total)
+{
+    /// <summary>None.</summary>
+    public static readonly KeptStations None = new([], 0);
+}
+
 /// <summary>What stands in the history's way, if anything (F1.41 behaviors 5, 13).</summary>
 public enum HistoryProblem
 {
