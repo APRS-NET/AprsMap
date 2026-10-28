@@ -43,6 +43,28 @@ public interface IEngineService
     Task<StationDetail?> GetStationAsync(string name, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// <paramref name="name"/>'s track since <paramref name="since"/>, oldest first, from the packet history
+    /// (docs/features/F1.41-persistent-history.md, behavior 8): F1.5's 20 m rule, at most
+    /// <see cref="TrackPoint.MaxLongTrack"/> points. Without a history, the track the store holds.
+    /// </summary>
+    Task<IReadOnlyList<TrackPoint>> GetTrackAsync(
+        string name,
+        DateTimeOffset since,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
+    /// Up to <paramref name="count"/> of <paramref name="name"/>'s packets from the packet history, received before
+    /// <paramref name="before"/> (the newest with null), newest first (F1.41 behavior 9); empty without a history.
+    /// </summary>
+    Task<IReadOnlyList<PacketView>> GetStationPacketsAsync(
+        string name,
+        DateTimeOffset? before,
+        int count,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>
     /// Turns a quick toggle on or off (docs/features/F1.15-quick-toggles.md) and saves it with the settings: APRS-IS
     /// disconnects or connects at once, and tile downloads and address lookups stop or start. Turning
     /// <see cref="Toggle.Transmit"/> on is checked first (docs/features/F2.1-own-station.md, behavior 5).

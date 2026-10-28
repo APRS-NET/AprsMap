@@ -344,6 +344,33 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         );
 
     /// <inheritdoc />
+    public Task<IReadOnlyList<TrackPoint>> GetTrackAsync(
+        string name,
+        DateTimeOffset since,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<TrackPoint>>(EngineHub.GetTrack, name, since, cancellationToken)
+        );
+
+    /// <inheritdoc />
+    public Task<IReadOnlyList<PacketView>> GetStationPacketsAsync(
+        string name,
+        DateTimeOffset? before,
+        int count,
+        CancellationToken cancellationToken = default
+    ) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<PacketView>>(
+                EngineHub.GetStationPackets,
+                name,
+                before,
+                count,
+                cancellationToken
+            )
+        );
+
+    /// <inheritdoc />
     public Task<HistoryStatus> GetHistoryStatusAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<HistoryStatus>(EngineHub.GetHistoryStatus, cancellationToken));
 

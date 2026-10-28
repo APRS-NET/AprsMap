@@ -137,6 +137,31 @@
             IsVisible="{Binding CanClearTrack}"
           />
         </WrapPanel>
+        <!-- How far back the track reaches, from the packet history (F1.41 behavior 8). -->
+        <WrapPanel
+          x:Name="TrackSpanChoice"
+          ItemSpacing="8"
+          LineSpacing="4"
+          IsVisible="{Binding PositionText, Converter={x:Static ObjectConverters.IsNotNull}}"
+        >
+          <TextBlock
+            Text="{l:T Details.Track}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            VerticalAlignment="Center"
+          />
+          <ItemsControl ItemsSource="{Binding TrackSpans}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel ItemSpacing="8" LineSpacing="4" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:StationDetailsViewModel+TrackSpanOption">
+                <RadioButton GroupName="TrackSpan" Content="{Binding Label}" IsChecked="{Binding IsSelected}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </WrapPanel>
         <Grid IsVisible="{Binding PositionText, Converter={x:Static ObjectConverters.IsNotNull}}">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" SharedSizeGroup="Label" />
@@ -487,6 +512,49 @@
             Text="{Binding LastPacket}"
             FontFamily="{DynamicResource Font.Mono}"
             TextWrapping="Wrap"
+          />
+        </StackPanel>
+        <!-- The packets kept for this station, newest first, a page at a time (F1.41 behavior 9). -->
+        <StackPanel
+          x:Name="KeptPacketsSection"
+          Spacing="4"
+          IsVisible="{Binding Name, Converter={x:Static ObjectConverters.IsNotNull}}"
+        >
+          <Button
+            x:Name="ShowKeptPacketsButton"
+            Content="{l:T Details.Kept.Show}"
+            Command="{Binding ShowKeptPacketsCommand}"
+            IsVisible="{Binding !KeptPacketsShown}"
+          />
+          <TextBlock
+            Text="{l:T Details.Kept}"
+            Foreground="{DynamicResource Brush.TextMuted}"
+            IsVisible="{Binding KeptPacketsShown}"
+          />
+          <ItemsControl x:Name="KeptPacketsList" ItemsSource="{Binding KeptPackets}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:KeptPacketRow">
+                <StackPanel Margin="0,0,0,4">
+                  <TextBlock Text="{Binding Time}" Classes="detail" />
+                  <SelectableTextBlock
+                    Text="{Binding Raw}"
+                    FontFamily="{DynamicResource Font.Mono}"
+                    TextWrapping="Wrap"
+                  />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock
+            Text="{Binding KeptPacketsNote}"
+            IsVisible="{Binding KeptPacketsNote, Converter={x:Static ObjectConverters.IsNotNull}}"
+            TextWrapping="Wrap"
+          />
+          <Button
+            x:Name="OlderPacketsButton"
+            Content="{l:T Details.Kept.Older}"
+            Command="{Binding OlderPacketsCommand}"
+            IsVisible="{Binding HasOlderPackets}"
           />
         </StackPanel>
       </StackPanel>

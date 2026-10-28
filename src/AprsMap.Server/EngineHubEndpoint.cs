@@ -324,6 +324,22 @@ internal sealed class EngineHubEndpoint(
         return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.RoutesOut(routes) : routes;
     }
 
+    /// <summary>A station's longer track (F1.41 behavior 8); the home's, for a viewer it's shielded from, is withheld.</summary>
+    [HubMethodName(EngineHub.GetTrack)]
+    public async Task<IReadOnlyList<TrackPoint>> GetTrack(string name, DateTimeOffset since) =>
+        await ShieldAsync().ConfigureAwait(false) is { } shield && shield.Hides(name)
+            ? []
+            : await engine.GetTrackAsync(name, since, Context.ConnectionAborted).ConfigureAwait(false);
+
+    /// <summary>A station's kept packets (F1.41 behavior 9); the home's, for a viewer it's shielded from, are withheld.</summary>
+    [HubMethodName(EngineHub.GetStationPackets)]
+    public async Task<IReadOnlyList<PacketView>> GetStationPackets(string name, DateTimeOffset? before, int count) =>
+        await ShieldAsync().ConfigureAwait(false) is { } shield && shield.Hides(name)
+            ? []
+            : await engine
+                .GetStationPacketsAsync(name, before, Math.Clamp(count, 1, 500), Context.ConnectionAborted)
+                .ConfigureAwait(false);
+
     [HubMethodName(EngineHub.GetStation)]
     public async Task<StationDetail?> GetStation(string name)
     {

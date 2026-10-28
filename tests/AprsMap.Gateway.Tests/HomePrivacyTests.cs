@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using AprsMap.Contracts;
 using AprsNet.Packets;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AprsMap.Gateway.Tests;
 
@@ -156,6 +157,28 @@ public sealed class HomePrivacyTests(OperatorPortGatewayFactory gateway) : IClas
         Assert.Equal(Home.Latitude, (await operatorPort.GetSettingsAsync(Ct)).GetActiveProfile()!.Latitude);
         var toDenver = (await viewer.GetDestinationAsync(40, -105, Ct)).DistanceKm!.Value;
         Assert.Equal(Geodesy.DistanceKm(Square, new AprsPosition(40, -105)), toDenver, precision: 6);
+    }
+
+    [Fact]
+    public async Task AViewerIsntGivenTheHomesKeptTrackOrPackets()
+    {
+        // F1.41 behaviors 8, 9: the history would otherwise give away what the shield hides.
+        var cookie = await SignInOnOperatorPort();
+        await using var operatorPort = gateway.CreateRemote(cookie, localPort: OperatorPortGatewayFactory.OperatorPort);
+        await operatorPort.StartAsync(Ct);
+        var home = (await operatorPort.GetSettingsAsync(Ct)).GetActiveProfile()!.Callsign;
+        var engine = gateway.Services.GetRequiredService<Core.Engine>();
+        engine.Accept($"{home}>APRS:!4903.50N/07201.75W-home");
+        engine.Accept("N0CAR-9>APRS:!4913.50N/07201.75W>away");
+        await engine.FlushHistoryAsync();
+        await using var viewer = gateway.CreateRemote();
+        await viewer.StartAsync(Ct);
+        var since = DateTimeOffset.UtcNow.AddDays(-1);
+
+        Assert.Empty(await viewer.GetTrackAsync(home, since, Ct));
+        Assert.Empty(await viewer.GetStationPacketsAsync(home, null, 10, Ct));
+        Assert.Single(await viewer.GetStationPacketsAsync("N0CAR-9", null, 10, Ct));
+        Assert.Single(await operatorPort.GetStationPacketsAsync(home, null, 10, Ct));
     }
 
     private async Task<string> SignInOnOperatorPort()

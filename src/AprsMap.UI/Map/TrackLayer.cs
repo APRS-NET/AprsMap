@@ -30,11 +30,35 @@ internal sealed class TrackLayer
 
     private readonly Dictionary<string, Track> _tracks = new(StringComparer.Ordinal);
 
+    // One station's longer track from the packet history, drawn in place of its live one
+    // (docs/features/F1.41-persistent-history.md, behavior 8); it takes the live track's new points as they come.
+    private (string Name, Track Track)? _long;
+
     /// <summary>How many tracks are held.</summary>
     public int Count => _tracks.Count;
 
     /// <summary>The points held for <paramref name="name"/>, in map coordinates, oldest first; empty for none.</summary>
-    public IReadOnlyList<MPoint> PointsOf(string name) => _tracks.TryGetValue(name, out var track) ? track.Points : [];
+    public IReadOnlyList<MPoint> PointsOf(string name) => TrackOf(name)?.Points ?? [];
+
+    /// <summary>
+    /// Draws <paramref name="points"/> as <paramref name="name"/>'s track instead of its live one, until another is set
+    /// or null goes back to the live tracks (F1.41 behavior 8).
+    /// </summary>
+    public void SetLong(string? name, IReadOnlyList<TrackPoint>? points)
+    {
+        if (name is null || points is null)
+        {
+            _long = null;
+            return;
+        }
+        var track = new Track();
+        track.Points.AddRange(points.Select(ToMap));
+        track.Times.AddRange(points.Select(p => p.Time));
+        _long = (name, track);
+    }
+
+    private Track? TrackOf(string name) =>
+        _long is { } held && held.Name == name ? held.Track : _tracks.GetValueOrDefault(name);
 
     /// <summary>
     /// The time of the point of <paramref name="name"/>'s track nearest <paramref name="at"/> on screen, within
@@ -42,7 +66,7 @@ internal sealed class TrackLayer
     /// </summary>
     public DateTimeOffset? PointAt(string name, Mapsui.Viewport viewport, SKPoint at, float slop)
     {
-        if (!_tracks.TryGetValue(name, out var track))
+        if (TrackOf(name) is not { } track)
         {
             return null;
         }
@@ -75,6 +99,13 @@ internal sealed class TrackLayer
         TrackUpdates.Apply(track.Points, update, ToMap);
         TrackUpdates.Apply(track.Times, update, p => p.Time);
         track.Dirty = true;
+        if (_long is { } held && held.Name == update.Name && !update.Reset)
+        {
+            // New points join the longer track; the live track's length limit doesn't apply to it.
+            held.Track.Points.AddRange(update.Added.Select(ToMap));
+            held.Track.Times.AddRange(update.Added.Select(p => p.Time));
+            held.Track.Dirty = true;
+        }
         if (track.Points.Count == 0)
         {
             _tracks.Remove(update.Name);
@@ -106,8 +137,11 @@ internal sealed class TrackLayer
             viewport.CenterX + half.X,
             viewport.CenterY + half.Y
         );
-        foreach (var (name, track) in _tracks)
+        var names =
+            _long is { } held && !_tracks.ContainsKey(held.Name) ? _tracks.Keys.Append(held.Name) : _tracks.Keys;
+        foreach (var name in names)
         {
+            var track = TrackOf(name)!;
             if (track.Points.Count < 2 || styleOf(name) is not var (style, stale) || !track.Bounds.Intersects(view))
             {
                 continue;
