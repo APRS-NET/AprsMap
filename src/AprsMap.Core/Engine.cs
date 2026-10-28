@@ -757,6 +757,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             await TurnAprsIsOffAsync(cancellationToken).ConfigureAwait(false); // #415: before anything connects
         }
+        await RestoreFromHistoryAsync(cancellationToken).ConfigureAwait(false); // F1.41 behavior 7: before the sources
         var sweeping = SweepAsync(cancellationToken);
         var others = RunOtherSourcesAsync(cancellationToken);
         var updates = RunUpdatesAsync(cancellationToken); // F4.15
