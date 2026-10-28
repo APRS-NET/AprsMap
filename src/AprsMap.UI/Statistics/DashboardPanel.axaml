@@ -349,6 +349,14 @@
               <TextBlock Classes="title" Text="{l:T Dashboard.Connection}" />
               <ItemsControl ItemsSource="{Binding Connections}" Margin="0,4,0,0" />
               <TextBlock Classes="detail" Text="{Binding ReconnectsText}" Margin="0,4,0,0" />
+              <TextBlock
+                x:Name="HistoryWarning"
+                Text="{Binding HistoryWarning}"
+                IsVisible="{Binding HistoryWarning, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+                Margin="0,4,0,0"
+              />
             </StackPanel>
           </Border>
 
