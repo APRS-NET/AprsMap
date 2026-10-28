@@ -90,12 +90,36 @@ public class GatewayFactory : WebApplicationFactory<Program>
         return new RemoteEngineService(connection);
     }
 
+    // The folder goes once the host has stopped: its engine holds the packet history's files open (F1.41), which
+    // Windows won't delete, and an asynchronous dispose can call Dispose(true) before the host is gone.
+    public override async ValueTask DisposeAsync()
+    {
+        await base.DisposeAsync();
+        DeleteFolder();
+        GC.SuppressFinalize(this);
+    }
+
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        if (disposing && Directory.Exists(SettingsFolder))
+        if (disposing)
         {
-            Directory.Delete(SettingsFolder, recursive: true);
+            DeleteFolder();
+        }
+    }
+
+    private void DeleteFolder()
+    {
+        try
+        {
+            if (Directory.Exists(SettingsFolder))
+            {
+                Directory.Delete(SettingsFolder, recursive: true);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Still in use: DisposeAsync deletes it after the host has stopped.
         }
     }
 }

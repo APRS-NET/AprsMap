@@ -37,6 +37,12 @@ public sealed partial class DataSectionViewModel : ObservableObject
     /// </summary>
     public Capture.CaptureSettingsViewModel? Capture { get; init; }
 
+    /// <summary>
+    /// History (docs/features/F1.41-persistent-history.md, behavior 2), where this viewer may change the station; null
+    /// otherwise.
+    /// </summary>
+    public HistorySettingsViewModel? History { get; init; }
+
     /// <summary>The device list (docs/features/F4.16-device-list.md): for everyone; its checks for whoever may change them.</summary>
     public DeviceListViewModel? DeviceList { get; init; }
 
@@ -103,5 +109,6 @@ public sealed partial class DataSectionViewModel : ObservableObject
     {
         Description = _text[SharedStation ? "Settings.Data.Description.Browser" : "Settings.Data.Description.Desktop"];
         Clear?.Retranslate();
+        History?.Retranslate();
     }
 }

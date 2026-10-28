@@ -508,6 +508,9 @@ public sealed partial class MainViewModel : ObservableObject
             Capture = _settings is { ReadOnly: false }
                 ? new Capture.CaptureSettingsViewModel(engine, _text, Show)
                 : null,
+            History = _settings is { ReadOnly: false }
+                ? new HistorySettingsViewModel(engine, _text, time.LocalTimeZone, Show)
+                : null, // F1.41
             DeviceList = new DeviceListViewModel(engine, _text, time, _settings is { ReadOnly: false }, Show),
             UpdateChecks =
                 (OwnUpdates || IsOperator) && Updates.Status is not { CheckDisabled: true }
@@ -523,6 +526,7 @@ public sealed partial class MainViewModel : ObservableObject
         if (_settings is { } shown)
         {
             data.Capture?.Show(shown);
+            _ = data.History?.ShowAsync(shown);
             data.DeviceList?.Show(shown);
             if (UpdateEngine is null)
             {
@@ -1418,6 +1422,7 @@ public sealed partial class MainViewModel : ObservableObject
         Details.Refresh(); // the lists a station is in
         LiveObjects = [.. settings.GetActiveProfile()?.ObjectList.Where(o => o.Live) ?? []];
         Settings?.Data?.Capture?.Show(settings);
+        _ = Settings?.Data?.History?.ShowAsync(settings);
         Settings?.Data?.DeviceList?.Show(settings);
         if (UpdateEngine is null)
         {

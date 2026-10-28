@@ -19,6 +19,14 @@ internal static class SettingsValidator
             throw Fail(EngineErrorCodes.SettingsIncomplete, "Settings are incomplete.");
         }
 
+        if (settings.History is { IsValid: false })
+        {
+            throw Fail(
+                EngineErrorCodes.HistoryInvalid,
+                $"History is kept for 0 to {HistorySettings.MaxDays} days, within {HistorySettings.MinMegabytes} to {HistorySettings.MaxMegabytesLimit} MB."
+            ); // F1.41 behavior 2
+        }
+
         // The source list (F1.25): ids unique, names given, an APRS-IS source with a server.
         var sources = new Dictionary<string, SourceSettings>(StringComparer.Ordinal);
         foreach (var source in settings.SourceList)

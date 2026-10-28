@@ -1696,8 +1696,69 @@
             </ItemsControl>
           </StackPanel>
 
-          <!-- Data: packet capture. Clear data and Start over are in the Tools menu (F1.29). -->
+          <!-- Data: packet history and capture. Clear data and Start over are in the Tools menu (F1.29). -->
           <StackPanel x:Name="DataSection" IsVisible="{Binding IsDataSection}" Spacing="12">
+            <!-- History (F1.41 behaviors 2, 3, 5, 13): how long packets are kept, the size limit, what's kept now. -->
+            <StackPanel
+              x:Name="HistorySection"
+              Spacing="8"
+              IsVisible="{Binding Data.History, Converter={x:Static ObjectConverters.IsNotNull}}"
+            >
+              <TextBlock Text="{l:T History.Title}" FontWeight="SemiBold" />
+              <TextBlock Text="{l:T History.Description}" TextWrapping="Wrap" />
+              <ToggleSwitch
+                x:Name="HistorySwitch"
+                IsChecked="{Binding Data.History.On, FallbackValue=False}"
+                IsEnabled="{Binding Data.History.CanChange, FallbackValue=False}"
+                OnContent="{l:T History.Switch}"
+                OffContent="{l:T History.Switch}"
+              />
+              <WrapPanel ItemSpacing="12" LineSpacing="8">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T History.Days}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="HistoryDaysBox"
+                    Text="{Binding Data.History.Days, FallbackValue=''}"
+                    IsEnabled="{Binding Data.History.CanChange, FallbackValue=False}"
+                    AutomationProperties.Name="{l:T History.Days}"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T History.MaxMegabytes}" Foreground="{DynamicResource Brush.TextMuted}" />
+                  <TextBox
+                    x:Name="HistoryMegabytesBox"
+                    Text="{Binding Data.History.MaxMegabytes, FallbackValue=''}"
+                    IsEnabled="{Binding Data.History.CanChange, FallbackValue=False}"
+                    AutomationProperties.Name="{l:T History.MaxMegabytes}"
+                    MinWidth="96"
+                  />
+                </StackPanel>
+              </WrapPanel>
+              <TextBlock x:Name="HistoryStatusText" Text="{Binding Data.History.StatusText}" TextWrapping="Wrap" />
+              <TextBlock
+                x:Name="HistoryWarningText"
+                Text="{Binding Data.History.Warning}"
+                IsVisible="{Binding Data.History.Warning, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+              <WrapPanel ItemSpacing="8" LineSpacing="8">
+                <Button
+                  x:Name="HistorySaveButton"
+                  Content="{l:T History.Save}"
+                  Command="{Binding Data.History.SaveCommand}"
+                  IsEnabled="{Binding Data.History.CanChange, FallbackValue=False}"
+                />
+                <TextBlock Text="{Binding Data.History.SavedText}" VerticalAlignment="Center" />
+              </WrapPanel>
+              <TextBlock
+                Text="{Binding Data.History.Error}"
+                IsVisible="{Binding Data.History.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Foreground="{DynamicResource Brush.Warn}"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
             <!-- Packet capture (F1.27 behaviors 4, 5): off by default, with its limits. -->
             <StackPanel
               x:Name="CaptureSection"

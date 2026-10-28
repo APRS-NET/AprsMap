@@ -63,6 +63,9 @@ public static class EngineErrorCodes
     /// <summary>Settings were sent without profiles or units.</summary>
     public const string SettingsIncomplete = "settings.incomplete";
 
+    /// <summary>History's days or size limit is out of range (docs/features/F1.41-persistent-history.md, behavior 2).</summary>
+    public const string HistoryInvalid = "settings.history-invalid";
+
     /// <summary>Two profiles share an id, or one has none.</summary>
     public const string ProfileIdDuplicate = "settings.profile.id-duplicate";
 

@@ -5,18 +5,18 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup Label="APRS.NET (pre-release until its 1.0; Dependabot proposes each new alpha)">
-    <PackageVersion Include="AprsNet.AprsIsTcpClient" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.Beacons" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.Corpus" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.DeviceId" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.Filters" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.Gps" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.IGate" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.Kiss" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.Kiss.Serial" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.Messaging" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.Packets" Version="0.7.0-alpha.3" />
-    <PackageVersion Include="AprsNet.Symbols" Version="0.7.0-alpha.3" />
+    <PackageVersion Include="AprsNet.AprsIsTcpClient" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.Beacons" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.Corpus" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.DeviceId" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.Filters" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.Gps" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.IGate" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.Kiss" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.Kiss.Serial" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.Messaging" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.Packets" Version="0.7.0-alpha.4" />
+    <PackageVersion Include="AprsNet.Symbols" Version="0.7.0-alpha.4" />
   </ItemGroup>
   <ItemGroup Label="Build">
     <PackageVersion Include="MinVer" Version="8.0.0" />
@@ -39,6 +39,7 @@
     <PackageVersion Include="Mapsui.Tiling" Version="5.1.0" />
     <PackageVersion Include="MessageFormat" Version="8.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.14" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.14" />

@@ -33,6 +33,7 @@ namespace AprsMap.Contracts;
 [JsonSerializable(typeof(GatewayTest))]
 [JsonSerializable(typeof(CaptureQuery))]
 [JsonSerializable(typeof(CaptureView))]
+[JsonSerializable(typeof(HistoryStatus))]
 [JsonSerializable(typeof(CaptureExport))]
 [JsonSerializable(typeof(CaptureExportResult))]
 [JsonSerializable(typeof(TncCommand))]
