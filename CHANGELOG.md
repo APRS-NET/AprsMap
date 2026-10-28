@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.9...v0.8.0-alpha.1) (2026-10-28)
+
+
+### Miscellaneous Chores
+
+* release 0.8.0-alpha.1 ([5e6c9e9](https://github.com/APRS-NET/AprsMap/commit/5e6c9e90af469f1e4a8e03029153850c7532a89a))
+
 ## [0.7.0-alpha.9](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.8...v0.7.0-alpha.9) (2026-10-28)
 
 
