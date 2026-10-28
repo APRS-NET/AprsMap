@@ -441,6 +441,34 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>The queries asked, in order.</summary>
     public List<CaptureQuery> CaptureQueries { get; } = [];
 
+    /// <summary>What <see cref="GetTrackAsync"/> answers, and what it was asked (F1.41 behavior 8).</summary>
+    public IReadOnlyList<TrackPoint> LongTrack { get; set; } = [];
+
+    public List<(string Name, DateTimeOffset Since)> TrackQueries { get; } = [];
+
+    public Task<IReadOnlyList<TrackPoint>> GetTrackAsync(
+        string name,
+        DateTimeOffset since,
+        CancellationToken cancellationToken = default
+    )
+    {
+        TrackQueries.Add((name, since));
+        return Task.FromResult(LongTrack);
+    }
+
+    /// <summary>The kept packets <see cref="GetStationPacketsAsync"/> pages through, newest first (F1.41 behavior 9).</summary>
+    public IReadOnlyList<PacketView> KeptPackets { get; set; } = [];
+
+    public Task<IReadOnlyList<PacketView>> GetStationPacketsAsync(
+        string name,
+        DateTimeOffset? before,
+        int count,
+        CancellationToken cancellationToken = default
+    ) =>
+        Task.FromResult<IReadOnlyList<PacketView>>([
+            .. KeptPackets.Where(p => before is null || p.ReceivedAt < before).Take(count),
+        ]);
+
     /// <summary>What <see cref="GetHistoryStatusAsync"/> answers (F1.41).</summary>
     public HistoryStatus History { get; set; } = new(true, HistorySettings.Default);
 

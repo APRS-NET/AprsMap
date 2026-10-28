@@ -202,6 +202,92 @@ public sealed partial class Engine
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<TrackPoint>> GetTrackAsync(
+        string name,
+        DateTimeOffset since,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        if (_history is not { Usable: true, Settings.On: true })
+        {
+            return _stations.GetTrack(name); // the live track is all there is
+        }
+        var kept = await _history.PositionsAsync(name, since, cancellationToken).ConfigureAwait(false);
+        return LongTrack(kept);
+    }
+
+    /// <summary>
+    /// The points as F1.5 joins them: one within 20 m of the last moves its time on (behavior 2), then thinned evenly to
+    /// <see cref="TrackPoint.MaxLongTrack"/>, keeping the first and the last.
+    /// </summary>
+    internal static IReadOnlyList<TrackPoint> LongTrack(IReadOnlyList<TrackPoint> kept)
+    {
+        var track = new List<TrackPoint>(kept.Count);
+        foreach (var point in kept)
+        {
+            if (
+                track.Count > 0
+                && Geodesy.DistanceKm(
+                    new AprsPosition(track[^1].Latitude, track[^1].Longitude),
+                    new AprsPosition(point.Latitude, point.Longitude)
+                ) < StationStore.TrackMoveKm
+            )
+            {
+                track[^1] = track[^1] with { Time = point.Time };
+                continue;
+            }
+            track.Add(point);
+        }
+        if (track.Count <= TrackPoint.MaxLongTrack)
+        {
+            return track;
+        }
+        var step = (track.Count - 1) / (double)(TrackPoint.MaxLongTrack - 1);
+        return [.. Enumerable.Range(0, TrackPoint.MaxLongTrack).Select(i => track[(int)Math.Round(i * step)])];
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<PacketView>> GetStationPacketsAsync(
+        string name,
+        DateTimeOffset? before,
+        int count,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        if (_history is not { Usable: true } || count < 1)
+        {
+            return [];
+        }
+        var records = await _history.PacketsOfAsync(name, before, count, cancellationToken).ConfigureAwait(false);
+        var views = new List<PacketView>(records.Count);
+        foreach (var record in records)
+        {
+            AprsPacket packet;
+            try
+            {
+                packet = AprsPacket.Parse(Encoding.Latin1.GetString(record.Raw));
+            }
+            catch (ArgumentException)
+            {
+                continue;
+            }
+            var view = PacketSummarizer.Summarize(
+                packet,
+                record.ReceivedAt,
+                record.Duplicate,
+                IsOwnReceiver(record.SourceId)
+            ) with
+            {
+                SourceId = record.SourceId,
+            };
+            views.Add(record.Own ? view with { Markers = PacketMarkers.Sent } : view);
+        }
+        return views;
+    }
+
+    /// <inheritdoc />
     public Task<HistoryStatus> GetHistoryStatusAsync(CancellationToken cancellationToken = default) =>
         _history?.StatusAsync(_options.History.Configured, cancellationToken)
         ?? Task.FromResult(HistoryStatus.NotAvailable);

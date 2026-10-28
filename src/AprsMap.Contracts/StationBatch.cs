@@ -398,7 +398,11 @@ public sealed record StationBatch(
 /// <param name="Latitude">Latitude in degrees.</param>
 /// <param name="Longitude">Longitude in degrees.</param>
 /// <param name="Time">When the station was last heard at this point (a report within 20 m moves the time on).</param>
-public sealed record TrackPoint(double Latitude, double Longitude, DateTimeOffset Time);
+public sealed record TrackPoint(double Latitude, double Longitude, DateTimeOffset Time)
+{
+    /// <summary>The most points a track from the packet history has (docs/features/F1.41-persistent-history.md, behavior 8).</summary>
+    public const int MaxLongTrack = 10_000;
+}
 
 /// <summary>
 /// How one station's track changed: apply <see cref="Reset"/> first (forget the points held), then append

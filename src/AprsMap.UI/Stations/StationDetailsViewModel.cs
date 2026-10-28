@@ -43,6 +43,10 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         {
             Write();
             RouteText = Words(_route);
+            foreach (var option in TrackSpans)
+            {
+                option.Refresh();
+            }
         };
     }
 
@@ -499,6 +503,8 @@ public sealed partial class StationDetailsViewModel : ObservableObject
             _detail = null;
             _telemetry = null;
             WriteTelemetry();
+            Name = name;
+            ResetHistory(); // F1.41 behaviors 8, 9
         }
         Name = name;
         CanClearTrack = name is not null && _canClearTrack(name);

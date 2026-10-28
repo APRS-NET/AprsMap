@@ -3454,6 +3454,31 @@ In a Docker container:
     <value>{minutes, plural, one {# minute old} other {# minutes old}}</value>
     <comment>After a weather reading older than the station's last packet.</comment>
   </data>
+  <data name="Details.Track" xml:space="preserve">
+    <value>Track</value>
+  </data>
+  <data name="Details.Track.Live" xml:space="preserve">
+    <value>Live</value>
+    <comment>The track as the map keeps it for every station.</comment>
+  </data>
+  <data name="Details.Track.Day" xml:space="preserve">
+    <value>24 hours</value>
+  </data>
+  <data name="Details.Track.Week" xml:space="preserve">
+    <value>7 days</value>
+  </data>
+  <data name="Details.Kept" xml:space="preserve">
+    <value>Kept packets, newest first</value>
+  </data>
+  <data name="Details.Kept.Show" xml:space="preserve">
+    <value>Show kept packets</value>
+  </data>
+  <data name="Details.Kept.Older" xml:space="preserve">
+    <value>Older packets</value>
+  </data>
+  <data name="Details.Kept.None" xml:space="preserve">
+    <value>No packets are kept for this station.</value>
+  </data>
   <data name="Details.ClearTrack" xml:space="preserve">
     <value>Clear track</value>
     <comment>Details: empties the station's drawn route, keeping where it is now.</comment>

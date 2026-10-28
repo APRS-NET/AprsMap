@@ -679,6 +679,16 @@ public sealed class MapView : Control, IDisposable
     /// <summary>The tracks held, for tests.</summary>
     internal TrackLayer TrackLayer => _tracks;
 
+    /// <summary>
+    /// <paramref name="name"/>'s longer track from the packet history, drawn instead of its live one; null goes back to
+    /// the live tracks (docs/features/F1.41-persistent-history.md, behavior 8).
+    /// </summary>
+    public void SetLongTrack(string? name, IReadOnlyList<TrackPoint>? points)
+    {
+        _tracks.SetLong(name, points);
+        InvalidateVisual();
+    }
+
     /// <summary>Every station's track, replacing those held (a panel shown again, or a resubscription).</summary>
     public void SetTracks(IEnumerable<KeyValuePair<string, IReadOnlyList<TrackPoint>>> tracks)
     {

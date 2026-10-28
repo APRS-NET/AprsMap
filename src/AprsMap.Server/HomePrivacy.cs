@@ -63,6 +63,12 @@ internal sealed class HomeShield(HomePrivacy mode, AprsPosition? home, string? h
     private bool IsHomeName(string? name) =>
         homeName is not null && string.Equals(name, homeName, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Whether <paramref name="name"/> is the station whose whereabouts this viewer isn't shown: its kept track and packets
+    /// are withheld (docs/features/F1.41-persistent-history.md, behaviors 8, 9).
+    /// </summary>
+    public bool Hides(string name) => IsHomeName(name);
+
     /// <summary>Distance and bearing from the shown point, or nothing under <see cref="HomePrivacy.Hidden"/>.</summary>
     public (double? Km, int? Bearing) Measure(double? latitude, double? longitude)
     {
