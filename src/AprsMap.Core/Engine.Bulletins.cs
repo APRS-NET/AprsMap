@@ -63,6 +63,15 @@ public sealed partial class Engine
     internal Task TickBulletinsAsync() => _ownBulletins.TickAsync();
 
     /// <inheritdoc />
+    IReadOnlyList<string> IMessengerHost.Groups()
+    {
+        lock (_gate)
+        {
+            return _settings?.GetActiveProfile()?.Groups ?? [];
+        }
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetGroupsAsync(CancellationToken cancellationToken = default)
     {
         var settings = await LoadSettingsAsync(cancellationToken).ConfigureAwait(false);
@@ -102,7 +111,7 @@ public sealed partial class Engine
         ArgumentNullException.ThrowIfNull(text);
         var command = Ansrvr(() => AnsrvrCommand.Post(Group(group), text.Trim()));
         var settings = await LoadSettingsAsync(cancellationToken).ConfigureAwait(false);
-        var sent = _messenger.Send(AnsrvrCommand.Ansrvr.ToString(), command.Text);
+        var sent = _messenger.Send(AnsrvrCommand.Ansrvr.ToString(), command.Text, command.Groups[0]);
         if (settings.GetActiveProfile() is { } profile)
         {
             lock (_gate)

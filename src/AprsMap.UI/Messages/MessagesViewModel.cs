@@ -130,6 +130,7 @@ public sealed partial class MessagesViewModel : ObservableObject
         try
         {
             Unavailable = null;
+            await ShowGroupsAsync(); // a joined group has a conversation from the start (F2.5 behavior 8)
             await foreach (var message in _engine.WatchMessagesAsync(cancellationToken))
             {
                 Apply(message);
@@ -142,13 +143,45 @@ public sealed partial class MessagesViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// The joined ANSRVR groups' conversations, before their first message (docs/features/F2.5-bulletins.md,
+    /// behavior 8); called when the panel starts and after joining a group.
+    /// </summary>
+    internal async Task ShowGroupsAsync()
+    {
+        try
+        {
+            foreach (var group in (await _engine.GetConversationsAsync()).Where(c => c.Group is not null))
+            {
+                if (!_started.Any(s => Same(s, group.Correspondent)))
+                {
+                    _started.Add(group.Correspondent);
+                }
+            }
+            RebuildConversations();
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            // Only the operator's; the panel says so already.
+        }
+    }
+
+    /// <summary>The conversation a message is in: its correspondent's, or its ANSRVR group's (<c>#NEDR</c>).</summary>
+    internal static string KeyOf(ChatMessage message) =>
+        message.Group is { } group ? Conversation.ForGroup(group) : message.Correspondent;
+
     /// <summary>Takes one message from the stream: new, or a new state of one already shown.</summary>
     internal void Apply(ChatMessage message)
     {
+        var isNew = !_messages.ContainsKey(message.Id);
         _messages[message.Id] = message;
-        _started.RemoveAll(c => string.Equals(c, message.Correspondent, StringComparison.OrdinalIgnoreCase));
+        _started.RemoveAll(c => string.Equals(c, KeyOf(message), StringComparison.OrdinalIgnoreCase));
         RebuildConversations();
-        if (Selected is { } open && Same(open.Correspondent, message.Correspondent))
+        if (isNew && message is { Outgoing: true, Group: null } && Same(message.Correspondent, "ANSRVR"))
+        {
+            _ = ShowGroupsAsync(); // a join (or a leave) from the Bulletins panel
+        }
+        if (Selected is { } open && Same(open.Correspondent, KeyOf(message)))
         {
             var row = Thread.FirstOrDefault(r => r.Message.Id == message.Id);
             if (row is null)
@@ -176,9 +209,7 @@ public sealed partial class MessagesViewModel : ObservableObject
         {
             return;
         }
-        foreach (
-            var message in _messages.Values.Where(m => Same(m.Correspondent, value.Correspondent)).OrderBy(m => m.At)
-        )
+        foreach (var message in _messages.Values.Where(m => Same(KeyOf(m), value.Correspondent)).OrderBy(m => m.At))
         {
             Thread.Add(new MessageRow(message, _text, this));
         }
@@ -504,7 +535,7 @@ public sealed partial class MessagesViewModel : ObservableObject
     private void RebuildConversations()
     {
         var groups = _messages
-            .Values.GroupBy(m => m.Correspondent, StringComparer.OrdinalIgnoreCase)
+            .Values.GroupBy(KeyOf, StringComparer.OrdinalIgnoreCase)
             .Select(g => (Correspondent: g.Key, Last: g.MaxBy(m => m.At), Unread: g.Count(m => !m.Outgoing && !m.Read)))
             .OrderByDescending(g => g.Last?.At)
             .ToList();
@@ -618,8 +649,15 @@ public sealed partial class MessageRow : ObservableObject
     /// <summary>Sent by this station: shown on the other side.</summary>
     public bool Outgoing => Message.Outgoing;
 
-    /// <summary>The text.</summary>
-    public string Text => Message.Text;
+    /// <summary>The text; this station's post to a group without the <c>CQ GROUP</c> it was sent with (F2.5 behavior 9).</summary>
+    public string Text =>
+        Message is { Outgoing: true, Group: { } group }
+        && Message.Text.StartsWith($"CQ {group} ", StringComparison.Ordinal)
+            ? Message.Text[$"CQ {group} ".Length..]
+            : Message.Text;
+
+    /// <summary>In a group's conversation, who wrote a message received: the member, or ANSRVR; null otherwise.</summary>
+    public string? Sender => Message is { Outgoing: false, Group: not null } ? Message.Correspondent : null;
 
     /// <summary>"Delivered", "Retrying, try 2 of 6", "Not acknowledged: transmitting is off", in words.</summary>
     [ObservableProperty]
@@ -649,6 +687,7 @@ public sealed partial class MessageRow : ObservableObject
     {
         Message = message;
         OnPropertyChanged(nameof(Text));
+        OnPropertyChanged(nameof(Sender));
         var time = message.At.ToLocalTime().ToString("t", _text.Culture);
         var state = message.State switch
         {

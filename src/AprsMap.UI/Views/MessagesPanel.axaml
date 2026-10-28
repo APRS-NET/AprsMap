@@ -192,6 +192,12 @@
                     Padding="8,5"
                   >
                     <StackPanel Spacing="2">
+                      <!-- In a group's conversation, who wrote it (F2.5 behavior 8). -->
+                      <TextBlock
+                        Text="{Binding Sender}"
+                        IsVisible="{Binding Sender, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        FontWeight="SemiBold"
+                      />
                       <SelectableTextBlock Text="{Binding Text}" TextWrapping="Wrap" />
                       <TextBlock
                         Classes="state"

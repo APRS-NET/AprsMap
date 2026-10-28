@@ -1,6 +1,6 @@
 # Architecture
 
-Working product name: **AprsMap** (placeholder; rename before the first release). Namespaces use `AprsMap.*`.
+Working product name: **AprsMap** (it can still be renamed; see [branding.md](branding.md)). Namespaces use `AprsMap.*`.
 
 ## Goals
 
