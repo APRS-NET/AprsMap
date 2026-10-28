@@ -30,6 +30,10 @@ public sealed record SignInRequest(string Name, string Password);
 /// Sign-in is offered here over plain HTTP from another computer, because the gateway allows it (#414): the dialog warns
 /// that the password crosses the network unencrypted.
 /// </param>
+/// <param name="WaitMinutes">
+/// With <paramref name="ApiKey"/>: the key wasn't checked because this computer is waiting after too many wrong keys or
+/// passwords (#450), for this many more whole minutes.
+/// </param>
 public sealed record AuthInfo(
     bool Operator,
     string? Name = null,
@@ -39,7 +43,8 @@ public sealed record AuthInfo(
     bool NeedsHttps = false,
     bool ApiKey = false,
     bool NoOperator = false,
-    bool Unencrypted = false
+    bool Unencrypted = false,
+    int? WaitMinutes = null
 )
 {
     /// <summary>A viewer on a gateway that offers no sign-in.</summary>
@@ -49,7 +54,10 @@ public sealed record AuthInfo(
 /// <summary>Whether the gateway has an API key (docs/features/F1.38-gateway-api-key.md, behavior 6).</summary>
 /// <param name="Set">A key is saved, so apps with it are let in as the operator.</param>
 /// <param name="SetAt">When it was saved.</param>
-public sealed record ApiKeyStatus(bool Set, DateTimeOffset? SetAt = null)
+/// <param name="InUse">
+/// How many other apps are connected with it now (#450): replacing it disconnects them until they have the new one.
+/// </param>
+public sealed record ApiKeyStatus(bool Set, DateTimeOffset? SetAt = null, int InUse = 0)
 {
     /// <summary>No key: API access is off.</summary>
     public static ApiKeyStatus None { get; } = new(false);
@@ -77,7 +85,7 @@ public enum ApiKeyCheck
     /// <summary>The gateway's key: the app would be its operator.</summary>
     Accepted,
 
-    /// <summary>Not the gateway's key, or the address is waiting after wrong ones.</summary>
+    /// <summary>Not the gateway's key.</summary>
     Refused,
 
     /// <summary>Sent over plain HTTP from another computer, which the gateway doesn't allow (F1.38 behavior 5).</summary>
@@ -85,6 +93,12 @@ public enum ApiKeyCheck
 
     /// <summary>Sent to an address that isn't the gateway's admin (operator) port, where keys aren't taken.</summary>
     NotAdminPort,
+
+    /// <summary>
+    /// Not checked: this computer is waiting after too many wrong keys or passwords (#450), for
+    /// <see cref="GatewayTest.WaitMinutes"/>.
+    /// </summary>
+    Waiting,
 }
 
 /// <summary>A gateway's answer to a connection test (#419), from <see cref="AuthPaths.Test"/>.</summary>
@@ -92,7 +106,14 @@ public enum ApiKeyCheck
 /// <param name="Version">The gateway's build version, such as <c>0.8.0-alpha.2</c>.</param>
 /// <param name="ContractVersion">The hub contract's version; an app on another one can't connect (F1.14 behavior 8).</param>
 /// <param name="Key">What the gateway made of the key sent.</param>
-public sealed record GatewayTest(string Product, string Version, int ContractVersion, ApiKeyCheck Key);
+/// <param name="WaitMinutes">With <see cref="ApiKeyCheck.Waiting"/>, the whole minutes left to wait.</param>
+public sealed record GatewayTest(
+    string Product,
+    string Version,
+    int ContractVersion,
+    ApiKeyCheck Key,
+    int? WaitMinutes = null
+);
 
 /// <summary>The gateway's sign-in endpoints, relative to its base (not the hub).</summary>
 public static class AuthPaths

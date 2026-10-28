@@ -72,6 +72,8 @@ public sealed partial class MainViewModel
     /// <summary>Why it's only watching, when the gateway refused the key; the gateway's address otherwise.</summary>
     public string? GatewayClientTip =>
         GatewayClient?.Connected is not { } gateway ? null
+        : Auth is { Operator: false, ApiKey: true, WaitMinutes: { } minutes }
+            ? _text.Format("Connection.Bar.Waiting", new Dictionary<string, object?> { ["minutes"] = minutes })
         : Auth is { Operator: false, ApiKey: true, NeedsHttps: true } ? _text["Connection.Bar.KeyNeedsHttps"]
         : Auth is { Operator: false, ApiKey: true } ? _text["Connection.Bar.KeyRefused"]
         : gateway.ToString();

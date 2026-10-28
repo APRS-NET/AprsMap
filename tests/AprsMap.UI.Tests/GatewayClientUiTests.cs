@@ -182,6 +182,23 @@ public sealed class GatewayClientUiTests
     }
 
     [Fact]
+    public async Task AComputerWaitingAfterWrongKeysIsToldHowLong()
+    {
+        // #450
+        var section = await TestedAsync(
+            new(new GatewayTest(Brand.Slug, "0.8.0-alpha.2", EngineHub.ContractVersion, ApiKeyCheck.Waiting, 12))
+        );
+
+        Assert.True(section.TestFailed);
+        Assert.Contains(
+            "isn't checking keys from this computer for 12 min",
+            section.TestText,
+            StringComparison.Ordinal
+        );
+        Assert.False(section.ApplyCommand.CanExecute(null));
+    }
+
+    [Fact]
     public async Task WithoutAKeyItMayApplyToWatch()
     {
         var section = await TestedAsync(Answer(ApiKeyCheck.None), key: "");
@@ -242,6 +259,13 @@ public sealed class GatewayClientUiTests
         Assert.True(section.HasProblem);
         Assert.Contains("accepts the API key only over https://", section.StatusText, StringComparison.Ordinal);
         Assert.Contains("ssh -L 8081:127.0.0.1:8081", section.StatusText, StringComparison.Ordinal);
+        section.ShowAuth(new AuthInfo(false, ApiKey: true, WaitMinutes: 12)); // after too many wrong keys (#450)
+        Assert.True(section.HasProblem);
+        Assert.Contains(
+            "isn't checking keys from this computer for 12 min",
+            section.StatusText,
+            StringComparison.Ordinal
+        );
         section.ShowAuth(AuthInfo.Viewer);
         Assert.False(section.HasProblem);
         Assert.StartsWith("Now watching the gateway at http://127.0.0.1:8081/. Add its API key", section.StatusText);
@@ -293,6 +317,20 @@ public sealed class GatewayClientUiTests
         }
         await vm.OpenConnectionCommand.ExecuteAsync(null);
         Assert.True(vm.Settings!.IsConnectionSection);
+    }
+
+    [Fact]
+    public async Task TheStatusBarSaysHowLongAWaitingComputerWaits()
+    {
+        // #450
+        var (vm, _, _) = await Client(new AuthInfo(false, ApiKey: true, WaitMinutes: 12));
+
+        Assert.True(vm.GatewayClientWarn);
+        Assert.StartsWith(
+            "The gateway isn't checking keys from this computer for 12 min",
+            vm.GatewayClientTip,
+            StringComparison.Ordinal
+        );
     }
 
     [Fact]

@@ -2523,6 +2523,9 @@ In a Docker container:
     <value>The gateway accepts the API key only over https://, or from its own computer. Reach it through an SSH tunnel (ssh -L 8081:127.0.0.1:8081 you@gateway, then http://127.0.0.1:8081/ here), or, on a network you trust, set allow_insecure_sign_in = true in the gateway's configuration.</value>
     <comment>The ssh command and allow_insecure_sign_in are to type; keep them.</comment>
   </data>
+  <data name="Connection.Test.Waiting" xml:space="preserve">
+    <value>The gateway isn't checking keys from this computer for {minutes} min, after too many wrong keys or passwords from it. Test again after that.</value>
+  </data>
   <data name="Connection.Test.NotAdminPort" xml:space="preserve">
     <value>{address} is the gateway's public address, which doesn't take API keys. Use its admin address (port 8081 by default).</value>
   </data>
@@ -2546,6 +2549,9 @@ In a Docker container:
   <data name="Connection.Bar.KeyRefused" xml:space="preserve">
     <value>The gateway refused the API key, so this app only watches. Open Settings › Connection to test it.</value>
   </data>
+  <data name="Connection.Bar.Waiting" xml:space="preserve">
+    <value>The gateway isn't checking keys from this computer for {minutes} min, after too many wrong ones, so this app only watches. Restart it after that.</value>
+  </data>
   <data name="Connection.Bar.KeyNeedsHttps" xml:space="preserve">
     <value>The gateway takes the API key only over https:// or from its own computer, so this app only watches. Open Settings › Connection for how to reach it.</value>
   </data>
@@ -2561,6 +2567,9 @@ In a Docker container:
   <data name="Connection.Status.KeyNeedsHttps" xml:space="preserve">
     <value>Now watching the gateway at {address}: it accepts the API key only over https://, or from the gateway's own computer, so the key isn't sent across the network unencrypted. Reach it through an SSH tunnel (ssh -L 8081:127.0.0.1:8081 you@gateway, then http://127.0.0.1:8081/ here), or, on a network you trust, set allow_insecure_sign_in = true in the gateway's configuration.</value>
     <comment>The ssh command and allow_insecure_sign_in are to type; keep them.</comment>
+  </data>
+  <data name="Connection.Status.Waiting" xml:space="preserve">
+    <value>Now watching the gateway at {address}: it isn't checking keys from this computer for {minutes} min, after too many wrong keys or passwords from it. Restart the app after that.</value>
   </data>
   <data name="Connection.Status.KeyRefused" xml:space="preserve">
     <value>Now watching the gateway at {address}: it refused the API key. Check the key, and that this is the gateway's admin address.</value>
@@ -2582,6 +2591,15 @@ In a Docker container:
   </data>
   <data name="GatewayAccess.SetNoTime" xml:space="preserve">
     <value>An API key is set. It can't be shown again: generate a new one to see one.</value>
+  </data>
+  <data name="GatewayAccess.InUse" xml:space="preserve">
+    <value>{count, plural, one {One other app is connected with it now.} other {# other apps are connected with it now.}}</value>
+  </data>
+  <data name="GatewayAccess.ConfirmReplace" xml:space="preserve">
+    <value>{count, plural, one {One other app is connected with the current key.} other {# other apps are connected with the current key.}} Replacing it disconnects them, and until they have the new key the gateway refuses them. Press Apply again to replace it.</value>
+  </data>
+  <data name="GatewayAccess.ConfirmRemove" xml:space="preserve">
+    <value>{count, plural, one {One other app is connected with the current key.} other {# other apps are connected with the current key.}} Removing it disconnects them, and they can only watch. Press Apply again to remove it.</value>
   </data>
   <data name="GatewayAccess.Key" xml:space="preserve">
     <value>New API key</value>

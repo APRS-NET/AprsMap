@@ -229,7 +229,7 @@ internal sealed class EngineHubEndpoint(
     public ApiKeyStatus GetApiKeyStatus()
     {
         RequireOperator();
-        return apiKeys.Status;
+        return apiKeys.Status with { InUse = apiKeys.InUse(Context.ConnectionId) };
     }
 
     [HubMethodName(EngineHub.GenerateApiKey)]

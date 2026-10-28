@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AprsMap.Contracts;
@@ -118,6 +119,18 @@ internal sealed class ApiKeyStore(string folder, TimeProvider time)
             : null;
     }
 
+    /// <summary>
+    /// How many hub connections the key let in, other than <paramref name="except"/>'s: the apps that lose operator
+    /// access when it's replaced (#450).
+    /// </summary>
+    public int InUse(string? except)
+    {
+        lock (_gate)
+        {
+            return _connections.Keys.Count(id => id != except);
+        }
+    }
+
     /// <summary>A hub connection let in by the key: it closes when the key changes.</summary>
     public void Attach(HubCallerContext context)
     {
@@ -160,8 +173,11 @@ internal enum ApiKeyOutcome
     /// <summary>The saved key: the request is the operator "API key".</summary>
     Accepted,
 
-    /// <summary>A key that isn't the saved one, over plain HTTP from another machine, or while waiting after guesses.</summary>
+    /// <summary>A key that isn't the saved one, or over plain HTTP from another machine.</summary>
     Refused,
+
+    /// <summary>Not checked: the address is waiting after too many wrong keys or passwords (#450).</summary>
+    Waiting,
 }
 
 /// <summary>
@@ -187,33 +203,42 @@ internal sealed class ApiKeyGate(
             ? key
             : null;
 
-    /// <summary>What <paramref name="context"/>'s key comes to, with the key's stamp when it's accepted.</summary>
-    public (ApiKeyOutcome Outcome, string? Stamp) Check(HttpContext context)
+    /// <summary>
+    /// What <paramref name="context"/>'s key comes to, with the key's stamp when it's accepted and how long the address
+    /// must wait when it's waiting.
+    /// </summary>
+    public (ApiKeyOutcome Outcome, string? Stamp, TimeSpan? Wait) Check(HttpContext context)
     {
         if (KeyIn(context) is not { } key || !OperatorSignIn.IsOperatorPort(context, options.CurrentValue))
         {
-            return (ApiKeyOutcome.None, null); // the viewer port ignores it (behavior 4)
+            return (ApiKeyOutcome.None, null, null); // the viewer port ignores it (behavior 4)
         }
         var address = Viewers.AddressOf(context);
         if (!OperatorSignIn.IsSecureEnough(context, options.CurrentValue))
         {
             audit.ApiKeyRefused(address, "plain HTTP from another machine");
-            return (ApiKeyOutcome.Refused, null);
+            return (ApiKeyOutcome.Refused, null, null);
         }
-        if (limiter.Wait(address) is not null)
+        if (limiter.Wait(address) is { } wait)
         {
             audit.ApiKeyRefused(address, "too many tries");
-            return (ApiKeyOutcome.Refused, null);
+            return (ApiKeyOutcome.Waiting, null, wait);
         }
         if (store.Check(key) is { } stamp)
         {
             audit.ApiKeyAccepted(address);
-            return (ApiKeyOutcome.Accepted, stamp);
+            return (ApiKeyOutcome.Accepted, stamp, null);
         }
-        limiter.Failed(address, null);
+        limiter.Failed(address, null, Fingerprint(key));
         audit.ApiKeyRefused(address, "wrong key");
-        return (ApiKeyOutcome.Refused, null);
+        return (ApiKeyOutcome.Refused, null, null);
     }
+
+    /// <summary>Whole minutes left of <paramref name="wait"/>, as a refusal states it.</summary>
+    public static int Minutes(TimeSpan wait) => (int)Math.Ceiling(wait.TotalMinutes);
+
+    // Only to tell a key seen before from a new one, in memory; never stored or logged.
+    private static string Fingerprint(string key) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
 }
 
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web, WriteIndented = true)]

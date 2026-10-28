@@ -186,6 +186,7 @@ public sealed partial class ConnectionSectionViewModel : ObservableObject
             ["detail"] = outcome.Detail ?? string.Empty,
             ["version"] = outcome.Gateway?.Version ?? string.Empty,
             ["app"] = _appVersion,
+            ["minutes"] = outcome.Gateway?.WaitMinutes ?? 1,
         };
         if (outcome.Unreachable)
         {
@@ -207,6 +208,8 @@ public sealed partial class ConnectionSectionViewModel : ObservableObject
                 return (_text.Format("Connection.Test.KeyNeedsHttps", args), true, false);
             case ApiKeyCheck.NotAdminPort:
                 return (_text.Format("Connection.Test.NotAdminPort", args), true, false);
+            case ApiKeyCheck.Waiting:
+                return (_text.Format("Connection.Test.Waiting", args), true, false);
         }
         var reached = _text.Format(
             answer.Key == ApiKeyCheck.Accepted ? "Connection.Test.Operator" : "Connection.Test.WatchOnly",
@@ -265,11 +268,16 @@ public sealed partial class ConnectionSectionViewModel : ObservableObject
 
     private void ShowStatus()
     {
-        var address = new Dictionary<string, object?> { ["address"] = _host.Connected?.ToString() ?? string.Empty };
+        var address = new Dictionary<string, object?>
+        {
+            ["address"] = _host.Connected?.ToString() ?? string.Empty,
+            ["minutes"] = _auth?.WaitMinutes ?? 1,
+        };
         (StatusText, HasProblem) = (_host.Connected, _auth) switch
         {
             (null, _) => (_text["Connection.Status.ThisComputer"], false),
             (_, { Operator: true }) => (_text.Format("Connection.Status.Operator", address), false),
+            (_, { ApiKey: true, WaitMinutes: not null }) => (_text.Format("Connection.Status.Waiting", address), true),
             (_, { ApiKey: true, NeedsHttps: true }) => (_text.Format("Connection.Status.KeyNeedsHttps", address), true),
             (_, { ApiKey: true }) => (_text.Format("Connection.Status.KeyRefused", address), true),
             _ => (_text.Format("Connection.Status.Viewing", address), false),

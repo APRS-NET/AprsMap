@@ -303,8 +303,12 @@ internal static partial class OperatorSignIn
                 "The API key is accepted over HTTPS, or from the gateway's own computer."
             );
         }
-        switch (apiKey.Check(context).Outcome)
+        var (outcome, _, wait) = apiKey.Check(context);
+        switch (outcome)
         {
+            case ApiKeyOutcome.Waiting:
+                // Said as a wait, not as a wrong key, so an app's owner doesn't go looking for a typo (#450).
+                return TooManyTries(context, wait!.Value);
             case ApiKeyOutcome.Accepted:
                 return Results.Json(
                     new AuthInfo(true, ApiKeyGate.OperatorName, FailedSignIns: limiter.FailedToday, ApiKey: true),
@@ -339,19 +343,54 @@ internal static partial class OperatorSignIn
     /// </summary>
     private static IResult Test(HttpContext context, ApiKeyGate apiKey, IOptionsMonitor<GatewayOptions> options)
     {
+        TimeSpan? wait = null;
         var key =
             ApiKeyGate.KeyIn(context) is null ? ApiKeyCheck.None
             : !IsOperatorPort(context, options.CurrentValue) ? ApiKeyCheck.NotAdminPort
             : !IsSecureEnough(context, options.CurrentValue) ? ApiKeyCheck.NeedsHttps
-            : apiKey.Check(context).Outcome == ApiKeyOutcome.Accepted ? ApiKeyCheck.Accepted
-            : ApiKeyCheck.Refused;
+            : CheckKey(out wait);
         if (key == ApiKeyCheck.NeedsHttps)
         {
             _ = apiKey.Check(context); // logged as refused, as the hub's connection is
         }
         return Results.Json(
-            new GatewayTest(Brand.Slug, Brand.Version.Split('+')[0], EngineHub.ContractVersion, key),
+            new GatewayTest(
+                Brand.Slug,
+                Brand.Version.Split('+')[0],
+                EngineHub.ContractVersion,
+                key,
+                wait is { } left ? ApiKeyGate.Minutes(left) : null
+            ),
             EngineJsonContext.Default.GatewayTest
+        );
+
+        ApiKeyCheck CheckKey(out TimeSpan? left)
+        {
+            var (outcome, _, waiting) = apiKey.Check(context);
+            left = waiting;
+            return outcome switch
+            {
+                ApiKeyOutcome.Accepted => ApiKeyCheck.Accepted,
+                ApiKeyOutcome.Waiting => ApiKeyCheck.Waiting,
+                _ => ApiKeyCheck.Refused,
+            };
+        }
+    }
+
+    private static IResult TooManyTries(HttpContext context, TimeSpan wait)
+    {
+        var minutes = ApiKeyGate.Minutes(wait);
+        context.Response.Headers.RetryAfter = ((int)Math.Ceiling(wait.TotalSeconds)).ToString(
+            System.Globalization.CultureInfo.InvariantCulture
+        );
+        return Refuse(
+            StatusCodes.Status429TooManyRequests,
+            EngineErrorCodes.AuthTooManyTries,
+            $"Too many tries. Wait {minutes} min and try again.",
+            new Dictionary<string, string>
+            {
+                [EngineErrorArgs.Minutes] = minutes.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            }
         );
     }
 
@@ -549,7 +588,7 @@ internal sealed class OperatorFilter(
         }
         else if (
             context.Context.GetHttpContext() is { } http
-            && apiKeyGate.Check(http) is (ApiKeyOutcome.Accepted, { } stamp)
+            && apiKeyGate.Check(http) is (ApiKeyOutcome.Accepted, { } stamp, _)
         )
         {
             // An app with the API key is the operator "API key" (F1.38 behaviors 2, 8); a refused one is a viewer.
