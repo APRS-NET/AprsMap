@@ -170,6 +170,7 @@ internal sealed class SignInLimiter(TimeProvider time)
     private readonly Dictionary<string, Tries> _addresses = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Tries> _names = new(StringComparer.OrdinalIgnoreCase);
     private readonly Queue<DateTimeOffset> _failures = new();
+    private readonly Dictionary<string, DateTimeOffset> _repeats = new(StringComparer.Ordinal);
 
     private sealed class Tries
     {
@@ -208,11 +209,21 @@ internal sealed class SignInLimiter(TimeProvider time)
     /// guessing from one address can't lock the key out for everyone (docs/features/F1.38-gateway-api-key.md,
     /// behavior 7).
     /// </summary>
-    public void Failed(string address, string? name)
+    /// <param name="address">Where the try came from.</param>
+    /// <param name="name">The operator name tried; null for an API key.</param>
+    /// <param name="repeat">
+    /// A fingerprint of what was tried, when trying the same thing again isn't guessing: an app with an old API key
+    /// sends it on every connection, so the same wrong key from the same address counts once per window (#450).
+    /// </param>
+    public void Failed(string address, string? name, string? repeat = null)
     {
         var now = time.GetUtcNow();
         lock (_gate)
         {
+            if (repeat is not null && Repeated(address + "\n" + repeat, now))
+            {
+                return;
+            }
             Count(_addresses, address, now, AddressWindow, AddressLimit);
             if (name is not null)
             {
@@ -237,6 +248,23 @@ internal sealed class SignInLimiter(TimeProvider time)
                 return _failures.Count(f => now - f <= Day);
             }
         }
+    }
+
+    private bool Repeated(string key, DateTimeOffset now)
+    {
+        if (_repeats.TryGetValue(key, out var first) && now - first < AddressWindow)
+        {
+            return true;
+        }
+        if (_repeats.Count >= MaxKeys)
+        {
+            foreach (var stale in _repeats.Where(r => now - r.Value >= AddressWindow).Select(r => r.Key).ToList())
+            {
+                _repeats.Remove(stale);
+            }
+        }
+        _repeats[key] = now;
+        return false;
     }
 
     private static void Count(Dictionary<string, Tries> all, string key, DateTimeOffset now, TimeSpan window, int limit)

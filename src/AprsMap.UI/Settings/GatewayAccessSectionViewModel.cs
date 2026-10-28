@@ -18,6 +18,7 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
     private readonly Localizer _text;
     private readonly TimeZoneInfo _zone;
     private ApiKeyStatus _status = ApiKeyStatus.None;
+    private bool _confirming;
 
     internal GatewayAccessSectionViewModel(IEngineService engine, Localizer text, TimeZoneInfo zone)
     {
@@ -81,7 +82,7 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
     private void ShowStatusText()
     {
         var status = _status;
-        StatusText =
+        var text =
             status is { Set: true, SetAt: { } at }
                 ? _text.Format(
                     "GatewayAccess.Set",
@@ -92,7 +93,16 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
                 )
             : status.Set ? _text["GatewayAccess.SetNoTime"]
             : _text["GatewayAccess.None"];
+        StatusText = status is { Set: true, InUse: > 0 }
+            ? text + " " + _text.Format("GatewayAccess.InUse", Count(status.InUse))
+            : text;
     }
+
+    private static Dictionary<string, object?> Count(int count) => new() { ["count"] = count };
+
+    partial void OnKeyChanged(string value) => _confirming = false;
+
+    partial void OnOnChanged(bool value) => _confirming = false;
 
     /// <summary>A new random key in the field, to copy and then save.</summary>
     [RelayCommand]
@@ -140,12 +150,32 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
     /// </summary>
     private bool CanApply => On ? HasKey : IsSet;
 
-    /// <summary>Saves the key in the field (the old one stops working at once), or with access off removes the key.</summary>
+    /// <summary>
+    /// Saves the key in the field (the old one stops working at once), or with access off removes the key. While other
+    /// apps are connected with the current key, the first press only says so and the second goes ahead (#450): an app
+    /// left with the old key is refused, and enough refusals make its computer wait.
+    /// </summary>
     [RelayCommand(CanExecute = nameof(CanApply))]
     private async Task ApplyAsync()
     {
         try
         {
+            if (_status is { Set: true, InUse: > 0 } && !_confirming)
+            {
+                _status = await _engine.GetApiKeyStatusAsync(); // they may have gone since the section was shown
+                ShowStatusText();
+                if (_status is { Set: true, InUse: > 0 } status)
+                {
+                    _confirming = true;
+                    HasProblem = true;
+                    Message = _text.Format(
+                        On ? "GatewayAccess.ConfirmReplace" : "GatewayAccess.ConfirmRemove",
+                        Count(status.InUse)
+                    );
+                    return;
+                }
+            }
+            _confirming = false;
             if (On)
             {
                 Show(await _engine.SaveApiKeyAsync(Key.Trim()));

@@ -27,6 +27,12 @@ public sealed class GatewayOperatorSession(HttpClient gateway, bool passwordSign
             {
                 return new AuthInfo(false, ApiKey: true);
             }
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                // Waiting after too many wrong keys: said as a wait, not as a wrong key (#450).
+                var error = await ReadErrorAsync(response, cancellationToken);
+                return new AuthInfo(false, ApiKey: true, WaitMinutes: MinutesIn(error) ?? 1);
+            }
             if (response.StatusCode == HttpStatusCode.Forbidden)
             {
                 // Over plain HTTP from another computer the gateway won't take the key at all (#414).
@@ -57,20 +63,35 @@ public sealed class GatewayOperatorSession(HttpClient gateway, bool passwordSign
         {
             return;
         }
-        EngineError? error = null;
-        try
-        {
-            error = await response.Content.ReadFromJsonAsync(EngineJsonContext.Default.EngineError, cancellationToken);
-        }
-        catch (System.Text.Json.JsonException) { }
         throw EngineErrors.ToException(
-            error
+            await ReadErrorAsync(response, cancellationToken)
                 ?? new EngineError(
                     EngineErrorCodes.AuthNotOfferedHere,
                     $"The gateway answered {(int)response.StatusCode}."
                 )
         );
     }
+
+    private static async Task<EngineError?> ReadErrorAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            return await response.Content.ReadFromJsonAsync(EngineJsonContext.Default.EngineError, cancellationToken);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
+    }
+
+    private static int? MinutesIn(EngineError? error) =>
+        error?.Arg(EngineErrorArgs.Minutes) is { } text
+        && int.TryParse(text, System.Globalization.CultureInfo.InvariantCulture, out var minutes)
+            ? minutes
+            : null;
 
     /// <inheritdoc />
     public async Task SignOutAsync(CancellationToken cancellationToken = default)

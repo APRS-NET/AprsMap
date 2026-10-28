@@ -112,6 +112,47 @@ public sealed class GatewayAccessUiTests
     }
 
     [Fact]
+    public async Task ReplacingAKeyOtherAppsUseAsksOnceMore()
+    {
+        // #450: those apps are refused until they have the new key, so the first Apply only says so.
+        var engine = new FakeEngine { ApiKey = new ApiKeyStatus(true, DateTimeOffset.UnixEpoch, InUse: 2) };
+        var section = await Section(engine);
+        Assert.EndsWith("2 other apps are connected with it now.", section.StatusText, StringComparison.Ordinal);
+
+        await section.GenerateCommand.ExecuteAsync(null);
+        await section.ApplyCommand.ExecuteAsync(null);
+        Assert.Empty(engine.SavedApiKeys);
+        Assert.True(section.HasProblem);
+        Assert.StartsWith(
+            "2 other apps are connected with the current key.",
+            section.Message,
+            StringComparison.Ordinal
+        );
+        Assert.EndsWith("Press Apply again to replace it.", section.Message, StringComparison.Ordinal);
+
+        section.Key = new string('k', 43); // a change asks again
+        await section.ApplyCommand.ExecuteAsync(null);
+        Assert.Empty(engine.SavedApiKeys);
+        await section.ApplyCommand.ExecuteAsync(null);
+        Assert.Single(engine.SavedApiKeys);
+
+        engine.ApiKey = new ApiKeyStatus(true, DateTimeOffset.UnixEpoch, InUse: 1);
+        await section.ShowAsync();
+        section.On = false;
+        await section.ApplyCommand.ExecuteAsync(null);
+        Assert.StartsWith(
+            "One other app is connected with the current key.",
+            section.Message,
+            StringComparison.Ordinal
+        );
+        engine.ApiKey = new ApiKeyStatus(true, DateTimeOffset.UnixEpoch); // it went meanwhile: no need to ask
+        section.On = true;
+        section.On = false;
+        await section.ApplyCommand.ExecuteAsync(null);
+        Assert.Equal("Removed. Apps can only watch.", section.Message);
+    }
+
+    [Fact]
     public async Task OnlyASignedInGatewayOperatorHasTheSection()
     {
         static async Task<bool> Offered(bool shared, AuthInfo? auth)

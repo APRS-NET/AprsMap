@@ -208,6 +208,18 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
     }
 
     [Fact]
+    public async Task TheOperatorSeesHowManyOtherAppsUseTheKey()
+    {
+        // #450: replacing a key in use locks those apps out, so Gateway access says how many there are.
+        var key = await SaveNewKeyAsync();
+        await using var app = await AppAsync(key);
+        Assert.Equal(0, (await app.GetApiKeyStatusAsync(Ct)).InUse); // not counting itself
+        await using var op = await OperatorAsync();
+
+        Assert.Equal(1, (await op.GetApiKeyStatusAsync(Ct)).InUse);
+    }
+
+    [Fact]
     public async Task ANewKeyRefusesTheOldOneAtItsNextCall()
     {
         var old = await SaveNewKeyAsync();
@@ -303,10 +315,62 @@ public sealed class ApiKeyGuessingTests(ApiKeyGatewayFactory gateway) : IClassFi
         }
         using var waiting = await MeAsync(key);
 
-        Assert.Equal(HttpStatusCode.Unauthorized, waiting.StatusCode); // even the right key waits, from that address
+        // Even the right key waits, from that address, and the app is told it's a wait, not a wrong key (#450).
+        Assert.Equal(HttpStatusCode.TooManyRequests, waiting.StatusCode);
+        var error = await waiting.Content.ReadFromJsonAsync(EngineJsonContext.Default.EngineError, Ct);
+        Assert.Equal(EngineErrorCodes.AuthTooManyTries, error!.Code);
+        Assert.Equal("15", error.Arg(EngineErrorArgs.Minutes));
         Assert.Contains(gateway.Logs.Messages, m => m.Contains("too many tries", StringComparison.Ordinal));
+        var test = await TestAsync(key);
+        Assert.Equal((ApiKeyCheck.Waiting, 15), (test.Key, test.WaitMinutes));
         var limiter = gateway.Services.GetRequiredService<SignInLimiter>();
         Assert.Null(limiter.Wait("192.0.2.1", ApiKeyGate.OperatorName)); // nor is the key locked for other addresses
+    }
+
+    private async Task<GatewayTest> TestAsync(string key)
+    {
+        using var browser = gateway.Browser();
+        using var request = new HttpRequestMessage(HttpMethod.Get, AuthPaths.Test);
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
+        request.Headers.Add(LocalPortFilter.Header, "8081");
+        using var response = await browser.SendAsync(request, Ct);
+        return (await response.Content.ReadFromJsonAsync(EngineJsonContext.Default.GatewayTest, Ct))!;
+    }
+
+    private async Task<HttpResponseMessage> MeAsync(string key)
+    {
+        using var browser = gateway.Browser();
+        using var request = new HttpRequestMessage(HttpMethod.Get, AuthPaths.Me);
+        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
+        request.Headers.Add(LocalPortFilter.Header, "8081");
+        return await browser.SendAsync(request, Ct);
+    }
+}
+
+/// <summary>An app with an old key isn't guessing (#450), on a gateway of its own so no wait reaches other tests.</summary>
+public sealed class OldApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<ApiKeyGatewayFactory>
+{
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    [Fact]
+    public async Task AnAppRetryingAnOldKeyDoesNotLockItsComputerOut()
+    {
+        var store = gateway.Services.GetRequiredService<ApiKeyStore>();
+        var old = ApiKeyStore.Generate();
+        store.Save(ApiKeyStore.Generate());
+
+        for (var i = 0; i < SignInLimiter.AddressLimit * 2; i++)
+        {
+            using var refused = await MeAsync(old); // started again and again with the key it was given last week
+            Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
+        }
+        var key = ApiKeyStore.Generate();
+        store.Save(key);
+        using var accepted = await MeAsync(key);
+
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        Assert.Equal(1, gateway.Services.GetRequiredService<SignInLimiter>().FailedToday); // counted once
+        Assert.Equal(10, gateway.Logs.Messages.Count(m => m.Contains("wrong key", StringComparison.Ordinal))); // all logged
     }
 
     private async Task<HttpResponseMessage> MeAsync(string key)
