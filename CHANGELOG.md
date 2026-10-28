@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-alpha.7](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.6...v0.7.0-alpha.7) (2026-10-28)
+
+
+### Bug Fixes
+
+* **deps:** APRS.NET 0.8.0-alpha.1 ([6a6d1b1](https://github.com/APRS-NET/AprsMap/commit/6a6d1b142844a5a403db27519bd9610466472b45))
+
 ## [0.7.0-alpha.6](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.5...v0.7.0-alpha.6) (2026-10-28)
 
 
