@@ -219,6 +219,8 @@ public sealed class LoggingTests
 
     private sealed class NoHost : IMessengerHost
     {
+        public IReadOnlyList<string> Groups() => [];
+
         public EngineError? ProfileBlock() => null;
 
         public bool CanSendOn(string sourceId) => false;
