@@ -187,6 +187,13 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     public partial string? ReconnectsText { get; private set; }
 
+    /// <summary>
+    /// That the packet history's size limit is cutting it short, in the Connection tile
+    /// (docs/features/F1.41-persistent-history.md, behavior 5); null otherwise.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? HistoryWarning { get; private set; }
+
     /// <summary>The busiest stations (behavior 4.8), each selectable.</summary>
     public ObservableCollection<CountRow> BusiestStations { get; } = [];
 
@@ -457,6 +464,15 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         ReconnectsText = status is null
             ? null
             : _text.Format("Dashboard.Reconnects", new Dictionary<string, object?> { ["count"] = status.Reconnects });
+        HistoryWarning = dashboard.History switch
+        {
+            { Problem: HistoryProblem.TodayFull } => _text["History.TodayFull"],
+            { Problem: HistoryProblem.SizeLimitShortens } history => _text.Format(
+                "History.SizeLimitShortens",
+                new Dictionary<string, object?> { ["fit"] = history.DaysFit ?? 0, ["wanted"] = history.Settings.Days }
+            ),
+            _ => null,
+        };
 
         ShowExtras(dashboard);
         ShowGps(dashboard, range, Clock);

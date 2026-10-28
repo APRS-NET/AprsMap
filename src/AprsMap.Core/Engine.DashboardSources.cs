@@ -106,6 +106,7 @@ public sealed partial class Engine
                 Weather = _stations.WeatherSince(dashboard.Start, include),
                 Tables = _stations.Statistics(include is null ? null : filter, now),
                 Gps = _gpsHistory.Read(dashboard.Start, dashboard.Step, dashboard.Packets.Count, now),
+                History = _history?.SizeProblem(), // F1.41 behavior 5
             }
         );
     }
