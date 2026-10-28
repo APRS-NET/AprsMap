@@ -117,6 +117,25 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
     }
 
     [Fact]
+    public async Task TheOperatorCanTestAKeyAgainstTheCurrentOneWithoutSavingIt()
+    {
+        // #447
+        await using var op = await OperatorAsync();
+        await op.RemoveApiKeyAsync(Ct);
+        Assert.Equal(ApiKeyCheck.None, await op.CheckApiKeyAsync(ApiKeyStore.Generate(), Ct));
+
+        var key = await SaveNewKeyAsync();
+
+        Assert.Equal(ApiKeyCheck.Accepted, await op.CheckApiKeyAsync(key, Ct));
+        Assert.Equal(ApiKeyCheck.Accepted, await op.CheckApiKeyAsync($" {key} ", Ct)); // as pasted
+        Assert.Equal(ApiKeyCheck.Refused, await op.CheckApiKeyAsync(ApiKeyStore.Generate(), Ct));
+        Assert.True((await op.GetApiKeyStatusAsync(Ct)).Set); // nothing changed
+        await using var viewer = await AppAsync(null);
+        var refused = await Assert.ThrowsAsync<EngineAccessException>(() => viewer.CheckApiKeyAsync(key, Ct));
+        Assert.Equal(EngineErrorCodes.OperatorOnly, refused.EngineError.Code);
+    }
+
+    [Fact]
     public async Task AShortKeyIsRefused()
     {
         await using var op = await OperatorAsync();

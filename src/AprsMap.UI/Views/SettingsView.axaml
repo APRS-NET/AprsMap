@@ -2011,12 +2011,19 @@
                 />
               </WrapPanel>
             </StackPanel>
-            <Button
-              x:Name="GatewayAccessApply"
-              Content="{l:T WebViewer.Apply}"
-              Command="{Binding GatewayAccess.ApplyCommand, FallbackValue={x:Null}}"
-              HorizontalAlignment="Left"
-            />
+            <!-- Test (#447): always there, to check a key an app has against the current one; Apply saves. -->
+            <WrapPanel ItemSpacing="8">
+              <Button
+                x:Name="GatewayAccessTest"
+                Content="{l:T GatewayAccess.Test}"
+                Command="{Binding GatewayAccess.TestCommand, FallbackValue={x:Null}}"
+              />
+              <Button
+                x:Name="GatewayAccessApply"
+                Content="{l:T WebViewer.Apply}"
+                Command="{Binding GatewayAccess.ApplyCommand, FallbackValue={x:Null}}"
+              />
+            </WrapPanel>
             <TextBlock
               x:Name="GatewayAccessMessage"
               Text="{Binding GatewayAccess.Message, FallbackValue={x:Null}}"

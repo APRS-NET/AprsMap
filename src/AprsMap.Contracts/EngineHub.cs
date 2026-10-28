@@ -238,6 +238,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.SaveApiKeyAsync"/>.</summary>
     public const string SaveApiKey = "SaveApiKey";
 
+    /// <summary>Hub method for <see cref="IEngineService.CheckApiKeyAsync"/>.</summary>
+    public const string CheckApiKey = "CheckApiKey";
+
     /// <summary>Hub method for <see cref="IEngineService.RemoveApiKeyAsync"/>.</summary>
     public const string RemoveApiKey = "RemoveApiKey";
 

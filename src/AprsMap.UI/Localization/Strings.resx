@@ -2598,6 +2598,18 @@ In a Docker container:
   <data name="GatewayAccess.On" xml:space="preserve">
     <value>Let apps in with an API key</value>
   </data>
+  <data name="GatewayAccess.Test" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="GatewayAccess.Test.Accepted" xml:space="preserve">
+    <value>That's the gateway's current key.</value>
+  </data>
+  <data name="GatewayAccess.Test.Refused" xml:space="preserve">
+    <value>That isn't the gateway's current key. Apps using it can only watch.</value>
+  </data>
+  <data name="GatewayAccess.Test.None" xml:space="preserve">
+    <value>No key is saved, so apps can only watch.</value>
+  </data>
   <data name="GatewayAccess.Saved" xml:space="preserve">
     <value>Saved. Apps using the old key are disconnected and can only watch until they have this one.</value>
   </data>

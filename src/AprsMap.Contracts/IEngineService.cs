@@ -504,6 +504,14 @@ public interface IEngineService
     /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
     Task<ApiKeyStatus> SaveApiKeyAsync(string key, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Whether <paramref name="key"/> is the gateway's current API key (#447), saving nothing:
+    /// <see cref="ApiKeyCheck.Accepted"/> when it is, <see cref="ApiKeyCheck.Refused"/> when it isn't, and
+    /// <see cref="ApiKeyCheck.None"/> when no key is saved. The operator's only.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
+    Task<ApiKeyCheck> CheckApiKeyAsync(string key, CancellationToken cancellationToken = default);
+
     /// <summary>Removes the API key: API access is off (behavior 1).</summary>
     /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
     Task RemoveApiKeyAsync(CancellationToken cancellationToken = default);

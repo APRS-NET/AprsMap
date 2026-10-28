@@ -255,6 +255,17 @@ internal sealed class EngineHubEndpoint(
         }
     }
 
+    /// <summary>Whether a key is the current one (#447), for the operator checking a key an app has; saves nothing.</summary>
+    [HubMethodName(EngineHub.CheckApiKey)]
+    public ApiKeyCheck CheckApiKey(string key)
+    {
+        RequireOperator();
+        ArgumentNullException.ThrowIfNull(key);
+        return !apiKeys.Status.Set ? ApiKeyCheck.None
+            : apiKeys.Check(key.Trim()) is not null ? ApiKeyCheck.Accepted
+            : ApiKeyCheck.Refused;
+    }
+
     [HubMethodName(EngineHub.RemoveApiKey)]
     public void RemoveApiKey()
     {
