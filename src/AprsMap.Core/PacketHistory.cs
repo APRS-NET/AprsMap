@@ -626,6 +626,25 @@ internal sealed partial class PacketHistory : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// The size limit's problem as the last pass found it, without reading the folder: for the dashboard, asked every
+    /// 10 seconds (behavior 5). Null when there's none.
+    /// </summary>
+    public HistoryStatus? SizeProblem()
+    {
+        lock (_lock)
+        {
+            var problem =
+                !_settings.On || _blocked != HistoryProblem.None ? HistoryProblem.None
+                : _fullDay == Day(_time.GetUtcNow()) ? HistoryProblem.TodayFull
+                : _daysFit is not null ? HistoryProblem.SizeLimitShortens
+                : HistoryProblem.None;
+            return problem == HistoryProblem.None
+                ? null
+                : new HistoryStatus(true, _settings, Problem: problem, DaysFit: _daysFit);
+        }
+    }
+
     /// <summary>What the history holds now (behavior 3).</summary>
     public async Task<HistoryStatus> StatusAsync(bool configured, CancellationToken cancellationToken = default)
     {

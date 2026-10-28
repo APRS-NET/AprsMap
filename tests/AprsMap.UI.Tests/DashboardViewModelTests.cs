@@ -74,6 +74,31 @@ public sealed class DashboardViewModelTests
     }
 
     [Fact]
+    public void TheConnectionTileSaysWhenTheHistorysSizeLimitCutsItShort()
+    {
+        // F1.41 behavior 5.
+        var vm = new Harness().Create();
+
+        vm.Show(
+            Sample() with
+            {
+                History = new HistoryStatus(
+                    true,
+                    HistorySettings.Default,
+                    Problem: HistoryProblem.SizeLimitShortens,
+                    DaysFit: 3
+                ),
+            }
+        );
+        Assert.Equal(
+            "The size limit keeps about 3 days of the 7 asked for. Raise it to keep them all.",
+            vm.HistoryWarning
+        );
+        vm.Show(Sample());
+        Assert.Null(vm.HistoryWarning);
+    }
+
+    [Fact]
     public async Task WithTwoSourcesOneCanBeShownAndTheyAreCompared()
     {
         // #454

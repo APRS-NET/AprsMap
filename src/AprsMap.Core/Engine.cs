@@ -2081,6 +2081,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             HeardOnRf = heard.Recent, // F3.4 two-way, behavior 7
             HeardOnRfTotal = heard.Total,
             Comparison = CompareSources(range, now), // #454
+            History = _history?.SizeProblem(), // F1.41 behavior 5
         };
     }
 

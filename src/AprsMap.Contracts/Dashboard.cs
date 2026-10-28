@@ -74,6 +74,11 @@ public enum DashboardRange
 /// The one source these numbers are for (#454); null for every source. The tiles read from the stations held (farthest
 /// heard, weather, the tables, heard on RF) are every source's either way.
 /// </param>
+/// <param name="History">
+/// What stands in the packet history's way, for the Connection tile (docs/features/F1.41-persistent-history.md, behavior
+/// 5); null when nothing does or no history is kept. Only the size limit's problems, with the days asked for in
+/// <see cref="HistoryStatus.Settings"/> and those that fit in <see cref="HistoryStatus.DaysFit"/>.
+/// </param>
 /// <param name="Comparison">
 /// The sources side by side, for every source's dashboard with two or more (#454); over 7 days, the last 24 hours.
 /// </param>
@@ -107,7 +112,8 @@ public sealed record Dashboard(
     int HeardOnRfTotal = 0,
     TimeSpan? ListsCover = null,
     string? SourceId = null,
-    IReadOnlyList<DashboardSourceRow>? Comparison = null
+    IReadOnlyList<DashboardSourceRow>? Comparison = null,
+    HistoryStatus? History = null
 );
 
 /// <summary>One source against the others over the range (#454).</summary>

@@ -147,6 +147,7 @@ public sealed class PacketHistoryTests : IDisposable
 
         Assert.Equal(before, (await ReadAll(history)).Count);
         Assert.Equal(HistoryProblem.TodayFull, (await history.StatusAsync(false, Ct)).Problem);
+        Assert.Equal(HistoryProblem.TodayFull, history.SizeProblem()!.Problem); // for the dashboard (behavior 5)
         _time.Advance(TimeSpan.FromDays(1)); // a new day starts again
         history.Record(Record());
         await history.FlushAsync(Ct);
@@ -224,6 +225,16 @@ public sealed class PacketHistoryTests : IDisposable
         var status = await engine.GetHistoryStatusAsync(Ct);
 
         Assert.Equal((new HistorySettings(3, 500), true), (status.Settings, status.Configured));
+    }
+
+    [Fact]
+    public async Task TheConfigurationsValuesAreBroughtIntoRange()
+    {
+        var options = new HistoryOptions { Days = 90, MaxMegabytes = 1 };
+        await using var history = Store();
+
+        Assert.Equal(new HistorySettings(30, 100), options.Apply(HistorySettings.Default));
+        Assert.Null(history.SizeProblem()); // nothing standing in the way
     }
 
     [Fact]

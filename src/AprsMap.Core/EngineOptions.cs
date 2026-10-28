@@ -183,9 +183,19 @@ public sealed class HistoryOptions
     /// <summary>Whether the configuration sets either.</summary>
     internal bool Configured => Days is not null || MaxMegabytes is not null;
 
-    /// <summary><paramref name="stored"/> with what the configuration sets in place.</summary>
+    /// <summary>
+    /// <paramref name="stored"/> with what the configuration sets in place, brought into range: the file isn't checked
+    /// as Settings is.
+    /// </summary>
     internal HistorySettings Apply(HistorySettings stored) =>
-        new(Days ?? stored.Days, MaxMegabytes ?? stored.MaxMegabytes);
+        new(
+            Math.Clamp(Days ?? stored.Days, 0, HistorySettings.MaxDays),
+            Math.Clamp(
+                MaxMegabytes ?? stored.MaxMegabytes,
+                HistorySettings.MinMegabytes,
+                HistorySettings.MaxMegabytesLimit
+            )
+        );
 }
 
 /// <summary>A first-run gpsd (docs/features/F1.37-gateway-service.md, behavior 4).</summary>
