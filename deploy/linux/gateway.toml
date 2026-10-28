@@ -45,5 +45,11 @@ host = "localhost"
 port = 2947
 name = "gpsd"
 
+# Packet history (F1.41): every packet kept for this many days (0 is off, up to 30), within this many MB; the oldest
+# days go first. Set here, it wins on every start; left out, Settings › Data sets it (7 days within 1024 MB).
+# [engine.history]
+# days = 7
+# max_megabytes = 1024
+
 [tiles]
 cache_folder = "/var/lib/aprsmap/tiles"

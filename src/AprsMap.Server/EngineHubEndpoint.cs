@@ -685,6 +685,14 @@ internal sealed class EngineHubEndpoint(
             ? shield.Destination(latitude, longitude, segments: 64)
             : await engine.GetDestinationAsync(latitude, longitude, Context.ConnectionAborted).ConfigureAwait(false);
 
+    /// <summary>The history's status is the station operator's, as its settings are (F1.41 behavior 3).</summary>
+    [HubMethodName(EngineHub.GetHistoryStatus)]
+    public Task<HistoryStatus> GetHistoryStatus()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetHistoryStatusAsync(Context.ConnectionAborted);
+    }
+
     /// <summary>Capture is the station operator's (F1.27 behavior 11).</summary>
     [HubMethodName(EngineHub.GetCapture)]
     public Task<CaptureView> GetCapture(CaptureQuery query)

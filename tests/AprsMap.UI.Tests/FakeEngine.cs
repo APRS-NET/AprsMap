@@ -441,6 +441,12 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>The queries asked, in order.</summary>
     public List<CaptureQuery> CaptureQueries { get; } = [];
 
+    /// <summary>What <see cref="GetHistoryStatusAsync"/> answers (F1.41).</summary>
+    public HistoryStatus History { get; set; } = new(true, HistorySettings.Default);
+
+    public Task<HistoryStatus> GetHistoryStatusAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(History.Configured ? History : History with { Settings = Settings.EffectiveHistory });
+
     public Task<CaptureView> GetCaptureAsync(CaptureQuery query, CancellationToken cancellationToken = default)
     {
         CaptureQueries.Add(query);

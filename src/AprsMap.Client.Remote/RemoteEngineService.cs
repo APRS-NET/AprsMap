@@ -344,6 +344,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         );
 
     /// <inheritdoc />
+    public Task<HistoryStatus> GetHistoryStatusAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync<HistoryStatus>(EngineHub.GetHistoryStatus, cancellationToken));
+
+    /// <inheritdoc />
     public Task<CaptureView> GetCaptureAsync(CaptureQuery query, CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<CaptureView>(EngineHub.GetCapture, query, cancellationToken));
 

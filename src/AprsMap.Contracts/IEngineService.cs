@@ -276,6 +276,12 @@ public interface IEngineService
     /// </summary>
     Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// What the packet history holds and what stands in its way (docs/features/F1.41-persistent-history.md, behavior 3).
+    /// Its settings are saved with <see cref="SaveSettingsAsync"/> (<see cref="AppSettings.History"/>).
+    /// </summary>
+    Task<HistoryStatus> GetHistoryStatusAsync(CancellationToken cancellationToken = default);
+
     /// <summary>The packets capture recorded, newest first (docs/features/F1.27-packet-capture.md, behavior 7).</summary>
     /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
     Task<CaptureView> GetCaptureAsync(CaptureQuery query, CancellationToken cancellationToken = default);

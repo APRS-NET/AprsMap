@@ -184,6 +184,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetCaptureAsync"/>.</summary>
     public const string GetCapture = "GetCapture";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetHistoryStatusAsync"/>.</summary>
+    public const string GetHistoryStatus = "GetHistoryStatus";
+
     /// <summary>Hub method for <see cref="IEngineService.ExportCaptureAsync"/>.</summary>
     public const string ExportCapture = "ExportCapture";
 

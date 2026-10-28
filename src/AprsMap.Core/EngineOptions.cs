@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+using AprsMap.Contracts;
+
 namespace AprsMap.Core;
 
 /// <summary>Engine settings, bound from the <c>Engine</c> configuration section.</summary>
@@ -85,6 +87,12 @@ public sealed class EngineOptions
     public DeviceListOptions DeviceList { get; set; } = new();
 
     /// <summary>
+    /// The packet history (docs/features/F1.41-persistent-history.md): where it's kept, and the length and size the
+    /// gateway's configuration sets (<c>[engine.history]</c>), which win over the stored settings on every start.
+    /// </summary>
+    public HistoryOptions History { get; set; } = new();
+
+    /// <summary>
     /// How many recent packets the engine keeps for clients that connect later, and for filtering after the fact
     /// (F1.8 behavior 9): a few minutes of a full APRS-IS feed, or hours of a filtered one.
     /// </summary>
@@ -155,6 +163,29 @@ public sealed class KissSerialSeedOptions
 
     /// <summary>The source's name; null for the port.</summary>
     public string? Name { get; set; }
+}
+
+/// <summary>The packet history's folder and configured limits (docs/features/F1.41-persistent-history.md, behavior 2).</summary>
+public sealed class HistoryOptions
+{
+    /// <summary>
+    /// Where the history's day files are kept: <c>history</c> in the data folder when the engine is added to a host;
+    /// null, as in tests that build the engine themselves, keeps no history.
+    /// </summary>
+    public string? Folder { get; set; }
+
+    /// <summary>How many days are kept (0 is off), from the configuration; null leaves it to the stored settings.</summary>
+    public int? Days { get; set; }
+
+    /// <summary>The size limit in MB, from the configuration; null leaves it to the stored settings.</summary>
+    public int? MaxMegabytes { get; set; }
+
+    /// <summary>Whether the configuration sets either.</summary>
+    internal bool Configured => Days is not null || MaxMegabytes is not null;
+
+    /// <summary><paramref name="stored"/> with what the configuration sets in place.</summary>
+    internal HistorySettings Apply(HistorySettings stored) =>
+        new(Days ?? stored.Days, MaxMegabytes ?? stored.MaxMegabytes);
 }
 
 /// <summary>A first-run gpsd (docs/features/F1.37-gateway-service.md, behavior 4).</summary>
