@@ -96,6 +96,9 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
     /// <summary>The shortcut for Find a station: Ctrl+F.</summary>
     public static KeyGesture FindGesture => new(Key.F, CommandKey);
 
+    /// <summary>The shortcut for Next filter: Ctrl+Shift+F (docs/features/F1.42-saved-filters.md, decision 4).</summary>
+    public static KeyGesture NextFilterGesture => new(Key.F, CommandKey | KeyModifiers.Shift);
+
     /// <summary>The shortcut for Quit: Ctrl+Q (Cmd+Q on macOS).</summary>
     public static KeyGesture QuitGesture => new(Key.Q, CommandKey);
 
@@ -301,6 +304,7 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
             ),
             Run("view.reset-layout", text["Shell.Menu.ResetLayout"] + "…", vm.AskResetLayout),
             new SubmenuEntry(text["Menu.View.Layouts"], layouts),
+            new SubmenuEntry(text["Menu.View.Filter"], Filters()),
         ];
         if (vm.CanUndoResetLayout)
         {
@@ -334,6 +338,37 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                 )
             );
         }
+        return items;
+    }
+
+    /// <summary>All, My filter and each saved filter, ticked in use, then Next filter (F1.42 behavior 4).</summary>
+    private List<MenuEntry> Filters()
+    {
+        List<MenuEntry> items =
+        [
+            .. vm.ViewFilter.Choices.Select(c =>
+                (MenuEntry)
+                    new CommandEntry(
+                        "view.filter." + (c.SavedId ?? c.Kind.ToString()),
+                        c.Kind == Stations.FilterChoiceKind.Saved ? Literal(c.Label) : c.Label,
+                        c.ChooseCommand,
+                        null,
+                        null,
+                        c.IsChecked,
+                        null
+                    )
+            ),
+            SeparatorEntry.Instance,
+            new CommandEntry(
+                "view.next-filter",
+                text["Menu.View.NextFilter"],
+                vm.ViewFilter.NextFilterCommand,
+                null,
+                NextFilterGesture,
+                null,
+                null
+            ),
+        ];
         return items;
     }
 

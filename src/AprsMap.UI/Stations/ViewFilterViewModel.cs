@@ -157,8 +157,19 @@ public sealed partial class ViewFilterViewModel : ObservableObject
     {
         // With station lists, the chip names them (F1.33 behavior 8).
         var lists = string.Join(", ", Lists.Where(c => c.IsChecked).Select(c => c.Label));
+        var counts = new Dictionary<string, object?> { ["shown"] = shown, ["total"] = total };
         ChipText =
-            !IsFiltered ? null
+            !IsFiltered ? (_saved.Count > 0 ? _text.Format("Filter.ChipAll", counts) : null)
+            : InUse is { } inUse
+                ? _text.Format(
+                    IsChanged ? "Filter.ChipSavedChanged" : "Filter.ChipSaved",
+                    new Dictionary<string, object?>
+                    {
+                        ["name"] = inUse.Name,
+                        ["shown"] = shown,
+                        ["total"] = total,
+                    }
+                )
             : lists.Length > 0
                 ? _text.Format(
                     "Filter.ChipLists",
@@ -231,11 +242,13 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         {
             return;
         }
-        if (Read(json) is not var (on, filter))
+        if (Read(json) is not var (on, filter, saved))
         {
             return;
         }
         Set(on, filter);
+        _mine = filter;
+        _pendingSavedId = on ? saved : null; // used once the profile's saved filters are shown (F1.42 behavior 5)
     }
 
     /// <summary>
@@ -281,7 +294,7 @@ public sealed partial class ViewFilterViewModel : ObservableObject
     }
 
     /// <summary>The kept filter, or null when the text isn't one.</summary>
-    internal static (bool On, StationFilter Filter)? Read(string? json)
+    internal static (bool On, StationFilter Filter, string? Saved)? Read(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -290,7 +303,7 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         try
         {
             var kept = JsonSerializer.Deserialize(json, ViewFilterJson.Default.KeptFilter);
-            return kept?.Filter is { } filter ? (kept.On, filter) : null;
+            return kept?.Filter is { } filter ? (kept.On, filter, kept.Saved) : null;
         }
         catch (JsonException)
         {
@@ -337,8 +350,10 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         {
             return;
         }
+        NoteChange(); // F1.42 behavior 6
         OnPropertyChanged(nameof(Current));
         OnPropertyChanged(nameof(IsFiltered));
+        RefreshChoices();
         _ = SaveAsync();
         Changed?.Invoke(this, EventArgs.Empty);
     }
@@ -353,7 +368,10 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         {
             await _store.SaveAsync(
                 Key,
-                JsonSerializer.Serialize(new KeptFilter(IsOn, Conditions), ViewFilterJson.Default.KeptFilter)
+                JsonSerializer.Serialize(
+                    new KeptFilter(IsOn, _inUseId is null ? Conditions : _mine, _inUseId), // F1.42: My filter kept apart
+                    ViewFilterJson.Default.KeptFilter
+                )
             );
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
@@ -465,7 +483,7 @@ public sealed partial class FilterOption(object? value, string labelKey) : Obser
 }
 
 /// <summary>The filter as kept in this viewer's preferences.</summary>
-internal sealed record KeptFilter(bool On, StationFilter Filter);
+internal sealed record KeptFilter(bool On, StationFilter Filter, string? Saved = null);
 
 [System.Text.Json.Serialization.JsonSourceGenerationOptions(
     PropertyNamingPolicy = System.Text.Json.Serialization.JsonKnownNamingPolicy.CamelCase,

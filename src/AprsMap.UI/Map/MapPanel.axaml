@@ -421,6 +421,59 @@
                   Content="{l:T Filter.Reset}"
                   Command="{Binding ViewFilter.ResetCommand}"
                 />
+                <!-- Saved filters (F1.42 behaviors 1, 6): the one in use, and Save filter as… -->
+                <StackPanel x:Name="SavedFiltersPart" Spacing="8">
+                  <TextBlock Text="{l:T Filter.Saved.Title}" FontWeight="SemiBold" />
+                  <StackPanel
+                    Spacing="4"
+                    IsVisible="{Binding ViewFilter.InUse, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  >
+                    <TextBlock Text="{Binding ViewFilter.InUse.Name, FallbackValue=''}" TextWrapping="Wrap" />
+                    <TextBlock
+                      Text="{l:T Filter.ChangedNote}"
+                      IsVisible="{Binding ViewFilter.IsChanged}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                    />
+                    <WrapPanel ItemSpacing="8" LineSpacing="4" IsVisible="{Binding ViewFilter.IsChanged}">
+                      <Button
+                        x:Name="FilterSaveOverButton"
+                        Content="{l:T Filter.SaveOver}"
+                        Command="{Binding ViewFilter.SaveOverCommand}"
+                        IsVisible="{Binding ViewFilter.CanSave}"
+                      />
+                      <Button
+                        x:Name="FilterBackToSavedButton"
+                        Content="{l:T Filter.BackToSaved}"
+                        Command="{Binding ViewFilter.BackToSavedCommand}"
+                      />
+                    </WrapPanel>
+                  </StackPanel>
+                  <StackPanel Spacing="4" IsVisible="{Binding ViewFilter.CanSave}">
+                    <TextBox
+                      x:Name="FilterSaveAsName"
+                      Text="{Binding ViewFilter.SaveAsName}"
+                      PlaceholderText="{l:T Filter.SaveAsName}"
+                      AutomationProperties.Name="{l:T Filter.SaveAsName}"
+                      MaxLength="40"
+                    />
+                    <CheckBox
+                      x:Name="FilterSaveAsUseView"
+                      Content="{l:T Filter.SaveAsUseView}"
+                      IsChecked="{Binding ViewFilter.SaveAsUseView}"
+                    />
+                    <Button
+                      x:Name="FilterSaveAsButton"
+                      Content="{l:T Filter.SaveAs}"
+                      Command="{Binding ViewFilter.SaveAsCommand}"
+                    />
+                  </StackPanel>
+                  <TextBlock
+                    Text="{Binding ViewFilter.SaveError}"
+                    IsVisible="{Binding ViewFilter.SaveError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.Warn}"
+                    TextWrapping="Wrap"
+                  />
+                </StackPanel>
               </StackPanel>
             </ScrollViewer>
           </Flyout>
@@ -543,11 +596,40 @@
         BorderThickness="{DynamicResource Thickness.Border}"
         CornerRadius="{DynamicResource Radius.Control}"
         Padding="10,2,4,2"
-        IsVisible="{Binding ViewFilter.IsFiltered}"
+        IsVisible="{Binding ViewFilter.ShowsChip}"
       >
         <StackPanel Orientation="Horizontal" Spacing="8">
           <TextBlock Text="{Binding ViewFilter.ChipText}" VerticalAlignment="Center" TextWrapping="Wrap" />
-          <Button x:Name="ShowAllButton" Content="{l:T Filter.ShowAll}" Command="{Binding ViewFilter.ShowAllCommand}" />
+          <!-- All, My filter and each saved filter (F1.42 behavior 4). -->
+          <DropDownButton
+            x:Name="FilterChoicesButton"
+            Content="{l:T Filter.Choose}"
+            AutomationProperties.Name="{l:T Filter.Choose}"
+          >
+            <DropDownButton.Flyout>
+              <Flyout Placement="Bottom">
+                <ItemsControl ItemsSource="{Binding ViewFilter.Choices}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="st:FilterChoice">
+                      <RadioButton
+                        GroupName="FilterChoice"
+                        Content="{Binding Label}"
+                        IsChecked="{Binding IsChecked, Mode=OneWay}"
+                        Command="{Binding ChooseCommand}"
+                        Margin="0,0,0,4"
+                      />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Flyout>
+            </DropDownButton.Flyout>
+          </DropDownButton>
+          <Button
+            x:Name="ShowAllButton"
+            Content="{l:T Filter.ShowAll}"
+            Command="{Binding ViewFilter.ShowAllCommand}"
+            IsVisible="{Binding ViewFilter.IsFiltered}"
+          />
         </StackPanel>
       </Border>
       <Border

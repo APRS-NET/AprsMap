@@ -222,6 +222,11 @@ public sealed partial class MainView : IMenuActions
             },
             new KeyBinding
             {
+                Gesture = AppMenus.NextFilterGesture, // F1.42 decision 4
+                Command = vm.ViewFilter.NextFilterCommand,
+            },
+            new KeyBinding
+            {
                 Gesture = AppMenus.FullScreenGesture,
                 Command = new CommunityToolkit.Mvvm.Input.RelayCommand(((IMenuActions)this).ToggleFullScreen),
             },

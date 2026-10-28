@@ -140,6 +140,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.DestinationRequested -= OnDestinationRequested;
             _main.Destination.PropertyChanged -= OnDestinationChanged;
             _main.ViewFilter.AlsoHeardChanged -= OnAlsoHeardChanged;
+            _main.ViewFilter.MapViewRequested -= OnFilterMapView;
         }
         _main = DataContext as MainViewModel;
         if (_main is not null)
@@ -152,6 +153,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _main.DestinationRequested += OnDestinationRequested;
             _main.Destination.PropertyChanged += OnDestinationChanged;
             _main.ViewFilter.AlsoHeardChanged += OnAlsoHeardChanged; // F1.43 behavior 1
+            _main.ViewFilter.MapViewRequested += OnFilterMapView; // F1.42 behavior 5
             ShowDestination();
             _map.SetStations(_main.Stations);
             _map.SetTracks(_main.Tracks);
@@ -311,6 +313,13 @@ public sealed partial class MapPanel : UserControl, IDisposable
     private readonly DispatcherTimer _alsoHeardTimer = new() { Interval = TimeSpan.FromMinutes(1) };
 
     private void OnAlsoHeardChanged(object? sender, EventArgs e) => _ = LoadAlsoHeardAsync();
+
+    /// <summary>A saved filter with a map view was chosen: the map goes there (F1.42 behavior 5).</summary>
+    private void OnFilterMapView(object? sender, SavedMapView view)
+    {
+        StopFollowing();
+        _map.GoTo(view.Latitude, view.Longitude, MainViewModel.ResolutionOf(view));
+    }
 
     private async Task LoadAlsoHeardAsync()
     {

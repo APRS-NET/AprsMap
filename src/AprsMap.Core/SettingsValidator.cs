@@ -199,6 +199,7 @@ internal static class SettingsValidator
                 );
             }
             ValidateStationLists(profile);
+            ValidateSavedFilters(profile); // F1.42
             // One GPS a profile (F3.6 decision 2): a GPS source and a radio whose GPS is On would be two; a radio on Auto
             // steps aside (docs/features/F3.13-tnc-gps.md, behavior 4).
             if (
@@ -640,6 +641,44 @@ internal static class SettingsValidator
     /// <summary>Whether <paramref name="symbol"/> is a table or overlay character and a code APRS.NET accepts.</summary>
     internal static bool IsSymbol(string symbol) =>
         symbol.Length == 2 && AprsSymbol.TryCreate(symbol[0], symbol[1], out _);
+
+    /// <summary>
+    /// A profile's saved filters (docs/features/F1.42-saved-filters.md, behavior 1): each named, names not repeated, up
+    /// to the limit (decision 5).
+    /// </summary>
+    private static void ValidateSavedFilters(StationProfile profile)
+    {
+        var filters = profile.SavedFilterSet;
+        if (filters.Count > SavedFilter.MaxFilters)
+        {
+            throw Fail(
+                EngineErrorCodes.SavedFilterTooMany,
+                $"Profile '{profile.Name}' has more than {SavedFilter.MaxFilters} saved filters.",
+                profile.Name
+            );
+        }
+        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var filter in filters)
+        {
+            var name = filter.Name?.Trim() ?? string.Empty;
+            if (
+                name.Length is 0 or > SavedFilter.MaxNameLength
+                || !names.Add(name)
+                || filter.Filter is null
+                || !ids.Add(filter.Id ?? string.Empty)
+            )
+            {
+                throw new EngineArgumentException(
+                    new EngineError(
+                        EngineErrorCodes.SavedFilterNameTaken,
+                        $"Each saved filter needs a name of its own, up to {SavedFilter.MaxNameLength} characters; '{filter.Name}' is taken, empty or too long.",
+                        new Dictionary<string, string> { [EngineErrorArgs.Value] = filter.Name ?? string.Empty }
+                    )
+                );
+            }
+        }
+    }
 
     /// <summary>
     /// A profile's station lists (docs/features/F1.33-station-lists.md, behaviors 1–3): each named, names not repeated,

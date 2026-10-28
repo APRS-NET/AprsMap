@@ -51,6 +51,12 @@ public static class EngineErrorCodes
     /// <summary>Two station lists of a profile have the same name, or one has none (F1.33).</summary>
     public const string StationListNameTaken = "settings.station-list.name-taken";
 
+    /// <summary>A profile has more saved filters than allowed (docs/features/F1.42-saved-filters.md, decision 5).</summary>
+    public const string SavedFilterTooMany = "settings.saved-filter.too-many";
+
+    /// <summary>Two saved filters of a profile have the same name, or one has none or a name too long (F1.42).</summary>
+    public const string SavedFilterNameTaken = "settings.saved-filter.name-taken";
+
     /// <summary>The moving schedule's speeds, rates or turns can't be used (F2.2, #335).</summary>
     public const string ProfileMovingInvalid = "settings.profile.moving-invalid";
 

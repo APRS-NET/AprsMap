@@ -99,6 +99,7 @@ public sealed partial class MainViewModel : ObservableObject
         );
         ViewFilter = new Stations.ViewFilterViewModel(engine, _text);
         ViewFilter.Changed += (_, _) => OnViewFilterChanged();
+        WireSavedFilters(); // F1.42
         StationList.Filter = () => ViewFilter.Current;
         Shell = new ShellViewModel(this, _text, managedWindows);
         Layouts = new SavedLayoutsViewModel(Shell, _text);
@@ -1419,6 +1420,7 @@ public sealed partial class MainViewModel : ObservableObject
         Settings?.Objects?.Show(settings); // a killed object goes once it's been sent (F2.7 behavior 8)
         Settings?.StationLists?.Show(settings);
         ViewFilter.ShowLists(settings.GetActiveProfile()?.StationListSet ?? []); // F1.33 behavior 6
+        ViewFilter.ShowSaved(settings.GetActiveProfile()?.SavedFilterSet ?? [], settings is { ReadOnly: false }); // F1.42
         ShowListChoices(); // F1.33 behavior 5
         Details.Refresh(); // the lists a station is in
         LiveObjects = [.. settings.GetActiveProfile()?.ObjectList.Where(o => o.Live) ?? []];
