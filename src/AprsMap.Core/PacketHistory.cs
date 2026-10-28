@@ -555,6 +555,59 @@ internal sealed partial class PacketHistory : IAsyncDisposable
         return records;
     }
 
+    /// <summary>
+    /// Each station's last kept packet with a position since <paramref name="since"/>, inside the box (west may be past
+    /// east, across the antimeridian), for the map (docs/features/F1.43-map-history-range.md, behavior 2).
+    /// </summary>
+    public async Task<IReadOnlyList<HistoryRecord>> LastPositionsAsync(
+        DateTimeOffset since,
+        double south,
+        double west,
+        double north,
+        double east,
+        CancellationToken cancellationToken = default
+    )
+    {
+        await FlushAsync(cancellationToken).ConfigureAwait(false);
+        var last = new Dictionary<string, HistoryRecord>(StringComparer.Ordinal);
+        foreach (var day in DaysKept().Where(d => d >= Day(since)).Order())
+        {
+            await _files.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                using var connection = day == _connectionDay && _connection is not null ? null : Open(day, false);
+                using var query = (connection ?? _connection!).CreateCommand();
+                query.CommandText = $"""
+                    SELECT received_at, source, own, duplicate, name, kind, lat, lon, raw FROM packets
+                    WHERE received_at >= $since AND name IS NOT NULL AND duplicate = 0
+                      AND lat BETWEEN $south AND $north
+                      AND {(west <= east ? "lon BETWEEN $west AND $east" : "(lon >= $west OR lon <= $east)")}
+                    ORDER BY rowid
+                    """;
+                query.Parameters.AddWithValue("$since", since.ToUnixTimeMilliseconds());
+                query.Parameters.AddWithValue("$south", south);
+                query.Parameters.AddWithValue("$north", north);
+                query.Parameters.AddWithValue("$west", west);
+                query.Parameters.AddWithValue("$east", east);
+                using var reader = query.ExecuteReader();
+                while (reader.Read())
+                {
+                    var record = RecordAt(reader);
+                    last[record.Name!] = record;
+                }
+            }
+            catch (SqliteException ex)
+            {
+                LogNotRead(_logger, PathOf(day), ex);
+            }
+            finally
+            {
+                _files.Release();
+            }
+        }
+        return [.. last.Values];
+    }
+
     private static HistoryRecord RecordAt(SqliteDataReader reader) =>
         new(
             DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(0)),

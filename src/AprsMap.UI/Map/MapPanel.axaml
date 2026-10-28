@@ -263,6 +263,23 @@
                     </ComboBox.ItemTemplate>
                   </ComboBox>
                 </StackPanel>
+                <!-- Also stations heard in the last days, from the packet history (F1.43 behavior 1). -->
+                <StackPanel Spacing="4" IsVisible="{Binding ViewFilter.IsAlsoHeardOffered}">
+                  <TextBlock Text="{l:T Filter.Label.AlsoHeard}" FontWeight="SemiBold" />
+                  <ComboBox
+                    x:Name="FilterAlsoHeard"
+                    ItemsSource="{Binding ViewFilter.AlsoHeardOptions}"
+                    SelectedItem="{Binding ViewFilter.AlsoHeard}"
+                    AutomationProperties.Name="{l:T Filter.Label.AlsoHeard}"
+                    MinWidth="240"
+                  >
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="st:FilterOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
                 <StackPanel Spacing="4">
                   <TextBlock Text="{l:T Filter.Label.Heard}" FontWeight="SemiBold" />
                   <ComboBox
@@ -516,23 +533,36 @@
       </Button>
     </StackPanel>
     <!-- While a View filter hides stations (F1.9 behavior 4): what's shown, and a way back to everything. -->
-    <Border
-      x:Name="FilterChip"
-      HorizontalAlignment="Center"
-      VerticalAlignment="Top"
-      Background="{DynamicResource Brush.Surface}"
-      BorderBrush="{DynamicResource Brush.Accent}"
-      BorderThickness="{DynamicResource Thickness.Border}"
-      CornerRadius="{DynamicResource Radius.Control}"
-      Padding="10,2,4,2"
-      Margin="10"
-      IsVisible="{Binding ViewFilter.IsFiltered}"
-    >
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <TextBlock Text="{Binding ViewFilter.ChipText}" VerticalAlignment="Center" TextWrapping="Wrap" />
-        <Button x:Name="ShowAllButton" Content="{l:T Filter.ShowAll}" Command="{Binding ViewFilter.ShowAllCommand}" />
-      </StackPanel>
-    </Border>
+    <!-- The filter's chip, and under it how many the packet history added (F1.43 behavior 3). -->
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="10" Spacing="4">
+      <Border
+        x:Name="FilterChip"
+        HorizontalAlignment="Center"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Accent}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        CornerRadius="{DynamicResource Radius.Control}"
+        Padding="10,2,4,2"
+        IsVisible="{Binding ViewFilter.IsFiltered}"
+      >
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{Binding ViewFilter.ChipText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <Button x:Name="ShowAllButton" Content="{l:T Filter.ShowAll}" Command="{Binding ViewFilter.ShowAllCommand}" />
+        </StackPanel>
+      </Border>
+      <Border
+        x:Name="AlsoHeardChip"
+        HorizontalAlignment="Center"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        CornerRadius="{DynamicResource Radius.Control}"
+        Padding="10,2"
+        IsVisible="{Binding ViewFilter.AlsoHeardText, Converter={x:Static ObjectConverters.IsNotNull}}"
+      >
+        <TextBlock Text="{Binding ViewFilter.AlsoHeardText}" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
     <Border
       x:Name="AttributionBar"
       HorizontalAlignment="Right"

@@ -456,6 +456,26 @@ internal sealed class FakeEngine : IEngineService
         return Task.FromResult(LongTrack);
     }
 
+    /// <summary>What <see cref="GetKeptStationsAsync"/> answers, and what it was asked (F1.43).</summary>
+    public KeptStations KeptStations { get; set; } = KeptStations.None;
+
+    public List<KeptStationsQuery> KeptQueries { get; } = [];
+
+    public Task<KeptStations> GetKeptStationsAsync(
+        KeptStationsQuery query,
+        CancellationToken cancellationToken = default
+    )
+    {
+        KeptQueries.Add(query);
+        return Task.FromResult(KeptStations);
+    }
+
+    /// <summary>Stations as the history describes them, by name (F1.43 behavior 4).</summary>
+    public Dictionary<string, StationDetail> KeptDetails { get; } = new(StringComparer.Ordinal);
+
+    public Task<StationDetail?> GetKeptStationAsync(string name, CancellationToken cancellationToken = default) =>
+        Task.FromResult(KeptDetails.GetValueOrDefault(name));
+
     /// <summary>The kept packets <see cref="GetStationPacketsAsync"/> pages through, newest first (F1.41 behavior 9).</summary>
     public IReadOnlyList<PacketView> KeptPackets { get; set; } = [];
 

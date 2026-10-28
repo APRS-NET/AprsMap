@@ -341,6 +341,42 @@ internal sealed class EngineHubEndpoint(
             ? []
             : await engine.GetTrackAsync(name, since, Context.ConnectionAborted).ConfigureAwait(false);
 
+    /// <summary>Stations from the history for the map (F1.43); the home, for a viewer it's shielded from, is left out.</summary>
+    [HubMethodName(EngineHub.GetKeptStations)]
+    public async Task<KeptStations> GetKeptStations(KeptStationsQuery query)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var kept = await engine
+            .GetKeptStationsAsync(
+                query with
+                {
+                    Max = Math.Clamp(query.Max, 0, KeptStationsQuery.DefaultMax),
+                },
+                Context.ConnectionAborted
+            )
+            .ConfigureAwait(false);
+        return await ShieldAsync().ConfigureAwait(false) is { } shield
+            ? kept with
+            {
+                Stations = [.. kept.Stations.Where(s => !shield.Hides(s.Name)).Select(shield.Apply)],
+            }
+            : kept;
+    }
+
+    /// <summary>A station as the history describes it (F1.43 behavior 4); not the home, for a viewer shielded from it.</summary>
+    [HubMethodName(EngineHub.GetKeptStation)]
+    public async Task<StationDetail?> GetKeptStation(string name)
+    {
+        if (await ShieldAsync().ConfigureAwait(false) is { } shield)
+        {
+            return shield.Hides(name) ? null
+                : await engine.GetKeptStationAsync(name, Context.ConnectionAborted).ConfigureAwait(false) is { } kept
+                    ? shield.Apply(kept)
+                : null;
+        }
+        return await engine.GetKeptStationAsync(name, Context.ConnectionAborted).ConfigureAwait(false);
+    }
+
     /// <summary>A station's kept packets (F1.41 behavior 9); the home's, for a viewer it's shielded from, are withheld.</summary>
     [HubMethodName(EngineHub.GetStationPackets)]
     public async Task<IReadOnlyList<PacketView>> GetStationPackets(string name, DateTimeOffset? before, int count) =>

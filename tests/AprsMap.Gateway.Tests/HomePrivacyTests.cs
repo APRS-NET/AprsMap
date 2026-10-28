@@ -179,6 +179,11 @@ public sealed class HomePrivacyTests(OperatorPortGatewayFactory gateway) : IClas
         Assert.Empty(await viewer.GetStationPacketsAsync(home, null, 10, Ct));
         Assert.Single(await viewer.GetStationPacketsAsync("N0CAR-9", null, 10, Ct));
         Assert.Single(await operatorPort.GetStationPacketsAsync(home, null, 10, Ct));
+        Assert.Null(await viewer.GetKeptStationAsync(home, Ct)); // F1.43 behavior 7
+        Assert.NotNull(await viewer.GetKeptStationAsync("N0CAR-9", Ct));
+        Assert.NotNull(await operatorPort.GetKeptStationAsync(home, Ct));
+        var everywhere = new KeptStationsQuery(since, -90, -180, 90, 180);
+        Assert.Empty((await viewer.GetKeptStationsAsync(everywhere, Ct)).Stations); // both are live: drawn as such
     }
 
     private async Task<string> SignInOnOperatorPort()
