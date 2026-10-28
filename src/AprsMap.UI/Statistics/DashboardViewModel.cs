@@ -119,11 +119,21 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void ShowScope() =>
-        ScopeText =
+    private void ShowScope()
+    {
+        var scope =
             !MyView ? null
+            : Range == DashboardRange.Week ? _text["Dashboard.MyView.Week"] // F1.41 behavior 10
             : _viewFilter() is null ? _text["Dashboard.MyView.NoFilter"]
             : _text["Dashboard.MyView.Note"];
+        ScopeText =
+            scope is null ? _listsNote
+            : _listsNote is null ? scope
+            : scope + " " + _listsNote;
+    }
+
+    // Over 7 days, how far back the lists reach when it's less (F1.41 behavior 10); null otherwise.
+    private string? _listsNote;
 
     /// <summary>The tile whose series is open as a large plot (behavior 6.1); null for the tiles.</summary>
     [ObservableProperty]
@@ -268,6 +278,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
         {
             option.Refresh();
         }
+        ShowScope();
         if (_running is not null)
         {
             _ = RefreshAsync(_running.Token);
@@ -308,7 +319,26 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     {
         _last = dashboard;
         var zone = _time.LocalTimeZone;
-        string Clock(DateTimeOffset at) => TimeZoneInfo.ConvertTime(at, zone).ToString("t", _text.Culture);
+        // A point an hour over 7 days needs the day as well (F1.41 behavior 10).
+        var withDay = dashboard.Step >= TimeSpan.FromHours(1);
+        string Clock(DateTimeOffset at)
+        {
+            var local = TimeZoneInfo.ConvertTime(at, zone);
+            var time = local.ToString("t", _text.Culture);
+            return withDay ? local.ToString("ddd", _text.Culture) + " " + time : time;
+        }
+        _listsNote = dashboard.ListsCover is { } cover
+            ? _text.Format(
+                "Dashboard.ListsCover",
+                new Dictionary<string, object?>
+                {
+                    ["hours"] = (int)Math.Round(cover.TotalHours),
+                    ["days"] = (int)Math.Floor(cover.TotalDays),
+                    ["unit"] = cover >= TimeSpan.FromDays(2) ? "days" : "hours",
+                }
+            )
+            : null;
+        ShowScope();
         AsOfText = _text.Format(
             "Dashboard.AsOf",
             new Dictionary<string, object?>
@@ -705,6 +735,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             {
                 DashboardRange.SixHours => "Dashboard.Range.SixHours",
                 DashboardRange.Day => "Dashboard.Range.Day",
+                DashboardRange.Week => "Dashboard.Range.Week",
                 _ => "Dashboard.Range.Hour",
             };
 

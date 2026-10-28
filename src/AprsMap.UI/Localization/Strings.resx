@@ -1966,6 +1966,9 @@ Start the gateway (for example with docker compose up), then open the app from t
   <data name="Dashboard.MyView.Note" xml:space="preserve">
     <value>My view: only the stations your View filter shows, in steps of at least 5 minutes. Packets by source and the busiest digipeaters and IGates are still the whole feed.</value>
   </data>
+  <data name="Dashboard.MyView.Week" xml:space="preserve">
+    <value>My view counts up to 24 hours, so over 7 days this is the whole feed.</value>
+  </data>
   <data name="Dashboard.MyView.NoFilter" xml:space="preserve">
     <value>Your View filter is off, so My view counts the whole feed.</value>
   </data>
@@ -4392,6 +4395,13 @@ In a Docker container:
   </data>
   <data name="Dashboard.Range.Day" xml:space="preserve">
     <value>24 hours</value>
+  </data>
+  <data name="Dashboard.Range.Week" xml:space="preserve">
+    <value>7 days</value>
+  </data>
+  <data name="Dashboard.ListsCover" xml:space="preserve">
+    <value>The stations heard, the newest and the busiest cover the last {unit, select, days {{days, plural, one {# day} other {# days}}} other {{hours, plural, one {# hour} other {# hours}}}}: that's all the history kept.</value>
+    <comment>Over 7 days, when the packet history is shorter. unit: days or hours.</comment>
   </data>
   <data name="Dashboard.Waiting" xml:space="preserve">
     <value>Waiting for packets. The numbers fill in as they arrive.</value>
