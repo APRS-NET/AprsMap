@@ -163,4 +163,6 @@ internal sealed record GpsOutageState(DateTimeOffset Start, DateTimeOffset? End)
 [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage] // generated code
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
 [JsonSerializable(typeof(HistorySnapshot))]
+[JsonSerializable(typeof(IReadOnlyDictionary<string, int>))]
+[JsonSerializable(typeof(Dictionary<string, int>))]
 internal sealed partial class HistoryJsonContext : JsonSerializerContext;

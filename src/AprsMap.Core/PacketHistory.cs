@@ -128,6 +128,12 @@ internal sealed partial class PacketHistory : IAsyncDisposable
         }
     }
 
+    /// <summary>The history's folder.</summary>
+    public string Folder => _folder;
+
+    /// <summary>Whether this engine has the folder: not when another process does, or it can't be written.</summary>
+    public bool Usable => _blocked == HistoryProblem.None;
+
     /// <summary>Packets dropped because the disk couldn't keep up.</summary>
     public long Dropped => Interlocked.Read(ref _dropped);
 
@@ -407,6 +413,62 @@ internal sealed partial class PacketHistory : IAsyncDisposable
         }
         return records;
     }
+
+    /// <summary>
+    /// How many stations were heard since <paramref name="since"/>, and the <paramref name="top"/> that sent the most,
+    /// from every day kept (behavior 10): the dashboard's lists over 7 days. Duplicates and own packets aren't counted.
+    /// </summary>
+    public async Task<(int Stations, IReadOnlyList<(string Name, int Count)> Busiest)> StationsSinceAsync(
+        DateTimeOffset since,
+        int top,
+        CancellationToken cancellationToken = default
+    )
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var day in DaysKept().Where(d => d >= Day(since)))
+        {
+            await _files.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                using var connection = day == _connectionDay && _connection is not null ? null : Open(day, false);
+                using var query = (connection ?? _connection!).CreateCommand();
+                query.CommandText = """
+                    SELECT name, COUNT(*) FROM packets
+                    WHERE received_at >= $since AND name IS NOT NULL AND duplicate = 0 AND own = 0
+                    GROUP BY name
+                    """;
+                query.Parameters.AddWithValue("$since", since.ToUnixTimeMilliseconds());
+                using var reader = query.ExecuteReader();
+                while (reader.Read())
+                {
+                    var name = reader.GetString(0);
+                    counts[name] = counts.GetValueOrDefault(name) + reader.GetInt32(1);
+                }
+            }
+            catch (SqliteException ex)
+            {
+                LogNotRead(_logger, PathOf(day), ex);
+            }
+            finally
+            {
+                _files.Release();
+            }
+        }
+        return (
+            counts.Count,
+            [
+                .. counts
+                    .OrderByDescending(c => c.Value)
+                    .ThenBy(c => c.Key, StringComparer.Ordinal)
+                    .Take(top)
+                    .Select(c => (c.Key, c.Value)),
+            ]
+        );
+    }
+
+    /// <summary>When the oldest packet kept was received; null with none.</summary>
+    public async Task<DateTimeOffset?> KeptSinceAsync(CancellationToken cancellationToken = default) =>
+        (await StatusAsync(false, cancellationToken).ConfigureAwait(false)).KeptSince;
 
     /// <summary>
     /// The once-a-minute pass (behaviors 4, 5): deletes the days past the age limit, then the oldest past the size

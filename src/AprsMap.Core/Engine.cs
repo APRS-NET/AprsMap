@@ -131,6 +131,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _groupTimer = time.CreateTimer(_ => KeepGroupsAlive(), null, GroupCheck, GroupCheck);
         _capture = _options.CaptureFolder is { } captureFolder ? new PacketCapture(captureFolder, time) : null;
         _history = _options.History.Folder is { } historyFolder ? new PacketHistory(historyFolder, time, logger) : null; // F1.41
+        _metrics = _history is { Usable: true } ? new MetricsStore(_history.Folder) : null; // F1.41 behavior 10
     }
 
     /// <inheritdoc />
@@ -144,6 +145,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _bulletins.Dispose();
         _capture?.DisposeAsync().AsTask().GetAwaiter().GetResult(); // what's queued is written first
         _history?.DisposeAsync().AsTask().GetAwaiter().GetResult(); // likewise
+        _metrics?.Dispose();
         _settingsLock.Dispose();
         lock (_gate)
         {
@@ -559,6 +561,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             {
                 await _history.DeleteAllAsync(cancellationToken).ConfigureAwait(false); // F1.41 behavior 12
             }
+            _metrics?.DeleteAll();
+            _hoursSavedThrough = long.MinValue;
             MeasureFrom(AppSettings.Empty);
             await UseMessengerAsync(AppSettings.Empty, cancellationToken).ConfigureAwait(false);
             SignalSettingsChanged();
@@ -763,6 +767,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         var updates = RunUpdatesAsync(cancellationToken); // F4.15
         var devices = RunDeviceListAsync(cancellationToken); // F4.16
         await LoadHistoryAsync(cancellationToken).ConfigureAwait(false); // #386: before anything is counted
+        SaveDashboardHours(); // F1.41 behavior 11: the hours the minutes hold, an older file's too
         var gps = RunGpsHistoryAsync(cancellationToken); // F3.14
         var saving = RunHistorySavesAsync(cancellationToken); // #386
         try
@@ -2031,6 +2036,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 var count = _recent.Count;
                 _dashboard.Clear(_time.GetUtcNow());
                 _ = SaveHistoryAsync(); // a restart doesn't bring the cleared counts back
+                _metrics?.DeleteAll(); // nor do the 7 days (F1.41 behavior 10)
+                _hoursSavedThrough = long.MinValue;
+                _weekLists = null;
                 _recent.Clear();
                 _listed.Clear();
                 _listedOrder.Clear();
@@ -2042,7 +2050,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     }
 
     /// <inheritdoc />
-    public Task<Dashboard> GetDashboardAsync(
+    public async Task<Dashboard> GetDashboardAsync(
         DashboardRange range,
         StationFilter? filter = null,
         CancellationToken cancellationToken = default
@@ -2050,22 +2058,27 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         var now = _time.GetUtcNow();
         // My view (F1.22 behavior 7): only the stations the viewer's filter shows now; an empty filter is the whole feed.
-        Func<string, bool>? include = filter is { IsEmpty: false } ? _stations.Matching(filter, now).Contains : null;
-        var dashboard = _dashboard.Read(range, now, include);
+        // Not over 7 days (F1.41 behavior 10): the per-station counts cover 24 hours.
+        Func<string, bool>? include =
+            filter is { IsEmpty: false } && range != DashboardRange.Week
+                ? _stations.Matching(filter, now).Contains
+                : null;
+        var dashboard =
+            range == DashboardRange.Week
+                ? await ReadWeekAsync(now, cancellationToken).ConfigureAwait(false)
+                : _dashboard.Read(range, now, include);
         var heard = HeardOnRf();
         // The counters cover the range; the rest is read from the stations held (F1.22 behaviors 4.10, 4.11, 10).
-        return Task.FromResult(
-            dashboard with
-            {
-                FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5, include),
-                Weather = _stations.WeatherSince(dashboard.Start, include),
-                Tables = _stations.Statistics(include is null ? null : filter, now),
-                // The station's own GPS, whatever the view (F3.14 behavior 9).
-                Gps = _gpsHistory.Read(dashboard.Start, dashboard.Step, dashboard.Packets.Count, now),
-                HeardOnRf = heard.Recent, // F3.4 two-way, behavior 7
-                HeardOnRfTotal = heard.Total,
-            }
-        );
+        return dashboard with
+        {
+            FarthestDirect = _stations.FarthestDirect(dashboard.Start, 5, include),
+            Weather = _stations.WeatherSince(dashboard.Start, include),
+            Tables = _stations.Statistics(include is null ? null : filter, now),
+            // The station's own GPS, whatever the view (F3.14 behavior 9).
+            Gps = _gpsHistory.Read(dashboard.Start, dashboard.Step, dashboard.Packets.Count, now),
+            HeardOnRf = heard.Recent, // F3.4 two-way, behavior 7
+            HeardOnRfTotal = heard.Total,
+        };
     }
 
     /// <inheritdoc />
@@ -2111,6 +2124,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
         _stations.Sweep(now, (settings ?? AppSettings.Empty).EffectiveAging);
         _ = _history?.MaintainAsync(); // F1.41 behaviors 4, 5
+        SaveDashboardHours(); // F1.41 behavior 10
     }
 
     /// <summary>Marks stations stale and removes expired ones, once a <see cref="EngineOptions.SweepInterval"/> (F1.3 behavior 10).</summary>

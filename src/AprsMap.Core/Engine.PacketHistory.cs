@@ -13,6 +13,9 @@ public sealed partial class Engine
     internal static readonly TimeSpan LongestRestore = TimeSpan.FromHours(24);
 
     private readonly PacketHistory? _history;
+    private readonly MetricsStore? _metrics;
+    private long _hoursSavedThrough = long.MinValue;
+    private (DateTimeOffset At, Dashboard Lists)? _weekLists;
 
     /// <summary>
     /// After a restart or an upgrade, before the sources connect, applies again the packets kept from the last
@@ -121,6 +124,83 @@ public sealed partial class Engine
         );
     }
 
+    /// <summary>
+    /// Writes the dashboard's hours that have ended since the last write to <c>metrics.db</c> (behavior 10): at start,
+    /// every hour the minutes hold, which takes up an older <c>dashboard-history.json</c> (behavior 11); then once a
+    /// minute.
+    /// </summary>
+    private void SaveDashboardHours()
+    {
+        if (_metrics is null)
+        {
+            return;
+        }
+        var now = _time.GetUtcNow();
+        var hours = _dashboard.CompletedHours(now).Where(h => h.Hour > _hoursSavedThrough).ToList();
+        if (hours.Count == 0)
+        {
+            return;
+        }
+        try
+        {
+            _metrics.Save(hours, now);
+            _hoursSavedThrough = hours[^1].Hour;
+        }
+        catch (Exception ex)
+            when (ex is Microsoft.Data.Sqlite.SqliteException or IOException or UnauthorizedAccessException)
+        {
+            LogHoursNotSaved(_logger, ex); // tried again next minute
+        }
+    }
+
+    /// <summary>
+    /// The dashboard's 7 days (behavior 10): a point an hour from <c>metrics.db</c> and the minutes, with the stations
+    /// heard and the busiest from the packet history where it has them, worked out at most every 5 minutes. My view
+    /// isn't offered over 7 days: the per-station counts cover 24 hours.
+    /// </summary>
+    private async Task<Dashboard> ReadWeekAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<DashboardHour> kept = [];
+        try
+        {
+            kept = _metrics?.Read(now.AddDays(-7)) ?? [];
+        }
+        catch (Exception ex) when (ex is Microsoft.Data.Sqlite.SqliteException or IOException)
+        {
+            LogHoursNotRead(_logger, ex);
+        }
+        var week = _dashboard.ReadWeek(now, kept);
+        if (_history is not { Usable: true, Settings.On: true })
+        {
+            return week; // the lists cover the minutes' 24 hours, and say so
+        }
+        if (_weekLists is not { } cached || now - cached.At >= TimeSpan.FromMinutes(5))
+        {
+            var since = week.Start;
+            var (stations, busiest) = await _history
+                .StationsSinceAsync(since, 10, cancellationToken)
+                .ConfigureAwait(false);
+            var keptSince = await _history.KeptSinceAsync(cancellationToken).ConfigureAwait(false);
+            var cover = keptSince is { } first && first > since ? now - first : (TimeSpan?)null;
+            cached = (
+                now,
+                week with
+                {
+                    StationsHeardTotal = stations,
+                    BusiestStations = [.. busiest.Select(b => new DashboardCount(b.Name, b.Count))],
+                    ListsCover = cover is { } c && c < DashboardCounters.Window ? DashboardCounters.Window : cover,
+                }
+            );
+            _weekLists = cached;
+        }
+        return week with
+        {
+            StationsHeardTotal = cached.Lists.StationsHeardTotal,
+            BusiestStations = cached.Lists.BusiestStations,
+            ListsCover = cached.Lists.ListsCover,
+        };
+    }
+
     /// <inheritdoc />
     public Task<HistoryStatus> GetHistoryStatusAsync(CancellationToken cancellationToken = default) =>
         _history?.StatusAsync(_options.History.Configured, cancellationToken)
@@ -141,4 +221,10 @@ public sealed partial class Engine
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Restored {Count} packets from the last {Minutes} minutes")]
     private static partial void LogRestored(ILogger logger, int count, int minutes);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The dashboard's hours couldn't be saved")]
+    private static partial void LogHoursNotSaved(ILogger logger, Exception error);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "The dashboard's hours couldn't be read")]
+    private static partial void LogHoursNotRead(ILogger logger, Exception error);
 }
