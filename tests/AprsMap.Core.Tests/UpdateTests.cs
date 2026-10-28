@@ -394,6 +394,7 @@ public sealed class UpdateTests
             using (engine)
             {
                 Assert.True((await engine.GetUpdateStatusAsync(Ct)).CanInstall);
+                Assert.Equal(EngineInstall.Service, (await engine.GetStatusAsync(Ct)).Install); // #453
 
                 await engine.InstallUpdateAsync("0.9.0", Ct);
 

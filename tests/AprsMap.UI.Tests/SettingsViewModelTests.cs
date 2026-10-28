@@ -150,6 +150,34 @@ public class SettingsViewModelTests
 
         about.Show(null, GeocodingInfo.Disabled);
         Assert.False(about.ShowLookupCredit);
+        Assert.Null(about.VersionsDifferText); // its own engine
+    }
+
+    [Fact]
+    public void AboutNamesAGatewaysVersionAndHowItsInstalledAndSaysWhenItDiffers()
+    {
+        // #453
+        var (_, _, _, text) = Create();
+        var about = new AboutViewModel(text) { Remote = true };
+        var app = Brand.Version.Split('+')[0];
+
+        about.Show(
+            new EngineStatus(
+                ConnectionState.Connected,
+                null,
+                1,
+                app,
+                AprsNetVersion: "0.7.0",
+                Install: EngineInstall.Service
+            ),
+            null
+        );
+        Assert.Equal($"Gateway {app} (Linux service) · APRS.NET 0.7.0", about.EngineText);
+        Assert.Null(about.VersionsDifferText);
+
+        about.Show(new EngineStatus(ConnectionState.Connected, null, 1, "99.0.1", AprsNetVersion: "0.7.0"), null);
+        Assert.Equal("Gateway 99.0.1 · APRS.NET 0.7.0", about.EngineText); // an older gateway doesn't say how
+        Assert.StartsWith("Its version differs from this app's", about.VersionsDifferText, StringComparison.Ordinal);
     }
 
     [Fact]

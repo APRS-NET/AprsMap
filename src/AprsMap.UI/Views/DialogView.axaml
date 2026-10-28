@@ -184,6 +184,13 @@
                     Foreground="{DynamicResource Brush.TextMuted}"
                   />
                   <TextBlock
+                    x:Name="VersionsDifferLabel"
+                    TextWrapping="Wrap"
+                    Text="{Binding VersionsDifferText}"
+                    IsVisible="{Binding VersionsDifferText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.Warn}"
+                  />
+                  <TextBlock
                     x:Name="ViewersLabel"
                     TextWrapping="Wrap"
                     Text="{Binding ViewersText}"

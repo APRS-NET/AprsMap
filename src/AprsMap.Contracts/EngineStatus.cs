@@ -67,6 +67,10 @@ public enum ConnectionState
 /// <param name="Gps">The active profile's GPS and its fix (docs/features/F3.6-gps.md); null without one.</param>
 /// <param name="IGate">The receive-only IGate (docs/features/F3.4-rx-igate.md); null when the profile isn't one.</param>
 /// <param name="DeviceList">The device list in use (docs/features/F4.16-device-list.md), so a change shows without asking.</param>
+/// <param name="Install">
+/// How the engine is installed, so an app connected to a gateway can say which it reached (#453); null from an older
+/// engine.
+/// </param>
 /// Counts up each time the held packets are cleared (F1.19 behavior 3), so every viewer empties its packet list.
 /// </param>
 public sealed record EngineStatus(
@@ -94,8 +98,25 @@ public sealed record EngineStatus(
     string? Title = null,
     GpsStatus? Gps = null,
     IGateStatus? IGate = null,
-    DeviceListStatus? DeviceList = null
+    DeviceListStatus? DeviceList = null,
+    EngineInstall? Install = null
 );
+
+/// <summary>How an engine is installed (#453), for "Gateway 0.8.0 (Linux service)".</summary>
+public enum EngineInstall
+{
+    /// <summary>The desktop app's own engine.</summary>
+    Desktop,
+
+    /// <summary>The gateway as the Linux service (docs/features/F1.37-gateway-service.md).</summary>
+    Service,
+
+    /// <summary>The gateway in its container.</summary>
+    Container,
+
+    /// <summary>The gateway run some other way, such as by hand.</summary>
+    Other,
+}
 
 /// <summary>
 /// The receive-only IGate (docs/features/F3.4-rx-igate.md, behavior 6): what it has gated to APRS-IS and what it hasn't

@@ -674,9 +674,19 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
     [ObservableProperty]
     public partial string VersionText { get; set; } = string.Empty;
 
-    /// <summary>The engine and APRS.NET versions, once the engine has answered.</summary>
+    /// <summary>
+    /// The engine and APRS.NET versions, once the engine has answered; "Gateway 0.8.0-alpha.2 (Linux service) · …" when
+    /// it's a gateway's (#453).
+    /// </summary>
     [ObservableProperty]
     public partial string? EngineText { get; set; }
+
+    /// <summary>That the gateway's version differs from this app's, in its major.minor (#453); null when they match.</summary>
+    [ObservableProperty]
+    public partial string? VersionsDifferText { get; set; }
+
+    /// <summary>Whether the engine is a gateway's, reached over the network: the browser, or the desktop as its client.</summary>
+    internal bool Remote { get; set; }
 
     /// <summary>"3 viewers connected", on a gateway (F1.14 behavior 11); null on desktop.</summary>
     [ObservableProperty]
@@ -748,13 +758,20 @@ public sealed partial class AboutViewModel(Localizer text) : ObservableObject
         EngineText = _status is null
             ? null
             : text.Format(
-                "Settings.About.Engine",
+                !Remote ? "Settings.About.Engine"
+                    : Platform.GatewayVersions.InstallText(text, _status.Install) is null ? "Settings.About.Gateway"
+                    : "Settings.About.GatewayInstall",
                 new Dictionary<string, object?>
                 {
                     ["version"] = ShortVersion(_status.Version),
                     ["aprsnet"] = _status.AprsNetVersion ?? "?",
+                    ["install"] = Platform.GatewayVersions.InstallText(text, _status.Install),
                 }
             );
+        VersionsDifferText =
+            Remote && _status is not null
+                ? Platform.GatewayVersions.DifferText(text, _status.Version, Brand.Version)
+                : null;
         ConnectionText = _status is null ? null : ViewModels.ConnectionText.Details(text, _status);
         ViewersText = _status?.Viewers is { } viewers
             ? text.Format("Settings.About.Viewers", new Dictionary<string, object?> { ["count"] = viewers })

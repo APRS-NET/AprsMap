@@ -69,14 +69,39 @@ public sealed partial class MainViewModel
     /// <summary>Whether the gateway refused the key (or it went over plain HTTP), for the warning colour.</summary>
     public bool GatewayClientWarn => GatewayClient?.Connected is not null && Auth is { Operator: false, ApiKey: true };
 
-    /// <summary>Why it's only watching, when the gateway refused the key; the gateway's address otherwise.</summary>
+    /// <summary>
+    /// Why it's only watching, when the gateway refused the key; otherwise the gateway's address and version, and whether
+    /// that differs from this app's (#453).
+    /// </summary>
     public string? GatewayClientTip =>
         GatewayClient?.Connected is not { } gateway ? null
         : Auth is { Operator: false, ApiKey: true, WaitMinutes: { } minutes }
             ? _text.Format("Connection.Bar.Waiting", new Dictionary<string, object?> { ["minutes"] = minutes })
         : Auth is { Operator: false, ApiKey: true, NeedsHttps: true } ? _text["Connection.Bar.KeyNeedsHttps"]
         : Auth is { Operator: false, ApiKey: true } ? _text["Connection.Bar.KeyRefused"]
-        : gateway.ToString();
+        : GatewayTip(gateway);
+
+    private string GatewayTip(Uri gateway)
+    {
+        if (_status is not { } status)
+        {
+            return gateway.ToString();
+        }
+        var tip = _text.Format(
+            Platform.GatewayVersions.InstallText(_text, status.Install) is null
+                ? "Connection.Bar.Tip"
+                : "Connection.Bar.TipInstall",
+            new Dictionary<string, object?>
+            {
+                ["gateway"] = gateway.ToString(),
+                ["version"] = UI.Settings.AboutViewModel.ShortVersion(status.Version),
+                ["install"] = Platform.GatewayVersions.InstallText(_text, status.Install),
+            }
+        );
+        return Platform.GatewayVersions.DifferText(_text, status.Version, Brand.Version) is { } differ
+            ? tip + " " + differ
+            : tip;
+    }
 
     /// <summary>The status bar's gateway notice opens Settings › Connection.</summary>
     [RelayCommand]

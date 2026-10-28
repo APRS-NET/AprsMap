@@ -83,7 +83,7 @@ public sealed partial class MainViewModel
     /// <summary>Help › About: the versions, the connection, the licence and the credits, as Settings › About had them.</summary>
     internal async Task OpenAboutAsync()
     {
-        var about = new AboutViewModel(_text);
+        var about = new AboutViewModel(_text) { Remote = SharedStation || GatewayClient?.Connected is not null }; // #453
         GeocodingInfo? geocoding = null;
         try
         {
