@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0-alpha.8](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.7...v0.7.0-alpha.8) (2026-10-28)
+
+
+### Features
+
+* **sources:** AGWPE TNCs as sources ([c83f6a1](https://github.com/APRS-NET/AprsMap/commit/c83f6a1270f6ef9e5a9a233c5fa8abe9e53ebada)), closes [#384](https://github.com/APRS-NET/AprsMap/issues/384)
+
 ## [0.7.0-alpha.7](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.6...v0.7.0-alpha.7) (2026-10-28)
 
 
