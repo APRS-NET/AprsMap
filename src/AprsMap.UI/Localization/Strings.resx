@@ -5855,7 +5855,77 @@ pause 1s</value>
     <value>Move the pointer along the line, or use Left, Right, Home and End, to read each point. Escape closes.</value>
   </data>
   <data name="Settings.StationLists" xml:space="preserve">
-    <value>Station lists</value>
+    <value>Lists and filters</value>
+    <comment>Station lists and saved filters (F1.33, F1.42).</comment>
+  </data>
+  <data name="SavedFilters.Title" xml:space="preserve">
+    <value>Saved filters</value>
+  </data>
+  <data name="SavedFilters.Help" xml:space="preserve">
+    <value>Save a filter from the map's Filter panel with Save filter as…, then switch to it from the chip on the map, View › Filter or Ctrl+Shift+F.</value>
+  </data>
+  <data name="SavedFilters.Everything" xml:space="preserve">
+    <value>Every station</value>
+  </data>
+  <data name="SavedFilters.MovesMap" xml:space="preserve">
+    <value>moves the map</value>
+  </data>
+  <data name="SavedFilters.Rename" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="SavedFilters.Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="SavedFilters.MoveUp" xml:space="preserve">
+    <value>Move up</value>
+  </data>
+  <data name="SavedFilters.MoveDown" xml:space="preserve">
+    <value>Move down</value>
+  </data>
+  <data name="SavedFilters.Copy" xml:space="preserve">
+    <value>Copy filter</value>
+  </data>
+  <data name="SavedFilters.Copied" xml:space="preserve">
+    <value>Copied. Paste it in Lists and filters on another profile or station.</value>
+  </data>
+  <data name="SavedFilters.NewName" xml:space="preserve">
+    <value>New name</value>
+  </data>
+  <data name="SavedFilters.SaveName" xml:space="preserve">
+    <value>Save name</value>
+  </data>
+  <data name="SavedFilters.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="SavedFilters.Deleted" xml:space="preserve">
+    <value>{name} deleted.</value>
+  </data>
+  <data name="SavedFilters.Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="SavedFilters.Paste.Title" xml:space="preserve">
+    <value>Paste filter…</value>
+  </data>
+  <data name="SavedFilters.Paste.Name" xml:space="preserve">
+    <value>Name for it</value>
+  </data>
+  <data name="SavedFilters.Paste.Text" xml:space="preserve">
+    <value>The filter's text, as Copy filter gives it</value>
+  </data>
+  <data name="SavedFilters.Paste.FromClipboard" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="SavedFilters.Paste.Add" xml:space="preserve">
+    <value>Add filter</value>
+  </data>
+  <data name="SavedFilters.Added" xml:space="preserve">
+    <value>Added.</value>
+  </data>
+  <data name="SavedFilters.MissingLists" xml:space="preserve">
+    <value>Added without lists this profile doesn't have: {lists}.</value>
+  </data>
+  <data name="SavedFilters.Unread" xml:space="preserve">
+    <value>Left out, as they couldn't be read: {parts}.</value>
   </data>
   <data name="StationLists.Heading" xml:space="preserve">
     <value>Station lists for {profile}</value>
@@ -5918,12 +5988,70 @@ pause 1s</value>
   <data name="Error.settings.station-list.too-many" xml:space="preserve">
     <value>A profile has up to 20 station lists of up to 500 entries.</value>
   </data>
+  <data name="Error.settings.saved-filter.too-many" xml:space="preserve">
+    <value>A profile has up to 20 saved filters.</value>
+  </data>
+  <data name="Error.settings.saved-filter.name-taken" xml:space="preserve">
+    <value>Each saved filter needs a name of its own, up to 40 characters.</value>
+  </data>
   <data name="Error.settings.station-list.name-taken" xml:space="preserve">
     <value>Each station list needs a name of its own.</value>
   </data>
   <data name="Filter.Label.Lists" xml:space="preserve">
     <value>Only stations in</value>
     <comment>The View filter's station lists (F1.33): only the stations and objects in the lists ticked.</comment>
+  </data>
+  <data name="Menu.View.Filter" xml:space="preserve">
+    <value>Filter</value>
+    <comment>View menu: All, My filter and the saved filters (F1.42).</comment>
+  </data>
+  <data name="Menu.View.NextFilter" xml:space="preserve">
+    <value>Next filter</value>
+  </data>
+  <data name="Filter.ChipAll" xml:space="preserve">
+    <value>All · {total, plural, other {#}} stations</value>
+    <comment>The map's chip with nothing filtered, when the profile has saved filters to switch to (F1.42).</comment>
+  </data>
+  <data name="Filter.ChipSaved" xml:space="preserve">
+    <value>{name} · {shown, plural, other {#}} of {total, plural, other {#}} · emergencies always shown</value>
+    <comment>name: the saved filter in use, such as Storm spotting.</comment>
+  </data>
+  <data name="Filter.ChipSavedChanged" xml:space="preserve">
+    <value>{name} (changed) · {shown, plural, other {#}} of {total, plural, other {#}} · emergencies always shown</value>
+  </data>
+  <data name="Filter.Choice.All" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Filter.Choice.Mine" xml:space="preserve">
+    <value>My filter</value>
+  </data>
+  <data name="Filter.Choose" xml:space="preserve">
+    <value>Switch filter</value>
+    <comment>The chip's menu button (F1.42 behavior 4).</comment>
+  </data>
+  <data name="Filter.Saved.Title" xml:space="preserve">
+    <value>Saved filters</value>
+  </data>
+  <data name="Filter.SaveAs" xml:space="preserve">
+    <value>Save filter as…</value>
+  </data>
+  <data name="Filter.SaveAsName" xml:space="preserve">
+    <value>Name, such as Storm spotting</value>
+  </data>
+  <data name="Filter.SaveAsUseView" xml:space="preserve">
+    <value>Use this map view</value>
+  </data>
+  <data name="Filter.SaveOver" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Filter.BackToSaved" xml:space="preserve">
+    <value>Back to saved</value>
+  </data>
+  <data name="Filter.SaveNoProfile" xml:space="preserve">
+    <value>There's no station profile to save filters in yet.</value>
+  </data>
+  <data name="Filter.ChangedNote" xml:space="preserve">
+    <value>Changed since it was saved.</value>
   </data>
   <data name="Filter.ChipLists" xml:space="preserve">
     <value>{lists} · {shown, plural, other {#}} of {total, plural, other {#}} · emergencies always shown</value>

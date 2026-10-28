@@ -230,7 +230,8 @@ public sealed record StationProfile(
     bool? AnswerQueries = null,
     bool? IGate = null,
     IReadOnlyList<StationList>? StationLists = null,
-    bool? IGateToRf = null
+    bool? IGateToRf = null,
+    IReadOnlyList<SavedFilter>? SavedFilters = null
 )
 {
     /// <summary>
@@ -241,6 +242,9 @@ public sealed record StationProfile(
 
     /// <summary>Its station lists (docs/features/F1.33-station-lists.md, behavior 1); none when unset.</summary>
     public IReadOnlyList<StationList> StationListSet => StationLists ?? [];
+
+    /// <summary>Its saved filters, in order (docs/features/F1.42-saved-filters.md, behavior 2); none when unset.</summary>
+    public IReadOnlyList<SavedFilter> SavedFilterSet => SavedFilters ?? [];
 
     /// <summary>
     /// Whether the profile gates what its TNCs hear to APRS-IS, as a receive-only IGate (docs/features/F3.4-rx-igate.md,

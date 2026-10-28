@@ -88,6 +88,7 @@ public sealed partial class StationListsSectionViewModel(
             ? text.Format("StationLists.Heading", new Dictionary<string, object?> { ["profile"] = active.Name })
             : null;
         Selected = openId is null ? null : Lists.FirstOrDefault(r => r.List.Id == openId);
+        ShowSavedFilters(settings.GetActiveProfile()); // F1.42 behavior 8
     }
 
     /// <summary>Words the section again after a language change.</summary>
@@ -202,7 +203,34 @@ public sealed partial class StationListsSectionViewModel(
             return;
         }
         Selected = null;
-        await SaveAsync(profile.Id, [.. profile.StationListSet.Where(l => l.Id != row.List.Id)]);
+        // Out of the saved filters that showed it too (F1.42 behavior 3).
+        await SaveProfileAsync(
+            profile.Id,
+            p =>
+                p with
+                {
+                    StationLists = [.. p.StationListSet.Where(l => l.Id != row.List.Id)],
+                    SavedFilters = p.SavedFilters is null
+                        ? null
+                        :
+                        [
+                            .. p.SavedFilterSet.Select(s =>
+                                s.Filter.Lists?.Contains(row.List.Id) == true
+                                    ? s with
+                                    {
+                                        Filter = s.Filter with
+                                        {
+                                            Lists = s.Filter.Lists.Where(id => id != row.List.Id).ToList()
+                                                is { Count: > 0 } left
+                                                ? left
+                                                : null,
+                                        },
+                                    }
+                                    : s
+                            ),
+                        ],
+                }
+        );
     }
 
     /// <summary>Puts the open list's text on the clipboard (behavior 3).</summary>
@@ -249,15 +277,20 @@ public sealed partial class StationListsSectionViewModel(
         }
     }
 
-    private async Task<bool> SaveAsync(string profileId, IReadOnlyList<StationList> lists)
+    private Task<bool> SaveAsync(string profileId, IReadOnlyList<StationList> lists) =>
+        SaveProfileAsync(profileId, p => p with { StationLists = lists });
+
+    private async Task<bool> SaveProfileAsync(string profileId, Func<StationProfile, StationProfile> change)
     {
         var changed = _settings with
         {
-            Profiles = [.. _settings.Profiles.Select(p => p.Id == profileId ? p with { StationLists = lists } : p)],
+            Profiles = [.. _settings.Profiles.Select(p => p.Id == profileId ? change(p) : p)],
         };
         try
         {
             await engine.SaveSettingsAsync(changed);
+            _settings = changed; // what's shown follows, even before the app shows it again
+            ShowSavedFilters(changed.GetActiveProfile());
             saved(changed);
             return true;
         }

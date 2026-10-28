@@ -1546,6 +1546,100 @@
               IsVisible="{Binding StationLists.Message, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
               TextWrapping="Wrap"
             />
+            <!-- Saved filters (F1.42 behaviors 8, 9). -->
+            <StackPanel x:Name="SavedFiltersSection" Spacing="8">
+              <TextBlock Text="{l:T SavedFilters.Title}" FontWeight="SemiBold" />
+              <TextBlock
+                Text="{l:T SavedFilters.Help}"
+                TextWrapping="Wrap"
+                Foreground="{DynamicResource Brush.TextMuted}"
+              />
+              <ItemsControl
+                x:Name="SavedFiltersList"
+                ItemsSource="{Binding StationLists.SavedFilters, FallbackValue={x:Null}}"
+              >
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="s:SavedFilterRow">
+                    <StackPanel Spacing="4" Margin="0,0,0,8">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock
+                        Text="{Binding Summary}"
+                        TextWrapping="Wrap"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                      />
+                      <WrapPanel ItemSpacing="8" LineSpacing="4">
+                        <Button Content="{l:T SavedFilters.Rename}" Command="{Binding RenameCommand}" />
+                        <Button Content="{l:T SavedFilters.MoveUp}" Command="{Binding MoveUpCommand}" />
+                        <Button Content="{l:T SavedFilters.MoveDown}" Command="{Binding MoveDownCommand}" />
+                        <Button Content="{l:T SavedFilters.Copy}" Command="{Binding CopyCommand}" />
+                        <Button Content="{l:T SavedFilters.Delete}" Command="{Binding DeleteCommand}" />
+                      </WrapPanel>
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <StackPanel
+                Spacing="4"
+                IsVisible="{Binding StationLists.Renaming, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              >
+                <TextBox
+                  x:Name="SavedFilterNewName"
+                  Text="{Binding StationLists.NewName, FallbackValue=''}"
+                  AutomationProperties.Name="{l:T SavedFilters.NewName}"
+                  PlaceholderText="{l:T SavedFilters.NewName}"
+                  MaxLength="40"
+                />
+                <WrapPanel ItemSpacing="8">
+                  <Button
+                    Content="{l:T SavedFilters.SaveName}"
+                    Command="{Binding StationLists.RenameCommand, FallbackValue={x:Null}}"
+                  />
+                  <Button
+                    Content="{l:T SavedFilters.Cancel}"
+                    Command="{Binding StationLists.CancelRenameCommand, FallbackValue={x:Null}}"
+                  />
+                </WrapPanel>
+              </StackPanel>
+              <WrapPanel
+                ItemSpacing="8"
+                IsVisible="{Binding StationLists.DeletedText, Converter={x:Static ObjectConverters.IsNotNull}, FallbackValue=False}"
+              >
+                <TextBlock
+                  Text="{Binding StationLists.DeletedText, FallbackValue={x:Null}}"
+                  VerticalAlignment="Center"
+                />
+                <Button
+                  Content="{l:T SavedFilters.Undo}"
+                  Command="{Binding StationLists.UndoDeleteCommand, FallbackValue={x:Null}}"
+                />
+              </WrapPanel>
+              <TextBlock Text="{l:T SavedFilters.Paste.Title}" FontWeight="SemiBold" />
+              <TextBox
+                x:Name="PastedFilterName"
+                Text="{Binding StationLists.PastedName, FallbackValue=''}"
+                PlaceholderText="{l:T SavedFilters.Paste.Name}"
+                AutomationProperties.Name="{l:T SavedFilters.Paste.Name}"
+                MaxLength="40"
+              />
+              <TextBox
+                x:Name="PastedFilterText"
+                Text="{Binding StationLists.PastedText, FallbackValue=''}"
+                PlaceholderText="{l:T SavedFilters.Paste.Text}"
+                AutomationProperties.Name="{l:T SavedFilters.Paste.Text}"
+                TextWrapping="Wrap"
+                FontFamily="{DynamicResource Font.Mono}"
+              />
+              <WrapPanel ItemSpacing="8">
+                <Button
+                  Content="{l:T SavedFilters.Paste.FromClipboard}"
+                  Command="{Binding StationLists.PasteFilterTextCommand, FallbackValue={x:Null}}"
+                />
+                <Button
+                  Content="{l:T SavedFilters.Paste.Add}"
+                  Command="{Binding StationLists.AddPastedFilterCommand, FallbackValue={x:Null}}"
+                />
+              </WrapPanel>
+            </StackPanel>
           </StackPanel>
           <StackPanel x:Name="AppearanceSection" IsVisible="{Binding IsAppearanceSection}" Spacing="20">
             <ItemsControl x:Name="AppearanceOptions" ItemsSource="{Binding AppearanceItems}">
