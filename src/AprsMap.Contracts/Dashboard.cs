@@ -12,6 +12,9 @@ public enum DashboardRange
 
     /// <summary>The last 24 hours, a point every 15 minutes.</summary>
     Day,
+
+    /// <summary>The last 7 days, a point an hour (docs/features/F1.41-persistent-history.md, behavior 10).</summary>
+    Week,
 }
 
 /// <summary>
@@ -62,6 +65,11 @@ public enum DashboardRange
 /// behavior 7).
 /// </param>
 /// <param name="HeardOnRfTotal">How many stations the TNCs have heard.</param>
+/// <param name="ListsCover">
+/// When shorter than the range: how far back the busiest stations and relays, the newest stations and the stations heard
+/// total reach (docs/features/F1.41-persistent-history.md, behavior 10), so the tiles can say so; null when they cover
+/// the whole range.
+/// </param>
 public sealed record Dashboard(
     DateTimeOffset At,
     DashboardRange Range,
@@ -89,7 +97,8 @@ public sealed record Dashboard(
     bool MyView = false,
     DashboardGps? Gps = null,
     IReadOnlyList<DashboardHeard>? HeardOnRf = null,
-    int HeardOnRfTotal = 0
+    int HeardOnRfTotal = 0,
+    TimeSpan? ListsCover = null
 );
 
 /// <summary>A station heard on RF: over how many hops, and when last.</summary>

@@ -21,8 +21,11 @@ internal sealed class DashboardCounters
     private const int NewestKept = 5;
     private const int TopKept = 10;
 
-    // The point sizes, in minutes, each with a ring of distinct-station counts covering the window.
-    private static readonly int[] PointSizes = [1, 5, 15];
+    // The point sizes, in minutes, each with a ring of distinct-station counts covering the window. The hour's is last,
+    // so a state saved before it existed is read with that ring empty.
+    private static readonly int[] PointSizes = [1, 5, 15, 60];
+
+    private const int WeekHours = 7 * 24;
 
     private static readonly ArrivalKind[] ArrivalKinds = Enum.GetValues<ArrivalKind>();
     private static readonly PacketKind[] PacketKinds = Enum.GetValues<PacketKind>();
@@ -302,6 +305,7 @@ internal sealed class DashboardCounters
             DashboardRange.Hour => 1,
             DashboardRange.SixHours => 5,
             DashboardRange.Day => 15,
+            DashboardRange.Week => throw new ArgumentOutOfRangeException(nameof(range), range, "Read with ReadWeek."),
             _ => throw new ArgumentOutOfRangeException(nameof(range), range, "Not a dashboard range."),
         };
         var points = range switch
@@ -509,6 +513,180 @@ internal sealed class DashboardCounters
         }
     }
 
+    /// <summary>
+    /// The hours the minutes still hold that have ended, oldest first, each summed: for the dashboard's counters kept
+    /// by the hour (docs/features/F1.41-persistent-history.md, behavior 10). Hours with nothing counted are left out.
+    /// </summary>
+    public IReadOnlyList<DashboardHour> CompletedHours(DateTimeOffset now)
+    {
+        var current = MinuteOf(now) / 60;
+        lock (_gate)
+        {
+            Prune(MinuteOf(now));
+            return
+            [
+                .. Enumerable.Range(1, 24).Reverse().Select(back => HourAt(current - back)).OfType<DashboardHour>(),
+            ];
+        }
+    }
+
+    /// <summary>The hour <paramref name="hour"/> summed from the minutes, or null with nothing counted in it.</summary>
+    private DashboardHour? HourAt(long hour)
+    {
+        var packets = 0;
+        var problems = 0;
+        var fresh = 0;
+        var any = false;
+        var bySource = new Dictionary<string, int>(StringComparer.Ordinal);
+        var arrivals = new int[ArrivalKinds.Length];
+        var kinds = new int[PacketKinds.Length];
+        for (var m = hour * 60; m < (hour + 1) * 60; m++)
+        {
+            var bucket = _minutes[Index(m, Minutes)];
+            if (bucket.Minute != m)
+            {
+                continue;
+            }
+            any = true;
+            packets += bucket.Packets;
+            problems += bucket.Problems;
+            fresh += bucket.New;
+            foreach (var (source, count) in bucket.BySource)
+            {
+                bySource[source] = bySource.GetValueOrDefault(source) + count;
+            }
+            for (var k = 0; k < arrivals.Length; k++)
+            {
+                arrivals[k] += bucket.Arrivals[k];
+            }
+            for (var k = 0; k < kinds.Length; k++)
+            {
+                kinds[k] += bucket.Kinds[k];
+            }
+        }
+        var ring = _distinct[^1];
+        var (slot, stations) = ring[Index(hour, ring.Length)];
+        if (!any && slot != hour)
+        {
+            return null;
+        }
+        return new DashboardHour(
+            hour,
+            packets,
+            problems,
+            fresh,
+            slot == hour ? stations : 0,
+            bySource,
+            ByName(ArrivalKinds, arrivals),
+            ByName(PacketKinds, kinds)
+        );
+    }
+
+    /// <summary>
+    /// The last 7 days, a point an hour (F1.41 behavior 10): the hours <paramref name="kept"/> holds, and the last 24
+    /// from the minutes, which win where both have an hour. The lists (busiest, newest) and the stations heard total
+    /// are the minutes' 24 hours; the engine replaces them from the packet history where it has one.
+    /// </summary>
+    public Dashboard ReadWeek(DateTimeOffset now, IReadOnlyList<DashboardHour> kept)
+    {
+        var minute = MinuteOf(now);
+        var lastHour = minute / 60;
+        var firstHour = lastHour - WeekHours + 1;
+        var start = DateTimeOffset.UnixEpoch.AddHours(firstHour);
+        lock (_gate)
+        {
+            Prune(minute);
+            var hours = kept.Where(h => h.Hour >= firstHour && h.Hour <= lastHour).ToDictionary(h => h.Hour);
+            for (var hour = lastHour - 23; hour <= lastHour; hour++)
+            {
+                if (HourAt(hour) is { } live)
+                {
+                    hours[hour] = live;
+                }
+            }
+            var packets = new int[WeekHours];
+            var problems = new int[WeekHours];
+            var fresh = new int[WeekHours];
+            var heard = new int[WeekHours];
+            var arrivals = ArrivalKinds.ToDictionary(k => k.ToString(), _ => new int[WeekHours]);
+            var bySource = new Dictionary<string, int[]>(StringComparer.Ordinal);
+            var kinds = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var (hour, counts) in hours)
+            {
+                var point = (int)(hour - firstHour);
+                packets[point] = counts.Packets;
+                problems[point] = counts.Problems;
+                fresh[point] = counts.New;
+                heard[point] = counts.Stations;
+                foreach (var (kind, count) in counts.Arrivals)
+                {
+                    if (arrivals.TryGetValue(kind, out var series))
+                    {
+                        series[point] = count;
+                    }
+                }
+                foreach (var (source, count) in counts.BySource)
+                {
+                    if (!bySource.TryGetValue(source, out var series))
+                    {
+                        bySource[source] = series = new int[WeekHours];
+                    }
+                    series[point] = count;
+                }
+                foreach (var (kind, count) in counts.Kinds)
+                {
+                    kinds[kind] = kinds.GetValueOrDefault(kind) + count;
+                }
+            }
+            var recent = 0;
+            for (var m = minute - 4; m <= minute; m++)
+            {
+                var bucket = _minutes[Index(m, Minutes)];
+                recent += bucket.Minute == m ? bucket.Packets : 0;
+            }
+            var firstStep = (minute - Minutes + 1) / CountStep;
+            var historyStart =
+                hours.Count > 0 ? Min(HistoryStart, DateTimeOffset.UnixEpoch.AddHours(hours.Keys.Min())) : HistoryStart;
+            return new Dashboard(
+                now,
+                DashboardRange.Week,
+                start,
+                TimeSpan.FromHours(1),
+                historyStart,
+                packets,
+                recent / 5.0,
+                bySource.Count > 1
+                    ? [.. bySource.OrderBy(s => s.Key).Select(s => new DashboardSeries(s.Key, s.Value))]
+                    : [],
+                heard,
+                _stations.Count,
+                fresh,
+                fresh.Sum(),
+                [.. _newest],
+                [.. arrivals.Select(a => new DashboardSeries(a.Key, a.Value))],
+                [
+                    .. kinds
+                        .Select(k => new DashboardCount(k.Key, k.Value))
+                        .Where(c => c.Count > 0)
+                        .OrderByDescending(c => c.Count)
+                        .ThenBy(c => c.Key, StringComparer.Ordinal),
+                ],
+                problems,
+                problems.Sum(),
+                Top(_stations.Select(s => (s.Key, s.Value.Total(firstStep)))),
+                Top(_relays.Select(r => (r.Key, r.Value.Where(c => c.Step >= firstStep).Sum(c => c.Count)))),
+                [
+                    .. _sources
+                        .OrderBy(s => s.Key, StringComparer.Ordinal)
+                        .Select(s => new DashboardMoment(s.Key, s.Value)),
+                ],
+                ListsCover: Window
+            );
+        }
+    }
+
+    private static DateTimeOffset Min(DateTimeOffset a, DateTimeOffset b) => a < b ? a : b;
+
     private static List<DashboardCount> Top(IEnumerable<(string Name, int Count)> all) =>
         [
             .. all.Select(a => new DashboardCount(a.Name, a.Count))
@@ -691,3 +869,26 @@ internal sealed class DashboardCounters
     /// <summary>A station's packets in one 5-minute step that arrived one way and were one kind.</summary>
     private readonly record struct Tally(long Step, int Count, int Problems, byte Arrival, byte Kind);
 }
+
+/// <summary>
+/// One hour of the dashboard's counters, as kept for longer than the minutes (docs/features/F1.41-persistent-history.md,
+/// behavior 10). Counts by name are kept by name, so reordering an enum doesn't misread older hours.
+/// </summary>
+/// <param name="Hour">Hours since the Unix epoch, UTC.</param>
+/// <param name="Packets">Packets listed.</param>
+/// <param name="Problems">Packets with issues or anomalies.</param>
+/// <param name="New">Stations heard for the first time in 24 hours.</param>
+/// <param name="Stations">Distinct stations heard.</param>
+/// <param name="BySource">Packets by source id.</param>
+/// <param name="Arrivals">Packets by how they arrived.</param>
+/// <param name="Kinds">Packets by kind.</param>
+internal sealed record DashboardHour(
+    long Hour,
+    int Packets,
+    int Problems,
+    int New,
+    int Stations,
+    IReadOnlyDictionary<string, int> BySource,
+    IReadOnlyDictionary<string, int> Arrivals,
+    IReadOnlyDictionary<string, int> Kinds
+);

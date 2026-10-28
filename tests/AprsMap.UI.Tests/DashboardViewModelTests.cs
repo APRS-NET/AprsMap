@@ -74,6 +74,44 @@ public sealed class DashboardViewModelTests
     }
 
     [Fact]
+    public void SevenDaysPutTheDayInEachPointAndSayWhatTheListsCover()
+    {
+        // F1.41 behavior 10.
+        var vm = new Harness().Create();
+        Assert.Contains("7 days", vm.Ranges.Select(r => r.Label));
+
+        vm.Show(
+            Sample() with
+            {
+                Range = DashboardRange.Week,
+                Start = T0,
+                Step = TimeSpan.FromHours(1),
+                ListsCover = TimeSpan.FromDays(2),
+            }
+        );
+
+        Assert.StartsWith("Fri 12:00", vm.Stations.PointTimes[0], StringComparison.Ordinal);
+        Assert.StartsWith("Fri 1:00", vm.Stations.PointTimes[1], StringComparison.Ordinal);
+        Assert.Equal(
+            "The stations heard, the newest and the busiest cover the last 2 days: that's all the history kept.",
+            vm.ScopeText
+        );
+    }
+
+    [Fact]
+    public void MyViewOverSevenDaysSaysItsTheWholeFeed()
+    {
+        var vm = new Harness { ViewFilter = new StationFilter(Kinds: StationKinds.Stations) }.Create();
+
+        vm.Range = DashboardRange.Week;
+        vm.MyView = true;
+
+        Assert.Equal("My view counts up to 24 hours, so over 7 days this is the whole feed.", vm.ScopeText);
+        vm.Range = DashboardRange.Day;
+        Assert.StartsWith("My view: only the stations", vm.ScopeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TilesWriteEveryNumberOutAndReadAsASentence()
     {
         var harness = new Harness
