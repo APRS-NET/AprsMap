@@ -202,7 +202,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     UnreadMessages: unread,
                     Gps: GpsStatusLocked(),
                     IGate: IGateStatusLocked(),
-                    DeviceList: DeviceListStatusLocked(_settings ?? AppSettings.Empty)
+                    DeviceList: DeviceListStatusLocked(_settings ?? AppSettings.Empty),
+                    Install: Install
                 )
             );
         }

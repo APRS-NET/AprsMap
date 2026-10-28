@@ -41,6 +41,14 @@ public class EngineTests
         );
 
     [Fact]
+    public async Task TheStatusSaysHowTheEngineIsInstalled()
+    {
+        // #453: an app connected to a gateway says which it reached.
+        using var desktop = CreateEngine(new FakeTimeProvider());
+        Assert.Equal(EngineInstall.Desktop, (await desktop.GetStatusAsync(Ct)).Install);
+    }
+
+    [Fact]
     public async Task AcceptCountsPacketsAndIgnoresLinesWithoutAHeader()
     {
         var engine = CreateEngine(new FakeTimeProvider());

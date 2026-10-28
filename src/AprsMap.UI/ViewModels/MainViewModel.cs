@@ -1613,7 +1613,12 @@ public sealed partial class MainViewModel : ObservableObject
         {
             PacketList.Clear(); // someone cleared the packet history (F1.19 behavior 3)
         }
+        var newVersion = _status?.Version != status.Version || _status?.Install != status.Install;
         _status = status;
+        if (newVersion)
+        {
+            OnPropertyChanged(nameof(GatewayClientTip)); // the gateway's version (#453)
+        }
         CaptureText = status.CapturedToday is { } captured
             ? _text.Format("Capture.Status", new Dictionary<string, object?> { ["count"] = captured })
             : null;

@@ -215,13 +215,10 @@ public sealed partial class ConnectionSectionViewModel : ObservableObject
             answer.Key == ApiKeyCheck.Accepted ? "Connection.Test.Operator" : "Connection.Test.WatchOnly",
             args
         );
-        return MajorMinor(answer.Version) == MajorMinor(_appVersion)
+        return !Platform.GatewayVersions.Differ(answer.Version, _appVersion)
             ? (reached, false, false)
             : (reached + " " + _text.Format("Connection.Test.VersionsDiffer", args), false, true);
     }
-
-    /// <summary>"0.8" of "0.8.0-alpha.2".</summary>
-    private static string MajorMinor(string version) => string.Join('.', version.Split('-')[0].Split('.').Take(2));
 
     /// <summary>Saves the choice and restarts the app into it (behavior 1).</summary>
     [RelayCommand(CanExecute = nameof(CanApply))]

@@ -12,6 +12,18 @@ namespace AprsMap.Core;
 /// </summary>
 public sealed partial class Engine
 {
+    /// <summary>How this engine is installed, for an app connected to it (#453).</summary>
+    internal EngineInstall Install =>
+        _options.Updates.Kind switch
+        {
+            InstallKind.Archive or InstallKind.Installed => EngineInstall.Desktop,
+            InstallKind.Service => EngineInstall.Service,
+            // Microsoft's .NET images set this; the gateway's container is built on them.
+            _ when Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true" =>
+                EngineInstall.Container,
+            _ => EngineInstall.Other,
+        };
+
     /// <summary>The request the updater picks up.</summary>
     public const string UpdateRequestFile = "update-request.json";
 
