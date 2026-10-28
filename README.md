@@ -10,18 +10,19 @@ macOS, and a web app served by a Docker gateway, both running the same UI on the
 from [APRS.NET](https://github.com/APRS-NET/APRS.NET). The feature set is a clean-room reimplementation of the
 functionality of APRSIS32, redesigned with a modern UI (see [docs/clean-room.md](docs/clean-room.md)).
 
-Status: `0.7.0-alpha.4`, working towards `0.8.0`. The app receives and transmits over APRS-IS and your own TNCs: KISS
-over TCP (Direwolf, soundmodem) and on serial ports (a TH-D72A's built-in TNC, TNC-X, NinoTNC), or a TNC's text output.
-It shows the stations on a live map with their tracks, RF paths and dead-reckoned positions, with station and packet
-lists, station details and a dashboard whose history survives a restart and whose charts open into plots, on the
-desktop and in the browser, where a panel can open in a tab of its own. Licensed operators send their position by hand
-or as a beacon (fixed, decaying, or SmartBeaconing from a GPS), statuses, objects and items, messages with acks and
-auto-replies, and answer APRS queries. Their TNCs can digipeat (fill-in or wide-area) and act as a two-way IGate,
-passing messages from APRS-IS to stations heard nearby. A GPS on serial, TCP, gpsd or a radio's TNC port places the
-station, with a sky view and statistics over time. Station lists show only an event's volunteers or the spotters you
-work with, wherever they are. The desktop app can share its station with browsers on the network, keeps its device
-list current, and checks for updates every two hours; every release carries an SBOM.
-Next are TNCs over AGWPE and transmitting with the registered TOCALL.
+Status: `0.8.0-alpha.1`. The app receives and transmits over APRS-IS and your own TNCs: KISS over TCP (Direwolf,
+soundmodem), on serial ports (a TH-D72A's built-in TNC, TNC-X, NinoTNC) and through an AGWPE server, or a TNC's text
+output. It shows the stations on a live map with their tracks, RF paths and dead-reckoned positions, with station and
+packet lists, station details and a dashboard for every source or each one, on the desktop and in the browser. Every
+packet is kept for up to 7 days within a size limit, so stations and tracks come back after a restart, a station's
+track and packets go back days, the dashboard covers a week, and the map can add the stations heard in the last days.
+Licensed operators send their position by hand or as a beacon (fixed, decaying, or SmartBeaconing from a GPS),
+statuses, objects and items, messages with acks and auto-replies, ANSRVR group conversations, and answer APRS queries.
+Their TNCs can digipeat (fill-in or wide-area) and act as a two-way IGate. A GPS on serial, TCP, gpsd or a radio's TNC
+port places the station, with a sky view and statistics over time. Station lists and saved filters bring back an
+event's volunteers or the spotters you work with in one click, wherever they are. The gateway runs as a Linux service
+that updates itself, and the desktop app can be its client with an API key; every release carries an SBOM.
+Next is transmitting with the registered TOCALL.
 See [docs/status.md](docs/status.md) for what
 to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 
