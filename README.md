@@ -10,7 +10,7 @@ macOS, and a web app served by a Docker gateway, both running the same UI on the
 from [APRS.NET](https://github.com/APRS-NET/APRS.NET). The feature set is a clean-room reimplementation of the
 functionality of APRSIS32, redesigned with a modern UI (see [docs/clean-room.md](docs/clean-room.md)).
 
-Status: `0.7.0-alpha.1`, working towards `0.8.0`. The app receives and transmits over APRS-IS and your own TNCs: KISS
+Status: `0.7.0-alpha.4`, working towards `0.8.0`. The app receives and transmits over APRS-IS and your own TNCs: KISS
 over TCP (Direwolf, soundmodem) and on serial ports (a TH-D72A's built-in TNC, TNC-X, NinoTNC), or a TNC's text output.
 It shows the stations on a live map with their tracks, RF paths and dead-reckoned positions, with station and packet
 lists, station details and a dashboard whose history survives a restart and whose charts open into plots, on the

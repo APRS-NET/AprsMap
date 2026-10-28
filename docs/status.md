@@ -3,16 +3,21 @@
 What you should expect to see when you run AprsMap today, and what isn't there yet. Per-feature status lives in
 [scope.md](scope.md); this page is the short version for someone trying the app.
 
-As of 2026-10-18 (`main`, everything planned for `0.5.0-alpha.1`): **receive and transmit, over APRS-IS and your own
-TNCs.** The app connects to APRS-IS and to KISS TNCs over TCP (Direwolf, soundmodem) and on serial ports (a TH-D72A's
-built-in TNC, TNC-X, NinoTNC), draws the stations on a live map with their tracks and RF paths, lists them and their
-packets, and has a dashboard of live numbers beside the map. Once you turn transmitting on, it sends your position and
-status beacons, messages with acks and retries, and bulletins, and joins ANSRVR groups. The gateway can run as a public,
-receive-only page with a private operator port, and only a signed-in operator can transmit there. The desktop app
-installs, and finds and installs its own updates.
+As of 2026-10-27 (`main`, `0.7.0-alpha.4`, most of [0.8.0](https://github.com/APRS-NET/AprsMap/milestone/6)):
+**receive and transmit, over APRS-IS and your own TNCs.** The app connects to APRS-IS and to KISS TNCs over TCP
+(Direwolf, soundmodem) and on serial ports (a TH-D72A's built-in TNC, TNC-X, NinoTNC), draws the stations on a live map
+with their tracks, RF paths and dead-reckoned positions, lists them and their packets, and has a dashboard of live
+numbers beside the map. Once you turn transmitting on, it sends your position and status beacons (fixed, decaying, or
+SmartBeaconing from a GPS), objects and items, messages with acks and retries, and bulletins, and joins ANSRVR groups.
+Your TNCs can digipeat and act as a receive-only or two-way IGate. A GPS on serial, TCP, gpsd or a TNC port places the
+station, with a sky view and statistics. The gateway can run as a public, receive-only page with a private operator
+port, and only a signed-in operator (or an app with the gateway's API key) can transmit there; it also runs as a Linux
+service configured in TOML. The desktop app installs, finds and installs its own updates, and can show a gateway
+instead of running its own engine. In the browser, a panel can open in a tab of its own.
 
-**Next:** [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) (objects, GPS, a receive-only IGate, a conversation per
-ANSRVR group), then [0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5) (a digipeater and a two-way IGate).
+**Next:** the rest of [0.8.0](https://github.com/APRS-NET/AprsMap/milestone/6): AGWPE TNCs as sources
+([#384](https://github.com/APRS-NET/AprsMap/issues/384)) and transmitting with the registered TOCALL
+([#211](https://github.com/APRS-NET/AprsMap/issues/211)).
 
 ## What you'll see
 
@@ -103,9 +108,10 @@ the same window as the desktop app, live.
 
 | What | Where it's planned |
 | --- | --- |
-| A conversation per ANSRVR group | F2.5, [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) ([#285](https://github.com/APRS-NET/AprsMap/issues/285)) |
-| Objects and items, GPS, a receive-only IGate, dead reckoning, extra map views | [0.6.0](https://github.com/APRS-NET/AprsMap/milestone/4) |
-| Digipeater, two-way IGate, web pop-out panels | [0.7.0](https://github.com/APRS-NET/AprsMap/milestone/5) |
+| AGWPE TNCs as sources | F3.8, [0.8.0](https://github.com/APRS-NET/AprsMap/milestone/6) ([#384](https://github.com/APRS-NET/AprsMap/issues/384)) |
+| Transmitting with the registered TOCALL (today `APZAMP`) | [0.8.0](https://github.com/APRS-NET/AprsMap/milestone/6) ([#211](https://github.com/APRS-NET/AprsMap/issues/211)) |
+| A conversation per ANSRVR group | F2.5 ([#285](https://github.com/APRS-NET/AprsMap/issues/285)), in review |
+| GPS from the OS location API or the browser | F3.6, later |
 | Signed installers (Windows SmartScreen and macOS warn on first install) | F4.15 behavior 14, when there's a signing provider |
 | Translations | F0.9 groundwork is done (English only); translations come from contributors |
 
