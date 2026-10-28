@@ -91,9 +91,13 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
             remote.ExportCaptureAsync(new CaptureExport(), Ct)
         );
         var clear = await Assert.ThrowsAsync<EngineAccessException>(() => remote.ClearCaptureAsync(Ct));
+        var history = await Assert.ThrowsAsync<EngineAccessException>(() => remote.GetHistoryStatusAsync(Ct));
 
-        // F1.27 behavior 11.
-        Assert.All(new[] { read, export, clear }, e => Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code));
+        // F1.27 behavior 11; the history's status is the operator's too (F1.41 behavior 3).
+        Assert.All(
+            new[] { read, export, clear, history },
+            e => Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code)
+        );
     }
 
     [Fact]

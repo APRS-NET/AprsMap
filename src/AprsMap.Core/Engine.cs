@@ -130,6 +130,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _bulletins.Own = _ownBulletins;
         _groupTimer = time.CreateTimer(_ => KeepGroupsAlive(), null, GroupCheck, GroupCheck);
         _capture = _options.CaptureFolder is { } captureFolder ? new PacketCapture(captureFolder, time) : null;
+        _history = _options.History.Folder is { } historyFolder ? new PacketHistory(historyFolder, time, logger) : null; // F1.41
     }
 
     /// <inheritdoc />
@@ -142,6 +143,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _ownBulletins.Dispose();
         _bulletins.Dispose();
         _capture?.DisposeAsync().AsTask().GetAwaiter().GetResult(); // what's queued is written first
+        _history?.DisposeAsync().AsTask().GetAwaiter().GetResult(); // likewise
         _settingsLock.Dispose();
         lock (_gate)
         {
@@ -357,6 +359,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             _logging.Update(saved.EffectiveLogging); // levels and the log file apply at once (F1.32 behavior 2)
             MeasureFrom(saved);
             UseCapture(saved);
+            UseHistory(saved);
             await UseMessengerAsync(saved, cancellationToken).ConfigureAwait(false);
             SignalSettingsChanged();
 
@@ -544,6 +547,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 _settings = AppSettings.Empty; // not the configured defaults: the point is to see first-run setup
                 _logging.Update(LoggingSettings.Default);
                 UseCapture(AppSettings.Empty);
+                UseHistory(AppSettings.Empty);
                 _recent.Clear();
                 _listed.Clear();
                 _listedOrder.Clear();
@@ -551,6 +555,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 _packets = 0;
             }
             _stations.Clear();
+            if (_history is not null)
+            {
+                await _history.DeleteAllAsync(cancellationToken).ConfigureAwait(false); // F1.41 behavior 12
+            }
             MeasureFrom(AppSettings.Empty);
             await UseMessengerAsync(AppSettings.Empty, cancellationToken).ConfigureAwait(false);
             SignalSettingsChanged();
@@ -2101,6 +2109,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             settings = _settings;
         }
         _stations.Sweep(now, (settings ?? AppSettings.Empty).EffectiveAging);
+        _ = _history?.MaintainAsync(); // F1.41 behaviors 4, 5
     }
 
     /// <summary>Marks stations stale and removes expired ones, once a <see cref="EngineOptions.SweepInterval"/> (F1.3 behavior 10).</summary>
@@ -2297,6 +2306,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             view = view with { Markers = view.Markers | PacketMarkers.DigipeatedHere }; // F3.5 behavior 5
         }
+        Keep(packet, view, sourceId, sent, duplicate); // F1.41 behavior 1
         if (!duplicate)
         {
             // F1.3 behavior 11: a duplicate is listed, not applied again. The track analysis marks the packet (F1.20).
@@ -2639,6 +2649,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         _logging.Update(settings.EffectiveLogging);
         MeasureFrom(settings);
         UseCapture(settings);
+        UseHistory(settings);
         await UseMessengerAsync(settings, cancellationToken).ConfigureAwait(false);
         return settings;
     }
