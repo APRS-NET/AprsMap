@@ -219,6 +219,17 @@ public interface IEngineService
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// The dashboard for one source (#454): every APRS tile with the packets <paramref name="sourceId"/> brought, copies
+    /// another source brought first included. The tiles read from the stations held stay every source's.
+    /// </summary>
+    Task<Dashboard> GetSourceDashboardAsync(
+        DashboardRange range,
+        string sourceId,
+        StationFilter? filter = null,
+        CancellationToken cancellationToken = default
+    );
+
     /// <summary>A station's held telemetry reports (F1.11); null when it has sent none.</summary>
     Task<TelemetryView?> GetTelemetryAsync(string name, CancellationToken cancellationToken = default);
 

@@ -31,6 +31,7 @@ public sealed partial class Engine
         {
             _dashboard.Import(dashboard, now);
         }
+        ImportSources(snapshot.Sources, now); // #454
         if (snapshot.Gps is { } gps)
         {
             _gpsHistory.Import(gps, now);
@@ -70,7 +71,8 @@ public sealed partial class Engine
                 HistorySnapshot.CurrentVersion,
                 _time.GetUtcNow(),
                 _dashboard.Export(),
-                _gpsHistory.Export()
+                _gpsHistory.Export(),
+                ExportSources() // #454
             );
             await store.SaveAsync(snapshot, CancellationToken.None).ConfigureAwait(false);
         }

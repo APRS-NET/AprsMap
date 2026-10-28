@@ -137,14 +137,14 @@ public sealed partial class Engine
         }
         var now = _time.GetUtcNow();
         var hours = _dashboard.CompletedHours(now).Where(h => h.Hour > _hoursSavedThrough).ToList();
-        if (hours.Count == 0)
-        {
-            return;
-        }
         try
         {
-            _metrics.Save(hours, now);
-            _hoursSavedThrough = hours[^1].Hour;
+            if (hours.Count > 0)
+            {
+                _metrics.Save(hours, now);
+                _hoursSavedThrough = hours[^1].Hour;
+            }
+            SaveSourceHours(_metrics, now); // #454
         }
         catch (Exception ex)
             when (ex is Microsoft.Data.Sqlite.SqliteException or IOException or UnauthorizedAccessException)

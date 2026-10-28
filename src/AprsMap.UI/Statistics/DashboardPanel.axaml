@@ -141,6 +141,16 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+      <!-- All sources or one (#454), where the profile has two or more. -->
+      <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,16,0" IsVisible="{Binding HasSourceChoice}">
+        <TextBlock Text="{l:T Dashboard.Sources}" VerticalAlignment="Center" />
+        <ComboBox
+          x:Name="SourcePicker"
+          ItemsSource="{Binding SourceOptions}"
+          SelectedItem="{Binding SelectedSource}"
+          AutomationProperties.Name="{l:T Dashboard.Sources}"
+        />
+      </StackPanel>
       <!-- Whole feed or My view (behavior 7). -->
       <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,16,0">
         <RadioButton
@@ -339,6 +349,19 @@
               <TextBlock Classes="title" Text="{l:T Dashboard.Connection}" />
               <ItemsControl ItemsSource="{Binding Connections}" Margin="0,4,0,0" />
               <TextBlock Classes="detail" Text="{Binding ReconnectsText}" Margin="0,4,0,0" />
+            </StackPanel>
+          </Border>
+
+          <!-- The sources side by side (#454). -->
+          <Border Classes="tile" IsVisible="{Binding HasComparison}">
+            <StackPanel>
+              <TextBlock Classes="title" Text="{l:T Dashboard.Sources.Compared}" />
+              <ItemsControl x:Name="SourceComparison" ItemsSource="{Binding Comparison}" Margin="0,4,0,0" />
+              <TextBlock
+                Classes="detail"
+                Text="{Binding ComparisonNote}"
+                IsVisible="{Binding ComparisonNote, Converter={x:Static ObjectConverters.IsNotNull}}"
+              />
             </StackPanel>
           </Border>
 

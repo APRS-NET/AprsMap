@@ -157,6 +157,41 @@ public sealed class DashboardWeekTests : IDisposable
     }
 
     [Fact]
+    public async Task EachSourcesCountsAreKeptAcrossARestart()
+    {
+        // #454, with #386 and F1.41 behavior 10.
+        using (var first = Create(json: true))
+        {
+            await first.GetSettingsAsync(Ct);
+            first.Accept(Car, "tnc");
+            first.Accept(House, "rotate");
+            _time.Advance(TimeSpan.FromHours(1));
+            first.SweepNow(_time.GetUtcNow());
+            await first.SaveHistoryAsync();
+        }
+
+        using var second = Create(json: true);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var run = second.RunAsync(cts.Token);
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        Dashboard tnc;
+        while (
+            (tnc = await second.GetSourceDashboardAsync(DashboardRange.Day, "tnc", cancellationToken: Ct)).Packets.Sum()
+            == 0
+        )
+        {
+            Assert.True(DateTime.UtcNow < deadline, "The source's counts weren't taken up.");
+            await Task.Delay(20, Ct);
+        }
+        var week = await second.GetSourceDashboardAsync(DashboardRange.Week, "tnc", cancellationToken: Ct);
+        await cts.CancelAsync();
+        await run;
+
+        Assert.Equal(1, tnc.StationsHeardTotal);
+        Assert.Equal(1, week.Packets[PointOf(week, T0)]);
+    }
+
+    [Fact]
     public async Task StartingOverDeletesTheHours()
     {
         using var engine = Create();
