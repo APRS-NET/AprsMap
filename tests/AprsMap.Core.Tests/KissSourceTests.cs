@@ -190,12 +190,14 @@ public sealed class KissSourceTests
         var stream = client.GetStream();
         await WaitUntil(async () => (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Connected });
 
-        // A TNC server (Dire Wolf, tnc share) keeps the link up while the radio behind it is switched off.
-        time.Advance(AprsIsPacketSourceFactory.TncQuietWarning);
+        // A TNC server (Dire Wolf, tnc share) keeps the link up while the radio behind it is switched off. The clock
+        // moves on again while waiting: the quiet timer may start a moment after the link says it's connected.
         await WaitUntil(async () =>
-            (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Connected } s
-            && s.Warning?.Code == EngineErrorCodes.KissQuiet
-        );
+        {
+            time.Advance(AprsIsPacketSourceFactory.TncQuietWarning);
+            return (await StatusOf(engine, tnc.Id)) is { State: ConnectionState.Connected } s
+                && s.Warning?.Code == EngineErrorCodes.KissQuiet;
+        });
 
         await stream.WriteAsync(Frame("N0CAR-9>APRS,WIDE1-1:!4903.50N/07201.75W>"), Ct); // the radio's back
         await WaitUntil(async () =>
