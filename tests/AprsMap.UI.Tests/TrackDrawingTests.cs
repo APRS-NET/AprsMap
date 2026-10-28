@@ -41,6 +41,28 @@ public sealed class TrackDrawingTests
     }
 
     [Fact]
+    public void ALongTrackIsDrawnInsteadOfTheLiveOneAndTakesItsNewPoints()
+    {
+        // F1.41 behavior 8.
+        var layer = new TrackLayer();
+        layer.Apply(new TrackUpdate("A", Line(3), Reset: true));
+
+        layer.SetLong("A", Line(50, fromLatitude: 39));
+        Assert.Equal(50, layer.PointsOf("A").Count);
+        layer.Apply(new TrackUpdate("A", [new TrackPoint(41, -105, T0.AddHours(2))], Dropped: 1));
+        Assert.Equal(51, layer.PointsOf("A").Count); // the live track's limit doesn't trim it
+
+        layer.SetLong("GONE", Line(5)); // no live track any more: still drawn
+        using (var frame = layer.Build(Around(40.02, -105, 20), _ => (TrackStyle.Selected, false), Colours))
+        {
+            Assert.True(frame.Segments > 0);
+        }
+        layer.SetLong(null, null);
+        Assert.Equal(3, layer.PointsOf("A").Count);
+        Assert.Empty(layer.PointsOf("GONE"));
+    }
+
+    [Fact]
     public void ATrackInViewIsDrawnAndOneOutOfViewIsNot()
     {
         var layer = new TrackLayer();

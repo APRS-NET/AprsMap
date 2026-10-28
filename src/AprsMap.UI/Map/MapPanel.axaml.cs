@@ -146,6 +146,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             _map.SetFilterAreas(_main.FilterAreas);
             ShowSeen();
             ShowFollowed();
+            ShowLongTrack();
             _map.Select(_main.SelectedStation);
         }
         _state = _main?.Map;
@@ -308,11 +309,17 @@ public sealed partial class MapPanel : UserControl, IDisposable
         {
             ShowFollowed();
         }
+        else if (e.PropertyName is nameof(StationDetailsViewModel.LongTrack))
+        {
+            ShowLongTrack();
+        }
     }
 
     /// <summary>Where others see me, against my house (docs/features/F2.3-seen-as.md, behavior 3).</summary>
     private void ShowSeen() =>
         _map.ShowSeen(_main?.SeenAt?.Latitude, _main?.SeenAt?.Longitude, _main?.SeenAt?.DistanceKm ?? 0);
+
+    private void ShowLongTrack() => _map.SetLongTrack(_main?.Details.LongTrack?.Name, _main?.Details.LongTrack?.Points); // F1.41 behavior 8
 
     private void ShowFollowed() =>
         _map.Followed = _main?.Details is { IsFollowing: true } details ? details.Name : null;

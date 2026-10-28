@@ -34,6 +34,12 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetStationAsync"/>.</summary>
     public const string GetStation = "GetStation";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetTrackAsync"/>.</summary>
+    public const string GetTrack = "GetTrack";
+
+    /// <summary>Hub method for <see cref="IEngineService.GetStationPacketsAsync"/>.</summary>
+    public const string GetStationPackets = "GetStationPackets";
+
     /// <summary>Hub method for <see cref="IEngineService.SetMapViewAsync"/>.</summary>
     public const string SetMapView = "SetMapView";
 

@@ -392,19 +392,7 @@ internal sealed partial class PacketHistory : IAsyncDisposable
             using var reader = query.ExecuteReader();
             while (reader.Read())
             {
-                records.Add(
-                    new HistoryRecord(
-                        DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(0)),
-                        reader.IsDBNull(1) ? null : reader.GetString(1),
-                        reader.GetInt64(2) != 0,
-                        reader.GetInt64(3) != 0,
-                        reader.IsDBNull(4) ? null : reader.GetString(4),
-                        (StationKind)reader.GetInt32(5),
-                        reader.IsDBNull(6) ? null : reader.GetDouble(6),
-                        reader.IsDBNull(7) ? null : reader.GetDouble(7),
-                        (byte[])reader.GetValue(8)
-                    )
-                );
+                records.Add(RecordAt(reader));
             }
         }
         catch (SqliteException ex)
@@ -465,6 +453,120 @@ internal sealed partial class PacketHistory : IAsyncDisposable
             ]
         );
     }
+
+    /// <summary>
+    /// <paramref name="name"/>'s positions kept since <paramref name="since"/>, oldest first (behavior 8): duplicates
+    /// left out, as the store leaves them out of the track.
+    /// </summary>
+    public async Task<IReadOnlyList<TrackPoint>> PositionsAsync(
+        string name,
+        DateTimeOffset since,
+        CancellationToken cancellationToken = default
+    )
+    {
+        await FlushAsync(cancellationToken).ConfigureAwait(false);
+        var points = new List<TrackPoint>();
+        foreach (var day in DaysKept().Where(d => d >= Day(since)).Order())
+        {
+            await _files.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                using var connection = day == _connectionDay && _connection is not null ? null : Open(day, false);
+                using var query = (connection ?? _connection!).CreateCommand();
+                query.CommandText = """
+                    SELECT received_at, lat, lon FROM packets
+                    WHERE name = $name AND received_at >= $since AND lat IS NOT NULL AND duplicate = 0
+                    ORDER BY rowid
+                    """;
+                query.Parameters.AddWithValue("$name", name);
+                query.Parameters.AddWithValue("$since", since.ToUnixTimeMilliseconds());
+                using var reader = query.ExecuteReader();
+                while (reader.Read())
+                {
+                    points.Add(
+                        new TrackPoint(
+                            reader.GetDouble(1),
+                            reader.GetDouble(2),
+                            DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(0))
+                        )
+                    );
+                }
+            }
+            catch (SqliteException ex)
+            {
+                LogNotRead(_logger, PathOf(day), ex);
+            }
+            finally
+            {
+                _files.Release();
+            }
+        }
+        return points;
+    }
+
+    /// <summary>
+    /// Up to <paramref name="count"/> of <paramref name="name"/>'s packets kept from before <paramref name="before"/>
+    /// (all of them with null), newest first (behavior 9).
+    /// </summary>
+    public async Task<IReadOnlyList<HistoryRecord>> PacketsOfAsync(
+        string name,
+        DateTimeOffset? before,
+        int count,
+        CancellationToken cancellationToken = default
+    )
+    {
+        await FlushAsync(cancellationToken).ConfigureAwait(false);
+        var records = new List<HistoryRecord>();
+        var until = before ?? DateTimeOffset.MaxValue.AddYears(-1);
+        foreach (var day in DaysKept().Where(d => d <= Day(until)).OrderDescending())
+        {
+            if (records.Count >= count)
+            {
+                break;
+            }
+            await _files.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                using var connection = day == _connectionDay && _connection is not null ? null : Open(day, false);
+                using var query = (connection ?? _connection!).CreateCommand();
+                query.CommandText = """
+                    SELECT received_at, source, own, duplicate, name, kind, lat, lon, raw FROM packets
+                    WHERE name = $name AND received_at < $before
+                    ORDER BY rowid DESC LIMIT $count
+                    """;
+                query.Parameters.AddWithValue("$name", name);
+                query.Parameters.AddWithValue("$before", until.ToUnixTimeMilliseconds());
+                query.Parameters.AddWithValue("$count", count - records.Count);
+                using var reader = query.ExecuteReader();
+                while (reader.Read())
+                {
+                    records.Add(RecordAt(reader));
+                }
+            }
+            catch (SqliteException ex)
+            {
+                LogNotRead(_logger, PathOf(day), ex);
+            }
+            finally
+            {
+                _files.Release();
+            }
+        }
+        return records;
+    }
+
+    private static HistoryRecord RecordAt(SqliteDataReader reader) =>
+        new(
+            DateTimeOffset.FromUnixTimeMilliseconds(reader.GetInt64(0)),
+            reader.IsDBNull(1) ? null : reader.GetString(1),
+            reader.GetInt64(2) != 0,
+            reader.GetInt64(3) != 0,
+            reader.IsDBNull(4) ? null : reader.GetString(4),
+            (StationKind)reader.GetInt32(5),
+            reader.IsDBNull(6) ? null : reader.GetDouble(6),
+            reader.IsDBNull(7) ? null : reader.GetDouble(7),
+            (byte[])reader.GetValue(8)
+        );
 
     /// <summary>When the oldest packet kept was received; null with none.</summary>
     public async Task<DateTimeOffset?> KeptSinceAsync(CancellationToken cancellationToken = default) =>
