@@ -31,6 +31,44 @@ public sealed class MessagesTests
         new(id, from, Outgoing: false, text, Noon.AddMinutes(minute), ChatMessageState.Received, Read: read);
 
     [Fact]
+    public async Task AGroupHasAConversationOfWhatItsMembersWroteAndWhatThisStationPosted()
+    {
+        // F2.5 behavior 8 (#285): a joined group's conversation, from the start, then its relays, notices and posts.
+        var (messages, engine) = Create();
+        engine.Conversations.Add(
+            new Conversation("#NEDR", 0, null, SendVia.Auto, MessageRetries.Automatic, Group: "NEDR")
+        );
+        await messages.ShowGroupsAsync();
+        Assert.Equal(["#NEDR"], messages.Conversations.Select(c => c.Correspondent));
+
+        messages.Apply(Received("r", "N1KXJ-14", "Pretty quiet ot here...", 1) with { Group = "NEDR" });
+        messages.Apply(Received("n", "ANSRVR", "Now Monitoring with 3 Members", 2) with { Group = "NEDR" });
+        messages.Apply(
+            new ChatMessage(
+                "p",
+                "ANSRVR",
+                true,
+                "CQ NEDR Hello NEDR",
+                Noon.AddMinutes(3),
+                ChatMessageState.Sent,
+                Group: "NEDR"
+            )
+        );
+        messages.Apply(Received("d", "N1KXJ-14", "A direct one", 4)); // still its own conversation
+
+        Assert.Equal(["N1KXJ-14", "#NEDR"], messages.Conversations.Select(c => c.Correspondent));
+        messages.Selected = messages.Conversations.Single(c => c.Correspondent == "#NEDR");
+        Assert.Equal(
+            [
+                ("N1KXJ-14", "Pretty quiet ot here..."),
+                ("ANSRVR", "Now Monitoring with 3 Members"),
+                (null, "Hello NEDR"),
+            ],
+            messages.Thread.Select(r => (r.Sender, r.Text))
+        );
+    }
+
+    [Fact]
     public async Task AWaitingConversationSaysWhyAndWhereToFixIt()
     {
         var (messages, engine) = Create();

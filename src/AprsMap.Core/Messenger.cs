@@ -10,6 +10,9 @@ namespace AprsMap.Core;
 /// <summary>What the messenger needs from the engine: who may send where, and the sending itself.</summary>
 internal interface IMessengerHost
 {
+    /// <summary>The ANSRVR groups the active profile has joined (docs/features/F2.5-bulletins.md, behavior 8).</summary>
+    IReadOnlyList<string> Groups();
+
     /// <summary>Why the active profile may not transmit at all (F2.1 behavior 4), or null.</summary>
     EngineError? ProfileBlock();
 
@@ -216,49 +219,55 @@ internal sealed partial class Messenger : IDisposable
         station?.Receive(packet, sourceId);
     }
 
-    /// <summary>The conversations, newest activity first (behavior 1).</summary>
+    /// <summary>
+    /// The conversation a message is in: its correspondent's, or its group's (<c>#NEDR</c>, F2.5 behavior 8), whoever
+    /// sent it there.
+    /// </summary>
+    internal static string KeyOf(ChatMessage message) =>
+        message.Group is { } group ? Conversation.ForGroup(group) : message.Correspondent;
+
+    /// <summary>
+    /// The conversations, newest activity first (behavior 1). A joined group has one from the start, as a conversation
+    /// started by hand does (F2.5 behavior 8); its messages go to ANSRVR, so it shows ANSRVR's route.
+    /// </summary>
     public IReadOnlyList<Conversation> Conversations()
     {
+        var groups = _host.Groups();
         lock (_gate)
         {
+            Conversation Make(string key, int unread, ChatMessage? last)
+            {
+                var group = Conversation.GroupOf(key);
+                var sendTo = group is null ? key : AnsrvrCommand.Ansrvr.Value; // a group's posts go to ANSRVR
+                var (via, retries) = Settings(key);
+                var route = PlanRoute(sendTo, via);
+                return new Conversation(
+                    key,
+                    unread,
+                    last,
+                    via,
+                    retries,
+                    route is null ? null : string.Join(", ", route.SourceIds.Select(NameOf)),
+                    route is null ? WhyWaiting(via) : null,
+                    group
+                );
+            }
+            var withMessages = _messages
+                .GroupBy(KeyOf, StringComparer.OrdinalIgnoreCase)
+                .Select(g => Make(g.Key, g.Count(m => !m.Outgoing && !m.Read), g.MaxBy(m => m.At)))
+                .OrderByDescending(c => c.Last?.At)
+                .ToList();
+            bool Has(string key) =>
+                withMessages.Any(c => string.Equals(c.Correspondent, key, StringComparison.OrdinalIgnoreCase));
             return
             [
-                .. _messages
-                    .GroupBy(m => m.Correspondent, StringComparer.OrdinalIgnoreCase)
-                    .Select(g =>
-                    {
-                        var (via, retries) = Settings(g.Key);
-                        var route = PlanRoute(g.Key, via);
-                        return new Conversation(
-                            g.Key,
-                            g.Count(m => !m.Outgoing && !m.Read),
-                            g.MaxBy(m => m.At),
-                            via,
-                            retries,
-                            route is null ? null : string.Join(", ", route.SourceIds.Select(NameOf)),
-                            route is null ? WhyWaiting(via) : null
-                        );
-                    })
-                    .OrderByDescending(c => c.Last?.At),
-                // Started, with Send via or retries chosen, before the first message.
+                .. withMessages,
+                // Started, with Send via or retries chosen, before the first message; and each joined group.
                 .. _conversations
-                    .Keys.Where(k =>
-                        !_messages.Any(m => string.Equals(m.Correspondent, k, StringComparison.OrdinalIgnoreCase))
-                    )
-                    .Select(k =>
-                    {
-                        var (via, retries) = Settings(k);
-                        var route = PlanRoute(k, via);
-                        return new Conversation(
-                            k,
-                            0,
-                            null,
-                            via,
-                            retries,
-                            route is null ? null : string.Join(", ", route.SourceIds.Select(NameOf)),
-                            route is null ? WhyWaiting(via) : null
-                        );
-                    }),
+                    .Keys.Concat(groups.Select(Conversation.ForGroup))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Where(k => !Has(k))
+                    .Select(k => Make(k, 0, null)),
             ];
         }
     }
@@ -298,7 +307,7 @@ internal sealed partial class Messenger : IDisposable
     /// <summary>
     /// Queues <paramref name="text"/> to <paramref name="to"/> as messages of at most 67 characters (behaviors 6, 10).
     /// </summary>
-    public IReadOnlyList<ChatMessage> Send(string to, string text)
+    public IReadOnlyList<ChatMessage> Send(string to, string text, string? group = null)
     {
         var correspondent = to.Trim().ToUpperInvariant();
         if (correspondent.Length is 0 or > 9 || !Callsign.TryParse(correspondent, out _))
@@ -339,7 +348,8 @@ internal sealed partial class Messenger : IDisposable
                 Outgoing: true,
                 part,
                 now,
-                ChatMessageState.Queued
+                ChatMessageState.Queued,
+                Group: group // a post shows in its group's conversation (F2.5 behavior 9)
             ))
             .ToList();
         lock (_gate)
@@ -419,7 +429,7 @@ internal sealed partial class Messenger : IDisposable
                     .Where(m =>
                         !m.Outgoing
                         && !m.Read
-                        && string.Equals(m.Correspondent, correspondent, StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(KeyOf(m), correspondent, StringComparison.OrdinalIgnoreCase)
                     )
                     .ToList()
             )
@@ -571,12 +581,19 @@ internal sealed partial class Messenger : IDisposable
         var source = message.Source;
         var route = PathAnalysis.FromPacket(message.Packet);
         var isRf = source is not null && _host.TransmitSources().Any(s => s.Id == source && s.IsRf);
-        var ping = PingResultFor(message.From.Value, message.Text, source);
+        // A joined group's traffic goes to its conversation (F2.5 behavior 8): never a ping, nor answered by the away
+        // reply. APRS.NET tells a member's relayed post from ANSRVR's notice (G34, APRS.NET#281).
+        var group =
+            AnsrvrMessage.TryParse(message, out var ansrvr)
+            && _host.Groups().Contains(ansrvr.Group, StringComparer.OrdinalIgnoreCase)
+                ? (Group: ansrvr.Group.ToUpperInvariant(), Text: ansrvr.Text.Trim())
+                : ((string Group, string Text)?)null;
+        var ping = group is null ? PingResultFor(message.From.Value, message.Text, source) : null;
         var received = new ChatMessage(
             Guid.NewGuid().ToString("N"),
             message.From.Value.ToUpperInvariant(),
             Outgoing: false,
-            message.Text,
+            group?.Text ?? message.Text,
             message.ReceivedAt,
             ChatMessageState.Received,
             message.MessageId,
@@ -585,7 +602,8 @@ internal sealed partial class Messenger : IDisposable
             // No ack goes back while this station can't send there (behavior 13).
             NotAcknowledged: message.MessageId is not null && (source is null || !_host.CanSendOn(source)),
             Read: ping is not null, // a ping isn't unread (F2.13 behavior 11)
-            Ping: ping
+            Ping: ping,
+            Group: group?.Group
         );
         // Who, when and its ID; the text only with Log message texts on (docs/features/F1.32-logging.md, behavior 5.2).
         LogMessageReceived(
@@ -609,7 +627,7 @@ internal sealed partial class Messenger : IDisposable
                 QueuePong(received.Correspondent, source!, isRf);
             }
         }
-        else
+        else if (group is null)
         {
             MaybeAutoReply(received.Correspondent, message.Text, source, isRf);
         }

@@ -1723,6 +1723,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         ArgumentNullException.ThrowIfNull(correspondent);
         ArgumentNullException.ThrowIfNull(text);
+        if (Conversation.GroupOf(correspondent) is { } group)
+        {
+            // A group's conversation posts to the group (docs/features/F2.5-bulletins.md, behavior 9).
+            return await PostToGroupAsync(group, text, cancellationToken).ConfigureAwait(false);
+        }
         await LoadSettingsAsync(cancellationToken).ConfigureAwait(false);
         return _messenger.Send(correspondent, text);
     }
