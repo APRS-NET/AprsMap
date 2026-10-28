@@ -1060,6 +1060,75 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<string>>([.. KissSerialConnection.GetPortNames().Order(StringComparer.Ordinal)]);
 
+    /// <summary>How long an AGWPE server has to answer with its ports (F3.8 behavior 1); shorter in tests.</summary>
+    internal TimeSpan AgwpeAnswerTimeout { get; set; } = TimeSpan.FromSeconds(5);
+
+    /// <inheritdoc />
+    public async Task<AgwpeServer> GetAgwpePortsAsync(
+        string host,
+        int port,
+        CancellationToken cancellationToken = default
+    )
+    {
+        AgwpeConnection connection;
+        try
+        {
+            connection = new AgwpeConnection(
+                new AgwpeOptions
+                {
+                    Host = host?.Trim() ?? string.Empty,
+                    Port = port,
+                    ConnectTimeout = AgwpeAnswerTimeout,
+                    ReconnectDelay = TimeSpan.FromHours(1), // asked once: no retrying
+                    MaxReconnectDelay = TimeSpan.FromHours(1),
+                }
+            );
+        }
+        catch (ArgumentException)
+        {
+            return AgwpeServer.Unreached; // no host, or a port out of range
+        }
+        await using (connection.ConfigureAwait(false))
+        {
+            var listed = new TaskCompletionSource<IReadOnlyList<AgwpePort>>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
+            connection.PortsReceived += (_, e) => listed.TrySetResult(e.Ports);
+            using var asking = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            asking.CancelAfter(AgwpeAnswerTimeout);
+            // Reading is what connects; nothing read is kept.
+            var reading = Task.Run(
+                async () =>
+                {
+                    try
+                    {
+                        await foreach (var _ in connection.ReadPacketsAsync(asking.Token).ConfigureAwait(false)) { }
+                    }
+                    catch (OperationCanceledException) { }
+                },
+                CancellationToken.None
+            );
+            try
+            {
+                var ports = await listed.Task.WaitAsync(asking.Token).ConfigureAwait(false);
+                return new AgwpeServer(
+                    true,
+                    connection.ServerVersion,
+                    [.. ports.Select(p => new AgwpeRadioPort(p.Number, p.Description))]
+                );
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                return AgwpeServer.Unreached;
+            }
+            finally
+            {
+                await asking.CancelAsync().ConfigureAwait(false);
+                await reading.ConfigureAwait(false);
+            }
+        }
+    }
+
     /// <inheritdoc />
     public Task<IReadOnlyList<TncTypeInfo>> GetTncTypesAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<TncTypeInfo>>([.. TncSetup.Known.Select(t => new TncTypeInfo(t.Id, t.Name))]);
@@ -2363,7 +2432,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     }
 
     /// <summary>
-    /// Whether <paramref name="sourceId"/> is this station's own receiver: a KISS TNC (F3.1 behavior 8) or TNC text output
+    /// Whether <paramref name="sourceId"/> is this station's own receiver: a KISS or AGWPE TNC (F3.1 behavior 8, F3.8) or TNC text output
     /// (F3.2 behavior 2).
     /// </summary>
     private bool IsOwnReceiver(string? sourceId) =>
@@ -2371,6 +2440,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         && _settings?.SourceList.FirstOrDefault(s => s.Id == sourceId)?.Kind
             is SourceKind.KissTcp
                 or SourceKind.KissSerial
+                or SourceKind.Agwpe
                 or SourceKind.AprsTextSerial;
 
     /// <summary>Keeps <paramref name="node"/> findable by identity for one duplicate window.</summary>

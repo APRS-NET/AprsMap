@@ -145,6 +145,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetSerialPortsAsync"/>.</summary>
     public const string GetSerialPorts = "GetSerialPorts";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetAgwpePortsAsync"/>.</summary>
+    public const string GetAgwpePorts = "GetAgwpePorts";
+
     /// <summary>Hub streaming method for <see cref="IEngineService.WatchBulletinsAsync"/>.</summary>
     public const string WatchBulletins = "WatchBulletins";
 

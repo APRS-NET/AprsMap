@@ -55,6 +55,20 @@ internal static class SettingsValidator
                 );
             }
             if (
+                source.Kind == SourceKind.Agwpe
+                && (
+                    string.IsNullOrWhiteSpace(source.Host)
+                    || source.Port is < 1 or > 65535
+                    || source.TncPort is < 0 or > 15
+                )
+            )
+            {
+                throw Fail(
+                    EngineErrorCodes.AgwpeSourceInvalid,
+                    "An AGWPE source needs a host, a port from 1 to 65535 and a radio port from 1 to 16."
+                ); // F3.8
+            }
+            if (
                 source.IsSerial
                 && (
                     string.IsNullOrWhiteSpace(source.SerialPort) || source.Baud is <= 0 || source.TncPort is < 0 or > 15

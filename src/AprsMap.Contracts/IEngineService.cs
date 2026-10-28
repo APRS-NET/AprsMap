@@ -316,6 +316,13 @@ public interface IEngineService
     Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// The AGWPE server at <paramref name="host"/>:<paramref name="port"/>: its version and its radio ports, for an AGWPE
+    /// source's picker (docs/features/F3.8-agwpe.md, behaviors 1, 5); on a gateway, reached from the gateway's computer.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">This caller may not do it (a gateway without operator sign-in).</exception>
+    Task<AgwpeServer> GetAgwpePortsAsync(string host, int port, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// The TNC types a KISS over serial source can be switched into KISS with, such as the Kenwood TH-D72
     /// (docs/features/F3.2-built-in-tncs.md, behavior 4).
     /// </summary>

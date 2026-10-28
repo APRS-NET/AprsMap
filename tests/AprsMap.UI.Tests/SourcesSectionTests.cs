@@ -28,7 +28,7 @@ public class SourcesSectionTests
         Assert.Equal("Used by: Home, Portable", section.Rows[0].UsedByText);
         Assert.Equal("Not used by any profile", section.Rows[1].UsedByText);
         Assert.Equal(
-            ["APRS-IS", "KISS over TCP", "KISS over serial", "TNC text output (TNC2) over serial", "GPS"],
+            ["APRS-IS", "KISS over TCP", "KISS over serial", "AGWPE TNC", "TNC text output (TNC2) over serial", "GPS"],
             section.Kinds.Select(k => k.Name)
         );
         Assert.All(section.Kinds, k => Assert.True(k.IsAvailable)); // GPS too (docs/features/F3.6-gps.md)
@@ -224,7 +224,7 @@ public class SourcesSectionTests
         var (section, engine) = Create(BothOnRotate());
         section.AddCommand.Execute(null);
         Assert.False(section.EditRxOnly); // a new source may send unless ticked
-        section.Kinds[3].IsSelected = true; // TNC text output (TNC2) over serial
+        section.Kinds[4].IsSelected = true; // TNC text output (TNC2) over serial, after the TNCs
 
         Assert.True(section.IsSerial);
         Assert.True(section.IsTnc);

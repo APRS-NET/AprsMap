@@ -212,6 +212,17 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>The serial ports <see cref="GetSerialPortsAsync"/> gives.</summary>
     public List<string> SerialPorts { get; } = ["/dev/ttyUSB0"];
 
+    /// <summary>What <see cref="GetAgwpePortsAsync"/> answers, and what it was asked (F3.8).</summary>
+    public AgwpeServer Agwpe { get; set; } = AgwpeServer.Unreached;
+
+    public List<(string Host, int Port)> AgwpeQueries { get; } = [];
+
+    public Task<AgwpeServer> GetAgwpePortsAsync(string host, int port, CancellationToken cancellationToken = default)
+    {
+        AgwpeQueries.Add((host, port));
+        return Task.FromResult(Agwpe);
+    }
+
     public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<string>>(SerialPorts);
 

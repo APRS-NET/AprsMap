@@ -26,8 +26,19 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         _engine = engine;
         _text = text;
         _saved = saved;
-        Kinds = [.. Enum.GetValues<SourceKind>().Select(k => new SourceKindChoice(k, true, text, this))];
+        Kinds = [.. KindOrder.Select(k => new SourceKindChoice(k, true, text, this))];
     }
+
+    // The kinds as offered: APRS-IS, then the TNCs together (AGWPE beside KISS, F3.8), then text output and GPS.
+    private static readonly SourceKind[] KindOrder =
+    [
+        SourceKind.AprsIs,
+        SourceKind.KissTcp,
+        SourceKind.KissSerial,
+        SourceKind.Agwpe,
+        SourceKind.AprsTextSerial,
+        SourceKind.Gps,
+    ];
 
     /// <summary>The kind in the form: picked for a new source, fixed for one being edited.</summary>
     [ObservableProperty]
@@ -36,6 +47,8 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         nameof(IsKiss),
         nameof(IsKissTcp),
         nameof(IsKissSerial),
+        nameof(IsAgwpe),
+        nameof(ShowsTncPort),
         nameof(IsSerial),
         nameof(IsTnc),
         nameof(CanTransmitKind),
@@ -288,7 +301,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     }
 
     /// <summary>Whether the form shows a KISS TNC's radio port, TX path and the profiles that use it (F3.1 behavior 1).</summary>
-    public bool IsKiss => EditKind is SourceKind.KissTcp or SourceKind.KissSerial;
+    public bool IsKiss => EditKind is SourceKind.KissTcp or SourceKind.KissSerial or SourceKind.Agwpe;
 
     /// <summary>Whether the form shows a TCP TNC's host and port (F3.1 behavior 1.1).</summary>
     public bool IsKissTcp => EditKind == SourceKind.KissTcp;
@@ -361,12 +374,13 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
     }
 
     /// <summary>Whether the form shows a host and port: a TCP TNC, or a GPS over TCP or gpsd.</summary>
-    public bool ShowsHost => IsKissTcp || (IsGps && EditGpsLink != GpsLink.Serial);
+    public bool ShowsHost => IsKissTcp || IsAgwpe || (IsGps && EditGpsLink != GpsLink.Serial);
 
     /// <summary>The port used when none is typed, shown in the box.</summary>
     public string PortPlaceholder =>
         (
-            !IsGps ? SourceSettings.DefaultKissPort
+            IsAgwpe ? SourceSettings.DefaultAgwpePort
+            : !IsGps ? SourceSettings.DefaultKissPort
             : EditGpsLink == GpsLink.Gpsd ? SourceSettings.DefaultGpsdPort
             : SourceSettings.DefaultNmeaPort
         ).ToString(CultureInfo.InvariantCulture);
@@ -696,6 +710,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 string.Empty;
         EditDtr = EditRts = true;
         SerialPortsNote = null;
+        ShowAgwpePort(null); // F3.8
         EditEnterScript = EditLeaveScript = string.Empty;
         TncTypes.Clear();
         SelectedTncType = null;
@@ -758,6 +773,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         EditHost = row.Source.Host ?? string.Empty;
         EditPort = row.Source.Port?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
         EditTncPort = row.Source.TncPort?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        ShowAgwpePort(row.Source); // F3.8: from 1, as the server numbers it
         EditRxOnly = !row.Source.MaySend;
         EditTxPath = row.Source.TxPath ?? string.Empty;
         FillProfiles(id => _settings.Profiles.Any(p => p.Id == id && p.Uses(row.Source)));
@@ -904,17 +920,22 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
             var host = EditHost.Trim();
             int? port = EditPort.Trim().Length == 0 ? null : Number(EditPort);
             var name = EditName.Trim().Length > 0 ? EditName.Trim() : host;
+            var radioPort = IsAgwpe ? AgwpeRadioPort() : tncPort; // AGWPE's typed from 1 (F3.8)
             source = _editingId is { } id
                 ? _settings.SourceList.Single(s => s.Id == id) with
                 {
                     Name = name,
                     Host = host,
                     Port = port,
-                    TncPort = tncPort,
+                    TncPort = radioPort,
                     RxOnly = EditRxOnly,
                     TxPath = txPath,
                 }
-                : SourceSettings.KissTcpFor(host, port, tncPort) with
+                : (
+                    IsAgwpe
+                        ? SourceSettings.AgwpeFor(host, port, radioPort)
+                        : SourceSettings.KissTcpFor(host, port, radioPort)
+                ) with
                 {
                     Name = name,
                     RxOnly = EditRxOnly,

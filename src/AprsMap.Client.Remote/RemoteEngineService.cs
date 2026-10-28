@@ -424,6 +424,12 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         );
 
     /// <inheritdoc />
+    public Task<AgwpeServer> GetAgwpePortsAsync(string host, int port, CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<AgwpeServer>(EngineHub.GetAgwpePorts, host, port, cancellationToken)
+        );
+
+    /// <inheritdoc />
     public Task<IReadOnlyList<string>> GetSerialPortsAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() =>
             _connection.InvokeAsync<IReadOnlyList<string>>(EngineHub.GetSerialPorts, cancellationToken)

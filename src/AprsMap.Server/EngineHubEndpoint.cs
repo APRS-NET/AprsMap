@@ -536,6 +536,14 @@ internal sealed class EngineHubEndpoint(
     /// The gateway host's serial ports are only listed where sources can be changed (F3.1 behavior 1.2, 12): the
     /// settings gate.
     /// </summary>
+    /// <summary>An AGWPE server's ports, asked from the gateway's computer: the operator's, as the serial ports are (F3.8).</summary>
+    [HubMethodName(EngineHub.GetAgwpePorts)]
+    public Task<AgwpeServer> GetAgwpePorts(string host, int port)
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.GetAgwpePortsAsync(host, port, Context.ConnectionAborted);
+    }
+
     [HubMethodName(EngineHub.GetSerialPorts)]
     public Task<IReadOnlyList<string>> GetSerialPorts()
     {

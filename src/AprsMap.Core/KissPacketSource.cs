@@ -114,6 +114,10 @@ internal sealed class KissPacketSource(
         _changed = stateChanged;
         connection.StateChanged += OnStateChanged;
         connection.Warning += OnWarning;
+        if (connection is AgwpeConnection agwpe)
+        {
+            agwpe.PortsReceived += OnAgwpePorts; // F3.8 behavior 5
+        }
         if (gps != TncGps.Off)
         {
             connection.NmeaSentenceReceived += OnSentence;
@@ -223,9 +227,39 @@ internal sealed class KissPacketSource(
         }
     }
 
+    // The AGWPE server's port list doesn't have this source's radio port (F3.8 behavior 5).
+    private bool _portMissing;
+
+    private void OnAgwpePorts(object? sender, AgwpePortsEventArgs e)
+    {
+        PacketSourceEvent? last;
+        lock (_lock)
+        {
+            var missing = !e.Ports.Any(p => p.Number == connection.TncPort);
+            if (missing == _portMissing)
+            {
+                return;
+            }
+            _portMissing = missing;
+            last = _last;
+        }
+        Report(last ?? new PacketSourceEvent(ConnectionState.Connected, new PacketSourceLogin(endpoint, false)));
+    }
+
     /// <summary>The warning to show: not in KISS mode before quiet, since a TNC sending text isn't quiet.</summary>
     private EngineError? WarningNow() =>
-        _warnings.Contains(KissWarning.TextNotKiss)
+        _portMissing
+            ? new EngineError(
+                EngineErrorCodes.AgwpePortMissing,
+                $"Port {connection.TncPort + 1} isn't on this AGWPE server.",
+                new Dictionary<string, string>
+                {
+                    [EngineErrorArgs.Port] = (connection.TncPort + 1).ToString(
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ),
+                }
+            )
+        : _warnings.Contains(KissWarning.TextNotKiss)
             ? new EngineError(EngineErrorCodes.KissTextNotKiss, "The TNC is sending text, not KISS frames.")
         : _warnings.Contains(KissWarning.Quiet)
             ? new EngineError(EngineErrorCodes.KissQuiet, "The TNC has sent nothing for a while.")
@@ -342,6 +376,10 @@ internal sealed class KissPacketSource(
         WatchTraffic(null);
         connection.StateChanged -= OnStateChanged;
         connection.Warning -= OnWarning;
+        if (connection is AgwpeConnection agwpe)
+        {
+            agwpe.PortsReceived -= OnAgwpePorts;
+        }
         connection.NmeaSentenceReceived -= OnSentence;
         connection.GpsPresenceChanged -= OnPresence;
         _gpsWait?.Dispose();
