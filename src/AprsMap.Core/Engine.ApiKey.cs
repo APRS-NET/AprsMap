@@ -22,6 +22,10 @@ public sealed partial class Engine
         Task.FromException<ApiKeyStatus>(NotHere());
 
     /// <inheritdoc />
+    public Task<ApiKeyCheck> CheckApiKeyAsync(string key, CancellationToken cancellationToken = default) =>
+        Task.FromException<ApiKeyCheck>(NotHere());
+
+    /// <inheritdoc />
     public Task RemoveApiKeyAsync(CancellationToken cancellationToken = default) => Task.FromException(NotHere());
 
     private static Exception NotHere() =>

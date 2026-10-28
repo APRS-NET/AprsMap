@@ -925,6 +925,16 @@ internal sealed class FakeEngine : IEngineService
         return Task.FromResult(ApiKey);
     }
 
+    /// <summary>The key <see cref="CheckApiKeyAsync"/> takes for the current one.</summary>
+    public string? CurrentApiKey { get; set; }
+
+    public Task<ApiKeyCheck> CheckApiKeyAsync(string key, CancellationToken cancellationToken = default) =>
+        Task.FromResult(
+            !ApiKey.Set ? ApiKeyCheck.None
+            : key == CurrentApiKey ? ApiKeyCheck.Accepted
+            : ApiKeyCheck.Refused
+        );
+
     public Task RemoveApiKeyAsync(CancellationToken cancellationToken = default)
     {
         ApiKey = ApiKeyStatus.None;

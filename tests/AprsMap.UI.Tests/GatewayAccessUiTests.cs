@@ -87,6 +87,31 @@ public sealed class GatewayAccessUiTests
     }
 
     [Fact]
+    public async Task TestSaysWhetherAKeyIsTheCurrentOneAndSavesNothing()
+    {
+        // #447
+        var engine = new FakeEngine
+        {
+            ApiKey = new ApiKeyStatus(true, DateTimeOffset.UnixEpoch),
+            CurrentApiKey = new string('k', 43),
+        };
+        var section = await Section(engine);
+        Assert.False(section.TestCommand.CanExecute(null)); // nothing to test yet
+
+        section.Key = new string('k', 43);
+        await section.TestCommand.ExecuteAsync(null);
+        Assert.Equal(("That's the gateway's current key.", false), (section.Message, section.HasProblem));
+
+        section.Key = new string('x', 43);
+        await section.TestCommand.ExecuteAsync(null);
+        Assert.Equal(
+            ("That isn't the gateway's current key. Apps using it can only watch.", true),
+            (section.Message, section.HasProblem)
+        );
+        Assert.Empty(engine.SavedApiKeys);
+    }
+
+    [Fact]
     public async Task OnlyASignedInGatewayOperatorHasTheSection()
     {
         static async Task<bool> Offered(bool shared, AuthInfo? auth)

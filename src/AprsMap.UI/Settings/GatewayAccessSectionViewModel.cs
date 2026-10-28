@@ -32,7 +32,7 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
 
     /// <summary>The key being set: generated, typed or pasted; empty once it's saved.</summary>
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ApplyCommand), nameof(CopyCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyCommand), nameof(CopyCommand), nameof(TestCommand))]
     public partial string Key { get; set; } = string.Empty;
 
     /// <summary>Apps may connect with an API key; turned off and applied, the saved key is removed.</summary>
@@ -111,6 +111,25 @@ public sealed partial class GatewayAccessSectionViewModel : ObservableObject
     }
 
     private bool HasKey => Key.Length > 0;
+
+    /// <summary>
+    /// Tests the key in the field against the gateway's current one, saving nothing (#447): the way to check a key an app
+    /// or a password manager has, since the gateway keeps only its hash.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasKey))]
+    private async Task TestAsync()
+    {
+        try
+        {
+            var check = await _engine.CheckApiKeyAsync(Key.Trim());
+            HasProblem = check != ApiKeyCheck.Accepted;
+            Message = _text[$"GatewayAccess.Test.{check}"];
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException)
+        {
+            Problem(ex);
+        }
+    }
 
     /// <summary>Copies the key in the field: the only time it can be seen (behavior 6).</summary>
     [RelayCommand(CanExecute = nameof(HasKey))]

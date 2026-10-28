@@ -567,6 +567,15 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
     }
 
     /// <inheritdoc />
+    public Task<ApiKeyCheck> CheckApiKeyAsync(string key, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        return WithEngineErrors(() =>
+            _connection.InvokeAsync<ApiKeyCheck>(EngineHub.CheckApiKey, key, cancellationToken)
+        );
+    }
+
+    /// <inheritdoc />
     public Task RemoveApiKeyAsync(CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.RemoveApiKey, cancellationToken));
 
