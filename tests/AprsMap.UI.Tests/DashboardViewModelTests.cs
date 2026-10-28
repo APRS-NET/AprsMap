@@ -74,6 +74,57 @@ public sealed class DashboardViewModelTests
     }
 
     [Fact]
+    public async Task WithTwoSourcesOneCanBeShownAndTheyAreCompared()
+    {
+        // #454
+        var tnc = SourceSettings.KissTcpFor("127.0.0.1", 8001) with
+        {
+            Id = "tnc",
+            Name = "TNC-X",
+        };
+        var aprsIs = SourceSettings.AprsIsFor("rotate.aprs2.net:14580") with { Id = "rotate", Name = "APRS-IS" };
+        var profile = new StationProfile("p", "Home", "N0CALL", -1, [aprsIs.Id, tnc.Id], null, null);
+        var settings = new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [aprsIs, tnc]);
+        var engine = new FakeEngine
+        {
+            Dashboard = Sample() with
+            {
+                Comparison = [new DashboardSourceRow("rotate", 40, 1200, 35), new DashboardSourceRow("tnc", 9, 60, 0)],
+            },
+        };
+        var vm = new DashboardViewModel(
+            engine,
+            new FakeTimeProvider(T0),
+            new Localizer(CultureInfo.GetCultureInfo("en-US")),
+            () => null,
+            new SourceNames(() => settings),
+            _ => null,
+            _ => { },
+            () => { }
+        );
+
+        await vm.RefreshAsync(TestContext.Current.CancellationToken);
+        Assert.True(vm.HasSourceChoice);
+        Assert.Equal(["All sources", "APRS-IS", "TNC-X"], vm.SourceOptions.Select(o => o.Name));
+        Assert.Equal(
+            [
+                new ValueRow("APRS-IS", "40 stations · 1,200 packets · 35 heard only here"),
+                new ValueRow("TNC-X", "9 stations · 60 packets · none heard only here"),
+            ],
+            vm.Comparison
+        );
+
+        vm.SelectedSource = vm.SourceOptions[2];
+        await vm.RefreshAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(["tnc"], engine.DashboardSources);
+        Assert.False(vm.HasComparison);
+        Assert.Equal(
+            "Farthest heard directly, weather, heard on RF and the tables still count every source.",
+            vm.ScopeText
+        );
+    }
+
+    [Fact]
     public void SevenDaysPutTheDayInEachPointAndSayWhatTheListsCover()
     {
         // F1.41 behavior 10.

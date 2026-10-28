@@ -18,15 +18,18 @@ internal sealed class MetricsStore(string folder) : IDisposable
     /// <summary>How long hours are kept (decision 5: 90 days).</summary>
     public static readonly TimeSpan KeptFor = TimeSpan.FromDays(90);
 
-    private const int SchemaVersion = 1;
+    private const int SchemaVersion = 2; // 2: hours per source (#454)
 
     private readonly Lock _lock = new();
     private SqliteConnection? _connection;
 
     private string FilePath => Path.Combine(folder, FileName);
 
-    /// <summary>Keeps <paramref name="hours"/>, replacing any already kept, and drops those past <see cref="KeptFor"/>.</summary>
-    public void Save(IReadOnlyList<DashboardHour> hours, DateTimeOffset now)
+    /// <summary>
+    /// Keeps <paramref name="hours"/> of <paramref name="source"/> (empty for the whole feed), replacing any already kept,
+    /// and drops those past <see cref="KeptFor"/>.
+    /// </summary>
+    public void Save(IReadOnlyList<DashboardHour> hours, DateTimeOffset now, string source = "")
     {
         lock (_lock)
         {
@@ -35,9 +38,10 @@ internal sealed class MetricsStore(string folder) : IDisposable
             using var insert = connection.CreateCommand();
             insert.Transaction = transaction;
             insert.CommandText = """
-                INSERT OR REPLACE INTO hours (hour, packets, problems, new, stations, by_source, arrivals, kinds)
-                VALUES ($hour, $packets, $problems, $new, $stations, $bySource, $arrivals, $kinds)
+                INSERT OR REPLACE INTO hours (hour, source, packets, problems, new, stations, by_source, arrivals, kinds)
+                VALUES ($hour, $source, $packets, $problems, $new, $stations, $bySource, $arrivals, $kinds)
                 """;
+            insert.Parameters.AddWithValue("$source", source);
             var hour = insert.Parameters.Add("$hour", SqliteType.Integer);
             var packets = insert.Parameters.Add("$packets", SqliteType.Integer);
             var problems = insert.Parameters.Add("$problems", SqliteType.Integer);
@@ -67,17 +71,18 @@ internal sealed class MetricsStore(string folder) : IDisposable
         }
     }
 
-    /// <summary>The hours kept from <paramref name="since"/> on, oldest first.</summary>
-    public IReadOnlyList<DashboardHour> Read(DateTimeOffset since)
+    /// <summary>The hours of <paramref name="source"/> (empty for the whole feed) kept from <paramref name="since"/> on, oldest first.</summary>
+    public IReadOnlyList<DashboardHour> Read(DateTimeOffset since, string source = "")
     {
         lock (_lock)
         {
             using var query = Connection().CreateCommand();
             query.CommandText = """
                 SELECT hour, packets, problems, new, stations, by_source, arrivals, kinds
-                FROM hours WHERE hour >= $since ORDER BY hour
+                FROM hours WHERE hour >= $since AND source = $source ORDER BY hour
                 """;
             query.Parameters.AddWithValue("$since", HourOf(since));
+            query.Parameters.AddWithValue("$source", source);
             using var reader = query.ExecuteReader();
             var hours = new List<DashboardHour>();
             while (reader.Read())
@@ -151,14 +156,16 @@ internal sealed class MetricsStore(string folder) : IDisposable
                 command.CommandText = $"""
                     PRAGMA journal_mode = WAL;
                     CREATE TABLE hours (
-                        hour INTEGER PRIMARY KEY,
+                        hour INTEGER NOT NULL,
+                        source TEXT NOT NULL,
                         packets INTEGER NOT NULL,
                         problems INTEGER NOT NULL,
                         new INTEGER NOT NULL,
                         stations INTEGER NOT NULL,
                         by_source TEXT NOT NULL,
                         arrivals TEXT NOT NULL,
-                        kinds TEXT NOT NULL
+                        kinds TEXT NOT NULL,
+                        PRIMARY KEY (hour, source)
                     );
                     PRAGMA user_version = {SchemaVersion};
                     """;

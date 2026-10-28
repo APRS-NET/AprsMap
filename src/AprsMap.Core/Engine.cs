@@ -2036,6 +2036,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             {
                 var count = _recent.Count;
                 _dashboard.Clear(_time.GetUtcNow());
+                ClearSources(); // #454
                 _ = SaveHistoryAsync(); // a restart doesn't bring the cleared counts back
                 _metrics?.DeleteAll(); // nor do the 7 days (F1.41 behavior 10)
                 _hoursSavedThrough = long.MinValue;
@@ -2079,6 +2080,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             Gps = _gpsHistory.Read(dashboard.Start, dashboard.Step, dashboard.Packets.Count, now),
             HeardOnRf = heard.Recent, // F3.4 two-way, behavior 7
             HeardOnRfTotal = heard.Total,
+            Comparison = CompareSources(range, now), // #454
         };
     }
 
@@ -2309,6 +2311,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             AddSeenOn(check.Identity, sourceId);
             _stations.SeenOn(packet, sourceId);
             _dashboard.RecordSource(sourceId, now); // still delivering, though another source was first
+            RecordCopyForSource(packet, sourceId, now); // but for this source, a packet it heard (#454)
             return null;
         }
         var duplicate = check.IsDuplicate;
@@ -2332,6 +2335,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         EngineTelemetry.PacketsReceived.Add(1, new KeyValuePair<string, object?>("aprs.packet.type", view.Type));
         var (arrival, relays) = StationFacts.Route(view.Path, heardHere);
         _dashboard.Record(view, arrival, relays, now);
+        RecordForSource(view, arrival, relays, now); // #454
         lock (_gate)
         {
             _packets++;

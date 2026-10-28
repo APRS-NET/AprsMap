@@ -298,6 +298,16 @@ internal sealed class EngineHubEndpoint(
         return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.Apply(dashboard) : dashboard;
     }
 
+    /// <summary>One source's dashboard (#454), shielded as the whole feed's is.</summary>
+    [HubMethodName(EngineHub.GetSourceDashboard)]
+    public async Task<Dashboard> GetSourceDashboard(DashboardRange range, string sourceId, StationFilter? filter)
+    {
+        var dashboard = await engine
+            .GetSourceDashboardAsync(range, sourceId, filter, Context.ConnectionAborted)
+            .ConfigureAwait(false);
+        return await ShieldAsync().ConfigureAwait(false) is { } shield ? shield.Apply(dashboard) : dashboard;
+    }
+
     [HubMethodName(EngineHub.GetNetworkLinks)]
     public async Task<IReadOnlyList<NetworkLink>> GetNetworkLinks()
     {

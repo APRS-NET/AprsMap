@@ -67,6 +67,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.GetDashboardAsync"/>.</summary>
     public const string GetDashboard = "GetDashboard";
 
+    /// <summary>Hub method for <see cref="IEngineService.GetSourceDashboardAsync"/>.</summary>
+    public const string GetSourceDashboard = "GetSourceDashboard";
+
     /// <summary>Hub method for <see cref="IEngineService.GetNetworkLinksAsync"/>.</summary>
     public const string GetNetworkLinks = "GetNetworkLinks";
 

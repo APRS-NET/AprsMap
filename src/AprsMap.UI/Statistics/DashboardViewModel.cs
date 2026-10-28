@@ -126,10 +126,8 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
             : Range == DashboardRange.Week ? _text["Dashboard.MyView.Week"] // F1.41 behavior 10
             : _viewFilter() is null ? _text["Dashboard.MyView.NoFilter"]
             : _text["Dashboard.MyView.Note"];
-        ScopeText =
-            scope is null ? _listsNote
-            : _listsNote is null ? scope
-            : scope + " " + _listsNote;
+        var notes = new[] { scope, _listsNote, _sourceNote }.OfType<string>().ToList();
+        ScopeText = notes.Count > 0 ? string.Join(" ", notes) : null;
     }
 
     // Over 7 days, how far back the lists reach when it's less (F1.41 behavior 10); null otherwise.
@@ -264,7 +262,12 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
     {
         try
         {
-            Show(await _engine.GetDashboardAsync(Range, MyView ? _viewFilter() : null, cancellationToken));
+            var filter = MyView ? _viewFilter() : null;
+            Show(
+                SelectedSource?.Id is { } source
+                    ? await _engine.GetSourceDashboardAsync(Range, source, filter, cancellationToken) // #454
+                    : await _engine.GetDashboardAsync(Range, filter, cancellationToken)
+            );
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or TimeoutException)
         {
@@ -338,6 +341,7 @@ public sealed partial class DashboardViewModel : ObservableObject, IDisposable
                 }
             )
             : null;
+        ShowSources(dashboard); // #454
         ShowScope();
         AsOfText = _text.Format(
             "Dashboard.AsOf",

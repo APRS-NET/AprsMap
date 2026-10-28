@@ -513,6 +513,15 @@ internal sealed class DashboardCounters
         }
     }
 
+    /// <summary>The stations heard since <paramref name="start"/>, for comparing sources (#454).</summary>
+    public IReadOnlyCollection<string> HeardSince(DateTimeOffset start)
+    {
+        lock (_gate)
+        {
+            return [.. _stations.Where(s => s.Value.LastHeard >= start).Select(s => s.Key)];
+        }
+    }
+
     /// <summary>
     /// The hours the minutes still hold that have ended, oldest first, each summed: for the dashboard's counters kept
     /// by the hour (docs/features/F1.41-persistent-history.md, behavior 10). Hours with nothing counted are left out.

@@ -12,6 +12,9 @@ public sealed class SourceNames(Func<AppSettings?> settings)
     /// <summary>Whether the active profile uses more than one source, so sources are worth naming.</summary>
     public bool AreShown => settings()?.GetActiveProfile()?.SourceIds.Count > 1;
 
+    /// <summary>The active profile's sources, by id, in its order.</summary>
+    public IReadOnlyList<string> Ids => settings()?.GetActiveProfile()?.SourceIds ?? [];
+
     /// <summary>The source's name, or its id when it isn't in the list any more.</summary>
     public string NameOf(string id) => settings()?.SourceList.FirstOrDefault(s => s.Id == id)?.Name ?? id;
 

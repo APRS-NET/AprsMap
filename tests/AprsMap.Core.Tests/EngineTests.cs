@@ -827,6 +827,53 @@ public class EngineTests
     }
 
     [Fact]
+    public async Task EachSourceHasItsOwnDashboardAndTheSourcesCompare()
+    {
+        // #454: a copy heard on a second source counts for that source, and once for the whole feed.
+        var sources = new FakeSourceFactory();
+        var aprsIs = sources.Enqueue("T2TEST");
+        var tnc = sources.EnqueueFor(Tnc.Id, "DIREWOLF");
+        var profile = InMemorySettingsStore.Profile("N0TEST") with
+        {
+            SourceIds = [InMemorySettingsStore.Rotate.Id, Tnc.Id],
+        };
+        var store = new InMemorySettingsStore(
+            new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [InMemorySettingsStore.Rotate, Tnc])
+        );
+        var engine = CreateEngine(new FakeTimeProvider(), sources, settings: store);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        var run = engine.RunAsync(cts.Token);
+        await aprsIs.Connected.Task.WaitAsync(Ct);
+        await tnc.Connected.Task.WaitAsync(Ct);
+        await WaitUntil(async () =>
+            (await engine.GetStatusAsync(Ct)).Sources is { Count: 2 } all
+            && all.All(s => s.State == ConnectionState.Connected)
+        );
+
+        await tnc.Write("N0RF-9>APRS,WIDE1-1:!4903.50N/07201.75W>Heard on RF");
+        await WaitUntil(async () => (await engine.GetStationAsync("N0RF-9", Ct)) is not null);
+        await aprsIs.Write("N0RF-9>APRS,WIDE1-1,qAR,N1GATE:!4903.50N/07201.75W>Heard on RF");
+        await aprsIs.Write("N0NET>APRS,TCPIP*,qAC,T2TEST:!4903.50N/07201.75W-Internet only");
+        await WaitUntil(async () => (await engine.GetStationAsync("N0NET", Ct)) is not null);
+
+        var all = await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct);
+        var rf = await engine.GetSourceDashboardAsync(DashboardRange.Hour, Tnc.Id, cancellationToken: Ct);
+        var net = await engine.GetSourceDashboardAsync(DashboardRange.Hour, "rotate", cancellationToken: Ct);
+
+        Assert.Equal(2, all.Packets.Sum()); // the copy once
+        Assert.Equal((1, 1, "tnc"), (rf.Packets.Sum(), rf.StationsHeardTotal, rf.SourceId));
+        Assert.Equal((2, 2), (net.Packets.Sum(), net.StationsHeardTotal)); // the copy counts here
+        Assert.Equal(
+            [new DashboardSourceRow("rotate", 2, 2, 1), new DashboardSourceRow("tnc", 1, 1, 0)],
+            all.Comparison
+        );
+        Assert.Null(rf.Comparison);
+
+        await cts.CancelAsync();
+        await run;
+    }
+
+    [Fact]
     public async Task AListOfOneSourceGetsAPacketWhenItsHeardThereSecond()
     {
         var sources = new FakeSourceFactory();
