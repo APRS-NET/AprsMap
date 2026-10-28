@@ -14,7 +14,8 @@ internal sealed record HistorySnapshot(
     int Version,
     DateTimeOffset SavedAt,
     DashboardCountersState? Dashboard,
-    GpsHistoryState? Gps
+    GpsHistoryState? Gps,
+    IReadOnlyDictionary<string, DashboardCountersState>? Sources = null
 )
 {
     /// <summary>The version written now; a file of another version is set aside.</summary>

@@ -4446,6 +4446,25 @@ In a Docker container:
   <data name="Dashboard.Range.Day" xml:space="preserve">
     <value>24 hours</value>
   </data>
+  <data name="Dashboard.Sources" xml:space="preserve">
+    <value>Source</value>
+    <comment>Label of the dashboard's source picker (#454).</comment>
+  </data>
+  <data name="Dashboard.Sources.All" xml:space="preserve">
+    <value>All sources</value>
+  </data>
+  <data name="Dashboard.Sources.SomeTilesAll" xml:space="preserve">
+    <value>Farthest heard directly, weather, heard on RF and the tables still count every source.</value>
+  </data>
+  <data name="Dashboard.Sources.Compared" xml:space="preserve">
+    <value>Sources compared</value>
+  </data>
+  <data name="Dashboard.Sources.Row" xml:space="preserve">
+    <value>{stations, plural, one {# station} other {# stations}} · {packets, plural, one {# packet} other {# packets}} · {only, plural, =0 {none heard only here} other {# heard only here}}</value>
+  </data>
+  <data name="Dashboard.Sources.Day" xml:space="preserve">
+    <value>Over the last 24 hours.</value>
+  </data>
   <data name="Dashboard.Range.Week" xml:space="preserve">
     <value>7 days</value>
   </data>

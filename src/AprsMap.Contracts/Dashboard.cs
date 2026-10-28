@@ -70,6 +70,13 @@ public enum DashboardRange
 /// total reach (docs/features/F1.41-persistent-history.md, behavior 10), so the tiles can say so; null when they cover
 /// the whole range.
 /// </param>
+/// <param name="SourceId">
+/// The one source these numbers are for (#454); null for every source. The tiles read from the stations held (farthest
+/// heard, weather, the tables, heard on RF) are every source's either way.
+/// </param>
+/// <param name="Comparison">
+/// The sources side by side, for every source's dashboard with two or more (#454); over 7 days, the last 24 hours.
+/// </param>
 public sealed record Dashboard(
     DateTimeOffset At,
     DashboardRange Range,
@@ -98,8 +105,17 @@ public sealed record Dashboard(
     DashboardGps? Gps = null,
     IReadOnlyList<DashboardHeard>? HeardOnRf = null,
     int HeardOnRfTotal = 0,
-    TimeSpan? ListsCover = null
+    TimeSpan? ListsCover = null,
+    string? SourceId = null,
+    IReadOnlyList<DashboardSourceRow>? Comparison = null
 );
+
+/// <summary>One source against the others over the range (#454).</summary>
+/// <param name="SourceId">The source.</param>
+/// <param name="Stations">Stations it heard.</param>
+/// <param name="Packets">Packets it brought, copies another source brought first included.</param>
+/// <param name="OnlyHere">Stations no other source heard.</param>
+public sealed record DashboardSourceRow(string SourceId, int Stations, int Packets, int OnlyHere);
 
 /// <summary>A station heard on RF: over how many hops, and when last.</summary>
 public sealed record DashboardHeard(string Station, int Hops, DateTimeOffset LastHeard);
