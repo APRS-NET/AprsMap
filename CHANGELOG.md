@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.4...v0.7.0-alpha.5) (2026-10-28)
+
+
+### Features
+
+* **gateway:** test a key against the gateway's current one in Settings › Gateway access ([972d792](https://github.com/APRS-NET/AprsMap/commit/972d792088ad22b22eb287930ef08ffdc3ab139c)), closes [#447](https://github.com/APRS-NET/AprsMap/issues/447)
+* **messaging:** a conversation per ANSRVR group ([fcca60c](https://github.com/APRS-NET/AprsMap/commit/fcca60c508b4bc9859d3896ed05778479fc5f9cd)), closes [#285](https://github.com/APRS-NET/AprsMap/issues/285)
+
+
+### Bug Fixes
+
+* **gateway:** an old API key no longer locks its own computer out ([a36e7be](https://github.com/APRS-NET/AprsMap/commit/a36e7be784b33b4e766927f43dcdff9c690f9891)), closes [#450](https://github.com/APRS-NET/AprsMap/issues/450)
+
 ## [0.7.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.3...v0.7.0-alpha.4) (2026-10-27)
 
 
