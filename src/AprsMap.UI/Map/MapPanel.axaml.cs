@@ -21,6 +21,10 @@ public sealed partial class MapPanel : UserControl, IDisposable
     private MapViewModel? _state;
     private MainViewModel? _main;
     private bool _placed;
+
+    // Opened on the world because the station's location wasn't known yet: it moves there when it is, unless the
+    // viewer has zoomed in by then (behavior 2).
+    private bool _awaitingHome;
     private (double Latitude, double Longitude)? _menuAt;
 
     /// <summary>Creates the panel.</summary>
@@ -41,7 +45,8 @@ public sealed partial class MapPanel : UserControl, IDisposable
         };
         _map.ViewChanged += (_, _) =>
         {
-            if (_placed && _map.View is var (lat, lon, resolution))
+            // The whole world isn't a view to come back to: the next start shows the station (behavior 2).
+            if (_placed && _map.View is var (lat, lon, resolution) && resolution < WorldResolution)
             {
                 _state?.Remember(new MapViewState(lat, lon, resolution)); // not the filter's: F1.2 behavior 1.2
             }
@@ -185,7 +190,7 @@ public sealed partial class MapPanel : UserControl, IDisposable
             return;
         }
         _placed = true;
-        if (_state.SavedView is { } view)
+        if (_state.SavedView is { } view && !(view.Resolution >= WorldResolution && _state.HasHome))
         {
             _map.GoTo(view.Latitude, view.Longitude, view.Resolution);
         }
@@ -195,9 +200,17 @@ public sealed partial class MapPanel : UserControl, IDisposable
         }
         else
         {
+            _awaitingHome = true;
             _map.ShowWorld();
         }
     }
+
+    /// <summary>
+    /// Metres per pixel at which a view shows about the whole world: 30 km a pixel is the world's width in about 1,300
+    /// pixels. Such a view is the fallback from a start before the station's location was known, so it isn't
+    /// remembered, and the station is shown instead (behavior 2).
+    /// </summary>
+    internal const double WorldResolution = 30_000;
 
     private void GoHome()
     {
@@ -246,6 +259,14 @@ public sealed partial class MapPanel : UserControl, IDisposable
             case nameof(MapViewModel.Home):
             case nameof(MapViewModel.HomeName):
                 ShowHome();
+                if (_awaitingHome && _state!.HasHome)
+                {
+                    _awaitingHome = false;
+                    if (_map.View is not { Resolution: < WorldResolution })
+                    {
+                        GoHome(); // the location came after the map opened, as it does on the web (behavior 2)
+                    }
+                }
                 break;
             case nameof(MapViewModel.DistanceUnit):
                 _map.DistanceUnit = _state!.DistanceUnit;

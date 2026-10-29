@@ -126,6 +126,83 @@ public sealed class MapTests
     }
 
     [AvaloniaFact]
+    public async Task ALocationThatArrivesAfterTheMapOpensMovesItThereAndTheWorldIsNotRemembered()
+    {
+        // On the web the settings come after the map has its size: it opens on the world, then the station.
+        var engine = new FakeEngine();
+        var store = new MemoryStore();
+        var time = new FakeTimeProvider();
+        var vm = new MainViewModel(engine, time) { Map = new MapViewModel(new FakeTiles(), store, time) };
+        await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
+        using var panel = new MapPanel { DataContext = vm };
+        var window = new Window
+        {
+            Content = panel,
+            Width = 800,
+            Height = 600,
+        };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(panel.View.View!.Value.Resolution >= MapPanel.WorldResolution);
+
+        vm.Show(Located(engine.Settings, 40, -105));
+        Dispatcher.UIThread.RunJobs();
+
+        var (lat, lon, resolution) = panel.View.View!.Value;
+        Assert.Equal(40, lat, 1);
+        Assert.Equal(-105, lon, 1);
+        Assert.True(resolution < 1000, $"{resolution} m a pixel");
+        time.Advance(MapViewModel.SaveDelay);
+        await WaitUntil(() => store.Saves.Count == 1);
+        Assert.True(MapViewModel.Read(store.Saves[0])!.Resolution < 1000); // the station's view, not the world's
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task ARememberedWorldViewOpensAtTheStationInstead()
+    {
+        var engine = new FakeEngine();
+        var store = new MemoryStore();
+        await store.SaveAsync(
+            MapViewModel.ViewKey,
+            "{\"latitude\":20,\"longitude\":0,\"resolution\":50000}",
+            TestContext.Current.CancellationToken
+        );
+        var vm = new MainViewModel(engine, new FakeTimeProvider())
+        {
+            Map = new MapViewModel(new FakeTiles(), store, new FakeTimeProvider()),
+        };
+        await vm.Map!.LoadAsync(TestContext.Current.CancellationToken);
+        vm.Show(Located(engine.Settings, 40, -105));
+        using var panel = new MapPanel { DataContext = vm };
+        var window = new Window
+        {
+            Content = panel,
+            Width = 800,
+            Height = 600,
+        };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+
+        var (lat, lon, resolution) = panel.View.View!.Value;
+        Assert.Equal(40, lat, 1);
+        Assert.Equal(-105, lon, 1);
+        Assert.True(resolution < 1000, $"{resolution} m a pixel");
+        window.Close();
+    }
+
+    private static AppSettings Located(AppSettings settings, double lat, double lon) =>
+        settings with
+        {
+            Profiles =
+            [
+                .. settings.Profiles.Select(p =>
+                    p.Id == settings.ActiveProfileId ? p with { Latitude = lat, Longitude = lon } : p
+                ),
+            ],
+        };
+
+    [AvaloniaFact]
     public void TheMapsButtonTogglesAllRfConnectionsForTheViewer()
     {
         var app = Assert.IsType<App>(Application.Current);
