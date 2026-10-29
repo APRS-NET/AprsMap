@@ -62,6 +62,9 @@ public sealed class ViewerLimitTests(LimitedGatewayFactory factory) : IClassFixt
         await using var third = factory.CreateRemote();
         await first.StartAsync(Ct);
         await second.StartAsync(Ct);
+        // A start returns at the handshake, before the hub counts the viewer, so wait until both are counted.
+        var viewers = factory.Services.GetRequiredService<Server.Viewers>();
+        await WaitUntilAsync(() => Task.FromResult(viewers.Count == 2));
 
         var refused = await Assert.ThrowsAsync<EngineAccessException>(() => third.StartAsync(Ct));
         Assert.Equal(EngineErrorCodes.GatewayBusy, refused.EngineError.Code);
