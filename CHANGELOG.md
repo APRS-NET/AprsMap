@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.1...v0.8.0-alpha.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **ui:** map labels and the header fit on phones ([de1f72a](https://github.com/APRS-NET/AprsMap/commit/de1f72a1d923b0546327b3cb01f754bb50f14e78))
+
 ## [0.8.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.7.0-alpha.9...v0.8.0-alpha.1) (2026-10-28)
 
 
