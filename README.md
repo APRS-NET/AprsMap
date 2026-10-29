@@ -48,83 +48,105 @@ in [docs/architecture.md](docs/architecture.md).
 
 ```mermaid
 flowchart LR
-    subgraph fronts["Front ends: one UI (AprsMap.UI)"]
-        desktop["Desktop app<br/>Windows, Linux, macOS"]
-        web["Web app<br/>WebAssembly in a browser"]
+    subgraph fronts["Front ends · one UI"]
+        desktop(["<b>Desktop app</b><br/><small>Windows · Linux · macOS</small>"])
+        web(["<b>Web app</b><br/><small>WebAssembly in any browser</small>"])
     end
 
-    subgraph hosts["Engine hosts: each runs its own engine"]
-        inproc["Desktop process<br/>engine in-process"]
-        gateway["Gateway<br/>ASP.NET Core, Docker or Linux service<br/>SignalR hub, map tiles, web app files"]
+    subgraph hosts["Engine hosts"]
+        inproc["<b>Desktop process</b><br/><small>engine in-process</small>"]
+        gateway["<b>Gateway</b><br/><small>Docker or Linux service</small>"]
     end
 
-    desktop -- "IEngineService, in-process" --> inproc
-    desktop -. "or IEngineService over SignalR<br/>with an API key" .-> gateway
-    web -- "IEngineService over SignalR" --> gateway
+    desktop -- "built in" --> inproc
+    desktop -. "or over the network" .-> gateway
+    web -- "over the network" --> gateway
 
     inproc --> engine
     gateway --> engine
-    engine["Engine (AprsMap.Core)<br/>stations, tracks, messages,<br/>beacons, digipeater, IGate, history"]
-    engine --> aprsnet["APRS.NET<br/>APRS-IS, KISS, AX.25, AGWPE, GPS"]
+    engine[["<b>Engine</b><br/><small>stations · tracks · messages<br/>beacons · digipeater · IGate</small>"]]
+    engine --> aprsnet[["<b>APRS.NET</b><br/><small>the APRS protocol library</small>"]]
 
-    subgraph local["Attached to the host"]
-        usbkiss["USB or serial KISS TNC<br/>TH-D72A, TNC-X, NinoTNC"]
-        tnctext["TNC text output<br/>serial"]
-        nmea["GPS receiver<br/>USB or serial NMEA"]
+    subgraph net["Over the network"]
+        aprsis(("<b>APRS-IS</b>"))
+        direwolf["<b>Direwolf · soundmodem</b>"]
+        agwpe["<b>AGWPE server</b>"]
+        gpsd["<b>gpsd</b>"]
     end
 
-    subgraph net["Over the network: same machine, LAN or internet"]
-        aprsis["APRS-IS servers"]
-        direwolf["Direwolf or soundmodem<br/>KISS over TCP"]
-        agwpe["AGWPE server"]
-        gpsd["gpsd"]
+    subgraph local["Plugged in by USB or serial"]
+        usbkiss[/"<b>TNC or radio</b><br/><small>TH-D72A, TNC-X, NinoTNC</small>"/]
+        tnctext[/"<b>TNC text output</b><br/><small>receive only</small>"/]
+        nmea[/"<b>GPS receiver</b>"/]
     end
 
-    aprsnet --> usbkiss
-    aprsnet --> tnctext
-    aprsnet --> nmea
-    aprsnet --> aprsis
-    aprsnet --> direwolf
-    aprsnet --> agwpe
-    aprsnet --> gpsd
+    aprsnet --> aprsis & direwolf & agwpe & gpsd
+    aprsnet --> usbkiss & tnctext & nmea
+
+    classDef client fill:#e7edf5,stroke:#58708f,color:#1d2733
+    classDef host fill:#e5efec,stroke:#4f7d71,color:#1b2c27
+    classDef core fill:#ece9f2,stroke:#6b6188,color:#24202e
+    classDef network fill:#eef0f1,stroke:#6f7880,color:#1f2326
+    classDef device fill:#f4ede3,stroke:#94703f,color:#2e2414
+    class desktop,web client
+    class inproc,gateway host
+    class engine,aprsnet core
+    class aprsis,direwolf,agwpe,gpsd network
+    class usbkiss,tnctext,nmea device
+    style fronts fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style hosts fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style net fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style local fill:none,stroke:#8a939c,stroke-dasharray:4 3
 ```
 
 ### Protocols on each link
 
-The gateway's side is on the left. The links on the right are the same whichever host runs the engine. Ports are the
-defaults, and each source's port can be changed.
+Clients reach the gateway on the left. The links to the radios and services on the right are the same whichever host
+runs the engine.
 
 ```mermaid
 flowchart LR
     subgraph clients["Clients"]
-        browser["Web app"]
-        desktopclient["Desktop app<br/>as a gateway client"]
+        browser(["<b>Web app</b>"])
+        desktopclient(["<b>Desktop app</b><br/><small>as a gateway client</small>"])
     end
 
     subgraph host["Gateway"]
-        hub["SignalR hub<br/>/hubs/engine"]
-        tiles["Tile cache<br/>/tiles/{provider}/{z}/{x}/{y}.png"]
-        engine["Engine and APRS.NET<br/>(also in the desktop app on its own)"]
+        hub["<b>Live updates</b>"]
+        tiles["<b>Map tile cache</b>"]
+        engine[["<b>Engine</b><br/><small>also inside the desktop app<br/>when it runs on its own</small>"]]
         hub --- engine
     end
 
-    browser -- "HTTP(S): web app files" --> hub
-    browser -- "WebSocket: SignalR, JSON" --> hub
-    browser -- "HTTP(S) GET: map tiles" --> tiles
-    desktopclient -- "same links, with an<br/>Authorization: Bearer API key" --> hub
+    browser -- "WebSocket" --> hub
+    browser -- "HTTPS" --> tiles
+    desktopclient -- "WebSocket, with an API key" --> hub
 
-    tiles -- "HTTPS, cached, per the<br/>provider's usage policy" --> provider["Map tile provider<br/>OpenStreetMap and others"]
+    tiles -- "HTTPS" --> provider(("<b>Map tiles</b><br/><small>OpenStreetMap</small>"))
 
-    engine -- "TCP 14580: login, filter,<br/>TNC2 text packets" --> aprsis["APRS-IS"]
-    engine -- "TCP 8001: KISS frames<br/>carrying AX.25" --> direwolf["Direwolf or soundmodem"]
-    engine -- "Serial: KISS frames<br/>carrying AX.25" --> kiss["USB or serial TNC"]
-    engine -- "TCP 8000: AGWPE frames" --> agwpe["AGWPE server"]
-    engine -- "Serial: monitor text lines<br/>receive only" --> text["TNC in text mode"]
-    engine -- "TCP 2947: gpsd JSON" --> gpsd["gpsd"]
-    engine -- "Serial, or TCP 10110:<br/>NMEA 0183" --> nmea["GPS receiver"]
+    engine -- "internet" --> aprsis(("<b>APRS-IS</b>"))
+    engine -- "KISS over TCP" --> direwolf["<b>Direwolf · soundmodem</b>"]
+    engine -- "KISS over USB" --> kiss[/"<b>TNC or radio</b>"/]
+    engine -- "AGWPE" --> agwpe["<b>AGWPE server</b>"]
+    engine -- "text, receive only" --> text[/"<b>TNC in text mode</b>"/]
+    engine -- "gpsd" --> gpsd["<b>gpsd</b>"]
+    engine -- "NMEA" --> nmea[/"<b>GPS receiver</b>"/]
 
-    direwolf -- "audio" --> radio1["Radio"]
-    kiss -- "RF" --> radio2["Radio"]
+    direwolf -- "audio" --> radio1[\"<b>Radio</b>"\]
+    kiss -- "RF" --> radio2[\"<b>Radio</b>"\]
+
+    classDef client fill:#e7edf5,stroke:#58708f,color:#1d2733
+    classDef host fill:#e5efec,stroke:#4f7d71,color:#1b2c27
+    classDef core fill:#ece9f2,stroke:#6b6188,color:#24202e
+    classDef network fill:#eef0f1,stroke:#6f7880,color:#1f2326
+    classDef device fill:#f4ede3,stroke:#94703f,color:#2e2414
+    class browser,desktopclient client
+    class hub,tiles host
+    class engine core
+    class aprsis,direwolf,agwpe,gpsd,provider network
+    class kiss,text,nmea,radio1,radio2 device
+    style clients fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style host fill:none,stroke:#8a939c,stroke-dasharray:4 3
 ```
 
 ### One gateway, several viewers
@@ -136,39 +158,52 @@ signed-in operator, or an API key with operator rights.
 ```mermaid
 flowchart TB
     subgraph clients["Clients"]
-        client1["Client 1: desktop app<br/>gateway client, API key"]
-        client2["Client 2: laptop browser<br/>web app"]
-        client3["Client 3: phone browser<br/>web app, touch layout"]
+        client1(["<b>Client 1 · desktop app</b>"])
+        client2(["<b>Client 2 · laptop browser</b>"])
+        client3(["<b>Client 3 · phone browser</b>"])
     end
 
-    subgraph station["Station machine: a Raspberry Pi, a home server or a PC"]
-        gw["Gateway service<br/>engine, hub, tiles, web app"]
-        dwlocal["Direwolf<br/>KISS over TCP on localhost"]
-        gpsdlocal["gpsd"]
+    subgraph station["Station machine · a Raspberry Pi, a home server or a PC"]
+        gw["<b>Gateway service</b>"]
+        dwlocal["<b>Direwolf</b>"]
+        gpsdlocal["<b>gpsd</b>"]
     end
 
     subgraph hardware["Plugged into the station machine"]
-        vhf["VHF radio<br/>on a sound card"]
-        usbgps["USB GPS"]
-        usbtnc["USB KISS TNC<br/>and its radio"]
+        vhf[\"<b>VHF radio</b>"\]
+        usbgps[/"<b>USB GPS</b>"/]
+        usbtnc[/"<b>TNC and radio</b>"/]
     end
 
     subgraph remote["Remote sources"]
-        dwremote["Direwolf on another Pi<br/>LAN or a hilltop site"]
-        aprsis["APRS-IS servers<br/>internet"]
+        dwremote["<b>Direwolf on another Pi</b><br/><small>a hilltop site</small>"]
+        aprsis(("<b>APRS-IS</b><br/><small>internet</small>"))
     end
 
-    client1 -- "SignalR over WebSocket" --> gw
-    client2 -- "HTTPS and SignalR" --> gw
-    client3 -- "HTTPS and SignalR<br/>Wi-Fi, VPN or reverse proxy" --> gw
+    client1 -- "app" --> gw
+    client2 -- "web" --> gw
+    client3 -- "web" --> gw
 
-    gw -- "KISS over TCP" --> dwlocal
-    gw -- "gpsd JSON" --> gpsdlocal
+    gw --> dwlocal
+    gw --> gpsdlocal
     dwlocal --- vhf
     gpsdlocal --- usbgps
-    gw -- "KISS over USB serial" --> usbtnc
-    gw -- "KISS over TCP" --> dwremote
-    gw -- "APRS-IS, TCP 14580" --> aprsis
+    gw -- "USB" --> usbtnc
+    gw -- "LAN" --> dwremote
+    gw -- "internet" --> aprsis
+
+    classDef client fill:#e7edf5,stroke:#58708f,color:#1d2733
+    classDef host fill:#e5efec,stroke:#4f7d71,color:#1b2c27
+    classDef network fill:#eef0f1,stroke:#6f7880,color:#1f2326
+    classDef device fill:#f4ede3,stroke:#94703f,color:#2e2414
+    class client1,client2,client3 client
+    class gw,dwlocal,gpsdlocal host
+    class dwremote,aprsis network
+    class vhf,usbgps,usbtnc device
+    style clients fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style station fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style hardware fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style remote fill:none,stroke:#8a939c,stroke-dasharray:4 3
 ```
 
 ## Layout
