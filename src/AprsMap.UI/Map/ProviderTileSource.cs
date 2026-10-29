@@ -16,7 +16,11 @@ internal sealed class ProviderTileSource(Platform.ITileSource tiles, TileProvide
 
     public string Name => provider.Name;
 
-    public Attribution Attribution { get; } = new(provider.Attribution, provider.AttributionUrl ?? string.Empty);
+    /// <summary>
+    /// None for Mapsui to draw: the map panel shows the provider's attribution in its own bar (F1.4), and Mapsui's copy
+    /// showed through it in the browser, a second time in another font.
+    /// </summary>
+    public Attribution Attribution { get; } = new(string.Empty, string.Empty);
 
     public Task<byte[]?> GetTileAsync(TileInfo tileInfo)
     {
