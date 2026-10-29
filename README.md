@@ -112,27 +112,28 @@ flowchart TB
     subgraph s1["Server 1"]
         gw["<b>Gateway</b><br/><small>runs the station</small>"]
         tnc[/"<b>KISS TNC</b><br/><small>on USB</small>"/]
-        radio1[\"<b>Radio</b>"\]
         gw --> tnc
-        tnc --- radio1
     end
 
     subgraph dev["GPS device"]
         gpsd["<b>gpsd</b>"]
-        gps[/"<b>GPS</b>"/]
-        gpsd --- gps
     end
 
     subgraph pc2["Remote PC 2"]
         dw["<b>Direwolf</b>"]
-        radio2[\"<b>Radio</b><br/><small>on a sound card</small>"\]
-        dw --- radio2
     end
 
     subgraph inet["Internet"]
         aprsis(("<b>APRS-IS</b>"))
     end
 
+
+    radio1[\"<b>Radio</b>"\]
+    radio2[\"<b>Radio</b>"\]
+    gps[/"<b>GPS</b>"/]
+    tnc --- radio1
+    dw -- "sound card" --- radio2
+    gpsd --- gps
 
     app -- "app" --> gw
     web -- "web" --> gw
