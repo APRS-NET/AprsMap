@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.2...v0.8.0-alpha.3) (2026-10-29)
+
+
+### Bug Fixes
+
+* **ui:** the map opens at the station, not the whole world ([f584c65](https://github.com/APRS-NET/AprsMap/commit/f584c65a134e92cd2214da593ce6807f3de2824d))
+
 ## [0.8.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.1...v0.8.0-alpha.2) (2026-10-29)
 
 
