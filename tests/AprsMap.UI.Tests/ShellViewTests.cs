@@ -279,6 +279,15 @@ public sealed class ShellViewTests
         Assert.True(header.Bounds.Bottom < 140, $"the header ends at {header.Bounds.Bottom}");
         var strip = tabs.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ItemsPresenter>().First();
         Assert.True(strip.Bounds.Height < 60, $"the tabs are {strip.Bounds.Height} high"); // one row
+
+        // The menu and settings buttons sit on the title line, leaving the status line the whole width.
+        var buttons = window.GetVisualDescendants().OfType<StackPanel>().Single(p => p.Name == "HeaderButtons");
+        Assert.Equal("NarrowTitle", ((Control)buttons.Parent!).Name);
+        Assert.True(header.Bounds.Width > 360, $"the status line is {header.Bounds.Width} wide");
+
+        window.Width = 1280;
+        Dispatcher.UIThread.RunJobs();
+        Assert.NotEqual("NarrowTitle", ((Control)buttons.Parent!).Name);
         window.Close();
     }
 

@@ -52,6 +52,7 @@ public sealed partial class MainView : UserControl
         // The header (#440): the titles on their own line, the rest one line that scrolls sideways.
         NarrowTitle.IsVisible = narrow;
         WideTitle.IsVisible = !narrow;
+        PlaceHeaderButtons(narrow);
         StatusScroll.HorizontalScrollBarVisibility = narrow
             ? Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden
             : Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
@@ -65,6 +66,25 @@ public sealed partial class MainView : UserControl
         }
         NarrowShell.IsVisible = narrow;
         ShellDock.IsVisible = !narrow;
+    }
+
+    // The header's own panel, where the buttons sit in a wide window.
+    private Panel? _headerPanel;
+
+    /// <summary>
+    /// The sign-in, menu and Settings buttons: on the titles' line in a narrow window, so the line below (the profile,
+    /// the switches) gets the whole width instead of scrolling under them; beside everything in a wide one.
+    /// </summary>
+    private void PlaceHeaderButtons(bool narrow)
+    {
+        _headerPanel ??= HeaderButtons.Parent as Panel;
+        Panel? target = narrow ? NarrowTitle : _headerPanel;
+        if (target is null || ReferenceEquals(HeaderButtons.Parent, target))
+        {
+            return;
+        }
+        (HeaderButtons.Parent as Panel)?.Children.Remove(HeaderButtons);
+        target.Children.Insert(0, HeaderButtons); // first: docked right before what fills the rest
     }
 
     /// <summary>One tab per panel, map first, each with its own view (Dock's views stay with the docked layout).</summary>

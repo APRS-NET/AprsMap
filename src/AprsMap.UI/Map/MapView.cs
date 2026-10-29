@@ -1234,17 +1234,18 @@ public sealed class MapView : Control, IDisposable
             }
             var image = label.Image(scale);
             var bounds = rect.Inflate(MapLabel.Halo);
+            var whole = new Rect(0, 0, image.PixelSize.Width, image.PixelSize.Height); // all of it, in its own pixels
             if (marks[i].IsStale)
             {
                 // A stale station's label fades with its symbol (behavior 19).
                 using (context.PushOpacity(0.5))
                 {
-                    context.DrawImage(image, bounds);
+                    context.DrawImage(image, whole, bounds);
                 }
             }
             else
             {
-                context.DrawImage(image, bounds);
+                context.DrawImage(image, whole, bounds);
             }
         }
     }
@@ -1625,6 +1626,11 @@ public sealed class MapView : Control, IDisposable
 
         public double Height => text.Height;
 
+        /// <summary>
+        /// The label at <paramref name="scale"/> pixels a DIP. The bitmap says 96 DPI, so its size is its pixels on every
+        /// platform, and the text is scaled into it here: the browser took a higher DPI's size as pixels and drew only
+        /// the label's top-left corner, enlarged, at a phone's pixel density.
+        /// </summary>
         public RenderTargetBitmap Image(double scale)
         {
             if (_image is null)
@@ -1635,14 +1641,17 @@ public sealed class MapView : Control, IDisposable
                         Math.Max(1, (int)Math.Ceiling(size.Width * scale)),
                         Math.Max(1, (int)Math.Ceiling(size.Height * scale))
                     ),
-                    new Vector(96 * scale, 96 * scale)
+                    new Vector(96, 96)
                 );
                 using var context = _image.CreateDrawingContext();
-                foreach (var (dx, dy) in Offsets)
+                using (context.PushTransform(Matrix.CreateScale(scale, scale)))
                 {
-                    context.DrawText(halo, new Point(Halo + dx, Halo + dy));
+                    foreach (var (dx, dy) in Offsets)
+                    {
+                        context.DrawText(halo, new Point(Halo + dx, Halo + dy));
+                    }
+                    context.DrawText(text, new Point(Halo, Halo));
                 }
-                context.DrawText(text, new Point(Halo, Halo));
             }
             return _image;
         }
@@ -1779,7 +1788,7 @@ public sealed class MapView : Control, IDisposable
                 canvas,
                 map.Navigator.Viewport,
                 map.Layers,
-                map.GetWidgetsOfMapAndLayers(),
+                map.Widgets, // not the tile layer's own attribution: the panel shows it, once (F1.4)
                 map.RenderService,
                 map.BackColor,
                 null,
