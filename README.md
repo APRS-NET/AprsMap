@@ -46,60 +46,119 @@ and show that gateway's station. The web app always uses a gateway, because a br
 ports. Either way the UI calls the same `IEngineService`, so the desktop and web apps behave the same. More detail is
 in [docs/architecture.md](docs/architecture.md).
 
+### On one laptop
+
+Everything on one machine: the gateway runs the station with a TNC and a GPS on USB, the desktop app connects to it,
+and a browser on the same laptop can show the web UI too.
+
 ```mermaid
 flowchart LR
-    subgraph fronts["Front ends · one UI"]
-        desktop(["<b>Desktop app</b><br/><small>Windows · Linux · macOS</small>"])
-        web(["<b>Web app</b><br/><small>WebAssembly in any browser</small>"])
+    subgraph laptop["Laptop"]
+        direction LR
+        app(["<b>Desktop app</b>"])
+        web(["<b>Web UI</b><br/><small>in a browser</small>"])
+        gw["<b>Gateway</b><br/><small>runs the station</small>"]
+        subgraph usb["USB"]
+            tnc[/"<b>KISS TNC</b>"/]
+            gps[/"<b>GPS</b>"/]
+        end
+        app -- "app" --> gw
+        web -- "web" --> gw
+        gw --> tnc
+        gw --> gps
     end
 
-    subgraph hosts["Engine hosts"]
-        inproc["<b>Desktop process</b><br/><small>engine in-process</small>"]
-        gateway["<b>Gateway</b><br/><small>Docker or Linux service</small>"]
-    end
-
-    desktop -- "built in" --> inproc
-    desktop -. "or over the network" .-> gateway
-    web -- "over the network" --> gateway
-
-    inproc --> engine
-    gateway --> engine
-    engine[["<b>Engine</b><br/><small>stations · tracks · messages<br/>beacons · digipeater · IGate</small>"]]
-    engine --> aprsnet[["<b>APRS.NET</b><br/><small>the APRS protocol library</small>"]]
-
-    subgraph net["Over the network"]
+    radio[\"<b>Radio</b>"\]
+    subgraph inet["Internet"]
         aprsis(("<b>APRS-IS</b>"))
-        direwolf["<b>Direwolf · soundmodem</b>"]
-        agwpe["<b>AGWPE server</b>"]
-        gpsd["<b>gpsd</b>"]
     end
-
-    subgraph local["Plugged in by USB or serial"]
-        usbkiss[/"<b>TNC or radio</b><br/><small>TH-D72A, TNC-X, NinoTNC</small>"/]
-        tnctext[/"<b>TNC text output</b><br/><small>receive only</small>"/]
-        nmea[/"<b>GPS receiver</b>"/]
-    end
-
-    aprsnet --> aprsis & direwolf & agwpe & gpsd
-    aprsnet --> usbkiss & tnctext & nmea
+    tnc --- radio
+    gw --> aprsis
 
     classDef client fill:#e7edf5,stroke:#58708f,color:#1d2733
     classDef host fill:#e5efec,stroke:#4f7d71,color:#1b2c27
-    classDef core fill:#ece9f2,stroke:#6b6188,color:#24202e
     classDef network fill:#eef0f1,stroke:#6f7880,color:#1f2326
     classDef device fill:#f4ede3,stroke:#94703f,color:#2e2414
-    class desktop,web client
-    class inproc,gateway host
-    class engine,aprsnet core
-    class aprsis,direwolf,agwpe,gpsd network
-    class usbkiss,tnctext,nmea device
-    style fronts fill:none,stroke:#8a939c,stroke-dasharray:4 3
-    style hosts fill:none,stroke:#8a939c,stroke-dasharray:4 3
-    style net fill:none,stroke:#8a939c,stroke-dasharray:4 3
-    style local fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    class app,web client
+    class gw host
+    class aprsis network
+    class tnc,gps,radio device
+    style laptop fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style usb fill:none,stroke:#b0a48f,stroke-dasharray:2 2
+    style inet fill:none,stroke:#8a939c,stroke-dasharray:4 3
 ```
 
-### Protocols on each link
+The desktop app can also run the station itself, with no gateway: then it talks to the TNC and GPS directly, and
+there's no web UI.
+
+### Spread over several machines
+
+The station runs on a server, the radios and the GPS can be anywhere on the network, and everyone else connects to
+the server. They all see the same station live. Viewing can be open on the LAN, but anything that transmits needs a
+signed-in operator, or an API key with operator rights.
+
+```mermaid
+flowchart TB
+    subgraph c1["Client 1 · PC"]
+        app(["<b>Desktop app</b>"])
+    end
+    subgraph c2["Client 2 · laptop"]
+        web(["<b>Web UI</b><br/><small>in a browser</small>"])
+    end
+    subgraph c3["Client 3 · phone"]
+        phone(["<b>Web UI</b><br/><small>in a browser</small>"])
+    end
+
+    subgraph s1["Server 1"]
+        gw["<b>Gateway</b><br/><small>runs the station</small>"]
+        tnc[/"<b>KISS TNC</b><br/><small>on USB</small>"/]
+        radio1[\"<b>Radio</b>"\]
+        gw --> tnc
+        tnc --- radio1
+    end
+
+    subgraph dev["GPS device"]
+        gpsd["<b>gpsd</b>"]
+        gps[/"<b>GPS</b>"/]
+        gpsd --- gps
+    end
+
+    subgraph pc2["Remote PC 2"]
+        dw["<b>Direwolf</b>"]
+        radio2[\"<b>Radio</b><br/><small>on a sound card</small>"\]
+        dw --- radio2
+    end
+
+    subgraph inet["Internet"]
+        aprsis(("<b>APRS-IS</b>"))
+    end
+
+
+    app -- "app" --> gw
+    web -- "web" --> gw
+    phone -- "web" --> gw
+    gw -- "gpsd" --> gpsd
+    gw -- "KISS over TCP" --> dw
+    gw --> aprsis
+
+    classDef client fill:#e7edf5,stroke:#58708f,color:#1d2733
+    classDef host fill:#e5efec,stroke:#4f7d71,color:#1b2c27
+    classDef network fill:#eef0f1,stroke:#6f7880,color:#1f2326
+    classDef device fill:#f4ede3,stroke:#94703f,color:#2e2414
+    class app,web,phone client
+    class gw,dw,gpsd host
+    class aprsis network
+    class tnc,gps,radio1,radio2 device
+    style c1 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style c2 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style c3 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style s1 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style pc2 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style dev fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style inet fill:none,stroke:#8a939c,stroke-dasharray:4 3
+```
+
+### Connections
 
 Clients reach the gateway on the left. The links to the radios and services on the right are the same whichever host
 runs the engine.
@@ -147,63 +206,6 @@ flowchart LR
     class kiss,text,nmea,radio1,radio2 device
     style clients fill:none,stroke:#8a939c,stroke-dasharray:4 3
     style host fill:none,stroke:#8a939c,stroke-dasharray:4 3
-```
-
-### One gateway, several viewers
-
-A typical home or EOC setup: the gateway runs on one machine with the radios and the GPS, and everyone else connects
-to it. Each of them sees the same station live. Viewing can be open on the LAN, but anything that transmits needs a
-signed-in operator, or an API key with operator rights.
-
-```mermaid
-flowchart TB
-    subgraph clients["Clients"]
-        client1(["<b>Client 1 · desktop app</b>"])
-        client2(["<b>Client 2 · laptop browser</b>"])
-        client3(["<b>Client 3 · phone browser</b>"])
-    end
-
-    subgraph station["Station machine · a Raspberry Pi, a home server or a PC"]
-        gw["<b>Gateway service</b>"]
-        dwlocal["<b>Direwolf</b>"]
-        gpsdlocal["<b>gpsd</b>"]
-    end
-
-    subgraph hardware["Plugged into the station machine"]
-        vhf[\"<b>VHF radio</b>"\]
-        usbgps[/"<b>USB GPS</b>"/]
-        usbtnc[/"<b>TNC and radio</b>"/]
-    end
-
-    subgraph remote["Remote sources"]
-        dwremote["<b>Direwolf on another Pi</b><br/><small>a hilltop site</small>"]
-        aprsis(("<b>APRS-IS</b><br/><small>internet</small>"))
-    end
-
-    client1 -- "app" --> gw
-    client2 -- "web" --> gw
-    client3 -- "web" --> gw
-
-    gw --> dwlocal
-    gw --> gpsdlocal
-    dwlocal --- vhf
-    gpsdlocal --- usbgps
-    gw -- "USB" --> usbtnc
-    gw -- "LAN" --> dwremote
-    gw -- "internet" --> aprsis
-
-    classDef client fill:#e7edf5,stroke:#58708f,color:#1d2733
-    classDef host fill:#e5efec,stroke:#4f7d71,color:#1b2c27
-    classDef network fill:#eef0f1,stroke:#6f7880,color:#1f2326
-    classDef device fill:#f4ede3,stroke:#94703f,color:#2e2414
-    class client1,client2,client3 client
-    class gw,dwlocal,gpsdlocal host
-    class dwremote,aprsis network
-    class vhf,usbgps,usbtnc device
-    style clients fill:none,stroke:#8a939c,stroke-dasharray:4 3
-    style station fill:none,stroke:#8a939c,stroke-dasharray:4 3
-    style hardware fill:none,stroke:#8a939c,stroke-dasharray:4 3
-    style remote fill:none,stroke:#8a939c,stroke-dasharray:4 3
 ```
 
 ## Layout
