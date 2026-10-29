@@ -39,6 +39,176 @@ to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 
 Without a passcode the app logs in to APRS-IS receive-only, and nothing is transmitted.
 
+## How it fits together
+
+One engine and one UI, with two ways to run them. The desktop app can run the engine itself, or connect to a gateway
+and show that gateway's station. The web app always uses a gateway, because a browser can't open TCP sockets or serial
+ports. Either way the UI calls the same `IEngineService`, so the desktop and web apps behave the same. More detail is
+in [docs/architecture.md](docs/architecture.md).
+
+### On one laptop
+
+Everything on one machine: the gateway runs the station with a TNC and a GPS on USB, the desktop app connects to it,
+and a browser on the same laptop can show the web UI too.
+
+```mermaid
+flowchart LR
+    subgraph laptop["Laptop"]
+        direction LR
+        app(["<b>Desktop app</b>"])
+        web(["<b>Web UI</b><br/><small>in a browser</small>"])
+        gw["<b>Gateway</b><br/><small>runs the station</small>"]
+        subgraph usb["USB"]
+            tnc[/"<b>KISS TNC</b>"/]
+            gps[/"<b>GPS</b>"/]
+        end
+        app -- "app" --> gw
+        web -- "web" --> gw
+        gw --> tnc
+        gw --> gps
+    end
+
+    radio[\"<b>Radio</b>"\]
+    subgraph inet["Internet"]
+        aprsis(("<b>APRS-IS</b>"))
+    end
+    tnc --- radio
+    gw --> aprsis
+
+    classDef client fill:#e7edf5,stroke:#58708f,color:#1d2733
+    classDef host fill:#e5efec,stroke:#4f7d71,color:#1b2c27
+    classDef network fill:#eef0f1,stroke:#6f7880,color:#1f2326
+    classDef device fill:#f4ede3,stroke:#94703f,color:#2e2414
+    class app,web client
+    class gw host
+    class aprsis network
+    class tnc,gps,radio device
+    style laptop fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style usb fill:none,stroke:#b0a48f,stroke-dasharray:2 2
+    style inet fill:none,stroke:#8a939c,stroke-dasharray:4 3
+```
+
+The desktop app can also run the station itself, with no gateway: then it talks to the TNC and GPS directly, and
+there's no web UI.
+
+### Spread over several machines
+
+The station runs on a server, the radios and the GPS can be anywhere on the network, and everyone else connects to
+the server. They all see the same station live. Viewing can be open on the LAN, but anything that transmits needs a
+signed-in operator, or an API key with operator rights.
+
+```mermaid
+flowchart TB
+    subgraph c1["Client 1 · PC"]
+        app(["<b>Desktop app</b>"])
+    end
+    subgraph c2["Client 2 · laptop"]
+        web(["<b>Web UI</b><br/><small>in a browser</small>"])
+    end
+    subgraph c3["Client 3 · phone"]
+        phone(["<b>Web UI</b><br/><small>in a browser</small>"])
+    end
+
+    subgraph s1["Server 1"]
+        gw["<b>Gateway</b><br/><small>runs the station</small>"]
+        tnc[/"<b>KISS TNC</b><br/><small>on USB</small>"/]
+        gw --> tnc
+    end
+
+    subgraph dev["GPS device"]
+        gpsd["<b>gpsd</b>"]
+    end
+
+    subgraph pc2["Remote PC 2"]
+        dw["<b>Direwolf</b>"]
+    end
+
+    subgraph inet["Internet"]
+        aprsis(("<b>APRS-IS</b>"))
+    end
+
+
+    radio1[\"<b>Radio</b>"\]
+    radio2[\"<b>Radio</b>"\]
+    gps[/"<b>GPS</b>"/]
+    tnc --- radio1
+    dw -- "sound card" --- radio2
+    gpsd --- gps
+
+    app -- "app" --> gw
+    web -- "web" --> gw
+    phone -- "web" --> gw
+    gw -- "gpsd" --> gpsd
+    gw -- "KISS over TCP" --> dw
+    gw --> aprsis
+
+    classDef client fill:#e7edf5,stroke:#58708f,color:#1d2733
+    classDef host fill:#e5efec,stroke:#4f7d71,color:#1b2c27
+    classDef network fill:#eef0f1,stroke:#6f7880,color:#1f2326
+    classDef device fill:#f4ede3,stroke:#94703f,color:#2e2414
+    class app,web,phone client
+    class gw,dw,gpsd host
+    class aprsis network
+    class tnc,gps,radio1,radio2 device
+    style c1 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style c2 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style c3 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style s1 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style pc2 fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style dev fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style inet fill:none,stroke:#8a939c,stroke-dasharray:4 3
+```
+
+### Connections
+
+Clients reach the gateway on the left. The links to the radios and services on the right are the same whichever host
+runs the engine.
+
+```mermaid
+flowchart LR
+    subgraph clients["Clients"]
+        browser(["<b>Web app</b>"])
+        desktopclient(["<b>Desktop app</b><br/><small>as a gateway client</small>"])
+    end
+
+    subgraph host["Gateway"]
+        hub["<b>Live updates</b>"]
+        tiles["<b>Map tile cache</b>"]
+        engine[["<b>Engine</b><br/><small>also inside the desktop app<br/>when it runs on its own</small>"]]
+        hub --- engine
+    end
+
+    browser -- "WebSocket" --> hub
+    browser -- "HTTPS" --> tiles
+    desktopclient -- "WebSocket, with an API key" --> hub
+
+    tiles -- "HTTPS" --> provider(("<b>Map tiles</b><br/><small>OpenStreetMap</small>"))
+
+    engine -- "internet" --> aprsis(("<b>APRS-IS</b>"))
+    engine -- "KISS over TCP" --> direwolf["<b>Direwolf · soundmodem</b>"]
+    engine -- "KISS over USB" --> kiss[/"<b>TNC or radio</b>"/]
+    engine -- "AGWPE" --> agwpe["<b>AGWPE server</b>"]
+    engine -- "text, receive only" --> text[/"<b>TNC in text mode</b>"/]
+    engine -- "gpsd" --> gpsd["<b>gpsd</b>"]
+    engine -- "NMEA" --> nmea[/"<b>GPS receiver</b>"/]
+
+    direwolf -- "audio" --> radio1[\"<b>Radio</b>"\]
+    kiss -- "RF" --> radio2[\"<b>Radio</b>"\]
+
+    classDef client fill:#e7edf5,stroke:#58708f,color:#1d2733
+    classDef host fill:#e5efec,stroke:#4f7d71,color:#1b2c27
+    classDef core fill:#ece9f2,stroke:#6b6188,color:#24202e
+    classDef network fill:#eef0f1,stroke:#6f7880,color:#1f2326
+    classDef device fill:#f4ede3,stroke:#94703f,color:#2e2414
+    class browser,desktopclient client
+    class hub,tiles host
+    class engine core
+    class aprsis,direwolf,agwpe,gpsd,provider network
+    class kiss,text,nmea,radio1,radio2 device
+    style clients fill:none,stroke:#8a939c,stroke-dasharray:4 3
+    style host fill:none,stroke:#8a939c,stroke-dasharray:4 3
+```
+
 ## Layout
 
 | Path | Contents | Licence |
