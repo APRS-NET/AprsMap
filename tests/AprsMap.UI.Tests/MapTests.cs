@@ -7,6 +7,8 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Microsoft.Extensions.Time.Testing;
@@ -201,6 +203,67 @@ public sealed class MapTests
                 ),
             ],
         };
+
+    [AvaloniaFact]
+    public void TwoFingersZoomAndPanTheMapAndDontSelectAStation()
+    {
+        using var view = new MapView();
+        var window = new Window
+        {
+            Content = view,
+            Width = 800,
+            Height = 600,
+        };
+        window.Show();
+        view.SetStations([new StationState("N0CALL-9", DateTimeOffset.UnixEpoch, 40, -105, "/>")]);
+        view.GoTo(40, -105, 1000);
+        Dispatcher.UIThread.RunJobs();
+        var under = view.ScreenPoint(40, -105);
+        var one = new Pointer(1, PointerType.Touch, true);
+        var two = new Pointer(2, PointerType.Touch, false);
+
+        Touch(view, one, under - new Point(50, 0), InputElement.PointerPressedEvent);
+        Touch(view, two, under + new Point(50, 0), InputElement.PointerPressedEvent);
+        Touch(view, two, under + new Point(150, 0), InputElement.PointerMovedEvent); // twice as far apart
+        Touch(view, two, under + new Point(150, 0), InputElement.PointerReleasedEvent);
+        Touch(view, one, under - new Point(50, 0), InputElement.PointerReleasedEvent);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(500, view.View!.Value.Resolution, 1); // zoomed in by the spread
+        var moved = view.ScreenPoint(40, -105);
+        Assert.Equal(under.X + 50, moved.X, 1); // the place between the fingers stays between them
+        Assert.Equal(under.Y, moved.Y, 1);
+        Assert.Null(view.Selected); // lifting the fingers isn't a tap
+        window.Close();
+    }
+
+    private static void Touch(MapView view, Pointer pointer, Point at, RoutedEvent kind)
+    {
+        var root = TopLevel.GetTopLevel(view)!;
+        var position = view.TranslatePoint(at, root)!.Value;
+        var properties = new PointerPointProperties(
+            RawInputModifiers.None,
+            kind == InputElement.PointerReleasedEvent ? PointerUpdateKind.LeftButtonReleased
+                : kind == InputElement.PointerPressedEvent ? PointerUpdateKind.LeftButtonPressed
+                : PointerUpdateKind.Other
+        );
+        RoutedEventArgs args =
+            kind == InputElement.PointerPressedEvent
+                ? new PointerPressedEventArgs(view, pointer, root, position, 0, properties, KeyModifiers.None)
+            : kind == InputElement.PointerReleasedEvent
+                ? new PointerReleasedEventArgs(
+                    view,
+                    pointer,
+                    root,
+                    position,
+                    0,
+                    properties,
+                    KeyModifiers.None,
+                    MouseButton.Left
+                )
+            : new PointerEventArgs(kind, view, pointer, root, position, 0, properties, KeyModifiers.None);
+        view.RaiseEvent(args);
+    }
 
     [AvaloniaFact]
     public void TheMapsButtonTogglesAllRfConnectionsForTheViewer()
