@@ -64,6 +64,9 @@ public sealed class MapView : Control, IDisposable
     private double _wheel;
     private double _pinch;
 
+    // The fingers on a touch screen, by pointer, where each was last.
+    private readonly Dictionary<int, Point> _touches = [];
+
     /// <summary>How much pinch makes one zoom step.</summary>
     private const double PinchStep = 0.25;
     private double _symbolDip = 24;
@@ -1367,6 +1370,18 @@ public sealed class MapView : Control, IDisposable
         {
             return; // the context menu opens on release (F1.13 behavior 2), without dragging the map
         }
+        if (e.Pointer.Type == PointerType.Touch)
+        {
+            _touches[e.Pointer.Id] = e.GetPosition(this);
+            if (_touches.Count > 1)
+            {
+                // A second finger: a pinch, not a tap or a drag (behavior 5).
+                _dragFrom = null;
+                _pressedAt = null;
+                e.Pointer.Capture(this);
+                return;
+            }
+        }
         if (e.ClickCount == 2)
         {
             var at = e.GetPosition(this);
@@ -1383,6 +1398,15 @@ public sealed class MapView : Control, IDisposable
     protected override void OnPointerMoved(PointerEventArgs e)
     {
         base.OnPointerMoved(e);
+        if (_touches.Count > 1 && _touches.ContainsKey(e.Pointer.Id))
+        {
+            PinchTo(e.Pointer.Id, e.GetPosition(this));
+            return;
+        }
+        if (_touches.ContainsKey(e.Pointer.Id))
+        {
+            _touches[e.Pointer.Id] = e.GetPosition(this);
+        }
         if (_dragFrom is not { } from)
         {
             ShowHover(e.GetPosition(this));
@@ -1403,8 +1427,15 @@ public sealed class MapView : Control, IDisposable
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
-        _dragFrom = null;
         e.Pointer.Capture(null);
+        if (_touches.Remove(e.Pointer.Id) && _pressedAt is null)
+        {
+            // The end of a pinch: a finger still down drags on from where it is, and nothing is tapped.
+            _dragFrom = _touches.Count > 0 ? _touches.Values.First() : null;
+            QueueRefresh();
+            return;
+        }
+        _dragFrom = null;
         var at = e.GetPosition(this);
         if (_pressedAt is { } pressed && Math.Abs(at.X - pressed.X) + Math.Abs(at.Y - pressed.Y) < ClickDistance)
         {
@@ -1488,6 +1519,57 @@ public sealed class MapView : Control, IDisposable
         var zoomIn = _wheel > 0;
         _wheel = 0;
         ZoomAt(e.GetPosition(this), zoomIn);
+    }
+
+    /// <inheritdoc />
+    protected override void OnPointerCaptureLost(PointerCaptureLostEventArgs e)
+    {
+        base.OnPointerCaptureLost(e);
+        _touches.Remove(e.Pointer.Id); // a finger the browser took back, so a pinch can't stick
+    }
+
+    /// <summary>
+    /// Two fingers on a touch screen zoom by how far apart they move and pan with the point between them (behavior 5),
+    /// smoothly, as the map is held. More fingers count by their first two.
+    /// </summary>
+    private void PinchTo(int id, Point to)
+    {
+        var (a, b) = FirstTwo();
+        _touches[id] = to;
+        var (c, d) = FirstTwo();
+        var before = Distance(a, b);
+        var after = Distance(c, d);
+        if (before < 1 || after < 1)
+        {
+            return;
+        }
+        // The place that was between the fingers stays between them, at the new spread. Worked out here rather than
+        // with the navigator's Manipulate, which moves the map wrongly when it zooms about a point off the centre.
+        var from = (a + b) / 2;
+        var centre = (c + d) / 2;
+        var viewport = _map.Navigator.Viewport;
+        var held = Mapsui.Extensions.ViewportExtensions.ScreenToWorld(viewport, new ScreenPosition(from.X, from.Y));
+        var resolution = viewport.Resolution * before / after;
+        PannedByHand?.Invoke(this, EventArgs.Empty);
+        _map.Navigator.CenterOnAndZoomTo(
+            new MPoint(
+                held.X - (centre.X - viewport.Width / 2) * resolution,
+                held.Y + (centre.Y - viewport.Height / 2) * resolution
+            ),
+            resolution
+        );
+        QueueRefresh();
+
+        (Point, Point) FirstTwo()
+        {
+            using var points = _touches.Values.GetEnumerator();
+            points.MoveNext();
+            var first = points.Current;
+            points.MoveNext();
+            return (first, points.Current);
+        }
+
+        static double Distance(Point p, Point q) => Math.Sqrt((p.X - q.X) * (p.X - q.X) + (p.Y - q.Y) * (p.Y - q.Y));
     }
 
     /// <summary>A touchpad pinch zooms about the fingers (behavior 5), one step per quarter of scale.</summary>
