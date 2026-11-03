@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.3...v0.8.0-alpha.4) (2026-11-03)
+
+
+### Bug Fixes
+
+* **ui:** pinch to zoom the map on a touch screen ([1e02c66](https://github.com/APRS-NET/AprsMap/commit/1e02c66e57af6e4c7782e7e863eb8f7fc935549c))
+
 ## [0.8.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.2...v0.8.0-alpha.3) (2026-10-29)
 
 
