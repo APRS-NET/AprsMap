@@ -5,18 +5,18 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup Label="APRS.NET (pre-release until its 1.0; Dependabot proposes each new alpha)">
-    <PackageVersion Include="AprsNet.AprsIsTcpClient" Version="0.8.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Beacons" Version="0.8.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Corpus" Version="0.8.0-alpha.2" />
-    <PackageVersion Include="AprsNet.DeviceId" Version="0.8.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Filters" Version="0.8.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Gps" Version="0.7.0-alpha.5" />
-    <PackageVersion Include="AprsNet.IGate" Version="0.8.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Kiss" Version="0.8.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Kiss.Serial" Version="0.7.0-alpha.5" />
-    <PackageVersion Include="AprsNet.Messaging" Version="0.8.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Packets" Version="0.8.0-alpha.2" />
-    <PackageVersion Include="AprsNet.Symbols" Version="0.8.0-alpha.2" />
+    <PackageVersion Include="AprsNet.AprsIsTcpClient" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Beacons" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Corpus" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.DeviceId" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Filters" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Gps" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.IGate" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Kiss" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Kiss.Serial" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Messaging" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Packets" Version="0.8.0-alpha.3" />
+    <PackageVersion Include="AprsNet.Symbols" Version="0.8.0-alpha.3" />
   </ItemGroup>
   <ItemGroup Label="Build">
     <PackageVersion Include="MinVer" Version="8.0.0" />
@@ -30,10 +30,10 @@
     <PackageVersion Include="Velopack" Version="1.2.161" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="12.1.5" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageVersion Include="Dock.Avalonia" Version="12.1.0.13" />
-    <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.1.0.13" />
-    <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.0.13" />
-    <PackageVersion Include="Dock.Serializer.SystemTextJson" Version="12.1.0.13" />
+    <PackageVersion Include="Dock.Avalonia" Version="12.1.5" />
+    <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.1.5" />
+    <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.5" />
+    <PackageVersion Include="Dock.Serializer.SystemTextJson" Version="12.1.5" />
     <PackageVersion Include="Mapsui" Version="5.1.0" />
     <PackageVersion Include="Mapsui.Rendering.Skia" Version="5.1.0" />
     <PackageVersion Include="Mapsui.Tiling" Version="5.1.0" />
@@ -54,7 +54,7 @@
     <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.20.1" />
     <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.20.1" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.20.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.20.2" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.1" />
   </ItemGroup>
