@@ -1,6 +1,7 @@
 <Project>
   <!-- Every package here ships in the app or the image, so a bump is committed as fix(deps), not chore(deps):
-       release-please releases fix commits and never chore ones (.github/dependabot.yml). -->
+       release-please releases fix commits and never chore ones (.github/dependabot.yml). A commit that only
+       touches .github is outside the release (exclude-paths), so a catch-up release commit edits this file. -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
