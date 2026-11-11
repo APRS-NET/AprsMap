@@ -43,6 +43,13 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "xunit.runner.visualstudio"
         update-types: ["version-update:semver-major"]
+      # The app targets .NET 10 (LTS). Microsoft.Extensions/AspNetCore majors track the .NET major (11.x is .NET 11:
+      # SignalR.Client 11 has no net10.0 build, and 11.x over the gateway's ASP.NET Core 10 runtime is unsupported),
+      # so take only 10.0.x patches here; moving to .NET 11 is its own change (CLAUDE.md, global.json, TFMs, images).
+      - dependency-name: "Microsoft.Extensions.*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "Microsoft.AspNetCore.*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: docker
     directory: /
