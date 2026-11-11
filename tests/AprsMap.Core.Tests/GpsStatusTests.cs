@@ -162,9 +162,8 @@ public sealed class GpsStatusTests
             Assert.Equal((3.1, 5.2), (quality.HorizontalErrorMeters, quality.AltitudeErrorMeters));
             Assert.Equal(2, satellites.Count);
             Assert.Equal(GnssSystem.Glonass, satellites.Single(s => !s.Used).System);
-            Assert.Contains(
-                lines,
-                l => l.Kind == TrafficKind.GpsdReport && l.Text!.Contains("\"SKY\"", StringComparison.Ordinal)
+            Assert.Contains(lines, l =>
+                l.Kind == TrafficKind.GpsdReport && l.Text!.Contains("\"SKY\"", StringComparison.Ordinal)
             );
             await stop.CancelAsync();
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => reading);

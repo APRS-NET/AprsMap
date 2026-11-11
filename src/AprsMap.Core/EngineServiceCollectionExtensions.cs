@@ -27,20 +27,16 @@ public static class EngineServiceCollectionExtensions
         });
         services.AddOptions<GeocodingOptions>();
         services.TryAddSingleton(TimeProvider.System);
-        services.AddHttpClient(
-            NominatimGeocoder.HttpClientName,
-            (sp, client) => client.Timeout = sp.GetRequiredService<IOptions<GeocodingOptions>>().Value.Timeout
+        services.AddHttpClient(NominatimGeocoder.HttpClientName, (sp, client) =>
+            client.Timeout = sp.GetRequiredService<IOptions<GeocodingOptions>>().Value.Timeout
         );
         services.TryAddSingleton<IGeocoder, NominatimGeocoder>();
         services.AddHttpClient(Engine.UpdatesHttpClient, client => client.Timeout = TimeSpan.FromSeconds(30)); // F4.15
-        services.AddHttpClient(
-            Engine.DeviceListHttpClient,
-            (sp, client) =>
-            {
-                client.Timeout = sp.GetRequiredService<IOptions<EngineOptions>>().Value.DeviceList.Timeout;
-                client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", NominatimGeocoder.UserAgent); // F0.5 behavior 17
-            }
-        ); // F4.16
+        services.AddHttpClient(Engine.DeviceListHttpClient, (sp, client) =>
+        {
+            client.Timeout = sp.GetRequiredService<IOptions<EngineOptions>>().Value.DeviceList.Timeout;
+            client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", NominatimGeocoder.UserAgent); // F0.5 behavior 17
+        }); // F4.16
         services.TryAddSingleton<IPacketSourceFactory, AprsIsPacketSourceFactory>();
         services.TryAddSingleton<ISettingsStore>(sp =>
             SettingsLocation.CreateStore(sp.GetRequiredService<IOptions<EngineOptions>>().Value)

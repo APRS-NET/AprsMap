@@ -1251,9 +1251,8 @@ public class EngineTests
         await cts.CancelAsync();
         await run;
 
-        Assert.Single(
-            stopped,
-            a => a.OperationName == "aprs-is.session" && Equals(a.GetTagItem("aprs-is.server"), "T2TRACE")
+        Assert.Single(stopped, a =>
+            a.OperationName == "aprs-is.session" && Equals(a.GetTagItem("aprs-is.server"), "T2TRACE")
         );
     }
 

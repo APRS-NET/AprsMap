@@ -102,11 +102,7 @@ public sealed class DashboardViewModelTests
     public async Task WithTwoSourcesOneCanBeShownAndTheyAreCompared()
     {
         // #454
-        var tnc = SourceSettings.KissTcpFor("127.0.0.1", 8001) with
-        {
-            Id = "tnc",
-            Name = "TNC-X",
-        };
+        var tnc = SourceSettings.KissTcpFor("127.0.0.1", 8001) with { Id = "tnc", Name = "TNC-X" };
         var aprsIs = SourceSettings.AprsIsFor("rotate.aprs2.net:14580") with { Id = "rotate", Name = "APRS-IS" };
         var profile = new StationProfile("p", "Home", "N0CALL", -1, [aprsIs.Id, tnc.Id], null, null);
         var settings = new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [aprsIs, tnc]);

@@ -40,17 +40,14 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         ArgumentNullException.ThrowIfNull(gatewayBaseUri);
         var contract = new ContractCheck();
         var connection = new HubConnectionBuilder()
-            .WithUrl(
-                HubUri(gatewayBaseUri),
-                o =>
+            .WithUrl(HubUri(gatewayBaseUri), o =>
+            {
+                o.HttpMessageHandlerFactory = contract.Wrap;
+                if (!string.IsNullOrEmpty(apiKey))
                 {
-                    o.HttpMessageHandlerFactory = contract.Wrap;
-                    if (!string.IsNullOrEmpty(apiKey))
-                    {
-                        o.Headers["Authorization"] = $"{ApiKeys.Scheme} {apiKey}";
-                    }
+                    o.Headers["Authorization"] = $"{ApiKeys.Scheme} {apiKey}";
                 }
-            )
+            })
             .WithAutomaticReconnect(new KeepTryingPolicy())
             // The browser app has no reflection-based JSON (WebAssembly publish turns it off).
             .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, EngineJsonContext.Default))

@@ -248,8 +248,8 @@ public sealed partial class MainView : UserControl
         if (_topLevel is not null && DataContext is MainViewModel vm)
         {
             BindMenuKeys(_topLevel, vm);
-            var command =
-                Application.Current?.PlatformSettings?.HotkeyConfiguration.CommandModifiers ?? KeyModifiers.Control;
+            var command = Application.Current?.PlatformSettings?.HotkeyConfiguration.CommandModifiers
+                ?? KeyModifiers.Control;
             _settingsKey = new KeyBinding
             {
                 Gesture = new KeyGesture(Key.OemComma, command),

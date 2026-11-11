@@ -113,8 +113,7 @@ internal static class Program
         s_platform = new PlatformServices
         {
             Preferences = preferences,
-            Tiles =
-                client?.Tiles
+            Tiles = client?.Tiles
                 ?? new DesktopTileSource(s_host.Services.GetRequiredService<AprsMap.Tiles.ITileService>()),
             SavedLayout = resetLayout
                 ? null

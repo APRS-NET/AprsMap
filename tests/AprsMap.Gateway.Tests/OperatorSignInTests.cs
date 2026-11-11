@@ -270,9 +270,8 @@ public sealed class OperatorSignInTests
         Assert.NotEqual(EngineErrorCodes.OperatorOnly, (engineSays as IHasEngineError)?.EngineError.Code);
         Assert.False((await signedIn.GetSettingsAsync(Ct)).ReadOnly);
         Assert.True((await viewer.GetSettingsAsync(Ct)).ReadOnly);
-        Assert.Contains(
-            gateway.Logs.Messages,
-            m => m.StartsWith("Operator Operator: SendPosition(", StringComparison.Ordinal)
+        Assert.Contains(gateway.Logs.Messages, m =>
+            m.StartsWith("Operator Operator: SendPosition(", StringComparison.Ordinal)
         );
     }
 
@@ -362,9 +361,8 @@ public sealed class OperatorSignInTests
         Assert.DoesNotContain("secure", cookie, StringComparison.OrdinalIgnoreCase); // a browser keeps it over http
         Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
         Assert.True((await Me(browser, cookie.Split(';')[0])).Operator);
-        Assert.Contains(
-            gateway.Logs.Messages,
-            m => m.StartsWith("Gateway:AllowInsecureSignIn is on", StringComparison.Ordinal)
+        Assert.Contains(gateway.Logs.Messages, m =>
+            m.StartsWith("Gateway:AllowInsecureSignIn is on", StringComparison.Ordinal)
         );
 
         // The API key too.
@@ -395,9 +393,8 @@ public sealed class OperatorSignInTests
 
         Assert.False((await Me(browser, session)).Operator);
         await Assert.ThrowsAnyAsync<Exception>(() => signedIn.GetConversationsAsync(Ct));
-        Assert.Contains(
-            gateway.Logs.Messages,
-            m => m.StartsWith("Operator Operator signed out", StringComparison.Ordinal)
+        Assert.Contains(gateway.Logs.Messages, m =>
+            m.StartsWith("Operator Operator signed out", StringComparison.Ordinal)
         );
     }
 

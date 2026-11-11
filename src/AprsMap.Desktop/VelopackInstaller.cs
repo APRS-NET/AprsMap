@@ -46,18 +46,16 @@ internal sealed class VelopackInstaller : IAppInstaller
         ArgumentNullException.ThrowIfNull(update);
         ArgumentNullException.ThrowIfNull(progress);
         // releases.<channel>.json, attached to the release (behavior 4.2); its folder holds the packages it lists.
-        var feed =
-            update.Files.FirstOrDefault(f =>
-                f.Name.StartsWith("releases.", StringComparison.Ordinal)
-                && f.Name.EndsWith(".json", StringComparison.Ordinal)
-            ) ?? throw new InvalidOperationException("The release has no installer feed for this platform.");
+        var feed = update.Files.FirstOrDefault(f =>
+            f.Name.StartsWith("releases.", StringComparison.Ordinal)
+            && f.Name.EndsWith(".json", StringComparison.Ordinal)
+        ) ?? throw new InvalidOperationException("The release has no installer feed for this platform.");
         var channel = feed.Name["releases.".Length..^".json".Length];
         var manager = new UpdateManager(
             new SimpleWebSource(new Uri(feed.Url, ".")),
             new UpdateOptions { ExplicitChannel = channel }
         );
-        var found =
-            await manager.CheckForUpdatesAsync().ConfigureAwait(false)
+        var found = await manager.CheckForUpdatesAsync().ConfigureAwait(false)
             ?? throw new InvalidOperationException("The feed has nothing newer than this version.");
         if (found.TargetFullRelease.Version.ToString() != update.Version)
         {

@@ -204,32 +204,30 @@ public sealed partial class StationListsSectionViewModel(
         }
         Selected = null;
         // Out of the saved filters that showed it too (F1.42 behavior 3).
-        await SaveProfileAsync(
-            profile.Id,
-            p =>
-                p with
-                {
-                    StationLists = [.. p.StationListSet.Where(l => l.Id != row.List.Id)],
-                    SavedFilters = p.SavedFilters is null
-                        ? null
-                        :
-                        [
-                            .. p.SavedFilterSet.Select(s =>
-                                s.Filter.Lists?.Contains(row.List.Id) == true
-                                    ? s with
+        await SaveProfileAsync(profile.Id, p =>
+            p with
+            {
+                StationLists = [.. p.StationListSet.Where(l => l.Id != row.List.Id)],
+                SavedFilters = p.SavedFilters is null
+                    ? null
+                    :
+                    [
+                        .. p.SavedFilterSet.Select(s =>
+                            s.Filter.Lists?.Contains(row.List.Id) == true
+                                ? s with
+                                {
+                                    Filter = s.Filter with
                                     {
-                                        Filter = s.Filter with
-                                        {
-                                            Lists = s.Filter.Lists.Where(id => id != row.List.Id).ToList()
-                                                is { Count: > 0 } left
-                                                ? left
-                                                : null,
-                                        },
-                                    }
-                                    : s
-                            ),
-                        ],
-                }
+                                        Lists = s.Filter.Lists.Where(id => id != row.List.Id).ToList()
+                                            is { Count: > 0 } left
+                                            ? left
+                                            : null,
+                                    },
+                                }
+                                : s
+                        ),
+                    ],
+            }
         );
     }
 

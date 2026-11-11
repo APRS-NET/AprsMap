@@ -44,15 +44,11 @@ public sealed class GpsPanelTests
     );
 
     private static GpsPanelViewModel Create(FakeTimeProvider? time = null, List<string>? opened = null) =>
-        new(
-            Localizer.Instance,
-            time ?? new FakeTimeProvider(T0.AddSeconds(12)),
-            id =>
-            {
-                opened?.Add(id);
-                return Task.CompletedTask;
-            }
-        );
+        new(Localizer.Instance, time ?? new FakeTimeProvider(T0.AddSeconds(12)), id =>
+        {
+            opened?.Add(id);
+            return Task.CompletedTask;
+        });
 
     [Fact]
     public void ItSaysTheFixTheAccuracyAndTheSatellitesStrongestFirst()

@@ -140,9 +140,8 @@ public sealed class SourceConsoleTests
         // reads like a KISS command byte, is text too (APRS.NET 0.4.0-alpha.8).
         await stream.WriteAsync("cmd:KISS OFF\r\n"u8.ToArray(), Ct);
         await WaitUntil(() => Snapshot(entries).Any(e => e.Kind == TrafficKind.Unframed));
-        Assert.Contains(
-            Snapshot(entries),
-            e => e.Kind == TrafficKind.Unframed && e.Text!.Contains("cmd:KISS OFF", StringComparison.Ordinal)
+        Assert.Contains(Snapshot(entries), e =>
+            e.Kind == TrafficKind.Unframed && e.Text!.Contains("cmd:KISS OFF", StringComparison.Ordinal)
         );
 
         await cts.CancelAsync();
@@ -188,9 +187,8 @@ public sealed class SourceConsoleTests
         await engine.SendTncCommandAsync(tnc.Id, new TncCommand(TncCommandKind.Bytes, "c0 ff c0"), Ct);
         Assert.Equal("ÀÿÀ", await pair.ReadAsync(3));
         await WaitUntil(() => Snapshot(entries).Count(e => e.Kind == TrafficKind.Typed) >= 2);
-        Assert.All(
-            Snapshot(entries).Where(e => e.Kind == TrafficKind.Typed),
-            e => Assert.Equal(TrafficDirection.Out, e.Direction)
+        Assert.All(Snapshot(entries).Where(e => e.Kind == TrafficKind.Typed), e =>
+            Assert.Equal(TrafficDirection.Out, e.Direction)
         );
 
         // The TNC's answer shows as text.

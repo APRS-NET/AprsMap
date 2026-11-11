@@ -56,8 +56,7 @@ public sealed record ComponentReport(
     public static ComponentReport Of(Assembly? app = null)
     {
         app ??= Assembly.GetEntryAssembly();
-        var version =
-            app?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+        var version = app?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
             ?? app?.GetName().Version?.ToString()
             ?? string.Empty;
         using var stream = app?.GetManifestResourceStream(ResourceName);

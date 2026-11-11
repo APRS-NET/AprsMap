@@ -121,8 +121,7 @@ public sealed partial class SetupWizardViewModel : ObservableObject
         SourceChoices = ChoicesOfSources();
         // Editing keeps the profile's source; a new profile starts with the active one's (F1.25 behavior 6).
         var current = existing?.AprsIsSourceOf(editing ?? existing.GetActiveProfile());
-        SelectedSource =
-            SourceChoices.FirstOrDefault(c => current is not null && c.Source?.Id == current.Id)
+        SelectedSource = SourceChoices.FirstOrDefault(c => current is not null && c.Source?.Id == current.Id)
             ?? (editing is not null && current is null ? SourceChoices.FirstOrDefault(c => c.IsNone) : null)
             ?? SourceChoices.FirstOrDefault(c => c.IsNew);
     }
@@ -1377,8 +1376,8 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             speed = null;
         }
         return _existing?.SourceList.FirstOrDefault(s =>
-                s.Kind == SourceKind.KissSerial && string.Equals(s.SerialPort, port, StringComparison.Ordinal)
-            )
+            s.Kind == SourceKind.KissSerial && string.Equals(s.SerialPort, port, StringComparison.Ordinal)
+        )
             ?? SourceSettings.KissSerialFor(port, speed) with
             {
                 TncType = SelectedTncType?.Id,
@@ -1401,10 +1400,10 @@ public sealed partial class SetupWizardViewModel : ObservableObject
             number = null;
         }
         return _existing?.SourceList.FirstOrDefault(s =>
-                s.Kind == SourceKind.KissTcp
-                && string.Equals(s.Host, host, StringComparison.OrdinalIgnoreCase)
-                && (s.Port ?? SourceSettings.DefaultKissPort) == (number ?? SourceSettings.DefaultKissPort)
-            )
+            s.Kind == SourceKind.KissTcp
+            && string.Equals(s.Host, host, StringComparison.OrdinalIgnoreCase)
+            && (s.Port ?? SourceSettings.DefaultKissPort) == (number ?? SourceSettings.DefaultKissPort)
+        )
             ?? SourceSettings.KissTcpFor(host, number);
     }
 

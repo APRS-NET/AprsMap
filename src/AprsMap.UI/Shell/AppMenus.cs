@@ -200,10 +200,8 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                     )
                 ),
                 SeparatorEntry.Instance,
-                RunAsync(
-                    "file.edit-profiles",
-                    text["Menu.File.EditProfiles"],
-                    () => vm.OpenSettingsSectionAsync("profiles")
+                RunAsync("file.edit-profiles", text["Menu.File.EditProfiles"], () =>
+                    vm.OpenSettingsSectionAsync("profiles")
                 ),
             ];
             items.Add(new SubmenuEntry(text["Menu.File.Profile"], profiles));
@@ -213,10 +211,8 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                 text["Menu.File.SavePackets"],
                 [
                     .. Packets.Export.PacketExporter.All.Select(e =>
-                        RunAsync(
-                            "file.save-packets." + e.Format.ToString().ToLowerInvariant(),
-                            text[e.NameKey],
-                            () => actions.SavePacketsAsync(e)
+                        RunAsync("file.save-packets." + e.Format.ToString().ToLowerInvariant(), text[e.NameKey], () =>
+                            actions.SavePacketsAsync(e)
                         )
                     ),
                 ]
@@ -530,10 +526,8 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
         [
             Run("tools.find", text["Menu.Tools.Find"], vm.FindStation, FindGesture),
             new CommandEntry("tools.messages", text["Menu.Tools.Messages"], vm.ShowMessagesCommand),
-            Run(
-                "tools.bulletins",
-                text["Menu.Tools.Bulletins"],
-                () => vm.TogglePanel(PanelKinds.Bulletins, show: true)
+            Run("tools.bulletins", text["Menu.Tools.Bulletins"], () =>
+                vm.TogglePanel(PanelKinds.Bulletins, show: true)
             ),
             SeparatorEntry.Instance,
             Run(
@@ -566,20 +560,14 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                     : []
             ),
             SeparatorEntry.Instance,
-            RunAsync(
-                "help.docs",
-                text["Menu.Help.Docs"],
-                () => actions.OpenUriAsync(new Uri(source, "tree/main/docs"))
+            RunAsync("help.docs", text["Menu.Help.Docs"], () =>
+                actions.OpenUriAsync(new Uri(source, "tree/main/docs"))
             ),
-            RunAsync(
-                "help.report",
-                text["Menu.Help.Report"],
-                () => actions.OpenUriAsync(new Uri(source, "issues/new"))
+            RunAsync("help.report", text["Menu.Help.Report"], () =>
+                actions.OpenUriAsync(new Uri(source, "issues/new"))
             ),
-            RunAsync(
-                "help.source",
-                text["Settings.About.Source"],
-                () => actions.OpenUriAsync(new Uri(Brand.SourceUrl))
+            RunAsync("help.source", text["Settings.About.Source"], () =>
+                actions.OpenUriAsync(new Uri(Brand.SourceUrl))
             ),
             SeparatorEntry.Instance,
             RunAsync("help.about", text["Menu.Help.About"], vm.OpenAboutAsync),

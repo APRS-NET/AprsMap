@@ -25,18 +25,11 @@ public sealed class UpdatesUiTests
     {
         var engine = new FakeEngine { UpdateStatus = new("0.4.0", UpdateChannel.PreReleases, Update: Newer) };
         var opened = new List<Uri>();
-        var updates = new UpdatesViewModel(
-            engine,
-            Localizer.Instance,
-            uri =>
-            {
-                opened.Add(uri);
-                return Task.CompletedTask;
-            }
-        )
+        var updates = new UpdatesViewModel(engine, Localizer.Instance, uri =>
         {
-            Gateway = gateway,
-        };
+            opened.Add(uri);
+            return Task.CompletedTask;
+        }) { Gateway = gateway };
         return (updates, engine, opened);
     }
 

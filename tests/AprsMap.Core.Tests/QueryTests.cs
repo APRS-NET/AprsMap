@@ -140,9 +140,8 @@ public sealed class QueryTests
                         )
                 )
             );
-            Assert.Contains(
-                Answers(tnc).Select(p => p.Payload).OfType<MessagePayload>(),
-                m => m.Text.Contains("W1AW-9", StringComparison.Ordinal)
+            Assert.Contains(Answers(tnc).Select(p => p.Payload).OfType<MessagePayload>(), m =>
+                m.Text.Contains("W1AW-9", StringComparison.Ordinal)
             );
 
             var before = tnc.Sent.Count(l => l.Contains(";NETCTL", StringComparison.Ordinal));

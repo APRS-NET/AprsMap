@@ -205,8 +205,8 @@ public static class HostingExtensions
     /// </summary>
     private static LoggingState AddLogging(IHostApplicationBuilder builder, bool logFile)
     {
-        var engine =
-            builder.Configuration.GetSection(EngineOptions.SectionName).Get<EngineOptions>() ?? new EngineOptions();
+        var engine = builder.Configuration.GetSection(EngineOptions.SectionName).Get<EngineOptions>()
+            ?? new EngineOptions();
         var state = new LoggingState
         {
             DefaultFolder = Path.Combine(SettingsLocation.DataFolder(engine), "logs"),

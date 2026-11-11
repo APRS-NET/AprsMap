@@ -265,54 +265,49 @@ internal sealed class Beaconer : IDisposable
                         ? _host.Motion(profile)
                         : null;
                 var signature = on + position.GetHashCode() + (smart is null ? string.Empty : "|moving");
-                wanted[(BeaconKind.Position, id, null)] = (
-                    signature,
-                    () =>
+                wanted[(BeaconKind.Position, id, null)] = (signature, () =>
+                {
+                    if (smart is not null)
                     {
-                        if (smart is not null)
-                        {
-                            var schedule = new SmartBeaconSchedule(SmartSettings(position.EffectiveMoving), _time);
-                            schedule.Update(smart);
-                            return new Entry(BeaconKind.Position, id, isRf, schedule, now, signature);
-                        }
-                        if (position.Schedule == PositionBeaconSchedule.Decay)
-                        {
-                            var first = isRf ? RfFloor : IsFirstStep;
-                            return new Entry(
-                                BeaconKind.Position,
-                                id,
-                                isRf,
-                                new DecayBeaconSchedule(first, interval, _time),
-                                now + StartWait(first),
-                                signature
-                            );
-                        }
+                        var schedule = new SmartBeaconSchedule(SmartSettings(position.EffectiveMoving), _time);
+                        schedule.Update(smart);
+                        return new Entry(BeaconKind.Position, id, isRf, schedule, now, signature);
+                    }
+                    if (position.Schedule == PositionBeaconSchedule.Decay)
+                    {
+                        var first = isRf ? RfFloor : IsFirstStep;
                         return new Entry(
                             BeaconKind.Position,
                             id,
                             isRf,
-                            new FixedBeaconSchedule(interval, Clamp(interval / 10), _time, _random),
-                            now,
+                            new DecayBeaconSchedule(first, interval, _time),
+                            now + StartWait(first),
                             signature
                         );
                     }
-                );
+                    return new Entry(
+                        BeaconKind.Position,
+                        id,
+                        isRf,
+                        new FixedBeaconSchedule(interval, Clamp(interval / 10), _time, _random),
+                        now,
+                        signature
+                    );
+                });
             }
             if (status.On && status.SendsVia(id))
             {
                 var interval = TimeSpan.FromMinutes(status.IntervalMinutes);
                 var signature = on + status.GetHashCode();
-                wanted[(BeaconKind.Status, id, null)] = (
-                    signature,
-                    () =>
-                        new Entry(
-                            BeaconKind.Status,
-                            id,
-                            isRf,
-                            new FixedBeaconSchedule(interval, Clamp(interval / 10), _time, _random),
-                            now,
-                            signature
-                        )
+                wanted[(BeaconKind.Status, id, null)] = (signature, () =>
+                    new Entry(
+                        BeaconKind.Status,
+                        id,
+                        isRf,
+                        new FixedBeaconSchedule(interval, Clamp(interval / 10), _time, _random),
+                        now,
+                        signature
+                    )
                 );
             }
             foreach (var placed in profile?.ObjectList ?? [])
@@ -325,18 +320,16 @@ internal sealed class Beaconer : IDisposable
                 var signature = on + placed.GetHashCode();
                 var first = isRf ? ObjectRfFirstStep : IsFirstStep;
                 var interval = TimeSpan.FromMinutes(placed.IntervalMinutes);
-                wanted[(BeaconKind.PlacedObject, id, placed.Id)] = (
-                    signature,
-                    () =>
-                        new Entry(
-                            BeaconKind.PlacedObject,
-                            id,
-                            isRf,
-                            new DecayBeaconSchedule(first, interval, _time),
-                            now,
-                            signature,
-                            placed.Id
-                        )
+                wanted[(BeaconKind.PlacedObject, id, placed.Id)] = (signature, () =>
+                    new Entry(
+                        BeaconKind.PlacedObject,
+                        id,
+                        isRf,
+                        new DecayBeaconSchedule(first, interval, _time),
+                        now,
+                        signature,
+                        placed.Id
+                    )
                 );
             }
         }

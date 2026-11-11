@@ -51,16 +51,13 @@ public sealed class LanguageViewTests : IDisposable
 
         var labels = Labels(window).ToList();
         Assert.Equal(4, labels.Count);
-        Assert.All(
-            labels,
-            label =>
-            {
-                Assert.StartsWith("[", label.Text, StringComparison.Ordinal);
-                Assert.EndsWith("]", label.Text, StringComparison.Ordinal);
-                // Laid out in full: the closing bracket is on screen, not cut off.
-                Assert.True(label.DesiredSize.Width <= label.Bounds.Width + 0.5, $"{label.Name} is clipped");
-            }
-        );
+        Assert.All(labels, label =>
+        {
+            Assert.StartsWith("[", label.Text, StringComparison.Ordinal);
+            Assert.EndsWith("]", label.Text, StringComparison.Ordinal);
+            // Laid out in full: the closing bracket is on screen, not cut off.
+            Assert.True(label.DesiredSize.Width <= label.Bounds.Width + 0.5, $"{label.Name} is clipped");
+        });
         var picker = window.GetLogicalDescendants().OfType<ComboBox>().Single(c => c.Name == "ProfilePicker");
         Assert.StartsWith("[Šţåţîöñ", ToolTip.GetTip(picker) as string, StringComparison.Ordinal);
         window.Close();
@@ -145,9 +142,8 @@ public sealed class LanguageViewTests : IDisposable
                 ) // data: callsigns, profile and source names, servers
                 .ToList();
             Assert.NotEmpty(texts);
-            Assert.All(
-                texts,
-                t => Assert.True(t.Text!.StartsWith('[') || t.Text == "English", $"{section.Id}: {t.Text}")
+            Assert.All(texts, t =>
+                Assert.True(t.Text!.StartsWith('[') || t.Text == "English", $"{section.Id}: {t.Text}")
             );
         }
 

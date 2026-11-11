@@ -407,10 +407,7 @@ internal sealed class EngineHubEndpoint(
     {
         ArgumentNullException.ThrowIfNull(view);
         // At most the views one viewer can open (F1.16 decision 1), so a browser can't fill the filter.
-        view = view with
-        {
-            Watched = view.Watched?.Take(MaxWatchedPerViewer).ToList(),
-        };
+        view = view with { Watched = view.Watched?.Take(MaxWatchedPerViewer).ToList() };
         filterEngine.SetMapView(
             Context.ConnectionId,
             options.Value.FollowViewers

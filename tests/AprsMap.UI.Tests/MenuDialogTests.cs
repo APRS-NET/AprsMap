@@ -129,9 +129,8 @@ public sealed class MenuDialogTests
         Assert.Contains(rows, r => r is { Menu: "View", Command: "Full screen", Keys: "F11" });
         Assert.Contains(rows, r => r is { Menu: "Anywhere", Command: "Show the menu bar", Keys: "Alt, F10" });
 
-        Assert.Contains(
-            menus.Menus.Single(m => m.Id == "help").Items(),
-            e => e is CommandEntry { Id: "help.shortcuts" }
+        Assert.Contains(menus.Menus.Single(m => m.Id == "help").Items(), e =>
+            e is CommandEntry { Id: "help.shortcuts" }
         );
         vm.ShowShortcuts(rows);
         Assert.Equal("Keyboard shortcuts", vm.Dialog!.Title);

@@ -17,10 +17,8 @@ internal static class TileEndpoints
 
     public static void MapTiles(this IEndpointRouteBuilder app)
     {
-        app.MapGet(
-            ProvidersPath,
-            (ITileService tiles) =>
-                Results.Json(tiles.Providers, EngineJsonContext.Default.IReadOnlyListTileProviderInfo)
+        app.MapGet(ProvidersPath, (ITileService tiles) =>
+            Results.Json(tiles.Providers, EngineJsonContext.Default.IReadOnlyListTileProviderInfo)
         );
         app.MapGet("/tiles/{provider}/{z:int}/{x:int}/{y:int}", GetTileAsync);
     }

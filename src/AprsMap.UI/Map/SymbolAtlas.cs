@@ -35,9 +35,9 @@ internal sealed class SymbolAtlas : IDisposable
         CellPixels = cellPixels;
         Style = style;
         var stride = cellPixels + 2 * Padding;
-        _surface =
-            SKSurface.Create(new SKImageInfo(Columns * stride, Rows * stride, SKColorType.Rgba8888, SKAlphaType.Premul))
-            ?? throw new InvalidOperationException("No surface for the symbol atlas.");
+        _surface = SKSurface.Create(
+            new SKImageInfo(Columns * stride, Rows * stride, SKColorType.Rgba8888, SKAlphaType.Premul)
+        ) ?? throw new InvalidOperationException("No surface for the symbol atlas.");
         _surface.Canvas.Clear(SKColors.Transparent);
         foreach (var info in AprsSymbolCatalog.All)
         {
@@ -123,9 +123,8 @@ internal sealed class SymbolAtlas : IDisposable
             SKFontStyleWidth fontWidth,
             SKFontStyleSlant fontStyle
         ) =>
-            _cache.GetOrAdd(
-                (fontFamily, fontWeight, fontWidth, fontStyle),
-                k => SKTypeface.FromFamilyName(k.Item1, k.Item2, k.Item3, k.Item4)
+            _cache.GetOrAdd((fontFamily, fontWeight, fontWidth, fontStyle), k =>
+                SKTypeface.FromFamilyName(k.Item1, k.Item2, k.Item3, k.Item4)
             );
     }
 }

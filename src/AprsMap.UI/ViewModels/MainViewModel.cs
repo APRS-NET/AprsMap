@@ -91,11 +91,8 @@ public sealed partial class MainViewModel : ObservableObject
                 _ = ReportMapViewAsync(); // following counts at once (F1.2 behavior 3)
             }
         };
-        StationList = new Stations.StationListViewModel(
-            engine,
-            time,
-            _text,
-            () => _settings?.Units ?? UnitSettings.Metric
+        StationList = new Stations.StationListViewModel(engine, time, _text, () =>
+            _settings?.Units ?? UnitSettings.Metric
         );
         ViewFilter = new Stations.ViewFilterViewModel(engine, _text);
         ViewFilter.Changed += (_, _) => OnViewFilterChanged();

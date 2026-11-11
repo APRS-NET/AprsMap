@@ -114,9 +114,8 @@ public sealed class AutoReplyTests
             var messages = await Collect(station.Engine, 2);
             Assert.True(messages.Values.Single(m => m.Outgoing).Automatic); // behavior 9
             Assert.Equal(1, (await station.Engine.GetStatusAsync(Ct)).UnreadMessages); // still unread
-            Assert.Contains(
-                station.Log.Lines,
-                l => l.StartsWith("Auto-reply to NZ0P-9 on tnc", StringComparison.Ordinal)
+            Assert.Contains(station.Log.Lines, l =>
+                l.StartsWith("Auto-reply to NZ0P-9 on tnc", StringComparison.Ordinal)
             );
             await cts.CancelAsync();
             await run;

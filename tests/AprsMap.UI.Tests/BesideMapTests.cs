@@ -31,9 +31,8 @@ public sealed class BesideMapTests
         shell.Factory.MoveBesideMap.Execute(messages);
         Assert.Equal(ShellFactory.CentreDock, DockOf(shell, PanelKinds.Messages));
         Assert.Equal([PanelKinds.Messages], shell.BesideMap);
-        Assert.Contains(
-            ShellViewModel.Dockables(shell.Layout).OfType<MapDocument>(),
-            m => m.Owner?.Id == ShellFactory.CentreDock
+        Assert.Contains(ShellViewModel.Dockables(shell.Layout).OfType<MapDocument>(), m =>
+            m.Owner?.Id == ShellFactory.CentreDock
         );
 
         shell.SetBesideMap(PanelKinds.Messages, false);

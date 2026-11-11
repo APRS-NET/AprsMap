@@ -180,9 +180,8 @@ public sealed class ShellTests
 
         Assert.Equal(ShellFactory.BottomDock, details.Owner!.Id);
         Assert.Same(messages, ((IDock)messages.Owner!).ActiveDockable);
-        Assert.DoesNotContain(
-            ShellViewModel.Dockables(shell.Layout).OfType<IToolDock>(),
-            d => d.Id == ShellFactory.RightDock && d.VisibleDockables!.Count > 0
+        Assert.DoesNotContain(ShellViewModel.Dockables(shell.Layout).OfType<IToolDock>(), d =>
+            d.Id == ShellFactory.RightDock && d.VisibleDockables!.Count > 0
         );
     }
 
@@ -236,9 +235,8 @@ public sealed class ShellTests
         Assert.False(
             (bool)ShellConverters.IsFloating.Convert(dashboard, typeof(bool), null, CultureInfo.InvariantCulture)!
         );
-        Assert.DoesNotContain(
-            shell.Layout.Windows ?? [],
-            w => ShellViewModel.Dockables(w.Layout!).Any(d => d.Id == PanelKinds.Dashboard)
+        Assert.DoesNotContain(shell.Layout.Windows ?? [], w =>
+            ShellViewModel.Dockables(w.Layout!).Any(d => d.Id == PanelKinds.Dashboard)
         );
         Assert.NotEqual(0, changed);
     }

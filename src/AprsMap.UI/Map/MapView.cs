@@ -107,71 +107,50 @@ public sealed class MapView : Control, IDisposable
         _map.Navigator.ViewportChanged += (_, _) => ViewChanged?.Invoke(this, EventArgs.Empty);
         this.GetResourceObservable("Color.Ground").Subscribe(new GroundObserver(this));
         Watch("Map.SymbolSize", v => _symbolDip = v is double d ? d : 24);
-        Watch(
-            "Map.Dimming",
-            v =>
-            {
-                Dimming = v is double d and >= 0 ? d : null;
-                InvalidateVisual(); // live as the contrast slider moves (#345)
-            }
-        );
-        Watch(
-            "Map.Greyscale",
-            v =>
-            {
-                Greyscale = v is true;
-                InvalidateVisual();
-            }
-        );
-        Watch(
-            "Map.SymbolBacking",
-            v =>
-            {
-                SymbolBacking = v is true;
-                InvalidateVisual();
-            }
-        );
+        Watch("Map.Dimming", v =>
+        {
+            Dimming = v is double d and >= 0 ? d : null;
+            InvalidateVisual(); // live as the contrast slider moves (#345)
+        });
+        Watch("Map.Greyscale", v =>
+        {
+            Greyscale = v is true;
+            InvalidateVisual();
+        });
+        Watch("Map.SymbolBacking", v =>
+        {
+            SymbolBacking = v is true;
+            InvalidateVisual();
+        });
         Watch("Map.ShowLabels", v => ShowLabels = v is not false);
-        Watch(
-            "Map.LabelSize",
-            v =>
-            {
-                _labelSize = v is double d ? d : 12;
-                ClearLabels();
-            }
-        );
-        Watch(
-            "Color.Text",
-            v =>
-            {
-                _labelBrush = v is Color c ? new ImmutableSolidColorBrush(c) : null;
-                ClearLabels();
-            }
-        );
-        Watch(
-            "Color.Surface",
-            v =>
-            {
-                _haloBrush = v is Color c ? new ImmutableSolidColorBrush(c) : null;
-                ClearLabels();
-            }
-        );
-        Watch(
-            "Color.Accent",
-            v =>
-            {
-                _ringPen = v is Color c ? new ImmutablePen(new ImmutableSolidColorBrush(c), 2) : null;
-                _followedColour = v is Color a ? new SKColor(a.R, a.G, a.B, a.A) : SKColors.Transparent;
-                _filterPen = v is Color f
-                    ? new ImmutablePen(new ImmutableSolidColorBrush(f), 1.5, new ImmutableDashStyle([4, 4], 0))
-                    : null;
-                _destinationPen = v is Color d
-                    ? new ImmutablePen(new ImmutableSolidColorBrush(d), 2, new ImmutableDashStyle([3, 3], 0))
-                    : null;
-                _destinationPolePen = v is Color p ? new ImmutablePen(new ImmutableSolidColorBrush(p), 2) : null;
-                _flagBrush = v is Color b ? new ImmutableSolidColorBrush(b) : null;
-            }
-        );
+        Watch("Map.LabelSize", v =>
+        {
+            _labelSize = v is double d ? d : 12;
+            ClearLabels();
+        });
+        Watch("Color.Text", v =>
+        {
+            _labelBrush = v is Color c ? new ImmutableSolidColorBrush(c) : null;
+            ClearLabels();
+        });
+        Watch("Color.Surface", v =>
+        {
+            _haloBrush = v is Color c ? new ImmutableSolidColorBrush(c) : null;
+            ClearLabels();
+        });
+        Watch("Color.Accent", v =>
+        {
+            _ringPen = v is Color c ? new ImmutablePen(new ImmutableSolidColorBrush(c), 2) : null;
+            _followedColour = v is Color a ? new SKColor(a.R, a.G, a.B, a.A) : SKColors.Transparent;
+            _filterPen = v is Color f
+                ? new ImmutablePen(new ImmutableSolidColorBrush(f), 1.5, new ImmutableDashStyle([4, 4], 0))
+                : null;
+            _destinationPen = v is Color d
+                ? new ImmutablePen(new ImmutableSolidColorBrush(d), 2, new ImmutableDashStyle([3, 3], 0))
+                : null;
+            _destinationPolePen = v is Color p ? new ImmutablePen(new ImmutableSolidColorBrush(p), 2) : null;
+            _flagBrush = v is Color b ? new ImmutableSolidColorBrush(b) : null;
+        });
         Watch("Map.ShowFilterCircles", v => ShowFilterCircles = v is true);
         Watch("Map.DeadReckoning", v => DeadReckoning = v is true);
         _reckoningTimer.Tick += (_, _) =>
@@ -183,9 +162,8 @@ public sealed class MapView : Control, IDisposable
         };
         Watch("Map.Tracks", v => Tracks = v is MapTracks tracks ? tracks : MapTracks.All);
         Watch("Map.Paths", v => Paths = v is MapPaths paths ? paths : MapPaths.SelectedStation);
-        Watch(
-            "Map.WeatherLabels",
-            v => WeatherLabels = v is MapWeatherLabels labels ? labels : MapWeatherLabels.Temperature
+        Watch("Map.WeatherLabels", v =>
+            WeatherLabels = v is MapWeatherLabels labels ? labels : MapWeatherLabels.Temperature
         );
         Watch("Map.Wind", v => Wind = v is MapWind wind ? wind : MapWind.Off);
         Watch("Map.ShowAreas", v => ShowAreas = v is not false);
@@ -193,45 +171,33 @@ public sealed class MapView : Control, IDisposable
         for (var i = 0; i < _areaColours.Length; i++)
         {
             var token = i;
-            Watch(
-                $"Color.Area{token + 1}",
-                v =>
-                {
-                    _areaColours[token] = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
-                    InvalidateVisual();
-                }
-            );
+            Watch($"Color.Area{token + 1}", v =>
+            {
+                _areaColours[token] = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+                InvalidateVisual();
+            });
         }
-        Watch(
-            "Color.Text",
-            v =>
-            {
-                _textColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
-                InvalidateVisual();
-            }
-        );
-        Watch(
-            "Color.Track",
-            v =>
-            {
-                _trackColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
-                // Dead reckoning's line, dot and freshness ring, in the track colour (F1.17 behavior 3).
-                _estimatePen = v is Color e
-                    ? new ImmutablePen(new ImmutableSolidColorBrush(e), 1.5, new ImmutableDashStyle([2, 3], 0))
-                    : null;
-                _freshnessPen = v is Color r ? new ImmutablePen(new ImmutableSolidColorBrush(r), 2) : null;
-                _estimateDot = v is Color d ? new ImmutableSolidColorBrush(d) : null;
-                InvalidateVisual();
-            }
-        );
-        Watch(
-            "Color.Surface",
-            v =>
-            {
-                _casingColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
-                InvalidateVisual();
-            }
-        );
+        Watch("Color.Text", v =>
+        {
+            _textColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+            InvalidateVisual();
+        });
+        Watch("Color.Track", v =>
+        {
+            _trackColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+            // Dead reckoning's line, dot and freshness ring, in the track colour (F1.17 behavior 3).
+            _estimatePen = v is Color e
+                ? new ImmutablePen(new ImmutableSolidColorBrush(e), 1.5, new ImmutableDashStyle([2, 3], 0))
+                : null;
+            _freshnessPen = v is Color r ? new ImmutablePen(new ImmutableSolidColorBrush(r), 2) : null;
+            _estimateDot = v is Color d ? new ImmutableSolidColorBrush(d) : null;
+            InvalidateVisual();
+        });
+        Watch("Color.Surface", v =>
+        {
+            _casingColour = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent;
+            InvalidateVisual();
+        });
         Watch("Color.TextMuted", v => _dot = v is Color c ? new SKColor(c.R, c.G, c.B, c.A) : SKColors.Transparent);
         ActualThemeVariantChanged += (_, _) => InvalidateVisual();
     }
