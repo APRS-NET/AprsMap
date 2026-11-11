@@ -13,11 +13,8 @@ public sealed class DetailsHistoryTests
     private static readonly DateTimeOffset T0 = new(2026, 10, 27, 12, 0, 0, TimeSpan.Zero);
 
     private static StationDetailsViewModel Details(FakeEngine engine) =>
-        new(
-            engine,
-            new FakeTimeProvider(T0),
-            new Localizer(CultureInfo.GetCultureInfo("en-US")),
-            () => UnitSettings.Metric
+        new(engine, new FakeTimeProvider(T0), new Localizer(CultureInfo.GetCultureInfo("en-US")), () =>
+            UnitSettings.Metric
         );
 
     private static PacketView Packet(int hoursAgo) =>

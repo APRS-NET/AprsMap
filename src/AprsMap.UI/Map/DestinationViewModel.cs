@@ -172,8 +172,7 @@ public sealed partial class DestinationViewModel : ObservableObject
             Text = null;
             return;
         }
-        var name =
-            Station
+        var name = Station
             ?? string.Create(CultureInfo.InvariantCulture, $"{point.Latitude:0.0000}, {point.Longitude:0.0000}");
         var range = RangeText.Format(_info.DistanceKm, _info.Bearing, _units().Distance, _text);
         Text = range is null

@@ -267,8 +267,8 @@ public sealed partial class ViewFilterViewModel : ObservableObject
         _loading = true;
         Kind = KindOptions.FirstOrDefault(o => Equals(o.Value, filter.Kinds)) ?? KindOptions[0];
         Heard = HeardOptions.FirstOrDefault(o => Equals(o.Value, filter.HeardWithinMinutes)) ?? HeardOptions[0];
-        ReceptionChoice =
-            ReceptionOptions.FirstOrDefault(o => Equals(o.Value, filter.Reception)) ?? ReceptionOptions[0];
+        ReceptionChoice = ReceptionOptions.FirstOrDefault(o => Equals(o.Value, filter.Reception))
+            ?? ReceptionOptions[0];
         MessageCapable = filter.MessageCapable;
         WithWeather = filter.WithWeather;
         WithTrack = filter.WithTrack;

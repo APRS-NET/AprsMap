@@ -114,11 +114,8 @@ public sealed class GpsHistoryTests
     public void TheDilutionsAndErrorsGiveNowTheAverageLowestAndHighest()
     {
         var history = new GpsHistory();
-        var now = Run(
-            history,
-            Noon,
-            4,
-            i => Fix(accuracy: new GpsAccuracy(Hdop: 1 + i, Vdop: 2, HorizontalErrorMeters: 3 + i))
+        var now = Run(history, Noon, 4, i =>
+            Fix(accuracy: new GpsAccuracy(Hdop: 1 + i, Vdop: 2, HorizontalErrorMeters: 3 + i))
         );
 
         var gps = LastHour(history, now)!;

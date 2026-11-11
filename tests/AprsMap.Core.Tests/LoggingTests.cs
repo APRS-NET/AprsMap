@@ -189,11 +189,9 @@ public sealed class LoggingTests
         state.Update(LoggingSettings.Default with { MessageTexts = true });
         messenger.Receive(AprsPacket.Parse("NZ0P-9>APRS::NZ0P-10  :bring the radio{8"), "tnc", heardHere: true);
 
-        Assert.Contains(
-            log.Lines,
-            l =>
-                l.Contains("NZ0P-9 (7)", StringComparison.Ordinal)
-                && l.EndsWith("(text not logged)", StringComparison.Ordinal)
+        Assert.Contains(log.Lines, l =>
+            l.Contains("NZ0P-9 (7)", StringComparison.Ordinal)
+            && l.EndsWith("(text not logged)", StringComparison.Ordinal)
         );
         Assert.DoesNotContain(log.Lines, l => l.Contains("meet at 6", StringComparison.Ordinal));
         Assert.Contains(log.Lines, l => l.EndsWith("bring the radio", StringComparison.Ordinal));

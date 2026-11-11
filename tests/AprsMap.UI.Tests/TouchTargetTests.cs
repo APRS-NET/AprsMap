@@ -61,9 +61,8 @@ public sealed class TouchTargetTests : IDisposable
         var targets = Targets(window);
         Assert.NotEmpty(targets);
         Assert.All(targets, t => Assert.True(t.Bounds.Height >= 44, $"{t.GetType().Name} {t.Name}: {t.Bounds.Height}"));
-        Assert.All(
-            targets.OfType<Button>().Where(b => b is not ToggleButton),
-            b => Assert.True(b.Bounds.Width >= 44, $"{b.Name}: {b.Bounds.Width}")
+        Assert.All(targets.OfType<Button>().Where(b => b is not ToggleButton), b =>
+            Assert.True(b.Bounds.Width >= 44, $"{b.Name}: {b.Bounds.Width}")
         );
         window.Close();
     }

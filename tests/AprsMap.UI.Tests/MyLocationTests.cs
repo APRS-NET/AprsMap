@@ -39,9 +39,8 @@ public class MyLocationTests
 
         var active = engine.Saved[^1].GetActiveProfile()!;
         Assert.Equal((41.12346, -104.5), (active.Latitude, active.Longitude));
-        Assert.All(
-            engine.Saved[^1].Profiles.Where(p => p.Id != active.Id),
-            p => Assert.Contains(p, engine.Settings.Profiles)
+        Assert.All(engine.Saved[^1].Profiles.Where(p => p.Id != active.Id), p =>
+            Assert.Contains(p, engine.Settings.Profiles)
         );
         Assert.Equal("My location is set here.", vm.MyLocationNotice);
         Assert.True(vm.CanUndoMyLocation);

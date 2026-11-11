@@ -21,13 +21,8 @@ public sealed class AppFoldersTests : IDisposable
     private static string P(string path) => path.Replace('/', S);
 
     private static FolderEnvironment Env(OSPlatform platform, Dictionary<string, string>? variables = null) =>
-        new(
-            platform,
-            P("/home/me"),
-            P("/roaming"),
-            P("/local"),
-            P("/programdata"),
-            name => variables is not null && variables.TryGetValue(name, out var value) ? value : null
+        new(platform, P("/home/me"), P("/roaming"), P("/local"), P("/programdata"), name =>
+            variables is not null && variables.TryGetValue(name, out var value) ? value : null
         );
 
     [Fact]

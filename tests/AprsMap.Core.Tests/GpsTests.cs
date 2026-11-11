@@ -136,9 +136,8 @@ public sealed class GpsTests
                 }
             }
             catch (OperationCanceledException) when (!Ct.IsCancellationRequested) { }
-            Assert.Contains(
-                lines,
-                e => e.Kind == TrafficKind.GpsSentence && e.Text!.StartsWith("$GPRMC", StringComparison.Ordinal)
+            Assert.Contains(lines, e =>
+                e.Kind == TrafficKind.GpsSentence && e.Text!.StartsWith("$GPRMC", StringComparison.Ordinal)
             );
             await cts.CancelAsync();
             await run;

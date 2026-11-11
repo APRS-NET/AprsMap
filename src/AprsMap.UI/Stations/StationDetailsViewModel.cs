@@ -95,10 +95,8 @@ public sealed partial class StationDetailsViewModel : ObservableObject
         IsMe = me is not null;
         HasHeardThroughDigipeaters = me is { HeardThroughDigipeaters.Count: > 0 };
         LastPositionText = me?.LastPosition is { } last
-            ? Localization.HeardBackText.Describe(
-                last,
-                _text,
-                at => TimeZoneInfo.ConvertTime(at, _time.LocalTimeZone).ToString("t", _text.Culture)
+            ? Localization.HeardBackText.Describe(last, _text, at =>
+                TimeZoneInfo.ConvertTime(at, _time.LocalTimeZone).ToString("t", _text.Culture)
             )
             : null;
         if (me is null)

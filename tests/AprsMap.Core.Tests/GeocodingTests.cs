@@ -201,14 +201,12 @@ public sealed class GeocodingTests : IDisposable
         _time.Advance(TimeSpan.FromSeconds(1));
         Assert.NotEmpty(await geocoder.GeocodeAsync("Denver", null, Ct));
         Assert.Equal(2, _handler.Requests.Count);
-        Assert.Contains(
-            _logger.Entries,
-            e =>
-                e.Level == LogLevel.Warning
-                && e.Message.Contains(
-                    ((int)status).ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    StringComparison.Ordinal
-                )
+        Assert.Contains(_logger.Entries, e =>
+            e.Level == LogLevel.Warning
+            && e.Message.Contains(
+                ((int)status).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                StringComparison.Ordinal
+            )
         );
     }
 
@@ -268,15 +266,12 @@ public sealed class GeocodingTests : IDisposable
         await Assert.ThrowsAsync<EngineOperationException>(() => geocoder.GeocodeAsync("Hidden Road", null, Ct));
 
         Assert.NotEmpty(_logger.Entries);
-        Assert.All(
-            _logger.Entries,
-            e =>
-            {
-                Assert.DoesNotContain("Secret", e.Message, StringComparison.OrdinalIgnoreCase);
-                Assert.DoesNotContain("Hidden", e.Message, StringComparison.OrdinalIgnoreCase);
-                Assert.DoesNotContain("Boulder", e.Message, StringComparison.OrdinalIgnoreCase);
-            }
-        );
+        Assert.All(_logger.Entries, e =>
+        {
+            Assert.DoesNotContain("Secret", e.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Hidden", e.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Boulder", e.Message, StringComparison.OrdinalIgnoreCase);
+        });
     }
 
     [Fact]

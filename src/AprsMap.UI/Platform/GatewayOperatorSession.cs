@@ -39,8 +39,7 @@ public sealed class GatewayOperatorSession(HttpClient gateway, bool passwordSign
                 return new AuthInfo(false, ApiKey: true, NeedsHttps: true);
             }
             response.EnsureSuccessStatusCode();
-            var info =
-                await response.Content.ReadFromJsonAsync(EngineJsonContext.Default.AuthInfo, cancellationToken)
+            var info = await response.Content.ReadFromJsonAsync(EngineJsonContext.Default.AuthInfo, cancellationToken)
                 ?? AuthInfo.Viewer;
             return passwordSignIn ? info : info with { SignInOffered = false, NeedsHttps = false };
         }

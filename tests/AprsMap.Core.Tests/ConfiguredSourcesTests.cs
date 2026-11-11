@@ -47,15 +47,12 @@ public sealed class ConfiguredSourcesTests
     {
         var store = Installed();
         var id = TncOf(store.Stored!).Id;
-        using var engine = Create(
-            store,
-            o =>
-            {
-                o.KissSerial.Port = Tnc;
-                o.KissSerial.Baud = 1200;
-                o.KissSerial.Name = "USB TNC-X";
-            }
-        );
+        using var engine = Create(store, o =>
+        {
+            o.KissSerial.Port = Tnc;
+            o.KissSerial.Baud = 1200;
+            o.KissSerial.Name = "USB TNC-X";
+        });
 
         var tnc = TncOf(await engine.GetSettingsAsync(Ct));
 
@@ -68,14 +65,11 @@ public sealed class ConfiguredSourcesTests
     public async Task AMovedTncAndANewNameFollowTheConfiguration()
     {
         var store = Installed();
-        using var engine = Create(
-            store,
-            o =>
-            {
-                o.KissSerial.Port = "/dev/ttyUSB1";
-                o.KissSerial.Name = "V71A";
-            }
-        );
+        using var engine = Create(store, o =>
+        {
+            o.KissSerial.Port = "/dev/ttyUSB1";
+            o.KissSerial.Name = "V71A";
+        });
 
         var tnc = TncOf(await engine.GetSettingsAsync(Ct));
 
@@ -86,14 +80,11 @@ public sealed class ConfiguredSourcesTests
     public async Task SavingFromTheAppKeepsTheConfiguredConnectionButTheRestChanges()
     {
         var store = Installed();
-        using var engine = Create(
-            store,
-            o =>
-            {
-                o.KissSerial.Port = Tnc;
-                o.KissSerial.Baud = 1200;
-            }
-        );
+        using var engine = Create(store, o =>
+        {
+            o.KissSerial.Port = Tnc;
+            o.KissSerial.Baud = 1200;
+        });
         var settings = await engine.GetSettingsAsync(Ct);
         var tnc = TncOf(settings);
 
@@ -132,16 +123,13 @@ public sealed class ConfiguredSourcesTests
     public async Task AFirstRunGivesTheConfiguredDevicesTheirStableIds()
     {
         var store = new InMemorySettingsStore();
-        using var engine = Create(
-            store,
-            o =>
-            {
-                o.Callsign = "NZ0P-4";
-                o.Server = "";
-                o.KissSerial.Port = Tnc;
-                o.Gpsd.Host = "localhost";
-            }
-        );
+        using var engine = Create(store, o =>
+        {
+            o.Callsign = "NZ0P-4";
+            o.Server = "";
+            o.KissSerial.Port = Tnc;
+            o.Gpsd.Host = "localhost";
+        });
 
         var settings = await engine.GetSettingsAsync(Ct);
 

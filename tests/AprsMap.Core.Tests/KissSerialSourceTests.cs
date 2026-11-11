@@ -203,11 +203,7 @@ public sealed class KissSerialSourceTests
     {
         await using var pair = await PtyPair.StartAsync();
         // A pseudo-terminal has no modem lines, so DTR and RTS stay low.
-        var tnc = SourceSettings.KissSerialFor(pair.Tnc) with
-        {
-            DtrEnable = false,
-            RtsEnable = false,
-        };
+        var tnc = SourceSettings.KissSerialFor(pair.Tnc) with { DtrEnable = false, RtsEnable = false };
         using var engine = Create(tnc);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var run = engine.RunAsync(cts.Token);

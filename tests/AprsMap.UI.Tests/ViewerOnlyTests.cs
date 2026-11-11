@@ -87,9 +87,8 @@ public sealed class ViewerOnlyTests
         Assert.Contains("station.destination.set", ids);
 
         await vm.OpenSettingsAsync();
-        Assert.DoesNotContain(
-            vm.Settings!.Sections,
-            s => s.Id is "profiles" or "sources" or "beacons" or "units" or "data"
+        Assert.DoesNotContain(vm.Settings!.Sections, s =>
+            s.Id is "profiles" or "sources" or "beacons" or "units" or "data"
         );
         Assert.Contains(vm.Settings.Sections, s => s.Id == "appearance");
     }

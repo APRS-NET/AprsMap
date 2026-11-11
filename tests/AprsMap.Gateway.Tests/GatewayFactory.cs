@@ -59,32 +59,29 @@ public class GatewayFactory : WebApplicationFactory<Program>
     )
     {
         var connection = new HubConnectionBuilder()
-            .WithUrl(
-                RemoteEngineService.HubUri(https ? new Uri("https://localhost/") : Server.BaseAddress),
-                o =>
+            .WithUrl(RemoteEngineService.HubUri(https ? new Uri("https://localhost/") : Server.BaseAddress), o =>
+            {
+                o.HttpMessageHandlerFactory = _ => Server.CreateHandler();
+                o.Transports = HttpTransportType.LongPolling;
+                if (cookie is not null)
                 {
-                    o.HttpMessageHandlerFactory = _ => Server.CreateHandler();
-                    o.Transports = HttpTransportType.LongPolling;
-                    if (cookie is not null)
-                    {
-                        o.Headers["Cookie"] = cookie; // a signed-in operator's session (F2.9)
-                    }
-                    if (origin is not null)
-                    {
-                        o.Headers["Origin"] = origin;
-                    }
-                    if (apiKey is not null)
-                    {
-                        o.Headers["Authorization"] = "Bearer " + apiKey; // an app with the API key (F1.38)
-                    }
-                    if (localPort is { } port)
-                    {
-                        o.Headers[LocalPortFilter.Header] = port.ToString(
-                            System.Globalization.CultureInfo.InvariantCulture
-                        );
-                    }
+                    o.Headers["Cookie"] = cookie; // a signed-in operator's session (F2.9)
                 }
-            )
+                if (origin is not null)
+                {
+                    o.Headers["Origin"] = origin;
+                }
+                if (apiKey is not null)
+                {
+                    o.Headers["Authorization"] = "Bearer " + apiKey; // an app with the API key (F1.38)
+                }
+                if (localPort is { } port)
+                {
+                    o.Headers[LocalPortFilter.Header] = port.ToString(
+                        System.Globalization.CultureInfo.InvariantCulture
+                    );
+                }
+            })
             .AddJsonProtocol(o => o.PayloadSerializerOptions.TypeInfoResolver = EngineJsonContext.Default)
             .Build();
         return new RemoteEngineService(connection);

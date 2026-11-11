@@ -38,11 +38,7 @@ public class SourcesSectionTests
     public void ASourceSetInTheGatewaysConfigurationSaysSoAndItsConnectionCantBeEdited()
     {
         // #424: gateway.toml's [engine.kiss_serial] wins on every start.
-        var tnc = SourceSettings.KissSerialFor("/dev/ttyUSB0", 1200) with
-        {
-            Name = "USB TNC-X",
-            Configured = true,
-        };
+        var tnc = SourceSettings.KissSerialFor("/dev/ttyUSB0", 1200) with { Name = "USB TNC-X", Configured = true };
         var (section, _) = Create(BothOnRotate() with { Sources = [FakeEngine.Rotate, Euro, tnc] });
 
         section.Edit(section.Rows[^1]);

@@ -82,9 +82,8 @@ public sealed class WebViewerTests(GatewayFactory gateway) : IClassFixture<Gatew
         await using var viewer = await StartAsync(localNetwork: true);
 
         Assert.Equal("localhost", viewer.Addresses[0].Host);
-        Assert.All(
-            viewer.Addresses.Skip(1),
-            a => Assert.Equal(System.Net.Sockets.AddressFamily.InterNetwork, IPAddress.Parse(a.Host).AddressFamily)
+        Assert.All(viewer.Addresses.Skip(1), a =>
+            Assert.Equal(System.Net.Sockets.AddressFamily.InterNetwork, IPAddress.Parse(a.Host).AddressFamily)
         );
         using var http = new HttpClient { BaseAddress = viewer.Addresses[0] };
         Assert.Contains("viewer", await http.GetStringAsync("/", Ct), StringComparison.Ordinal);

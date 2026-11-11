@@ -270,15 +270,9 @@ public sealed partial class Engine
             string symbol;
             try
             {
-                symbol =
-                    PacketSummarizer
-                        .Summarize(
-                            AprsPacket.Parse(Encoding.Latin1.GetString(record.Raw)),
-                            record.ReceivedAt,
-                            false,
-                            false
-                        )
-                        .Symbol
+                symbol = PacketSummarizer
+                    .Summarize(AprsPacket.Parse(Encoding.Latin1.GetString(record.Raw)), record.ReceivedAt, false, false)
+                    .Symbol
                     ?? "/.";
             }
             catch (ArgumentException)

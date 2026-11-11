@@ -154,8 +154,7 @@ public sealed partial class ObjectsSectionViewModel(IEngineService engine, Local
         CoordinatesText = Where(placed.Latitude, placed.Longitude);
         SelectedSymbol = Symbols.FirstOrDefault(s => s.Symbol == placed.Symbol) ?? SymbolChoice.For(placed.Symbol);
         Comment = placed.Comment;
-        SelectedInterval =
-            Intervals.FirstOrDefault(i => i.Value == placed.IntervalMinutes)
+        SelectedInterval = Intervals.FirstOrDefault(i => i.Value == placed.IntervalMinutes)
             ?? Intervals.FirstOrDefault(i => i.Value == OwnObject.DefaultIntervalMinutes);
         Via.Clear();
         var profile = _settings.GetActiveProfile();

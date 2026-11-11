@@ -188,11 +188,8 @@ public sealed class SavedFiltersUiTests
     public async Task SettingsRenamesDeletesWithUndoMovesCopiesAndPastes()
     {
         var engine = new FakeEngine { Settings = With(false, StormSpotting, LocalRf) };
-        var section = new StationListsSectionViewModel(
-            engine,
-            new Localizer(CultureInfo.GetCultureInfo("en-US")),
-            _ => { }
-        );
+        var section = new StationListsSectionViewModel(engine, new Localizer(CultureInfo.GetCultureInfo("en-US")), _ =>
+        { });
         var copied = new List<string>();
         section.CopyToClipboard = text =>
         {
@@ -233,11 +230,8 @@ public sealed class SavedFiltersUiTests
     public async Task DeletingAListTakesItOutOfTheSavedFiltersThatShowedIt()
     {
         var engine = new FakeEngine { Settings = With(false, StormSpotting) };
-        var section = new StationListsSectionViewModel(
-            engine,
-            new Localizer(CultureInfo.GetCultureInfo("en-US")),
-            _ => { }
-        );
+        var section = new StationListsSectionViewModel(engine, new Localizer(CultureInfo.GetCultureInfo("en-US")), _ =>
+        { });
         section.Show(engine.Settings);
         section.Selected = section.Lists[0];
 

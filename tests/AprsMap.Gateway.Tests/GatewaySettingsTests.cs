@@ -76,9 +76,8 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
         );
 
         // F1.28 behavior 11, F3.2 behavior 12.
-        Assert.All(
-            new[] { watch, manual, line, leave },
-            e => Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code)
+        Assert.All(new[] { watch, manual, line, leave }, e =>
+            Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code)
         );
     }
 
@@ -98,9 +97,8 @@ public sealed class GatewaySettingsTests(GatewayFactory factory) : IClassFixture
         var history = await Assert.ThrowsAsync<EngineAccessException>(() => remote.GetHistoryStatusAsync(Ct));
 
         // F1.27 behavior 11; the history's status is the operator's too (F1.41 behavior 3).
-        Assert.All(
-            new[] { read, export, clear, history },
-            e => Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code)
+        Assert.All(new[] { read, export, clear, history }, e =>
+            Assert.Equal(EngineErrorCodes.OperatorOnly, e.EngineError.Code)
         );
     }
 

@@ -124,10 +124,7 @@ public sealed partial class Engine
             if (at < 0)
             {
                 // Not there: added, and used by the active profile when it can take it.
-                var added = configured.Apply(configured.Create()) with
-                {
-                    Configured = true,
-                };
+                var added = configured.Apply(configured.Create()) with { Configured = true };
                 sources.Add(added);
                 var active = profiles.FindIndex(p => p.Id == settings.ActiveProfileId);
                 if (active >= 0)

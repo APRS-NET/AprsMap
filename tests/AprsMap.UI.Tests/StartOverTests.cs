@@ -88,16 +88,11 @@ public sealed class StartOverTests
     {
         var text = new Localizer(System.Globalization.CultureInfo.GetCultureInfo("en-US"));
         var calls = 0;
-        var data = new DataSectionViewModel(
-            text,
-            sharedStation: false,
-            canResetStation: true,
-            _ =>
-            {
-                calls++;
-                throw EngineErrors.Create(EngineErrorCodes.SettingsReadOnly, "read only");
-            }
-        );
+        var data = new DataSectionViewModel(text, sharedStation: false, canResetStation: true, _ =>
+        {
+            calls++;
+            throw EngineErrors.Create(EngineErrorCodes.SettingsReadOnly, "read only");
+        });
 
         data.StartCommand.Execute(null);
         data.CancelCommand.Execute(null);

@@ -559,17 +559,15 @@ internal sealed partial class Messenger : IDisposable
                 _inFlight.Remove(outgoing);
                 LogSettled(_log, outgoing.To.Value, outgoing.MessageId ?? "-", state, outgoing.Attempts);
             }
-            Update(
-                id,
-                m =>
-                    m with
-                    {
-                        State = state,
-                        MessageId = outgoing.MessageId ?? m.MessageId,
-                        Attempts = outgoing.Attempts,
-                        MaxAttempts = outgoing.RetryProfile.Sends,
-                        NextTry = outgoing.IsFinished ? null : outgoing.NextDue,
-                    }
+            Update(id, m =>
+                m with
+                {
+                    State = state,
+                    MessageId = outgoing.MessageId ?? m.MessageId,
+                    Attempts = outgoing.Attempts,
+                    MaxAttempts = outgoing.RetryProfile.Sends,
+                    NextTry = outgoing.IsFinished ? null : outgoing.NextDue,
+                }
             );
         }
         SaveLater();

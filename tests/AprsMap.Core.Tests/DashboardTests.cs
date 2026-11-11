@@ -201,9 +201,8 @@ public sealed class DashboardTests
         var tables = (await engine.GetDashboardAsync(DashboardRange.Hour, cancellationToken: Ct)).Tables!;
 
         Assert.Equal(5, tables.Total); // the object's sender is a station too
-        var droid = Assert.Single(
-            tables.Platforms,
-            p => $"{p.Vendor} {p.Model}".Contains("APRSdroid", StringComparison.OrdinalIgnoreCase)
+        var droid = Assert.Single(tables.Platforms, p =>
+            $"{p.Vendor} {p.Model}".Contains("APRSdroid", StringComparison.OrdinalIgnoreCase)
         );
         Assert.Equal(2, droid.Count);
         Assert.Equal(new DashboardSymbol("/>", "Car", "Vehicles", 3), tables.Symbols[0]);

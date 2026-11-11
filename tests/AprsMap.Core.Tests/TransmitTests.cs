@@ -750,9 +750,8 @@ public sealed class TransmitTests
             await WaitUntil(() => Task.FromResult(Count(aprsIs, ":ANSRVR   :J NEDR{") == 1));
             await AnsrvrAcks(aprsIs, ":ANSRVR   :J NEDR{");
             var group = Conversation.ForGroup("NEDR");
-            Assert.Contains(
-                await station.Engine.GetConversationsAsync(Ct),
-                c => c.Correspondent == group && c.Group == "NEDR"
+            Assert.Contains(await station.Engine.GetConversationsAsync(Ct), c =>
+                c.Correspondent == group && c.Group == "NEDR"
             );
 
             // A member's post, relayed; then ANSRVR's notice; and a group this station isn't in stays an ordinary message.
