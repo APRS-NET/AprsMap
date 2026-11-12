@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.8.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.4...v0.8.0-alpha.5) (2026-11-12)
+
+
+### Bug Fixes
+
+* **deps:** Bump csharpier from 1.3.0 to 1.4.0 ([695bfce](https://github.com/APRS-NET/AprsMap/commit/695bfcef13acf6f0e1937a2554e1225a63f0be5b))
+* **deps:** Bump dotnet-reportgenerator-globaltool from 5.5.12 to 5.6.0 ([c1ddb81](https://github.com/APRS-NET/AprsMap/commit/c1ddb817a7e66afff2e0373e1c7bb031c0c632dd))
+* **deps:** Bump Microsoft.Data.Sqlite from 10.0.14 to 11.0.0 ([fdf3bb6](https://github.com/APRS-NET/AprsMap/commit/fdf3bb6d44f2c39e9fa97fb2371c58b23f39e5e7))
+* **deps:** Bump OpenTelemetry and 6 others ([0efc2eb](https://github.com/APRS-NET/AprsMap/commit/0efc2ebfbfcb7b76629a1981c70e530d2c33c0e9))
+* **deps:** Bump the avalonia group with 7 updates ([9746f9e](https://github.com/APRS-NET/AprsMap/commit/9746f9eb5ad2de4e661a0a163858bca9b347601c))
+* **deps:** Bump the microsoft-extensions group with 7 updates ([e3f8052](https://github.com/APRS-NET/AprsMap/commit/e3f8052d334983d5215f3481f38aff1b2d57cf33))
+* **deps:** Bump the test group with 1 update ([65452e4](https://github.com/APRS-NET/AprsMap/commit/65452e42092e358dae000af7e36c13768a035667))
+* **deps:** Bump the test group with 1 update ([7ce5d26](https://github.com/APRS-NET/AprsMap/commit/7ce5d26c816f75bad8cec12af03f1b98e22ba373))
+* **deps:** release the dependency bumps since 0.8.0-alpha.4 and reload Dependabot's config ([763f0bb](https://github.com/APRS-NET/AprsMap/commit/763f0bb3e8698ebabb42f2e70d0f28a45eec0d92))
+
 ## [0.8.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.3...v0.8.0-alpha.4) (2026-11-03)
 
 
