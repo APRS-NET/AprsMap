@@ -94,6 +94,11 @@ public sealed partial class Engine
         return list;
     }
 
+    private static bool SameDevice(SourceSettings a, SourceSettings b) =>
+        a.IsSerial
+            ? string.Equals(a.SerialPort, b.SerialPort, StringComparison.Ordinal)
+            : a.Host is { } host && string.Equals(host, b.Host, StringComparison.OrdinalIgnoreCase) && a.Port == b.Port;
+
     private static string Named(string? configured, string current) =>
         string.IsNullOrWhiteSpace(configured) ? current : configured.Trim();
 
@@ -114,11 +119,42 @@ public sealed partial class Engine
         foreach (var configured in ConfiguredSources())
         {
             var at = sources.FindIndex(s => s.Id == configured.Id);
+            // One adopted earlier keeps its own id, so it's found by its mark rather than by being the only one of its
+            // kind: adding a second USB TNC mustn't make the configured one come back as a copy.
+            var adopted = sources.FindIndex(s => s.Id != configured.Id && s.Configured && configured.IsKind(s));
+            if (at >= 0 && adopted >= 0)
+            {
+                // A copy an earlier version added beside the adopted one: removed, keeping the one with the history.
+                var copy = sources[at];
+                sources.RemoveAt(at);
+                for (var p = 0; p < profiles.Count; p++)
+                {
+                    if (profiles[p].SourceIds.Contains(copy.Id))
+                    {
+                        profiles[p] = profiles[p] with
+                        {
+                            SourceIds = [.. profiles[p].SourceIds.Where(id => id != copy.Id)],
+                        };
+                    }
+                }
+                LogConfiguredCopyRemoved(_logger, copy.Name);
+                changed = true;
+                adopted = sources.FindIndex(s => s.Id != configured.Id && s.Configured && configured.IsKind(s));
+                at = -1;
+            }
             if (at < 0)
             {
+                at = adopted;
+            }
+            if (at < 0)
+            {
+                // First time: the source on the configured device, else the one with the configured name, else the
+                // only one of its kind.
                 var ofKind = sources.Where(configured.IsKind).ToList();
-                var wanted = configured.Create().Name;
-                var adopt = ofKind.Find(s => s.Name == wanted) ?? (ofKind.Count == 1 ? ofKind[0] : null);
+                var wanted = configured.Apply(configured.Create());
+                var adopt = ofKind.Find(s => SameDevice(s, wanted))
+                    ?? ofKind.Find(s => s.Name == wanted.Name)
+                    ?? (ofKind.Count == 1 ? ofKind[0] : null);
                 at = adopt is null ? -1 : sources.IndexOf(adopt);
             }
             if (at < 0)
@@ -157,7 +193,8 @@ public sealed partial class Engine
             }
         }
         // The same settings when nothing changed, so a load with nothing to apply saves nothing.
-        return changed ? settings with { Sources = sources, Profiles = profiles } : settings;
+        // A removed copy leaves the beacons' Send via too.
+        return changed ? ForgetDeletedSources(settings with { Sources = sources, Profiles = profiles }) : settings;
     }
 
     private bool IsValid(AppSettings settings)
@@ -214,4 +251,10 @@ public sealed partial class Engine
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{Source}: added, from the configuration")]
     private static partial void LogConfiguredAdded(ILogger logger, string source);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "{Source}: a second copy added from the configuration was removed"
+    )]
+    private static partial void LogConfiguredCopyRemoved(ILogger logger, string source);
 }
