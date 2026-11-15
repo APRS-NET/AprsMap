@@ -26,6 +26,21 @@ public sealed partial class MainViewModel
     /// <summary>An update's dialog shows in the dialog overlay (F4.15 behavior 9).</summary>
     private void OnUpdatesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(AprsMap.UI.Updates.UpdatesViewModel.WhatsNew))
+        {
+            // What's new after an update (F4.15 behavior 11c); closing it is dismissing it, as OK is.
+            if (Updates.WhatsNew is { } news)
+            {
+                Dialog = new DialogViewModel(_text["Updates.WhatsNew.Title"], news, () =>
+                    _ = Updates.DismissWhatsNewAsync()
+                );
+            }
+            else if (Dialog?.Content is AprsMap.UI.Updates.WhatsNewViewModel)
+            {
+                Dialog = null;
+            }
+            return;
+        }
         if (e.PropertyName != nameof(AprsMap.UI.Updates.UpdatesViewModel.Dialog))
         {
             return;

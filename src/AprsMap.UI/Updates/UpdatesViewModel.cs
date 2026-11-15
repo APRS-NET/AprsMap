@@ -18,9 +18,172 @@ public sealed partial class UpdatesViewModel(
     IEngineService engine,
     Localizer text,
     Func<Uri, Task> openUri,
-    IAppInstaller? installer = null
+    IAppInstaller? installer = null,
+    TimeProvider? time = null
 ) : ObservableObject
 {
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
+    private ITimer? _autoTimer;
+    private ITimer? _restartTimer;
+    private SynchronizationContext? _context;
+    private DateTimeOffset? _autoFailedCheck; // the check after which an automatic download failed (F4.15 11a)
+    private bool _whatsNewShown;
+
+    /// <summary>
+    /// Whether this is the desktop app as a gateway's client (F1.39), whose automatic updates are never newer than the
+    /// gateway (F4.15 behavior 11a.2).
+    /// </summary>
+    public bool Client { get; init; }
+
+    /// <summary>The gateway's version, for a gateway's client; null until it's known.</summary>
+    [ObservableProperty]
+    public partial string? GatewayVersion { get; set; }
+
+    partial void OnGatewayVersionChanged(string? value) => ConsiderAutoInstall();
+
+    partial void OnStatusChanged(UpdateStatus? value)
+    {
+        _context ??= SynchronizationContext.Current;
+        ConsiderAutoInstall();
+        ShowWhatsNew();
+    }
+
+    /// <summary>When a downloaded update restarts the app by itself (F4.15 behavior 11b); null when it doesn't.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NoticeText))]
+    public partial DateTimeOffset? RestartAt { get; private set; }
+
+    /// <summary>
+    /// Install updates automatically (F4.15 behavior 11a), in an installed desktop build: downloads the offered update
+    /// once it's due (the engine's <see cref="UpdateStatus.AutoInstallAt"/>), and as a gateway's client only when it's
+    /// no newer than the gateway; looks again every ten minutes while one is due later.
+    /// </summary>
+    private void ConsiderAutoInstall()
+    {
+        if (
+            Gateway
+            || installer?.CanInstall != true
+            || Status is not { Update: { } update, AutoInstallAt: { } at } status
+            || Install is InstallState.Downloading or InstallState.Ready
+            || Install == InstallState.Failed && _autoFailedCheck == status.LastChecked
+        )
+        {
+            return;
+        }
+        if (Client && !NoNewerThanGateway(update.Version))
+        {
+            return;
+        }
+        if (at > _time.GetUtcNow())
+        {
+            _autoTimer ??= _time.CreateTimer(
+                _ => Post(ConsiderAutoInstall),
+                null,
+                TimeSpan.FromMinutes(10),
+                TimeSpan.FromMinutes(10)
+            );
+            return;
+        }
+        _ = InstallAutomaticallyAsync(update, status.LastChecked);
+    }
+
+    private bool NoNewerThanGateway(string version) =>
+        SemVersion.TryParse(GatewayVersion, out var gateway)
+        && SemVersion.TryParse(version, out var offered)
+        && offered <= gateway;
+
+    private async Task InstallAutomaticallyAsync(UpdateInfo update, DateTimeOffset? check)
+    {
+        await InstallAsync(update);
+        if (Install == InstallState.Failed)
+        {
+            _autoFailedCheck = check; // tried again at the next check
+        }
+    }
+
+    /// <summary>Restart automatically (F4.15 behavior 11b): once a download is ready, at the chosen time.</summary>
+    private async Task ScheduleRestartAsync()
+    {
+        AppSettings settings;
+        try
+        {
+            settings = await engine.GetSettingsAsync();
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException or IOException)
+        {
+            return;
+        }
+        if (!settings.EffectiveUpdates.AutoRestart || !IsReady)
+        {
+            return;
+        }
+        var at = NextLocal(settings.EffectiveUpdates.EffectiveRestartTime);
+        RestartAt = at;
+        _restartTimer?.Dispose();
+        _restartTimer = _time.CreateTimer(
+            _ => Post(RestartNow),
+            null,
+            at - _time.GetUtcNow(),
+            Timeout.InfiniteTimeSpan
+        );
+    }
+
+    /// <summary>The next moment, from now, when the computer's clock says <paramref name="time"/>.</summary>
+    private DateTimeOffset NextLocal(TimeOnly time)
+    {
+        var zone = _time.LocalTimeZone;
+        var now = TimeZoneInfo.ConvertTime(_time.GetUtcNow(), zone);
+        var day = now.TimeOfDay < time.ToTimeSpan() ? now.Date : now.Date.AddDays(1);
+        var local = DateTime.SpecifyKind(day + time.ToTimeSpan(), DateTimeKind.Unspecified);
+        if (zone.IsInvalidTime(local))
+        {
+            local = local.AddHours(1);
+        }
+        return new DateTimeOffset(local, zone.GetUtcOffset(local));
+    }
+
+    private void Post(Action action)
+    {
+        if (_context is null)
+        {
+            action();
+        }
+        else
+        {
+            _context.Post(_ => action(), null);
+        }
+    }
+
+    /// <summary>What's new after an update (F4.15 behavior 11c), while it's open.</summary>
+    [ObservableProperty]
+    public partial WhatsNewViewModel? WhatsNew { get; private set; }
+
+    private void ShowWhatsNew()
+    {
+        if (!_whatsNewShown && Status?.WhatsNew is { Count: > 0 } news)
+        {
+            _whatsNewShown = true;
+            WhatsNew = new WhatsNewViewModel(news, text, this);
+        }
+    }
+
+    /// <summary>OK, or closing the dialog: What's new isn't shown again for these versions.</summary>
+    internal async Task DismissWhatsNewAsync()
+    {
+        WhatsNew = null;
+        try
+        {
+            await engine.DismissWhatsNewAsync();
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException or IOException)
+        {
+            // Shown again at the next start; nothing else to do.
+        }
+    }
+
+    /// <summary>Opens a release's page, from What's new.</summary>
+    internal Task OpenReleaseAsync(UpdateInfo release) => openUri(release.ReleasePage);
+
     /// <summary>How many lines of the notes the dialog shows before Release notes (behavior 9.1).</summary>
     public const int NotesLines = 40;
 
@@ -113,6 +276,14 @@ public sealed partial class UpdatesViewModel(
                 {
                     ["version"] = _installing?.Version,
                     ["percent"] = Progress.ToString("P0", text.Culture),
+                }
+            ),
+            InstallState.Ready when RestartAt is { } restart => text.Format(
+                "Updates.ReadyRestartNotice",
+                new Dictionary<string, object?>
+                {
+                    ["version"] = _installing?.Version,
+                    ["time"] = TimeZoneInfo.ConvertTime(restart, _time.LocalTimeZone).ToString("t", text.Culture),
                 }
             ),
             InstallState.Ready => text.Format(
@@ -321,6 +492,7 @@ public sealed partial class UpdatesViewModel(
             await installer.DownloadAsync(update, progress, download.Token);
             installer.ApplyOnExit();
             Install = InstallState.Ready;
+            await ScheduleRestartAsync(); // F4.15 behavior 11b
         }
         catch (OperationCanceledException)
         {
@@ -490,6 +662,52 @@ public sealed partial class UpdateDialogViewModel(
     /// <summary>Closes the dialog.</summary>
     [RelayCommand]
     private void Close() => owner.Close();
+}
+
+/// <summary>
+/// What's new (F4.15 behavior 11c): each version since the last one that ran, newest first, with its notes; OK
+/// dismisses it for good.
+/// </summary>
+public sealed partial class WhatsNewViewModel(
+    IReadOnlyList<UpdateInfo> releases,
+    Localizer text,
+    UpdatesViewModel owner
+) : ObservableObject
+{
+    /// <summary>"Updated to 0.9.0".</summary>
+    public string Heading { get; } =
+        text.Format("Updates.WhatsNew.Heading", new Dictionary<string, object?> { ["version"] = releases[0].Version });
+
+    /// <summary>Each version's heading and notes.</summary>
+    public IReadOnlyList<WhatsNewRelease> Releases { get; } =
+    [.. releases.Select(r => new WhatsNewRelease(r, text, owner))];
+
+    /// <summary>OK: read.</summary>
+    [RelayCommand]
+    private Task OkAsync() => owner.DismissWhatsNewAsync();
+}
+
+/// <summary>One version in What's new.</summary>
+public sealed partial class WhatsNewRelease(UpdateInfo release, Localizer text, UpdatesViewModel owner)
+    : ObservableObject
+{
+    /// <summary>"0.9.0 · 20 October 2026".</summary>
+    public string Heading { get; } =
+        $"{release.Version} · {release.Published.ToString("d", text.Culture ?? CultureInfo.InvariantCulture)}";
+
+    /// <summary>Its notes, formatted, the first lines only.</summary>
+    public IReadOnlyList<NoteBlock> Blocks { get; } =
+        ReleaseNotes.Parse(
+            string.Join(
+                '\n',
+                release.Notes.Replace("\r", "", StringComparison.Ordinal).Split('\n').Take(UpdatesViewModel.NotesLines)
+            ),
+            release.Version
+        );
+
+    /// <summary>The full notes, on the release page.</summary>
+    [RelayCommand]
+    private Task ReleaseNotesAsync() => owner.OpenReleaseAsync(release);
 }
 
 /// <summary>Where installing an update stands (behavior 11).</summary>

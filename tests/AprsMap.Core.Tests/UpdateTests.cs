@@ -695,4 +695,147 @@ public sealed class UpdateTests
             Assert.Null((await engine.GetUpdateStatusAsync(Ct)).AutoInstallAt);
         }
     }
+
+    /// <summary>
+    /// An installed desktop build's engine (F4.15 behavior 11a), its own or, with <paramref name="client"/>, a gateway
+    /// client's update-only one, at <paramref name="now"/>, offered 0.9.0 (published 2026-10-20 12:00 UTC).
+    /// </summary>
+    private static async Task<(Engine Engine, InMemorySettingsStore Store)> DesktopAsync(
+        DateTimeOffset now,
+        bool autoInstall,
+        bool client = false,
+        string? lastRun = null,
+        params string[] tags
+    )
+    {
+        tags = tags.Length == 0 ? ["v0.9.0"] : tags;
+        var github = new FakeGitHub
+        {
+            Answer = _ =>
+                Json("[" + string.Join(',', tags.Select(t => Release(t, false, "releases.linux-x64.json"))) + "]"),
+        };
+        var store = InMemorySettingsStore.WithProfile();
+        if (lastRun is not null)
+        {
+            // As an earlier version left it: the engine's own field, so stored directly.
+            await store.SaveAsync(
+                store.Stored! with
+                {
+                    Updates = store.Stored!.EffectiveUpdates with { LastRunVersion = lastRun },
+                },
+                Ct
+            );
+        }
+        var engine = new Engine(
+            Options.Create(
+                new EngineOptions
+                {
+                    UpdatesOnly = client,
+                    Updates = new UpdateOptions { Kind = InstallKind.Installed, RuntimeId = "linux-x64" },
+                }
+            ),
+            new EngineTests.FakeSourceFactory(),
+            store,
+            new FakeTimeProvider(now),
+            NullLogger<Engine>.Instance
+        )
+        {
+            UpdateHttp = new HttpClient(github),
+            RunningVersion = "0.8.0",
+        };
+        var settings = await engine.GetSettingsAsync(Ct);
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Updates = settings.EffectiveUpdates with { AutoInstall = autoInstall },
+            },
+            Ct
+        );
+        await engine.CheckForUpdateAsync(Ct);
+        return (engine, store);
+    }
+
+    private static readonly DateTimeOffset Released = DateTimeOffset.Parse("2026-10-20T12:00:00Z", null);
+
+    [Fact]
+    public async Task TheDesktopDownloadsAutomaticallyADayAfterTheReleaseOnlyWithTheSwitchOn()
+    {
+        var (off, _) = await DesktopAsync(Released.AddHours(30), autoInstall: false);
+        using (off)
+        {
+            Assert.Null((await off.GetUpdateStatusAsync(Ct)).AutoInstallAt);
+        }
+        var (on, _) = await DesktopAsync(Released.AddHours(30), autoInstall: true);
+        using (on)
+        {
+            Assert.Equal(Released.AddHours(24), (await on.GetUpdateStatusAsync(Ct)).AutoInstallAt);
+            Assert.False(await on.AutoInstallIfDueAsync(Ct)); // the desktop's UI installs, not the engine
+        }
+    }
+
+    [Fact]
+    public async Task AGatewaysClientMayDownloadAsSoonAsItsOutForItsUiToHoldToTheGateway()
+    {
+        var (engine, _) = await DesktopAsync(Released.AddHours(1), autoInstall: true, client: true);
+        using (engine)
+        {
+            Assert.Equal(Released, (await engine.GetUpdateStatusAsync(Ct)).AutoInstallAt);
+        }
+    }
+
+    [Fact]
+    public async Task AFirstRunIsOnlyRecordedWithNothingNewToShow()
+    {
+        var (engine, store) = await DesktopAsync(Released.AddDays(2), autoInstall: false);
+        using (engine)
+        {
+            Assert.Null((await engine.GetUpdateStatusAsync(Ct)).WhatsNew);
+            Assert.Equal("0.8.0", store.Stored!.EffectiveUpdates.LastRunVersion);
+        }
+    }
+
+    [Fact]
+    public async Task AfterAnUpdateWhatsNewListsEachVersionSinceTheLastOneThatRanUntilDismissed()
+    {
+        var (engine, store) = await DesktopAsync(
+            Released.AddDays(2),
+            autoInstall: false,
+            lastRun: "0.7.0",
+            tags: ["v0.7.0", "v0.7.5", "v0.8.0", "v0.9.0"]
+        );
+        using (engine)
+        {
+            var news = Assert.IsAssignableFrom<IReadOnlyList<UpdateInfo>>(
+                (await engine.GetUpdateStatusAsync(Ct)).WhatsNew
+            );
+            Assert.Equal(["0.8.0", "0.7.5"], news.Select(n => n.Version)); // newest first, not the one offered
+            Assert.Equal("Notes for v0.8.0", news[0].Notes);
+
+            await engine.DismissWhatsNewAsync(Ct);
+
+            Assert.Null((await engine.GetUpdateStatusAsync(Ct)).WhatsNew);
+            Assert.Equal("0.8.0", store.Stored!.EffectiveUpdates.LastRunVersion);
+            await engine.CheckForUpdateAsync(Ct);
+            Assert.Null((await engine.GetUpdateStatusAsync(Ct)).WhatsNew); // for good
+        }
+    }
+
+    [Fact]
+    public async Task ASaveFromTheAppKeepsTheLastVersionThatRan()
+    {
+        var (engine, store) = await DesktopAsync(Released.AddDays(2), autoInstall: false, lastRun: "0.7.0");
+        using (engine)
+        {
+            var settings = await engine.GetSettingsAsync(Ct);
+            await engine.SaveSettingsAsync(
+                settings with
+                {
+                    Updates = settings.EffectiveUpdates with { LastRunVersion = "0.8.0" },
+                },
+                Ct
+            );
+
+            Assert.Equal("0.7.0", store.Stored!.EffectiveUpdates.LastRunVersion);
+        }
+    }
 }

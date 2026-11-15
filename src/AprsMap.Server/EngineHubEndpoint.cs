@@ -658,6 +658,14 @@ internal sealed class EngineHubEndpoint(
         return engine.SkipUpdateAsync(version, Context.ConnectionAborted);
     }
 
+    /// <summary>What's new was read (F4.15 behavior 11c): whoever sees the update notice, as Skip.</summary>
+    [HubMethodName(EngineHub.DismissWhatsNew)]
+    public Task DismissWhatsNew()
+    {
+        Require(EngineErrorCodes.OperatorOnly, EngineHub.OperatorOnlyMessage);
+        return engine.DismissWhatsNewAsync(Context.ConnectionAborted);
+    }
+
     /// <summary>
     /// Update and restart on the Linux service gateway (docs/features/F1.40-gateway-service-updates.md, behavior 4): a
     /// signed-in operator or an app with the key only, whatever <c>AllowSettingsChanges</c> says, since it reaches root.

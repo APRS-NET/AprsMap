@@ -470,6 +470,12 @@ public interface IEngineService
     Task SkipUpdateAsync(string version, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// What's new was read (docs/features/F4.15-updates.md, behavior 11c): the running version is recorded as the last
+    /// that ran, so the dialog isn't shown again. Operator-only on a gateway.
+    /// </summary>
+    Task DismissWhatsNewAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Update and restart on the Linux service gateway (docs/features/F1.40-gateway-service-updates.md, behavior 4):
     /// asks its updater to install <paramref name="version"/>, the update offered; where it stands is in
     /// <see cref="UpdateStatus.Install"/>. The operator's only.

@@ -5620,6 +5620,29 @@ pause 1s</value>
     <value>Restart to finish updating to {version}</value>
     <comment>version: a version such as 0.5.0-alpha.1.</comment>
   </data>
+  <data name="Updates.ReadyRestartNotice" xml:space="preserve">
+    <value>Update to {version} ready: restarts at {time}</value>
+    <comment>version: a version such as 0.9.0; time: a local time such as 03:00.</comment>
+  </data>
+  <data name="Updates.WhatsNew.Title" xml:space="preserve">
+    <value>What's new</value>
+  </data>
+  <data name="Updates.WhatsNew.Heading" xml:space="preserve">
+    <value>Updated to {version}</value>
+    <comment>version: the version now running.</comment>
+  </data>
+  <data name="Updates.WhatsNew.Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Updates.Auto.DesktopDescription" xml:space="preserve">
+    <value>The app downloads a new release by itself a day after it comes out and puts it in when you close the app. Connected to a gateway, it only takes a version the gateway already runs, so it never gets ahead of it.</value>
+  </data>
+  <data name="Updates.Auto.Restart" xml:space="preserve">
+    <value>Restart automatically to finish an update</value>
+  </data>
+  <data name="Updates.Auto.RestartAt" xml:space="preserve">
+    <value>At</value>
+  </data>
   <data name="Updates.Ready" xml:space="preserve">
     <value>The update is downloaded. It goes in when you close the app, or restart now to use it straight away.</value>
   </data>

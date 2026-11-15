@@ -485,6 +485,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             {
                 LastChecked = old.EffectiveUpdates.LastChecked,
                 AutoInstallFailed = old.EffectiveUpdates.AutoInstallFailed, // the engine's (F1.40 behavior 8)
+                LastRunVersion = old.EffectiveUpdates.LastRunVersion, // and this (F4.15 behavior 11c)
             },
         };
 
