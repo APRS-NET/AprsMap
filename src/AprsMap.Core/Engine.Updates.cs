@@ -29,6 +29,9 @@ public sealed partial class Engine
     private UpdateChecker? _updateChecker;
     private UpdateStatus? _update;
 
+    // What's new since the last version that ran (F4.15 behavior 11c), from the last check's release list. Under _gate.
+    private IReadOnlyList<UpdateInfo>? _whatsNew;
+
     /// <summary>The HTTP client the check uses; tests give their own.</summary>
     internal HttpClient? UpdateHttp { get; set; }
 
@@ -66,7 +69,11 @@ public sealed partial class Engine
                 CanInstall = _options.Updates.Kind == InstallKind.Service, // F1.40
                 Install = ServiceInstallNow(),
             };
-            status = status with { AutoInstallAt = AutoInstallAt(settings, status.Update, _time.GetUtcNow()) }; // F1.40 behavior 8
+            status = status with
+            {
+                AutoInstallAt = AutoInstallAt(settings, status.Update, _time.GetUtcNow()), // F1.40 behavior 8, F4.15 11a
+                WhatsNew = IsNewerThanLastRun(settings) && _whatsNew is { Count: > 0 } news ? news : null, // F4.15 11c
+            };
             // With Check for updates off, nothing is offered or warned about unless Check now was pressed (behavior 6).
             return settings.EffectiveUpdates.Check || _checkedByHand
                 ? status
@@ -117,6 +124,32 @@ public sealed partial class Engine
             {
                 _update = _update with { Update = null }; // until a newer one comes out (behavior 9.3)
             }
+        }
+        PublishUpdate(await GetUpdateStatusAsync(cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>Whether this version is newer than the last one that ran (F4.15 behavior 11c).</summary>
+    private bool IsNewerThanLastRun(AppSettings settings) =>
+        SemVersion.TryParse(settings.EffectiveUpdates.LastRunVersion, out var last)
+        && SemVersion.TryParse(RunningVersion, out var running)
+        && running.CompareTo(last) > 0;
+
+    /// <inheritdoc />
+    public async Task DismissWhatsNewAsync(CancellationToken cancellationToken = default)
+    {
+        var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
+        await SaveAsync(
+                settings with
+                {
+                    Updates = settings.EffectiveUpdates with { LastRunVersion = RunningVersion },
+                },
+                trusted: true,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
+        lock (_gate)
+        {
+            _whatsNew = null;
         }
         PublishUpdate(await GetUpdateStatusAsync(cancellationToken).ConfigureAwait(false));
     }
@@ -188,6 +221,10 @@ public sealed partial class Engine
                 );
             lock (_gate)
             {
+                if (releases is not null)
+                {
+                    _whatsNew = UpdateChecker.Since(releases, settings.EffectiveUpdates.LastRunVersion, RunningVersion);
+                }
                 _update = new UpdateStatus(
                     RunningVersion,
                     ChannelOf(settings),
@@ -201,7 +238,12 @@ public sealed partial class Engine
             await SaveAsync(
                     latest with
                     {
-                        Updates = latest.EffectiveUpdates with { LastChecked = now },
+                        Updates = latest.EffectiveUpdates with
+                        {
+                            LastChecked = now,
+                            // A first run, or the first of a version that keeps it, is only recorded (F4.15 11c).
+                            LastRunVersion = latest.EffectiveUpdates.LastRunVersion ?? RunningVersion,
+                        },
                     },
                     trusted: true,
                     cancellationToken

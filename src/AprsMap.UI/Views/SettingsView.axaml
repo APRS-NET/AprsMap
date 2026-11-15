@@ -1978,7 +1978,35 @@
                   OnContent="{l:T Updates.Auto.Switch}"
                   OffContent="{l:T Updates.Auto.Switch}"
                 />
-                <TextBlock Text="{l:T Updates.Auto.Description}" TextWrapping="Wrap" />
+                <TextBlock
+                  Text="{Binding Data.UpdateChecks.AutoInstallDescription, FallbackValue={x:Null}}"
+                  TextWrapping="Wrap"
+                />
+                <!-- Restart automatically (docs/features/F4.15-updates.md, behavior 11b): the desktop's choice. -->
+                <WrapPanel
+                  ItemSpacing="12"
+                  LineSpacing="8"
+                  IsVisible="{Binding Data.UpdateChecks.ShowsAutoRestart, FallbackValue=False}"
+                >
+                  <ToggleSwitch
+                    x:Name="UpdateAutoRestartSwitch"
+                    IsChecked="{Binding Data.UpdateChecks.AutoRestartOn, FallbackValue=False}"
+                    OnContent="{l:T Updates.Auto.Restart}"
+                    OffContent="{l:T Updates.Auto.Restart}"
+                    IsEnabled="{Binding Data.UpdateChecks.AutoInstallOn, FallbackValue=False}"
+                  />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{l:T Updates.Auto.RestartAt}" VerticalAlignment="Center" />
+                    <TimePicker
+                      x:Name="UpdateRestartTime"
+                      ClockIdentifier="24HourClock"
+                      MinuteIncrement="15"
+                      SelectedTime="{Binding Data.UpdateChecks.RestartTime, FallbackValue={x:Null}}"
+                      IsEnabled="{Binding Data.UpdateChecks.AutoRestartOn, FallbackValue=False}"
+                      AutomationProperties.Name="{l:T Updates.Auto.Restart}"
+                    />
+                  </StackPanel>
+                </WrapPanel>
                 <TextBlock
                   x:Name="UpdateAutoText"
                   Text="{Binding Data.UpdateChecks.AutoInstallText, FallbackValue={x:Null}}"

@@ -360,6 +360,16 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
+    /// <summary>How many times What's new was dismissed.</summary>
+    public int WhatsNewDismissed { get; private set; }
+
+    public Task DismissWhatsNewAsync(CancellationToken cancellationToken = default)
+    {
+        WhatsNewDismissed++;
+        UpdateStatus = UpdateStatus with { WhatsNew = null };
+        return Task.CompletedTask;
+    }
+
     /// <summary>The bulletins <see cref="PostBulletinAsync"/> was asked to post, in order.</summary>
     public List<BulletinPost> PostedBulletins { get; } = [];
 
