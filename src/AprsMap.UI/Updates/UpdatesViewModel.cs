@@ -361,8 +361,11 @@ public sealed partial class UpdatesViewModel(
     [ObservableProperty]
     public partial UpdateDialogViewModel? Dialog { get; private set; }
 
-    /// <summary>Follows the engine's update status until cancelled; a refusal (a gateway viewer) ends it quietly.</summary>
-    internal async Task WatchAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// Follows the engine's update status until cancelled. True when the engine refused it (behavior 15): not this
+    /// viewer's, such as an operator whose sign-in ended, so the caller stops asking rather than asking again.
+    /// </summary>
+    internal async Task<bool> WatchAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -370,10 +373,16 @@ public sealed partial class UpdatesViewModel(
             {
                 Status = status;
             }
+            return false;
         }
-        catch (Exception ex) when (ex is UnauthorizedAccessException or InvalidOperationException or IOException)
+        catch (UnauthorizedAccessException)
         {
             Status = null; // not this viewer's to know (behavior 15)
+            return true;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException)
+        {
+            return false; // the connection dropped: asked again once it's back
         }
     }
 

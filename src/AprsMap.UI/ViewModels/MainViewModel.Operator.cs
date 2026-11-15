@@ -151,6 +151,31 @@ public sealed partial class MainViewModel
         }
     }
 
+    private bool _signInEnded;
+
+    /// <summary>
+    /// The gateway refused this page something only its operator may do, while the page thinks it's the operator: the
+    /// sign-in may have ended (a gateway restart signs everyone out, F2.9; or it expired). Asks again who this page is,
+    /// and if it's no longer the operator, starts the page again as a viewer, as signing out does, so it shows Sign in
+    /// rather than offering what it can't do.
+    /// </summary>
+    internal async Task SignInEndedAsync()
+    {
+        if (!SharedStation || Auth?.Operator != true || _signInEnded)
+        {
+            return;
+        }
+        _signInEnded = true;
+        await LoadAuthAsync();
+        if (IsOperator)
+        {
+            _signInEnded = false; // still signed in: the refusal was something else
+            return;
+        }
+        ShowToast(_text["Operator.SignInEnded"], warning: true);
+        Restart?.Invoke();
+    }
+
     /// <summary>Opens the Sign in dialog.</summary>
     [RelayCommand]
     private void OpenSignIn()

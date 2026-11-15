@@ -1217,9 +1217,14 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or InvalidOperationException)
         {
             Error = _text.Describe(ex);
+            Show(_settings); // a switch flipped back: it didn't take effect
+            Refused?.Invoke(ex); // and said where it's seen, not only at the top of the section
             return false;
         }
     }
+
+    /// <summary>Told when a save is refused, with why, so the app can say so where it's seen.</summary>
+    public Action<Exception>? Refused { get; init; }
 }
 
 /// <summary>One source in Settings › Sources.</summary>

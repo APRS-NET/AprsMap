@@ -247,6 +247,79 @@ public sealed partial class MainViewModel : ObservableObject
         return result;
     }
 
+    /// <summary>
+    /// A short notice at the bottom of the window, over Settings and dialogs: "Saved" when a setting that applies as
+    /// it's switched was saved, or why it wasn't; gone by itself after a few seconds. Null when there's none.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? Toast { get; private set; }
+
+    /// <summary>Whether <see cref="Toast"/> is a refusal, in the warning colour.</summary>
+    [ObservableProperty]
+    public partial bool ToastIsWarning { get; private set; }
+
+    /// <summary>How long a notice stays: a confirmation briefly, a refusal long enough to read.</summary>
+    internal static readonly TimeSpan ToastTime = TimeSpan.FromSeconds(3);
+
+    internal static readonly TimeSpan WarningToastTime = TimeSpan.FromSeconds(8);
+
+    private ITimer? _toastTimer;
+    private int _toastNumber;
+
+    /// <summary>Shows <paramref name="text"/> as the notice, replacing any, and hides it after its time.</summary>
+    internal void ShowToast(string text, bool warning = false)
+    {
+        Toast = text;
+        ToastIsWarning = warning;
+        var number = ++_toastNumber;
+        var context = SynchronizationContext.Current;
+        _toastTimer?.Dispose();
+        _toastTimer = time.CreateTimer(
+            _ =>
+            {
+                void Hide()
+                {
+                    if (number == _toastNumber)
+                    {
+                        Toast = null;
+                    }
+                }
+                if (context is null)
+                {
+                    Hide();
+                }
+                else
+                {
+                    context.Post(_ => Hide(), null);
+                }
+            },
+            null,
+            warning ? WarningToastTime : ToastTime,
+            Timeout.InfiniteTimeSpan
+        );
+    }
+
+    /// <summary>A section saved a setting as it was switched: the settings shown, and "Saved".</summary>
+    private void SavedFromSection(AppSettings settings)
+    {
+        Show(settings);
+        ShowToast(_text["Settings.Saved"]);
+    }
+
+    /// <summary>
+    /// A section's save was refused: why, where it's seen; and if it's because the sign-in ended, the page starts again
+    /// as a viewer.
+    /// </summary>
+    private void RefusedFromSection(Exception error)
+    {
+        if (error is IHasEngineError { EngineError.Code: EngineErrorCodes.OperatorOnly } && IsOperator)
+        {
+            _ = SignInEndedAsync();
+            return;
+        }
+        ShowToast(_text.Describe(error), warning: true);
+    }
+
     /// <summary>Hides <see cref="LayoutNotice"/>.</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     internal void DismissLayoutNotice() => LayoutNotice = null;
@@ -550,7 +623,9 @@ public sealed partial class MainViewModel : ObservableObject
                     ? (() => _settings?.EffectiveAging ?? StationAging.Default, SaveAging)
                     : null
             );
-        var sources = IsViewerOnly ? null : new SourcesSectionViewModel(engine, _text, Show);
+        var sources = IsViewerOnly
+            ? null
+            : new SourcesSectionViewModel(engine, _text, SavedFromSection) { Refused = RefusedFromSection };
         var beacons = IsViewerOnly ? null : new BeaconsSectionViewModel(engine, _text, Show);
         var messaging =
             IsViewerOnly || _settings is not { ReadOnly: false }
@@ -900,7 +975,7 @@ public sealed partial class MainViewModel : ObservableObject
         await Bulletins.LoadAsync();
         var bulletins = KeepAsync(Bulletins.WatchAsync, cancellationToken);
         // Updates are the operator's (F4.15 behavior 15): the desktop's user, or a signed-in gateway operator.
-        var updates = OwnUpdates || IsOperator ? KeepAsync(Updates.WatchAsync, cancellationToken) : Task.CompletedTask;
+        var updates = OwnUpdates || IsOperator ? WatchUpdatesAsync(cancellationToken) : Task.CompletedTask;
         await Task.WhenAll(packets, stations, status, countdown, messages, bulletins, updates);
     }
 
@@ -1656,6 +1731,43 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Runs <paramref name="run"/> until cancelled, retrying after failures and after the stream ends.</summary>
+    /// <summary>
+    /// Follows the update status as <see cref="KeepAsync"/> does, but stops once the gateway refuses it: an operator's
+    /// sign-in ended (a gateway restart signs everyone out, F2.9), so the page starts again as a viewer instead of
+    /// asking every two seconds.
+    /// </summary>
+    private async Task WatchUpdatesAsync(CancellationToken cancellationToken)
+    {
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            bool refused;
+            try
+            {
+                refused = await Updates.WatchAsync(cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            if (refused)
+            {
+                if (SharedStation)
+                {
+                    await SignInEndedAsync();
+                }
+                return;
+            }
+            try
+            {
+                await Task.Delay(RetryDelay, time, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+        }
+    }
+
     private async Task KeepAsync(Func<CancellationToken, Task> run, CancellationToken cancellationToken)
     {
         // Leaves only through cancellation: of the run, or of the wait before the next one.
@@ -1678,6 +1790,10 @@ public sealed partial class MainViewModel : ObservableObject
                 {
                     _engineUnreachable = true;
                     ShowConnection();
+                }
+                else if (ex is IHasEngineError { EngineError.Code: EngineErrorCodes.OperatorOnly } && IsOperator)
+                {
+                    await SignInEndedAsync();
                 }
                 else
                 {
