@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.7](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.6...v0.8.0-alpha.7) (2026-11-15)
+
+
+### Features
+
+* **gateway:** install updates automatically on the Linux service, off by default ([1ff0ca4](https://github.com/APRS-NET/AprsMap/commit/1ff0ca415a8924c9e7ab3461b3df41c887460a6e))
+
 ## [0.8.0-alpha.6](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.5...v0.8.0-alpha.6) (2026-11-15)
 
 
