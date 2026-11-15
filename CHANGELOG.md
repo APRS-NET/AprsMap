@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.6](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.5...v0.8.0-alpha.6) (2026-11-15)
+
+
+### Bug Fixes
+
+* **engine:** a second USB TNC no longer brings the configured one back as a copy ([e00e92a](https://github.com/APRS-NET/AprsMap/commit/e00e92ab5bb8375d6e15e0499ceb85e0772bd1c0))
+
 ## [0.8.0-alpha.5](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.4...v0.8.0-alpha.5) (2026-11-12)
 
 
