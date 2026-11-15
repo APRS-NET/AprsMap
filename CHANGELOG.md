@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.9](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.8...v0.8.0-alpha.9) (2026-11-15)
+
+
+### Bug Fixes
+
+* **ui:** a page signed out by a gateway restart starts again as a viewer, and switches say they saved ([d899acd](https://github.com/APRS-NET/AprsMap/commit/d899acd6eb18592c5036b9ec3c1ef75f161eec04))
+
 ## [0.8.0-alpha.8](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.7...v0.8.0-alpha.8) (2026-11-15)
 
 
