@@ -16,11 +16,21 @@ public enum UpdateChannel
 /// <param name="Channel">Pre-releases or Stable; null for the running build's own (behavior 5).</param>
 /// <param name="SkippedVersion">A version the user skipped: not offered again, only a newer one.</param>
 /// <param name="LastChecked">When the last check ran, so a restart within a day doesn't check again. Set by the engine.</param>
+/// <param name="AutoInstall">
+/// Install updates automatically, on the Linux service gateway (docs/features/F1.40-gateway-service-updates.md,
+/// behavior 8): off by default, and only the operator changes it.
+/// </param>
+/// <param name="AutoInstallFailed">
+/// A version whose automatic install failed: never installed automatically again, only a newer one (F1.40 behavior 8).
+/// Set by the engine.
+/// </param>
 public sealed record UpdateSettings(
     bool Check = true,
     UpdateChannel? Channel = null,
     string? SkippedVersion = null,
-    DateTimeOffset? LastChecked = null
+    DateTimeOffset? LastChecked = null,
+    bool AutoInstall = false,
+    string? AutoInstallFailed = null
 )
 {
     /// <summary>Checking, on the build's own channel.</summary>
@@ -67,6 +77,10 @@ public sealed record UpdateInfo(
 /// behavior 1). The installed desktop installs through its own installer instead.
 /// </param>
 /// <param name="Install">Where the service gateway's update stands (F1.40 behavior 5); null with none.</param>
+/// <param name="AutoInstallAt">
+/// When the offered update will be installed automatically (F1.40 behavior 8): the earliest moment it's due and in the
+/// night's window; null when it won't be.
+/// </param>
 public sealed record UpdateStatus(
     string Running,
     UpdateChannel Channel,
@@ -77,7 +91,8 @@ public sealed record UpdateStatus(
     bool Checking = false,
     bool CheckOff = false,
     bool CanInstall = false,
-    ServiceInstall? Install = null
+    ServiceInstall? Install = null,
+    DateTimeOffset? AutoInstallAt = null
 );
 
 /// <summary>A step of the service gateway's update (docs/features/F1.40-gateway-service-updates.md, behavior 4).</summary>

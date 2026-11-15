@@ -481,7 +481,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     private static AppSettings KeepUpdateState(AppSettings settings, AppSettings old) =>
         settings with
         {
-            Updates = settings.EffectiveUpdates with { LastChecked = old.EffectiveUpdates.LastChecked },
+            Updates = settings.EffectiveUpdates with
+            {
+                LastChecked = old.EffectiveUpdates.LastChecked,
+                AutoInstallFailed = old.EffectiveUpdates.AutoInstallFailed, // the engine's (F1.40 behavior 8)
+            },
         };
 
     /// <summary>
@@ -767,6 +771,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         var sweeping = SweepAsync(cancellationToken);
         var others = RunOtherSourcesAsync(cancellationToken);
         var updates = RunUpdatesAsync(cancellationToken); // F4.15
+        var autoInstall = RunAutoInstallAsync(cancellationToken); // F1.40 behavior 8
         var devices = RunDeviceListAsync(cancellationToken); // F4.16
         await LoadHistoryAsync(cancellationToken).ConfigureAwait(false); // #386: before anything is counted
         SaveDashboardHours(); // F1.41 behavior 11: the hours the minutes hold, an older file's too
@@ -781,6 +786,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             await others.ConfigureAwait(false);
             await sweeping.ConfigureAwait(false);
             await updates.ConfigureAwait(false);
+            await autoInstall.ConfigureAwait(false);
             await devices.ConfigureAwait(false);
             await gps.ConfigureAwait(false);
             await saving.ConfigureAwait(false);

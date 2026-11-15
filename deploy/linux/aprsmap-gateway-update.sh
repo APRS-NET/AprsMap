@@ -153,6 +153,11 @@ stays_up() {
 }
 
 systemctl stop "$service"
+# The settings as the installed version left them, for a rollback (behavior 9): a newer version may rewrite them.
+settings="$data/settings.json"
+if [ -f "$settings" ]; then
+  cp -p "$settings" "$settings.before-update"
+fi
 rm -rf "$previous"
 mv "$app" "$previous"
 mv "$staging" "$app"
@@ -169,6 +174,9 @@ systemctl stop "$service" || true
 rm -rf "$app.failed"
 mv "$app" "$app.failed"
 mv "$previous" "$app"
+if [ -f "$settings.before-update" ]; then
+  cp -p "$settings.before-update" "$settings" # the settings it knows (behavior 9)
+fi
 install_units
 systemctl start "$service" || true
 fail "$version didn't stay running, so $installed is back (journalctl -u $service)"

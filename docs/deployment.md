@@ -296,9 +296,13 @@ dialog has **Update and restart** (docs/features/F1.40-gateway-service-updates.m
 in `/var/lib/aprsmap`; `aprsmap-gateway-update.path` starts the updater as root, which downloads the release's tarball
 for this machine and its `.sha256`, checks it, swaps it into `/opt/aprsmap-gateway` (keeping the old one as
 `/opt/aprsmap-gateway.previous`) and restarts the service. If the new version doesn't stay up for 30 seconds, the old
-one is put back. Your TOML file and data are kept. Help › About has **Restart gateway**. Its log:
-`journalctl -u aprsmap-gateway-update`. A Docker gateway has neither: Docker restarts it, and you update it by pulling
-the new image.
+one is put back, with `settings.json` as it was before the update. Your TOML file and data are kept. Help › About has
+**Restart gateway**. Its log: `journalctl -u aprsmap-gateway-update`. A Docker gateway has neither: Docker restarts it,
+and you update it by pulling the new image.
+
+**Automatic updates.** Settings › Data › Updates has **Install updates automatically** for the operator, off by default.
+With it on, the gateway asks for the same update by itself a day after a release comes out, between 02:00 and 05:00
+its local time. A version that fails and is rolled back isn't installed automatically again; the next one is.
 
 **Reaching the admin web app from another computer.** Signing in, the API key, and copy and paste all need a secure
 page: HTTPS, or the gateway's own computer. Over plain `http://` from elsewhere, the browser gives the web app no

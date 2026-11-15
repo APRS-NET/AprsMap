@@ -80,6 +80,62 @@ public sealed class ServiceUpdateUiTests
     }
 
     [Fact]
+    public async Task TheServicesOperatorTurnsOnAutomaticUpdatesAndIsToldWhen()
+    {
+        // F1.40 behavior 8.
+        var (updates, engine) = Service();
+        var at = new DateTimeOffset(2026, 10, 29, 2, 0, 0, TimeSpan.Zero);
+        engine.UpdateStatus = engine.UpdateStatus with { AutoInstallAt = at };
+        await updates.RefreshAsync();
+        var settings = new UpdateSettingsViewModel(engine, Localizer.Instance, updates, TimeZoneInfo.Utc, _ => { });
+        settings.Show(engine.Settings);
+        Assert.True(settings.ShowsAutoInstall);
+        Assert.False(settings.AutoInstallOn); // off by default
+        Assert.Null(settings.AutoInstallText);
+
+        settings.AutoInstallOn = true;
+        await WaitUntil(() => engine.Settings.EffectiveUpdates.AutoInstall);
+        settings.Show(engine.Settings);
+
+        Assert.Equal(
+            $"Installs 0.9.0 automatically after {at.ToString("g", Localizer.Instance.Culture)}.",
+            settings.AutoInstallText
+        );
+
+        engine.Settings = engine.Settings with
+        {
+            Updates = engine.Settings.EffectiveUpdates with { AutoInstallFailed = "0.9.0" },
+        };
+        engine.UpdateStatus = engine.UpdateStatus with { AutoInstallAt = null };
+        await updates.RefreshAsync();
+        settings.Show(engine.Settings);
+        Assert.Equal(
+            "The update to 0.9.0 failed, so it won't be installed automatically; a newer version will be.",
+            settings.AutoInstallText
+        );
+    }
+
+    [Fact]
+    public async Task AutomaticUpdatesArentOfferedWhereTheEngineDoesntInstall()
+    {
+        var (updates, engine) = Service(canInstall: false);
+        await updates.RefreshAsync();
+        var settings = new UpdateSettingsViewModel(engine, Localizer.Instance, updates, TimeZoneInfo.Utc, _ => { });
+        settings.Show(engine.Settings);
+
+        Assert.False(settings.ShowsAutoInstall);
+    }
+
+    private static async Task WaitUntil(Func<bool> condition)
+    {
+        for (var i = 0; i < 200 && !condition(); i++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+        Assert.True(condition());
+    }
+
+    [Fact]
     public async Task AContainerGatewaysDialogStillSaysHowToPull()
     {
         var (updates, _) = Service(canInstall: false);

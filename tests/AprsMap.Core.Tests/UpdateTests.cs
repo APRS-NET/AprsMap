@@ -480,4 +480,219 @@ public sealed class UpdateTests
             Assert.Equal(EngineErrorCodes.GatewayNotService, restart.EngineError.Code);
         }
     }
+
+    /// <summary>The gateway's zone in these tests: six hours behind UTC, as Central time in winter.</summary>
+    private static readonly TimeZoneInfo Central = TimeZoneInfo.CreateCustomTimeZone(
+        "Test/Central",
+        TimeSpan.FromHours(-6),
+        "Central",
+        "Central"
+    );
+
+    /// <summary>
+    /// A service gateway's engine (F1.40 behavior 8) at <paramref name="localNow"/> gateway time, offered 0.9.0
+    /// (published 2026-10-20 12:00 UTC); <paramref name="autoInstall"/> turns Install updates automatically on.
+    /// </summary>
+    private static async Task<(Engine Engine, FakeGitHub GitHub, FakeTimeProvider Time)> AutoAsync(
+        DirectoryInfo data,
+        DateTime localNow,
+        bool autoInstall = true
+    )
+    {
+        var github = new FakeGitHub { Answer = _ => Json("[" + ServiceRelease("v0.9.0") + "]") };
+        var time = new FakeTimeProvider(new DateTimeOffset(localNow, Central.BaseUtcOffset));
+        time.SetLocalTimeZone(Central);
+        var engine = new Engine(
+            Options.Create(
+                new EngineOptions
+                {
+                    DataFolder = data.FullName,
+                    Updates = new UpdateOptions { Kind = InstallKind.Service, RuntimeId = "linux-x64" },
+                }
+            ),
+            new EngineTests.FakeSourceFactory(),
+            InMemorySettingsStore.WithProfile(),
+            time,
+            NullLogger<Engine>.Instance
+        )
+        {
+            UpdateHttp = new HttpClient(github),
+            RunningVersion = "0.8.0",
+        };
+        if (autoInstall)
+        {
+            var settings = await engine.GetSettingsAsync(Ct);
+            await engine.SaveSettingsAsync(
+                settings with
+                {
+                    Updates = settings.EffectiveUpdates with { AutoInstall = true },
+                },
+                Ct
+            );
+        }
+        await engine.CheckForUpdateAsync(Ct);
+        return (engine, github, time);
+    }
+
+    private static string ServiceRelease(string tag) =>
+        Release(tag, false, $"{Slug}-gateway-{tag}-linux-x64.tar.gz", $"{Slug}-gateway-{tag}-linux-x64.tar.gz.sha256");
+
+    private static string? Requested(DirectoryInfo data) =>
+        File.Exists(Path.Combine(data.FullName, Engine.UpdateRequestFile))
+            ? File.ReadAllText(Path.Combine(data.FullName, Engine.UpdateRequestFile))
+            : null;
+
+    private static async Task WithData(Func<DirectoryInfo, Task> test)
+    {
+        var data = Directory.CreateTempSubdirectory("aprsmap-auto-");
+        try
+        {
+            await test(data);
+        }
+        finally
+        {
+            data.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public Task InstallUpdatesAutomaticallyIsOffUntilTheOperatorTurnsItOn() =>
+        WithData(async data =>
+        {
+            var (engine, _, _) = await AutoAsync(data, new DateTime(2026, 10, 22, 3, 0, 0), autoInstall: false);
+            using (engine)
+            {
+                Assert.False((await engine.GetSettingsAsync(Ct)).EffectiveUpdates.AutoInstall);
+                Assert.Null((await engine.GetUpdateStatusAsync(Ct)).AutoInstallAt);
+
+                Assert.False(await engine.AutoInstallIfDueAsync(Ct));
+                Assert.Null(Requested(data));
+            }
+        });
+
+    [Fact]
+    public Task TheUpdateIsRequestedAutomaticallyOnlyInTheNightsWindow() =>
+        WithData(async data =>
+        {
+            var (engine, _, time) = await AutoAsync(data, new DateTime(2026, 10, 22, 1, 30, 0));
+            using (engine)
+            {
+                Assert.Equal(
+                    new DateTimeOffset(2026, 10, 22, 2, 0, 0, Central.BaseUtcOffset),
+                    (await engine.GetUpdateStatusAsync(Ct)).AutoInstallAt
+                );
+                Assert.False(await engine.AutoInstallIfDueAsync(Ct)); // 01:30: not yet
+                Assert.Null(Requested(data));
+
+                time.Advance(TimeSpan.FromMinutes(40)); // 02:10
+                Assert.True(await engine.AutoInstallIfDueAsync(Ct));
+
+                Assert.Equal("""{"version":"0.9.0"}""", Requested(data));
+                Assert.Equal(ServiceInstallStep.Requested, (await engine.GetUpdateStatusAsync(Ct)).Install!.Step);
+                Assert.False(await engine.AutoInstallIfDueAsync(Ct)); // one at a time
+            }
+        });
+
+    [Fact]
+    public Task NotDuringTheDay() =>
+        WithData(async data =>
+        {
+            var (engine, _, _) = await AutoAsync(data, new DateTime(2026, 10, 22, 5, 0, 0));
+            using (engine)
+            {
+                Assert.False(await engine.AutoInstallIfDueAsync(Ct)); // the window ends at 05:00
+                Assert.Equal(
+                    new DateTimeOffset(2026, 10, 23, 2, 0, 0, Central.BaseUtcOffset),
+                    (await engine.GetUpdateStatusAsync(Ct)).AutoInstallAt
+                );
+            }
+        });
+
+    [Fact]
+    public Task NotSoonerThanADayAfterTheRelease() =>
+        WithData(async data =>
+        {
+            // Published 2026-10-20 12:00 UTC, 06:00 here: 02:30 the next night is only 20½ hours on.
+            var (engine, _, _) = await AutoAsync(data, new DateTime(2026, 10, 21, 2, 30, 0));
+            using (engine)
+            {
+                Assert.False(await engine.AutoInstallIfDueAsync(Ct));
+                Assert.Null(Requested(data));
+                Assert.Equal(
+                    new DateTimeOffset(2026, 10, 22, 2, 0, 0, Central.BaseUtcOffset),
+                    (await engine.GetUpdateStatusAsync(Ct)).AutoInstallAt
+                );
+            }
+        });
+
+    [Fact]
+    public Task AVersionWhoseAutomaticInstallFailedIsSkippedButANewerOneIsInstalled() =>
+        WithData(async data =>
+        {
+            var (engine, github, _) = await AutoAsync(data, new DateTime(2026, 10, 22, 2, 30, 0));
+            using (engine)
+            {
+                Assert.True(await engine.AutoInstallIfDueAsync(Ct));
+                // The updater rolled it back, as aprsmap-gateway-update.sh reports it.
+                File.Delete(Path.Combine(data.FullName, Engine.UpdateRequestFile));
+                await File.WriteAllTextAsync(
+                    Path.Combine(data.FullName, Engine.UpdateStatusFile),
+                    """{"version":"0.9.0","step":"failed","reason":"0.9.0 didn't stay running, so 0.8.0 is back"}""",
+                    Ct
+                );
+
+                Assert.False(await engine.AutoInstallIfDueAsync(Ct));
+                Assert.Null(Requested(data));
+                Assert.Equal("0.9.0", (await engine.GetSettingsAsync(Ct)).EffectiveUpdates.AutoInstallFailed);
+                var status = await engine.GetUpdateStatusAsync(Ct);
+                Assert.Null(status.AutoInstallAt);
+                Assert.Equal("0.9.0", status.Update?.Version); // still offered by hand
+
+                github.Answer = _ => Json("[" + ServiceRelease("v0.9.1") + "]", "\"two\"");
+                await engine.CheckForUpdateAsync(Ct);
+
+                Assert.True(await engine.AutoInstallIfDueAsync(Ct));
+                Assert.Equal("""{"version":"0.9.1"}""", Requested(data));
+            }
+        });
+
+    [Fact]
+    public Task ASaveFromTheAppKeepsTheFailedVersionTheEngineRecorded() =>
+        WithData(async data =>
+        {
+            var (engine, _, _) = await AutoAsync(data, new DateTime(2026, 10, 22, 12, 0, 0));
+            using (engine)
+            {
+                var settings = await engine.GetSettingsAsync(Ct);
+                await engine.SaveSettingsAsync(
+                    settings with
+                    {
+                        Updates = settings.EffectiveUpdates with { AutoInstallFailed = "0.9.0" },
+                    },
+                    Ct
+                );
+
+                Assert.Null((await engine.GetSettingsAsync(Ct)).EffectiveUpdates.AutoInstallFailed);
+            }
+        });
+
+    [Fact]
+    public async Task AnEngineThatIsntTheServiceNeverInstallsByItself()
+    {
+        var (engine, _, _, _) = Create();
+        using (engine)
+        {
+            var settings = await engine.GetSettingsAsync(Ct);
+            await engine.SaveSettingsAsync(
+                settings with
+                {
+                    Updates = settings.EffectiveUpdates with { AutoInstall = true },
+                },
+                Ct
+            );
+
+            Assert.False(await engine.AutoInstallIfDueAsync(Ct));
+            Assert.Null((await engine.GetUpdateStatusAsync(Ct)).AutoInstallAt);
+        }
+    }
 }

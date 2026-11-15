@@ -216,6 +216,27 @@ public sealed class TrustedGatewaySettingsTests(TrustedGatewayFactory factory) :
     }
 
     [Fact]
+    public async Task OnATrustedNetworkBrowsersStillCantTurnOnAutomaticUpdates()
+    {
+        // An update runs as root, so only the operator decides (docs/features/F1.40-gateway-service-updates.md,
+        // behavior 8, decision 7): every browser may change settings here, but not that.
+        await using var remote = factory.CreateRemote();
+        await remote.StartAsync(Ct);
+        var settings = await remote.GetSettingsAsync(Ct);
+
+        await remote.SaveSettingsAsync(
+            settings with
+            {
+                Updates = settings.EffectiveUpdates with { AutoInstall = true },
+            },
+            Ct
+        );
+
+        var engine = factory.Services.GetRequiredService<Engine>();
+        Assert.False((await engine.GetSettingsAsync(Ct)).EffectiveUpdates.AutoInstall);
+    }
+
+    [Fact]
     public async Task OnATrustedNetworkBrowsersCanReconnect()
     {
         await using var remote = factory.CreateRemote();

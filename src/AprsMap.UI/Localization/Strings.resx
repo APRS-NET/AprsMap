@@ -5661,6 +5661,20 @@ pause 1s</value>
     <value>Skipped: {version}</value>
     <comment>version: the version Skip this version hid.</comment>
   </data>
+  <data name="Updates.Auto.Switch" xml:space="preserve">
+    <value>Install updates automatically</value>
+  </data>
+  <data name="Updates.Auto.Description" xml:space="preserve">
+    <value>The gateway installs a new release by itself a day after it comes out, between 02:00 and 05:00 its time, and restarts on it. Viewers are disconnected and the station is off the air for a minute. If the new version doesn't stay running, the previous one and its settings come back, and that version isn't installed automatically again.</value>
+  </data>
+  <data name="Updates.Auto.When" xml:space="preserve">
+    <value>Installs {version} automatically after {when}.</value>
+    <comment>version: the offered version; when: a local date and time.</comment>
+  </data>
+  <data name="Updates.Auto.Skipped" xml:space="preserve">
+    <value>The update to {version} failed, so it won't be installed automatically; a newer version will be.</value>
+    <comment>version: the version whose automatic install failed.</comment>
+  </data>
   <data name="Updates.OfferAgain" xml:space="preserve">
     <value>Offer it again</value>
   </data>

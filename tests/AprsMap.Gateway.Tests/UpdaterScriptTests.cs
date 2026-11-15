@@ -56,7 +56,8 @@ public sealed class UpdaterScriptTests : IDisposable
         File.WriteAllText(Path.Combine(App, "release-source"), Source + "\n");
         File.WriteAllText(Path.Combine(Root, "active"), "active");
         File.WriteAllText(Path.Combine(Root, "restarts"), "0");
-        // systemctl: logs each call; a gateway with a "crash" file doesn't stay up.
+        // systemctl: logs each call; a gateway with a "crash" file doesn't stay up, after rewriting the settings as a
+        // newer version might.
         Shim(
             "systemctl",
             $$"""
@@ -64,7 +65,7 @@ public sealed class UpdaterScriptTests : IDisposable
             case "$1" in
               is-active) cat "{{Root}}/active" ;;
               show) cat "{{Root}}/restarts" ;;
-              start) if [ -f "{{App}}/crash" ]; then echo failed > "{{Root}}/active"; else echo active > "{{Root}}/active"; fi ;;
+              start) if [ -f "{{App}}/crash" ]; then echo failed > "{{Root}}/active"; echo '{"newer":true}' > "{{Data}}/settings.json"; else echo active > "{{Root}}/active"; fi ;;
             esac
             exit 0
             """
@@ -201,6 +202,35 @@ public sealed class UpdaterScriptTests : IDisposable
         Assert.Equal("v0.8.0", Installed);
         Assert.Contains("doesn't match its checksum", Status, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(Root, "systemctl.log"))); // the gateway was never stopped
+    }
+
+    [Fact]
+    public async Task TheSettingsComeBackWithTheRollback()
+    {
+        // docs/features/F1.40-gateway-service-updates.md, behavior 9.
+        var settings = Path.Combine(Data, "settings.json");
+        await File.WriteAllTextAsync(settings, """{"older":true}""", Ct);
+        await ReleaseAsync("0.9.0", crashes: true);
+
+        var (exit, _) = await UpdateAsync("""{"version":"0.9.0"}""");
+
+        Assert.NotEqual(0, exit);
+        Assert.Equal("""{"older":true}""", (await File.ReadAllTextAsync(settings, Ct)).Trim());
+    }
+
+    [Fact]
+    public async Task ASuccessfulUpdateKeepsACopyOfTheSettingsFromBefore()
+    {
+        await File.WriteAllTextAsync(Path.Combine(Data, "settings.json"), """{"older":true}""", Ct);
+        await ReleaseAsync("0.9.0");
+
+        var (exit, output) = await UpdateAsync("""{"version":"0.9.0"}""");
+
+        Assert.True(exit == 0, output);
+        Assert.Equal(
+            """{"older":true}""",
+            (await File.ReadAllTextAsync(Path.Combine(Data, "settings.json.before-update"), Ct)).Trim()
+        );
     }
 
     [Fact]
