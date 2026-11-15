@@ -179,6 +179,42 @@ internal sealed class UpdateChecker(HttpClient http, UpdateOptions options)
         return null;
     }
 
+    /// <summary>The most What's new lists (F4.15 behavior 11c): an install many versions behind sees the latest.</summary>
+    public const int WhatsNewMost = 10;
+
+    /// <summary>
+    /// What's new (F4.15 behavior 11c): the published releases after <paramref name="last"/> up to
+    /// <paramref name="running"/>, newest first; empty when <paramref name="last"/> isn't older than it.
+    /// </summary>
+    public static IReadOnlyList<UpdateInfo> Since(IEnumerable<GitHubRelease> releases, string? last, string running)
+    {
+        if (
+            !SemVersion.TryParse(last, out var from)
+            || !SemVersion.TryParse(running, out var to)
+            || from.CompareTo(to) >= 0
+        )
+        {
+            return [];
+        }
+        return
+        [
+            .. releases
+                .Where(r => !r.Draft && r.TagName is { } tag && tag.StartsWith('v') && r.HtmlUrl is not null)
+                .Select(r => (Release: r, Ok: SemVersion.TryParse(r.TagName, out var v), Version: v))
+                .Where(c => c.Ok && c.Version.CompareTo(from) > 0 && c.Version.CompareTo(to) <= 0)
+                .OrderByDescending(c => c.Version)
+                .Take(WhatsNewMost)
+                .Select(c => new UpdateInfo(
+                    c.Version.ToString(),
+                    c.Release.PublishedAt ?? DateTimeOffset.MinValue,
+                    new Uri(c.Release.HtmlUrl!),
+                    c.Release.Body ?? string.Empty,
+                    null,
+                    []
+                )),
+        ];
+    }
+
     /// <summary>The container image, from the repository's owner and the product: <c>ghcr.io/owner/slug</c>.</summary>
     private static string ImageName() =>
         $"ghcr.io/{(Repository(Brand.SourceUrl) ?? "unknown/unknown").Split('/')[0].ToLowerInvariant()}/{Brand.Slug}";

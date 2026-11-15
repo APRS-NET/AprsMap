@@ -312,6 +312,10 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.SkipUpdate, version, cancellationToken));
 
     /// <inheritdoc />
+    public Task DismissWhatsNewAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.DismissWhatsNew, cancellationToken));
+
+    /// <inheritdoc />
     public Task<BulletinView> PostBulletinAsync(BulletinPost post, CancellationToken cancellationToken = default) =>
         WithEngineErrors(() => _connection.InvokeAsync<BulletinView>(EngineHub.PostBulletin, post, cancellationToken));
 

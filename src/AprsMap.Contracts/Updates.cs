@@ -17,8 +17,17 @@ public enum UpdateChannel
 /// <param name="SkippedVersion">A version the user skipped: not offered again, only a newer one.</param>
 /// <param name="LastChecked">When the last check ran, so a restart within a day doesn't check again. Set by the engine.</param>
 /// <param name="AutoInstall">
-/// Install updates automatically, on the Linux service gateway (docs/features/F1.40-gateway-service-updates.md,
-/// behavior 8): off by default, and only the operator changes it.
+/// Install updates automatically: on the Linux service gateway (docs/features/F1.40-gateway-service-updates.md,
+/// behavior 8), where only the operator changes it, or in an installed desktop build (F4.15 behavior 11a). Off by
+/// default.
+/// </param>
+/// <param name="AutoRestart">
+/// Restart automatically to put a downloaded update in, at <paramref name="AutoRestartTime"/> (F4.15 behavior 11b);
+/// off by default, so it goes in when the app closes.
+/// </param>
+/// <param name="AutoRestartTime">The restart's local time, "HH:mm"; null for 03:00.</param>
+/// <param name="LastRunVersion">
+/// The last version that ran, for What's new (F4.15 behavior 11c). Set by the engine.
 /// </param>
 /// <param name="AutoInstallFailed">
 /// A version whose automatic install failed: never installed automatically again, only a newer one (F1.40 behavior 8).
@@ -30,9 +39,27 @@ public sealed record UpdateSettings(
     string? SkippedVersion = null,
     DateTimeOffset? LastChecked = null,
     bool AutoInstall = false,
-    string? AutoInstallFailed = null
+    string? AutoInstallFailed = null,
+    bool AutoRestart = false,
+    string? AutoRestartTime = null,
+    string? LastRunVersion = null
 )
 {
+    /// <summary>The restart time when none is chosen (F4.15 behavior 11b).</summary>
+    public static TimeOnly DefaultRestartTime { get; } = new(3, 0);
+
+    /// <summary>The restart time chosen, or 03:00 when it's unset or unreadable.</summary>
+    public TimeOnly EffectiveRestartTime =>
+        TimeOnly.TryParseExact(
+            AutoRestartTime,
+            "HH:mm",
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None,
+            out var time
+        )
+            ? time
+            : DefaultRestartTime;
+
     /// <summary>Checking, on the build's own channel.</summary>
     public static UpdateSettings Default { get; } = new();
 }
@@ -77,6 +104,10 @@ public sealed record UpdateInfo(
 /// behavior 1). The installed desktop installs through its own installer instead.
 /// </param>
 /// <param name="Install">Where the service gateway's update stands (F1.40 behavior 5); null with none.</param>
+/// <param name="WhatsNew">
+/// The releases since the last version that ran, newest first, until What's new is dismissed (F4.15 behavior 11c);
+/// null or empty with nothing new.
+/// </param>
 /// <param name="AutoInstallAt">
 /// When the offered update will be installed automatically (F1.40 behavior 8): the earliest moment it's due and in the
 /// night's window; null when it won't be.
@@ -92,7 +123,8 @@ public sealed record UpdateStatus(
     bool CheckOff = false,
     bool CanInstall = false,
     ServiceInstall? Install = null,
-    DateTimeOffset? AutoInstallAt = null
+    DateTimeOffset? AutoInstallAt = null,
+    IReadOnlyList<UpdateInfo>? WhatsNew = null
 );
 
 /// <summary>A step of the service gateway's update (docs/features/F1.40-gateway-service-updates.md, behavior 4).</summary>

@@ -23,9 +23,12 @@ public sealed partial class Engine
     /// <summary>How often the engine looks whether an automatic install is due.</summary>
     internal static readonly TimeSpan AutoInstallPoll = TimeSpan.FromMinutes(10);
 
-    /// <summary>Whether this engine may install by itself with these settings: the service, the switch on, checking on.</summary>
+    /// <summary>
+    /// Whether updates are installed automatically with these settings: the switch and checking on, on the service
+    /// gateway (F1.40 behavior 8) or an installed desktop build (F4.15 behavior 11a), whose UI installs them.
+    /// </summary>
     private bool AutoInstalls(AppSettings settings) =>
-        _options.Updates.Kind == InstallKind.Service
+        _options.Updates.Kind is InstallKind.Service or InstallKind.Installed
         && _options.Updates.Check
         && settings.EffectiveUpdates is { AutoInstall: true, Check: true };
 
@@ -38,6 +41,12 @@ public sealed partial class Engine
         if (update is null || !AutoInstalls(settings) || update.Version == settings.EffectiveUpdates.AutoInstallFailed)
         {
             return null;
+        }
+        if (_options.Updates.Kind == InstallKind.Installed)
+        {
+            // The desktop downloads at any time; as a gateway's client its UI holds it to the gateway's version instead
+            // of the day's wait (F4.15 behavior 11a).
+            return _options.UpdatesOnly ? update.Published : update.Published + AutoInstallDelay;
         }
         var due = update.Published + AutoInstallDelay;
         return NextWindow(due > now ? due : now);
@@ -68,7 +77,7 @@ public sealed partial class Engine
     internal async Task<bool> AutoInstallIfDueAsync(CancellationToken cancellationToken)
     {
         var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
-        if (!AutoInstalls(settings))
+        if (_options.Updates.Kind != InstallKind.Service || !AutoInstalls(settings))
         {
             return false;
         }

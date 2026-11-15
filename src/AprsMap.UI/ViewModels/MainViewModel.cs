@@ -375,10 +375,12 @@ public sealed partial class MainViewModel : ObservableObject
             UpdatesFrom,
             _text,
             uri => OpenUri?.Invoke(uri) ?? Task.CompletedTask,
-            OwnUpdates ? Installer : null
+            OwnUpdates ? Installer : null,
+            time
         )
         {
             Gateway = !OwnUpdates,
+            Client = UpdateEngine is not null, // F4.15 behavior 11a.2
         };
         updates.PropertyChanged += OnUpdatesChanged;
         return updates;
@@ -518,7 +520,8 @@ public sealed partial class MainViewModel : ObservableObject
                         _text,
                         Updates,
                         time.LocalTimeZone,
-                        UpdateEngine is null ? Show : _ => { }
+                        UpdateEngine is null ? Show : _ => { },
+                        installs: OwnUpdates && Installer?.CanInstall == true // F4.15 behaviors 11a, 11b
                     )
                     : null,
         };
@@ -1618,6 +1621,10 @@ public sealed partial class MainViewModel : ObservableObject
         if (newVersion)
         {
             OnPropertyChanged(nameof(GatewayClientTip)); // the gateway's version (#453)
+        }
+        if (UpdateEngine is not null)
+        {
+            Updates.GatewayVersion = status.Version; // a client follows its gateway's version up (F4.15 11a.2)
         }
         CaptureText = status.CapturedToday is { } captured
             ? _text.Format("Capture.Status", new Dictionary<string, object?> { ["count"] = captured })

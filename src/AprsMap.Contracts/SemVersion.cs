@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 using System.Globalization;
 
-namespace AprsMap.Core;
+namespace AprsMap.Contracts;
 
 /// <summary>
 /// A Semantic Versioning 2.0 version and its precedence (semver.org, section 11), for the update check
 /// (docs/features/F4.15-updates.md, behavior 3): build metadata is ignored, a pre-release is older than its release,
 /// and pre-release parts compare numerically when both are numbers, so <c>alpha.10</c> follows <c>alpha.9</c>.
 /// </summary>
-internal sealed record SemVersion(int Major, int Minor, int Patch, IReadOnlyList<string> PreRelease)
+public sealed record SemVersion(int Major, int Minor, int Patch, IReadOnlyList<string> PreRelease)
     : IComparable<SemVersion>
 {
     /// <summary>Whether it has a pre-release part (<c>-alpha.1</c>).</summary>
@@ -86,6 +86,21 @@ internal sealed record SemVersion(int Major, int Minor, int Patch, IReadOnlyList
         }
         return PreRelease.Count.CompareTo(other.PreRelease.Count);
     }
+
+    /// <summary>Whether <paramref name="left"/> is older than <paramref name="right"/>.</summary>
+    public static bool operator <(SemVersion left, SemVersion right) => Compare(left, right) < 0;
+
+    /// <summary>Whether <paramref name="left"/> is older than or as new as <paramref name="right"/>.</summary>
+    public static bool operator <=(SemVersion left, SemVersion right) => Compare(left, right) <= 0;
+
+    /// <summary>Whether <paramref name="left"/> is newer than <paramref name="right"/>.</summary>
+    public static bool operator >(SemVersion left, SemVersion right) => Compare(left, right) > 0;
+
+    /// <summary>Whether <paramref name="left"/> is newer than or as new as <paramref name="right"/>.</summary>
+    public static bool operator >=(SemVersion left, SemVersion right) => Compare(left, right) >= 0;
+
+    private static int Compare(SemVersion? left, SemVersion? right) =>
+        left is null ? (right is null ? 0 : -1) : left.CompareTo(right);
 
     /// <inheritdoc />
     public override string ToString() =>

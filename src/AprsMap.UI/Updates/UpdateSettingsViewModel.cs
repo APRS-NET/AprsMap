@@ -29,15 +29,75 @@ public sealed partial class UpdateSettingsViewModel : ObservableObject
     private readonly Action<AppSettings> _saved;
     private AppSettings _settings = AppSettings.Empty;
     private bool _showing;
+    private readonly bool _installs;
+
+    /// <summary>
+    /// Whether Restart automatically is offered: an installed desktop build, which puts an update in by restarting
+    /// (F4.15 behavior 11b).
+    /// </summary>
+    public bool ShowsAutoRestart => _installs;
+
+    /// <summary>What Install updates automatically does here: the service gateway's, or the desktop's.</summary>
+    public string AutoInstallDescription =>
+        _text[_installs ? "Updates.Auto.DesktopDescription" : "Updates.Auto.Description"];
+
+    /// <summary>Restart automatically (F4.15 behavior 11b), off by default; saved as it's switched.</summary>
+    [ObservableProperty]
+    public partial bool AutoRestartOn { get; set; }
+
+    /// <summary>When it restarts, the computer's local time; 03:00 by default.</summary>
+    [ObservableProperty]
+    public partial TimeSpan? RestartTime { get; set; } = UpdateSettings.DefaultRestartTime.ToTimeSpan();
+
+    partial void OnAutoRestartOnChanged(bool value)
+    {
+        if (!_showing && value != _settings.EffectiveUpdates.AutoRestart)
+        {
+            _ = SaveAsync(
+                _settings with
+                {
+                    Updates = _settings.EffectiveUpdates with { AutoRestart = value },
+                },
+                recheck: false
+            );
+        }
+    }
+
+    partial void OnRestartTimeChanged(TimeSpan? value)
+    {
+        if (_showing || value is not { } time)
+        {
+            return;
+        }
+        var text = TimeOnly.FromTimeSpan(time).ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+        if (
+            text
+            != _settings.EffectiveUpdates.EffectiveRestartTime.ToString(
+                "HH:mm",
+                System.Globalization.CultureInfo.InvariantCulture
+            )
+        )
+        {
+            _ = SaveAsync(
+                _settings with
+                {
+                    Updates = _settings.EffectiveUpdates with { AutoRestartTime = text },
+                },
+                recheck: false
+            );
+        }
+    }
 
     internal UpdateSettingsViewModel(
         IEngineService engine,
         Localizer text,
         UpdatesViewModel updates,
         TimeZoneInfo zone,
-        Action<AppSettings> saved
+        Action<AppSettings> saved,
+        bool installs = false
     )
     {
+        _installs = installs;
         _engine = engine;
         _text = text;
         _updates = updates;
@@ -84,9 +144,9 @@ public sealed partial class UpdateSettingsViewModel : ObservableObject
     {
         var status = _updates.Status;
         var updates = _settings.EffectiveUpdates;
-        ShowsAutoInstall = status is { CanInstall: true };
+        ShowsAutoInstall = _installs || status is { CanInstall: true };
         AutoInstallText =
-            !ShowsAutoInstall || !updates.AutoInstall ? null
+            _installs || !ShowsAutoInstall || !updates.AutoInstall ? null
             : updates.AutoInstallFailed is { } failed && status?.Update?.Version == failed
                 ? _text.Format("Updates.Auto.Skipped", new Dictionary<string, object?> { ["version"] = failed })
             : status is { AutoInstallAt: { } at, Update: { } update }
@@ -134,6 +194,8 @@ public sealed partial class UpdateSettingsViewModel : ObservableObject
             var updates = settings.EffectiveUpdates;
             CheckOn = updates.Check;
             AutoInstallOn = updates.AutoInstall;
+            AutoRestartOn = updates.AutoRestart;
+            RestartTime = updates.EffectiveRestartTime.ToTimeSpan();
             Channel = ChannelOptions.First(o => o.Value == updates.Channel);
             SkippedText = updates.SkippedVersion is { } skipped
                 ? _text.Format("Updates.Skipped", new Dictionary<string, object?> { ["version"] = skipped })

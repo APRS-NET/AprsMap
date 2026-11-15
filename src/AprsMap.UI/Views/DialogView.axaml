@@ -485,6 +485,35 @@
                   </WrapPanel>
                 </StackPanel>
               </DataTemplate>
+              <!-- What's new after an update (F4.15 behavior 11c): each version's notes, newest first, then OK. -->
+              <DataTemplate DataType="u:WhatsNewViewModel">
+                <StackPanel x:Name="WhatsNewSection" Spacing="12">
+                  <TextBlock Text="{Binding Heading}" FontWeight="SemiBold" />
+                  <ItemsControl ItemsSource="{Binding Releases}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="u:WhatsNewRelease">
+                        <StackPanel Spacing="6" Margin="0,0,0,12">
+                          <TextBlock Text="{Binding Heading}" FontWeight="SemiBold" />
+                          <u:ReleaseNotesView Blocks="{Binding Blocks}" />
+                          <HyperlinkButton
+                            Content="{l:T Updates.ReleaseNotes}"
+                            Command="{Binding ReleaseNotesCommand}"
+                            Padding="0"
+                          />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <Button
+                    x:Name="WhatsNewOk"
+                    Classes="accent"
+                    IsDefault="True"
+                    Content="{l:T Updates.WhatsNew.Ok}"
+                    Command="{Binding OkCommand}"
+                    HorizontalAlignment="Right"
+                  />
+                </StackPanel>
+              </DataTemplate>
               <!-- A question with one action, such as Reset layout's (behavior 14). -->
               <DataTemplate DataType="vm:ConfirmViewModel">
                 <StackPanel Spacing="12">

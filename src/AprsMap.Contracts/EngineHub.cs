@@ -178,6 +178,9 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.SkipUpdateAsync"/>.</summary>
     public const string SkipUpdate = "SkipUpdate";
 
+    /// <summary>Hub method for <see cref="IEngineService.DismissWhatsNewAsync"/>.</summary>
+    public const string DismissWhatsNew = "DismissWhatsNew";
+
     /// <summary>Hub method for <see cref="IEngineService.PostBulletinAsync"/>.</summary>
     public const string PostBulletin = "PostBulletin";
 
