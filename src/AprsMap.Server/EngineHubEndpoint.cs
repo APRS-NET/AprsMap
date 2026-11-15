@@ -477,9 +477,14 @@ internal sealed class EngineHubEndpoint(
         {
             if (!IsOperator)
             {
-                // Logging is the signed-in operator's (F1.32 behavior 1): what anyone else sends keeps what's stored.
+                // Logging is the signed-in operator's (F1.32 behavior 1), and so is Install updates automatically, as an
+                // update runs as root (F1.40 behavior 8): what anyone else sends keeps what's stored.
                 var stored = await engine.GetSettingsAsync(Context.ConnectionAborted).ConfigureAwait(false);
-                settings = settings with { Logging = stored.Logging };
+                settings = settings with
+                {
+                    Logging = stored.Logging,
+                    Updates = settings.EffectiveUpdates with { AutoInstall = stored.EffectiveUpdates.AutoInstall },
+                };
             }
             await engine.SaveSettingsAsync(settings, Context.ConnectionAborted).ConfigureAwait(false);
         }

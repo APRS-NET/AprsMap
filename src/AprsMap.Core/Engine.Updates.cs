@@ -66,6 +66,7 @@ public sealed partial class Engine
                 CanInstall = _options.Updates.Kind == InstallKind.Service, // F1.40
                 Install = ServiceInstallNow(),
             };
+            status = status with { AutoInstallAt = AutoInstallAt(settings, status.Update, _time.GetUtcNow()) }; // F1.40 behavior 8
             // With Check for updates off, nothing is offered or warned about unless Check now was pressed (behavior 6).
             return settings.EffectiveUpdates.Check || _checkedByHand
                 ? status

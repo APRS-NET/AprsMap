@@ -55,9 +55,50 @@ public sealed partial class UpdateSettingsViewModel : ObservableObject
             if (e.PropertyName == nameof(UpdatesViewModel.Status))
             {
                 StatusText = _updates.Summary(_zone);
+                ShowAutoInstall();
             }
         };
         StatusText = updates.Summary(zone);
+        ShowAutoInstall();
+    }
+
+    /// <summary>
+    /// Whether Install updates automatically is offered: the engine installs updates itself, the Linux service gateway
+    /// (docs/features/F1.40-gateway-service-updates.md, behavior 8).
+    /// </summary>
+    [ObservableProperty]
+    public partial bool ShowsAutoInstall { get; private set; }
+
+    /// <summary>Install updates automatically (F1.40 behavior 8), off by default; saved as it's switched.</summary>
+    [ObservableProperty]
+    public partial bool AutoInstallOn { get; set; }
+
+    /// <summary>
+    /// "Installs 0.9.0 automatically after 16/11/2026 02:00", or that a failed version won't be; null with nothing to
+    /// say.
+    /// </summary>
+    [ObservableProperty]
+    public partial string? AutoInstallText { get; private set; }
+
+    private void ShowAutoInstall()
+    {
+        var status = _updates.Status;
+        var updates = _settings.EffectiveUpdates;
+        ShowsAutoInstall = status is { CanInstall: true };
+        AutoInstallText =
+            !ShowsAutoInstall || !updates.AutoInstall ? null
+            : updates.AutoInstallFailed is { } failed && status?.Update?.Version == failed
+                ? _text.Format("Updates.Auto.Skipped", new Dictionary<string, object?> { ["version"] = failed })
+            : status is { AutoInstallAt: { } at, Update: { } update }
+                ? _text.Format(
+                    "Updates.Auto.When",
+                    new Dictionary<string, object?>
+                    {
+                        ["version"] = update.Version,
+                        ["when"] = TimeZoneInfo.ConvertTime(at, _zone).ToString("g", _text.Culture),
+                    }
+                )
+            : null;
     }
 
     /// <summary>Check for updates: on start and every two hours (behavior 1); saved as it's switched.</summary>
@@ -92,6 +133,7 @@ public sealed partial class UpdateSettingsViewModel : ObservableObject
         {
             var updates = settings.EffectiveUpdates;
             CheckOn = updates.Check;
+            AutoInstallOn = updates.AutoInstall;
             Channel = ChannelOptions.First(o => o.Value == updates.Channel);
             SkippedText = updates.SkippedVersion is { } skipped
                 ? _text.Format("Updates.Skipped", new Dictionary<string, object?> { ["version"] = skipped })
@@ -100,6 +142,21 @@ public sealed partial class UpdateSettingsViewModel : ObservableObject
         finally
         {
             _showing = false;
+        }
+        ShowAutoInstall();
+    }
+
+    partial void OnAutoInstallOnChanged(bool value)
+    {
+        if (!_showing && value != _settings.EffectiveUpdates.AutoInstall)
+        {
+            _ = SaveAsync(
+                _settings with
+                {
+                    Updates = _settings.EffectiveUpdates with { AutoInstall = value },
+                },
+                recheck: true
+            );
         }
     }
 
