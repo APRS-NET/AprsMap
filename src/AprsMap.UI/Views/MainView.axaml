@@ -782,5 +782,37 @@
       DataContext="{Binding SignIn}"
       IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
     />
+    <!-- A short notice over everything ("Saved", or why not), gone by itself; announced, never focused. -->
+    <Border
+      x:Name="ToastBar"
+      IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
+      IsHitTestVisible="False"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="{DynamicResource Thickness.Border}"
+      CornerRadius="{DynamicResource Radius.Panel}"
+      Padding="16,10"
+      Margin="16"
+      MaxWidth="480"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Bottom"
+      AutomationProperties.LiveSetting="Polite"
+    >
+      <Panel>
+        <TextBlock
+          x:Name="ToastText"
+          Text="{Binding Toast}"
+          TextWrapping="Wrap"
+          IsVisible="{Binding !ToastIsWarning}"
+        />
+        <TextBlock
+          x:Name="ToastWarning"
+          Text="{Binding Toast}"
+          TextWrapping="Wrap"
+          Foreground="{DynamicResource Brush.Warn}"
+          IsVisible="{Binding ToastIsWarning}"
+        />
+      </Panel>
+    </Border>
   </Panel>
 </UserControl>

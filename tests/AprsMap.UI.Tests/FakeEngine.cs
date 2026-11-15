@@ -345,10 +345,23 @@ internal sealed class FakeEngine : IEngineService
         return Task.FromResult(UpdateStatus);
     }
 
+    /// <summary>When set, <see cref="WatchUpdateStatusAsync"/> throws it, as a gateway refusing a viewer does.</summary>
+    public Exception? UpdateWatchFailure { get; set; }
+
+    /// <summary>How many times the update status was watched.</summary>
+    public int UpdateWatches => Volatile.Read(ref _updateWatches);
+
+    private int _updateWatches;
+
     public async IAsyncEnumerable<UpdateStatus> WatchUpdateStatusAsync(
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default
     )
     {
+        Interlocked.Increment(ref _updateWatches);
+        if (UpdateWatchFailure is { } failure)
+        {
+            throw failure;
+        }
         yield return UpdateStatus;
         await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
     }

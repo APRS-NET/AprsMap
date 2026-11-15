@@ -5698,6 +5698,12 @@ pause 1s</value>
     <value>The update to {version} failed, so it won't be installed automatically; a newer version will be.</value>
     <comment>version: the version whose automatic install failed.</comment>
   </data>
+  <data name="Settings.Saved" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="Operator.SignInEnded" xml:space="preserve">
+    <value>You're signed out: the gateway restarted or your sign-in ended. Sign in again to change the station.</value>
+  </data>
   <data name="Updates.OfferAgain" xml:space="preserve">
     <value>Offer it again</value>
   </data>
