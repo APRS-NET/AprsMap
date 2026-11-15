@@ -137,6 +137,93 @@ public sealed class ConfiguredSourcesTests
         Assert.All(settings.SourceList, s => Assert.True(s.Configured));
     }
 
+    private const string Nino = "/dev/serial/by-id/usb-Microchip_Technology_Inc._MCP2221_USB-I2C_UART_Combo-if00";
+
+    private static void ConfigureTnc(EngineOptions o)
+    {
+        o.KissSerial.Port = Tnc;
+        o.KissSerial.Baud = 1200;
+        o.KissSerial.Name = "USB TNC-X";
+    }
+
+    [Fact]
+    public async Task AddingASecondUsbTncKeepsTheConfiguredOneSingle()
+    {
+        var store = Installed();
+        var id = TncOf(store.Stored!).Id;
+        using var engine = Create(store, ConfigureTnc);
+        var settings = await engine.GetSettingsAsync(Ct);
+        var nino = SourceSettings.KissSerialFor(Nino, 57600) with { Name = "NinoTNC USB" };
+        var profile = settings.GetActiveProfile()!;
+
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Sources = [.. settings.SourceList, nino],
+                Profiles = [profile with { SourceIds = [.. profile.SourceIds, nino.Id] }],
+            },
+            Ct
+        );
+        using var restarted = Create(store, ConfigureTnc);
+        var after = await restarted.GetSettingsAsync(Ct);
+
+        var tnc = Assert.Single(after.SourceList, s => s.SerialPort == Tnc);
+        Assert.Equal((id, "USB TNC-X", true), (tnc.Id, tnc.Name, tnc.Configured)); // still the adopted one
+        Assert.Equal(2, after.SourceList.Count(s => s.Kind == SourceKind.KissSerial));
+    }
+
+    [Fact]
+    public async Task TheSecondCopyAnEarlierVersionAddedIsRemoved()
+    {
+        // 10.10.20.191 after a NinoTNC was added: the adopted TNC-X, the NinoTNC, and a second TNC-X added from the
+        // configuration because two USB TNCs left it nothing to adopt.
+        var tnc = SourceSettings.KissSerialFor(Tnc, 1200) with { Name = "USB TNC-X", Configured = true };
+        var nino = SourceSettings.KissSerialFor(Nino, 57600) with { Name = "NinoTNC USB" };
+        var copy = SourceSettings.KissSerialFor(Tnc, 1200) with
+        {
+            Id = Engine.ConfiguredKissSerialId,
+            Name = "USB TNC-X",
+            Configured = true,
+        };
+        var profile = InMemorySettingsStore.Profile("NZ0P-4") with
+        {
+            SourceIds = [InMemorySettingsStore.Rotate.Id, tnc.Id, nino.Id, copy.Id],
+        };
+        var store = new InMemorySettingsStore(
+            new AppSettings(
+                [profile],
+                profile.Id,
+                UnitSettings.Metric,
+                Sources: [InMemorySettingsStore.Rotate, tnc, nino, copy]
+            )
+        );
+        using var engine = Create(store, ConfigureTnc);
+
+        var settings = await engine.GetSettingsAsync(Ct);
+
+        Assert.Equal([tnc.Id, nino.Id], settings.SourceList.Where(s => s.IsSerial).Select(s => s.Id));
+        Assert.DoesNotContain(copy.Id, settings.GetActiveProfile()!.SourceIds);
+        Assert.DoesNotContain(store.Stored!.SourceList, s => s.Id == copy.Id); // and stored
+    }
+
+    [Fact]
+    public async Task WithTwoUsbTncsTheOneOnTheConfiguredDeviceIsAdopted()
+    {
+        var nino = SourceSettings.KissSerialFor(Nino, 57600) with { Name = "NinoTNC USB" };
+        var tnc = SourceSettings.KissSerialFor(Tnc, 9600) with { Name = "Old name" };
+        var profile = InMemorySettingsStore.Profile("NZ0P-4") with { SourceIds = [nino.Id, tnc.Id] };
+        var store = new InMemorySettingsStore(
+            new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [nino, tnc])
+        );
+        using var engine = Create(store, ConfigureTnc);
+
+        var settings = await engine.GetSettingsAsync(Ct);
+
+        Assert.Equal(2, settings.SourceList.Count);
+        var adopted = Assert.Single(settings.SourceList, s => s.Configured);
+        Assert.Equal((tnc.Id, "USB TNC-X", 1200), (adopted.Id, adopted.Name, adopted.Baud));
+    }
+
     [Fact]
     public async Task WithNothingConfiguredNothingIsTouched()
     {
