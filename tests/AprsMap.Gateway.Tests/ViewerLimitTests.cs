@@ -156,6 +156,7 @@ public sealed class ViewerLimitTests(LimitedGatewayFactory factory) : IClassFixt
         await using var remote = factory.CreateRemote();
         await remote.StartAsync(Ct);
         await remote.GetSettingsAsync(Ct);
+        var before = engine.PreviewFilter();
 
         await remote.SetMapViewAsync(
             new MapViewReport(null, null, 0, Watched: ["N0AAA", "N0BBB", "N0CCC", "N0DDD", "N0EEE"]),
@@ -165,6 +166,9 @@ public sealed class ViewerLimitTests(LimitedGatewayFactory factory) : IClassFixt
         var filter = engine.PreviewFilter()!;
         Assert.EndsWith("f/N0AAA/50 f/N0BBB/50 f/N0CCC/50", filter, StringComparison.Ordinal);
         Assert.DoesNotContain("N0DDD", filter, StringComparison.Ordinal);
+        // Gone before the next test in this class reads the filter: a viewer counts until the gateway sees it leave.
+        await remote.DisposeAsync();
+        await WaitUntilAsync(() => Task.FromResult(engine.PreviewFilter() == before));
     }
 
     private sealed class RefuseNegotiate : HttpMessageHandler
