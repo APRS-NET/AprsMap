@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.8](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.7...v0.8.0-alpha.8) (2026-11-15)
+
+
+### Features
+
+* **desktop:** install updates automatically, restart at a chosen time, and show what's new ([72d44e0](https://github.com/APRS-NET/AprsMap/commit/72d44e008da1523294e06c376fcf108cbf312792))
+
 ## [0.8.0-alpha.7](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.6...v0.8.0-alpha.7) (2026-11-15)
 
 
