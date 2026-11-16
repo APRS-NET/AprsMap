@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0-alpha.11](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.10...v0.8.0-alpha.11) (2026-11-16)
+
+
+### Bug Fixes
+
+* **deps:** Bump the aprs-net group with 12 updates ([6545b6c](https://github.com/APRS-NET/AprsMap/commit/6545b6c3a968193cbc23c1723d284d6910e95759))
+* **deps:** Bump the test group with 1 update ([e7f3d4f](https://github.com/APRS-NET/AprsMap/commit/e7f3d4f7c543eb418414d9b21fa1f05620099d77))
+
 ## [0.8.0-alpha.10](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.9...v0.8.0-alpha.10) (2026-11-16)
 
 
