@@ -52,16 +52,38 @@ public sealed record AuthInfo(
 }
 
 /// <summary>Whether the gateway has an API key (docs/features/F1.38-gateway-api-key.md, behavior 6).</summary>
-/// <param name="Set">A key is saved, so apps with it are let in as the operator.</param>
-/// <param name="SetAt">When it was saved.</param>
-/// <param name="InUse">
-/// How many other apps are connected with it now (#450): replacing it disconnects them until they have the new one.
-/// </param>
-public sealed record ApiKeyStatus(bool Set, DateTimeOffset? SetAt = null, int InUse = 0)
+/// <summary>What an app's key lets it do (docs/features/F1.38-gateway-api-key.md, behavior 2).</summary>
+public enum ApiKeyAccess
 {
-    /// <summary>No key: API access is off.</summary>
-    public static ApiKeyStatus None { get; } = new(false);
+    /// <summary>Everything a signed-in operator may: transmit, and change settings, sources and toggles.</summary>
+    Operator,
+
+    /// <summary>Watch only, as a viewer: for a kiosk or a wall display, named and revocable.</summary>
+    Watch,
 }
+
+/// <summary>One app's API key, as the operator sees it (behavior 1): never the key itself.</summary>
+/// <param name="Id">Its id, to revoke it by.</param>
+/// <param name="Name">What the operator called it: "Derek's laptop".</param>
+/// <param name="Access">What it lets the app do.</param>
+/// <param name="CreatedAt">When it was created.</param>
+/// <param name="LastUsedAt">When an app last connected with it; null if never.</param>
+/// <param name="LastUsedFrom">The address it last connected from; null if never.</param>
+/// <param name="InUse">How many connections it has now, other than the asking one's.</param>
+public sealed record ApiKeyInfo(
+    string Id,
+    string Name,
+    ApiKeyAccess Access,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? LastUsedAt = null,
+    string? LastUsedFrom = null,
+    int InUse = 0
+);
+
+/// <summary>A key just created: the only time the key itself is shown (behavior 6).</summary>
+/// <param name="Info">Its entry in the list.</param>
+/// <param name="Key">The key, to copy into the app now.</param>
+public sealed record ApiKeyCreated(ApiKeyInfo Info, string Key);
 
 /// <summary>The gateway's API key (docs/features/F1.38-gateway-api-key.md).</summary>
 public static class ApiKeys
@@ -74,6 +96,12 @@ public static class ApiKeys
 
     /// <summary>The scheme the key is sent with, in the <c>Authorization</c> header (behavior 5).</summary>
     public const string Scheme = "Bearer";
+
+    /// <summary>The longest a key's name may be.</summary>
+    public const int MaxNameLength = 40;
+
+    /// <summary>The most keys a gateway keeps.</summary>
+    public const int MaxKeys = 50;
 }
 
 /// <summary>What a gateway made of an app's API key, in a connection test (#419).</summary>

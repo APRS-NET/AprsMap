@@ -10,45 +10,100 @@ using Microsoft.Extensions.Options;
 
 namespace AprsMap.Server;
 
-/// <summary>The stored key: its hash and when it was saved (docs/features/F1.38-gateway-api-key.md, behavior 6).</summary>
+/// <summary>The stored key: its hash and when it was saved (the single key of F1.38 before per-app keys).</summary>
 internal sealed record ApiKeyRecord(string Hash, DateTimeOffset SetAt);
 
 /// <summary>
-/// The gateway's API key (docs/features/F1.38-gateway-api-key.md): kept as a hash in <c>api-key.json</c> in the data
-/// folder, readable by the gateway's user only, never the key itself. Connections let in by it are closed when it's
-/// replaced or removed (behavior 1).
+/// One app's stored key (docs/features/F1.38-gateway-api-key.md, behaviors 1, 6, 9): its hash, never the key. A key the
+/// gateway made is 32 random bytes, so a SHA-256 of it can't be reversed or guessed; the one key kept from before
+/// per-app keys has the slow password hash it was saved with (<see cref="Legacy"/>).
+/// </summary>
+internal sealed record StoredApiKey(
+    string Id,
+    string Name,
+    ApiKeyAccess Access,
+    string Hash,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? LastUsedAt = null,
+    string? LastUsedFrom = null,
+    bool Legacy = false
+);
+
+/// <summary>The keys file.</summary>
+internal sealed record StoredApiKeys(IReadOnlyList<StoredApiKey> Keys);
+
+/// <summary>A key a request was let in with: its id (which its connection remembers), name and access.</summary>
+internal sealed record AcceptedKey(string Id, string Name, ApiKeyAccess Access);
+
+/// <summary>
+/// The gateway's API keys, one per app (docs/features/F1.38-gateway-api-key.md): kept as hashes in
+/// <c>api-keys.json</c> in the data folder, readable by the gateway's user only. Revoking one closes its connections
+/// and leaves the others working (behavior 1). The single key of an earlier version is kept as "Existing key".
 /// </summary>
 internal sealed class ApiKeyStore(string folder, TimeProvider time)
 {
     /// <summary>The file's name in the data folder.</summary>
-    public const string FileName = "api-key.json";
+    public const string FileName = "api-keys.json";
+
+    /// <summary>The single key's file, from before per-app keys: read once, then renamed.</summary>
+    public const string LegacyFileName = "api-key.json";
+
+    /// <summary>The name the earlier version's key is kept under.</summary>
+    public const string LegacyName = "Existing key";
+
+    /// <summary>How often a key's last use is written to disk, at most; it's kept in memory meanwhile.</summary>
+    internal static readonly TimeSpan LastUsedWrite = TimeSpan.FromMinutes(5);
 
     private readonly Lock _gate = new();
-    private readonly Dictionary<string, HubCallerContext> _connections = new(StringComparer.Ordinal);
-    private ApiKeyRecord? _record;
+    private readonly Dictionary<string, (string KeyId, HubCallerContext Context)> _connections = new(
+        StringComparer.Ordinal
+    );
+    private List<StoredApiKey> _keys = [];
     private bool _loaded;
 
     private string FilePath => Path.Combine(folder, FileName);
 
-    /// <summary>Whether a key is saved, and when.</summary>
-    public ApiKeyStatus Status => Current is { } record ? new ApiKeyStatus(true, record.SetAt) : ApiKeyStatus.None;
-
-    /// <summary>The saved key's fingerprint, which connections let in by it remember; null with none.</summary>
-    public string? Stamp => Current is { } record ? PasswordHashing.Stamp(record.Hash) : null;
-
-    private ApiKeyRecord? Current
+    /// <summary>Whether there's any key, so apps can be let in at all.</summary>
+    public bool Any
     {
         get
         {
             lock (_gate)
             {
-                if (!_loaded)
-                {
-                    _record = Load(FilePath);
-                    _loaded = true;
-                }
-                return _record;
+                Load();
+                return _keys.Count > 0;
             }
+        }
+    }
+
+    /// <summary>The keys as the operator sees them, with how many connections each has other than <paramref name="except"/>.</summary>
+    public IReadOnlyList<ApiKeyInfo> List(string? except)
+    {
+        lock (_gate)
+        {
+            Load();
+            return
+            [
+                .. _keys.Select(k => new ApiKeyInfo(
+                    k.Id,
+                    k.Name,
+                    k.Access,
+                    k.CreatedAt,
+                    k.LastUsedAt,
+                    k.LastUsedFrom,
+                    _connections.Count(c => c.Value.KeyId == k.Id && c.Key != except)
+                )),
+            ];
+        }
+    }
+
+    /// <summary>Whether the key with <paramref name="id"/> is still there: a connection let in by it goes on.</summary>
+    public bool Has(string id)
+    {
+        lock (_gate)
+        {
+            Load();
+            return _keys.Any(k => k.Id == id);
         }
     }
 
@@ -60,83 +115,118 @@ internal sealed class ApiKeyStore(string folder, TimeProvider time)
     public static bool IsValid(string? key) =>
         key is { Length: >= ApiKeys.MinLength and <= ApiKeys.MaxLength } && key.All(c => c is > ' ' and <= '~');
 
-    /// <summary>Saves <paramref name="key"/>'s hash, replacing the old key and closing its connections.</summary>
-    /// <exception cref="ArgumentException">It can't be a key (<see cref="EngineErrorCodes.ApiKeyTooShort"/>).</exception>
-    public ApiKeyStatus Save(string key)
+    /// <summary>A new key for one app, saved as its hash; the key is returned this once (behaviors 1, 6).</summary>
+    /// <exception cref="ArgumentException">No name, a name too long or used, or too many keys.</exception>
+    public ApiKeyCreated Create(string name, ApiKeyAccess access)
     {
-        if (!IsValid(key))
-        {
-            throw EngineErrors.Create(
-                EngineErrorCodes.ApiKeyTooShort,
-                $"An API key needs at least {ApiKeys.MinLength} characters, printable ASCII without spaces."
-            );
-        }
-        var record = new ApiKeyRecord(PasswordHashing.Hash(key), time.GetUtcNow());
-        Directory.CreateDirectory(folder);
-        var temporary = FilePath + ".tmp";
-        File.WriteAllText(temporary, JsonSerializer.Serialize(record, ApiKeyJson.Default.ApiKeyRecord));
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(temporary, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-        }
-        File.Move(temporary, FilePath, overwrite: true);
-        Replace(record);
-        return Status;
-    }
-
-    /// <summary>Removes the key: API access is off, and its connections close.</summary>
-    public void Remove()
-    {
-        File.Delete(FilePath);
-        Replace(null);
-    }
-
-    private void Replace(ApiKeyRecord? record)
-    {
-        List<HubCallerContext> close;
+        ArgumentNullException.ThrowIfNull(name);
+        name = name.Trim();
         lock (_gate)
         {
-            _record = record;
-            _loaded = true;
-            close = [.. _connections.Values];
-            _connections.Clear();
+            Load();
+            if (name.Length == 0 || name.Length > ApiKeys.MaxNameLength || name.Any(char.IsControl))
+            {
+                throw NameError($"Give the key a name of up to {ApiKeys.MaxNameLength} characters.");
+            }
+            if (_keys.Any(k => string.Equals(k.Name, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw NameError($"There's already a key named {name}.");
+            }
+            if (_keys.Count >= ApiKeys.MaxKeys)
+            {
+                throw NameError($"The gateway keeps at most {ApiKeys.MaxKeys} keys. Revoke one first.");
+            }
+            var key = Generate();
+            var stored = new StoredApiKey(Guid.NewGuid().ToString("N"), name, access, FastHash(key), time.GetUtcNow());
+            _keys = [.. _keys, stored];
+            Write();
+            return new ApiKeyCreated(Info(stored), key);
+        }
+    }
+
+    /// <summary>Revokes one key: its connections close; the others go on. Its name, or null if there was none.</summary>
+    public string? Revoke(string id)
+    {
+        List<HubCallerContext> close;
+        string? name;
+        lock (_gate)
+        {
+            Load();
+            name = _keys.Find(k => k.Id == id)?.Name;
+            if (name is null)
+            {
+                return null;
+            }
+            _keys = [.. _keys.Where(k => k.Id != id)];
+            Write();
+            close = [.. _connections.Where(c => c.Value.KeyId == id).Select(c => c.Value.Context)];
+            foreach (var context in close)
+            {
+                _connections.Remove(context.ConnectionId);
+            }
         }
         foreach (var context in close)
         {
-            context.Abort(); // the app connects again, as a viewer unless it has the new key
+            context.Abort(); // the app connects again, as a viewer
         }
+        return name;
     }
 
     /// <summary>
-    /// The saved key's <see cref="Stamp"/> when <paramref name="key"/> is it, otherwise null; costs the same with no key
-    /// saved, so whether there is one can't be timed.
+    /// The key <paramref name="key"/> is, or null; records its use from <paramref name="address"/> (behavior 9). A
+    /// wrong key costs the same whichever keys there are, so which exist can't be timed.
     /// </summary>
-    public string? Check(string key)
+    public AcceptedKey? Check(string key, string? address = null)
     {
-        var record = Current;
-        return PasswordHashing.Verify(key, record?.Hash) && record is not null
-            ? PasswordHashing.Stamp(record.Hash)
-            : null;
-    }
-
-    /// <summary>
-    /// How many hub connections the key let in, other than <paramref name="except"/>'s: the apps that lose operator
-    /// access when it's replaced (#450).
-    /// </summary>
-    public int InUse(string? except)
-    {
+        var hash = FastHash(key);
         lock (_gate)
         {
-            return _connections.Keys.Count(id => id != except);
+            Load();
+            StoredApiKey? found = null;
+            foreach (var stored in _keys)
+            {
+                var match = stored.Legacy
+                    ? PasswordHashing.Verify(key, stored.Hash)
+                    : CryptographicOperations.FixedTimeEquals(
+                        Encoding.ASCII.GetBytes(hash),
+                        Encoding.ASCII.GetBytes(stored.Hash)
+                    );
+                if (match && found is null)
+                {
+                    found = stored;
+                }
+            }
+            if (found is null)
+            {
+                return null;
+            }
+            if (address is not null)
+            {
+                Used(found, address);
+            }
+            return new AcceptedKey(found.Id, found.Name, found.Access);
         }
     }
 
-    /// <summary>A hub connection let in by the key: it closes when the key changes.</summary>
-    public void Attach(HubCallerContext context)
+    // Under _gate. Written at most every few minutes for the same address, so a busy app doesn't wear the disk.
+    private void Used(StoredApiKey stored, string address)
+    {
+        var now = time.GetUtcNow();
+        var write = stored.LastUsedFrom != address || stored.LastUsedAt is not { } last || now - last >= LastUsedWrite;
+        var used = stored with { LastUsedAt = now, LastUsedFrom = address };
+        _keys = [.. _keys.Select(k => k.Id == stored.Id ? used : k)];
+        if (write)
+        {
+            Write();
+        }
+    }
+
+    /// <summary>A hub connection let in by key <paramref name="keyId"/>: it closes when that key is revoked.</summary>
+    public void Attach(HubCallerContext context, string keyId)
     {
         lock (_gate)
         {
-            _connections[context.ConnectionId] = context;
+            _connections[context.ConnectionId] = (keyId, context);
         }
     }
 
@@ -149,18 +239,75 @@ internal sealed class ApiKeyStore(string folder, TimeProvider time)
         }
     }
 
-    private static ApiKeyRecord? Load(string path)
+    private static ApiKeyInfo Info(StoredApiKey k) =>
+        new(k.Id, k.Name, k.Access, k.CreatedAt, k.LastUsedAt, k.LastUsedFrom);
+
+    private static Exception NameError(string message) => EngineErrors.Create(EngineErrorCodes.ApiKeyName, message);
+
+    private static string FastHash(string key) =>
+        "sha256:" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
+
+    // Under _gate: the keys file, or the earlier version's single key moved into it once.
+    private void Load()
     {
+        if (_loaded)
+        {
+            return;
+        }
+        _loaded = true;
         try
         {
-            return File.Exists(path)
-                ? JsonSerializer.Deserialize(File.ReadAllText(path), ApiKeyJson.Default.ApiKeyRecord)
-                : null;
+            if (File.Exists(FilePath))
+            {
+                _keys =
+                [
+                    .. JsonSerializer.Deserialize(File.ReadAllText(FilePath), ApiKeyJson.Default.StoredApiKeys)?.Keys
+                        ?? [],
+                ];
+                return;
+            }
+            var legacy = Path.Combine(folder, LegacyFileName);
+            if (
+                File.Exists(legacy)
+                && JsonSerializer.Deserialize(File.ReadAllText(legacy), ApiKeyJson.Default.ApiKeyRecord) is { } record
+            )
+            {
+                // Kept, so the apps using it keep working until they've moved to keys of their own (behavior 10).
+                _keys =
+                [
+                    new StoredApiKey(
+                        "existing",
+                        LegacyName,
+                        ApiKeyAccess.Operator,
+                        record.Hash,
+                        record.SetAt,
+                        Legacy: true
+                    ),
+                ];
+                Write();
+                File.Move(legacy, legacy + ".moved", overwrite: true);
+            }
         }
         catch (JsonException)
         {
-            return null; // unreadable: no API access until a key is saved again
+            _keys = []; // unreadable: no API access until a key is created again
         }
+    }
+
+    // Under _gate.
+    private void Write()
+    {
+        Directory.CreateDirectory(folder);
+        var temporary = FilePath + ".tmp";
+        File.WriteAllText(
+            temporary,
+            JsonSerializer.Serialize(new StoredApiKeys(_keys), ApiKeyJson.Default.StoredApiKeys)
+        );
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(temporary, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+        File.Move(temporary, FilePath, overwrite: true);
     }
 }
 
@@ -170,7 +317,7 @@ internal enum ApiKeyOutcome
     /// <summary>No key sent, or not where keys count (the viewer port): as without one.</summary>
     None,
 
-    /// <summary>The saved key: the request is the operator "API key".</summary>
+    /// <summary>One of the keys: the request is that app, with what its key allows.</summary>
     Accepted,
 
     /// <summary>A key that isn't the saved one, or over plain HTTP from another machine.</summary>
@@ -192,8 +339,8 @@ internal sealed class ApiKeyGate(
     IOptionsMonitor<GatewayOptions> options
 )
 {
-    /// <summary>The name a connection let in by the key has, where operators are named (behavior 8).</summary>
-    public const string OperatorName = "API key";
+    /// <summary>The name a connection let in by a key has, where operators are named (behavior 8): "API key: laptop".</summary>
+    public static string OperatorName(string keyName) => "API key: " + keyName;
 
     /// <summary>The key in <paramref name="context"/>'s <c>Authorization</c> header, if it sends one as a bearer.</summary>
     public static string? KeyIn(HttpContext context) =>
@@ -204,10 +351,10 @@ internal sealed class ApiKeyGate(
             : null;
 
     /// <summary>
-    /// What <paramref name="context"/>'s key comes to, with the key's stamp when it's accepted and how long the address
-    /// must wait when it's waiting.
+    /// What <paramref name="context"/>'s key comes to, with the key when it's accepted and how long the address must
+    /// wait when it's waiting.
     /// </summary>
-    public (ApiKeyOutcome Outcome, string? Stamp, TimeSpan? Wait) Check(HttpContext context)
+    public (ApiKeyOutcome Outcome, AcceptedKey? Key, TimeSpan? Wait) Check(HttpContext context)
     {
         if (KeyIn(context) is not { } key || !OperatorSignIn.IsOperatorPort(context, options.CurrentValue))
         {
@@ -224,10 +371,10 @@ internal sealed class ApiKeyGate(
             audit.ApiKeyRefused(address, "too many tries");
             return (ApiKeyOutcome.Waiting, null, wait);
         }
-        if (store.Check(key) is { } stamp)
+        if (store.Check(key, address) is { } accepted)
         {
-            audit.ApiKeyAccepted(address);
-            return (ApiKeyOutcome.Accepted, stamp, null);
+            audit.ApiKeyAccepted(address, accepted.Name);
+            return (ApiKeyOutcome.Accepted, accepted, null);
         }
         limiter.Failed(address, null, Fingerprint(key));
         audit.ApiKeyRefused(address, "wrong key");
@@ -241,7 +388,8 @@ internal sealed class ApiKeyGate(
     private static string Fingerprint(string key) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
 }
 
-[JsonSourceGenerationOptions(JsonSerializerDefaults.Web, WriteIndented = true)]
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web, WriteIndented = true, UseStringEnumConverter = true)]
 [JsonSerializable(typeof(ApiKeyRecord))]
+[JsonSerializable(typeof(StoredApiKeys))]
 [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage] // generated code
 internal sealed partial class ApiKeyJson : JsonSerializerContext;

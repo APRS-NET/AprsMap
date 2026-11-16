@@ -192,6 +192,11 @@ public static class EngineErrorCodes
     public const string ApiKeyTooShort = "gateway.api-key-too-short";
 
     /// <summary>
+    /// An API key with no name, a name too long or already used, or too many keys (F1.38 behavior 1).
+    /// </summary>
+    public const string ApiKeyName = "gateway.api-key-name";
+
+    /// <summary>
     /// Only the Linux service gateway updates and restarts itself from here (docs/features/F1.40-gateway-service-updates.md,
     /// behavior 1); a container is updated and restarted by Docker.
     /// </summary>
@@ -445,7 +450,7 @@ public static class EngineErrorCodes
     public static EngineErrorKind KindOf(string code)
     {
         ArgumentNullException.ThrowIfNull(code);
-        return code == ApiKeyTooShort ? EngineErrorKind.Argument
+        return code is ApiKeyTooShort or ApiKeyName ? EngineErrorKind.Argument
             : code.StartsWith("gateway.", StringComparison.Ordinal) ? EngineErrorKind.Access
             : code.StartsWith("auth.", StringComparison.Ordinal) ? EngineErrorKind.Access
             : code.StartsWith("geocoding.", StringComparison.Ordinal) ? EngineErrorKind.Operation

@@ -544,39 +544,43 @@ public interface IEngineService
     Task<string> GetLocatorAsync(double latitude, double longitude, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Whether the gateway has an API key, and since when (docs/features/F1.38-gateway-api-key.md, behavior 6); the
-    /// operator's only.
+    /// The apps let in with an API key (docs/features/F1.38-gateway-api-key.md, behaviors 1, 9): each key's name, what
+    /// it allows, when and where it was last used, and how many connections it has; never the keys. The operator's
+    /// only.
     /// </summary>
     /// <exception cref="UnauthorizedAccessException">
     /// Not the operator (<see cref="EngineErrorCodes.OperatorOnly"/>), or not a gateway
     /// (<see cref="EngineErrorCodes.ApiKeyNotHere"/>).
     /// </exception>
-    Task<ApiKeyStatus> GetApiKeyStatusAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>A new random key, 43 URL-safe characters (behavior 1); not saved until <see cref="SaveApiKeyAsync"/>.</summary>
-    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
-    Task<string> GenerateApiKeyAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ApiKeyInfo>> GetApiKeysAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Saves <paramref name="key"/> as the gateway's API key, kept as a hash; the old key is refused from its next call
-    /// (behaviors 1, 6).
+    /// A new key for one app, named <paramref name="name"/>, allowing <paramref name="access"/>: 32 random bytes as 43
+    /// URL-safe characters, returned this once and kept only as a hash (behaviors 1, 6).
     /// </summary>
     /// <exception cref="ArgumentException">
-    /// Shorter than <see cref="ApiKeys.MinLength"/>, longer than <see cref="ApiKeys.MaxLength"/>, or with spaces or
-    /// characters outside printable ASCII (<see cref="EngineErrorCodes.ApiKeyTooShort"/>).
+    /// No name, a name longer than <see cref="ApiKeys.MaxNameLength"/> or already used, or
+    /// <see cref="ApiKeys.MaxKeys"/> keys already (<see cref="EngineErrorCodes.ApiKeyName"/>).
     /// </exception>
-    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
-    Task<ApiKeyStatus> SaveApiKeyAsync(string key, CancellationToken cancellationToken = default);
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeysAsync"/>.</exception>
+    Task<ApiKeyCreated> CreateApiKeyAsync(
+        string name,
+        ApiKeyAccess access,
+        CancellationToken cancellationToken = default
+    );
 
     /// <summary>
-    /// Whether <paramref name="key"/> is the gateway's current API key (#447), saving nothing:
-    /// <see cref="ApiKeyCheck.Accepted"/> when it is, <see cref="ApiKeyCheck.Refused"/> when it isn't, and
-    /// <see cref="ApiKeyCheck.None"/> when no key is saved. The operator's only.
+    /// Revokes one app's key (behavior 1): its connections close and it's refused from then on; the other apps' keys
+    /// go on working.
     /// </summary>
-    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
-    Task<ApiKeyCheck> CheckApiKeyAsync(string key, CancellationToken cancellationToken = default);
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeysAsync"/>.</exception>
+    Task RevokeApiKeyAsync(string id, CancellationToken cancellationToken = default);
 
-    /// <summary>Removes the API key: API access is off (behavior 1).</summary>
-    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeyStatusAsync"/>.</exception>
-    Task RemoveApiKeyAsync(CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Whether <paramref name="key"/> is one of the gateway's API keys (#447), saving nothing:
+    /// <see cref="ApiKeyCheck.Accepted"/> when it is, <see cref="ApiKeyCheck.Refused"/> when it isn't, and
+    /// <see cref="ApiKeyCheck.None"/> when there are none. The operator's only.
+    /// </summary>
+    /// <exception cref="UnauthorizedAccessException">As for <see cref="GetApiKeysAsync"/>.</exception>
+    Task<ApiKeyCheck> CheckApiKeyAsync(string key, CancellationToken cancellationToken = default);
 }

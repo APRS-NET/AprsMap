@@ -224,30 +224,23 @@ internal sealed class EngineHubEndpoint(
         }
     }
 
-    /// <summary>The API key is the operator's to see and change (docs/features/F1.38-gateway-api-key.md, behavior 1).</summary>
-    [HubMethodName(EngineHub.GetApiKeyStatus)]
-    public ApiKeyStatus GetApiKeyStatus()
+    /// <summary>The API keys are the operator's to see and change (docs/features/F1.38-gateway-api-key.md, behavior 1).</summary>
+    [HubMethodName(EngineHub.GetApiKeys)]
+    public IReadOnlyList<ApiKeyInfo> GetApiKeys()
     {
         RequireOperator();
-        return apiKeys.Status with { InUse = apiKeys.InUse(Context.ConnectionId) };
+        return apiKeys.List(Context.ConnectionId);
     }
 
-    [HubMethodName(EngineHub.GenerateApiKey)]
-    public string GenerateApiKey()
-    {
-        RequireOperator();
-        return ApiKeyStore.Generate();
-    }
-
-    [HubMethodName(EngineHub.SaveApiKey)]
-    public ApiKeyStatus SaveApiKey(string key)
+    [HubMethodName(EngineHub.CreateApiKey)]
+    public ApiKeyCreated CreateApiKey(string name, ApiKeyAccess access)
     {
         RequireOperator();
         try
         {
-            var status = apiKeys.Save(key);
-            audit.ApiKeyChanged(OperatorName, removed: false);
-            return status;
+            var created = apiKeys.Create(name, access);
+            audit.ApiKeyChanged(OperatorName, created.Info.Name, revoked: false);
+            return created;
         }
         catch (Exception ex) when (ToHubException(ex) is { } hub)
         {
@@ -255,23 +248,26 @@ internal sealed class EngineHubEndpoint(
         }
     }
 
-    /// <summary>Whether a key is the current one (#447), for the operator checking a key an app has; saves nothing.</summary>
+    [HubMethodName(EngineHub.RevokeApiKey)]
+    public void RevokeApiKey(string id)
+    {
+        RequireOperator();
+        ArgumentNullException.ThrowIfNull(id);
+        if (apiKeys.Revoke(id) is { } name)
+        {
+            audit.ApiKeyChanged(OperatorName, name, revoked: true);
+        }
+    }
+
+    /// <summary>Whether a key is one of the gateway's (#447), for the operator checking a key an app has; saves nothing.</summary>
     [HubMethodName(EngineHub.CheckApiKey)]
     public ApiKeyCheck CheckApiKey(string key)
     {
         RequireOperator();
         ArgumentNullException.ThrowIfNull(key);
-        return !apiKeys.Status.Set ? ApiKeyCheck.None
+        return !apiKeys.Any ? ApiKeyCheck.None
             : apiKeys.Check(key.Trim()) is not null ? ApiKeyCheck.Accepted
             : ApiKeyCheck.Refused;
-    }
-
-    [HubMethodName(EngineHub.RemoveApiKey)]
-    public void RemoveApiKey()
-    {
-        RequireOperator();
-        apiKeys.Remove();
-        audit.ApiKeyChanged(OperatorName, removed: true);
     }
 
     private string OperatorName =>

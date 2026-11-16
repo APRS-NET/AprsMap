@@ -25,7 +25,7 @@ public sealed class ApiKeyGatewayFactory : OperatorGatewayFactory
     }
 }
 
-/// <summary>The gateway's API key (docs/features/F1.38-gateway-api-key.md, acceptance tests 1–4).</summary>
+/// <summary>The gateway's API keys, one per app (docs/features/F1.38-gateway-api-key.md, acceptance tests 1–6).</summary>
 public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<ApiKeyGatewayFactory>
 {
     private const int Admin = OperatorPortGatewayFactory.OperatorPort;
@@ -57,13 +57,11 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
         return response.Headers.GetValues("Set-Cookie").Single().Split(';')[0];
     }
 
-    /// <summary>A new key, saved by the operator.</summary>
-    private async Task<string> SaveNewKeyAsync()
+    /// <summary>A new key for an app, created by the operator.</summary>
+    private async Task<string> SaveNewKeyAsync(ApiKeyAccess access = ApiKeyAccess.Operator, string? name = null)
     {
         await using var op = await OperatorAsync();
-        var key = await op.GenerateApiKeyAsync(Ct);
-        await op.SaveApiKeyAsync(key, Ct);
-        return key;
+        return (await op.CreateApiKeyAsync(name ?? "App " + Guid.NewGuid().ToString("N")[..8], access, Ct)).Key;
     }
 
     private async Task<RemoteEngineService> AppAsync(string? key, int? port = Admin, bool https = true)
@@ -78,7 +76,7 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
     {
         try
         {
-            await remote.GetApiKeyStatusAsync(Ct);
+            await remote.GetApiKeysAsync(Ct);
             return true;
         }
         catch (EngineAccessException ex) when (ex.EngineError.Code == EngineErrorCodes.OperatorOnly)
@@ -97,58 +95,62 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
     }
 
     [Fact]
-    public async Task AGeneratedKeyIs43UrlSafeCharactersAndOnlyItsHashIsKept()
+    public async Task ANewKeyIs43UrlSafeCharactersShownOnceAndOnlyItsHashIsKept()
     {
         await using var op = await OperatorAsync();
 
-        var key = await op.GenerateApiKeyAsync(Ct);
-        var status = await op.SaveApiKeyAsync(key, Ct);
+        var created = await op.CreateApiKeyAsync("  Derek's laptop ", ApiKeyAccess.Operator, Ct);
 
-        Assert.Matches("^[A-Za-z0-9_-]{43}$", key);
-        Assert.True(status.Set);
-        Assert.Equal(status, await op.GetApiKeyStatusAsync(Ct));
+        Assert.Matches("^[A-Za-z0-9_-]{43}$", created.Key);
+        Assert.Equal("Derek's laptop", created.Info.Name);
+        var listed = Assert.Single(await op.GetApiKeysAsync(Ct), k => k.Id == created.Info.Id);
+        Assert.Equal((ApiKeyAccess.Operator, (DateTimeOffset?)null), (listed.Access, listed.LastUsedAt));
         var path = Path.Combine(gateway.SettingsFolder, ApiKeyStore.FileName);
-        Assert.DoesNotContain(key, await File.ReadAllTextAsync(path, Ct), StringComparison.Ordinal);
+        Assert.DoesNotContain(created.Key, await File.ReadAllTextAsync(path, Ct), StringComparison.Ordinal);
         if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path));
         }
-        Assert.DoesNotContain(gateway.Logs.Messages, m => m.Contains(key, StringComparison.Ordinal));
+        Assert.DoesNotContain(gateway.Logs.Messages, m => m.Contains(created.Key, StringComparison.Ordinal));
+        Assert.Contains(gateway.Logs.Messages, m =>
+            m.Contains("created the API key Derek's laptop", StringComparison.Ordinal)
+        );
     }
 
     [Fact]
-    public async Task TheOperatorCanTestAKeyAgainstTheCurrentOneWithoutSavingIt()
+    public async Task AKeyNeedsANameOfItsOwn()
+    {
+        await using var op = await OperatorAsync();
+        await op.CreateApiKeyAsync("Shack PC", ApiKeyAccess.Operator, Ct);
+
+        foreach (var name in new[] { " ", "shack pc", new string('n', ApiKeys.MaxNameLength + 1) })
+        {
+            var refused = await Assert.ThrowsAsync<EngineArgumentException>(() =>
+                op.CreateApiKeyAsync(name, ApiKeyAccess.Operator, Ct)
+            );
+            Assert.Equal(EngineErrorCodes.ApiKeyName, refused.EngineError.Code);
+        }
+    }
+
+    [Fact]
+    public async Task TheOperatorCanTestAKeyWithoutSavingIt()
     {
         // #447
-        await using var op = await OperatorAsync();
-        await op.RemoveApiKeyAsync(Ct);
-        Assert.Equal(ApiKeyCheck.None, await op.CheckApiKeyAsync(ApiKeyStore.Generate(), Ct));
-
         var key = await SaveNewKeyAsync();
+        await using var op = await OperatorAsync();
+        var before = await op.GetApiKeysAsync(Ct);
 
         Assert.Equal(ApiKeyCheck.Accepted, await op.CheckApiKeyAsync(key, Ct));
         Assert.Equal(ApiKeyCheck.Accepted, await op.CheckApiKeyAsync($" {key} ", Ct)); // as pasted
         Assert.Equal(ApiKeyCheck.Refused, await op.CheckApiKeyAsync(ApiKeyStore.Generate(), Ct));
-        Assert.True((await op.GetApiKeyStatusAsync(Ct)).Set); // nothing changed
+        Assert.Equal(before.Count, (await op.GetApiKeysAsync(Ct)).Count); // nothing changed
         await using var viewer = await AppAsync(null);
         var refused = await Assert.ThrowsAsync<EngineAccessException>(() => viewer.CheckApiKeyAsync(key, Ct));
         Assert.Equal(EngineErrorCodes.OperatorOnly, refused.EngineError.Code);
     }
 
     [Fact]
-    public async Task AShortKeyIsRefused()
-    {
-        await using var op = await OperatorAsync();
-
-        var refused = await Assert.ThrowsAsync<EngineArgumentException>(() =>
-            op.SaveApiKeyAsync(new string('k', ApiKeys.MinLength - 1), Ct)
-        );
-
-        Assert.Equal(EngineErrorCodes.ApiKeyTooShort, refused.EngineError.Code);
-    }
-
-    [Fact]
-    public async Task AnAppWithTheKeyOnTheAdminPortIsTheOperator()
+    public async Task AnAppWithAnOperatorKeyOnTheAdminPortIsTheOperator()
     {
         var key = await SaveNewKeyAsync();
 
@@ -171,16 +173,30 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
     }
 
     [Fact]
+    public async Task AWatchOnlyKeyOnlyWatches()
+    {
+        var key = await SaveNewKeyAsync(ApiKeyAccess.Watch, "Wall display");
+
+        await using var app = await AppAsync(key);
+        using var me = await MeAsync(key);
+
+        Assert.False(await IsOperatorAsync(app));
+        Assert.True((await app.GetSettingsAsync(Ct)).ReadOnly);
+        var info = await me.Content.ReadFromJsonAsync(EngineJsonContext.Default.AuthInfo, Ct);
+        Assert.Equal((false, "Wall display"), (info!.Operator, info.Name));
+    }
+
+    [Fact]
     public async Task AnAppIsToldWhetherTheGatewayTookItsKey()
     {
-        var key = await SaveNewKeyAsync();
+        var key = await SaveNewKeyAsync(name: "Phone");
 
         using var accepted = await MeAsync(key);
         using var refused = await MeAsync(ApiKeyStore.Generate());
         using var viewerPort = await MeAsync(key, port: 8080);
 
         var me = await accepted.Content.ReadFromJsonAsync(EngineJsonContext.Default.AuthInfo, Ct);
-        Assert.Equal((true, ApiKeyGate.OperatorName, true), (me!.Operator, me.Name, me.ApiKey));
+        Assert.Equal((true, "API key: Phone", true), (me!.Operator, me.Name, me.ApiKey));
         Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
         Assert.Equal(
             EngineErrorCodes.ApiKeyRefused,
@@ -190,7 +206,9 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
             AuthInfo.Viewer,
             await viewerPort.Content.ReadFromJsonAsync(EngineJsonContext.Default.AuthInfo, Ct)
         );
-        Assert.Contains(gateway.Logs.Messages, m => m.StartsWith("API key accepted from", StringComparison.Ordinal));
+        Assert.Contains(gateway.Logs.Messages, m =>
+            m.StartsWith("API key Phone accepted from", StringComparison.Ordinal)
+        );
         Assert.Contains(gateway.Logs.Messages, m => m.Contains("wrong key", StringComparison.Ordinal));
     }
 
@@ -209,47 +227,78 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
     }
 
     [Fact]
-    public async Task TheOperatorSeesHowManyOtherAppsUseTheKey()
+    public async Task TheOperatorSeesWhenAndWhereEachKeyWasLastUsedAndWhetherItsConnected()
     {
-        // #450: replacing a key in use locks those apps out, so Gateway access says how many there are.
-        var key = await SaveNewKeyAsync();
-        await using var app = await AppAsync(key);
-        Assert.Equal(0, (await app.GetApiKeyStatusAsync(Ct)).InUse); // not counting itself
+        // Behavior 9: which key a device has, and whether revoking it disconnects something.
         await using var op = await OperatorAsync();
+        var created = await op.CreateApiKeyAsync(
+            "Laptop " + Guid.NewGuid().ToString("N")[..6],
+            ApiKeyAccess.Operator,
+            Ct
+        );
+        await using var app = await AppAsync(created.Key);
+        Assert.Equal(0, (await app.GetApiKeysAsync(Ct)).Single(k => k.Id == created.Info.Id).InUse); // not itself
 
-        Assert.Equal(1, (await op.GetApiKeyStatusAsync(Ct)).InUse);
+        var listed = (await op.GetApiKeysAsync(Ct)).Single(k => k.Id == created.Info.Id);
+
+        Assert.Equal(1, listed.InUse);
+        Assert.NotNull(listed.LastUsedAt);
+        Assert.False(string.IsNullOrEmpty(listed.LastUsedFrom));
     }
 
     [Fact]
-    public async Task ANewKeyRefusesTheOldOneAtItsNextCall()
+    public async Task RevokingOneAppsKeyDisconnectsItAndLeavesTheOthersWorking()
     {
-        var old = await SaveNewKeyAsync();
-        await using var app = await AppAsync(old);
-        Assert.True(await IsOperatorAsync(app));
+        // Behavior 1: let a device in, or shut one out, without breaking the rest.
+        await using var op = await OperatorAsync();
+        var laptop = await op.CreateApiKeyAsync(
+            "Laptop " + Guid.NewGuid().ToString("N")[..6],
+            ApiKeyAccess.Operator,
+            Ct
+        );
+        var phone = await op.CreateApiKeyAsync("Phone " + Guid.NewGuid().ToString("N")[..6], ApiKeyAccess.Operator, Ct);
+        await using var laptopApp = await AppAsync(laptop.Key);
+        await using var phoneApp = await AppAsync(phone.Key);
+        Assert.True(await IsOperatorAsync(laptopApp));
 
-        var replacement = await SaveNewKeyAsync();
+        await op.RevokeApiKeyAsync(laptop.Info.Id, Ct);
 
-        await Assert.ThrowsAnyAsync<Exception>(() => app.GetApiKeyStatusAsync(Ct));
-        await using var again = await AppAsync(old);
+        await Assert.ThrowsAnyAsync<Exception>(() => laptopApp.GetApiKeysAsync(Ct));
+        await using var again = await AppAsync(laptop.Key);
         Assert.False(await IsOperatorAsync(again));
-        await using var current = await AppAsync(replacement);
-        Assert.True(await IsOperatorAsync(current));
+        Assert.True(await IsOperatorAsync(phoneApp)); // still connected
+        Assert.DoesNotContain(await op.GetApiKeysAsync(Ct), k => k.Id == laptop.Info.Id);
+        Assert.Contains(gateway.Logs.Messages, m => m.Contains("revoked the API key Laptop", StringComparison.Ordinal));
     }
+}
+
+/// <summary>A gateway's single key from before per-app keys (F1.38 behavior 10), on a gateway of its own.</summary>
+public sealed class LegacyApiKeyTests : IDisposable
+{
+    private readonly string _folder = Directory.CreateTempSubdirectory("aprsmap-keys").FullName;
+
+    public void Dispose() => Directory.Delete(_folder, recursive: true);
 
     [Fact]
-    public async Task RemovingTheKeyTurnsApiAccessOff()
+    public void TheEarlierKeyKeepsWorkingAsExistingKeyUntilItsRevoked()
     {
-        var key = await SaveNewKeyAsync();
-        await using (var op = await OperatorAsync())
-        {
-            await op.RemoveApiKeyAsync(Ct);
-            Assert.Equal(ApiKeyStatus.None, await op.GetApiKeyStatusAsync(Ct));
-        }
+        var old = ApiKeyStore.Generate();
+        File.WriteAllText(
+            Path.Combine(_folder, ApiKeyStore.LegacyFileName),
+            $$"""{"hash":"{{PasswordHashing.Hash(old)}}","setAt":"2026-10-26T12:00:00+00:00"}"""
+        );
+        var store = new ApiKeyStore(_folder, TimeProvider.System);
 
-        await using var app = await AppAsync(key);
+        var existing = Assert.Single(store.List(null));
+        Assert.Equal((ApiKeyStore.LegacyName, ApiKeyAccess.Operator), (existing.Name, existing.Access));
+        Assert.Equal(existing.Id, store.Check(old)?.Id);
+        Assert.Null(store.Check(ApiKeyStore.Generate()));
+        Assert.False(File.Exists(Path.Combine(_folder, ApiKeyStore.LegacyFileName)));
 
-        Assert.False(await IsOperatorAsync(app));
-        Assert.False(File.Exists(Path.Combine(gateway.SettingsFolder, ApiKeyStore.FileName)));
+        var again = new ApiKeyStore(_folder, TimeProvider.System); // after a restart
+        Assert.Equal(existing.Id, again.Check(old)?.Id);
+        again.Revoke(existing.Id);
+        Assert.Null(new ApiKeyStore(_folder, TimeProvider.System).Check(old));
     }
 }
 
@@ -281,8 +330,7 @@ public sealed class ConnectionTestTests(ApiKeyGatewayFactory gateway) : IClassFi
     public async Task TheConnectionTestSaysTheVersionAndWhatTheKeyComesTo()
     {
         // #419: an app tests the address and key before saving them.
-        var key = ApiKeyStore.Generate();
-        gateway.Services.GetRequiredService<ApiKeyStore>().Save(key);
+        var key = gateway.Services.GetRequiredService<ApiKeyStore>().Create("Test", ApiKeyAccess.Operator).Key;
 
         var accepted = await TestAsync(key);
 
@@ -306,8 +354,7 @@ public sealed class ApiKeyGuessingTests(ApiKeyGatewayFactory gateway) : IClassFi
     public async Task WrongKeysMakeTheAddressWaitButNotEveryone()
     {
         var store = gateway.Services.GetRequiredService<ApiKeyStore>();
-        var key = ApiKeyStore.Generate();
-        store.Save(key);
+        var key = store.Create("Guessed", ApiKeyAccess.Operator).Key;
 
         for (var i = 0; i < SignInLimiter.AddressLimit; i++)
         {
@@ -325,7 +372,7 @@ public sealed class ApiKeyGuessingTests(ApiKeyGatewayFactory gateway) : IClassFi
         var test = await TestAsync(key);
         Assert.Equal((ApiKeyCheck.Waiting, 15), (test.Key, test.WaitMinutes));
         var limiter = gateway.Services.GetRequiredService<SignInLimiter>();
-        Assert.Null(limiter.Wait("192.0.2.1", ApiKeyGate.OperatorName)); // nor is the key locked for other addresses
+        Assert.Null(limiter.Wait("192.0.2.1")); // nor is the key locked for other addresses
     }
 
     private async Task<GatewayTest> TestAsync(string key)
@@ -358,15 +405,14 @@ public sealed class OldApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture
     {
         var store = gateway.Services.GetRequiredService<ApiKeyStore>();
         var old = ApiKeyStore.Generate();
-        store.Save(ApiKeyStore.Generate());
+        store.Create("Current", ApiKeyAccess.Operator);
 
         for (var i = 0; i < SignInLimiter.AddressLimit * 2; i++)
         {
             using var refused = await MeAsync(old); // started again and again with the key it was given last week
             Assert.Equal(HttpStatusCode.Unauthorized, refused.StatusCode);
         }
-        var key = ApiKeyStore.Generate();
-        store.Save(key);
+        var key = store.Create("New", ApiKeyAccess.Operator).Key;
         using var accepted = await MeAsync(key);
 
         Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);

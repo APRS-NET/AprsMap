@@ -614,20 +614,29 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
         WithEngineErrors(() => _connection.InvokeAsync(EngineHub.RestartGateway, cancellationToken));
 
     /// <inheritdoc />
-    public Task<ApiKeyStatus> GetApiKeyStatusAsync(CancellationToken cancellationToken = default) =>
-        WithEngineErrors(() => _connection.InvokeAsync<ApiKeyStatus>(EngineHub.GetApiKeyStatus, cancellationToken));
-
-    /// <inheritdoc />
-    public Task<string> GenerateApiKeyAsync(CancellationToken cancellationToken = default) =>
-        WithEngineErrors(() => _connection.InvokeAsync<string>(EngineHub.GenerateApiKey, cancellationToken));
-
-    /// <inheritdoc />
-    public Task<ApiKeyStatus> SaveApiKeyAsync(string key, CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(key);
-        return WithEngineErrors(() =>
-            _connection.InvokeAsync<ApiKeyStatus>(EngineHub.SaveApiKey, key, cancellationToken)
+    public Task<IReadOnlyList<ApiKeyInfo>> GetApiKeysAsync(CancellationToken cancellationToken = default) =>
+        WithEngineErrors(() =>
+            _connection.InvokeAsync<IReadOnlyList<ApiKeyInfo>>(EngineHub.GetApiKeys, cancellationToken)
         );
+
+    /// <inheritdoc />
+    public Task<ApiKeyCreated> CreateApiKeyAsync(
+        string name,
+        ApiKeyAccess access,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        return WithEngineErrors(() =>
+            _connection.InvokeAsync<ApiKeyCreated>(EngineHub.CreateApiKey, name, access, cancellationToken)
+        );
+    }
+
+    /// <inheritdoc />
+    public Task RevokeApiKeyAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(id);
+        return WithEngineErrors(() => _connection.InvokeAsync(EngineHub.RevokeApiKey, id, cancellationToken));
     }
 
     /// <inheritdoc />
@@ -638,10 +647,6 @@ public sealed class RemoteEngineService : IEngineService, IAsyncDisposable
             _connection.InvokeAsync<ApiKeyCheck>(EngineHub.CheckApiKey, key, cancellationToken)
         );
     }
-
-    /// <inheritdoc />
-    public Task RemoveApiKeyAsync(CancellationToken cancellationToken = default) =>
-        WithEngineErrors(() => _connection.InvokeAsync(EngineHub.RemoveApiKey, cancellationToken));
 
     /// <inheritdoc />
     public Task<string> GetLocatorAsync(

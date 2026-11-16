@@ -253,20 +253,17 @@ public static class EngineHub
     /// <summary>Hub method for <see cref="IEngineService.RestartGatewayAsync"/>.</summary>
     public const string RestartGateway = "RestartGateway";
 
-    /// <summary>Hub method for <see cref="IEngineService.GetApiKeyStatusAsync"/>.</summary>
-    public const string GetApiKeyStatus = "GetApiKeyStatus";
+    /// <summary>Hub method for <see cref="IEngineService.GetApiKeysAsync"/>.</summary>
+    public const string GetApiKeys = "GetApiKeys";
 
-    /// <summary>Hub method for <see cref="IEngineService.GenerateApiKeyAsync"/>.</summary>
-    public const string GenerateApiKey = "GenerateApiKey";
+    /// <summary>Hub method for <see cref="IEngineService.CreateApiKeyAsync"/>.</summary>
+    public const string CreateApiKey = "CreateApiKey";
 
-    /// <summary>Hub method for <see cref="IEngineService.SaveApiKeyAsync"/>.</summary>
-    public const string SaveApiKey = "SaveApiKey";
+    /// <summary>Hub method for <see cref="IEngineService.RevokeApiKeyAsync"/>.</summary>
+    public const string RevokeApiKey = "RevokeApiKey";
 
     /// <summary>Hub method for <see cref="IEngineService.CheckApiKeyAsync"/>.</summary>
     public const string CheckApiKey = "CheckApiKey";
-
-    /// <summary>Hub method for <see cref="IEngineService.RemoveApiKeyAsync"/>.</summary>
-    public const string RemoveApiKey = "RemoveApiKey";
 
     /// <summary>English text of <see cref="EngineErrorCodes.OperatorOnly"/>: address lookup, the passcode calculator and reconnecting.</summary>
     public const string OperatorOnlyMessage =

@@ -89,15 +89,17 @@ sessions are kept in memory, so restarting the gateway signs everyone out. After
 15 minutes that address waits 15 minutes; after 10 for one name in an hour that name waits an hour. Sign-ins, failures,
 waits, sign-outs and every transmitting call are logged with the operator's name and address, never the password.
 
-#### An API key for apps
+#### API keys for apps
 
-An app, such as the desktop app used as the gateway's client (F1.39), gets the operator's rights with the gateway's API
-key instead of a password (docs/features/F1.38-gateway-api-key.md). A signed-in operator sets it in the web app's
-**Settings › Gateway access**: **Generate**, **Copy**, then **Apply**. The key is kept only as a hash in `api-key.json`
-in the data folder, so copy it before applying. Switching **Let apps in with an API key** off and applying removes the
-key; applying a new key disconnects the apps using the old one. The app sends it as `Authorization: Bearer <key>`, which
-the gateway accepts only on the operator port, over HTTPS or from the gateway's own host. Wrong keys count as failed
-sign-ins from that address, and each accepted or refused key is logged, never the key.
+An app, such as the desktop app used as the gateway's client (F1.39), gets the operator's rights with an API key
+instead of a password (docs/features/F1.38-gateway-api-key.md). Each app has its own key. A signed-in operator adds one
+in the web app's **Settings › Gateway access**: a name ("Derek's laptop"), **Operator** or **Watch only**, then
+**Create key** and **Copy**. The key is shown only then; the gateway keeps its hash in `api-keys.json` in the data
+folder. **Revoke** disconnects that app and refuses its key, leaving the other apps working, and each key shows when
+and from where it was last used. A gateway updated from a version with a single key keeps it as "Existing key". The
+app sends its key as `Authorization: Bearer <key>`, which the gateway accepts only on the operator port, over HTTPS or
+from the gateway's own host. Wrong keys count as failed sign-ins from that address, and each accepted or refused key is
+logged by name, never the key.
 
 Endpoints:
 
