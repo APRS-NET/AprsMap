@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.10](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.9...v0.8.0-alpha.10) (2026-11-16)
+
+
+### Features
+
+* **gateway:** an API key for each app, named and revocable one at a time ([9cc86c4](https://github.com/APRS-NET/AprsMap/commit/9cc86c478185254d672fe551b7971465d269bf0d))
+
 ## [0.8.0-alpha.9](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.8...v0.8.0-alpha.9) (2026-11-15)
 
 
