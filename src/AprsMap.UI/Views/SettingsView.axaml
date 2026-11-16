@@ -2212,55 +2212,123 @@
               AutomationProperties.LiveSetting="Polite"
             />
           </StackPanel>
-          <!-- Gateway access (docs/features/F1.38-gateway-api-key.md): the API key for apps that control the gateway. -->
+          <!-- Gateway access (docs/features/F1.38-gateway-api-key.md): a key for each app that connects. -->
           <StackPanel x:Name="GatewayAccessSection" IsVisible="{Binding IsGatewayAccessSection}" Spacing="10">
             <TextBlock Text="{l:T GatewayAccess.Title}" FontWeight="SemiBold" />
             <TextBlock Text="{l:T GatewayAccess.Description}" TextWrapping="Wrap" />
-            <ToggleSwitch
-              x:Name="GatewayAccessSwitch"
-              IsChecked="{Binding GatewayAccess.On, FallbackValue=False}"
-              OnContent="{l:T GatewayAccess.On}"
-              OffContent="{l:T GatewayAccess.On}"
-            />
             <TextBlock
               x:Name="GatewayAccessStatus"
               Text="{Binding GatewayAccess.StatusText, FallbackValue={x:Null}}"
               TextWrapping="Wrap"
               AutomationProperties.LiveSetting="Polite"
             />
-            <StackPanel Spacing="4" IsEnabled="{Binding GatewayAccess.On, FallbackValue=False}">
-              <TextBlock Text="{l:T GatewayAccess.Key}" Foreground="{DynamicResource Brush.TextMuted}" />
+            <!-- The apps with keys: what each allows, last used, connected, and Revoke (behaviors 1, 9). -->
+            <ItemsControl x:Name="GatewayAccessKeys" ItemsSource="{Binding GatewayAccess.Keys, FallbackValue={x:Null}}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="8" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="s:ApiKeyRow">
+                  <Border
+                    Background="{DynamicResource Brush.Surface}"
+                    BorderBrush="{DynamicResource Brush.Border}"
+                    BorderThickness="{DynamicResource Thickness.Border}"
+                    CornerRadius="{DynamicResource Radius.Panel}"
+                    Padding="12,8"
+                  >
+                    <DockPanel>
+                      <Button
+                        DockPanel.Dock="Right"
+                        Content="{l:T GatewayAccess.Revoke}"
+                        Command="{Binding RevokeCommand}"
+                        AutomationProperties.Name="{Binding Name}"
+                        VerticalAlignment="Center"
+                        Margin="8,0,0,0"
+                      />
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <TextBlock
+                          Text="{Binding Details}"
+                          Foreground="{DynamicResource Brush.TextMuted}"
+                          TextWrapping="Wrap"
+                        />
+                      </StackPanel>
+                    </DockPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <!-- Add an app: a name and what it may do; the key is shown this once (behaviors 1, 6). -->
+            <TextBlock Text="{l:T GatewayAccess.Add}" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <WrapPanel ItemSpacing="8" LineSpacing="8">
               <TextBox
-                x:Name="GatewayAccessKey"
-                Text="{Binding GatewayAccess.Key, FallbackValue=''}"
-                PlaceholderText="{l:T GatewayAccess.KeyHint}"
-                FontFamily="{DynamicResource Font.Mono}"
-                AutomationProperties.Name="{l:T GatewayAccess.Key}"
+                x:Name="GatewayAccessName"
+                Text="{Binding GatewayAccess.NewName, FallbackValue=''}"
+                PlaceholderText="{l:T GatewayAccess.NameHint}"
+                MinWidth="220"
+                MaxLength="40"
+                AutomationProperties.Name="{l:T GatewayAccess.Name}"
               />
-              <WrapPanel ItemSpacing="8" Margin="0,4,0,0">
-                <Button
-                  x:Name="GatewayAccessGenerate"
-                  Content="{l:T GatewayAccess.Generate}"
-                  Command="{Binding GatewayAccess.GenerateCommand, FallbackValue={x:Null}}"
+              <ComboBox
+                x:Name="GatewayAccessLevel"
+                ItemsSource="{Binding GatewayAccess.AccessOptions, FallbackValue={x:Null}}"
+                SelectedItem="{Binding GatewayAccess.NewAccess, FallbackValue={x:Null}}"
+                AutomationProperties.Name="{l:T GatewayAccess.AccessLabel}"
+              />
+              <Button
+                x:Name="GatewayAccessCreate"
+                Classes="accent"
+                Content="{l:T GatewayAccess.Create}"
+                Command="{Binding GatewayAccess.CreateCommand, FallbackValue={x:Null}}"
+              />
+            </WrapPanel>
+            <Border
+              x:Name="GatewayAccessCreated"
+              IsVisible="{Binding GatewayAccess.HasCreated, FallbackValue=False}"
+              BorderBrush="{DynamicResource Brush.Border}"
+              BorderThickness="{DynamicResource Thickness.Border}"
+              CornerRadius="{DynamicResource Radius.Panel}"
+              Padding="12,8"
+            >
+              <StackPanel Spacing="6">
+                <TextBlock Text="{Binding GatewayAccess.CreatedText, FallbackValue={x:Null}}" TextWrapping="Wrap" />
+                <SelectableTextBlock
+                  x:Name="GatewayAccessKey"
+                  Text="{Binding GatewayAccess.CreatedKey, FallbackValue={x:Null}}"
+                  FontFamily="{DynamicResource Font.Mono}"
+                  TextWrapping="Wrap"
                 />
-                <Button
-                  x:Name="GatewayAccessCopy"
-                  Content="{l:T GatewayAccess.Copy}"
-                  Command="{Binding GatewayAccess.CopyCommand, FallbackValue={x:Null}}"
-                />
-              </WrapPanel>
-            </StackPanel>
-            <!-- Test (#447): always there, to check a key an app has against the current one; Apply saves. -->
-            <WrapPanel ItemSpacing="8">
+                <WrapPanel ItemSpacing="8">
+                  <Button
+                    x:Name="GatewayAccessCopy"
+                    Content="{l:T GatewayAccess.Copy}"
+                    Command="{Binding GatewayAccess.CopyCommand, FallbackValue={x:Null}}"
+                  />
+                  <Button
+                    x:Name="GatewayAccessDone"
+                    Content="{l:T GatewayAccess.Done}"
+                    Command="{Binding GatewayAccess.DoneCommand, FallbackValue={x:Null}}"
+                  />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+            <!-- Test (#447): check a key an app has against the gateway's. -->
+            <TextBlock Text="{l:T GatewayAccess.TestTitle}" FontWeight="SemiBold" Margin="0,8,0,0" />
+            <WrapPanel ItemSpacing="8" LineSpacing="8">
+              <TextBox
+                x:Name="GatewayAccessTestKey"
+                Text="{Binding GatewayAccess.TestKey, FallbackValue=''}"
+                PlaceholderText="{l:T GatewayAccess.TestHint}"
+                FontFamily="{DynamicResource Font.Mono}"
+                MinWidth="320"
+                AutomationProperties.Name="{l:T GatewayAccess.TestTitle}"
+              />
               <Button
                 x:Name="GatewayAccessTest"
                 Content="{l:T GatewayAccess.Test}"
                 Command="{Binding GatewayAccess.TestCommand, FallbackValue={x:Null}}"
-              />
-              <Button
-                x:Name="GatewayAccessApply"
-                Content="{l:T WebViewer.Apply}"
-                Command="{Binding GatewayAccess.ApplyCommand, FallbackValue={x:Null}}"
               />
             </WrapPanel>
             <TextBlock

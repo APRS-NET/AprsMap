@@ -303,17 +303,25 @@ internal static partial class OperatorSignIn
                 "The API key is accepted over HTTPS, or from the gateway's own computer."
             );
         }
-        var (outcome, _, wait) = apiKey.Check(context);
+        var (outcome, key, wait) = apiKey.Check(context);
         switch (outcome)
         {
             case ApiKeyOutcome.Waiting:
                 // Said as a wait, not as a wrong key, so an app's owner doesn't go looking for a typo (#450).
                 return TooManyTries(context, wait!.Value);
-            case ApiKeyOutcome.Accepted:
+            case ApiKeyOutcome.Accepted when key is { Access: ApiKeyAccess.Operator } operatorKey:
                 return Results.Json(
-                    new AuthInfo(true, ApiKeyGate.OperatorName, FailedSignIns: limiter.FailedToday, ApiKey: true),
+                    new AuthInfo(
+                        true,
+                        ApiKeyGate.OperatorName(operatorKey.Name),
+                        FailedSignIns: limiter.FailedToday,
+                        ApiKey: true
+                    ),
                     EngineJsonContext.Default.AuthInfo
                 );
+            case ApiKeyOutcome.Accepted:
+                // A watch-only key (behavior 2): a viewer, named, so the app can say which key it is.
+                return Results.Json(new AuthInfo(false, key!.Name), EngineJsonContext.Default.AuthInfo);
             case ApiKeyOutcome.Refused:
                 return Refuse(
                     StatusCodes.Status401Unauthorized,
@@ -453,10 +461,10 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
     public void SignedOut(string name, string address) => LogSignedOut(name, address);
 
     /// <summary>An app's API key was accepted (docs/features/F1.38-gateway-api-key.md, behavior 7).</summary>
-    public void ApiKeyAccepted(string address)
+    public void ApiKeyAccepted(string address, string name)
     {
         SignIns.Add(1, new KeyValuePair<string, object?>("outcome", "api-key"));
-        LogApiKeyAccepted(address);
+        LogApiKeyAccepted(address, name);
     }
 
     /// <summary>An app's API key was refused, and why; never the key.</summary>
@@ -469,8 +477,9 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
     /// <summary>An operator asked the service gateway to update or restart (F1.40 behavior 6).</summary>
     public void Administered(string name, string what) => LogAdministered(name, what);
 
-    /// <summary>The API key was saved or removed, and by whom.</summary>
-    public void ApiKeyChanged(string name, bool removed) => LogApiKeyChanged(name, removed ? "removed" : "saved");
+    /// <summary>An app's API key was created or revoked, and by whom.</summary>
+    public void ApiKeyChanged(string name, string key, bool revoked) =>
+        LogApiKeyChanged(name, key, revoked ? "revoked" : "created");
 
     public void Transmitted(string name, string method, IReadOnlyList<object?> arguments)
     {
@@ -501,14 +510,14 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
     [LoggerMessage(Level = LogLevel.Warning, Message = "Operator {Name} asked the gateway to {What}")]
     private partial void LogAdministered(string name, string what);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "API key accepted from {Address}")]
-    private partial void LogApiKeyAccepted(string address);
+    [LoggerMessage(Level = LogLevel.Information, Message = "API key {Key} accepted from {Address}")]
+    private partial void LogApiKeyAccepted(string address, string key);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "API key refused from {Address}: {Reason}")]
     private partial void LogApiKeyRefused(string address, string reason);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Operator {Name} {Change} the API key")]
-    private partial void LogApiKeyChanged(string name, string change);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Operator {Name} {Change} the API key {Key}")]
+    private partial void LogApiKeyChanged(string name, string key, string change);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Operator {Name}: {Method}({Arguments})")]
     private partial void LogTransmitted(string name, string method, string arguments);
@@ -557,18 +566,21 @@ internal sealed class OperatorFilter(
             }
             context.Items[OperatorKey] = session.Name;
         }
-        else if (context.Items.TryGetValue(ApiKeyStampKey, out var stamp))
+        else if (context.Items.TryGetValue(ApiKeyStampKey, out var held) && held is AcceptedKey key)
         {
-            if (!Equals(stamp, apiKeys.Stamp))
+            if (!apiKeys.Has(key.Id))
             {
-                context.Abort(); // the key was replaced or removed: the app connects again
+                context.Abort(); // the key was revoked: the app connects again
                 throw new HubException(
                     EngineHub.EncodeError(
                         new EngineError(EngineErrorCodes.ApiKeyRefused, "The gateway refused this API key.")
                     )
                 );
             }
-            context.Items[OperatorKey] = ApiKeyGate.OperatorName;
+            if (key.Access == ApiKeyAccess.Operator)
+            {
+                context.Items[OperatorKey] = ApiKeyGate.OperatorName(key.Name);
+            }
         }
         if (
             context.Items.TryGetValue(OperatorKey, out var name)
@@ -588,12 +600,13 @@ internal sealed class OperatorFilter(
         }
         else if (
             context.Context.GetHttpContext() is { } http
-            && apiKeyGate.Check(http) is (ApiKeyOutcome.Accepted, { } stamp, _)
+            && apiKeyGate.Check(http) is (ApiKeyOutcome.Accepted, { } key, _)
         )
         {
-            // An app with the API key is the operator "API key" (F1.38 behaviors 2, 8); a refused one is a viewer.
-            context.Context.Items[ApiKeyStampKey] = stamp;
-            apiKeys.Attach(context.Context);
+            // An app with an operator key is the operator "API key: <name>"; one with a watch key is a viewer, still
+            // counted and closed when its key is revoked (F1.38 behaviors 2, 8); a refused one is a viewer.
+            context.Context.Items[ApiKeyStampKey] = key;
+            apiKeys.Attach(context.Context, key.Id);
         }
         return next(context);
     }

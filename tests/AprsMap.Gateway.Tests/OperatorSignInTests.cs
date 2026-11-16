@@ -366,8 +366,10 @@ public sealed class OperatorSignInTests
         );
 
         // The API key too.
-        var key = AprsMap.Server.ApiKeyStore.Generate();
-        gateway.Services.GetRequiredService<AprsMap.Server.ApiKeyStore>().Save(key);
+        var key = gateway
+            .Services.GetRequiredService<AprsMap.Server.ApiKeyStore>()
+            .Create("Insecure test", ApiKeyAccess.Operator)
+            .Key;
         using var me = new HttpRequestMessage(HttpMethod.Get, AuthPaths.Me);
         me.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", key);
         using var keyed = await browser.SendAsync(me, Ct);

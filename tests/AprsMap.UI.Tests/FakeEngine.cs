@@ -1004,46 +1004,56 @@ internal sealed class FakeEngine : IEngineService
         return Task.CompletedTask;
     }
 
-    public ApiKeyStatus ApiKey { get; set; } = ApiKeyStatus.None;
+    /// <summary>The gateway's keys, as listed.</summary>
+    public List<ApiKeyInfo> ApiKeysList { get; } = [];
 
-    public List<string> SavedApiKeys { get; } = [];
+    /// <summary>The keys made, by id.</summary>
+    public Dictionary<string, string> ApiKeyValues { get; } = [];
 
     public Exception? ApiKeyError { get; set; }
 
-    public Task<ApiKeyStatus> GetApiKeyStatusAsync(CancellationToken cancellationToken = default) =>
-        ApiKeyError is { } error ? Task.FromException<ApiKeyStatus>(error) : Task.FromResult(ApiKey);
+    public Task<IReadOnlyList<ApiKeyInfo>> GetApiKeysAsync(CancellationToken cancellationToken = default) =>
+        ApiKeyError is { } error
+            ? Task.FromException<IReadOnlyList<ApiKeyInfo>>(error)
+            : Task.FromResult<IReadOnlyList<ApiKeyInfo>>([.. ApiKeysList]);
 
-    public Task<string> GenerateApiKeyAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult("generated-key-" + new string('x', 29));
-
-    public Task<ApiKeyStatus> SaveApiKeyAsync(string key, CancellationToken cancellationToken = default)
+    public Task<ApiKeyCreated> CreateApiKeyAsync(
+        string name,
+        ApiKeyAccess access,
+        CancellationToken cancellationToken = default
+    )
     {
-        if (key.Length < ApiKeys.MinLength)
+        if (ApiKeysList.Any(k => string.Equals(k.Name, name, StringComparison.OrdinalIgnoreCase)))
         {
-            return Task.FromException<ApiKeyStatus>(
-                EngineErrors.Create(EngineErrorCodes.ApiKeyTooShort, "An API key needs at least 32 characters.")
+            return Task.FromException<ApiKeyCreated>(
+                EngineErrors.Create(EngineErrorCodes.ApiKeyName, $"There's already a key named {name}.")
             );
         }
-        SavedApiKeys.Add(key);
-        ApiKey = new ApiKeyStatus(true, new DateTimeOffset(2026, 10, 26, 12, 0, 0, TimeSpan.Zero));
-        return Task.FromResult(ApiKey);
+        var info = new ApiKeyInfo(
+            "id" + (ApiKeysList.Count + 1),
+            name,
+            access,
+            new DateTimeOffset(2026, 11, 15, 12, 0, 0, TimeSpan.Zero)
+        );
+        var key = "key-" + info.Id + new string('x', 39 - info.Id.Length);
+        ApiKeysList.Add(info);
+        ApiKeyValues[info.Id] = key;
+        return Task.FromResult(new ApiKeyCreated(info, key));
     }
 
-    /// <summary>The key <see cref="CheckApiKeyAsync"/> takes for the current one.</summary>
-    public string? CurrentApiKey { get; set; }
+    public Task RevokeApiKeyAsync(string id, CancellationToken cancellationToken = default)
+    {
+        ApiKeysList.RemoveAll(k => k.Id == id);
+        ApiKeyValues.Remove(id);
+        return Task.CompletedTask;
+    }
 
     public Task<ApiKeyCheck> CheckApiKeyAsync(string key, CancellationToken cancellationToken = default) =>
         Task.FromResult(
-            !ApiKey.Set ? ApiKeyCheck.None
-            : key == CurrentApiKey ? ApiKeyCheck.Accepted
+            ApiKeysList.Count == 0 ? ApiKeyCheck.None
+            : ApiKeyValues.ContainsValue(key) ? ApiKeyCheck.Accepted
             : ApiKeyCheck.Refused
         );
-
-    public Task RemoveApiKeyAsync(CancellationToken cancellationToken = default)
-    {
-        ApiKey = ApiKeyStatus.None;
-        return Task.CompletedTask;
-    }
 
     public Task<string> GetLocatorAsync(
         double latitude,

@@ -32,7 +32,7 @@ public sealed class GatewayAccessUiTests
     }
 
     [Fact]
-    public async Task AGeneratedKeyCanBeCopiedThenSavedAndIsntShownAgain()
+    public async Task AddingAnAppShowsItsKeyOnceToCopyAndListsIt()
     {
         var engine = new FakeEngine();
         var section = await Section(engine);
@@ -42,114 +42,117 @@ public sealed class GatewayAccessUiTests
             copied.Add(text);
             return Task.CompletedTask;
         };
-        Assert.Equal("No API key: apps can only watch.", section.StatusText);
-        Assert.False(section.On);
-        Assert.False(section.ApplyCommand.CanExecute(null));
+        Assert.Equal("No app has a key: apps can only watch.", section.StatusText);
+        Assert.False(section.CreateCommand.CanExecute(null)); // it needs a name
 
-        await section.GenerateCommand.ExecuteAsync(null);
+        section.NewName = "Derek's laptop";
+        await section.CreateCommand.ExecuteAsync(null);
         await section.CopyCommand.ExecuteAsync(null);
-        var key = section.Key;
-        Assert.True(section.On); // generating turns it on
-        await section.ApplyCommand.ExecuteAsync(null);
 
+        var key = engine.ApiKeyValues["id1"];
         Assert.Equal([key], copied);
-        Assert.Equal([key], engine.SavedApiKeys);
-        Assert.Empty(section.Key);
-        Assert.False(section.CopyCommand.CanExecute(null));
-        Assert.False(section.ApplyCommand.CanExecute(null)); // nothing left to apply
-        Assert.True(section.IsSet);
-        Assert.StartsWith("An API key is set, since 10/26/2026 12:00", section.StatusText, StringComparison.Ordinal);
-        Assert.False(section.HasProblem);
+        Assert.Equal(key, section.CreatedKey);
+        Assert.Equal("Key for Derek's laptop: copy it into the app now. It won't be shown again.", section.CreatedText);
+        Assert.Empty(section.NewName);
+        var row = Assert.Single(section.Keys);
+        Assert.Equal(("Derek's laptop", "Operator · not used yet"), (row.Name, row.Details));
+        Assert.Equal("One app has a key.", section.StatusText);
+
+        section.DoneCommand.Execute(null);
+        Assert.False(section.HasCreated);
+        Assert.Null(section.CreatedKey); // gone for good
     }
 
     [Fact]
-    public async Task AShortKeySaysWhyAndApplyingOffRemovesTheKey()
+    public async Task AWatchOnlyKeyAndAUsedKeySayWhatTheyAre()
+    {
+        var engine = new FakeEngine();
+        engine.ApiKeysList.Add(
+            new ApiKeyInfo(
+                "a",
+                "Shack PC",
+                ApiKeyAccess.Operator,
+                DateTimeOffset.UnixEpoch,
+                new DateTimeOffset(2026, 11, 15, 15, 40, 0, TimeSpan.Zero),
+                "10.10.20.130",
+                InUse: 1
+            )
+        );
+        var section = await Section(engine);
+        section.NewName = "Wall display";
+        section.NewAccess = section.AccessOptions.Single(o => o.Value == ApiKeyAccess.Watch);
+
+        await section.CreateCommand.ExecuteAsync(null);
+
+        var time = new DateTime(2026, 11, 15, 15, 40, 0).ToString("g", CultureInfo.GetCultureInfo("en-US")); // 11/15/2026 3:40 PM
+        Assert.Equal(
+            [$"Operator · last used {time} from 10.10.20.130 · connected", "Watch only · not used yet"],
+            section.Keys.Select(k => k.Details)
+        );
+        Assert.Equal("2 apps have keys.", section.StatusText);
+    }
+
+    [Fact]
+    public async Task ANameAlreadyUsedSaysSo()
     {
         var engine = new FakeEngine();
         var section = await Section(engine);
+        section.NewName = "Phone";
+        await section.CreateCommand.ExecuteAsync(null);
+        section.DoneCommand.Execute(null);
 
-        section.On = true;
-        section.Key = "too-short";
-        await section.ApplyCommand.ExecuteAsync(null);
+        section.NewName = "phone";
+        await section.CreateCommand.ExecuteAsync(null);
+
         Assert.True(section.HasProblem);
-        Assert.Equal("An API key needs at least 32 characters, without spaces.", section.Message);
-
-        section.Key = new string('k', 40);
-        await section.ApplyCommand.ExecuteAsync(null);
-        Assert.Equal([new string('k', 40)], engine.SavedApiKeys);
-        section.On = false;
-        Assert.True(section.ApplyCommand.CanExecute(null));
-        await section.ApplyCommand.ExecuteAsync(null);
-
-        Assert.False(section.IsSet);
-        Assert.Equal(ApiKeyStatus.None, engine.ApiKey);
-        Assert.Equal("Removed. Apps can only watch.", section.Message);
+        Assert.StartsWith("Give the key a name", section.Message, StringComparison.Ordinal);
+        Assert.Single(engine.ApiKeysList);
     }
 
     [Fact]
-    public async Task TestSaysWhetherAKeyIsTheCurrentOneAndSavesNothing()
+    public async Task RevokingOneKeyLeavesTheOthersAndAsksFirstWhenItsAppIsConnected()
+    {
+        var engine = new FakeEngine();
+        engine.ApiKeysList.Add(
+            new ApiKeyInfo("a", "Laptop", ApiKeyAccess.Operator, DateTimeOffset.UnixEpoch, InUse: 1)
+        );
+        engine.ApiKeysList.Add(new ApiKeyInfo("b", "Phone", ApiKeyAccess.Operator, DateTimeOffset.UnixEpoch));
+        var section = await Section(engine);
+
+        await section.Keys[1].RevokeCommand.ExecuteAsync(null); // not connected: straight away
+        Assert.Equal("Revoked the key for Phone. The other apps are unaffected.", section.Message);
+        Assert.Equal(["Laptop"], section.Keys.Select(k => k.Name));
+
+        await section.Keys[0].RevokeCommand.ExecuteAsync(null);
+        Assert.Single(engine.ApiKeysList); // asked first
+        Assert.True(section.HasProblem);
+        Assert.StartsWith("Laptop is connected now.", section.Message, StringComparison.Ordinal);
+        await section.Keys[0].RevokeCommand.ExecuteAsync(null);
+        Assert.Empty(engine.ApiKeysList);
+        Assert.Equal("No app has a key: apps can only watch.", section.StatusText);
+    }
+
+    [Fact]
+    public async Task TestSaysWhetherAKeyIsOneOfTheGatewaysAndSavesNothing()
     {
         // #447
-        var engine = new FakeEngine
-        {
-            ApiKey = new ApiKeyStatus(true, DateTimeOffset.UnixEpoch),
-            CurrentApiKey = new string('k', 43),
-        };
+        var engine = new FakeEngine();
         var section = await Section(engine);
+        section.NewName = "Laptop";
+        await section.CreateCommand.ExecuteAsync(null);
         Assert.False(section.TestCommand.CanExecute(null)); // nothing to test yet
 
-        section.Key = new string('k', 43);
+        section.TestKey = " " + engine.ApiKeyValues["id1"] + " ";
         await section.TestCommand.ExecuteAsync(null);
-        Assert.Equal(("That's the gateway's current key.", false), (section.Message, section.HasProblem));
+        Assert.Equal(("That's one of the gateway's keys.", false), (section.Message, section.HasProblem));
 
-        section.Key = new string('x', 43);
+        section.TestKey = new string('x', 43);
         await section.TestCommand.ExecuteAsync(null);
         Assert.Equal(
-            ("That isn't the gateway's current key. Apps using it can only watch.", true),
+            ("That isn't one of the gateway's keys. Apps using it can only watch.", true),
             (section.Message, section.HasProblem)
         );
-        Assert.Empty(engine.SavedApiKeys);
-    }
-
-    [Fact]
-    public async Task ReplacingAKeyOtherAppsUseAsksOnceMore()
-    {
-        // #450: those apps are refused until they have the new key, so the first Apply only says so.
-        var engine = new FakeEngine { ApiKey = new ApiKeyStatus(true, DateTimeOffset.UnixEpoch, InUse: 2) };
-        var section = await Section(engine);
-        Assert.EndsWith("2 other apps are connected with it now.", section.StatusText, StringComparison.Ordinal);
-
-        await section.GenerateCommand.ExecuteAsync(null);
-        await section.ApplyCommand.ExecuteAsync(null);
-        Assert.Empty(engine.SavedApiKeys);
-        Assert.True(section.HasProblem);
-        Assert.StartsWith(
-            "2 other apps are connected with the current key.",
-            section.Message,
-            StringComparison.Ordinal
-        );
-        Assert.EndsWith("Press Apply again to replace it.", section.Message, StringComparison.Ordinal);
-
-        section.Key = new string('k', 43); // a change asks again
-        await section.ApplyCommand.ExecuteAsync(null);
-        Assert.Empty(engine.SavedApiKeys);
-        await section.ApplyCommand.ExecuteAsync(null);
-        Assert.Single(engine.SavedApiKeys);
-
-        engine.ApiKey = new ApiKeyStatus(true, DateTimeOffset.UnixEpoch, InUse: 1);
-        await section.ShowAsync();
-        section.On = false;
-        await section.ApplyCommand.ExecuteAsync(null);
-        Assert.StartsWith(
-            "One other app is connected with the current key.",
-            section.Message,
-            StringComparison.Ordinal
-        );
-        engine.ApiKey = new ApiKeyStatus(true, DateTimeOffset.UnixEpoch); // it went meanwhile: no need to ask
-        section.On = true;
-        section.On = false;
-        await section.ApplyCommand.ExecuteAsync(null);
-        Assert.Equal("Removed. Apps can only watch.", section.Message);
+        Assert.Single(engine.ApiKeysList);
     }
 
     [Fact]

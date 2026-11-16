@@ -10,23 +10,23 @@ namespace AprsMap.Core;
 public sealed partial class Engine
 {
     /// <inheritdoc />
-    public Task<ApiKeyStatus> GetApiKeyStatusAsync(CancellationToken cancellationToken = default) =>
-        Task.FromException<ApiKeyStatus>(NotHere());
+    public Task<IReadOnlyList<ApiKeyInfo>> GetApiKeysAsync(CancellationToken cancellationToken = default) =>
+        Task.FromException<IReadOnlyList<ApiKeyInfo>>(NotHere());
 
     /// <inheritdoc />
-    public Task<string> GenerateApiKeyAsync(CancellationToken cancellationToken = default) =>
-        Task.FromException<string>(NotHere());
+    public Task<ApiKeyCreated> CreateApiKeyAsync(
+        string name,
+        ApiKeyAccess access,
+        CancellationToken cancellationToken = default
+    ) => Task.FromException<ApiKeyCreated>(NotHere());
 
     /// <inheritdoc />
-    public Task<ApiKeyStatus> SaveApiKeyAsync(string key, CancellationToken cancellationToken = default) =>
-        Task.FromException<ApiKeyStatus>(NotHere());
+    public Task RevokeApiKeyAsync(string id, CancellationToken cancellationToken = default) =>
+        Task.FromException(NotHere());
 
     /// <inheritdoc />
     public Task<ApiKeyCheck> CheckApiKeyAsync(string key, CancellationToken cancellationToken = default) =>
         Task.FromException<ApiKeyCheck>(NotHere());
-
-    /// <inheritdoc />
-    public Task RemoveApiKeyAsync(CancellationToken cancellationToken = default) => Task.FromException(NotHere());
 
     private static Exception NotHere() =>
         EngineErrors.Create(EngineErrorCodes.ApiKeyNotHere, "Only a gateway has an API key.");
