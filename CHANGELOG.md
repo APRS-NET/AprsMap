@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.12](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.11...v0.8.0-alpha.12) (2026-11-17)
+
+
+### Bug Fixes
+
+* **deps:** update AprsNet packages to 0.9.0-alpha.1 ([a02f025](https://github.com/APRS-NET/AprsMap/commit/a02f025bc66669e28f1fe47ef5ce406a4846e609))
+
 ## [0.8.0-alpha.11](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.10...v0.8.0-alpha.11) (2026-11-16)
 
 
