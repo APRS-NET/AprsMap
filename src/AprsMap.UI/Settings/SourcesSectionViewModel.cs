@@ -689,6 +689,7 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
                 "Settings.Sources.DeleteNamed",
                 new Dictionary<string, object?> { ["source"] = row.Name }
             );
+            row.ConfiguredText = row.Source.Configured ? _text["Settings.Sources.ConfiguredNote"] : null;
         }
     }
 
@@ -1080,6 +1081,15 @@ public sealed partial class SourcesSectionViewModel : ObservableObject
         PendingDelete = row;
     }
 
+    partial void OnPendingDeleteChanged(SourceRow? oldValue, SourceRow? newValue)
+    {
+        // The question shows in the source's own card, under its buttons, not below the list.
+        oldValue?.ConfirmText = null;
+        newValue?.ConfirmText = PendingDeleteText;
+    }
+
+    partial void OnPendingDeleteTextChanged(string? value) => PendingDelete?.ConfirmText = value;
+
     /// <summary>Deletes the source waiting for confirmation and unticks it from its profiles.</summary>
     [RelayCommand]
     private async Task ConfirmDeleteAsync()
@@ -1261,8 +1271,34 @@ public sealed partial class SourceRow(SourceSettings source, SourcesSectionViewM
     [RelayCommand]
     private void Edit() => section.Edit(this);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanDelete))]
     private Task DeleteAsync() => section.DeleteAsync(this);
+
+    /// <summary>
+    /// Whether Delete is offered: not for a source the gateway's configuration file names (#424), which comes back on
+    /// the next save; it's switched off instead.
+    /// </summary>
+    public bool CanDelete => !Source.Configured;
+
+    /// <summary>"Set in the gateway's configuration file (gateway.toml)…" for a configured source; null otherwise.</summary>
+    [ObservableProperty]
+    public partial string? ConfiguredText { get; set; }
+
+    /// <summary>The delete question, shown in this source's card while it waits; null otherwise.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsConfirmingDelete))]
+    public partial string? ConfirmText { get; set; }
+
+    /// <summary>Whether this source's delete waits for confirmation.</summary>
+    public bool IsConfirmingDelete => ConfirmText is not null;
+
+    /// <summary>Deletes it anyway, unticking it from its profiles.</summary>
+    [RelayCommand]
+    private Task ConfirmDeleteAsync() => section.ConfirmDeleteCommand.ExecuteAsync(null);
+
+    /// <summary>Keeps it.</summary>
+    [RelayCommand]
+    private void KeepIt() => section.CancelDeleteCommand.Execute(null);
 
     /// <summary>"Can send · WIDE1-1,WIDE2-1", or "RX only" (docs/features/F2.1-own-station.md, behavior 5).</summary>
     [ObservableProperty]

@@ -64,7 +64,12 @@ public sealed class ConfiguredSourcesTests
     [Fact]
     public async Task AMovedTncAndANewNameFollowTheConfiguration()
     {
+        // Once adopted, the source is the configured one by its mark, wherever the configuration moves it.
         var store = Installed();
+        using (var first = Create(store, o => o.KissSerial.Port = Tnc))
+        {
+            await first.GetSettingsAsync(Ct);
+        }
         using var engine = Create(store, o =>
         {
             o.KissSerial.Port = "/dev/ttyUSB1";
@@ -222,6 +227,142 @@ public sealed class ConfiguredSourcesTests
         Assert.Equal(2, settings.SourceList.Count);
         var adopted = Assert.Single(settings.SourceList, s => s.Configured);
         Assert.Equal((tnc.Id, "USB TNC-X", 1200), (adopted.Id, adopted.Name, adopted.Baud));
+    }
+
+    /// <summary>10.10.20.191 after the TNC-X was deleted: only the NinoTNC, on another device.</summary>
+    private static InMemorySettingsStore OnlyNino(out SourceSettings nino)
+    {
+        nino = SourceSettings.KissSerialFor(Nino, 57600) with { Name = "NinoTNC USB" };
+        var profile = InMemorySettingsStore.Profile("NZ0P-4") with
+        {
+            SourceIds = [InMemorySettingsStore.Rotate.Id, nino.Id],
+        };
+        return new InMemorySettingsStore(
+            new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [InMemorySettingsStore.Rotate, nino])
+        );
+    }
+
+    [Fact]
+    public async Task AUsbTncOnAnotherDeviceIsNeverTakenOverEvenTheOnlyOne()
+    {
+        // The configured TNC-X, deleted, took over the NinoTNC on 10.10.20.191: renamed it and moved it to the FTDI
+        // port at 1200 baud, on every save. Now the configured one is added as a source of its own.
+        var store = OnlyNino(out var nino);
+        using var engine = Create(store, ConfigureTnc);
+
+        var settings = await engine.GetSettingsAsync(Ct);
+
+        Assert.Equal(nino, settings.SourceList.Single(s => s.Id == nino.Id)); // untouched
+        var tnc = Assert.Single(settings.SourceList, s => s.Configured);
+        Assert.Equal((Engine.ConfiguredKissSerialId, Tnc, 1200), (tnc.Id, tnc.SerialPort, tnc.Baud));
+    }
+
+    [Fact]
+    public async Task ASourceWithTheConfiguredNameOnAnotherDeviceIsntTakenOverEither()
+    {
+        var store = OnlyNino(out var nino);
+        using var engine = Create(store, o =>
+        {
+            ConfigureTnc(o);
+            o.KissSerial.Name = "NinoTNC USB";
+        });
+
+        var settings = await engine.GetSettingsAsync(Ct);
+
+        Assert.Equal(nino, settings.SourceList.Single(s => s.Id == nino.Id));
+    }
+
+    [Fact]
+    public async Task ASourceOnALinkToTheConfiguredDeviceIsAdopted()
+    {
+        // Set up on /dev/ttyACM0 and configured as its /dev/serial/by-id link: the same TNC.
+        if (OperatingSystem.IsWindows())
+        {
+            return;
+        }
+        var folder = Directory.CreateTempSubdirectory("aprsmap-tty").FullName;
+        try
+        {
+            var device = Path.Combine(folder, "ttyACM0");
+            await File.WriteAllTextAsync(device, "", Ct);
+            var link = Path.Combine(folder, "usb-NinoTNC-if00");
+            File.CreateSymbolicLink(link, device);
+            var tnc = SourceSettings.KissSerialFor(device, 57600) with { Name = "NinoTNC USB" };
+            var profile = InMemorySettingsStore.Profile("NZ0P-4") with { SourceIds = [tnc.Id] };
+            var store = new InMemorySettingsStore(
+                new AppSettings([profile], profile.Id, UnitSettings.Metric, Sources: [tnc])
+            );
+            using var engine = Create(store, o => o.KissSerial.Port = link);
+
+            var adopted = TncOf(await engine.GetSettingsAsync(Ct));
+
+            Assert.Equal((tnc.Id, link, true), (adopted.Id, adopted.SerialPort, adopted.Configured));
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task TheAppCantDeleteAConfiguredSourceButCanSwitchItOff()
+    {
+        var store = Installed();
+        using var engine = Create(store, ConfigureTnc);
+        var settings = await engine.GetSettingsAsync(Ct);
+        var tnc = TncOf(settings);
+
+        var refused = await Assert.ThrowsAsync<EngineArgumentException>(() =>
+            engine.SaveSettingsAsync(
+                settings with
+                {
+                    Sources = [.. settings.SourceList.Where(s => s.Id != tnc.Id)],
+                    Profiles =
+                    [
+                        .. settings.Profiles.Select(p =>
+                            p with
+                            {
+                                SourceIds = [.. p.SourceIds.Where(i => i != tnc.Id)],
+                            }
+                        ),
+                    ],
+                },
+                Ct
+            )
+        );
+
+        Assert.Equal(EngineErrorCodes.SourceConfigured, refused.EngineError.Code);
+        Assert.Equal("USB TNC-X", refused.EngineError.Arg(EngineErrorArgs.Source));
+        Assert.Contains(store.Stored!.SourceList, s => s.Id == tnc.Id);
+        await engine.SetSourceEnabledAsync(tnc.Id, false, Ct); // switching it off is how
+    }
+
+    [Fact]
+    public async Task OnceTheConfigurationNoLongerNamesItTheSourceIsTheAppsAgain()
+    {
+        var store = Installed();
+        using (var configured = Create(store, ConfigureTnc))
+        {
+            Assert.True(TncOf(await configured.GetSettingsAsync(Ct)).Configured);
+        }
+        using var engine = Create(store, _ => { }); // the section removed from gateway.toml
+        var settings = await engine.GetSettingsAsync(Ct);
+        var tnc = TncOf(settings);
+        Assert.False(tnc.Configured);
+
+        await engine.SaveSettingsAsync(
+            settings with
+            {
+                Sources = [.. settings.SourceList.Where(s => s.Id != tnc.Id)],
+                Profiles =
+                [
+                    .. settings.Profiles.Select(p => p with { SourceIds = [.. p.SourceIds.Where(i => i != tnc.Id)] }),
+                ],
+            },
+            Ct
+        );
+
+        Assert.DoesNotContain(store.Stored!.SourceList, s => s.Kind == SourceKind.KissSerial);
     }
 
     [Fact]

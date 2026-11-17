@@ -335,6 +335,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             var old = await LoadSettingsLockedAsync(cancellationToken).ConfigureAwait(false);
             CheckLogFolder(settings, old);
+            if (!trusted)
+            {
+                RefuseDeletingConfigured(settings, old);
+            }
             var saved = KeepSecrets(
                 ForgetDeletedSources(
                     WithConfiguredSources(

@@ -345,6 +345,45 @@ public class SourcesSectionTests
     }
 
     [Fact]
+    public async Task TheDeleteQuestionShowsInTheSourcesOwnCardAndGoesWithKeep()
+    {
+        var (section, _) = Create(
+            BothOnRotate() with
+            {
+                Profiles =
+                [
+                    .. FakeEngine.TwoProfiles().Profiles.Select(p => p with { SourceIds = ["rotate", "euro"] }),
+                ],
+            }
+        );
+
+        await section.Rows[1].DeleteCommand.ExecuteAsync(null);
+
+        Assert.Equal((false, true), (section.Rows[0].IsConfirmingDelete, section.Rows[1].IsConfirmingDelete));
+        Assert.StartsWith("euro is used by", section.Rows[1].ConfirmText, StringComparison.Ordinal);
+        await section.Rows[0].DeleteCommand.ExecuteAsync(null); // another card's Delete moves the question there
+        Assert.Equal((true, false), (section.Rows[0].IsConfirmingDelete, section.Rows[1].IsConfirmingDelete));
+        section.Rows[0].KeepItCommand.Execute(null);
+        Assert.False(section.Rows[0].IsConfirmingDelete);
+        Assert.False(section.IsConfirmingDelete);
+    }
+
+    [Fact]
+    public void AConfiguredSourceOffersNoDeleteAndSaysWhy()
+    {
+        var tnc = SourceSettings.KissSerialFor("/dev/ttyUSB0", 1200) with { Name = "USB TNC-X", Configured = true };
+        var (section, _) = Create(BothOnRotate() with { Sources = [FakeEngine.Rotate, Euro, tnc] });
+
+        var row = section.Rows.Single(r => r.Source.Id == tnc.Id);
+
+        Assert.False(row.CanDelete);
+        Assert.False(row.DeleteCommand.CanExecute(null));
+        Assert.StartsWith("Set in the gateway's configuration file", row.ConfiguredText, StringComparison.Ordinal);
+        Assert.True(section.Rows[0].CanDelete);
+        Assert.Null(section.Rows[0].ConfiguredText);
+    }
+
+    [Fact]
     public void AddingAprsIsSaysWhatTheAutomaticFilterReceivesAndTheFilterInUse()
     {
         var settings = FakeEngine.TwoProfiles();

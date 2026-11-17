@@ -30,6 +30,12 @@ public static class EngineErrorCodes
     /// <summary>Two sources share an id, or a source has no name.</summary>
     public const string SourceInvalid = "settings.source.invalid";
 
+    /// <summary>
+    /// A save deletes a source the gateway's configuration file names (#424); <see cref="EngineErrorArgs.Source"/> names
+    /// it.
+    /// </summary>
+    public const string SourceConfigured = "settings.source.configured";
+
     /// <summary>A profile uses a source that isn't in the list.</summary>
     public const string SourceUnknown = "settings.profile.source-unknown";
 

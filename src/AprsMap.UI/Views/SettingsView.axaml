@@ -288,6 +288,7 @@
                         <Button
                           Content="{l:T Settings.Profiles.Delete}"
                           Command="{Binding DeleteCommand}"
+                          IsVisible="{Binding CanDelete}"
                           AutomationProperties.Name="{Binding DeleteName}"
                         />
                         <Button
@@ -298,23 +299,34 @@
                           AutomationProperties.Name="{Binding TestSendName}"
                         />
                       </WrapPanel>
+                      <!-- Set in gateway.toml (#424): no Delete; it's switched off instead. -->
+                      <TextBlock
+                        Text="{Binding ConfiguredText}"
+                        IsVisible="{Binding ConfiguredText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        TextWrapping="Wrap"
+                      />
+                      <!-- Deleting a source profiles use asks first (behavior 2), here in its own card. -->
+                      <StackPanel Spacing="8" IsVisible="{Binding IsConfirmingDelete}">
+                        <TextBlock
+                          Text="{Binding ConfirmText}"
+                          Foreground="{DynamicResource Brush.Warn}"
+                          TextWrapping="Wrap"
+                          AutomationProperties.LiveSetting="Assertive"
+                        />
+                        <WrapPanel ItemSpacing="8">
+                          <Button
+                            Content="{l:T Settings.Sources.DeleteAnyway}"
+                            Command="{Binding ConfirmDeleteCommand}"
+                          />
+                          <Button Content="{l:T Settings.Sources.Keep}" Command="{Binding KeepItCommand}" />
+                        </WrapPanel>
+                      </StackPanel>
                     </StackPanel>
                   </Border>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <!-- Deleting a source profiles use asks first (behavior 2). -->
-            <StackPanel Spacing="8" IsVisible="{Binding Sources.IsConfirmingDelete}">
-              <TextBlock Text="{Binding Sources.PendingDeleteText}" TextWrapping="Wrap" />
-              <WrapPanel ItemSpacing="8">
-                <Button
-                  x:Name="ConfirmDeleteSourceButton"
-                  Content="{l:T Settings.Sources.DeleteAnyway}"
-                  Command="{Binding Sources.ConfirmDeleteCommand}"
-                />
-                <Button Content="{l:T Settings.Sources.Keep}" Command="{Binding Sources.CancelDeleteCommand}" />
-              </WrapPanel>
-            </StackPanel>
             <Button
               x:Name="AddSourceButton"
               Content="{l:T Settings.Sources.Add}"

@@ -8,7 +8,9 @@ namespace AprsMap.Core;
 /// The devices the gateway's configuration names (#424): the USB TNC (<c>Engine:KissSerial</c>), gpsd
 /// (<c>Engine:Gpsd</c>) and a KISS over TCP TNC (<c>Engine:Kiss</c>). Their connection comes from the configuration on
 /// every start and every save, not only the first run, so editing <c>gateway.toml</c> and restarting fixes a wrong baud
-/// or a moved device. An existing source of that kind is adopted, keeping its id, so profiles and history carry on.
+/// or a moved device. An existing source on the same device is adopted, keeping its id, so profiles and history carry
+/// on; a source on another device is never taken over. A configured source can't be deleted from the app while the
+/// configuration names it (switch it off instead), and stops being configured when the configuration no longer does.
 /// </summary>
 public sealed partial class Engine
 {
@@ -97,7 +99,51 @@ public sealed partial class Engine
     private static bool SameDevice(SourceSettings a, SourceSettings b) =>
         a.IsSerial
             ? string.Equals(a.SerialPort, b.SerialPort, StringComparison.Ordinal)
+                || (DeviceOf(a.SerialPort) is { } device && device == DeviceOf(b.SerialPort))
             : a.Host is { } host && string.Equals(host, b.Host, StringComparison.OrdinalIgnoreCase) && a.Port == b.Port;
+
+    // The device a serial port's path leads to, following links (/dev/serial/by-id/... -> /dev/ttyACM0), so a source set
+    // up on /dev/ttyACM0 is recognised as the configured by-id path; null when the path isn't there.
+    private static string? DeviceOf(string? port)
+    {
+        if (string.IsNullOrWhiteSpace(port))
+        {
+            return null;
+        }
+        try
+        {
+            var info = new FileInfo(port);
+            return info.ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? (info.Exists ? info.FullName : null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Refuses a save from the app that deletes a source the configuration names (#424): it would only come back on
+    /// the next save. Switching it off is how to stop using it; the configuration is where it goes away.
+    /// </summary>
+    private void RefuseDeletingConfigured(AppSettings settings, AppSettings old)
+    {
+        var configured = ConfiguredSources();
+        foreach (var source in old.SourceList)
+        {
+            if (
+                source.Configured
+                && configured.Any(c => c.IsKind(source))
+                && settings.SourceList.All(s => s.Id != source.Id)
+            )
+            {
+                throw EngineErrors.Create(
+                    EngineErrorCodes.SourceConfigured,
+                    $"{source.Name} is set in the gateway's configuration file, so it can't be deleted here. Switch it off instead, or remove it from gateway.toml.",
+                    new Dictionary<string, string> { [EngineErrorArgs.Source] = source.Name }
+                );
+            }
+        }
+    }
 
     private static string Named(string? configured, string current) =>
         string.IsNullOrWhiteSpace(configured) ? current : configured.Trim();
@@ -148,13 +194,11 @@ public sealed partial class Engine
             }
             if (at < 0)
             {
-                // First time: the source on the configured device, else the one with the configured name, else the
-                // only one of its kind.
-                var ofKind = sources.Where(configured.IsKind).ToList();
+                // First time: the source on the configured device. Never one on another device, even the only one of
+                // its kind or one with the configured name: that's another TNC, which taking over would rename and
+                // move (a deleted configured TNC-X took over the NinoTNC on 10.10.20.191).
                 var wanted = configured.Apply(configured.Create());
-                var adopt = ofKind.Find(s => SameDevice(s, wanted))
-                    ?? ofKind.Find(s => s.Name == wanted.Name)
-                    ?? (ofKind.Count == 1 ? ofKind[0] : null);
+                var adopt = sources.Where(configured.IsKind).FirstOrDefault(s => SameDevice(s, wanted));
                 at = adopt is null ? -1 : sources.IndexOf(adopt);
             }
             if (at < 0)
@@ -189,6 +233,16 @@ public sealed partial class Engine
                     LogConfiguredChanged(_logger, after.Name, what, was, now);
                 }
                 sources[at] = after;
+                changed = true;
+            }
+        }
+        // A source the configuration no longer names is the app's again: it can be edited and deleted.
+        var named = ConfiguredSources();
+        for (var i = 0; i < sources.Count; i++)
+        {
+            if (sources[i].Configured && !named.Any(c => c.IsKind(sources[i])))
+            {
+                sources[i] = sources[i] with { Configured = false };
                 changed = true;
             }
         }
