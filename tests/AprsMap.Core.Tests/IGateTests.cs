@@ -77,12 +77,14 @@ public sealed class IGateTests
             await WaitUntil(() => Task.FromResult(Gated(aprsIs).Count == 1));
             Assert.Equal("W1AW-9>APRS,WIDE1-1,qAO,NZ0P-10:!4903.50N/07201.75W>Mobile", Gated(aprsIs).Single());
 
-            await tnc.Write("W1AW-9>APRS,WIDE1-1,WIDE2*:!4903.50N/07201.75W>Mobile"); // a digipeated copy
-            await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).IGate is { Refused: 1 });
+            // A digipeated copy goes up too: aprsc's IGate hints ask an IGate to send every copy it hears, and the
+            // APRS-IS servers drop the duplicates after noting which IGates heard the station (APRS.NET 0.8.0-alpha.6).
+            await tnc.Write("W1AW-9>APRS,WIDE1-1,WIDE2*:!4903.50N/07201.75W>Mobile");
+            await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).IGate is { Gated: 2 });
             var status = (await engine.GetStatusAsync(Ct)).IGate!;
-            Assert.Equal(1, status.Gated);
+            Assert.Equal(0, status.Refused);
             Assert.Null(status.Held);
-            Assert.Single(Gated(aprsIs));
+            Assert.Equal("W1AW-9>APRS,WIDE1-1,WIDE2*,qAO,NZ0P-10:!4903.50N/07201.75W>Mobile", Gated(aprsIs)[1]);
             await cts.CancelAsync();
             await run;
         }
