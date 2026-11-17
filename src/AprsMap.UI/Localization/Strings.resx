@@ -94,6 +94,13 @@
   <data name="Error.settings.source.invalid" xml:space="preserve">
     <value>Every source needs its own id and a name.</value>
   </data>
+  <data name="Settings.Sources.ConfiguredNote" xml:space="preserve">
+    <value>Set in the gateway's configuration file (gateway.toml), so it can't be deleted here. Switch it off to stop using it, or remove it from gateway.toml.</value>
+  </data>
+  <data name="Error.settings.source.configured" xml:space="preserve">
+    <value>{source} is set in the gateway's configuration file, so it can't be deleted here. Switch it off instead, or remove it from gateway.toml.</value>
+    <comment>source: the source's name.</comment>
+  </data>
   <data name="Error.settings.profile.source-unknown" xml:space="preserve">
     <value>Profile {profile} uses a source that isn't in the list.</value>
   </data>
