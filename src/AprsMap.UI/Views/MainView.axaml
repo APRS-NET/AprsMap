@@ -365,8 +365,8 @@
               >
                 <StackPanel Orientation="Horizontal">
                   <ToggleSwitch
-                    x:Name="AprsIsSwitch"
-                    DataContext="{Binding AprsIsSwitch}"
+                    x:Name="AprsIsFeedSwitch"
+                    DataContext="{Binding AprsIsFeedSwitch}"
                     x:DataType="vm:SourceSwitch"
                     IsChecked="{Binding IsOn}"
                     IsEnabled="{Binding CanChange}"
@@ -376,8 +376,8 @@
                     MinWidth="0"
                     Margin="8,0,0,0"
                     VerticalAlignment="Center"
-                    ToolTip.Tip="{l:T Toggles.Switch.AprsIs}"
-                    AutomationProperties.Name="{l:T Toggles.Switch.AprsIs}"
+                    ToolTip.Tip="{l:T Toggles.Switch.AprsIsFeed}"
+                    AutomationProperties.Name="{l:T Toggles.Switch.AprsIsFeed}"
                   />
                   <Button
                     x:Name="ConnectionButton"
@@ -446,6 +446,16 @@
                           IsEnabled="{Binding CanToggleDependents}"
                           Command="{Binding ToggleCommand}"
                           CommandParameter="{x:Static c:Toggle.AprsIs}"
+                        />
+                        <MenuItem
+                          x:Name="AprsIsFeedToggle"
+                          IsVisible="{Binding !IsViewerOnly}"
+                          Header="{l:T Toggles.AprsIsFeed}"
+                          ToggleType="CheckBox"
+                          IsChecked="{Binding AprsIsFeedOn, Mode=OneWay}"
+                          IsEnabled="{Binding CanToggleFeed}"
+                          Command="{Binding ToggleCommand}"
+                          CommandParameter="{x:Static c:Toggle.AprsIsFeed}"
                         />
                         <MenuItem
                           x:Name="TilesToggle"

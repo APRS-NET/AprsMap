@@ -27,6 +27,7 @@ public sealed partial class MainView : IMenuActions
         nameof(MainViewModel.CanSwitchProfiles),
         nameof(MainViewModel.InternetOn),
         nameof(MainViewModel.AprsIsOn),
+        nameof(MainViewModel.AprsIsFeedOn),
         nameof(MainViewModel.TilesOn),
         nameof(MainViewModel.TransmitOn),
         nameof(MainViewModel.CanTransmit),

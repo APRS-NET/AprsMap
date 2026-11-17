@@ -24,7 +24,7 @@ public sealed class ToggleTests
         Assert.False(vm.AprsIsOn);
         Assert.Equal("APRS-IS off", vm.ConnectionText); // its own pill says so, at once
         Assert.Empty(vm.ToggleMarkers); // no second pill for it
-        Assert.Equal("APRS-IS off", vm.ToggleAnnouncement);
+        Assert.Equal("APRS-IS connection off", vm.ToggleAnnouncement);
     }
 
     [Fact]
@@ -45,6 +45,41 @@ public sealed class ToggleTests
         Assert.Empty(vm.ToggleMarkers);
         await vm.ToggleCommand.ExecuteAsync(Toggle.AprsIs); // the menu turns it back on: the switch follows
         Assert.True(vm.AprsIsSwitch.IsOn);
+    }
+
+    [Fact]
+    public async Task ThePillsSwitchIsTheFeedNotTheConnection()
+    {
+        // docs/features/F1.42-aprs-is-feed.md, acceptance test 6.
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        vm.Show(engine.Settings);
+        vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 0, "1.0", Toggles: StationToggles.AllOn));
+        Assert.True(vm.AprsIsFeedSwitch is { IsOn: true, CanChange: true });
+
+        vm.AprsIsFeedSwitch.IsOn = false;
+        await WaitUntil(() => !vm.AprsIsFeedOn);
+
+        Assert.Equal([(Toggle.AprsIsFeed, false)], engine.Toggled);
+        Assert.True(vm.AprsIsOn); // still connected, for the IGate and messages
+        Assert.Equal("T2TEST connected · feed off", vm.ConnectionText);
+        Assert.True(vm.AprsIsSwitch.IsOn); // the dashboard's connection switch didn't move
+    }
+
+    [Fact]
+    public async Task WithTheConnectionOffTheFeedSwitchIsOffAndDisabled()
+    {
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        vm.Show(engine.Settings);
+        vm.Show(new EngineStatus(ConnectionState.Connected, "T2TEST", 0, "1.0", Toggles: StationToggles.AllOn));
+
+        await vm.ToggleCommand.ExecuteAsync(Toggle.AprsIs);
+
+        Assert.Equal([(Toggle.AprsIs, false)], engine.Toggled);
+        Assert.False(vm.CanToggleFeed);
+        Assert.Equal((false, false), (vm.AprsIsFeedSwitch.IsOn, vm.AprsIsFeedSwitch.CanChange));
+        Assert.True(vm.AprsIsFeedOn); // its own state is kept for when APRS-IS connects again
     }
 
     [Fact]

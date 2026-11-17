@@ -373,6 +373,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 LogToggled(_connections, saved.EffectiveToggles.ConnectsAprsIs ? "on" : "off");
                 SignalRestart(); // APRS-IS turned on or off (F1.15 behavior 1)
             }
+            else if (old.EffectiveToggles.ShowsAprsIs != saved.EffectiveToggles.ShowsAprsIs)
+            {
+                // The feed: the filter follows it, without a new login (F1.42 behavior 3).
+                LogFeedToggled(_connections, saved.EffectiveToggles.ShowsAprsIs ? "on" : "off");
+                RefreshFilter();
+            }
             else if (after is null ? before is not null : after.NeedsNewLogin(before))
             {
                 LogProfileChanged(_connections, after?.Name ?? "(none)");
@@ -766,7 +772,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         if (!_options.AprsIsOnStart)
         {
-            await TurnAprsIsOffAsync(cancellationToken).ConfigureAwait(false); // #415: before anything connects
+            LogAprsIsOnStartDeprecated(_logger); // F1.42 behavior 5: ignored
         }
         await RestoreFromHistoryAsync(cancellationToken).ConfigureAwait(false); // F1.41 behavior 7: before the sources
         var sweeping = SweepAsync(cancellationToken);
@@ -1243,7 +1249,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         toggles = toggle switch
         {
             Toggle.Internet => toggles with { Internet = enabled },
-            Toggle.AprsIs => toggles with { AprsIs = enabled },
+            // The feed's switch is set from here on, so a station saved before it doesn't flip it with the connection
+            // (docs/features/F1.42-aprs-is-feed.md, behavior 4).
+            Toggle.AprsIs => toggles with { AprsIs = enabled, AprsIsFeed = toggles.FeedOn },
+            Toggle.AprsIsFeed => toggles with { AprsIsFeed = enabled },
             Toggle.Tiles => toggles with { Tiles = enabled },
             Toggle.Transmit => toggles with { Transmit = enabled },
             _ => throw new ArgumentOutOfRangeException(nameof(toggle), toggle, "Not a toggle."),
@@ -1270,22 +1279,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             .ConfigureAwait(false);
     }
 
-    /// <summary>The APRS-IS switch off as the engine starts, with <see cref="EngineOptions.AprsIsOnStart"/> off (#415).</summary>
-    private async Task TurnAprsIsOffAsync(CancellationToken cancellationToken)
-    {
-        var settings = await GetSettingsAsync(cancellationToken).ConfigureAwait(false);
-        if (settings.Profiles.Count > 0 && settings.EffectiveToggles.AprsIs)
-        {
-            await SetToggleAsync(Toggle.AprsIs, false, cancellationToken).ConfigureAwait(false);
-            LogAprsIsOffOnStart(_logger);
-        }
-    }
-
     [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "APRS-IS is off as the engine starts (Engine:AprsIsOnStart); turn it on with its switch"
+        Level = LogLevel.Warning,
+        Message = "Engine:AprsIsOnStart (aprs_is_on_start) no longer does anything and can be removed: the APRS-IS connection and feed switches keep their saved state"
     )]
-    private static partial void LogAprsIsOffOnStart(ILogger logger);
+    private static partial void LogAprsIsOnStartDeprecated(ILogger logger);
 
     /// <summary>
     /// Why the station couldn't transmit now, leaving the switch aside (docs/features/F2.1-own-station.md, behavior
@@ -2375,6 +2373,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             ConsiderGating(packet, sourceId); // RF to APRS-IS (F3.4)
             digipeated = ConsiderDigipeat(packet, sourceId); // repeated on RF (F3.5)
             ConsiderGatingToRf(packet, sourceId); // APRS-IS to RF (F3.4 two-way)
+            if (FromAprsIs(sourceId) && _settings?.EffectiveToggles.ShowsAprsIs == false)
+            {
+                // The feed is off: what APRS-IS sends has done its work above, but isn't listed, plotted or counted
+                // (docs/features/F1.42-aprs-is-feed.md, behavior 2).
+                return null;
+            }
         }
         var now = _time.GetUtcNow();
         var check = _duplicates.Check(packet, sourceId);
@@ -2437,6 +2441,10 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
         return view;
     }
+
+    /// <summary>Whether <paramref name="sourceId"/> is APRS-IS: null (the APRS-IS session) or an APRS-IS source.</summary>
+    private bool FromAprsIs(string? sourceId) =>
+        sourceId is null || _settings?.SourceList.FirstOrDefault(s => s.Id == sourceId)?.Kind == SourceKind.AprsIs;
 
     /// <summary>
     /// Whether <paramref name="sourceId"/> is this station's own receiver: a KISS or AGWPE TNC (F3.1 behavior 8, F3.8) or TNC text output
@@ -2592,6 +2600,12 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     /// <summary>The filter and its circles; a followed station's circle is centred where it was last heard.</summary>
     private (string Text, IReadOnlyList<FilterArea> Areas) ComposeParts(Station profile)
     {
+        if (_settings?.EffectiveToggles.FeedOn == false)
+        {
+            // The feed is off: no area, only this station's own packets for the heard-back checks. Messages for it and
+            // for the stations it gates come on the filtered port without a filter (F1.42 behavior 3).
+            return ($"b/{profile.Profile.Callsign}", []);
+        }
         MapViewReport[] views;
         lock (_gate)
         {
@@ -2995,6 +3009,9 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
 
     [LoggerMessage(Level = LogLevel.Information, Message = "APRS-IS turned {State} by the quick toggles")]
     private static partial void LogToggled(ILogger logger, string state);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "APRS-IS feed turned {State}")]
+    private static partial void LogFeedToggled(ILogger logger, string state);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Cleared {Count} ({Scope})")]
     private static partial void LogCleared(ILogger logger, ClearScope scope, int count);
