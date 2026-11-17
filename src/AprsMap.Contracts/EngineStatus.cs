@@ -128,7 +128,7 @@ public enum EngineInstall
 /// since the engine started, and why it's held, if it is.
 /// </summary>
 /// <param name="Gated">Packets heard on RF and sent to APRS-IS.</param>
-/// <param name="Refused">Packets heard on RF the IGate rules kept off APRS-IS (from the internet, NOGATE, duplicates…).</param>
+/// <param name="Refused">Packets heard on RF the IGate rules kept off APRS-IS (from the internet, NOGATE, general queries…).</param>
 /// <param name="Held">Why nothing is gated now (no verified APRS-IS login, Transmit off…); null when it gates.</param>
 /// <param name="ToRf">Whether it also passes messages from APRS-IS to RF (docs/features/F3.4-two-way-igate.md).</param>
 /// <param name="GatedToRf">Packets from APRS-IS sent on RF.</param>
