@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.0-alpha.13](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.12...v0.8.0-alpha.13) (2026-11-17)
+
+
+### Features
+
+* separate the APRS-IS feed from the APRS-IS connection ([24795b8](https://github.com/APRS-NET/AprsMap/commit/24795b804ac1bb45f139427eba4f9aefc3d35c6a))
+
+
+### Bug Fixes
+
+* **gateway:** a configured TNC never takes over another TNC, and can't be deleted from the app ([acff06a](https://github.com/APRS-NET/AprsMap/commit/acff06afc3def568a000ddbaa7c8a4964a18e5d1))
+
 ## [0.8.0-alpha.12](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.11...v0.8.0-alpha.12) (2026-11-17)
 
 
