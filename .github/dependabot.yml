@@ -59,14 +59,7 @@ updates:
     commit-message:
       prefix: "fix(deps)"
 
-  - package-ecosystem: dotnet-sdk
-    directory: /
-    schedule:
-      interval: weekly
-    commit-message:
-      prefix: "chore(deps)"
-    # global.json is a floor, not a pin: any 10.0.x SDK >= 10.0.100 may build.
-    # Distro SDKs (e.g. Fedora) lag on the 1xx feature band, so don't raise it.
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
+  # No dotnet-sdk entry: global.json is a floor, not a pin (any 10.0.x SDK >= 10.0.100 builds, and distro SDKs such as
+  # Fedora's lag on the 1xx feature band, so minors and patches mustn't raise it), and the app stays on .NET 10 (LTS),
+  # so a major isn't wanted either (#528). With nothing left to offer, the entry is gone; moving to .NET 11 is its own
+  # change (CLAUDE.md, global.json, TFMs, images; see the Microsoft.Extensions ignore above).
