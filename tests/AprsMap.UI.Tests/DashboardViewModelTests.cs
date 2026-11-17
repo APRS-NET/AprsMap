@@ -301,7 +301,7 @@ public sealed class DashboardViewModelTests
         var tnc = vm.Dashboard.Connections[1];
         Assert.Same(vm.SourcePills[0].Switch, tnc.Switch); // the pill and the row move together
         Assert.Equal(("Connected", "Direwolf on or off"), (tnc.State, tnc.SwitchName));
-        Assert.Equal("APRS-IS on or off", vm.Dashboard.Connections[0].SwitchName);
+        Assert.Equal("APRS-IS connection on or off", vm.Dashboard.Connections[0].SwitchName);
 
         tnc.Switch!.IsOn = false;
         await WaitUntil(() => engine.SourcesSwitched.Count == 1);

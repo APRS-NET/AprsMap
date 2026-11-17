@@ -403,6 +403,18 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                 readOnly ?? (vm.InternetOn ? null : text["Menu.Why.InternetOff"])
             ),
             Switch(
+                "aprs-is-feed",
+                Toggle.AprsIsFeed,
+                "Toggles.AprsIsFeed",
+                vm.AprsIsFeedOn,
+                readOnly
+                    ?? (
+                        !vm.InternetOn ? text["Menu.Why.InternetOff"]
+                        : !vm.AprsIsOn ? text["Menu.Why.AprsIsOff"]
+                        : null
+                    )
+            ),
+            Switch(
                 "tiles",
                 Toggle.Tiles,
                 "Toggles.Tiles",

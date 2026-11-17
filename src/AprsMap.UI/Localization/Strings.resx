@@ -3921,7 +3921,23 @@ In a Docker container:
     <comment>Quick toggle: the master switch for everything that uses the internet (APRS-IS, map tiles, address lookup).</comment>
   </data>
   <data name="Toggles.AprsIs" xml:space="preserve">
-    <value>APRS-IS</value>
+    <value>APRS-IS connection</value>
+    <comment>Quick toggle: connect to APRS-IS or not; the IGate and messaging need it (F1.42).</comment>
+  </data>
+  <data name="Toggles.AprsIsFeed" xml:space="preserve">
+    <value>APRS-IS feed</value>
+    <comment>Quick toggle: show APRS-IS traffic on the map, in Stations and Packets, or not. Off, the IGate and messages still work (F1.42).</comment>
+  </data>
+  <data name="Toggles.Switch.AprsIsFeed" xml:space="preserve">
+    <value>APRS-IS feed on or off: show APRS-IS traffic on the map. Off, the IGate and messages keep working.</value>
+    <comment>The switch in the APRS-IS pill; its name for screen readers and its tooltip.</comment>
+  </data>
+  <data name="Status.ConnectedFeedOff" xml:space="preserve">
+    <value>{server} connected · feed off</value>
+    <comment>server: the APRS-IS server. Connected for the IGate and messages; its traffic isn't shown (F1.42).</comment>
+  </data>
+  <data name="Menu.Why.AprsIsOff" xml:space="preserve">
+    <value>APRS-IS isn't connected</value>
   </data>
   <data name="Toggles.Tiles" xml:space="preserve">
     <value>Download map tiles</value>
@@ -4706,8 +4722,8 @@ In a Docker container:
     <comment>A tile read by a screen reader.</comment>
   </data>
   <data name="Toggles.Switch.AprsIs" xml:space="preserve">
-    <value>APRS-IS on or off</value>
-    <comment>A switch beside the connection pill and in the dashboard; its name for screen readers and its tooltip.</comment>
+    <value>APRS-IS connection on or off</value>
+    <comment>The switch in the dashboard's Connection tile; its name for screen readers and its tooltip.</comment>
   </data>
   <data name="Dashboard.Farthest" xml:space="preserve">
     <value>Farthest heard directly</value>

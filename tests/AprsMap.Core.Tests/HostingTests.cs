@@ -106,9 +106,9 @@ public class HostingTests
     }
 
     [Fact]
-    public async Task WithAprsIsOffOnStartTheSwitchIsTurnedOffBeforeConnecting()
+    public async Task AprsIsOnStartIsIgnoredNow()
     {
-        // #415: APRS-IS only by hand.
+        // #415's option is deprecated (F1.42 behavior 5): the switches keep their saved state.
         var data = Directory.CreateTempSubdirectory("aprsmap-hosting-");
         using var cleanup = new Cleanup(data);
         var factory = new BlockingSourceFactory();
@@ -134,9 +134,9 @@ public class HostingTests
             .GetSettingsAsync(TestContext.Current.CancellationToken);
         await hosted.StopAsync(TestContext.Current.CancellationToken);
 
-        Assert.False(settings.EffectiveToggles.AprsIs);
-        Assert.False(factory.Created.Task.IsCompleted); // APRS-IS never opened
-        Assert.False((await store.LoadAsync(TestContext.Current.CancellationToken))!.EffectiveToggles.AprsIs);
+        Assert.True(settings.EffectiveToggles.AprsIs);
+        await factory.Created.Task.WaitAsync(TestContext.Current.CancellationToken); // APRS-IS opened as saved
+        Assert.True((await store.LoadAsync(TestContext.Current.CancellationToken))!.EffectiveToggles.AprsIs);
     }
 
     private sealed class Cleanup(DirectoryInfo folder) : IDisposable

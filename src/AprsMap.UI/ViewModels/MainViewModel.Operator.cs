@@ -128,6 +128,7 @@ public sealed partial class MainViewModel
     {
         OnPropertyChanged(nameof(IsViewerOnly));
         AprsIsSwitch.IsShown = !IsViewerOnly;
+        AprsIsFeedSwitch.IsShown = !IsViewerOnly;
         foreach (var pill in SourcePills)
         {
             pill.Switch.IsShown = !IsViewerOnly;

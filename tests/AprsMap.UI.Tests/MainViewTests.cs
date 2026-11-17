@@ -136,6 +136,7 @@ public class MainViewTests
                 "CaptureItem",
                 "InternetToggle",
                 "AprsIsToggle",
+                "AprsIsFeedToggle",
                 "TilesToggle",
                 "SendPositionOnAprsIsItem", // Transmit itself is the status bar's switch (F2.1 behavior 6)
             ],
