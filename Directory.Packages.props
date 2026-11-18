@@ -35,7 +35,7 @@
     <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="12.1.5" />
     <PackageVersion Include="Dock.Model.Mvvm" Version="12.1.5" />
     <PackageVersion Include="Dock.Serializer.SystemTextJson" Version="12.1.5" />
-    <PackageVersion Include="Mapsui" Version="5.1.0" />
+    <PackageVersion Include="Mapsui" Version="5.2.0" />
     <PackageVersion Include="Mapsui.Rendering.Skia" Version="5.1.0" />
     <PackageVersion Include="Mapsui.Tiling" Version="5.1.0" />
     <PackageVersion Include="MessageFormat" Version="8.0.0" />
