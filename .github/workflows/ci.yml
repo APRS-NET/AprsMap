@@ -1,23 +1,11 @@
 name: ci
 
+# Always starts, so the ci-ok job below can be the required check on main, but the changes job skips the build, tests,
+# SBOM and format check for changes that cannot affect them: docs, Markdown, licence and release bookkeeping.
 on:
   push:
     branches: [main]
-    # Docs and release bookkeeping can't break the build or the tests, so they don't start a run. No status check is
-    # required on main, so a skipped run never blocks a merge.
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
-      - "LICENSE*"
-      - ".release-please-manifest.json"
-      - "release-please-config.json"
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
-      - "LICENSE*"
-      - ".release-please-manifest.json"
-      - "release-please-config.json"
 
 permissions:
   contents: read
@@ -28,8 +16,41 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: filter
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # Without a usable base (a new branch, or history that was rewritten) everything runs.
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2> /dev/null; then
+            echo "No base to compare with: running everything."
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed="$(git diff --name-only "$(git merge-base "$BASE" "$GITHUB_SHA")" "$GITHUB_SHA")"
+          # The same set the old paths-ignore filter skipped.
+          ignored='^(docs/|LICENSE[^/]*$|\.release-please-manifest\.json$|release-please-config\.json$)|\.md$'
+          code="$(printf '%s\n' "$changed" | grep -v -E "$ignored" | grep -v '^$' || true)"
+          if [ -n "$code" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only docs or release bookkeeping changed: skipping the build, tests, SBOM and format check."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     # Windows and macOS only: the coverage job below is the Linux build and test run, so Linux isn't built twice.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -50,6 +71,8 @@ jobs:
   coverage:
     # The Linux build and test run, with coverage. Coverage on one platform is enough. The gate covers the MIT engine (Contracts, Core, Client.Remote), where the
     # logic lives; UI and host projects are reported but not gated.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -116,6 +139,8 @@ jobs:
   sbom:
     # The release's SBOMs (docs/features/F4.17-sbom.md, behavior 5): made the way the release makes them, and checked,
     # so a change that breaks them shows here rather than on release day.
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -142,6 +167,8 @@ jobs:
             sbom/*-browser.cdx.json
 
   format:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -151,3 +178,22 @@ jobs:
           global-json-file: global.json
       - run: dotnet tool restore
       - run: dotnet csharpier check .
+
+  ci-ok:
+    # The one check to require on main: it passes when every job above passed, or was skipped for a docs-only change.
+    if: always()
+    needs: [changes, build, coverage, sbom, format]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed or was skipped
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in
+              success | skipped) ;;
+              *) echo "::error::A CI job ended with '$result'."; exit 1 ;;
+            esac
+          done
