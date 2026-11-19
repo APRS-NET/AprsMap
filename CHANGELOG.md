@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.14](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.13...v0.8.0-alpha.14) (2026-11-19)
+
+
+### Bug Fixes
+
+* **deps:** Bump Mapsui and Mapsui.Tiling ([bc40401](https://github.com/APRS-NET/AprsMap/commit/bc40401910a5c0300de87935eb4c0de17e84fd72))
+
 ## [0.8.0-alpha.13](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.12...v0.8.0-alpha.13) (2026-11-17)
 
 
