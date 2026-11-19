@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.15...v0.9.0-alpha.1) (2026-11-19)
+
+
+### Miscellaneous Chores
+
+* start the 0.9.0 alpha line ([a60efb2](https://github.com/APRS-NET/AprsMap/commit/a60efb2567e7a9f7d5a119fc71027e146cfb82de))
+
 ## [0.8.0-alpha.15](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.14...v0.8.0-alpha.15) (2026-11-19)
 
 
