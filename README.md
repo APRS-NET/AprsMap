@@ -24,7 +24,7 @@ event's volunteers or the spotters you work with in one click, wherever they are
 that updates itself, and the desktop app can be its client, with a revocable API key of its own; every release carries
 an SBOM. The IGate follows aprsc's IGate hints (APRS.NET 0.9.0), and APRS-IS's feed can be switched off to watch only
 what the radio hears while the station stays connected for the IGate and messages. Next, in 0.10.0, is the rename to
-ZedMap and transmitting with the registered TOCALL, `APMAPZ`; then, in 0.11.0, APRS.NET's IS2 features.
+zedMap and transmitting with the registered TOCALL, `APMAPZ`; then, in 0.11.0, APRS.NET's IS2 features.
 See [docs/status.md](docs/status.md) for what
 to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 

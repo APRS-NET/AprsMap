@@ -10,7 +10,7 @@ Status values: `scoped` â†’ `spec'd` (feature doc exists in `docs/features/`) â†
 
 Work is tracked on GitHub: each feature planned for a release is an issue labelled `feature` in that release's
 milestone (0.3.0 to [0.8.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/6) done; 0.9.0 alphas now, while
-[0.10.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/7) renames the app to ZedMap with its repo and gateway
+[0.10.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/7) renames the app to zedMap with its repo and gateway
 service and switches to the registered TOCALL, released as 0.10.0-alpha.1 once that's complete and validated; then
 [0.11.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/8), the new APRS.NET IS2 features), and PRs close it (`Closes #N`) or reference it
 (`Part of #N`). This table stays the full inventory; the milestone shows what's in flight, and a status of the form
