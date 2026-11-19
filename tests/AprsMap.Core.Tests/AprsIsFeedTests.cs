@@ -7,7 +7,7 @@ using Microsoft.Extensions.Time.Testing;
 namespace AprsMap.Core.Tests;
 
 /// <summary>
-/// The APRS-IS feed apart from the connection (docs/features/F1.42-aprs-is-feed.md, acceptance tests 1–5): with the feed
+/// The APRS-IS feed apart from the connection (docs/features/F1.44-aprs-is-feed.md, acceptance tests 1–5): with the feed
 /// off, the IGate and messages still use APRS-IS, but nothing from it is listed, plotted or counted.
 /// </summary>
 public sealed class AprsIsFeedTests

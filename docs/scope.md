@@ -9,8 +9,10 @@ APRSIS32 exactly. "Needs" lists the APRS.NET gaps ([aprsnet/gaps.md](aprsnet/gap
 Status values: `scoped` → `spec'd` (feature doc exists in `docs/features/`) → `building` → `done`.
 
 Work is tracked on GitHub: each feature planned for a release is an issue labelled `feature` in that release's
-milestone (0.3.0 to [0.7.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/5) done; now
-[0.8.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/6)), and PRs close it (`Closes #N`) or reference it
+milestone (0.3.0 to [0.8.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/6) done; 0.9.0 alphas now, while
+[0.10.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/7) renames the app to ZedMap with its repo and gateway
+service and switches to the registered TOCALL, released as 0.10.0-alpha.1 once that's complete and validated; then
+[0.11.0-alpha.1](https://github.com/APRS-NET/AprsMap/milestone/8), the new APRS.NET IS2 features), and PRs close it (`Closes #N`) or reference it
 (`Part of #N`). This table stays the full inventory; the milestone shows what's in flight, and a status of the form
 "spec'd (0.4.0)" names the milestone a feature is planned for.
 
@@ -119,6 +121,7 @@ milestone (0.3.0 to [0.7.0-alpha.1](https://github.com/APRS-NET/AprsMap/mileston
 | F1.41 | Persistent history ([spec](features/F1.41-persistent-history.md)): every packet kept for up to 7 days (configurable) within a size limit (1 GB), one SQLite file a day; stations and tracks back after a restart, a station's 7-day track and older packets, and a 7-day dashboard from counters kept 90 days | — (maintainer request, 2026-10-27) | App | — | spec'd ([#314](https://github.com/APRS-NET/AprsMap/issues/314)) |
 | F1.42 | Saved filters ([spec](features/F1.42-saved-filters.md)): a View filter saved under a name per profile, with an optional map view; the chip's menu and Next filter (Ctrl+Shift+F) switch between All, My filter and each; plain text in and out | — (maintainer request, 2026-10-27) | App | — | built (0.8.0, [#457](https://github.com/APRS-NET/AprsMap/issues/457)) |
 | F1.43 | Stations heard in the last days, on the map ([spec](features/F1.43-map-history-range.md)): the Filter panel's "Also show stations heard in the last 24 hours · 3 days · 7 days" adds, faded, the stations the packet history has in the area shown, at their last positions; Details shows them as the history has them | — (maintainer request, 2026-10-27) | App | — | built (0.8.0, [#455](https://github.com/APRS-NET/AprsMap/issues/455)) |
+| F1.44 | APRS-IS feed apart from the connection ([spec](features/F1.44-aprs-is-feed.md)): the APRS-IS pill's switch tracks and plots APRS-IS or not, while the connection (toggles menu, dashboard) stays up for the IGate, messages, heard-back and queries; `aprs_is_on_start` deprecated | — (maintainer request, 2026-11-17) | App | — | built (0.9.0, [#536](https://github.com/APRS-NET/AprsMap/pull/536)) |
 
 ## Phase 2: Transmit via APRS-IS
 

@@ -20,7 +20,7 @@ internal static class ConnectionText
             ConnectionState.Connected when status.Toggles is { FeedOn: false } => text.Format(
                 "Status.ConnectedFeedOff",
                 new Dictionary<string, object?> { ["server"] = server }
-            ), // connected for the IGate and messages, nothing plotted (F1.42 behavior 1.2)
+            ), // connected for the IGate and messages, nothing plotted (F1.44 behavior 1.2)
             ConnectionState.Connected => text.Format(
                 "Status.Connected",
                 new Dictionary<string, object?> { ["server"] = server, ["verified"] = status.Verified ? "yes" : "no" }

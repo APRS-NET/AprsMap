@@ -50,7 +50,7 @@ public sealed class ToggleTests
     [Fact]
     public async Task ThePillsSwitchIsTheFeedNotTheConnection()
     {
-        // docs/features/F1.42-aprs-is-feed.md, acceptance test 6.
+        // docs/features/F1.44-aprs-is-feed.md, acceptance test 6.
         var engine = new FakeEngine();
         var vm = new MainViewModel(engine, new FakeTimeProvider());
         vm.Show(engine.Settings);

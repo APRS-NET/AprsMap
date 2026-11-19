@@ -108,7 +108,7 @@ public class HostingTests
     [Fact]
     public async Task AprsIsOnStartIsIgnoredNow()
     {
-        // #415's option is deprecated (F1.42 behavior 5): the switches keep their saved state.
+        // #415's option is deprecated (F1.44 behavior 5): the switches keep their saved state.
         var data = Directory.CreateTempSubdirectory("aprsmap-hosting-");
         using var cleanup = new Cleanup(data);
         var factory = new BlockingSourceFactory();

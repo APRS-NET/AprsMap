@@ -3922,11 +3922,11 @@ In a Docker container:
   </data>
   <data name="Toggles.AprsIs" xml:space="preserve">
     <value>APRS-IS connection</value>
-    <comment>Quick toggle: connect to APRS-IS or not; the IGate and messaging need it (F1.42).</comment>
+    <comment>Quick toggle: connect to APRS-IS or not; the IGate and messaging need it (F1.44).</comment>
   </data>
   <data name="Toggles.AprsIsFeed" xml:space="preserve">
     <value>APRS-IS feed</value>
-    <comment>Quick toggle: show APRS-IS traffic on the map, in Stations and Packets, or not. Off, the IGate and messages still work (F1.42).</comment>
+    <comment>Quick toggle: show APRS-IS traffic on the map, in Stations and Packets, or not. Off, the IGate and messages still work (F1.44).</comment>
   </data>
   <data name="Toggles.Switch.AprsIsFeed" xml:space="preserve">
     <value>APRS-IS feed on or off: show APRS-IS traffic on the map. Off, the IGate and messages keep working.</value>
@@ -3934,7 +3934,7 @@ In a Docker container:
   </data>
   <data name="Status.ConnectedFeedOff" xml:space="preserve">
     <value>{server} connected · feed off</value>
-    <comment>server: the APRS-IS server. Connected for the IGate and messages; its traffic isn't shown (F1.42).</comment>
+    <comment>server: the APRS-IS server. Connected for the IGate and messages; its traffic isn't shown (F1.44).</comment>
   </data>
   <data name="Menu.Why.AprsIsOff" xml:space="preserve">
     <value>APRS-IS isn't connected</value>

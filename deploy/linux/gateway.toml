@@ -29,7 +29,7 @@ callsign = "N0CALL-10"
 passcode = -1
 server = "rotate.aprs2.net:14580"
 # filter = "r/39.0/-94.7/50"
-# aprs_is_on_start is deprecated and ignored (docs/features/F1.42-aprs-is-feed.md): the APRS-IS connection (in the
+# aprs_is_on_start is deprecated and ignored (docs/features/F1.44-aprs-is-feed.md): the APRS-IS connection (in the
 # toggles menu) and the APRS-IS feed (the status bar pill's switch) keep their saved state. Remove it if it's set.
 
 # The TNC on USB. Unlike the station above, its port, baud, radio port and name come from here on every start: edit

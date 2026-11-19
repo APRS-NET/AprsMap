@@ -57,7 +57,7 @@ public sealed class EngineOptions
     public bool ReceiveOnly { get; set; }
 
     /// <summary>
-    /// Deprecated and ignored (docs/features/F1.42-aprs-is-feed.md, behavior 5): the APRS-IS connection and feed switches
+    /// Deprecated and ignored (docs/features/F1.44-aprs-is-feed.md, behavior 5): the APRS-IS connection and feed switches
     /// keep their saved state. False only logs a warning at start saying it can be removed. (It was #415's way to start
     /// with APRS-IS off, which also stopped the IGate.)
     /// </summary>
