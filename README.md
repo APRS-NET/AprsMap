@@ -10,7 +10,7 @@ macOS, and a web app served by a Docker gateway, both running the same UI on the
 from [APRS.NET](https://github.com/APRS-NET/APRS.NET). The feature set is a clean-room reimplementation of the
 functionality of APRSIS32, redesigned with a modern UI (see [docs/clean-room.md](docs/clean-room.md)).
 
-Status: `0.8.0-alpha.1`. The app receives and transmits over APRS-IS and your own TNCs: KISS over TCP (Direwolf,
+Status: `0.9.0-alpha.1`. The app receives and transmits over APRS-IS and your own TNCs: KISS over TCP (Direwolf,
 soundmodem), on serial ports (a TH-D72A's built-in TNC, TNC-X, NinoTNC) and through an AGWPE server, or a TNC's text
 output. It shows the stations on a live map with their tracks, RF paths and dead-reckoned positions, with station and
 packet lists, station details and a dashboard for every source or each one, on the desktop and in the browser. Every
@@ -21,8 +21,10 @@ statuses, objects and items, messages with acks and auto-replies, ANSRVR group c
 Their TNCs can digipeat (fill-in or wide-area) and act as a two-way IGate. A GPS on serial, TCP, gpsd or a radio's TNC
 port places the station, with a sky view and statistics over time. Station lists and saved filters bring back an
 event's volunteers or the spotters you work with in one click, wherever they are. The gateway runs as a Linux service
-that updates itself, and the desktop app can be its client with an API key; every release carries an SBOM.
-Next is transmitting with the registered TOCALL.
+that updates itself, and the desktop app can be its client, with a revocable API key of its own; every release carries
+an SBOM. The IGate follows aprsc's IGate hints (APRS.NET 0.9.0), and APRS-IS's feed can be switched off to watch only
+what the radio hears while the station stays connected for the IGate and messages. Next, in 0.10.0, is the rename to
+ZedMap and transmitting with the registered TOCALL, `APMAPZ`; then, in 0.11.0, APRS.NET's IS2 features.
 See [docs/status.md](docs/status.md) for what
 to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 

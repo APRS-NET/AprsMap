@@ -81,7 +81,7 @@ public sealed record AppSettings(
 /// restart keeps a quiet station quiet (decision 2).
 /// </summary>
 /// <param name="Internet">The master switch: off stops APRS-IS, tile downloads and address lookup (decision 1).</param>
-/// <param name="AprsIs">Connect to APRS-IS (docs/features/F1.42-aprs-is-feed.md, behavior 1.1).</param>
+/// <param name="AprsIs">Connect to APRS-IS (docs/features/F1.44-aprs-is-feed.md, behavior 1.1).</param>
 /// <param name="Tiles">Download map tiles; cached ones still show.</param>
 /// <param name="SourcesOff">
 /// The ids of the other sources switched off (KISS TNCs, docs/features/F3.1-kiss-sources.md behavior 6); null or
@@ -92,7 +92,7 @@ public sealed record AppSettings(
 /// checked the station may; saving settings never turns it on.
 /// </param>
 /// <param name="AprsIsFeed">
-/// Track and plot what APRS-IS sends (docs/features/F1.42-aprs-is-feed.md, behavior 1.2): the status bar pill's switch.
+/// Track and plot what APRS-IS sends (docs/features/F1.44-aprs-is-feed.md, behavior 1.2): the status bar pill's switch.
 /// Off, APRS-IS packets still reach the IGate, messages, heard-back and queries, but aren't listed, plotted or counted.
 /// Null for a station saved before it existed: it follows <paramref name="AprsIs"/> (behavior 4).
 /// </param>
@@ -123,10 +123,10 @@ public sealed record StationToggles(
     /// <summary>Whether APRS-IS may connect: it and the Internet are on.</summary>
     public bool ConnectsAprsIs => Internet && AprsIs;
 
-    /// <summary>Whether the feed switch is on, a station saved before it following the connection (F1.42 behavior 4).</summary>
+    /// <summary>Whether the feed switch is on, a station saved before it following the connection (F1.44 behavior 4).</summary>
     public bool FeedOn => AprsIsFeed ?? AprsIs;
 
-    /// <summary>Whether what APRS-IS sends is tracked and plotted: connected, and the feed on (F1.42 behavior 2).</summary>
+    /// <summary>Whether what APRS-IS sends is tracked and plotted: connected, and the feed on (F1.44 behavior 2).</summary>
     public bool ShowsAprsIs => ConnectsAprsIs && FeedOn;
 
     /// <summary>Whether tiles may be downloaded: they and the Internet are on.</summary>
@@ -139,7 +139,7 @@ public enum Toggle
     /// <summary>The Internet master switch.</summary>
     Internet,
 
-    /// <summary>The APRS-IS connection (docs/features/F1.42-aprs-is-feed.md, behavior 1.1).</summary>
+    /// <summary>The APRS-IS connection (docs/features/F1.44-aprs-is-feed.md, behavior 1.1).</summary>
     AprsIs,
 
     /// <summary>Map tile downloads.</summary>
@@ -148,7 +148,7 @@ public enum Toggle
     /// <summary>Transmitting (docs/features/F2.1-own-station.md, behavior 4).</summary>
     Transmit,
 
-    /// <summary>The APRS-IS feed: track and plot what APRS-IS sends (docs/features/F1.42-aprs-is-feed.md).</summary>
+    /// <summary>The APRS-IS feed: track and plot what APRS-IS sends (docs/features/F1.44-aprs-is-feed.md).</summary>
     AprsIsFeed,
 }
 

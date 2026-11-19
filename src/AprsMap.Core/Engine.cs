@@ -379,7 +379,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             }
             else if (old.EffectiveToggles.ShowsAprsIs != saved.EffectiveToggles.ShowsAprsIs)
             {
-                // The feed: the filter follows it, without a new login (F1.42 behavior 3).
+                // The feed: the filter follows it, without a new login (F1.44 behavior 3).
                 LogFeedToggled(_connections, saved.EffectiveToggles.ShowsAprsIs ? "on" : "off");
                 RefreshFilter();
             }
@@ -776,7 +776,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     {
         if (!_options.AprsIsOnStart)
         {
-            LogAprsIsOnStartDeprecated(_logger); // F1.42 behavior 5: ignored
+            LogAprsIsOnStartDeprecated(_logger); // F1.44 behavior 5: ignored
         }
         await RestoreFromHistoryAsync(cancellationToken).ConfigureAwait(false); // F1.41 behavior 7: before the sources
         var sweeping = SweepAsync(cancellationToken);
@@ -1254,7 +1254,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         {
             Toggle.Internet => toggles with { Internet = enabled },
             // The feed's switch is set from here on, so a station saved before it doesn't flip it with the connection
-            // (docs/features/F1.42-aprs-is-feed.md, behavior 4).
+            // (docs/features/F1.44-aprs-is-feed.md, behavior 4).
             Toggle.AprsIs => toggles with { AprsIs = enabled, AprsIsFeed = toggles.FeedOn },
             Toggle.AprsIsFeed => toggles with { AprsIsFeed = enabled },
             Toggle.Tiles => toggles with { Tiles = enabled },
@@ -2380,7 +2380,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             if (FromAprsIs(sourceId) && _settings?.EffectiveToggles.ShowsAprsIs == false)
             {
                 // The feed is off: what APRS-IS sends has done its work above, but isn't listed, plotted or counted
-                // (docs/features/F1.42-aprs-is-feed.md, behavior 2).
+                // (docs/features/F1.44-aprs-is-feed.md, behavior 2).
                 return null;
             }
         }
@@ -2607,7 +2607,7 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         if (_settings?.EffectiveToggles.FeedOn == false)
         {
             // The feed is off: no area, only this station's own packets for the heard-back checks. Messages for it and
-            // for the stations it gates come on the filtered port without a filter (F1.42 behavior 3).
+            // for the stations it gates come on the filtered port without a filter (F1.44 behavior 3).
             return ($"b/{profile.Profile.Callsign}", []);
         }
         MapViewReport[] views;

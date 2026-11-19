@@ -1341,16 +1341,16 @@ public sealed partial class MainViewModel : ObservableObject
     [ObservableProperty]
     public partial bool InternetOn { get; private set; } = true;
 
-    /// <summary>The APRS-IS connection (F1.15; docs/features/F1.42-aprs-is-feed.md, behavior 1.1).</summary>
+    /// <summary>The APRS-IS connection (F1.15; docs/features/F1.44-aprs-is-feed.md, behavior 1.1).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanToggleFeed))]
     public partial bool AprsIsOn { get; private set; } = true;
 
-    /// <summary>The APRS-IS feed: track and plot what APRS-IS sends (F1.42 behavior 1.2).</summary>
+    /// <summary>The APRS-IS feed: track and plot what APRS-IS sends (F1.44 behavior 1.2).</summary>
     [ObservableProperty]
     public partial bool AprsIsFeedOn { get; private set; } = true;
 
-    /// <summary>Whether the feed can be changed: APRS-IS is connected, and so the Internet is on (F1.42 behavior 1.2).</summary>
+    /// <summary>Whether the feed can be changed: APRS-IS is connected, and so the Internet is on (F1.44 behavior 1.2).</summary>
     public bool CanToggleFeed => CanToggleDependents && AprsIsOn;
 
     /// <summary>Map tile downloads (F1.15).</summary>
@@ -1374,11 +1374,11 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>
     /// The APRS-IS connection switch on the dashboard's Connection tile: the same toggle as the connection menu's
-    /// APRS-IS connection item (F1.15; F1.42 behavior 1.1), so they move together.
+    /// APRS-IS connection item (F1.15; F1.44 behavior 1.1), so they move together.
     /// </summary>
     public SourceSwitch AprsIsSwitch { get; }
 
-    /// <summary>The APRS-IS feed switch in the status bar's APRS-IS pill (F1.42 behavior 1.2).</summary>
+    /// <summary>The APRS-IS feed switch in the status bar's APRS-IS pill (F1.44 behavior 1.2).</summary>
     public SourceSwitch AprsIsFeedSwitch { get; }
 
     /// <summary>A switch was flipped to <paramref name="on"/>; whatever the engine says, the switch shows after.</summary>
