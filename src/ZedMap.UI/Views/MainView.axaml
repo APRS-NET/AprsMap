@@ -1,0 +1,828 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The main screen: the status bar, and the shell with the map and panels (F1.0). Colours, sizes and corners come
+     only from theme tokens. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:ZedMap.UI.ViewModels"
+  xmlns:c="using:ZedMap.Contracts"
+  xmlns:l="using:ZedMap.UI.Localization"
+  xmlns:views="using:ZedMap.UI.Views"
+  x:Class="ZedMap.UI.Views.MainView"
+  x:DataType="vm:MainViewModel"
+  Background="{DynamicResource Brush.Ground}"
+  Foreground="{DynamicResource Brush.Text}"
+  FontSize="{DynamicResource Text.Body}"
+>
+  <UserControl.Styles>
+    <!-- A failed update check (F4.15 behavior 7) reads in the warning colour. -->
+    <Style Selector="Button.update-notice.warn">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
+    <!-- While the engine is away the panels keep what they had, faded as out of date (F1.14 behavior 7). -->
+    <Style Selector="DockControl.away">
+      <Setter Property="Opacity" Value="{DynamicResource Opacity.Away}" />
+    </Style>
+    <!-- The narrow layout's tabs use the text tokens, not Fluent's large tab headers, so they follow the text size. -->
+    <!-- The narrow layout's tabs (#440): one row that scrolls sideways, not three wrapped rows. -->
+    <Style Selector="TabControl#NarrowShell">
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate>
+          <StackPanel Orientation="Horizontal" />
+        </ItemsPanelTemplate>
+      </Setter>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <DockPanel>
+            <ScrollViewer
+              DockPanel.Dock="Top"
+              HorizontalScrollBarVisibility="Hidden"
+              VerticalScrollBarVisibility="Disabled"
+            >
+              <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+            </ScrollViewer>
+            <ContentPresenter
+              Name="PART_SelectedContentHost"
+              Content="{TemplateBinding SelectedContent}"
+              ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+            />
+          </DockPanel>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="TabControl#NarrowShell > TabItem">
+      <Setter Property="FontSize" Value="{DynamicResource Text.Title}" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Padding" Value="12,6" />
+    </Style>
+    <!-- A refused login needs the user: the status takes the warning colour, as errors do, on the surface colour the
+         contrast checks cover (not the button's own fill). -->
+    <!-- The other sources' pills look the same (F3.1 behavior 5). -->
+    <Style Selector="Border.source-pill">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+    </Style>
+    <Style Selector="Border.source-pill.ok">
+      <Setter Property="Background" Value="{DynamicResource Brush.OkSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ok}" />
+    </Style>
+    <Style Selector="Border.source-pill.warn">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Warn}" />
+    </Style>
+    <Style Selector="Border.source-pill.warn TextBlock.source-label">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
+    <!-- The connection pill: its switch and its status button share one outline, coloured by the state. A refused login
+         needs the user: the status takes the warning colour, as errors do, on the surface colour the contrast checks
+         cover. -->
+    <Style Selector="Border#ConnectionPill">
+      <Setter Property="Background" Value="{DynamicResource Brush.Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Border}" />
+    </Style>
+    <!-- Connected: the OK colours, quiet (F1.1). -->
+    <Style Selector="Border#ConnectionPill.ok">
+      <Setter Property="Background" Value="{DynamicResource Brush.OkSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Ok}" />
+    </Style>
+    <Style Selector="Border#ConnectionPill.warn">
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Warn}" />
+    </Style>
+    <Style Selector="Border#ConnectionPill.warn TextBlock#ConnectionLabel">
+      <Setter Property="Foreground" Value="{DynamicResource Brush.Warn}" />
+    </Style>
+    <!-- The Transmit switch (F2.1 behavior 6): a source pill's look; while it's on, a light red fill and the transmit
+         colour's outline, so transmitting is plain at a glance (maintainer, 2026-10-25); the warning colour while held. -->
+    <Style Selector="Border#TransmitPill.transmitting">
+      <Setter Property="Background" Value="{DynamicResource Brush.TransmitSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Transmit}" />
+    </Style>
+  </UserControl.Styles>
+  <Panel>
+    <DockPanel>
+      <!-- The menu bar (F1.29): hidden until Alt or F10 on Windows and Linux, kept in the window at no height so Alt and
+           Alt + a menu's letter reach it; the system menu bar on macOS; optional in the web app. Filled in code. -->
+      <Menu
+        x:Name="MenuBar"
+        DockPanel.Dock="Top"
+        Background="{DynamicResource Brush.Surface}"
+        AutomationProperties.Name="{l:T Menu.Bar}"
+      />
+      <Border
+        DockPanel.Dock="Top"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.BorderBottom}"
+        Padding="16,10"
+      >
+        <DockPanel>
+          <!-- Sign in or the operator, the app menu and Settings, on the right: beside everything in a wide window, on
+               the titles' line in a narrow one (moved by code-behind), so the line below gets the whole width. -->
+          <StackPanel
+            x:Name="HeaderButtons"
+            DockPanel.Dock="Right"
+            Orientation="Horizontal"
+            Spacing="8"
+            VerticalAlignment="Center"
+          >
+            <Button
+              x:Name="ToolbarOperator"
+              IsVisible="{Binding IsSignedIn}"
+              ToolTip.Tip="{Binding SignedInText}"
+              AutomationProperties.Name="{Binding SignedInText}"
+              VerticalAlignment="Center"
+            >
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <!-- A person: head and shoulders. -->
+                <PathIcon
+                  Data="M 12,3 A 4,4 0 1 0 12,11 A 4,4 0 1 0 12,3 Z M 4,21 C 4,16.6 7.6,13.5 12,13.5 C 16.4,13.5 20,16.6 20,21 Z"
+                  Width="{DynamicResource Icon.Small}"
+                  Height="{DynamicResource Icon.Small}"
+                />
+                <TextBlock x:Name="ToolbarOperatorName" Text="{Binding OperatorShortName}" VerticalAlignment="Center" />
+              </StackPanel>
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                  <MenuItem Header="{Binding SignedInText}" IsEnabled="False" />
+                  <MenuItem
+                    x:Name="ToolbarSignOut"
+                    Header="{l:T Auth.SignOut}"
+                    Command="{Binding SignOutCommand}"
+                    IsVisible="{Binding CanSignOut}"
+                  />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+            <!-- Sign-in on a gateway, on the toolbar (#423): Sign in while it's offered; once signed in, the operator,
+                 whose menu signs out. Nothing on the desktop or for a viewer who can never sign in. -->
+            <Button
+              x:Name="ToolbarSignIn"
+              IsVisible="{Binding CanSignIn}"
+              Content="{l:T Auth.SignInButton}"
+              Command="{Binding OpenSignInCommand}"
+              VerticalAlignment="Center"
+            />
+            <!-- The app menu (F1.0): closed panels, Reset layout, Gather windows. Built when it opens (code-behind). -->
+            <Button
+              x:Name="AppMenuButton"
+              ToolTip.Tip="{l:T Shell.Menu}"
+              AutomationProperties.Name="{l:T Shell.Menu}"
+              VerticalAlignment="Center"
+            >
+              <PathIcon
+                Data="M 3,6 L 21,6 L 21,8 L 3,8 Z M 3,11 L 21,11 L 21,13 L 3,13 Z M 3,16 L 21,16 L 21,18 L 3,18 Z"
+                Width="{DynamicResource Icon.Size}"
+                Height="{DynamicResource Icon.Size}"
+              />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight" />
+              </Button.Flyout>
+            </Button>
+            <Button
+              x:Name="SettingsButton"
+              Command="{Binding OpenSettingsCommand}"
+              ToolTip.Tip="{l:T Main.Settings}"
+              AutomationProperties.Name="{l:T Main.Settings}"
+              VerticalAlignment="Center"
+            >
+              <!-- An eight-tooth gear, drawn for this app. -->
+              <PathIcon
+                Data="F0 M 19.85,9.64 L 22.36,10.31 L 22.36,13.69 L 19.85,14.36 L 19.22,15.89 L 20.52,18.13 L 18.13,20.52 L 15.89,19.22 L 14.36,19.85 L 13.69,22.36 L 10.31,22.36 L 9.64,19.85 L 8.11,19.22 L 5.87,20.52 L 3.48,18.13 L 4.78,15.89 L 4.15,14.36 L 1.64,13.69 L 1.64,10.31 L 4.15,9.64 L 4.78,8.11 L 3.48,5.87 L 5.87,3.48 L 8.11,4.78 L 9.64,4.15 L 10.31,1.64 L 13.69,1.64 L 14.36,4.15 L 15.89,4.78 L 18.13,3.48 L 20.52,5.87 L 19.22,8.11 Z M 15.40,12 A 3.4,3.4 0 1 0 8.60,12 A 3.4,3.4 0 1 0 15.40,12 Z"
+                Width="{DynamicResource Icon.Size}"
+                Height="{DynamicResource Icon.Size}"
+              />
+            </Button>
+          </StackPanel>
+          <!-- After a gateway upgrade: this page is older than the gateway (F1.14 behavior 8). -->
+          <DockPanel x:Name="OutdatedBar" DockPanel.Dock="Bottom" IsVisible="{Binding IsOutdated}" Margin="0,6,0,0">
+            <Button
+              x:Name="ReloadButton"
+              DockPanel.Dock="Right"
+              Classes="accent"
+              Content="{l:T Shell.Reload}"
+              Command="{Binding ReloadCommand}"
+              VerticalAlignment="Center"
+            />
+            <TextBlock
+              Text="{l:T Shell.Outdated}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+              VerticalAlignment="Center"
+            />
+          </DockPanel>
+          <!-- The monitors changed to a setup a saved layout was used with: asked, never switched (F1.23 behavior 3). -->
+          <DockPanel
+            x:Name="LayoutPromptBar"
+            DockPanel.Dock="Bottom"
+            IsVisible="{Binding Layouts.IsAsking}"
+            Margin="0,6,0,0"
+          >
+            <WrapPanel DockPanel.Dock="Right" ItemSpacing="6" VerticalAlignment="Center">
+              <Button
+                x:Name="UseLayoutButton"
+                Classes="accent"
+                Content="{l:T Layouts.PromptUse}"
+                Command="{Binding Layouts.UsePromptedCommand}"
+              />
+              <Button
+                x:Name="KeepLayoutButton"
+                Content="{l:T Layouts.PromptKeep}"
+                Command="{Binding Layouts.KeepCurrentCommand}"
+              />
+              <Button
+                x:Name="DontAskLayoutButton"
+                Content="{l:T Layouts.PromptDontAsk}"
+                Command="{Binding Layouts.DontAskAgainCommand}"
+              />
+            </WrapPanel>
+            <TextBlock Text="{Binding Layouts.PromptText}" TextWrapping="Wrap" VerticalAlignment="Center" />
+          </DockPanel>
+          <DockPanel
+            x:Name="SavedLayoutsNoticeBar"
+            DockPanel.Dock="Bottom"
+            IsVisible="{Binding Layouts.Notice, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Margin="0,6,0,0"
+          >
+            <Button
+              DockPanel.Dock="Right"
+              Content="{l:T Shell.Dismiss}"
+              Command="{Binding Layouts.DismissNoticeCommand}"
+              VerticalAlignment="Center"
+            />
+            <TextBlock
+              Text="{Binding Layouts.Notice}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+              VerticalAlignment="Center"
+            />
+          </DockPanel>
+          <!-- Said once when the saved layout couldn't be read (F1.0 behavior 10). -->
+          <DockPanel
+            x:Name="LayoutNoticeBar"
+            DockPanel.Dock="Bottom"
+            IsVisible="{Binding LayoutNotice, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Margin="0,6,0,0"
+          >
+            <Button
+              x:Name="DismissLayoutNotice"
+              DockPanel.Dock="Right"
+              Content="{l:T Shell.Dismiss}"
+              Command="{Binding DismissLayoutNoticeCommand}"
+              VerticalAlignment="Center"
+            />
+            <TextBlock
+              Text="{Binding LayoutNotice}"
+              Foreground="{DynamicResource Brush.Warn}"
+              TextWrapping="Wrap"
+              VerticalAlignment="Center"
+            />
+          </DockPanel>
+          <!-- Its own line, wrapping: an error can be long, and the status items must stay in the window. -->
+          <TextBlock
+            x:Name="ErrorLabel"
+            DockPanel.Dock="Bottom"
+            Text="{Binding ErrorText}"
+            IsVisible="{Binding ErrorText, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Foreground="{DynamicResource Brush.Warn}"
+            TextWrapping="Wrap"
+            Margin="0,6,0,0"
+          />
+          <!-- A narrow window (#440): the titles on their own line beside the buttons, set by code-behind. -->
+          <DockPanel x:Name="NarrowTitle" DockPanel.Dock="Top" IsVisible="False" Margin="0,0,0,8">
+            <TextBlock
+              DockPanel.Dock="Left"
+              Text="{Binding Title}"
+              FontSize="{DynamicResource Text.Title}"
+              FontWeight="SemiBold"
+              VerticalAlignment="Center"
+              Margin="0,0,12,0"
+            />
+            <TextBlock
+              Text="{Binding StationTitle}"
+              IsVisible="{Binding StationTitle, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Foreground="{DynamicResource Brush.TextMuted}"
+              TextTrimming="CharacterEllipsis"
+              VerticalAlignment="Center"
+              Margin="0,0,8,0"
+            />
+          </DockPanel>
+          <!-- Wraps onto more lines at large text sizes rather than running off the window; in a narrow window (#440)
+               it's one line that scrolls sideways instead, as the scroll viewer then gives it all the width it wants. -->
+          <ScrollViewer
+            x:Name="StatusScroll"
+            HorizontalScrollBarVisibility="Disabled"
+            VerticalScrollBarVisibility="Disabled"
+          >
+            <WrapPanel ItemSpacing="16" LineSpacing="6">
+              <StackPanel x:Name="WideTitle" Orientation="Horizontal" Spacing="16">
+                <TextBlock
+                  Text="{Binding Title}"
+                  FontSize="{DynamicResource Text.Title}"
+                  FontWeight="SemiBold"
+                  VerticalAlignment="Center"
+                />
+                <!-- A gateway's own title (F1.26 behavior 10). -->
+                <TextBlock
+                  x:Name="StationTitleText"
+                  Text="{Binding StationTitle}"
+                  IsVisible="{Binding StationTitle, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  FontSize="{DynamicResource Text.Title}"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                  VerticalAlignment="Center"
+                />
+              </StackPanel>
+              <ComboBox
+                x:Name="ProfilePicker"
+                ItemsSource="{Binding Profiles}"
+                SelectedItem="{Binding SelectedProfile}"
+                IsEnabled="{Binding CanSwitchProfiles}"
+                IsVisible="{Binding !!Profiles.Count}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="{l:T Main.ProfilePicker.ToolTip}"
+              >
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="c:StationProfile">
+                    <TextBlock>
+                      <Run Text="{Binding Name}" />
+                      <Run
+                        Text="{Binding Callsign}"
+                        Foreground="{DynamicResource Brush.TextMuted}"
+                        FontFamily="{DynamicResource Font.Mono}"
+                      />
+                    </TextBlock>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <!-- The connection pill: the APRS-IS switch on its left (F1.15), then the status, which opens a menu with
+                 Reconnect now (F1.1 behavior 7); its tooltip has the details. -->
+              <Border
+                x:Name="ConnectionPill"
+                IsVisible="{Binding ShowsAprsIsPill}"
+                Classes.warn="{Binding IsConnectionWarning}"
+                Classes.ok="{Binding IsConnected}"
+                CornerRadius="{DynamicResource Radius.Control}"
+                BorderThickness="{DynamicResource Thickness.Border}"
+                VerticalAlignment="Center"
+              >
+                <StackPanel Orientation="Horizontal">
+                  <ToggleSwitch
+                    x:Name="AprsIsFeedSwitch"
+                    DataContext="{Binding AprsIsFeedSwitch}"
+                    x:DataType="vm:SourceSwitch"
+                    IsChecked="{Binding IsOn}"
+                    IsEnabled="{Binding CanChange}"
+                    IsVisible="{Binding IsShown}"
+                    OnContent="{x:Null}"
+                    OffContent="{x:Null}"
+                    MinWidth="0"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="{l:T Toggles.Switch.AprsIsFeed}"
+                    AutomationProperties.Name="{l:T Toggles.Switch.AprsIsFeed}"
+                  />
+                  <Button
+                    x:Name="ConnectionButton"
+                    Background="{Binding #ConnectionPill.Background}"
+                    BorderThickness="0"
+                    CornerRadius="{DynamicResource Radius.Control}"
+                    Padding="6,4,10,4"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="{Binding ConnectionDetails}"
+                    AutomationProperties.Name="{l:T Status.Menu}"
+                    AutomationProperties.HelpText="{Binding ConnectionText}"
+                  >
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <!-- Receive-only (an unverified login): an eye, as in "can look, can't send". -->
+                      <PathIcon
+                        x:Name="ReceiveOnlyIcon"
+                        IsVisible="{Binding IsReceiveOnly}"
+                        Data="F0 M 12,5 C 6.5,5 2.7,9.4 1.5,12 C 2.7,14.6 6.5,19 12,19 C 17.5,19 21.3,14.6 22.5,12 C 21.3,9.4 17.5,5 12,5 Z M 12,7 C 16,7 19,10 20.3,12 C 19,14 16,17 12,17 C 8,17 5,14 3.7,12 C 5,10 8,7 12,7 Z M 12,8.5 A 3.5,3.5 0 1 0 12,15.5 A 3.5,3.5 0 1 0 12,8.5 Z"
+                        Width="{DynamicResource Icon.Size}"
+                        Height="{DynamicResource Icon.Size}"
+                        ToolTip.Tip="{l:T Status.ReceiveOnly}"
+                        AutomationProperties.Name="{l:T Status.ReceiveOnly}"
+                      />
+                      <TextBlock x:Name="ConnectionLabel" Text="{Binding ConnectionText}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button.Flyout>
+                      <MenuFlyout>
+                        <MenuItem
+                          x:Name="ReconnectItem"
+                          Header="{l:T Status.Reconnect}"
+                          Command="{Binding ReconnectCommand}"
+                          IsVisible="{Binding !IsViewerOnly}"
+                        />
+                        <MenuItem
+                          x:Name="AprsIsConsoleItem"
+                          Header="{l:T Console.Open}"
+                          Command="{Binding OpenAprsIsConsoleCommand}"
+                          IsVisible="{Binding !IsViewerOnly}"
+                        />
+                        <!-- Packet capture (F1.27 behavior 6): says so while it's on, and opens what it recorded. -->
+                        <MenuItem
+                          x:Name="CaptureItem"
+                          Header="{Binding CaptureText}"
+                          IsVisible="{Binding CaptureText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                          Command="{Binding OpenCapturedPacketsCommand}"
+                        />
+                        <Separator IsVisible="{Binding !IsViewerOnly}" />
+                        <!-- Quick toggles (F1.15): the station's, so read-only for a gateway's viewers and left out for
+                           one who can never act here (F1.26 behavior 9). -->
+                        <MenuItem
+                          x:Name="InternetToggle"
+                          IsVisible="{Binding !IsViewerOnly}"
+                          Header="{l:T Toggles.Internet}"
+                          ToggleType="CheckBox"
+                          IsChecked="{Binding InternetOn, Mode=OneWay}"
+                          IsEnabled="{Binding CanToggle}"
+                          Command="{Binding ToggleCommand}"
+                          CommandParameter="{x:Static c:Toggle.Internet}"
+                        />
+                        <MenuItem
+                          x:Name="AprsIsToggle"
+                          IsVisible="{Binding !IsViewerOnly}"
+                          Header="{l:T Toggles.AprsIs}"
+                          ToggleType="CheckBox"
+                          IsChecked="{Binding AprsIsOn, Mode=OneWay}"
+                          IsEnabled="{Binding CanToggleDependents}"
+                          Command="{Binding ToggleCommand}"
+                          CommandParameter="{x:Static c:Toggle.AprsIs}"
+                        />
+                        <MenuItem
+                          x:Name="AprsIsFeedToggle"
+                          IsVisible="{Binding !IsViewerOnly}"
+                          Header="{l:T Toggles.AprsIsFeed}"
+                          ToggleType="CheckBox"
+                          IsChecked="{Binding AprsIsFeedOn, Mode=OneWay}"
+                          IsEnabled="{Binding CanToggleFeed}"
+                          Command="{Binding ToggleCommand}"
+                          CommandParameter="{x:Static c:Toggle.AprsIsFeed}"
+                        />
+                        <MenuItem
+                          x:Name="TilesToggle"
+                          IsVisible="{Binding !IsViewerOnly}"
+                          Header="{l:T Toggles.Tiles}"
+                          ToggleType="CheckBox"
+                          IsChecked="{Binding TilesOn, Mode=OneWay}"
+                          IsEnabled="{Binding CanToggleDependents}"
+                          Command="{Binding ToggleCommand}"
+                          CommandParameter="{x:Static c:Toggle.Tiles}"
+                        />
+                        <!-- On APRS-IS alone (F2.1 behavior 10); Transmit itself is the status bar's switch. -->
+                        <Separator IsVisible="{Binding IsAprsIsTransmitEnabled}" />
+                        <MenuItem
+                          x:Name="SendPositionOnAprsIsItem"
+                          Header="{l:T Transmit.SendPositionOnAprsIs}"
+                          IsVisible="{Binding IsAprsIsTransmitEnabled}"
+                          Command="{Binding SendPositionOnAprsIsCommand}"
+                        />
+                      </MenuFlyout>
+                    </Button.Flyout>
+                  </Button>
+                </StackPanel>
+              </Border>
+              <!-- A marker per toggle that is off, with its name, never colour alone (F1.15 behavior 4). -->
+              <ItemsControl x:Name="ToggleMarkers" ItemsSource="{Binding ToggleMarkers}" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel ItemSpacing="8" LineSpacing="6" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <Button
+                      Classes="toggle-marker"
+                      BorderBrush="{DynamicResource Brush.Warn}"
+                      BorderThickness="{DynamicResource Thickness.Border}"
+                      CornerRadius="{DynamicResource Radius.Control}"
+                      Padding="8,3"
+                      ToolTip.Tip="{l:T Toggles.Marker.Help}"
+                      AutomationProperties.Name="{Binding}"
+                    >
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <!-- A switch turned off, drawn for this app. -->
+                        <PathIcon
+                          Data="F0 M 7,7 L 17,7 A 5,5 0 0 1 17,17 L 7,17 A 5,5 0 0 1 7,7 Z M 7,9 A 3,3 0 1 0 7,15 A 3,3 0 1 0 7,9 Z"
+                          Width="{DynamicResource Icon.Size}"
+                          Height="{DynamicResource Icon.Size}"
+                        />
+                        <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <!-- No sources yet (F0.5 behavior 23.1, F1.25 behavior 6): says so, and opens Add a source. -->
+              <Button
+                x:Name="AddSourceMarker"
+                Classes="toggle-marker"
+                IsVisible="{Binding OffersAddSource}"
+                BorderBrush="{DynamicResource Brush.Accent}"
+                BorderThickness="{DynamicResource Thickness.Border}"
+                CornerRadius="{DynamicResource Radius.Control}"
+                Padding="8,3"
+                VerticalAlignment="Center"
+                Command="{Binding AddSourceCommand}"
+                AutomationProperties.Name="{l:T Status.NoSources}"
+              >
+                <TextBlock Text="{l:T Status.NoSources}" TextWrapping="Wrap" />
+              </Button>
+              <!-- Unread messages (F2.4 behavior 4): opens the Messages panel. -->
+              <Button
+                x:Name="UnreadMarker"
+                Classes="toggle-marker"
+                IsVisible="{Binding UnreadText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                BorderBrush="{DynamicResource Brush.Accent}"
+                BorderThickness="{DynamicResource Thickness.Border}"
+                CornerRadius="{DynamicResource Radius.Control}"
+                Padding="8,3"
+                VerticalAlignment="Center"
+                Command="{Binding ShowMessagesCommand}"
+                AutomationProperties.Name="{Binding UnreadText}"
+                AutomationProperties.LiveSetting="Polite"
+              >
+                <TextBlock Text="{Binding UnreadText}" TextWrapping="Wrap" />
+              </Button>
+              <!-- The Transmit switch (F2.1 behavior 6): the one place transmitting is turned on or off, mirrored by
+                 Station › Transmit; from a gateway's browser only for a signed-in operator (F2.9). -->
+              <Border
+                x:Name="TransmitPill"
+                Classes="source-pill"
+                Classes.transmitting="{Binding IsTransmitting}"
+                Classes.warn="{Binding IsTransmitHeld}"
+                IsVisible="{Binding TransmitSwitch.IsShown}"
+                CornerRadius="{DynamicResource Radius.Control}"
+                BorderThickness="{DynamicResource Thickness.Border}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="{Binding TransmitTip}"
+              >
+                <StackPanel Orientation="Horizontal">
+                  <ToggleSwitch
+                    x:Name="TransmitSwitch"
+                    Classes="source-switch"
+                    IsChecked="{Binding TransmitSwitch.IsOn}"
+                    IsEnabled="{Binding TransmitSwitch.CanChange}"
+                    OnContent="{x:Null}"
+                    OffContent="{x:Null}"
+                    MinWidth="0"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    AutomationProperties.Name="{l:T Toggles.Transmit}"
+                    AutomationProperties.HelpText="{Binding TransmitTip}"
+                  />
+                  <TextBlock
+                    x:Name="TransmitLabel"
+                    Classes="source-label"
+                    Text="{Binding TransmitPillText}"
+                    TextWrapping="Wrap"
+                    Margin="6,4,10,4"
+                    VerticalAlignment="Center"
+                  />
+                </StackPanel>
+              </Border>
+              <TextBlock
+                x:Name="TransmitAnnouncement"
+                Text="{Binding TransmitAnnouncement}"
+                AutomationProperties.LiveSetting="Polite"
+                Width="0"
+                Height="0"
+                Opacity="0"
+              />
+              <TextBlock
+                x:Name="ToggleAnnouncement"
+                Text="{Binding ToggleAnnouncement}"
+                AutomationProperties.LiveSetting="Polite"
+                Width="0"
+                Height="0"
+                Opacity="0"
+              />
+              <!-- One pill per source besides APRS-IS (F1.25 behavior 11), made like the APRS-IS one: coloured by its state,
+                 its switch inside on the left (F3.1 behavior 6), and a menu with Reconnect now (behavior 5). -->
+              <ItemsControl x:Name="SourcePills" ItemsSource="{Binding SourcePills}" VerticalAlignment="Center">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel ItemSpacing="8" LineSpacing="6" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SourcePill">
+                    <Border
+                      Classes="source-pill"
+                      Classes.ok="{Binding IsConnected}"
+                      Classes.warn="{Binding IsWarning}"
+                      CornerRadius="{DynamicResource Radius.Control}"
+                      BorderThickness="{DynamicResource Thickness.Border}"
+                      VerticalAlignment="Center"
+                    >
+                      <StackPanel Orientation="Horizontal">
+                        <ToggleSwitch
+                          Classes="source-switch"
+                          IsChecked="{Binding Switch.IsOn}"
+                          IsEnabled="{Binding Switch.CanChange}"
+                          IsVisible="{Binding Switch.IsShown}"
+                          OnContent="{x:Null}"
+                          OffContent="{x:Null}"
+                          MinWidth="0"
+                          Margin="8,0,0,0"
+                          VerticalAlignment="Center"
+                          ToolTip.Tip="{Binding SwitchName}"
+                          AutomationProperties.Name="{Binding SwitchName}"
+                        />
+                        <Button
+                          Background="{Binding $parent[Border].Background}"
+                          BorderThickness="0"
+                          CornerRadius="{DynamicResource Radius.Control}"
+                          Padding="6,4,10,4"
+                          VerticalAlignment="Center"
+                          AutomationProperties.Name="{Binding Text}"
+                        >
+                          <TextBlock Classes="source-label" Text="{Binding Text}" TextWrapping="Wrap" />
+                          <Button.Flyout>
+                            <MenuFlyout>
+                              <MenuItem
+                                Header="{l:T Status.Reconnect}"
+                                Command="{Binding ReconnectCommand}"
+                                IsVisible="{Binding Switch.IsShown}"
+                              />
+                              <!-- The Source console (F1.28 behavior 1), and typing to a serial TNC (F3.2 behavior 8). -->
+                              <MenuItem
+                                Header="{l:T Console.Open}"
+                                Command="{Binding ConsoleCommand}"
+                                IsVisible="{Binding Switch.IsShown}"
+                              />
+                              <MenuItem
+                                Header="{l:T Console.TncCommands}"
+                                IsVisible="{Binding CanType}"
+                                Command="{Binding TncCommandsCommand}"
+                              />
+                              <!-- The GPS panel (F3.12 behavior 1). -->
+                              <MenuItem
+                                Header="{l:T Gps.Open}"
+                                IsVisible="{Binding IsGps}"
+                                Command="{Binding GpsStatusCommand}"
+                              />
+                              <!-- On this source alone (F2.1 behavior 10), unless it's RX only. -->
+                              <MenuItem
+                                Header="{l:T Transmit.SendPositionHere}"
+                                IsVisible="{Binding IsTransmitEnabled}"
+                                Command="{Binding SendPositionCommand}"
+                              />
+                            </MenuFlyout>
+                          </Button.Flyout>
+                        </Button>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <TextBlock
+                x:Name="PacketCountLabel"
+                Text="{Binding PacketCountText}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                VerticalAlignment="Center"
+              />
+              <TextBlock
+                x:Name="StationCountLabel"
+                Text="{Binding StationCountText}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                VerticalAlignment="Center"
+              />
+              <!-- The desktop as a gateway's client (#428): which gateway, and as whom; opens Settings › Connection. -->
+              <Button
+                x:Name="GatewayClientNotice"
+                Classes="update-notice"
+                Classes.warn="{Binding GatewayClientWarn}"
+                Content="{Binding GatewayClientText}"
+                IsVisible="{Binding GatewayClientText, Converter={x:Static ObjectConverters.IsNotNull}}"
+                Command="{Binding OpenConnectionCommand}"
+                ToolTip.Tip="{Binding GatewayClientTip}"
+                AutomationProperties.HelpText="{Binding GatewayClientTip}"
+                Background="{x:Null}"
+                VerticalAlignment="Center"
+              />
+              <!-- An update (F4.15 behavior 8): quiet, in the normal text colour, never a pop-up; a failed check is a
+                 warning that tries again when clicked (behavior 7). Either can be cleared with ×. -->
+              <StackPanel
+                Orientation="Horizontal"
+                Spacing="0"
+                VerticalAlignment="Center"
+                IsVisible="{Binding Updates.NoticeText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              >
+                <Button
+                  x:Name="UpdateNotice"
+                  Classes="update-notice"
+                  Classes.warn="{Binding Updates.IsWarning}"
+                  Content="{Binding Updates.NoticeText}"
+                  Command="{Binding Updates.OpenCommand}"
+                  ToolTip.Tip="{Binding Updates.NoticeTip}"
+                  AutomationProperties.LiveSetting="Polite"
+                  AutomationProperties.HelpText="{Binding Updates.NoticeTip}"
+                  Background="{x:Null}"
+                  BorderThickness="0"
+                  Padding="4,2"
+                  VerticalAlignment="Center"
+                />
+                <Button
+                  x:Name="ClearUpdateNotice"
+                  Command="{Binding Updates.ClearCommand}"
+                  IsVisible="{Binding Updates.CanClear}"
+                  ToolTip.Tip="{l:T Updates.Clear}"
+                  AutomationProperties.Name="{l:T Updates.Clear}"
+                  Background="{x:Null}"
+                  BorderThickness="0"
+                  Padding="2"
+                  VerticalAlignment="Center"
+                >
+                  <PathIcon
+                    Data="M 6.4,5 L 12,10.6 L 17.6,5 L 19,6.4 L 13.4,12 L 19,17.6 L 17.6,19 L 12,13.4 L 6.4,19 L 5,17.6 L 10.6,12 L 5,6.4 Z"
+                    Width="{DynamicResource Icon.Small}"
+                    Height="{DynamicResource Icon.Small}"
+                  />
+                </Button>
+              </StackPanel>
+              <Button
+                x:Name="OpenSetupButton"
+                Content="{l:T Main.Setup.Open}"
+                Command="{Binding OpenSetupCommand}"
+                IsVisible="{Binding CanOpenSetup}"
+                Classes="accent"
+                VerticalAlignment="Center"
+              />
+              <TextBlock
+                x:Name="GatewaySetupNote"
+                Text="{l:T Main.Setup.GatewayNote}"
+                IsVisible="{Binding ShowGatewaySetupNote}"
+                Foreground="{DynamicResource Brush.TextMuted}"
+                VerticalAlignment="Center"
+              />
+            </WrapPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+      <!-- The map and the panels around it (F1.0). Dock is only used here and in ZedMap.UI/Shell. In a narrow window
+           the panels are fixed tabs instead (behavior 7), built by code-behind; the docked layout is kept meanwhile. -->
+      <Panel>
+        <TabControl x:Name="NarrowShell" IsVisible="False" />
+        <DockControl
+          x:Name="ShellDock"
+          Classes.away="{Binding IsEngineAway}"
+          Layout="{Binding Shell.Layout}"
+          Factory="{Binding Shell.Factory}"
+          InitializeLayout="False"
+          InitializeFactory="False"
+        />
+      </Panel>
+    </DockPanel>
+    <views:SettingsView
+      x:Name="SettingsPage"
+      DataContext="{Binding Settings}"
+      IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+    />
+    <views:SetupWizardView
+      x:Name="SetupWizard"
+      DataContext="{Binding Setup}"
+      IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+    />
+    <views:DialogView
+      x:Name="Dialog"
+      DataContext="{Binding Dialog}"
+      IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+    />
+    <views:SignInView
+      x:Name="SignInDialog"
+      DataContext="{Binding SignIn}"
+      IsVisible="{Binding $self.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+    />
+    <!-- A short notice over everything ("Saved", or why not), gone by itself; announced, never focused. -->
+    <Border
+      x:Name="ToastBar"
+      IsVisible="{Binding Toast, Converter={x:Static ObjectConverters.IsNotNull}}"
+      IsHitTestVisible="False"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="{DynamicResource Thickness.Border}"
+      CornerRadius="{DynamicResource Radius.Panel}"
+      Padding="16,10"
+      Margin="16"
+      MaxWidth="480"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Bottom"
+      AutomationProperties.LiveSetting="Polite"
+    >
+      <Panel>
+        <TextBlock
+          x:Name="ToastText"
+          Text="{Binding Toast}"
+          TextWrapping="Wrap"
+          IsVisible="{Binding !ToastIsWarning}"
+        />
+        <TextBlock
+          x:Name="ToastWarning"
+          Text="{Binding Toast}"
+          TextWrapping="Wrap"
+          Foreground="{DynamicResource Brush.Warn}"
+          IsVisible="{Binding ToastIsWarning}"
+        />
+      </Panel>
+    </Border>
+  </Panel>
+</UserControl>

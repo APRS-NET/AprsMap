@@ -3,13 +3,16 @@
 <Project>
   <PropertyGroup>
     <!-- Code-facing name: namespace prefix and project-name prefix. Change with tools/rename-product.py. -->
-    <ProductName>AprsMap</ProductName>
-    <!-- What users see in titles, About, installers and the web manifest. -->
-    <ProductDisplayName>AprsMap</ProductDisplayName>
+    <ProductName>ZedMap</ProductName>
+    <!-- What users see in titles, About, installers and the web manifest. Lower-case z: the brand is zedMap. -->
+    <ProductDisplayName>zedMap</ProductDisplayName>
     <!-- Lower-case slug: config/cache folder, container image, URLs. -->
     <ProductSlug>aprsmap</ProductSlug>
     <!-- Earlier slugs, semicolon-separated, so user data can be migrated after a rename. -->
     <PreviousSlugs></PreviousSlugs>
+    <!-- The slug the next rename moves to, so this release's update check already finds releases published under it
+         (docs/branding.md, "Renaming in two steps"). Empty when no rename is under way. -->
+    <NextSlug>zedmap</NextSlug>
     <!-- Transmitted device ID: the APZAMP placeholder (experimental APZ range) until APMAPZ is registered in
          aprs-deviceid. Not tied to the product name; see docs/branding.md. -->
     <ProductTocall>APZAMP</ProductTocall>
@@ -22,6 +25,7 @@
     <AssemblyMetadata Include="Brand.DisplayName" Value="$(ProductDisplayName)" />
     <AssemblyMetadata Include="Brand.Slug" Value="$(ProductSlug)" />
     <AssemblyMetadata Include="Brand.PreviousSlugs" Value="$(PreviousSlugs)" />
+    <AssemblyMetadata Include="Brand.NextSlug" Value="$(NextSlug)" />
     <AssemblyMetadata Include="Brand.Tocall" Value="$(ProductTocall)" />
     <AssemblyMetadata Include="Brand.SourceUrl" Value="$(ProductSourceUrl)" />
   </ItemGroup>

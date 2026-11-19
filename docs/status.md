@@ -1,6 +1,6 @@
 # Development status
 
-What you should expect to see when you run AprsMap today, and what isn't there yet. Per-feature status lives in
+What you should expect to see when you run zedMap today, and what isn't there yet. Per-feature status lives in
 [scope.md](scope.md); this page is the short version for someone trying the app.
 
 As of 2026-10-27 (`main`, `0.7.0-alpha.4`, most of [0.8.0](https://github.com/APRS-NET/AprsMap/milestone/6)):
@@ -24,7 +24,7 @@ instead of running its own engine. In the browser, a panel can open in a tab of 
 ### Desktop app
 
 An installer from the release (Windows MSI, macOS pkg, Linux AppImage), a release archive, or
-`dotnet run --project src/AprsMap.Desktop`. The installed app checks for updates and offers **Update and restart**; the
+`dotnet run --project src/ZedMap.Desktop`. The installed app checks for updates and offers **Update and restart**; the
 AppImage adds itself to the app grid, and for an archive `tools/install-linux-desktop.sh` does (GNOME shows the icon only
 through that entry). See [deployment.md](deployment.md#desktop-app) for where each system keeps the files.
 
@@ -99,7 +99,7 @@ the same window as the desktop app, live.
   the wizard. Each browser keeps its own layout and appearance, and with `Gateway__FollowViewers` its map view widens
   the gateway's filter. The gateway limits viewers and their call rate; see [deployment.md](deployment.md) for these
   and for running behind a proxy or under a path.
-- **Running `src/AprsMap.Browser` on its own** (`dotnet run`, or Run in an IDE) **doesn't work.** A development build
+- **Running `src/ZedMap.Browser` on its own** (`dotnet run`, or Run in an IDE) **doesn't work.** A development build
   can't start in the browser (only a publish includes the WebAssembly native libraries, SkiaSharp among them), and
   there is no gateway at that address anyway. The page says so within seconds. Use the gateway as above.
 - **If the page says it can't reach the gateway:** the gateway isn't running, or the app was opened from another

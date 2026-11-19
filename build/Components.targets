@@ -2,10 +2,10 @@
   <!-- The components list Help › About shows (docs/features/F1.34-about-components.md): every package an app copies to
        its output, with its version and the licence its package states, and the .NET shared frameworks it runs on,
        written at build time from the same restore the release's SBOM is made from (F4.17), and embedded in the app as
-       the resource AprsMap.Components.json. An app opts in with <AprsMapEmbedComponents>true</AprsMapEmbedComponents> and names itself with
-       <AprsMapComponentHost> (Desktop, Gateway or Browser). -->
+       the resource ZedMap.Components.json. An app opts in with <ZedMapEmbedComponents>true</ZedMapEmbedComponents> and names itself with
+       <ZedMapComponentHost> (Desktop, Gateway or Browser). -->
   <UsingTask
-    TaskName="AprsMapWriteComponents"
+    TaskName="ZedMapWriteComponents"
     TaskFactory="RoslynCodeTaskFactory"
     AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll"
   >
@@ -82,21 +82,21 @@
   </UsingTask>
 
   <Target
-    Name="AprsMapEmbedComponents"
-    Condition="'$(AprsMapEmbedComponents)' == 'true'"
+    Name="ZedMapEmbedComponents"
+    Condition="'$(ZedMapEmbedComponents)' == 'true'"
     AfterTargets="ResolvePackageAssets"
     BeforeTargets="PrepareResources;AssignTargetPaths"
   >
-    <AprsMapWriteComponents
+    <ZedMapWriteComponents
       Packages="@(RuntimeCopyLocalItems);@(NativeCopyLocalItems);@(ResourceCopyLocalItems)"
       Frameworks="@(FrameworkReference)"
       PackageRoot="$(NuGetPackageRoot)"
       FrameworkVersion="$(BundledNETCoreAppPackageVersion)"
-      Host="$(AprsMapComponentHost)"
+      Host="$(ZedMapComponentHost)"
       OutputFile="$(IntermediateOutputPath)components.json"
     />
     <ItemGroup>
-      <EmbeddedResource Include="$(IntermediateOutputPath)components.json" LogicalName="AprsMap.Components.json" />
+      <EmbeddedResource Include="$(IntermediateOutputPath)components.json" LogicalName="ZedMap.Components.json" />
       <FileWrites Include="$(IntermediateOutputPath)components.json" />
     </ItemGroup>
   </Target>

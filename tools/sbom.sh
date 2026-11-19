@@ -11,10 +11,10 @@ set -euo pipefail
 
 version=${1:?version, such as 0.6.0-alpha.1}
 out=${2:?output folder}
-slug=$(dotnet msbuild src/AprsMap.Desktop/AprsMap.Desktop.csproj -getProperty:ProductSlug)
+slug=$(dotnet msbuild src/ZedMap.Desktop/ZedMap.Desktop.csproj -getProperty:ProductSlug)
 # The .NET runtime the apps are built and published with: shipped inside the desktop app (self-contained), the base
 # of the gateway's image, and in the browser app as WebAssembly.
-runtime=$(dotnet msbuild src/AprsMap.Desktop/AprsMap.Desktop.csproj -getProperty:BundledNETCoreAppPackageVersion)
+runtime=$(dotnet msbuild src/ZedMap.Desktop/ZedMap.Desktop.csproj -getProperty:BundledNETCoreAppPackageVersion)
 mkdir -p "$out"
 
 framework() { # file, framework names...: adds the shared frameworks, which aren't packages, as components
@@ -49,9 +49,9 @@ sbom() { # project, file name, BOM name
   echo "$out/$2"
 }
 
-sbom AprsMap.Desktop "$slug-v$version-desktop.cdx.json" "$slug"
+sbom ZedMap.Desktop "$slug-v$version-desktop.cdx.json" "$slug"
 framework "$slug-v$version-desktop.cdx.json" Microsoft.NETCore.App
-sbom AprsMap.Gateway "$slug-v$version-gateway.cdx.json" "$slug-gateway"
+sbom ZedMap.Gateway "$slug-v$version-gateway.cdx.json" "$slug-gateway"
 framework "$slug-v$version-gateway.cdx.json" Microsoft.NETCore.App Microsoft.AspNetCore.App
-sbom AprsMap.Browser "$slug-v$version-browser.cdx.json" "$slug-browser"
+sbom ZedMap.Browser "$slug-v$version-browser.cdx.json" "$slug-browser"
 framework "$slug-v$version-browser.cdx.json" Microsoft.NETCore.App

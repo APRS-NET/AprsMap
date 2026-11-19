@@ -1,37 +1,37 @@
 <Project>
   <Import Project="build/Components.targets" />
 
-  <!-- Licence per project (LICENSING.md). A project opts into MIT with <AprsMapLicense>MIT</AprsMapLicense>; everything
+  <!-- Licence per project (LICENSING.md). A project opts into MIT with <ZedMapLicense>MIT</ZedMapLicense>; everything
        else is the repository default. -->
   <PropertyGroup>
-    <AprsMapLicense Condition="'$(AprsMapLicense)' == ''">AGPL-3.0-only</AprsMapLicense>
-    <PackageLicenseExpression>$(AprsMapLicense)</PackageLicenseExpression>
+    <ZedMapLicense Condition="'$(ZedMapLicense)' == ''">AGPL-3.0-only</ZedMapLicense>
+    <PackageLicenseExpression>$(ZedMapLicense)</PackageLicenseExpression>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(AprsMapIsShipped)' == 'true' And '$(AprsMapLicense)' == 'MIT'">
+  <ItemGroup Condition="'$(ZedMapIsShipped)' == 'true' And '$(ZedMapLicense)' == 'MIT'">
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.Engine.txt" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(AprsMapIsShipped)' == 'true' And '$(AprsMapUsesAvalonia)' == 'true'">
+  <ItemGroup Condition="'$(ZedMapIsShipped)' == 'true' And '$(ZedMapUsesAvalonia)' == 'true'">
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.UI.txt" />
   </ItemGroup>
 
   <!-- Expose a project's licence to other projects. -->
-  <Target Name="AprsMapGetLicense" Returns="$(AprsMapLicense)" />
+  <Target Name="ZedMapGetLicense" Returns="$(ZedMapLicense)" />
 
   <!-- MIT code must never depend on AGPL code, or it would stop being MIT in practice. Fails the build when an MIT
        project references a project with any other licence. -->
   <Target
-    Name="AprsMapCheckLicenceBoundary"
+    Name="ZedMapCheckLicenceBoundary"
     BeforeTargets="ResolveProjectReferences"
-    Condition="'$(AprsMapLicense)' == 'MIT' And '@(ProjectReference)' != ''"
+    Condition="'$(ZedMapLicense)' == 'MIT' And '@(ProjectReference)' != ''"
   >
-    <MSBuild Projects="@(ProjectReference)" Targets="AprsMapGetLicense" BuildInParallel="true">
-      <Output TaskParameter="TargetOutputs" ItemName="_AprsMapReferenceLicence" />
+    <MSBuild Projects="@(ProjectReference)" Targets="ZedMapGetLicense" BuildInParallel="true">
+      <Output TaskParameter="TargetOutputs" ItemName="_ZedMapReferenceLicence" />
     </MSBuild>
     <Error
-      Condition="'%(_AprsMapReferenceLicence.Identity)' != 'MIT'"
-      Text="$(MSBuildProjectName) is MIT and must not reference %(_AprsMapReferenceLicence.MSBuildSourceProjectFile), which is %(_AprsMapReferenceLicence.Identity). See LICENSING.md."
+      Condition="'%(_ZedMapReferenceLicence.Identity)' != 'MIT'"
+      Text="$(MSBuildProjectName) is MIT and must not reference %(_ZedMapReferenceLicence.MSBuildSourceProjectFile), which is %(_ZedMapReferenceLicence.Identity). See LICENSING.md."
     />
   </Target>
 </Project>

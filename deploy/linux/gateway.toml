@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# The AprsMap gateway's configuration (docs/features/F1.37-gateway-service.md). Each table is a section of the
+# The zedMap gateway's configuration (docs/features/F1.37-gateway-service.md). Each table is a section of the
 # gateway's settings and each key one setting, snake_case for the setting's name; docs/deployment.md lists them all.
 # Environment variables still win over this file. Restart the service after changing it:
 #   sudo systemctl restart aprsmap-gateway

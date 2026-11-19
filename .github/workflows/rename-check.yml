@@ -34,14 +34,22 @@ jobs:
         with:
           global-json-file: global.json
           dotnet-version: 10.0.x
+      # Part-way through the rename to zedMap (docs/branding.md, "Renaming in two steps"): the code prefix is ZedMap,
+      # the slug and the repository's links are still aprsmap and AprsMap, and the brand is spelled zedMap. Every
+      # form goes to the test name.
       - name: Rename to a test name
-        run: python3 tools/rename-product.py AprsMap SkyTrack --apply
+        run: >-
+          python3 tools/rename-product.py ZedMap SkyTrack --apply
+          --also AprsMap=SkyTrack --also aprsmap=skytrack --also APRSMAP=SKYTRACK --also zedMap=skyTrack
       - name: Only the migration list still names the old product
         run: |
-          left="$(grep -rIl -i aprsmap --exclude-dir=.git . | grep -v '^./build/Branding.props$' || true)"
+          # The names are built from parts, or the rename would rewrite this check too.
+          old="aprs""map|zed""map"
+          left="$(grep -rIl -i -E "$old" --exclude-dir=.git . | grep -v '^./build/Branding.props$' || true)"
           if [ -n "$left" ]; then
             echo "::error::The rename left the old name in: $left"
             exit 1
           fi
       - run: dotnet build SkyTrack.slnx -c Release
-      - run: dotnet test SkyTrack.slnx -c Release --no-build
+      # A test that hangs fails within minutes and is named in the log, instead of the job running to its limit.
+      - run: dotnet test SkyTrack.slnx -c Release --no-build --blame-hang --blame-hang-timeout 5m

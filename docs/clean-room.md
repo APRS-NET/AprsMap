@@ -1,6 +1,6 @@
 # Clean-room process
 
-AprsMap reimplements the *functionality* of APRSIS32 (APRSISCE/32, by Lynn Deffenbaugh KJ4ERJ) as a new,
+zedMap reimplements the *functionality* of APRSIS32 (APRSISCE/32, by Lynn Deffenbaugh KJ4ERJ) as a new,
 modern .NET 10 / Avalonia application. It is a redesign, not a port: we study **what the program does and how a user
 works with it**, then design our own engine and UI with modern patterns. No APRSIS32 code is read, translated or used.
 
@@ -11,7 +11,7 @@ works with it**, then design our own engine and UI with modern patterns. No APRS
 - APRSISCE source code was published under **AGPL-3.0** by the APRS Foundation
   (github.com/APRSFoundation/APRSISCE, 2025-02-06). AGPL covers the code's *expression*. Functionality, workflows
   and the purpose of features, learned from user documentation and observation, are not that expression.
-- **APRS.NET and AprsMap's engine (`Contracts`, `Core`, `Client.Remote`) are MIT.** They stay MIT only if nothing in
+- **APRS.NET and zedMap's engine (`Contracts`, `Core`, `Client.Remote`) are MIT.** They stay MIT only if nothing in
   them is derived from AGPL code. The UIs are AGPL-3.0 by choice (see [LICENSING.md](../LICENSING.md)), but they come out of the
   same clean process: the AGPL choice is not permission to read the APRSISCE source.
 

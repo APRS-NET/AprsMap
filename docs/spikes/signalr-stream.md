@@ -12,7 +12,7 @@ WebAssembly build** unless the wire types have source-generated metadata, which 
 
 - **Feed:** two minutes of the full APRS-IS feed (port 10152, receive-only login), recorded 2026-10-14. Rate: **88
   packets/s average, 152/s peak**, 8.7 KB/s of raw text, 6,569 distinct stations. The recording is not committed (it
-  contains third parties' traffic). The spike gateway replays it at 1×, 5× or 20× through the real `AprsMap.Core`
+  contains third parties' traffic). The spike gateway replays it at 1×, 5× or 20× through the real `ZedMap.Core`
   `Engine` (`Accept` and per-client `WatchPacketsAsync` fan-out), so parsing and fan-out are the app's own code.
 - **Stream shapes:**
   - *packets*: one `PacketView` per message, the hub's shape today;
@@ -84,7 +84,7 @@ Allocation stays under 6 MB/s. One gateway serving a club or a family is far bel
    fix is a source-generated `JsonSerializerContext` listing every type that crosses the hub (including hub arguments'
    runtime types, such as `int` and `double`), inserted with `AddJsonProtocol(o =>
    o.PayloadSerializerOptions.TypeInfoResolverChain.Insert(0, Context.Default))`. The real web app had the same bug
-   (stuck at "Starting…"). **Fixed in PR #4**: `EngineJsonContext` in `AprsMap.Contracts`, used by the gateway and
+   (stuck at "Starting…"). **Fixed in PR #4**: `EngineJsonContext` in `ZedMap.Contracts`, used by the gateway and
    `RemoteEngineService`, with tests that fail when a hub type lacks metadata and a gateway test whose client runs
    with reflection off.
 2. **The replay has to read the recording as Latin-1.** Reading it as UTF-8 made `AprsPacket.Parse` throw on a

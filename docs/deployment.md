@@ -53,7 +53,7 @@ servers reject `N0CALL`, so use your own callsign (receive-only needs no passcod
 | Tile providers, by key: `Name`, `UrlTemplate` (`{z}`, `{x}`, `{y}` or `{-y}`), `Attribution`, `AttributionUrl`, `MinZoom`, `MaxZoom`, `ImageType` | `Tiles__Providers__<key>__…` | OpenStreetMap as `osm` |
 | That server's usage policy, linked in the setup wizard | `Geocoding__UsagePolicyUrl` | the OSMF policy for the public server |
 | OpenTelemetry export | `OTEL_EXPORTER_OTLP_ENDPOINT` (+ standard `OTEL_*`); more targets in Settings › Logging | off |
-| Log levels; overrides Settings › Logging | `Logging__LogLevel__Default`, `Logging__LogLevel__AprsMap.Connections` and the other areas' categories | `Information` |
+| Log levels; overrides Settings › Logging | `Logging__LogLevel__Default`, `Logging__LogLevel__ZedMap.Connections` and the other areas' categories (`AprsMap.*` before 0.9.0-alpha.2) | `Information` |
 | Log file | Settings › Logging (operator) | off on a gateway; `/data/logs` when on |
 
 Browsers see the gateway's settings read-only, with passcodes hidden, until an operator signs in (below). A profile

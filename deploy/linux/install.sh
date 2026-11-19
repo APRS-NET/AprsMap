@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-only
-# Installs the AprsMap gateway as a system service on Ubuntu (docs/features/F1.37-gateway-service.md, behavior 5):
+# Installs the zedMap gateway as a system service on Ubuntu (docs/features/F1.37-gateway-service.md, behavior 5):
 #
 #   mkdir aprsmap-gateway && tar -xzf aprsmap-gateway-vX-linux-x64.tar.gz -C aprsmap-gateway
 #   sudo aprsmap-gateway/install.sh aprsmap-gateway-vX-linux-x64.tar.gz

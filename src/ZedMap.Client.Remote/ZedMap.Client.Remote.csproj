@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ZedMapLicense>MIT</ZedMapLicense>
+    <Description>IEngineService over SignalR, for UIs that talk to a gateway (the browser app).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ZedMap.Gateway.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ZedMap.Contracts/ZedMap.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+  </ItemGroup>
+</Project>

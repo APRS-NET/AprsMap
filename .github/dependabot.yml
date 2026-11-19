@@ -10,7 +10,7 @@ updates:
       actions:
         patterns: ["*"]
 
-  # Daily, because APRS.NET publishes a new alpha often and AprsMap should track it closely. Dependabot offers
+  # Daily, because APRS.NET publishes a new alpha often and zedMap should track it closely. Dependabot offers
   # pre-releases for packages already on a pre-release, so each AprsNet.* alpha arrives as its own grouped PR.
   - package-ecosystem: nuget
     directory: /
@@ -37,7 +37,7 @@ updates:
       test:
         patterns: ["xunit*", "Microsoft.NET.Test.Sdk", "coverlet.*", "GitHubActionsTestLogger"]
     ignore:
-      # AprsMap.UI.Tests pins xUnit v3 3.x via VersionOverride until Avalonia.Headless.XUnit supports 4.x; ignoring
+      # ZedMap.UI.Tests pins xUnit v3 3.x via VersionOverride until Avalonia.Headless.XUnit supports 4.x; ignoring
       # majors keeps that pin while 4.x patches still flow to the other test projects. Revisit with each Avalonia bump.
       - dependency-name: "xunit.v3.mtp-off"
         update-types: ["version-update:semver-major"]

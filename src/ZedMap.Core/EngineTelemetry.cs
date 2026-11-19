@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: MIT
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
+
+namespace ZedMap.Core;
+
+/// <summary>
+/// The engine's traces and metrics, published through System.Diagnostics. The hosts (desktop app, gateway) decide
+/// whether to export them with OpenTelemetry; the engine itself has no exporter dependency.
+/// </summary>
+public static class EngineTelemetry
+{
+    /// <summary>The name of the engine's <see cref="ActivitySource"/> and <see cref="Meter"/>.</summary>
+    public const string Name = "ZedMap.Core";
+
+    internal static readonly ActivitySource ActivitySource = new(Name);
+
+    internal static readonly Meter Meter = new(Name);
+
+    internal static readonly Counter<long> PacketsReceived = Meter.CreateCounter<long>(
+        "aprsmap.packets.received",
+        unit: "{packet}",
+        description: "APRS packets received, tagged by packet type."
+    );
+
+    internal static readonly Counter<long> LinesRejected = Meter.CreateCounter<long>(
+        "aprsmap.lines.rejected",
+        unit: "{line}",
+        description: "Received lines dropped because they could not be parsed at all."
+    );
+
+    internal static readonly Counter<long> ConnectionFailures = Meter.CreateCounter<long>(
+        "aprsmap.connection.failures",
+        unit: "{failure}",
+        description: "Failed APRS-IS connection attempts and dropped connections."
+    );
+
+    internal static readonly Counter<double> GpsFixTime = Meter.CreateCounter<double>(
+        "aprsmap.gps.fix.time",
+        unit: "s",
+        description: "Time the station's GPS in use spent in each fix state, tagged fix: 3d, 2d, none or silent."
+    );
+
+    internal static readonly Counter<long> GpsFixLosses = Meter.CreateCounter<long>(
+        "aprsmap.gps.fix.losses",
+        unit: "{loss}",
+        description: "Fixes the station's GPS in use lost: no fix, or silent, straight after a fix."
+    );
+
+    internal static readonly Counter<long> Digipeated = Meter.CreateCounter<long>(
+        "aprsmap.digipeated",
+        unit: "{frame}",
+        description: "Frames the station repeated on RF as a digipeater (F3.5)."
+    );
+}

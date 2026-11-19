@@ -87,7 +87,7 @@ Reading the browser numbers:
    labels in our own Skia layer. This is faster in both heads and fits the symbol atlas (spike 3: `SKCanvas.DrawAtlas`
    with one sprite sheet). It also keeps APRS-specific drawing (overlays, wind barbs, DF, area objects) out of Mapsui's
    style system.
-2. **Own the Avalonia host control** (a small `MapView` in `AprsMap.UI`) instead of depending on Mapsui.Avalonia. If
+2. **Own the Avalonia host control** (a small `MapView` in `ZedMap.UI`) instead of depending on Mapsui.Avalonia. If
    Mapsui later ships an Avalonia 12 build, we can reconsider. Mapsui is MIT, which the AGPL UI may use.
 3. **Turn on AOT for the browser build in Release** (CI and container). Keep plain Debug builds fast.
 4. **Fetch browser tiles through the gateway** rather than from OSM directly. A gateway tile proxy with a disk cache

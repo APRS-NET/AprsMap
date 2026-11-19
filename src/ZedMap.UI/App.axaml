@@ -1,0 +1,57 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<Application
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:dock="using:Dock.Avalonia.Themes.Fluent"
+  xmlns:views="using:ZedMap.UI.Views"
+  x:Class="ZedMap.UI.App"
+  RequestedThemeVariant="Default"
+>
+  <!-- Each panel's view, picked by its kind. Here rather than on the main window's DockControl, so a floating panel's
+       own window finds it too. -->
+  <Application.DataTemplates>
+    <views:PanelTemplate />
+  </Application.DataTemplates>
+  <Application.Styles>
+    <FluentTheme />
+    <dock:DockFluentTheme />
+    <!-- Panel tabs wrap onto another row instead of running off the panel at large text sizes (F1.0 behavior 6). -->
+    <Style Selector="ToolTabStrip">
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate>
+          <WrapPanel />
+        </ItemsPanelTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="ToolTabStrip /template/ ScrollViewer#PART_ScrollViewer">
+      <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+    </Style>
+    <!-- On a touch screen, every target is at least 44 × 44 px whatever the density (F0.6 behavior 11, WCAG 2.5.5). The
+         app sets the "touch" class on its root view when the platform's primary pointer is coarse. -->
+    <Style Selector=".touch :is(Button)">
+      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="MinWidth" Value="44" />
+      <!-- The text stays in the middle of the taller target, not at its top. -->
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector=".touch ComboBox, .touch TextBox, .touch ListBoxItem">
+      <Setter Property="MinHeight" Value="44" />
+    </Style>
+    <!-- List rows follow the density tokens. -->
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="{DynamicResource Space.ListItem}" />
+      <Setter Property="MinHeight" Value="{DynamicResource Size.ListItemMinHeight}" />
+    </Style>
+  </Application.Styles>
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <!-- First: the palette, which AppearanceService replaces (it must stay at index 0). -->
+        <ResourceInclude Source="avares://ZedMap.UI/Themes/Palettes/Standard.axaml" />
+        <ResourceInclude Source="avares://ZedMap.UI/Themes/Tokens.axaml" />
+        <ResourceInclude Source="avares://ZedMap.UI/Themes/DockTokens.axaml" />
+        <ResourceInclude Source="avares://ZedMap.UI/Themes/DockMenus.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>

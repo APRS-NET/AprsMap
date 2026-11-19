@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <!-- Help › About lists the components this app is built from (F1.34). -->
+    <ZedMapEmbedComponents>true</ZedMapEmbedComponents>
+    <ZedMapComponentHost>Gateway</ZedMapComponentHost>
+    <Description>The web gateway: hosts the engine, serves the browser app and exposes IEngineService over SignalR.</Description>
+    <AssemblyName>$(ProductSlug)-gateway</AssemblyName>
+    <!-- Container image settings for 'dotnet publish /t:PublishContainer'. The Dockerfile is the primary path because
+         the browser app needs the wasm-tools workload at build time. -->
+    <ContainerRepository>$(ProductSlug)</ContainerRepository>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ZedMap.Gateway.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ZedMap.Server/ZedMap.Server.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
+    <PackageReference Include="Tomlyn" />
+  </ItemGroup>
+</Project>

@@ -1,4 +1,4 @@
 T:System.Console;The engine must not write to the console; log through ILogger
-N:Avalonia;The MIT engine stays UI-free; UI types belong in AprsMap.UI
+N:Avalonia;The MIT engine stays UI-free; UI types belong in ZedMap.UI
 M:System.Net.Http.HttpClient.#ctor;Use IHttpClientFactory so handlers are pooled and testable
 M:System.Net.Http.HttpClient.#ctor(System.Net.Http.HttpMessageHandler);Use IHttpClientFactory so handlers are pooled and testable

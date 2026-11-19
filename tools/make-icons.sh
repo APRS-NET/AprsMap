@@ -6,7 +6,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 src="$root/build/branding/icon.svg"
 out="$root/build/branding"
-web="$root/src/AprsMap.Browser/wwwroot"
+web="$root/src/ZedMap.Browser/wwwroot"
 
 render() { magick -background none -density 384 "$src" -resize "$1x$1" "PNG32:$2"; }
 

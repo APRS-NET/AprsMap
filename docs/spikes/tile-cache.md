@@ -101,9 +101,9 @@ The disk cache for the whole benchmark path (zoom 5–8 around 300 km, plus the 
 
 ## Recommendations
 
-1. **Put the cache in a new MIT project, `AprsMap.Tiles`** (HTTP and disk only; no UI, no BruTile). Use it in-process
+1. **Put the cache in a new MIT project, `ZedMap.Tiles`** (HTTP and disk only; no UI, no BruTile). Use it in-process
    on the desktop and behind the gateway's tile endpoint. Per the repo's rules, use `IHttpClientFactory` and
-   `TimeProvider` (the spike used `new HttpClient` and the system clock). The BruTile adapter lives in `AprsMap.UI`.
+   `TimeProvider` (the spike used `new HttpClient` and the system clock). The BruTile adapter lives in `ZedMap.UI`.
 2. **Gateway: `/tiles/{provider}/{z}/{x}/{y}.png`, same origin.** It replaces spike 1's strip-the-User-Agent hack and
    gives all viewers one cache. Pass the Referer through, keep the app's User-Agent, cap concurrency, merge
    duplicate downloads, and bound the coordinates (as the spike does) so the endpoint isn't an open proxy.
