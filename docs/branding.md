@@ -27,9 +27,12 @@ a hunt through the code.
 3. **One spelling per form**, so a rename is a fixed set of replacements:
    `AprsMap` (code and prose), `aprsmap` (slugs, paths, config folder, container image), `APRSMAP` (environment-variable
    prefix), `aprs-map` is not used.
+   After the rename the brand is written **`zedMap`** (lower-case z, maintainer decision, 2026-11-19): that is
+   `ProductDisplayName` and the spelling in prose, titles and installers. `ZedMap` is only the code prefix
+   (`ZedMap.Core`), since .NET namespaces are PascalCase; the slug is `zedmap` and the env prefix `ZEDMAP`.
 4. **The TOCALL is a separate decision.** The transmitted device ID is the `APZAMP` placeholder for now, in the
    experimental `APZ` range. The plan is to request **`APMAPZ`**, exactly, with no version wildcard, in the
-   aprs-deviceid list after the rename to ZedMap, and switch to it once it's assigned (maintainer decision, 2026-11-19,
+   aprs-deviceid list after the rename to zedMap, and switch to it once it's assigned (maintainer decision, 2026-11-19,
    replacing `APNETM`; [#547](https://github.com/APRS-NET/AprsMap/issues/547)). It is otherwise not tied to the product
    name: renaming the product never changes the TOCALL, because receivers identify existing installs by it.
 5. **User data survives a rename.** Settings and caches are found through `Brand.Slug`; the app looks for the previous
