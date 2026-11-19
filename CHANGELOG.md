@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0-alpha.15](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.14...v0.8.0-alpha.15) (2026-11-19)
+
+
+### Bug Fixes
+
+* **deps:** Bump Mapsui.Rendering.Skia from 5.1.0 to 5.2.0 ([1ad8699](https://github.com/APRS-NET/AprsMap/commit/1ad869934b733d25a187e6e5d2233afb037f54a0))
+
 ## [0.8.0-alpha.14](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.13...v0.8.0-alpha.14) (2026-11-19)
 
 
