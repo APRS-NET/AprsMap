@@ -107,9 +107,12 @@ public sealed class AprsIsFeedTests
                     (await engine.GetConversationsAsync(Ct)).Any(c => c.Correspondent == "K0ABC")
                 ); // a message to this station still arrives
 
+                // Listed: the RF packet, and this station's own ack of the message, as sent; not the message itself. The
+                // ack is listed after the conversation shows, so wait for it rather than read the count at once.
+                await WaitUntil(async () => (await engine.GetStatusAsync(Ct)).PacketsReceived == 2);
+                await Task.Delay(TimeSpan.FromMilliseconds(100), TimeProvider.System, Ct);
+                Assert.Equal(2, (await engine.GetStatusAsync(Ct)).PacketsReceived); // and nothing more: not the message
                 Assert.Null(await engine.GetStationAsync("K0ABC", Ct)); // the message's sender isn't plotted
-                // Listed: the RF packet, and this station's own ack of the message, as sent; not the message itself.
-                Assert.Equal(2, (await engine.GetStatusAsync(Ct)).PacketsReceived);
                 await cts.CancelAsync();
                 await run;
             }
