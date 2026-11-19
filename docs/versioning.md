@@ -32,7 +32,7 @@ release-please skips a commit when every file it touches is under `tests/`, `too
 (`exclude-paths` in `release-please-config.json`).
 
 A `Release-As:` footer is read only from a commit release-please counts, so it can't go on an empty commit or one that
-only touches those folders. AprsMap's minor version follows APRS.NET's: `0.2.0-alpha.1` came with APRS.NET 0.2.0.
+only touches those folders. zedMap's minor version follows APRS.NET's: `0.2.0-alpha.1` came with APRS.NET 0.2.0.
 
 ## The first release
 
@@ -56,6 +56,6 @@ footer on a new commit.
 
 ## APRS.NET
 
-AprsMap uses the APRS.NET packages from nuget.org, including pre-releases, with versions pinned in
+zedMap uses the APRS.NET packages from nuget.org, including pre-releases, with versions pinned in
 `Directory.Packages.props`. Dependabot checks daily and opens one grouped PR per new APRS.NET release. Work that needs
 an unreleased APRS.NET change waits for its alpha; nothing references APRS.NET projects directly.

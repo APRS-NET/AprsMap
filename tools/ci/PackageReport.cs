@@ -8,11 +8,11 @@
 // Turns `dotnet list package --format json` output into the markdown package report that CI posts to the run summary
 // and to pull requests.
 //
-//   dotnet list AprsMap.slnx package --vulnerable --include-transitive --format json > vulnerable.json
-//   dotnet list AprsMap.slnx package --outdated --format json > outdated.json
+//   dotnet list ZedMap.slnx package --vulnerable --include-transitive --format json > vulnerable.json
+//   dotnet list ZedMap.slnx package --outdated --format json > outdated.json
 //   dotnet run tools/ci/PackageReport.cs -- --vulnerable vulnerable.json --outdated outdated.json --out report.md
 //
-// Packages a project pins with `VersionOverride` (as AprsMap.UI.Tests pins xUnit v3 3.x) are marked in the updates
+// Packages a project pins with `VersionOverride` (as ZedMap.UI.Tests pins xUnit v3 3.x) are marked in the updates
 // table and listed with the reason given in the XML comment just above the pin, so a held-back update reads as
 // deliberate. The project files are found through the paths in the JSON.
 //

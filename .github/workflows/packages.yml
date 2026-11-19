@@ -52,12 +52,12 @@ jobs:
           dotnet-version: 10.0.x
       # NuGet's own audit would fail the restore on a vulnerable package (warnings are errors here); this job reports
       # it instead, then fails below.
-      - run: dotnet restore AprsMap.slnx -p:NuGetAudit=false
+      - run: dotnet restore ZedMap.slnx -p:NuGetAudit=false
       - name: Package report
         id: report
         run: |
-          dotnet list AprsMap.slnx package --vulnerable --include-transitive --format json > vulnerable.json
-          dotnet list AprsMap.slnx package --outdated --format json > outdated.json
+          dotnet list ZedMap.slnx package --vulnerable --include-transitive --format json > vulnerable.json
+          dotnet list ZedMap.slnx package --outdated --format json > outdated.json
           dotnet run tools/ci/PackageReport.cs -- --vulnerable vulnerable.json --outdated outdated.json --out package-report.md
           cat package-report.md >> "$GITHUB_STEP_SUMMARY"
       - name: Comment on the pull request

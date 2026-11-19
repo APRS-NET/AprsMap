@@ -1,23 +1,23 @@
 # APRS.NET gaps
 
-Capabilities AprsMap needs that belong in [APRS.NET](https://github.com/APRS-NET/APRS.NET) under the
+Capabilities zedMap needs that belong in [APRS.NET](https://github.com/APRS-NET/APRS.NET) under the
 [ownership rule](../architecture.md#ownership-rule). Each section is written to become one GitHub issue (title = heading).
 API sketches are proposals that follow APRS.NET's existing conventions: parsing never throws, input is bytes and strings
 are Latin-1, `TimeProvider` for time, async-first I/O, every public member tracked in `PublicAPI.Unshipped.txt`, and
 `AprsNet.Packets` stays I/O-free with BCL-only dependencies.
 
-Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). AprsMap uses `0.2.0-alpha.2` (2026-10-15); what has shipped since the baseline is noted
+Baseline: APRS.NET `0.1.0-alpha.8` (2026-10-13). zedMap uses `0.2.0-alpha.2` (2026-10-15); what has shipped since the baseline is noted
 under **Delivered** in each section. `AprsNet.Filters` and `AprsNet.DeviceId` are on NuGet from `0.2.0-alpha.2`;
 `AprsNet.Ax25`, `AprsNet.Kiss`, `AprsNet.Gateway` and `AprsNet.Extensions.DependencyInjection` are in source but not on
 NuGet yet (2026-10-15).
 
-Gaps an AprsMap milestone needs become APRS.NET issues, as sub-issues of a `capability` issue in APRS.NET's matching
-milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for AprsMap 0.3.0), labelled
-`blocks: AprsMap`, and block the AprsMap feature issues that need them. Phases 2 and 3 are planned (2026-10-16):
-AprsMap 0.5.0–0.7.0 match APRS.NET's milestones of the same numbers, and the Issue column below names each gap's
+Gaps an zedMap milestone needs become APRS.NET issues, as sub-issues of a `capability` issue in APRS.NET's matching
+milestone ([APRS.NET#116](https://github.com/APRS-NET/APRS.NET/issues/116) for zedMap 0.3.0), labelled
+`blocks: ZedMap`, and block the zedMap feature issues that need them. Phases 2 and 3 are planned (2026-10-16):
+zedMap 0.5.0–0.7.0 match APRS.NET's milestones of the same numbers, and the Issue column below names each gap's
 capability issue. G14, G18, G21, G22 and G25 get an issue when their features are planned.
 
-| ID | Title | Package | AprsMap phase | Issue |
+| ID | Title | Package | zedMap phase | Issue |
 | --- | --- | --- | --- | --- |
 | G03 | Resilient APRS-IS connection (reconnect, server rotation) (delivered) | AprsIsTcpClient | 1 | — |
 | G04 | Typed APRS-IS server filter builder (delivered) | Filters | 1 | [APRS.NET#117](https://github.com/APRS-NET/APRS.NET/issues/117) |
@@ -58,7 +58,7 @@ capability issue. G14, G18, G21, G22 and G25 get an issue when their features ar
 
 ## G03: Resilient APRS-IS connection (reconnect, server rotation)
 
-**Need.** AprsMap F1.1. `AprsIsClient` is single-use ("Create a new client to reconnect"). Every long-running consumer
+**Need.** zedMap F1.1. `AprsIsClient` is single-use ("Create a new client to reconnect"). Every long-running consumer
 would write the same supervisor loop.
 
 **Scope.** A supervisor (for example `AprsIsConnection`) that owns successive `AprsIsClient` instances: exponential
@@ -72,13 +72,13 @@ the filter persists across reconnects, and disposal stops the loop promptly.
 **Delivered** (`0.1.0-alpha.17`): `AprsIsConnection`: reconnect on close, failure, idle timeout or packet silence, with
 backoff and ±20 % jitter (`ReconnectDelay`, `MaxReconnectDelay`); one `ReadLinesAsync` stream across reconnects; the
 filter resent on every login (`SetFilterAsync`); `SendAsync` waiting through a reconnect; `StateChanged` events. Rotation
-through an endpoint list isn't included, and AprsMap doesn't need it (F1.1 behavior 10). AprsMap's engine runs on it,
+through an endpoint list isn't included, and zedMap doesn't need it (F1.1 behavior 10). zedMap's engine runs on it,
 reading with `ReadPacketsAsync` (`0.2.0-alpha.1`), and its `// SHIM: G03` loop is gone.
 
 ## G04: Typed APRS-IS server filter builder
 
-**Need.** AprsMap F1.2 builds filters from the map viewport and tracked stations. `SetFilterAsync(string)` takes raw
-text. AprsMap writes one filter itself, `r/lat/lon/km` or `m/km`, for profiles without a filter
+**Need.** zedMap F1.2 builds filters from the map viewport and tracked stations. `SetFilterAsync(string)` takes raw
+text. zedMap writes one filter itself, `r/lat/lon/km` or `m/km`, for profiles without a filter
 (`AprsIsPacketSourceFactory.EffectiveFilter`).
 
 **Scope.** An immutable `AprsIsFilter` composed of typed parts: range `r/lat/lon/km`, my-range `m/km`, friend range
@@ -94,12 +94,12 @@ round-tripping user-typed filters is a bonus.
 **Delivered** (`0.2.0-alpha.2`, package `AprsNet.Filters`): `AprsFilterTerm` with a factory per term (`Range`,
 `MyRange`, `FriendRange`, `Area`, `Prefix`, `Buddies`, `Objects`, `Types`, `Symbols`, `Digipeaters`, `EntryStations`,
 `MessagesTo`, `Destinations`, `QConstructs`) and `Exclude()`, combined by `AprsFilter.Create(terms)`;
-`AprsFilter.CheckServerLimits()` reports a filter APRS-IS would refuse (`ServerTermLimit`, 9 range terms). AprsMap's
+`AprsFilter.CheckServerLimits()` reports a filter APRS-IS would refuse (`ServerTermLimit`, 9 range terms). zedMap's
 stand-in filter now uses it.
 
 ## G05: Duplicate packet detection
 
-**Need.** AprsMap F1.3; also required by G15 and G16. The same packet arrives via several IGates, and via RF and IS.
+**Need.** zedMap F1.3; also required by G15 and G16. The same packet arrives via several IGates, and via RF and IS.
 
 **Scope.** A packet identity per the APRS-IS rule (source, destination, information field; path ignored) and a
 time-windowed `DuplicateFilter` (default 30 s, `TimeProvider`-driven, bounded memory). Mic-E needs care because the
@@ -114,7 +114,7 @@ returns a `DuplicateCheck` naming the first copy's source and time.
 
 ## G06: Third-party (`}`) payload decoding
 
-**Need.** AprsMap F1.3 and F1.6. IS→RF gated traffic and some IGates' traffic shows up as `}`. The design note already
+**Need.** zedMap F1.3 and F1.6. IS→RF gated traffic and some IGates' traffic shows up as `}`. The design note already
 plans an inner `AprsPacket` parsed once without recursion.
 
 **Acceptance.** APRS101 ch. 17 vectors; nesting is limited to one level; the corpus round-trips.
@@ -125,7 +125,7 @@ issue codes `InvalidThirdParty` and `ThirdPartyTooDeep`; `AprsEncoder.ThirdParty
 
 ## G07: Device identification from the aprs-deviceid list
 
-**Need.** AprsMap F1.6 shows "what sent this". The Mic-E notes already defer newer Yaesu codes "until the maintained
+**Need.** zedMap F1.6 shows "what sent this". The Mic-E notes already defer newer Yaesu codes "until the maintained
 `aprs-deviceid` list is adopted".
 
 **Scope.** A lookup from TOCALL (`APxxxx` with wildcards) and Mic-E device codes to vendor, model, class (tracker, rig,
@@ -136,7 +136,7 @@ the list's version/commit in the package.
 
 **Delivered** (`0.2.0-alpha.2`, package `AprsNet.DeviceId`): `AprsDevices.Identify(packet)` and `FromTocall(destination)`
 return an `AprsDevice` (vendor, model, class, operating system, features), with the list's `ListCommit` and `ListDate`.
-Breaking: `MicEReport.Device` is now an `AprsDevice` rather than a model name (AprsMap didn't use it).
+Breaking: `MicEReport.Device` is now an `AprsDevice` rather than a model name (zedMap didn't use it).
 
 ## G08: Geodesy and Maidenhead helpers
 
@@ -162,7 +162,7 @@ wizard, and can ship ahead of the rest of G08.
 
 ## G09: Telemetry definitions applied to reports
 
-**Need.** AprsMap F1.11 and F4.1. The design note leaves EQNS application "a job for the caller", but every caller needs
+**Need.** zedMap F1.11 and F4.1. The design note leaves EQNS application "a job for the caller", but every caller needs
 the same per-station state.
 
 **Scope.** A `TelemetryProfile` built from the latest `PARM.`/`UNIT.`/`EQNS.`/`BITS.` for a station (including definitions
@@ -173,7 +173,7 @@ bit names and sense. Pure functions, no storage.
 
 ## G20: Path analysis: RF vs IS origin, heard direct, digipeaters used, q-constructs
 
-**Need.** AprsMap F1.6, F1.9 (RF-only view), F3.3, and the IGate (G16).
+**Need.** zedMap F1.6, F1.9 (RF-only view), F3.3, and the IGate (G16).
 
 **Scope.** From an `AprsPacket` header: the q-construct and the IGate or server that injected it (`qAR`, `qAO`, `qAS`,
 `qAC`, `qAX`, `qAU`, `qAo`, `qAI`), whether it was heard on RF by an IGate, the used (`*`) digipeaters in order, whether
@@ -195,7 +195,7 @@ the IGate heard it directly (no used hops), remaining WIDEn-N hops, and trace pa
 **Scope.** `Callsign.Parse`/`TryParse` (AX.25-valid and APRS-IS forms), plus builders that produce an `AprsPacket` (so
 `Raw` stays the source of truth) for: position (uncompressed, compressed, with timestamp/messaging/course-speed/PHG/
 altitude/DAO), status, message/ack/rej with message ID and reply-ack, bulletins, objects and items (live and kill),
-telemetry and its definitions, weather. Mic-E encoding (with a chosen Mic-E status code) is needed by AprsMap F2.12
+telemetry and its definitions, weather. Mic-E encoding (with a chosen Mic-E status code) is needed by zedMap F2.12
 and can follow the first release of the encoder.
 
 **Acceptance.** Every builder output parses back to an equal payload (property tests); APRS101 vectors encode
@@ -236,10 +236,10 @@ widely documented, and needed for setup UX).
 `AprsIsClient.SendAsync` (`0.1.0-alpha.16`).
 
 **Delivered** (`0.4.0-alpha.3`, APRS.NET#242): `AprsIsLogin.NewListenerId`, `AprsIsLogin.IsListenerId` and
-`AprsIsClientOptions.ListenOnly`, which AprsMap uses; the shim is gone. Asked for (2026-10-17): a **listen-only mode** for unlicensed users (F2.1 behavior 4): a generated listener ID, `SWL` and
+`AprsIsClientOptions.ListenOnly`, which zedMap uses; the shim is gone. Asked for (2026-10-17): a **listen-only mode** for unlicensed users (F2.1 behavior 4): a generated listener ID, `SWL` and
 six random digits (nine characters, never an amateur callsign), with passcode -1 forced, `SendAsync` refusing locally
 with a clear reason, and a way to tell a listener ID from a callsign ([APRS.NET#227](https://github.com/APRS-NET/APRS.NET/issues/227)); until it
-shipped, AprsMap made the ID itself behind `// SHIM: G02`.
+shipped, zedMap made the ID itself behind `// SHIM: G02`.
 
 ## G10: Messaging session engine (ack, retry, reply-ack, dupes)
 
@@ -256,7 +256,7 @@ once, restart keeps message ID sequence.
 
 **Delivered** (`0.4.0-alpha.2`, package `AprsNet.Messaging`, APRS.NET#189): `MessagingStation` with outgoing retries,
 acks, rejects, reply-acks and duplicate suppression; `0.4.0-alpha.3` adds `OutgoingMessage.Attempted` for each retry.
-AprsMap's messaging (F2.4) is built on it; bulletins (F2.5), the email and QRU helpers (F2.6) and auto-reply (F2.10) are no longer blocked.
+zedMap's messaging (F2.4) is built on it; bulletins (F2.5), the email and QRU helpers (F2.6) and auto-reply (F2.10) are no longer blocked.
 
 ## G11: Beacon scheduling algorithms
 
@@ -312,16 +312,16 @@ transport.
 **Delivered** (`0.2.0-alpha.1` in source, on NuGet as `AprsNet.Kiss` from `0.2.0-alpha.3`): KISS framing, KISS over
 any stream (serial and Bluetooth), and a TCP TNC connection that reconnects, configured with `KissTcpOptions`, that
 reports `StateChanged` and metrics as APRS-IS does, and limits the transmit rate. `KissTcpServer` shares one TNC with
-several KISS apps. Still open, needed by AprsMap 0.4.0 (F1.25):
+several KISS apps. Still open, needed by zedMap 0.4.0 (F1.25):
 a serial connection that reopens the port after a USB unplug and replug (as `KissTcpConnection` reconnects), with the
 connection states F1.1 uses, and a list of the serial ports present. ([APRS.NET#126](https://github.com/APRS-NET/APRS.NET/issues/126))
 `0.4.0-alpha.4` takes an unplugged serial TNC for a lost link (tested with a TH-D72A on USB serial) and adds
 `KissConnection.Warning`: a TNC sending text instead of KISS frames, and, with `QuietWarning` set, one that has sent
-nothing for that long. AprsMap shows both on the source's pill (F3.1 behavior 13).
+nothing for that long. zedMap shows both on the source's pill (F3.1 behavior 13).
 
 ## G14: Radios' built-in TNCs: KISS setup, and reading a radio in APRS mode
 
-**Need.** F3.2 (AprsMap 0.5.0, [#242](https://github.com/APRS-NET/AprsMap/issues/242)): a radio's built-in TNC as a
+**Need.** F3.2 (zedMap 0.5.0, [#242](https://github.com/APRS-NET/AprsMap/issues/242)): a radio's built-in TNC as a
 source, starting with the Kenwood TH-D72A.
 
 **Scope** ([APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249), rescoped 2026-10-18, part of #160):
@@ -340,7 +340,7 @@ source, starting with the Kenwood TH-D72A.
    `IDisposable`; inside it, `SendRawAsync` and `SendLineAsync` write to the open port under the frame lock (they throw
    outside it), the automatic setup re-run is held off (the `TextNotKiss` warning still fires), and `RunScriptAsync`
    runs a script without a reopen, its expects matching the unframed bytes. At a TNC-2 prompt some commands transmit
-   (`ID`, `CONV`, `K`), and in KISS mode a raw data frame goes on the air, so AprsMap's console says so. A raw line on
+   (`ID`, `CONV`, `K`), and in KISS mode a raw data frame goes on the air, so zedMap's console says so. A raw line on
    APRS-IS (`#filter`) is lower priority.
 
 Not planned: switching the radio's TNC mode from the computer, sending through a TNC's own commands (sending uses KISS),
@@ -382,7 +382,7 @@ count), along with the sender's position once, wrapped as third-party; rate limi
 **Scope.** Checksum validation and parsing of GGA, RMC, GLL, VTG, GSA (and GNSS talker IDs GN/GL/GA/GB), plus
 `$`-type packets decoded as a `PositionedPayload` subtype or `NmeaReport`. Reading from devices stays in the app.
 
-Added 2026-10-20 for AprsMap F3.12 (GPS status): **GSV** (satellites in view: PRN, elevation, azimuth, SNR, across a
+Added 2026-10-20 for zedMap F3.12 (GPS status): **GSV** (satellites in view: PRN, elevation, azimuth, SNR, across a
 multi-sentence group, per talker so GPS, GLONASS, Galileo and BeiDou stay apart, with the NMEA 4.1 signal ID where
 sent), **GST** (estimated position error in metres, where the receiver sends it), and the DOPs and satellites used from
 GGA and GSA, gathered into one fix-quality value next to the position fix shared with G30. **Delivered** in `0.5.0-alpha.2`
@@ -401,7 +401,7 @@ GGA and GSA, gathered into one fix-quality value next to the position fix shared
 
 ## G21: APRS-IS server side: client logins, passcode check, filter evaluation
 
-**Need.** AprsMap F3.10 (re-serve our stream to other apps and instances) and F3.9 (CWOP feeds ignore filters, so we
+**Need.** zedMap F3.10 (re-serve our stream to other apps and instances) and F3.9 (CWOP feeds ignore filters, so we
 filter locally). The gateway could also use filter evaluation to give each browser its own view of one shared stream.
 
 **Scope.** (1) **Filter evaluation**: `AprsIsFilter.Matches(AprsPacket, context)`, which needs G04's typed filter and
@@ -421,7 +421,7 @@ de-duplicates, replays recent history on login and tracks where stations were he
 
 ## G22: AGWPE TCP transport
 
-**Need.** AprsMap F3.8. AGWPE-protocol TCP (default port 8000) is still offered by soundmodem software and Direwolf.
+**Need.** zedMap F3.8. AGWPE-protocol TCP (default port 8000) is still offered by soundmodem software and Direwolf.
 
 **Scope.** AGW frame header codec, registration, monitoring of UI frames (`U`/`K` frames, raw AX.25 via `k`), sending
 unproto/raw frames, multi-port enumeration (`G`). It feeds G12 `Ax25Frame` so packets join the same pipeline as KISS.
@@ -429,11 +429,11 @@ unproto/raw frames, multi-port enumeration (`G`). It feeds G12 `Ax25Frame` so pa
 **Acceptance.** Recorded sessions; Direwolf AGW interop smoke test (manual).
 
 Tracked as [APRS.NET#224](https://github.com/APRS-NET/APRS.NET/issues/224) (the connection is #225), milestone 0.8.0-alpha.1;
-AprsMap's side is [#384](https://github.com/APRS-NET/AprsMap/issues/384).
+zedMap's side is [#384](https://github.com/APRS-NET/AprsMap/issues/384).
 
 ## G24: Station track anomaly analysis
 
-**Need.** AprsMap F1.20 and the packet-list anomaly flags; useful to any tracker or map.
+**Need.** zedMap F1.20 and the packet-list anomaly flags; useful to any tracker or map.
 
 **Scope.** Given a station's previous position reports and a new one: duplicate position (same position resent after the
 dupe window), impossible implied speed (configurable; default far above aircraft speed), sub-second repeats, time going
@@ -444,7 +444,7 @@ and G08.
 
 ## G25: Frequency specification parsing and validation
 
-**Need.** AprsMap F3.11 (frequency monitor) and F3.7 (frequency objects). The reference app counts frequency objects
+**Need.** zedMap F3.11 (frequency monitor) and F3.7 (frequency objects). The reference app counts frequency objects
 and flags "frequency objects with issues", so validation is part of the need, not only decoding.
 
 **Scope.** Decode the APRS 1.2 frequency spec in comments and object names: `FFF.FFFMHz`, tone `Tnnn`/`tnnn`, DCS
@@ -458,7 +458,7 @@ frequency), and the AFRS conventions. Return a `FrequencySpec` with typed parts.
 
 ## G26: APRS-IS server presets a UI can list
 
-**Need.** AprsMap F0.5 (first-run wizard, server step) and the connection settings: offer the worldwide and regional
+**Need.** zedMap F0.5 (first-run wizard, server step) and the connection settings: offer the worldwide and regional
 aprs2.net rotates by name instead of hard-coding host names in the app.
 
 **Scope.** `AprsIsEndpoint` already has the presets (`Rotate`, `NorthAmerica`, `SouthAmerica`, `Europe`, `Asia`,
@@ -475,7 +475,7 @@ or endpoint.
 
 ## G27: Validation errors with stable codes
 
-**Need.** AprsMap F0.9 (ready for translation). The app shows APRS.NET's validation errors to users in their own
+**Need.** zedMap F0.9 (ready for translation). The app shows APRS.NET's validation errors to users in their own
 language, and on the web the error is raised on the gateway, far from the viewer. An English message can't be
 translated reliably, and matching on its text breaks whenever the wording changes.
 
@@ -498,15 +498,15 @@ that each code is unique and documented; existing catch blocks for `ArgumentExce
 
 ## G29: Source merge with provenance
 
-**Need.** AprsMap F1.25: packets come from several sources (APRS-IS, KISS TNCs). Each packet records its source, and a
+**Need.** zedMap F1.25: packets come from several sources (APRS-IS, KISS TNCs). Each packet records its source, and a
 packet heard again on another source within the duplicate window shows once with a **Seen on** list. APRS.NET plans a
-source abstraction inside `AprsNet.Gateway` (APRS.NET #106) that de-duplicates and counts per source; AprsMap needs the
+source abstraction inside `AprsNet.Gateway` (APRS.NET #106) that de-duplicates and counts per source; zedMap needs the
 same, public and outside the gateway.
 
 **Scope.** A source id carried with each packet from any reader (`AprsIsConnection`, `KissTcpConnection`, the serial
 connection), and G05's `DuplicateFilter` returning, for a duplicate, the first packet's identity and the new source,
 rather than only dropping it. A small merge type that reads any number of sources and yields `(packet, source,
-isDuplicateOf)` would serve both AprsMap and `AprsNet.Gateway`.
+isDuplicateOf)` would serve both zedMap and `AprsNet.Gateway`.
 
 **Acceptance.** One fake APRS-IS and one fake KISS source: a packet on both comes out once as new and once as a
 duplicate naming the second source; outside the window both are new.
@@ -517,14 +517,14 @@ copy's source and time.
 
 ## G30: gpsd client
 
-**Need.** AprsMap F1.25 behavior 12 (GPS sources, planned with beaconing, F2.2): a GPS shared by gpsd, locally or on
+**Need.** zedMap F1.25 behavior 12 (GPS sources, planned with beaconing, F2.2): a GPS shared by gpsd, locally or on
 another machine.
 
 **Scope.** Connect to gpsd over TCP (default port 2947), send `?WATCH={"enable":true,"json":true}`, and read TPV
 reports (time, position, speed, course, altitude, fix mode) into a position fix type shared with G17's NMEA parser;
 reconnect like the other connections. No device access in the library beyond the socket.
 
-Added 2026-10-20 for AprsMap F3.12 (GPS status): TPV's error estimates (`eph`, `epv`, `epx`, `epy`, `eps`), and
+Added 2026-10-20 for zedMap F3.12 (GPS status): TPV's error estimates (`eph`, `epv`, `epx`, `epy`, `eps`), and
 **SKY** reports (the satellites in view with PRN, elevation, azimuth, signal strength, used or not and constellation
 (`gnssid`), and the DOPs) into the same satellite and fix-quality values as G17's GSV and GSA. The raw lines read, for
 an app's console. **Delivered** in `0.5.0-alpha.2` (`GpsdConnection.Quality` and `Satellites`).
@@ -533,7 +533,7 @@ an app's console. **Delivered** in `0.5.0-alpha.2` (`GpsdConnection.Quality` and
 
 ## G31: Corpus capture helpers
 
-**Need.** AprsMap F1.27 (0.5.0): the app records packets it couldn't make sense of and exports them for
+**Need.** zedMap F1.27 (0.5.0): the app records packets it couldn't make sense of and exports them for
 `tests/corpus`, so what the corpus accepts has to be produced by the library, not re-implemented in the app.
 
 **Scope.**
@@ -552,12 +552,12 @@ an app's console. **Delivered** in `0.5.0-alpha.2` (`GpsdConnection.Quality` and
 that isn't valid UTF-8 writes and reads back unchanged; each unrecognised-part code has a corpus line that shows it.
 
 **Delivered** (`0.4.0-alpha.5`, APRS.NET#250, #251): `AprsNet.Corpus` (`CorpusLine`, `CorpusFile`, `CorpusWriter`,
-`CorpusAnonymizer`, `CorpusPseudonyms`) and `AprsPacket.Unrecognized` with four `UnrecognizedPartCode`s. AprsMap's
+`CorpusAnonymizer`, `CorpusPseudonyms`) and `AprsPacket.Unrecognized` with four `UnrecognizedPartCode`s. zedMap's
 packet capture (F1.27) is built on them.
 
 ## G32: A typed reason when an APRS-IS login reaches a KISS TNC
 
-**Need.** AprsMap F1.1: since `0.4.0-alpha.4` a login that gets KISS frames back (an APRS-IS source given Dire Wolf's
+**Need.** zedMap F1.1: since `0.4.0-alpha.4` a login that gets KISS frames back (an APRS-IS source given Dire Wolf's
 KISS port by mistake) fails at once with a `LoginException`, instead of waiting out the login timeout. The app can only
 tell that case from any other unreachable server by the exception's English message, so it says "Server unreachable"
 rather than "That's a KISS TNC: add it as a TNC source".
@@ -568,11 +568,11 @@ rather than "That's a KISS TNC: add it as a TNC source".
 **Acceptance.** The existing test for a login that reaches a KISS TNC asserts the type or the reason, not the message.
 
 **Filed** as [APRS.NET#246](https://github.com/APRS-NET/APRS.NET/issues/246) for `0.5.0-alpha.1`: a `LoginException`
-subclass, as `LoginRejectedException` is. AprsMap waits for it rather than matching the message.
+subclass, as `LoginRejectedException` is. zedMap waits for it rather than matching the message.
 
 ## G33: A traffic event for a troubleshooting console
 
-**Need.** AprsMap F1.28 Source console (0.5.0, [#246](https://github.com/APRS-NET/AprsMap/issues/246)): a source's live
+**Need.** zedMap F1.28 Source console (0.5.0, [#246](https://github.com/APRS-NET/AprsMap/issues/246)): a source's live
 traffic, mostly what never becomes a packet. `ReadPacketsAsync` and `ReadFramesAsync` each have one reader and yield only
 good frames, so the app can't watch them without taking packets away, and what's dropped is only counted. Why something
 was dropped is protocol knowledge, so it belongs in the library.
@@ -597,7 +597,7 @@ no subscriber; a throwing handler doesn't stop reading.
 
 ## G34: Bulletin repeat schedule and ANSRVR group helpers
 
-**Need.** AprsMap F2.5 (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)): posting bulletins and
+**Need.** zedMap F2.5 (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)): posting bulletins and
 announcements, and joining announcement groups through ANSRVR.
 
 **Scope** ([APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272), APRS.NET 0.5.0).
@@ -612,7 +612,7 @@ message from a recorded transcript is recognised with its group and sender.
 
 ## G35: A device list that can be loaded and fetched
 
-**Need.** AprsMap F4.16 (0.6.0): an install that isn't updated should still learn new devices. The aprs-deviceid list
+**Need.** zedMap F4.16 (0.6.0): an install that isn't updated should still learn new devices. The aprs-deviceid list
 reaches APRS.NET within a day (the nightly `deviceid` workflow), but only as each release's built-in table, so an app
 can't use a newer list without copying the generator's format and rules.
 
@@ -636,7 +636,7 @@ server, a `304` is unchanged, a `200` gives a list and its `ETag`, and a mirror'
 
 ## G36: Multiline objects
 
-**Need.** AprsMap F2.7 (objects and items: multiline objects, deferred) and showing received ones on the map.
+**Need.** zedMap F2.7 (objects and items: multiline objects, deferred) and showing received ones on the map.
 
 **Scope.** Decoding and encoding the multiline extension an object's comment can carry: a line or closed polygon of up
 to several vertices as offsets from the object's position, with its colour and line style. It's specified outside
@@ -648,9 +648,9 @@ spec folder), so the first step is getting that page into `docs/spec` with its s
 
 ## G37: GPS quality metrics
 
-**Need.** AprsMap F3.14 (GPS statistics on the dashboard): the maintainer wants a GPS's health watched from a
+**Need.** zedMap F3.14 (GPS statistics on the dashboard): the maintainer wants a GPS's health watched from a
 monitoring system over OTLP, as `aprsnet.kiss.nmea.*` already does for NMEA on a TNC port. The numbers belong to each
-GPS connection, so any app using the library gets them; AprsMap keeps only what's its own (the GPS *in use* among
+GPS connection, so any app using the library gets them; zedMap keeps only what's its own (the GPS *in use* among
 several, its dashboard history and wander).
 
 **Scope.** Metrics on the GPS meter, per connection (`GpsdConnection`, and serial or TCP NMEA read through
@@ -665,7 +665,7 @@ several, its dashboard history and wander).
 - the average signal of the satellites used (gauge, dB-Hz).
 
 Tags identify the connection the way the library's other metrics do (no positions). Names and units are the library's
-choice; the above is what AprsMap would read.
+choice; the above is what zedMap would read.
 
 Tracked as [APRS.NET#328](https://github.com/APRS-NET/APRS.NET/issues/328).
 

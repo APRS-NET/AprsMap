@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+using ZedMap.Contracts;
+using ZedMap.UI.Appearance;
+
+namespace ZedMap.UI.Platform;
+
+/// <summary>What each app (desktop, browser) supplies to the shared UI besides the engine.</summary>
+public sealed record PlatformServices
+{
+    /// <summary>The viewer's device location, where there is one (F0.5 behavior 9.4).</summary>
+    public IDeviceLocation? DeviceLocation { get; init; }
+
+    /// <summary>Where the viewer's own preferences are kept (F0.6 behavior 16); null keeps them for this session only.</summary>
+    public IPreferenceStore? Preferences { get; init; }
+
+    /// <summary>
+    /// The viewer's appearance, loaded before the app starts so the first window already has the right theme and
+    /// language (F0.6 behavior 19).
+    /// </summary>
+    public AppearanceSettings Appearance { get; init; } = new();
+
+    /// <summary>Where map tiles come from (F1.4); without one the map shows its ground colour only.</summary>
+    public ITileSource? Tiles { get; init; }
+
+    /// <summary>
+    /// The viewer's saved layout as stored (F1.0 behavior 8), read before the app starts so the main window opens where it
+    /// was; null for the default layout (none saved, or <c>--reset-layout</c>).
+    /// </summary>
+    public string? SavedLayout { get; init; }
+
+    /// <summary>
+    /// Whether floating panels stay inside the app instead of opening OS windows (F1.0 behavior 5): the browser, which
+    /// has no windows of its own.
+    /// </summary>
+    public bool ManagedWindows { get; init; }
+
+    /// <summary>
+    /// Whether the station's settings are a gateway's, shared with every viewer (the browser), so Reset the app (F0.10)
+    /// deletes them only when asked.
+    /// </summary>
+    public bool SharedStation { get; init; }
+
+    /// <summary>Where the menus go (F1.29): a hidden bar, the system menu bar (macOS) or under ☰ (the browser).</summary>
+    public Shell.MenuStyle MenuStyle { get; init; } = Shell.MenuStyle.InWindow;
+
+    /// <summary>Operator sign-in on a gateway (F2.9); null on the desktop, whose user is always the operator.</summary>
+    public IOperatorSession? OperatorSession { get; init; }
+
+    /// <summary>Sets the page's title, where the platform has one (the browser tab, F1.26 behavior 10).</summary>
+    public Action<string>? SetTitle { get; init; }
+
+    /// <summary>Starts the app afresh after Reset the app, where the platform can (the browser reloads the page).</summary>
+    public Action? Restart { get; init; }
+
+    /// <summary>Installs updates in an installed desktop build (F4.15 behavior 11); null elsewhere.</summary>
+    public IAppInstaller? Installer { get; init; }
+
+    /// <summary>
+    /// The app's own engine for its update checks when the station is a gateway's: the desktop as the gateway's client
+    /// (F1.39 behavior 5); null elsewhere.
+    /// </summary>
+    public IEngineService? UpdateEngine { get; init; }
+
+    /// <summary>
+    /// Settings › Connection on the desktop (F1.39 behavior 1): this computer's own engine or a gateway; null in the
+    /// browser, which is always a gateway's client.
+    /// </summary>
+    public IGatewayClientHost? GatewayClient { get; init; }
+
+    /// <summary>The desktop's web viewer (F1.35): its station served to browsers; null in the browser.</summary>
+    public IWebViewerHost? WebViewer { get; init; }
+
+    /// <summary>Open folder in Help › About (F1.31 behavior 4a): the desktop's; null in the browser.</summary>
+    public IFolderOpener? FolderOpener { get; init; }
+
+    /// <summary>Whether the platform asks for reduced motion (the browser's <c>prefers-reduced-motion</c>).</summary>
+    public bool SystemReducedMotion { get; init; }
+
+    /// <summary>
+    /// Whether the primary pointer is coarse (a touch screen; the browser's <c>pointer: coarse</c>), so targets get a
+    /// 44 px floor (F0.6 behavior 11). The desktop doesn't report it yet.
+    /// </summary>
+    public bool CoarsePointer { get; init; }
+
+    /// <summary>Whether Settings offers the pseudo-language (F0.9 behavior 6): debug builds, or when configured.</summary>
+    public bool ShowPseudoLanguage { get; init; }
+
+    /// <summary>
+    /// The panel this window shows on its own, popped out of another tab (docs/features/F1.24-web-pop-out.md, behavior
+    /// 2); null for the whole app.
+    /// </summary>
+    public string? PopOutPanel { get; init; }
+
+    /// <summary>Opens a panel in a tab of its own (behavior 1); null where there are no tabs (the desktop).</summary>
+    public Action<string>? OpenPopOut { get; init; }
+
+    /// <summary>Shares the selected station with the app's other tabs (behavior 3); null where there are none.</summary>
+    public ISelectionChannel? SelectionChannel { get; init; }
+}

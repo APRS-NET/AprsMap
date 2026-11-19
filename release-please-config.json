@@ -9,7 +9,7 @@
   "prerelease-type": "alpha",
   "packages": {
     ".": {
-      "package-name": "AprsMap",
+      "package-name": "ZedMap",
       "changelog-path": "CHANGELOG.md",
       "exclude-paths": ["tests", "tools", "docs", ".github"]
     }

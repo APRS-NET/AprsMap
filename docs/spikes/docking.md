@@ -1,6 +1,6 @@
 # Spike 5: docking layout with Dock
 
-Status: done, 2026-10-15. Code: `src/AprsMap.UI/Shell/` and `tests/AprsMap.UI.Tests/ShellSpikeTests.cs` on branch
+Status: done, 2026-10-15. Code: `src/ZedMap.UI/Shell/` and `tests/ZedMap.UI.Tests/ShellSpikeTests.cs` on branch
 `spike/dock` (throwaway, never merged).
 
 Question: can panels such as messages, direct-message threads, stations and packets be docked, tabbed, split and

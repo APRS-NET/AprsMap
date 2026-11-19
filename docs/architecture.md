@@ -1,6 +1,6 @@
 # Architecture
 
-Working product name: **AprsMap** (it can still be renamed; see [branding.md](branding.md)). Namespaces use `AprsMap.*`.
+Working product name: **zedMap** (it can still be renamed; see [branding.md](branding.md)). Namespaces use `ZedMap.*`.
 
 ## Goals
 
@@ -20,27 +20,27 @@ the engine:
 ```
  Desktop process                         Gateway process (server / Pi / home PC)
 ┌──────────────────────────┐            ┌──────────────────────────────────────┐
-│ AprsMap.Desktop (head)   │            │ AprsMap.Gateway (ASP.NET Core)       │
-│   AprsMap.UI (views/VMs) │            │   SignalR hub ── IEngineService     │
-│        │                 │            │   static files: AprsMap.Browser      │
+│ ZedMap.Desktop (head)   │            │ ZedMap.Gateway (ASP.NET Core)       │
+│   ZedMap.UI (views/VMs) │            │   SignalR hub ── IEngineService     │
+│        │                 │            │   static files: ZedMap.Browser      │
 │  IEngineService         │            │        │                             │
-│  (in-process impl)       │            │  AprsMap.Core engine                 │
+│  (in-process impl)       │            │  ZedMap.Core engine                 │
 │        │                 │            │        │                             │
-│  AprsMap.Core engine     │            │  APRS.NET (IS client, KISS, AX.25…)  │
+│  ZedMap.Core engine     │            │  APRS.NET (IS client, KISS, AX.25…)  │
 │        │                 │            └────────┼─────────────────────────────┘
 │  APRS.NET                │                     │ TCP / serial
 └────────┼─────────────────┘                APRS-IS, TNCs, GPS
          │ TCP / serial                            ▲
     APRS-IS, TNCs, GPS                             │ WebSocket (SignalR)
                                         ┌──────────┴───────────────┐
-                                        │ Browser: AprsMap.Browser │
-                                        │   AprsMap.UI (same VMs)  │
+                                        │ Browser: ZedMap.Browser │
+                                        │   ZedMap.UI (same VMs)  │
                                         │   IEngineService        │
                                         │   (SignalR client impl)  │
                                         └──────────────────────────┘
 ```
 
-Map tiles never go through `IEngineService`. Both heads use one tile cache (`AprsMap.Tiles`): the desktop in-process,
+Map tiles never go through `IEngineService`. Both heads use one tile cache (`ZedMap.Tiles`): the desktop in-process,
 and the browser through the gateway's same-origin `/tiles/{provider}/{z}/{x}/{y}.png` endpoint, which serves the same
 cache over plain HTTP. See [Map tiles](#map-tiles).
 
@@ -48,15 +48,15 @@ cache over plain HTTP. See [Map tiles](#map-tiles).
 
 | Project | License | Target | Depends on | Holds |
 | --- | --- | --- | --- | --- |
-| `AprsMap.Contracts` | MIT | net10.0 | — | `IEngineService`, DTOs (`StationSnapshot`, `TrackPoint`, `ChatMessage`…), change events. Every type that crosses the hub is listed in `EngineJsonContext` (System.Text.Json source generation), because browser builds have reflection-based JSON turned off. No APRS.NET types leak out. |
-| `AprsMap.Core` | MIT | net10.0 | Contracts, APRS.NET | The engine: connection manager, station store, tracks, message center, object manager, beacon scheduler host, settings, the in-process `IEngineService`. No UI references. |
-| `AprsMap.Client.Remote` | MIT | net10.0 (browser-safe) | Contracts | `IEngineService` over SignalR. |
-| `AprsMap.Tiles` | MIT | net10.0 | — | Map tile cache: disk store, HTTP fetch that follows each provider's usage policy (User-Agent from branding, cache headers, conditional revalidation, merged duplicate downloads, capped concurrency). No UI, no Mapsui or BruTile. |
-| `AprsMap.UI` | AGPL-3.0 | net10.0 | Contracts, Avalonia, Mapsui (core) | Shared views, view models, the `MapView` control, the station layer and symbol atlas, and the tile source adapter (fed by the head). Depends only on `IEngineService`, never on Core. |
-| `AprsMap.Desktop` | AGPL-3.0 | net10.0 | UI, Hosting, Tiles | Desktop head; composes Core in-process and gives the map `AprsMap.Tiles` directly. Serial/GPS device pickers. |
-| `AprsMap.Browser` | AGPL-3.0 | net10.0-browser | UI, Client.Remote | WebAssembly head; fetches tiles from the gateway's `/tiles` endpoint. AOT in Release builds. |
-| `AprsMap.Gateway` | AGPL-3.0 | net10.0 | Hosting, Tiles | ASP.NET Core host: SignalR hub, `/tiles` endpoint, auth, serves the Browser bundle, headless operation (IGate/digi without any UI attached). |
-| `AprsMap.Hosting` | AGPL-3.0 | net10.0 | Core | Host wiring shared by Desktop and Gateway: engine configuration binding and OpenTelemetry (OTLP export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set). |
+| `ZedMap.Contracts` | MIT | net10.0 | — | `IEngineService`, DTOs (`StationSnapshot`, `TrackPoint`, `ChatMessage`…), change events. Every type that crosses the hub is listed in `EngineJsonContext` (System.Text.Json source generation), because browser builds have reflection-based JSON turned off. No APRS.NET types leak out. |
+| `ZedMap.Core` | MIT | net10.0 | Contracts, APRS.NET | The engine: connection manager, station store, tracks, message center, object manager, beacon scheduler host, settings, the in-process `IEngineService`. No UI references. |
+| `ZedMap.Client.Remote` | MIT | net10.0 (browser-safe) | Contracts | `IEngineService` over SignalR. |
+| `ZedMap.Tiles` | MIT | net10.0 | — | Map tile cache: disk store, HTTP fetch that follows each provider's usage policy (User-Agent from branding, cache headers, conditional revalidation, merged duplicate downloads, capped concurrency). No UI, no Mapsui or BruTile. |
+| `ZedMap.UI` | AGPL-3.0 | net10.0 | Contracts, Avalonia, Mapsui (core) | Shared views, view models, the `MapView` control, the station layer and symbol atlas, and the tile source adapter (fed by the head). Depends only on `IEngineService`, never on Core. |
+| `ZedMap.Desktop` | AGPL-3.0 | net10.0 | UI, Hosting, Tiles | Desktop head; composes Core in-process and gives the map `ZedMap.Tiles` directly. Serial/GPS device pickers. |
+| `ZedMap.Browser` | AGPL-3.0 | net10.0-browser | UI, Client.Remote | WebAssembly head; fetches tiles from the gateway's `/tiles` endpoint. AOT in Release builds. |
+| `ZedMap.Gateway` | AGPL-3.0 | net10.0 | Hosting, Tiles | ASP.NET Core host: SignalR hub, `/tiles` endpoint, auth, serves the Browser bundle, headless operation (IGate/digi without any UI attached). |
+| `ZedMap.Hosting` | AGPL-3.0 | net10.0 | Core | Host wiring shared by Desktop and Gateway: engine configuration binding and OpenTelemetry (OTLP export only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set). |
 | `tests/*` | | | Core unit tests (fake `TimeProvider`, recorded packet corpora), contract round-trip tests, headless Avalonia UI tests. |
 
 **Licensing.** The engine side (Contracts, Core, Client.Remote) is MIT, like APRS.NET, so other tools can reuse it.
@@ -64,7 +64,7 @@ The UI side is AGPL-3.0: improvements to the apps, including a hosted gateway, s
 AGPL code. AGPL projects may reference MIT ones, and the Gateway's AGPL network clause is met by a "Source" link in the
 web UI.
 
-The rule that keeps both UIs equal: **`AprsMap.UI` may only reference `AprsMap.Contracts`.** Anything a view needs is a
+The rule that keeps both UIs equal: **`ZedMap.UI` may only reference `ZedMap.Contracts`.** Anything a view needs is a
 method or an event on `IEngineService`.
 
 ## Service interface shape (draft)
@@ -135,7 +135,7 @@ viewers on a third of one core.
 From [spike 1](spikes/map-wasm.md) and [spike 3](spikes/symbols.md):
 
 - **Mapsui for the base map only**: tiles, projection, navigation and tile fetching. Mapsui.Avalonia 5.1 doesn't run
-  on Avalonia 12, so `AprsMap.UI` owns a small `MapView` control that hosts Mapsui's core and draws through Skia.
+  on Avalonia 12, so `ZedMap.UI` owns a small `MapView` control that hosts Mapsui's core and draws through Skia.
 - **Stations, tracks and labels are our own Skia layer**, not Mapsui features. Mapsui's per-feature pipeline cost 3–5×
   more than drawing directly.
 - **Symbols come from one sprite sheet (atlas) drawn with a single `SKCanvas.DrawAtlas` call per frame**: under 1 ms
@@ -155,7 +155,7 @@ From [spike 1](spikes/map-wasm.md) and [spike 3](spikes/symbols.md):
 
 ## Map tiles
 
-From [spike 4](spikes/tile-cache.md). `AprsMap.Tiles` follows the
+From [spike 4](spikes/tile-cache.md). `ZedMap.Tiles` follows the
 [OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/) and the equivalent rules of any other
 provider:
 
@@ -198,12 +198,12 @@ package ships.
 well-tested APRS encoder and decoder (checked against three million APRS-IS packets, per its README), released often.
 Not used, and APRS.NET stays the protocol library, because:
 
-- **Licence.** It and its base `Packet.Core` are AGPL-3.0-or-later since 0.24.0 (2026-07-20). `AprsMap.Core`,
+- **Licence.** It and its base `Packet.Core` are AGPL-3.0-or-later since 0.24.0 (2026-07-20). `ZedMap.Core`,
   `Contracts` and `Client.Remote` are MIT and must not reference AGPL code. 0.23.0, the last MIT release, is frozen.
 - **Scope.** It is an encoder and decoder only; its README puts an APRS-IS client out of scope, and that client is what
-  AprsMap uses most. Its AX.25 and KISS packages, which would cover G12 and G13, are AGPL too.
+  zedMap uses most. Its AX.25 and KISS packages, which would cover G12 and G13, are AGPL too.
 - **Fit.** It is one part of a larger packet-node stack with one main maintainer and lockstep versions across all its
-  packages. APRS.NET's scope and release pace follow AprsMap's needs.
+  packages. APRS.NET's scope and release pace follow zedMap's needs.
 
 **Clean room.** Because APRS.NET is MIT and covers the same ground, nobody working on it reads Packet.NET's source or its
 AGPL test vectors. The review above used only the NuGet metadata, the README and repository statistics.

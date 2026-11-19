@@ -20,24 +20,24 @@ RUN dotnet workload install wasm-tools
 COPY global.json nuget.config Directory.Build.props Directory.Build.targets Directory.Packages.props ./
 COPY .editorconfig BannedSymbols*.txt ./
 COPY build/ build/
-COPY src/AprsMap.Contracts/*.csproj src/AprsMap.Contracts/
-COPY src/AprsMap.Core/*.csproj src/AprsMap.Core/
-COPY src/AprsMap.Tiles/*.csproj src/AprsMap.Tiles/
-COPY src/AprsMap.Client.Remote/*.csproj src/AprsMap.Client.Remote/
-COPY src/AprsMap.UI/*.csproj src/AprsMap.UI/
-COPY src/AprsMap.Browser/*.csproj src/AprsMap.Browser/
-COPY src/AprsMap.Hosting/*.csproj src/AprsMap.Hosting/
-COPY src/AprsMap.Server/*.csproj src/AprsMap.Server/
-COPY src/AprsMap.Gateway/*.csproj src/AprsMap.Gateway/
-RUN dotnet restore src/AprsMap.Browser/AprsMap.Browser.csproj \
-    && dotnet restore src/AprsMap.Gateway/AprsMap.Gateway.csproj -a $TARGETARCH
+COPY src/ZedMap.Contracts/*.csproj src/ZedMap.Contracts/
+COPY src/ZedMap.Core/*.csproj src/ZedMap.Core/
+COPY src/ZedMap.Tiles/*.csproj src/ZedMap.Tiles/
+COPY src/ZedMap.Client.Remote/*.csproj src/ZedMap.Client.Remote/
+COPY src/ZedMap.UI/*.csproj src/ZedMap.UI/
+COPY src/ZedMap.Browser/*.csproj src/ZedMap.Browser/
+COPY src/ZedMap.Hosting/*.csproj src/ZedMap.Hosting/
+COPY src/ZedMap.Server/*.csproj src/ZedMap.Server/
+COPY src/ZedMap.Gateway/*.csproj src/ZedMap.Gateway/
+RUN dotnet restore src/ZedMap.Browser/ZedMap.Browser.csproj \
+    && dotnet restore src/ZedMap.Gateway/ZedMap.Gateway.csproj -a $TARGETARCH
 
 COPY src/ src/
 RUN set -eu; \
     version=""; \
     if [ -n "$VERSION" ]; then version="-p:MinVerVersionOverride=$VERSION"; fi; \
-    dotnet publish src/AprsMap.Browser/AprsMap.Browser.csproj -c Release -o /out/browser $version; \
-    dotnet publish src/AprsMap.Gateway/AprsMap.Gateway.csproj -c Release -a $TARGETARCH --no-restore \
+    dotnet publish src/ZedMap.Browser/ZedMap.Browser.csproj -c Release -o /out/browser $version; \
+    dotnet publish src/ZedMap.Gateway/ZedMap.Gateway.csproj -c Release -a $TARGETARCH --no-restore \
         -o /out/gateway $version; \
     cp -r /out/browser/wwwroot/. /out/gateway/wwwroot/; \
     mkdir -p /out/data
@@ -55,7 +55,7 @@ ENV ASPNETCORE_HTTP_PORTS=8080 \
     Tiles__CacheFolder=/data/tiles
 VOLUME /data
 EXPOSE 8080
-LABEL org.opencontainers.image.title="AprsMap gateway" \
+LABEL org.opencontainers.image.title="zedMap gateway" \
       org.opencontainers.image.description="APRS map: engine, web UI and SignalR gateway" \
       org.opencontainers.image.source="https://github.com/APRS-NET/AprsMap" \
       org.opencontainers.image.licenses="AGPL-3.0-only"

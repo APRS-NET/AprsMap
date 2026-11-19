@@ -1,6 +1,6 @@
 # UX direction
 
-How AprsMap meets the needs in the [functional inventory](../reference/functional-inventory.md) with a modern,
+How zedMap meets the needs in the [functional inventory](../reference/functional-inventory.md) with a modern,
 cross-platform UI. The reference's capability set is the bar. Its menu tree is not: it grew on 240×320 Windows Mobile
 screens, so it puts nearly everything in one menu bar with 20 Configure submenus. We keep the functions and redesign
 how users get to them.
@@ -65,7 +65,7 @@ How it is built:
 
 - **Design tokens, not literal values.** Colours, font sizes, icon sizes, spacing and corner radii are named tokens
   (`Color.Surface`, `Color.Accent`, `Color.Transmit`, `Text.Body`, `Icon.Size`, `Radius.Control`…) defined in
-  `AprsMap.UI/Themes/`. Views use `DynamicResource` only, so every option swaps tokens at runtime with no view changes.
+  `ZedMap.UI/Themes/`. Views use `DynamicResource` only, so every option swaps tokens at runtime with no view changes.
 - **Theme = mode × palette.** Light and Dark are Avalonia `ThemeVariant`s; each palette (Standard, High contrast,
   Colour-vision-safe) supplies both variants. Size, corner and density options are independent token sets layered on
   top.
@@ -113,7 +113,7 @@ How it is built:
 
 ## Where the reference's menus went
 
-| Reference menu | AprsMap |
+| Reference menu | zedMap |
 | --- | --- |
 | Transmit | Identity chip → *Beacon now* (Ctrl+B); palette command |
 | Enables | Quick toggles flyout (⚡): APRS-IS, internet access, GPS, beaconing, telemetry, sound, tile fetching, logging. Each toggle is also in Settings |

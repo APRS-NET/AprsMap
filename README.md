@@ -1,4 +1,4 @@
-# AprsMap
+# zedMap
 
 [![CI](https://github.com/APRS-NET/AprsMap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/APRS-NET/AprsMap/actions/workflows/ci.yml)
 [![Packages](https://github.com/APRS-NET/AprsMap/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/APRS-NET/AprsMap/actions/workflows/packages.yml)
@@ -23,8 +23,11 @@ port places the station, with a sky view and statistics over time. Station lists
 event's volunteers or the spotters you work with in one click, wherever they are. The gateway runs as a Linux service
 that updates itself, and the desktop app can be its client, with a revocable API key of its own; every release carries
 an SBOM. The IGate follows aprsc's IGate hints (APRS.NET 0.9.0), and APRS-IS's feed can be switched off to watch only
-what the radio hears while the station stays connected for the IGate and messages. Next, in 0.10.0, is the rename to
-zedMap and transmitting with the registered TOCALL, `APMAPZ`; then, in 0.11.0, APRS.NET's IS2 features.
+what the radio hears while the station stays connected for the IGate and messages. The app is being renamed from
+AprsMap to zedMap: the 0.9.0 alphas carry the new name in the app and the code, while its files, folders, gateway
+service and this repository keep `aprsmap` until 0.10.0, which finishes the rename and transmits with the registered
+TOCALL, `APMAPZ` ([docs/branding.md](docs/branding.md#renaming-in-two-steps)); then, in 0.11.0, APRS.NET's IS2
+features.
 See [docs/status.md](docs/status.md) for what
 to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 
@@ -215,14 +218,14 @@ flowchart LR
 
 | Path | Contents | Licence |
 | --- | --- | --- |
-| `src/AprsMap.Contracts` | `IEngineService`, the data types the UIs see, product identity (`Brand`) | MIT |
-| `src/AprsMap.Core` | The engine: APRS-IS connection, packet handling (APRS.NET), recent history, telemetry | MIT |
-| `src/AprsMap.Client.Remote` | `IEngineService` over SignalR, used by the browser app | MIT |
-| `src/AprsMap.UI` | Shared Avalonia views, view models, theme tokens and appearance settings | AGPL-3.0 |
-| `src/AprsMap.Desktop` | Desktop app; runs the engine in-process | AGPL-3.0 |
-| `src/AprsMap.Browser` | Web app (WebAssembly); talks to the gateway | AGPL-3.0 |
-| `src/AprsMap.Gateway` | ASP.NET Core gateway: engine, SignalR hub, browser app, `/healthz`, `/source` | AGPL-3.0 |
-| `src/AprsMap.Hosting` | Host wiring shared by the desktop app and the gateway (engine config, OpenTelemetry) | AGPL-3.0 |
+| `src/ZedMap.Contracts` | `IEngineService`, the data types the UIs see, product identity (`Brand`) | MIT |
+| `src/ZedMap.Core` | The engine: APRS-IS connection, packet handling (APRS.NET), recent history, telemetry | MIT |
+| `src/ZedMap.Client.Remote` | `IEngineService` over SignalR, used by the browser app | MIT |
+| `src/ZedMap.UI` | Shared Avalonia views, view models, theme tokens and appearance settings | AGPL-3.0 |
+| `src/ZedMap.Desktop` | Desktop app; runs the engine in-process | AGPL-3.0 |
+| `src/ZedMap.Browser` | Web app (WebAssembly); talks to the gateway | AGPL-3.0 |
+| `src/ZedMap.Gateway` | ASP.NET Core gateway: engine, SignalR hub, browser app, `/healthz`, `/source` | AGPL-3.0 |
+| `src/ZedMap.Hosting` | Host wiring shared by the desktop app and the gateway (engine config, OpenTelemetry) | AGPL-3.0 |
 | `tests/` | xUnit v3 tests: engine, gateway end to end over SignalR, headless UI | as tested project |
 | `docs/` | Scope, architecture, UX and mockups, clean-room process, APRS.NET gaps | MIT |
 
@@ -234,13 +237,13 @@ dotnet build
 dotnet test
 ```
 
-Run the desktop app with `dotnet run --project src/AprsMap.Desktop`, or the gateway with
-`dotnet run --project src/AprsMap.Gateway` (APRS-IS settings are in each project's `appsettings.json`, section
+Run the desktop app with `dotnet run --project src/ZedMap.Desktop`, or the gateway with
+`dotnet run --project src/ZedMap.Gateway` (APRS-IS settings are in each project's `appsettings.json`, section
 `Engine`).
 
 The browser app builds with any .NET 10 SDK, but only a **publish** links SkiaSharp into WebAssembly, which needs the
 `wasm-tools` workload (`dotnet workload install wasm-tools`, with Microsoft's SDK). The Dockerfile does this, so the
-easiest way to try the web app is `docker compose up --build`. Running `src/AprsMap.Browser` on its own doesn't work (the page says so): it needs a
+easiest way to try the web app is `docker compose up --build`. Running `src/ZedMap.Browser` on its own doesn't work (the page says so): it needs a
 gateway to serve it (see [docs/status.md](docs/status.md#web-app)).
 
 Code is formatted with [CSharpier](https://csharpier.com), and CI fails on unformatted files. Enable the pre-commit hook
@@ -269,7 +272,7 @@ logs, metrics and traces over OTLP from the desktop app or the gateway. Exported
 
 | Name | From | Metrics |
 | --- | --- | --- |
-| `AprsMap.Core` | The engine | `aprsmap.packets.received` (by packet type), `aprsmap.lines.rejected`, `aprsmap.connection.failures`, `aprsmap.gps.fix.time` (seconds by fix: 3d, 2d, none, silent) and `aprsmap.gps.fix.losses` for the GPS in use, `aprsmap.digipeated`; an `aprs-is.session` trace per connection |
+| `ZedMap.Core` | The engine | `aprsmap.packets.received` (by packet type), `aprsmap.lines.rejected`, `aprsmap.connection.failures`, `aprsmap.gps.fix.time` (seconds by fix: 3d, 2d, none, silent) and `aprsmap.gps.fix.losses` for the GPS in use, `aprsmap.digipeated`; an `aprs-is.session` trace per connection |
 | `AprsNet.*` | APRS.NET, today `AprsNet.AprsIsTcpClient` | `aprsnet.aprsis.lines.received` (packets and server comments), `…packets.received` (by type and outcome), `…packets.parse_failures` (by reason), `…connection.attempts`, `…connection.reconnects`, `…connection.active`, `…login.results`, `…packets.dropped`, `…connection.idle_timeouts` |
 | runtime, HTTP client (and ASP.NET Core on the gateway) | OpenTelemetry instrumentation | The standard .NET ones |
 
@@ -279,19 +282,19 @@ To watch them while developing (for example in Rider), either:
   and add `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317` to the run configuration's environment; open
   <http://localhost:18888> (the login token is in the container's log); or
 - without exporting anything, attach `dotnet-counters` (`dotnet tool install -g dotnet-counters`):
-  `dotnet-counters monitor -n aprsmap --counters AprsMap.Core,AprsNet.AprsIsTcpClient`.
+  `dotnet-counters monitor -n aprsmap --counters ZedMap.Core,AprsNet.AprsIsTcpClient`.
 
 ## Code coverage
 
-The CI `coverage` job fails if the merged line or branch coverage of the MIT engine (`AprsMap.Contracts`,
-`AprsMap.Core`, `AprsMap.Client.Remote`) drops below `MIN_LINE` / `MIN_BRANCH` in `.github/workflows/ci.yml`
+The CI `coverage` job fails if the merged line or branch coverage of the MIT engine (`ZedMap.Contracts`,
+`ZedMap.Core`, `ZedMap.Client.Remote`) drops below `MIN_LINE` / `MIN_BRANCH` in `.github/workflows/ci.yml`
 (currently 85% line, 80% branch). To see the same numbers locally:
 
 ```sh
 dotnet tool restore
 dotnet test --collect:"XPlat Code Coverage" --results-directory coverage
 dotnet reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:coverage/report \
-  -reporttypes:"Html;TextSummary" -assemblyfilters:"+AprsMap.Contracts;+AprsMap.Core;+AprsMap.Client.Remote"
+  -reporttypes:"Html;TextSummary" -assemblyfilters:"+ZedMap.Contracts;+ZedMap.Core;+ZedMap.Client.Remote"
 ```
 
 ## Package checks
@@ -325,14 +328,14 @@ milestone starts with a `Release-As:` footer on a new commit. See [docs/versioni
 
 ## AI assistance
 
-AprsMap is developed with an AI coding assistant (Claude Code) as a copilot: the maintainer directs the work, and the
+zedMap is developed with an AI coding assistant (Claude Code) as a copilot: the maintainer directs the work, and the
 assistant carries out whole tasks, asking for decisions and permission as it goes. The maintainer reviews and merges
 every change. See [AI-DECLARATION.md](AI-DECLARATION.md).
 
 ## Licence
 
-The repository is AGPL-3.0-only ([LICENSE](LICENSE)). The engine (`AprsMap.Contracts`, `AprsMap.Core`,
-`AprsMap.Client.Remote`) and the docs are MIT so other tools can reuse them. Details: [LICENSING.md](LICENSING.md).
+The repository is AGPL-3.0-only ([LICENSE](LICENSE)). The engine (`ZedMap.Contracts`, `ZedMap.Core`,
+`ZedMap.Client.Remote`) and the docs are MIT so other tools can reuse them. Details: [LICENSING.md](LICENSING.md).
 
 APRSIS32 and APRSISCE are the work of Lynn Deffenbaugh, KJ4ERJ. This project is unaffiliated and uses none of its code
 or assets. Its published AGPL source is deliberately not consulted; see [docs/clean-room.md](docs/clean-room.md).

@@ -16,7 +16,7 @@ language. You don't need to read or change any code.
 
 ## The files
 
-- English, the source: `src/AprsMap.UI/Localization/Strings.resx`.
+- English, the source: `src/ZedMap.UI/Localization/Strings.resx`.
 - A translation: `Strings.<language>.resx` in the same folder, for example `Strings.de.resx` (German) or
   `Strings.pt-BR.resx` (Brazilian Portuguese). Use the plain language code unless the regional variant really
   differs.
@@ -72,7 +72,7 @@ If your language's community uses a different word, use it and add it to this ta
 
 ## Testing your translation
 
-1. Build and run the desktop app (`dotnet run --project src/AprsMap.Desktop`), open **Settings › Appearance ›
+1. Build and run the desktop app (`dotnet run --project src/ZedMap.Desktop`), open **Settings › Appearance ›
    Language** and choose your language. Text changes at once.
 2. Look for text that is cut off or wraps badly. Your language may be longer than English; the layouts allow for
    about 40 % more, and a test renders every screen at 200 % text size.
@@ -84,7 +84,7 @@ any plain English it reveals is text that can't be translated yet. Please report
 ## Adding a language
 
 1. Copy `Strings.resx` to `Strings.<language>.resx` and translate the values.
-2. Add the language code to `Localizer.Translations` in `src/AprsMap.UI/Localization/Localizer.cs` (one line; a test
+2. Add the language code to `Localizer.Translations` in `src/ZedMap.UI/Localization/Localizer.cs` (one line; a test
    fails until you do), so the Language list offers it.
 3. Open a pull request titled `feat(i18n): <language> translation`.
 

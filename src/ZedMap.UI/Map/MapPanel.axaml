@@ -1,0 +1,666 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- The map panel (F1.4): the map, its buttons (Home, zoom) over the top-right corner, and the tile provider's
+     attribution, linked as the provider requires, over the bottom-right corner. Colours and sizes come from tokens. -->
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:l="using:ZedMap.UI.Localization"
+  xmlns:vm="using:ZedMap.UI.ViewModels"
+  xmlns:st="using:ZedMap.UI.Stations"
+  x:Class="ZedMap.UI.Map.MapPanel"
+  x:DataType="vm:MainViewModel"
+>
+  <UserControl.Styles>
+    <!-- A filter in effect shows on its button too (F1.9 behavior 4). -->
+    <Style Selector="ToggleButton#AllLinksButton:checked /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource Brush.AccentSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+    </Style>
+    <Style Selector="Button#FilterButton.on">
+      <Setter Property="Background" Value="{DynamicResource Brush.AccentSoft}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Brush.Accent}" />
+    </Style>
+  </UserControl.Styles>
+  <UserControl.Resources>
+    <ContextMenu x:Key="MapMenu" x:Name="MapMenu">
+      <MenuItem x:Name="SetDestinationItem" Header="{l:T Map.SetDestination}" />
+      <MenuItem x:Name="SetMyLocationItem" Header="{l:T Map.SetMyLocation}" />
+      <MenuItem x:Name="PlaceObjectItem" Header="{l:T Map.PlaceObject}" />
+      <MenuItem x:Name="MoveObjectItem" Header="{l:T Map.MoveObject}" />
+      <MenuItem x:Name="AddToListItem" />
+    </ContextMenu>
+  </UserControl.Resources>
+  <Panel>
+    <Border x:Name="MapHost" />
+    <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10" Spacing="6">
+      <!-- While following a station (F1.7 behavior 8): its name, and a way to stop. -->
+      <Border
+        x:Name="FollowingChip"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Accent}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        CornerRadius="{DynamicResource Radius.Control}"
+        Padding="10,2,4,2"
+        IsVisible="{Binding Details.IsFollowing}"
+      >
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <TextBlock Text="{Binding Details.FollowingText}" VerticalAlignment="Center" />
+          <Button
+            x:Name="StopFollowingButton"
+            ToolTip.Tip="{l:T Map.StopFollowing}"
+            AutomationProperties.Name="{l:T Map.StopFollowing}"
+            Background="{x:Null}"
+            BorderThickness="0"
+            Padding="4"
+          >
+            <PathIcon
+              Data="M 6.4,5 L 12,10.6 L 17.6,5 L 19,6.4 L 13.4,12 L 19,17.6 L 17.6,19 L 12,13.4 L 6.4,19 L 5,17.6 L 10.6,12 L 5,6.4 Z"
+              Width="{DynamicResource Icon.Size}"
+              Height="{DynamicResource Icon.Size}"
+            />
+          </Button>
+        </StackPanel>
+      </Border>
+      <!-- My destination (F1.18 behavior 2): its name, distance and bearing; click centres on it, × clears it, and a
+           destination can be typed as coordinates or a locator. -->
+      <Border
+        x:Name="DestinationChip"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Accent}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        CornerRadius="{DynamicResource Radius.Control}"
+        Padding="4,2"
+      >
+        <StackPanel Spacing="2">
+          <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding Destination.IsSet}">
+            <Button
+              x:Name="DestinationChipButton"
+              Content="{Binding Destination.Text}"
+              ToolTip.Tip="{l:T Destination.Centre}"
+              AutomationProperties.Name="{Binding Destination.Text}"
+              Background="{x:Null}"
+              BorderThickness="0"
+              Padding="6,2"
+            />
+            <Button
+              x:Name="ClearDestinationButton"
+              Command="{Binding Destination.ClearCommand}"
+              ToolTip.Tip="{l:T Destination.Clear}"
+              AutomationProperties.Name="{l:T Destination.Clear}"
+              Background="{x:Null}"
+              BorderThickness="0"
+              Padding="4"
+            >
+              <PathIcon
+                Data="M 6.4,5 L 12,10.6 L 17.6,5 L 19,6.4 L 13.4,12 L 19,17.6 L 17.6,19 L 12,13.4 L 6.4,19 L 5,17.6 L 10.6,12 L 5,6.4 Z"
+                Width="{DynamicResource Icon.Size}"
+                Height="{DynamicResource Icon.Size}"
+              />
+            </Button>
+          </StackPanel>
+          <!-- No destination yet: a small button whose flyout takes coordinates or a locator (behavior 1). -->
+          <Button
+            x:Name="TypeDestinationButton"
+            Content="{l:T Destination.Type}"
+            IsVisible="{Binding !Destination.IsSet}"
+            Background="{x:Null}"
+            BorderThickness="0"
+            Padding="6,2"
+          >
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedLeft">
+                <StackPanel Spacing="6" MaxWidth="280">
+                  <TextBox
+                    x:Name="DestinationBox"
+                    Text="{Binding Destination.Typed}"
+                    PlaceholderText="{l:T Destination.Placeholder}"
+                    AutomationProperties.Name="{l:T Destination.Placeholder}"
+                  >
+                    <TextBox.KeyBindings>
+                      <KeyBinding Gesture="Enter" Command="{Binding Destination.SetTypedCommand}" />
+                    </TextBox.KeyBindings>
+                  </TextBox>
+                  <Button Content="{l:T Destination.Set}" Command="{Binding Destination.SetTypedCommand}" />
+                  <TextBlock
+                    Text="{Binding Destination.Error}"
+                    IsVisible="{Binding Destination.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.Warn}"
+                    TextWrapping="Wrap"
+                  />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+    <!-- After Set my location here: what happened, and Undo for 10 s (F1.13 behavior 2). -->
+    <Border
+      x:Name="LocationNotice"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Bottom"
+      Background="{DynamicResource Brush.Surface}"
+      BorderBrush="{DynamicResource Brush.Border}"
+      BorderThickness="{DynamicResource Thickness.Border}"
+      CornerRadius="{DynamicResource Radius.Control}"
+      Padding="10,4"
+      Margin="10"
+      IsVisible="{Binding CanUndoMyLocation}"
+    >
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="{Binding MyLocationNotice}" VerticalAlignment="Center" />
+        <Button
+          x:Name="UndoLocationButton"
+          Content="{l:T Map.UndoLocation}"
+          Command="{Binding UndoMyLocationCommand}"
+        />
+      </StackPanel>
+    </Border>
+    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10" Spacing="6">
+      <Button
+        x:Name="ZoomInButton"
+        ToolTip.Tip="{l:T Map.ZoomIn}"
+        AutomationProperties.Name="{l:T Map.ZoomIn}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <PathIcon
+          Data="M 11,5 L 13,5 L 13,11 L 19,11 L 19,13 L 13,13 L 13,19 L 11,19 L 11,13 L 5,13 L 5,11 L 11,11 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+      </Button>
+      <Button
+        x:Name="ZoomOutButton"
+        ToolTip.Tip="{l:T Map.ZoomOut}"
+        AutomationProperties.Name="{l:T Map.ZoomOut}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <PathIcon
+          Data="M 5,11 L 19,11 L 19,13 L 5,13 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+      </Button>
+      <Button
+        x:Name="FitButton"
+        ToolTip.Tip="{l:T Map.Fit}"
+        AutomationProperties.Name="{l:T Map.Fit}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <!-- Four corners pointing out: fit everything in view. -->
+        <PathIcon
+          Data="M 4,4 L 10,4 L 10,6 L 6,6 L 6,10 L 4,10 Z M 14,4 L 20,4 L 20,10 L 18,10 L 18,6 L 14,6 Z M 4,14 L 6,14 L 6,18 L 10,18 L 10,20 L 4,20 Z M 18,14 L 20,14 L 20,20 L 14,20 L 14,18 L 18,18 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+      </Button>
+      <Button
+        x:Name="HomeButton"
+        ToolTip.Tip="{l:T Map.Home}"
+        AutomationProperties.Name="{l:T Map.Home}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <!-- A house, drawn for this app. -->
+        <PathIcon
+          Data="M 12,3 L 21,11 L 18,11 L 18,20 L 14,20 L 14,14 L 10,14 L 10,20 L 6,20 L 6,11 L 3,11 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+      </Button>
+      <Button
+        x:Name="FilterButton"
+        ToolTip.Tip="{l:T Filter.Button}"
+        AutomationProperties.Name="{l:T Filter.Button}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        Classes.on="{Binding ViewFilter.IsFiltered}"
+      >
+        <!-- A funnel, drawn for this app: the View filter (F1.9 behavior 4). -->
+        <PathIcon
+          Data="M 3,4 L 21,4 L 14,12.5 L 14,19 L 10,21 L 10,12.5 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+        <Button.Flyout>
+          <Flyout Placement="LeftEdgeAlignedTop">
+            <ScrollViewer MaxHeight="560" Width="300">
+              <StackPanel x:Name="FilterPanel" Spacing="14" Margin="4">
+                <TextBlock Text="{l:T Filter.Title}" FontWeight="SemiBold" />
+                <TextBlock
+                  Text="{l:T Filter.Help}"
+                  TextWrapping="Wrap"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                />
+                <ToggleSwitch
+                  x:Name="FilterOnSwitch"
+                  IsChecked="{Binding ViewFilter.IsOn}"
+                  OnContent="{l:T Filter.On}"
+                  OffContent="{l:T Filter.ShowAll}"
+                  AutomationProperties.Name="{l:T Filter.On}"
+                />
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Filter.Label.Kinds}" FontWeight="SemiBold" />
+                  <ComboBox
+                    x:Name="FilterKinds"
+                    ItemsSource="{Binding ViewFilter.KindOptions}"
+                    SelectedItem="{Binding ViewFilter.Kind}"
+                    AutomationProperties.Name="{l:T Filter.Label.Kinds}"
+                    MinWidth="240"
+                  >
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="st:FilterOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <!-- Also stations heard in the last days, from the packet history (F1.43 behavior 1). -->
+                <StackPanel Spacing="4" IsVisible="{Binding ViewFilter.IsAlsoHeardOffered}">
+                  <TextBlock Text="{l:T Filter.Label.AlsoHeard}" FontWeight="SemiBold" />
+                  <ComboBox
+                    x:Name="FilterAlsoHeard"
+                    ItemsSource="{Binding ViewFilter.AlsoHeardOptions}"
+                    SelectedItem="{Binding ViewFilter.AlsoHeard}"
+                    AutomationProperties.Name="{l:T Filter.Label.AlsoHeard}"
+                    MinWidth="240"
+                  >
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="st:FilterOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Filter.Label.Heard}" FontWeight="SemiBold" />
+                  <ComboBox
+                    x:Name="FilterHeard"
+                    ItemsSource="{Binding ViewFilter.HeardOptions}"
+                    SelectedItem="{Binding ViewFilter.Heard}"
+                    AutomationProperties.Name="{l:T Filter.Label.Heard}"
+                    MinWidth="240"
+                  >
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="st:FilterOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{l:T Filter.Label.Reception}" FontWeight="SemiBold" />
+                  <ComboBox
+                    x:Name="FilterReception"
+                    ItemsSource="{Binding ViewFilter.ReceptionOptions}"
+                    SelectedItem="{Binding ViewFilter.ReceptionChoice}"
+                    AutomationProperties.Name="{l:T Filter.Label.Reception}"
+                    MinWidth="240"
+                  >
+                    <ComboBox.ItemTemplate>
+                      <DataTemplate x:DataType="st:FilterOption">
+                        <TextBlock Text="{Binding Label}" />
+                      </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                  </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.Capability}" FontWeight="SemiBold" />
+                  <CheckBox x:Name="FilterMessages" IsChecked="{Binding ViewFilter.MessageCapable}">
+                    <TextBlock Text="{l:T Filter.MessageCapable}" TextWrapping="Wrap" />
+                  </CheckBox>
+                  <CheckBox x:Name="FilterWeather" IsChecked="{Binding ViewFilter.WithWeather}">
+                    <TextBlock Text="{l:T Filter.WithWeather}" TextWrapping="Wrap" />
+                  </CheckBox>
+                  <CheckBox x:Name="FilterTrack" IsChecked="{Binding ViewFilter.WithTrack}">
+                    <TextBlock Text="{l:T Filter.WithTrack}" TextWrapping="Wrap" />
+                  </CheckBox>
+                  <CheckBox x:Name="FilterTelemetry" IsChecked="{Binding ViewFilter.WithTelemetry}">
+                    <TextBlock Text="{l:T Filter.WithTelemetry}" TextWrapping="Wrap" />
+                  </CheckBox>
+                  <CheckBox x:Name="FilterProblems" IsChecked="{Binding ViewFilter.HasProblems}">
+                    <TextBlock Text="{l:T Filter.HasProblems}" TextWrapping="Wrap" />
+                  </CheckBox>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.Categories}" FontWeight="SemiBold" />
+                  <TextBlock
+                    Text="{l:T Filter.None}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    IsVisible="{Binding !ViewFilter.Categories.Count}"
+                  />
+                  <ItemsControl x:Name="FilterCategories" ItemsSource="{Binding ViewFilter.Categories}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.Devices}" FontWeight="SemiBold" />
+                  <TextBlock
+                    Text="{l:T Filter.None}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    IsVisible="{Binding !ViewFilter.DeviceClasses.Count}"
+                  />
+                  <ItemsControl x:Name="FilterDevices" ItemsSource="{Binding ViewFilter.DeviceClasses}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <!-- Only stations in the profile's station lists (F1.33 behavior 6). -->
+                <StackPanel Spacing="2" IsVisible="{Binding !!ViewFilter.Lists.Count}">
+                  <TextBlock Text="{l:T Filter.Label.Lists}" FontWeight="SemiBold" />
+                  <ItemsControl x:Name="FilterLists" ItemsSource="{Binding ViewFilter.Lists}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.MicE}" FontWeight="SemiBold" />
+                  <TextBlock
+                    Text="{l:T Filter.None}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    IsVisible="{Binding !ViewFilter.MicEStatuses.Count}"
+                  />
+                  <ItemsControl x:Name="FilterMicE" ItemsSource="{Binding ViewFilter.MicEStatuses}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="2">
+                  <TextBlock Text="{l:T Filter.Label.Tags}" FontWeight="SemiBold" />
+                  <TextBlock
+                    Text="{l:T Filter.None}"
+                    Foreground="{DynamicResource Brush.TextMuted}"
+                    IsVisible="{Binding !ViewFilter.Tags.Count}"
+                  />
+                  <ItemsControl x:Name="FilterTags" ItemsSource="{Binding ViewFilter.Tags}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="st:FacetChoice">
+                        <CheckBox IsChecked="{Binding IsChecked}" AutomationProperties.Name="{Binding Label}">
+                          <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                        </CheckBox>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <TextBlock
+                  Text="{l:T Filter.Emergencies}"
+                  TextWrapping="Wrap"
+                  Foreground="{DynamicResource Brush.TextMuted}"
+                />
+                <Button
+                  x:Name="FilterResetButton"
+                  Content="{l:T Filter.Reset}"
+                  Command="{Binding ViewFilter.ResetCommand}"
+                />
+                <!-- Saved filters (F1.42 behaviors 1, 6): the one in use, and Save filter as… -->
+                <StackPanel x:Name="SavedFiltersPart" Spacing="8">
+                  <TextBlock Text="{l:T Filter.Saved.Title}" FontWeight="SemiBold" />
+                  <StackPanel
+                    Spacing="4"
+                    IsVisible="{Binding ViewFilter.InUse, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  >
+                    <TextBlock Text="{Binding ViewFilter.InUse.Name, FallbackValue=''}" TextWrapping="Wrap" />
+                    <TextBlock
+                      Text="{l:T Filter.ChangedNote}"
+                      IsVisible="{Binding ViewFilter.IsChanged}"
+                      Foreground="{DynamicResource Brush.TextMuted}"
+                    />
+                    <WrapPanel ItemSpacing="8" LineSpacing="4" IsVisible="{Binding ViewFilter.IsChanged}">
+                      <Button
+                        x:Name="FilterSaveOverButton"
+                        Content="{l:T Filter.SaveOver}"
+                        Command="{Binding ViewFilter.SaveOverCommand}"
+                        IsVisible="{Binding ViewFilter.CanSave}"
+                      />
+                      <Button
+                        x:Name="FilterBackToSavedButton"
+                        Content="{l:T Filter.BackToSaved}"
+                        Command="{Binding ViewFilter.BackToSavedCommand}"
+                      />
+                    </WrapPanel>
+                  </StackPanel>
+                  <StackPanel Spacing="4" IsVisible="{Binding ViewFilter.CanSave}">
+                    <TextBox
+                      x:Name="FilterSaveAsName"
+                      Text="{Binding ViewFilter.SaveAsName}"
+                      PlaceholderText="{l:T Filter.SaveAsName}"
+                      AutomationProperties.Name="{l:T Filter.SaveAsName}"
+                      MaxLength="40"
+                    />
+                    <CheckBox
+                      x:Name="FilterSaveAsUseView"
+                      Content="{l:T Filter.SaveAsUseView}"
+                      IsChecked="{Binding ViewFilter.SaveAsUseView}"
+                    />
+                    <Button
+                      x:Name="FilterSaveAsButton"
+                      Content="{l:T Filter.SaveAs}"
+                      Command="{Binding ViewFilter.SaveAsCommand}"
+                    />
+                  </StackPanel>
+                  <TextBlock
+                    Text="{Binding ViewFilter.SaveError}"
+                    IsVisible="{Binding ViewFilter.SaveError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Foreground="{DynamicResource Brush.Warn}"
+                    TextWrapping="Wrap"
+                  />
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+      <ToggleButton
+        x:Name="AllLinksButton"
+        ToolTip.Tip="{l:T Map.AllLinks}"
+        AutomationProperties.Name="{l:T Map.AllLinks}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        IsChecked="{Binding ShowAllLinks}"
+      >
+        <!-- Three stations joined by dashed links, drawn for this app: Show all RF connections (F1.21 behavior 5). -->
+        <PathIcon
+          Data="M 2.5,18 A 2.5,2.5 0 1 0 7.5,18 A 2.5,2.5 0 1 0 2.5,18 Z M 16.5,18 A 2.5,2.5 0 1 0 21.5,18 A 2.5,2.5 0 1 0 16.5,18 Z M 9.5,6 A 2.5,2.5 0 1 0 14.5,6 A 2.5,2.5 0 1 0 9.5,6 Z M 6.4,15.6 L 7.6,14.4 L 8.6,15.4 L 7.4,16.6 Z M 8.6,13.4 L 9.8,12.2 L 10.8,13.2 L 9.6,14.4 Z M 10.8,11.2 L 11.4,10.6 L 12.4,11.6 L 11.8,12.2 Z M 16.6,15.6 L 15.4,14.4 L 14.4,15.4 L 15.6,16.6 Z M 14.4,13.4 L 13.2,12.2 L 12.2,13.2 L 13.4,14.4 Z M 8,19.2 L 10,19.2 L 10,20.8 L 8,20.8 Z M 11,19.2 L 13,19.2 L 13,20.8 L 11,20.8 Z M 14,19.2 L 16,19.2 L 16,20.8 L 14,20.8 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+      </ToggleButton>
+      <!-- Map contrast (#345): fade, greyscale and a backing behind symbols, so stations stand out on busy tiles. -->
+      <Button
+        x:Name="ContrastButton"
+        ToolTip.Tip="{l:T Map.Contrast}"
+        AutomationProperties.Name="{l:T Map.Contrast}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <!-- A circle half filled, drawn for this app: contrast. -->
+        <PathIcon
+          Data="M 12,3 A 9,9 0 1 0 12,21 A 9,9 0 1 0 12,3 Z M 12,5 L 12,19 A 7,7 0 1 1 12,5 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+        <Button.Flyout>
+          <Flyout Placement="LeftEdgeAlignedTop">
+            <StackPanel x:Name="ContrastPanel" Spacing="10" Width="260" Margin="4">
+              <TextBlock Text="{l:T Map.Contrast}" FontWeight="SemiBold" />
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding MapFadeText}" TextWrapping="Wrap" />
+                <Slider
+                  x:Name="MapFadeSlider"
+                  Minimum="0"
+                  Maximum="80"
+                  SmallChange="5"
+                  LargeChange="10"
+                  TickFrequency="5"
+                  IsSnapToTickEnabled="True"
+                  Value="{Binding MapFadePercent}"
+                  AutomationProperties.Name="{l:T Settings.Map.Fade}"
+                />
+              </StackPanel>
+              <ToggleSwitch
+                x:Name="MapGreyscaleSwitch"
+                IsChecked="{Binding MapGreyscale}"
+                OnContent="{l:T Settings.Map.Greyscale}"
+                OffContent="{l:T Settings.Map.Greyscale}"
+                AutomationProperties.Name="{l:T Settings.Map.Greyscale}"
+              />
+              <ToggleSwitch
+                x:Name="SymbolBackingSwitch"
+                IsChecked="{Binding SymbolBacking}"
+                OnContent="{l:T Settings.Map.SymbolBacking}"
+                OffContent="{l:T Settings.Map.SymbolBacking}"
+                AutomationProperties.Name="{l:T Settings.Map.SymbolBacking}"
+              />
+              <Button
+                x:Name="ResetContrastButton"
+                Content="{l:T Map.Contrast.Reset}"
+                Command="{Binding ResetMapContrastCommand}"
+              />
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+      <!-- Clear stations (F1.19): every station, object and item off the map, after a question. -->
+      <Button
+        x:Name="ClearStationsButton"
+        IsVisible="{Binding CanClearData}"
+        ToolTip.Tip="{l:T Map.ClearStations}"
+        AutomationProperties.Name="{l:T Map.ClearStations}"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+      >
+        <!-- An eraser, drawn for this app. -->
+        <PathIcon
+          Data="M 2.6,15.4 L 11.6,6.4 L 17.6,12.4 L 10,20 L 5.2,20 Z M 12.6,5.4 L 15,3 L 21,9 L 18.6,11.4 Z M 12.5,20 L 21,20 L 21,22 L 12.5,22 Z"
+          Width="{DynamicResource Icon.Size}"
+          Height="{DynamicResource Icon.Size}"
+        />
+        <Button.Flyout>
+          <Flyout Placement="LeftEdgeAlignedTop">
+            <StackPanel Spacing="8" MaxWidth="320">
+              <TextBlock Text="{Binding ClearStationsQuestion}" TextWrapping="Wrap" />
+              <WrapPanel ItemSpacing="8">
+                <Button
+                  x:Name="ConfirmClearStationsButton"
+                  Classes="accent"
+                  Content="{l:T Map.ClearStations.Do}"
+                  Command="{Binding ClearStationsCommand}"
+                />
+                <Button x:Name="KeepStationsButton" Content="{l:T Map.ClearStations.Keep}" />
+              </WrapPanel>
+            </StackPanel>
+          </Flyout>
+        </Button.Flyout>
+      </Button>
+    </StackPanel>
+    <!-- While a View filter hides stations (F1.9 behavior 4): what's shown, and a way back to everything. -->
+    <!-- The filter's chip, and under it how many the packet history added (F1.43 behavior 3). -->
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="10" Spacing="4">
+      <Border
+        x:Name="FilterChip"
+        HorizontalAlignment="Center"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Accent}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        CornerRadius="{DynamicResource Radius.Control}"
+        Padding="10,2,4,2"
+        IsVisible="{Binding ViewFilter.ShowsChip}"
+      >
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <TextBlock Text="{Binding ViewFilter.ChipText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <!-- All, My filter and each saved filter (F1.42 behavior 4). -->
+          <DropDownButton
+            x:Name="FilterChoicesButton"
+            Content="{l:T Filter.Choose}"
+            AutomationProperties.Name="{l:T Filter.Choose}"
+          >
+            <DropDownButton.Flyout>
+              <Flyout Placement="Bottom">
+                <ItemsControl ItemsSource="{Binding ViewFilter.Choices}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="st:FilterChoice">
+                      <RadioButton
+                        GroupName="FilterChoice"
+                        Content="{Binding Label}"
+                        IsChecked="{Binding IsChecked, Mode=OneWay}"
+                        Command="{Binding ChooseCommand}"
+                        Margin="0,0,0,4"
+                      />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </Flyout>
+            </DropDownButton.Flyout>
+          </DropDownButton>
+          <Button
+            x:Name="ShowAllButton"
+            Content="{l:T Filter.ShowAll}"
+            Command="{Binding ViewFilter.ShowAllCommand}"
+            IsVisible="{Binding ViewFilter.IsFiltered}"
+          />
+        </StackPanel>
+      </Border>
+      <Border
+        x:Name="AlsoHeardChip"
+        HorizontalAlignment="Center"
+        Background="{DynamicResource Brush.Surface}"
+        BorderBrush="{DynamicResource Brush.Border}"
+        BorderThickness="{DynamicResource Thickness.Border}"
+        CornerRadius="{DynamicResource Radius.Control}"
+        Padding="10,2"
+        IsVisible="{Binding ViewFilter.AlsoHeardText, Converter={x:Static ObjectConverters.IsNotNull}}"
+      >
+        <TextBlock Text="{Binding ViewFilter.AlsoHeardText}" TextWrapping="Wrap" />
+      </Border>
+    </StackPanel>
+    <Border
+      x:Name="AttributionBar"
+      HorizontalAlignment="Right"
+      VerticalAlignment="Bottom"
+      Background="{DynamicResource Brush.Surface}"
+      Opacity="0.9"
+      Padding="6,2"
+      CornerRadius="{DynamicResource Radius.Control}"
+      Margin="4"
+    >
+      <HyperlinkButton
+        x:Name="AttributionLink"
+        Padding="0"
+        FontSize="{DynamicResource Text.Small}"
+        Foreground="{DynamicResource Brush.Text}"
+      />
+    </Border>
+  </Panel>
+</UserControl>

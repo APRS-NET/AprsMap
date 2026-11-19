@@ -99,7 +99,7 @@ jobs:
           dotnet tool restore
           dotnet reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:coverage/report \
             -reporttypes:"MarkdownSummaryGithub;JsonSummary;Badges" \
-            -assemblyfilters:"+AprsMap.Contracts;+AprsMap.Core;+AprsMap.Client.Remote;+AprsMap.Tiles"
+            -assemblyfilters:"+ZedMap.Contracts;+ZedMap.Core;+ZedMap.Client.Remote;+ZedMap.Tiles"
           cat coverage/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
       - name: Coverage gate
         env:
@@ -159,11 +159,11 @@ jobs:
         # Help › About's list (F1.34) is written by the build from the same restore; each app's must match its SBOM.
         run: |
           for app in Desktop Gateway Browser; do
-            dotnet build "src/AprsMap.$app/AprsMap.$app.csproj" -c Release -v quiet
+            dotnet build "src/ZedMap.$app/ZedMap.$app.csproj" -c Release -v quiet
           done
-          python3 tools/ci/check-sbom.py --about src/AprsMap.Desktop/obj/Release/net10.0/components.json sbom/*-desktop.cdx.json
-          python3 tools/ci/check-sbom.py --about src/AprsMap.Gateway/obj/Release/net10.0/components.json sbom/*-gateway.cdx.json
-          python3 tools/ci/check-sbom.py --about src/AprsMap.Browser/obj/Release/net10.0-browser/components.json \
+          python3 tools/ci/check-sbom.py --about src/ZedMap.Desktop/obj/Release/net10.0/components.json sbom/*-desktop.cdx.json
+          python3 tools/ci/check-sbom.py --about src/ZedMap.Gateway/obj/Release/net10.0/components.json sbom/*-gateway.cdx.json
+          python3 tools/ci/check-sbom.py --about src/ZedMap.Browser/obj/Release/net10.0-browser/components.json \
             sbom/*-browser.cdx.json
 
   format:

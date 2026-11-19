@@ -71,7 +71,7 @@ jobs:
       - run: dotnet workload install wasm-tools
       - name: Publish
         run: |
-          dotnet publish src/AprsMap.Browser/AprsMap.Browser.csproj -c Release -o browser-publish
+          dotnet publish src/ZedMap.Browser/ZedMap.Browser.csproj -c Release -o browser-publish
           find browser-publish/wwwroot -name '*.br' -delete
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -108,7 +108,7 @@ jobs:
           dotnet-version: 10.0.x
       - name: Publish
         run: |
-          dotnet publish src/AprsMap.Desktop/AprsMap.Desktop.csproj -c Release -r ${{ matrix.rid }} \
+          dotnet publish src/ZedMap.Desktop/ZedMap.Desktop.csproj -c Release -r ${{ matrix.rid }} \
             --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
             -o "publish/${{ matrix.rid }}"
           cp LICENSE LICENSING.md "publish/${{ matrix.rid }}/"
@@ -157,7 +157,7 @@ jobs:
           dotnet-version: 10.0.x
       - name: Publish
         run: |
-          dotnet publish src/AprsMap.Gateway/AprsMap.Gateway.csproj -c Release -r ${{ matrix.rid }} \
+          dotnet publish src/ZedMap.Gateway/ZedMap.Gateway.csproj -c Release -r ${{ matrix.rid }} \
             --self-contained -o "publish/${{ matrix.rid }}"
           cp LICENSE LICENSING.md deploy/linux/* "publish/${{ matrix.rid }}/"
           # What the updater needs (F1.40): the installed version, and where its releases come from.
@@ -252,7 +252,7 @@ jobs:
       - name: Product identity
         # From build/Branding.props, so a rename (tools/rename-product.py) carries through to the installers.
         run: |
-          props=$(dotnet msbuild src/AprsMap.Desktop/AprsMap.Desktop.csproj \
+          props=$(dotnet msbuild src/ZedMap.Desktop/ZedMap.Desktop.csproj \
             -getProperty:ProductSlug -getProperty:ProductDisplayName -getProperty:Company -getProperty:ProductSourceUrl)
           {
             echo "SLUG=$(jq -r .Properties.ProductSlug <<< "$props")"
@@ -264,7 +264,7 @@ jobs:
       - name: Publish
         # A folder rather than one file, so the delta packages stay small.
         run: |
-          dotnet publish src/AprsMap.Desktop/AprsMap.Desktop.csproj -c Release -r "$RID" --self-contained -o publish
+          dotnet publish src/ZedMap.Desktop/ZedMap.Desktop.csproj -c Release -r "$RID" --self-contained -o publish
           cp LICENSE LICENSING.md publish/
       - name: The browser app, for the web viewer (F1.35)
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2

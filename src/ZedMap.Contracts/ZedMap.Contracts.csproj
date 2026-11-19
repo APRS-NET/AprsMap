@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ZedMapLicense>MIT</ZedMapLicense>
+    <Description>The engine's client-facing contract: IEngineService, its data types, and the product identity.</Description>
+  </PropertyGroup>
+</Project>

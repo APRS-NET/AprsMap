@@ -1,6 +1,6 @@
 # Scope
 
-The feature inventory for AprsMap, phased. Derived from the [functional inventory](reference/functional-inventory.md) and the
+The feature inventory for zedMap, phased. Derived from the [functional inventory](reference/functional-inventory.md) and the
 [2026-10-13 observation](reference/observation-2026-10-13.md);
 the UI shape is in [ux](ux/README.md). "Reference topic" names the public APRSIS32 documentation topic
 (aprsisce.wikidot.com) that the feature spec will cite. It is a pointer for spec writing, not a requirement to match
@@ -139,7 +139,7 @@ service and switches to the registered TOCALL, released as 0.10.0-alpha.1 once t
 | F2.10 | Auto-reply ([spec](features/F2.10-auto-reply.md)): an away message, off by default, sent once per correspondent per hour after a 30 s wait (cancelled by a reply by hand), only when nothing was sent by hand for 15 minutes, never to pings, auto-replies or services, the way the message came | Auto-Reply | App | G10 | built (0.6.0, [#202](https://github.com/APRS-NET/AprsMap/issues/202)); decisions proposed |
 | F2.11 | Status reports ([spec](features/F2.11-status-reports.md)): up to 20 saved texts per profile to choose from, the grid square or the UTC time added if chosen, and Send status now | (Configure › Status Report) | App | G01 | built (0.6.0, [#203](https://github.com/APRS-NET/AprsMap/issues/203)); decisions proposed |
 | F2.12 | Mic-E status ([spec](features/F2.12-mic-e-status.md)): Mic-E as a third position format with a status to send (never Emergency, by decision); received statuses filtered by F1.9, alert styles with F4.7 | (observed) | App | G01 | built (0.6.0, [#204](https://github.com/APRS-NET/AprsMap/issues/204)); decisions proposed |
-| F2.13 | Ping ([spec](features/F2.13-ping.md)): a remote connectivity check; a message starting with the ping phrase ("AprsMap ping" by default, from the brand) is answered with the pong phrase and the UTC time, the way it came; off by default, who may ping and how often (never under 10 s) set by the operator | — (maintainer request) | App | G10 | built (0.6.0, [#307](https://github.com/APRS-NET/AprsMap/issues/307)) |
+| F2.13 | Ping ([spec](features/F2.13-ping.md)): a remote connectivity check; a message starting with the ping phrase ("zedMap ping" by default, from the brand) is answered with the pong phrase and the UTC time, the way it came; off by default, who may ping and how often (never under 10 s) set by the operator | — (maintainer request) | App | G10 | built (0.6.0, [#307](https://github.com/APRS-NET/AprsMap/issues/307)) |
 
 ## Phase 3: RF, GPS, IGate, digipeater
 

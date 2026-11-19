@@ -3,7 +3,7 @@
 # downloads the release asked for, checks it, swaps it in and restarts the gateway, or puts the previous one back.
 # Started by aprsmap-gateway-update.path; its log is in the journal (journalctl -u aprsmap-gateway-update).
 [Unit]
-Description=AprsMap gateway: install a requested update
+Description=zedMap gateway: install a requested update
 Wants=network-online.target
 After=network-online.target
 

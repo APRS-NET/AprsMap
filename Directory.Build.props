@@ -33,19 +33,19 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AprsMapProjectArea>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectDirectory)'))</AprsMapProjectArea>
-    <AprsMapIsShipped>$(AprsMapProjectArea.StartsWith('src'))</AprsMapIsShipped>
+    <ZedMapProjectArea>$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '$(MSBuildProjectDirectory)'))</ZedMapProjectArea>
+    <ZedMapIsShipped>$(ZedMapProjectArea.StartsWith('src'))</ZedMapIsShipped>
   </PropertyGroup>
 
   <!-- Every shipped project gets its version from the nearest vX.Y.Z tag. No version lives in the repo. -->
-  <ItemGroup Condition="'$(AprsMapIsShipped)' == 'true'">
+  <ItemGroup Condition="'$(ZedMapIsShipped)' == 'true'">
     <PackageReference Include="MinVer" PrivateAssets="all" />
   </ItemGroup>
 
   <!-- Banned APIs (RS0030) for shipped code only. Tests and tools may use real time and the console.
        BannedSymbols.txt: every project. BannedSymbols.Engine.txt: the MIT engine (no UI, no console).
        BannedSymbols.UI.txt: Avalonia projects (theme tokens instead of literal colours). -->
-  <ItemGroup Condition="'$(AprsMapIsShipped)' == 'true'">
+  <ItemGroup Condition="'$(ZedMapIsShipped)' == 'true'">
     <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" PrivateAssets="all" />
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" />
   </ItemGroup>

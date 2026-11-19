@@ -7,7 +7,7 @@ This format is based on [AI-DECLARATION.md](https://ai-declaration.md/en/0.1.2).
 
 ## Notes
 
-- AprsMap is developed by its maintainer with an AI coding assistant (Claude Code, by Anthropic) acting as a copilot:
+- zedMap is developed by its maintainer with an AI coding assistant (Claude Code, by Anthropic) acting as a copilot:
   the maintainer sets the work and its direction, and the assistant carries out whole tasks, asking the maintainer for
   decisions, permission and clarification along the way.
 - AI assistance covers code, tests, documentation, CI workflows, UI mockups and research, including the clean-room
