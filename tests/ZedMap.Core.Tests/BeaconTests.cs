@@ -256,7 +256,7 @@ public sealed class BeaconTests
                 (await station.Engine.GetStatusAsync(Ct)).Transmit!.BeaconHeld?.Code
             );
 
-            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // APRS-IS only: the uplink (F1.45)
             await Settle();
             Assert.Single(aprsIs.Sent); // one, not three
             await Advance(station, TimeSpan.FromSeconds(9));

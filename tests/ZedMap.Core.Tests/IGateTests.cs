@@ -127,7 +127,7 @@ public sealed class IGateTests
     }
 
     [Theory]
-    [InlineData(true, false, EngineErrorCodes.TransmitOff)]
+    [InlineData(true, false, EngineErrorCodes.TransmitUplinkOff)] // the uplink, as Transmit was (F1.45)
     [InlineData(false, true, EngineErrorCodes.TransmitNotVerified)]
     public async Task ItGatesNothingWhileHeldAndSaysWhy(bool verified, bool transmit, string? code)
     {

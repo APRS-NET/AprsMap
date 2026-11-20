@@ -457,6 +457,17 @@
                           Command="{Binding ToggleCommand}"
                           CommandParameter="{x:Static c:Toggle.AprsIsFeed}"
                         />
+                        <!-- What the station sends to APRS-IS, the IGate's uploads too; Transmit is RF's (F1.45). -->
+                        <MenuItem
+                          x:Name="AprsIsUplinkToggle"
+                          IsVisible="{Binding !IsViewerOnly}"
+                          Header="{l:T Toggles.AprsIsUplink}"
+                          ToggleType="CheckBox"
+                          IsChecked="{Binding AprsIsUplinkOn, Mode=OneWay}"
+                          IsEnabled="{Binding CanToggleUplink}"
+                          Command="{Binding ToggleCommand}"
+                          CommandParameter="{x:Static c:Toggle.AprsIsUplink}"
+                        />
                         <MenuItem
                           x:Name="TilesToggle"
                           IsVisible="{Binding !IsViewerOnly}"

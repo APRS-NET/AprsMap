@@ -28,6 +28,7 @@ public sealed partial class MainView : IMenuActions
         nameof(MainViewModel.InternetOn),
         nameof(MainViewModel.AprsIsOn),
         nameof(MainViewModel.AprsIsFeedOn),
+        nameof(MainViewModel.AprsIsUplinkOn),
         nameof(MainViewModel.TilesOn),
         nameof(MainViewModel.TransmitOn),
         nameof(MainViewModel.CanTransmit),

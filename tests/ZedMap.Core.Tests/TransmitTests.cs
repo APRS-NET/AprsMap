@@ -118,6 +118,7 @@ public sealed class TransmitTests
         using (cts)
         {
             await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // and to APRS-IS (F1.45)
             var status = await station.Engine.GetStatusAsync(Ct);
             Assert.True(status.Transmit!.On);
             Assert.Null(status.Transmit.Blocked);
@@ -150,7 +151,8 @@ public sealed class TransmitTests
         var (run, cts, aprsIs, tnc) = await Run(station);
         using (cts)
         {
-            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            // The TNC is RX only, so Transmit has nothing to send on; the uplink sends (F1.45).
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct);
 
             await station.Engine.SendPositionAsync(null, Ct);
             Assert.Equal(
@@ -179,6 +181,7 @@ public sealed class TransmitTests
         using (cts)
         {
             await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // and to APRS-IS (F1.45)
             await station.Engine.SetSourceEnabledAsync(Tnc.Id, false, Ct);
 
             var refusal = await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
@@ -262,6 +265,10 @@ public sealed class TransmitTests
         using (cts)
         {
             await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct); // the TNC can send
+            Assert.Equal(
+                EngineErrorCodes.TransmitNotVerified, // the uplink is checked the same way (F1.45 decision 4)
+                await RefusalOf(() => station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct))
+            );
 
             await station.Engine.SendPositionAsync(null, Ct);
 
@@ -320,10 +327,15 @@ public sealed class TransmitTests
             await RefusalOf(() => none.Engine.SetToggleAsync(Toggle.Transmit, true, Ct))
         );
 
-        var offline = Create();
+        var offline = Create(); // APRS-IS only
         await offline.Engine.GetSettingsAsync(Ct); // not running: never connected
         Assert.Equal(
             EngineErrorCodes.TransmitNotConnected,
+            await RefusalOf(() => offline.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct))
+        );
+        // Transmit is RF's, and the profile has no TNC (F1.45 decision 1).
+        Assert.Equal(
+            EngineErrorCodes.TransmitNoSource,
             await RefusalOf(() => offline.Engine.SetToggleAsync(Toggle.Transmit, true, Ct))
         );
     }
@@ -339,7 +351,7 @@ public sealed class TransmitTests
                 EngineErrorCodes.TransmitOff,
                 await RefusalOf(() => station.Engine.SendPositionAsync(null, Ct))
             );
-            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // APRS-IS only: the uplink (F1.45)
             Assert.Equal(
                 EngineErrorCodes.TransmitNoPosition,
                 await RefusalOf(() => station.Engine.SendPositionAsync(null, Ct))
@@ -348,8 +360,8 @@ public sealed class TransmitTests
             // The connection drops: the switch stays on, sending is held, and the status says why (behavior 7).
             session.Report(new PacketSourceEvent(ConnectionState.Reconnecting, RetryIn: TimeSpan.FromSeconds(5)));
             var status = await station.Engine.GetStatusAsync(Ct);
-            Assert.True(status.Transmit!.On);
-            Assert.Equal(EngineErrorCodes.TransmitNotConnected, status.Transmit.Blocked!.Code);
+            Assert.True(status.Transmit!.UplinkOn);
+            Assert.Equal(EngineErrorCodes.TransmitNotConnected, status.Transmit.UplinkBlocked!.Code);
             Assert.Equal(
                 EngineErrorCodes.TransmitNotConnected,
                 await RefusalOf(() => station.Engine.SendPositionAsync(null, Ct))
@@ -369,6 +381,7 @@ public sealed class TransmitTests
         using (cts)
         {
             await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // and to APRS-IS (F1.45)
             await station.Engine.SendPositionAsync(null, Ct);
             await WaitUntil(() => Task.FromResult(!tnc.Sent.IsEmpty && !aprsIs.Sent.IsEmpty));
             var sent = tnc.Sent.First();
@@ -416,6 +429,7 @@ public sealed class TransmitTests
             await aprsIs.Write("K0HQ-1>APRS,TCPIP*,qAC,T2TEST:!4910.00N/07210.00W#digi");
             await aprsIs.Write("N0IGT>APRS,TCPIP*,qAC,T2TEST:!4920.00N/07220.00W&igate");
             await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // and to APRS-IS (F1.45)
             await station.Engine.SendPositionAsync(null, Ct);
             await WaitUntil(() => Task.FromResult(!tnc.Sent.IsEmpty && !aprsIs.Sent.IsEmpty));
             Assert.Empty(await station.Engine.GetRoutesOutAsync(Ct)); // sent to APRS-IS directly: no route to draw
@@ -451,6 +465,7 @@ public sealed class TransmitTests
         {
             Assert.Equal(EngineErrorCodes.TransmitOff, await RefusalOf(() => station.Engine.TestSendAsync(Tnc.Id, Ct)));
             await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // and to APRS-IS (F1.45)
 
             var test = station.Engine.TestSendAsync(Tnc.Id, Ct);
             await WaitUntil(() => Task.FromResult(!tnc.Sent.IsEmpty));
@@ -477,7 +492,7 @@ public sealed class TransmitTests
     [Fact]
     public async Task SavingSettingsNeverTurnsTransmitOnAndSwitchingProfilesTurnsItOff()
     {
-        var station = Create();
+        var station = Create(Home(sources: [AprsIs, Tnc]));
         var (run, cts, _, _) = await Run(station);
         using (cts)
         {
@@ -485,19 +500,23 @@ public sealed class TransmitTests
             await station.Engine.SaveSettingsAsync(
                 settings with
                 {
-                    Toggles = settings.EffectiveToggles with { Transmit = true },
+                    Toggles = settings.EffectiveToggles with { Transmit = true, AprsIsUplink = true },
                 },
                 Ct
             );
             Assert.False(station.Store.Stored!.EffectiveToggles.Transmit);
+            Assert.False(station.Store.Stored.EffectiveToggles.UplinkOn); // nor the uplink (F1.45 behavior 4)
 
             await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // and to APRS-IS (F1.45)
             settings = await station.Engine.GetSettingsAsync(Ct);
             await station.Engine.SaveSettingsAsync(settings with { Units = UnitSettings.Imperial }, Ct);
             Assert.True(station.Store.Stored!.EffectiveToggles.Transmit); // another change keeps it
+            Assert.True(station.Store.Stored.EffectiveToggles.UplinkOn);
 
             await station.Engine.SaveSettingsAsync(settings with { ActiveProfileId = "N0TWO" }, Ct);
             Assert.False(station.Store.Stored!.EffectiveToggles.Transmit); // consent was for the other callsign
+            Assert.False(station.Store.Stored.EffectiveToggles.UplinkOn);
 
             await cts.CancelAsync();
             await run;
@@ -616,6 +635,7 @@ public sealed class TransmitTests
         using (cts)
         {
             await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // and to APRS-IS (F1.45)
             const string Line = ":BLN1NET  :Net tonight 7pm on 146.52";
 
             var view = await station.Engine.PostBulletinAsync(
@@ -663,7 +683,7 @@ public sealed class TransmitTests
                 EngineErrorCodes.TransmitOff,
                 await RefusalOf(() => station.Engine.PostBulletinAsync(post, Ct))
             );
-            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // APRS-IS only: the uplink (F1.45)
             Assert.Equal(
                 EngineErrorCodes.BulletinIdInvalid,
                 await ErrorOf(() => station.Engine.PostBulletinAsync(post with { Kind = BulletinKind.Bulletin }, Ct))
@@ -683,12 +703,12 @@ public sealed class TransmitTests
 
             await station.Engine.PostBulletinAsync(post, Ct);
             await WaitUntil(() => Task.FromResult(Count(aprsIs, ":BLNQ     :Club meeting Tuesday") == 1));
-            await station.Engine.SetToggleAsync(Toggle.Transmit, false, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, false, Ct);
             station.Time.Advance(TimeSpan.FromMinutes(10)); // due, but held
             await station.Engine.TickBulletinsAsync();
             Assert.Equal(1, Count(aprsIs, ":BLNQ     :Club meeting Tuesday"));
 
-            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct); // goes once, not for each one missed
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // goes once, not for each one missed
             await WaitUntil(() => Task.FromResult(Count(aprsIs, ":BLNQ     :Club meeting Tuesday") == 2));
 
             await cts.CancelAsync();
@@ -703,7 +723,7 @@ public sealed class TransmitTests
         var (run, cts, aprsIs, _) = await Run(station);
         using (cts)
         {
-            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // APRS-IS only: the uplink (F1.45)
 
             await station.Engine.JoinGroupAsync(" nzevent ", Ct);
             await WaitUntil(() => Task.FromResult(Count(aprsIs, ":ANSRVR   :J NZEVENT{") == 1));
@@ -745,7 +765,7 @@ public sealed class TransmitTests
         var (run, cts, aprsIs, _) = await Run(station);
         using (cts)
         {
-            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // APRS-IS only: the uplink (F1.45)
             await station.Engine.JoinGroupAsync("NEDR", Ct);
             await WaitUntil(() => Task.FromResult(Count(aprsIs, ":ANSRVR   :J NEDR{") == 1));
             await AnsrvrAcks(aprsIs, ":ANSRVR   :J NEDR{");
@@ -832,7 +852,7 @@ public sealed class TransmitTests
         var (run, cts, aprsIs, _) = await Run(station);
         using (cts)
         {
-            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct); // APRS-IS only: the uplink (F1.45)
             await using var watch = station.Engine.WatchBulletinsAsync(Ct).GetAsyncEnumerator(Ct);
             await station.Engine.PostBulletinAsync(new BulletinPost(BulletinKind.Bulletin, "2", "Repeater down"), Ct);
             Assert.True(await watch.MoveNextAsync()); // posted

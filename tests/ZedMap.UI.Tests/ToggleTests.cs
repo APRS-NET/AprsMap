@@ -67,6 +67,41 @@ public sealed class ToggleTests
     }
 
     [Fact]
+    public async Task TheUplinkIsItsOwnSwitchAndTransmitDoesntMoveIt()
+    {
+        // docs/features/F1.45-aprs-is-uplink.md, behaviors 1 and 7.
+        var engine = new FakeEngine();
+        var vm = new MainViewModel(engine, new FakeTimeProvider());
+        vm.Show(engine.Settings);
+        vm.Show(
+            new EngineStatus(
+                ConnectionState.Connected,
+                "T2TEST",
+                0,
+                "1.0",
+                Toggles: StationToggles.AllOn with
+                {
+                    Transmit = true,
+                }, // saved before it: as Transmit
+                Transmit: new TransmitStatus(true, UplinkOn: true)
+            )
+        );
+        Assert.True(vm.AprsIsUplinkOn);
+        Assert.True(vm.CanToggleUplink);
+
+        await vm.ToggleCommand.ExecuteAsync(Toggle.Transmit);
+        Assert.False(vm.TransmitOn);
+        Assert.True(vm.AprsIsUplinkOn); // RF off, APRS-IS still on
+
+        await vm.ToggleCommand.ExecuteAsync(Toggle.AprsIsUplink);
+        Assert.Equal([(Toggle.Transmit, false), (Toggle.AprsIsUplink, false)], engine.Toggled);
+        Assert.False(vm.AprsIsUplinkOn);
+
+        await vm.ToggleCommand.ExecuteAsync(Toggle.AprsIs); // disconnected: the uplink can't be changed
+        Assert.False(vm.CanToggleUplink);
+    }
+
+    [Fact]
     public async Task WithTheConnectionOffTheFeedSwitchIsOffAndDisabled()
     {
         var engine = new FakeEngine();

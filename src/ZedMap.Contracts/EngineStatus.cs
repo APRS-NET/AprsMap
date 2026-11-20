@@ -264,10 +264,11 @@ public sealed record GpsSkySatellite(
 );
 
 /// <summary>Transmitting, for the status bar (docs/features/F2.1-own-station.md, behaviors 4–13).</summary>
-/// <param name="On">Whether the Transmit switch is on.</param>
+/// <param name="On">Whether the Transmit switch, RF's, is on.</param>
 /// <param name="Blocked">
-/// Why the station couldn't send now: one of the <c>transmit.*</c> codes in <see cref="EngineErrorCodes"/> (with the
-/// switch off, why it couldn't be turned on), or null when it can.
+/// Why the station couldn't send on its TNCs now: one of the <c>transmit.*</c> codes in <see cref="EngineErrorCodes"/>
+/// (with the switch off, why it couldn't be turned on), or null when it can (docs/features/F1.45-aprs-is-uplink.md,
+/// behavior 6).
 /// </param>
 /// <param name="LastSent">When the station last sent a packet.</param>
 /// <param name="ReceiveOnly">The engine was started receive-only (<c>Engine:ReceiveOnly</c>), which nothing here can change.</param>
@@ -280,6 +281,10 @@ public sealed record GpsSkySatellite(
 /// How the last position sent got out (docs/features/F3.3-rf-paths.md, behavior 4), or null before one was sent.
 /// </param>
 /// <param name="SeenAt">Where others see the station (docs/features/F2.3-seen-as.md); null without a fresh GPS fix.</param>
+/// <param name="UplinkOn">Whether the APRS-IS uplink switch is on (docs/features/F1.45-aprs-is-uplink.md).</param>
+/// <param name="UplinkBlocked">
+/// Why the station couldn't send to APRS-IS now, the switch aside, as <paramref name="Blocked"/>; null when it can.
+/// </param>
 public sealed record TransmitStatus(
     bool On,
     EngineError? Blocked = null,
@@ -288,7 +293,9 @@ public sealed record TransmitStatus(
     NextBeacon? NextBeacon = null,
     EngineError? BeaconHeld = null,
     LastPositionHeard? LastPosition = null,
-    SeenPosition? SeenAt = null
+    SeenPosition? SeenAt = null,
+    bool UplinkOn = false,
+    EngineError? UplinkBlocked = null
 );
 
 /// <summary>

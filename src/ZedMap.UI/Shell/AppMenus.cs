@@ -415,6 +415,19 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
                     )
             ),
             Switch(
+                "aprs-is-uplink",
+                Toggle.AprsIsUplink,
+                "Toggles.AprsIsUplink",
+                vm.AprsIsUplinkOn,
+                readOnly
+                    ?? (
+                        !vm.InternetOn ? text["Menu.Why.InternetOff"]
+                        : !vm.AprsIsOn ? text["Menu.Why.AprsIsOff"]
+                        : !vm.CanTransmit ? TransmitWhyNot()
+                        : null
+                    )
+            ),
+            Switch(
                 "tiles",
                 Toggle.Tiles,
                 "Toggles.Tiles",
@@ -433,7 +446,7 @@ public sealed class AppMenus(MainViewModel vm, Localizer text, IMenuActions acti
         ];
         var sendWhyNot =
             !vm.CanTransmit ? TransmitWhyNot()
-            : !vm.TransmitOn ? text["Menu.Why.TransmitOff"]
+            : !vm.TransmitOn && !vm.AprsIsUplinkOn ? text["Menu.Why.TransmitOff"]
             : null;
         items.Add(
             new CommandEntry(

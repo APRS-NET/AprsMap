@@ -352,8 +352,14 @@ public static class EngineErrorCodes
     /// <summary>An AGWPE source needs a host, a port and a radio port (docs/features/F3.8-agwpe.md).</summary>
     public const string AgwpeSourceInvalid = "settings.source.agwpe-invalid";
 
-    /// <summary>The Transmit switch is off (docs/features/F2.1-own-station.md, behavior 11).</summary>
+    /// <summary>
+    /// The Transmit switch is off (docs/features/F2.1-own-station.md, behavior 11): for a TNC, or for any source when the
+    /// APRS-IS uplink is off too.
+    /// </summary>
     public const string TransmitOff = "transmit.off";
+
+    /// <summary>The APRS-IS uplink switch is off (docs/features/F1.45-aprs-is-uplink.md, behavior 2).</summary>
+    public const string TransmitUplinkOff = "transmit.uplink-off";
 
     /// <summary>The profile had Disable TX ticked; no longer raised since Disable TX went (F2.1, 2026-10-18).</summary>
     public const string TransmitProfileDisabled = "transmit.profile-disabled";

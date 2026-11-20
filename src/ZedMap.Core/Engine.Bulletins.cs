@@ -25,9 +25,10 @@ public sealed partial class Engine
         lock (_gate)
         {
             var settings = _settings ?? AppSettings.Empty;
-            var held = !settings.EffectiveToggles.Transmit
-                ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
-                : ProfileBlock(settings);
+            var held =
+                !settings.EffectiveToggles.Transmit && !settings.EffectiveToggles.UplinkOn
+                    ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
+                    : ProfileBlock(settings);
             return (settings.GetActiveProfile()?.Callsign, held, [.. TransmitSources(settings).Select(s => s.Id)]);
         }
     }

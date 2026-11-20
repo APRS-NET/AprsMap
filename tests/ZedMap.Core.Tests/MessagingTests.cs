@@ -285,7 +285,8 @@ public sealed class MessagingTests
             Assert.Equal(ChatMessageState.Queued, messages[made.Id].State);
             Assert.True(messages.Values.Single(m => !m.Outgoing).NotAcknowledged);
 
-            await station.Engine.SetToggleAsync(Toggle.Transmit, true, Ct);
+            // The uplink alone: it goes to APRS-IS (with Transmit on first, it would go out on the TNC, F1.45).
+            await station.Engine.SetToggleAsync(Toggle.AprsIsUplink, true, Ct);
             await WaitUntil(() =>
                 Task.FromResult(aprsIs.Sent.Any(l => l.Contains(":Later{", StringComparison.Ordinal)))
             );

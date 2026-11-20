@@ -76,13 +76,13 @@ internal sealed class EngineHubEndpoint(
 
     /// <summary>
     /// A toggle changes the station for every viewer, so it has the settings gate (F1.15 behavior 6). Turning Transmit
-    /// on needs a signed-in operator (F2.1 behavior 9, F2.9 behavior 12).
+    /// or the APRS-IS uplink on needs a signed-in operator (F2.1 behavior 9, F2.9 behavior 12, F1.45 behavior 3).
     /// </summary>
     [HubMethodName(EngineHub.SetToggle)]
     [Transmits]
     public async Task SetToggle(Toggle toggle, bool enabled)
     {
-        if (toggle == Toggle.Transmit && enabled)
+        if (toggle is Toggle.Transmit or Toggle.AprsIsUplink && enabled)
         {
             RequireOperator();
         }

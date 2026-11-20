@@ -110,6 +110,7 @@ public sealed class TransmitUiTests
                 StationToggles.AllOn with
                 {
                     Transmit = true,
+                    AprsIsUplink = false,
                 },
                 new TransmitStatus(
                     true,
@@ -121,6 +122,24 @@ public sealed class TransmitUiTests
         Assert.True(vm.IsTransmitHeld);
         Assert.Equal("Transmit held: APRS-IS isn't connected.", vm.TransmitText);
         Assert.False(vm.SendPositionCommand.CanExecute(null));
+
+        // The uplink on and able to send: a position can still go to APRS-IS (F1.45 behavior 2).
+        vm.Show(
+            Status(
+                StationToggles.AllOn with
+                {
+                    Transmit = true,
+                    AprsIsUplink = true,
+                },
+                new TransmitStatus(
+                    true,
+                    new EngineError(EngineErrorCodes.TransmitNotConnected, "APRS-IS isn't connected."),
+                    UplinkOn: true
+                )
+            )
+        );
+        Assert.True(vm.IsTransmitHeld);
+        Assert.True(vm.SendPositionCommand.CanExecute(null));
     }
 
     [Fact]
