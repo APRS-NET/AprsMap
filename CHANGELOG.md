@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.9.0-alpha.2...v0.9.0-alpha.3) (2026-11-20)
+
+
+### Bug Fixes
+
+* **deps:** Bump cyclonedx from 6.3.1 to 6.3.2 ([c8a2f81](https://github.com/APRS-NET/AprsMap/commit/c8a2f81b3789206e05254feceaa2b25edd55038c))
+* **deps:** Bump the aprs-net group with 12 updates ([6d00e09](https://github.com/APRS-NET/AprsMap/commit/6d00e0915f7031fbe49a26b0254139d533748b76))
+
 ## [0.9.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.9.0-alpha.1...v0.9.0-alpha.2) (2026-11-20)
 
 
