@@ -3928,6 +3928,10 @@ In a Docker container:
     <value>APRS-IS feed</value>
     <comment>Quick toggle: show APRS-IS traffic on the map, in Stations and Packets, or not. Off, the IGate and messages still work (F1.44).</comment>
   </data>
+  <data name="Toggles.AprsIsUplink" xml:space="preserve">
+    <value>APRS-IS uplink</value>
+    <comment>Quick toggle: send to APRS-IS or not — own beacons and messages, and the IGate's uploads. Transmit is the radio's switch (F1.45).</comment>
+  </data>
   <data name="Toggles.Switch.AprsIsFeed" xml:space="preserve">
     <value>APRS-IS feed on or off: show APRS-IS traffic on the map. Off, the IGate and messages keep working.</value>
     <comment>The switch in the APRS-IS pill; its name for screen readers and its tooltip.</comment>
@@ -3997,7 +4001,7 @@ In a Docker container:
   </data>
   <data name="Toggles.Transmit" xml:space="preserve">
     <value>Transmit</value>
-    <comment>Quick toggle: whether this station sends packets. Off until the user turns it on.</comment>
+    <comment>Quick toggle: whether this station sends packets on its radios (TNCs). Off until the user turns it on. Sending to APRS-IS is the APRS-IS uplink's (F1.45).</comment>
   </data>
   <data name="Transmit.SendPosition" xml:space="preserve">
     <value>Send position now</value>
@@ -4030,7 +4034,7 @@ In a Docker container:
     <value>Transmitting: turn the switch off to stop. Send your position from the Station menu.</value>
   </data>
   <data name="Transmit.OffTip" xml:space="preserve">
-    <value>Transmit is off: the station sends nothing. Turn it on to send your position, beacons and messages.</value>
+    <value>Transmit is off: nothing goes out on the radio. Turn it on to send your position, beacons and messages on RF. Sending to APRS-IS is the APRS-IS uplink, in the APRS-IS menu.</value>
     <comment>Tooltip of the Transmit switch in the status bar while it is off.</comment>
   </data>
   <data name="Toggles.Marker.Internet" xml:space="preserve">
@@ -5034,6 +5038,9 @@ pause 1s</value>
   </data>
   <data name="Error.transmit.off" xml:space="preserve">
     <value>Transmit is off. Turn it on in the status bar.</value>
+  </data>
+  <data name="Error.transmit.uplink-off" xml:space="preserve">
+    <value>APRS-IS uplink is off. Turn it on in the APRS-IS menu.</value>
   </data>
   <data name="Error.transmit.receive-only" xml:space="preserve">
     <value>This station was started receive only, so it doesn't transmit.</value>

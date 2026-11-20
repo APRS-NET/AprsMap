@@ -46,6 +46,7 @@ public sealed partial class MainViewModel
     /// 9), and the engine wasn't started receive only.
     /// </summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanToggleUplink))]
     public partial bool CanTransmit { get; private set; }
 
     /// <summary>"TX enabled", or "Transmit held: APRS-IS isn't connected"; null while Transmit is off.</summary>
@@ -220,9 +221,12 @@ public sealed partial class MainViewModel
         }
         TransmitSwitch.Show(TransmitOn, CanTransmit);
         TransmitSwitch.IsShown = IsOperator;
-        CanSendPosition = TransmitOn && !held && !_engineUnreachable && CanTransmit;
+        // Either switch lets a position out: Transmit on the TNCs, the uplink to APRS-IS (F1.45 behavior 2).
+        var uplinkOn = _status?.Toggles?.UplinkOn ?? false;
+        var uplinkSends = uplinkOn && transmit?.UplinkBlocked is null;
+        CanSendPosition = (TransmitOn && !held || uplinkSends) && !_engineUnreachable && CanTransmit;
         var aprsIs = _status?.Sources?.FirstOrDefault(s => s.Kind == SourceKind.AprsIs);
         IsAprsIsTransmitEnabled = CanTransmit && aprsIs is { MaySend: true };
-        CanSendPositionOnAprsIs = CanSendPosition && aprsIs is { CanTransmit: true };
+        CanSendPositionOnAprsIs = uplinkSends && !_engineUnreachable && CanTransmit && aprsIs is { CanTransmit: true };
     }
 }

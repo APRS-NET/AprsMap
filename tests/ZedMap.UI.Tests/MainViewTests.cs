@@ -137,11 +137,13 @@ public class MainViewTests
                 "InternetToggle",
                 "AprsIsToggle",
                 "AprsIsFeedToggle",
+                "AprsIsUplinkToggle", // what's sent to APRS-IS, next to the connection and the feed (F1.45 decision 2)
                 "TilesToggle",
                 "SendPositionOnAprsIsItem", // Transmit itself is the status bar's switch (F2.1 behavior 6)
             ],
             items.Select(i => i.Name)
         );
+        Assert.Equal(ZedMap.Contracts.Toggle.AprsIsUplink, items.Single(i => i.Name == "AprsIsUplinkToggle").CommandParameter);
         var item = items[0];
         Assert.Same(vm.ReconnectCommand, item.Command);
         item.Command!.Execute(null);

@@ -1344,6 +1344,7 @@ public sealed partial class MainViewModel : ObservableObject
     /// <summary>The APRS-IS connection (F1.15; docs/features/F1.44-aprs-is-feed.md, behavior 1.1).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanToggleFeed))]
+    [NotifyPropertyChangedFor(nameof(CanToggleUplink))]
     public partial bool AprsIsOn { get; private set; } = true;
 
     /// <summary>The APRS-IS feed: track and plot what APRS-IS sends (F1.44 behavior 1.2).</summary>
@@ -1352,6 +1353,18 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Whether the feed can be changed: APRS-IS is connected, and so the Internet is on (F1.44 behavior 1.2).</summary>
     public bool CanToggleFeed => CanToggleDependents && AprsIsOn;
+
+    /// <summary>
+    /// The APRS-IS uplink: what the station sends to APRS-IS, the IGate's uploads too
+    /// (docs/features/F1.45-aprs-is-uplink.md).
+    /// </summary>
+    [ObservableProperty]
+    public partial bool AprsIsUplinkOn { get; private set; }
+
+    /// <summary>
+    /// Whether the uplink can be changed: APRS-IS is connected and this viewer may transmit (F1.45 behavior 7).
+    /// </summary>
+    public bool CanToggleUplink => CanToggleFeed && CanTransmit;
 
     /// <summary>Map tile downloads (F1.15).</summary>
     [ObservableProperty]
@@ -1421,6 +1434,7 @@ public sealed partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanToggleFeed));
         ShowAprsIsSwitches();
         ShowTransmit();
+        OnPropertyChanged(nameof(CanToggleUplink));
         ShowViewerOnly();
     }
 
@@ -1433,6 +1447,7 @@ public sealed partial class MainViewModel : ObservableObject
             Toggle.Internet => !InternetOn,
             Toggle.AprsIs => !AprsIsOn,
             Toggle.AprsIsFeed => !AprsIsFeedOn,
+            Toggle.AprsIsUplink => !AprsIsUplinkOn,
             Toggle.Transmit => !TransmitOn,
             _ => !TilesOn,
         };
@@ -1444,7 +1459,8 @@ public sealed partial class MainViewModel : ObservableObject
                 var t when toggle == Toggle.Internet => t with { Internet = on },
                 var t when toggle == Toggle.AprsIs => t with { AprsIs = on, AprsIsFeed = t.FeedOn },
                 var t when toggle == Toggle.AprsIsFeed => t with { AprsIsFeed = on },
-                var t when toggle == Toggle.Transmit => t with { Transmit = on },
+                var t when toggle == Toggle.Transmit => t with { Transmit = on, AprsIsUplink = t.UplinkOn },
+                var t when toggle == Toggle.AprsIsUplink => t with { AprsIsUplink = on },
                 var t => t with { Tiles = on },
             };
             ShowToggles(toggles);
@@ -1472,8 +1488,10 @@ public sealed partial class MainViewModel : ObservableObject
         InternetOn = toggles.Internet;
         AprsIsOn = toggles.AprsIs;
         AprsIsFeedOn = toggles.FeedOn;
+        AprsIsUplinkOn = toggles.UplinkOn;
         TilesOn = toggles.Tiles;
         OnPropertyChanged(nameof(CanToggleDependents));
+        OnPropertyChanged(nameof(CanToggleUplink));
         var markers = new List<string>();
         if (!toggles.Internet)
         {

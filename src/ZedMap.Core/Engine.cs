@@ -191,13 +191,15 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     CapturedToday: _capture?.CapturedToday,
                     Transmit: new TransmitStatus(
                         (_settings ?? AppSettings.Empty).EffectiveToggles.Transmit,
-                        TransmitBlock(_settings ?? AppSettings.Empty),
+                        TransmitBlock(_settings ?? AppSettings.Empty, toAprsIs: false),
                         _lastSent,
                         _options.ReceiveOnly,
                         nextBeacon,
                         beaconHeld,
                         LastPositionHeard(),
-                        SeenAtLocked()
+                        SeenAtLocked(),
+                        (_settings ?? AppSettings.Empty).EffectiveToggles.UplinkOn,
+                        TransmitBlock(_settings ?? AppSettings.Empty, toAprsIs: true)
                     ),
                     UnreadMessages: unread,
                     Gps: GpsStatusLocked(),
@@ -542,15 +544,15 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 }
             )
             .ToList();
-        var transmit =
-            settings.EffectiveToggles.Transmit
-            && old.EffectiveToggles.Transmit
-            && settings.ActiveProfileId == old.ActiveProfileId;
+        var sameProfile = settings.ActiveProfileId == old.ActiveProfileId;
+        var transmit = settings.EffectiveToggles.Transmit && old.EffectiveToggles.Transmit && sameProfile;
+        // The uplink is kept and dropped the same way (docs/features/F1.45-aprs-is-uplink.md, behavior 4).
+        var uplink = settings.EffectiveToggles.UplinkOn && old.EffectiveToggles.UplinkOn && sameProfile;
         return settings with
         {
             ReadOnly = false,
             Profiles = profiles,
-            Toggles = settings.EffectiveToggles with { Transmit = transmit },
+            Toggles = settings.EffectiveToggles with { Transmit = transmit, AprsIsUplink = uplink },
         };
     }
 
@@ -1258,26 +1260,30 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
             Toggle.AprsIs => toggles with { AprsIs = enabled, AprsIsFeed = toggles.FeedOn },
             Toggle.AprsIsFeed => toggles with { AprsIsFeed = enabled },
             Toggle.Tiles => toggles with { Tiles = enabled },
-            Toggle.Transmit => toggles with { Transmit = enabled },
+            // Each sets the other's from here on, so a station saved before the uplink doesn't move it with Transmit
+            // (docs/features/F1.45-aprs-is-uplink.md, behavior 1).
+            Toggle.Transmit => toggles with { Transmit = enabled, AprsIsUplink = toggles.UplinkOn },
+            Toggle.AprsIsUplink => toggles with { AprsIsUplink = enabled },
             _ => throw new ArgumentOutOfRangeException(nameof(toggle), toggle, "Not a toggle."),
         };
-        if (toggle == Toggle.Transmit && enabled)
+        if (toggle is Toggle.Transmit or Toggle.AprsIsUplink)
         {
-            // Turning it on is the one change that's checked first (F2.1 behavior 5); off always works (behavior 6).
-            EngineError? blocked;
-            lock (_gate)
+            var toAprsIs = toggle == Toggle.AprsIsUplink;
+            if (enabled)
             {
-                blocked = TransmitBlock(settings);
+                // Turning one on is the change that's checked first (F2.1 behavior 5, F1.45 behavior 3); off always
+                // works (behavior 6).
+                EngineError? blocked;
+                lock (_gate)
+                {
+                    blocked = TransmitBlock(settings, toAprsIs);
+                }
+                if (blocked is not null)
+                {
+                    throw EngineErrors.ToException(blocked);
+                }
             }
-            if (blocked is not null)
-            {
-                throw EngineErrors.ToException(blocked);
-            }
-            LogTransmit(_transmitLog, "on");
-        }
-        else if (toggle == Toggle.Transmit)
-        {
-            LogTransmit(_transmitLog, "off");
+            LogTransmit(_transmitLog, toAprsIs ? "APRS-IS uplink" : "Transmit", enabled ? "on" : "off");
         }
         await SaveAsync(settings with { Toggles = toggles }, trusted: true, cancellationToken) // the switch is the one change here, made on a fresh read
             .ConfigureAwait(false);
@@ -1290,25 +1296,35 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     private static partial void LogAprsIsOnStartDeprecated(ILogger logger);
 
     /// <summary>
-    /// Why the station couldn't transmit now, leaving the switch aside (docs/features/F2.1-own-station.md, behavior
-    /// 6.1): the engine, the profile, then its sources; null when at least one of them can send. Call under
+    /// Why the station couldn't transmit now (docs/features/F2.1-own-station.md, behavior 6.1): the engine, the profile,
+    /// then its sources; null when at least one of them can send. <paramref name="toAprsIs"/> narrows it to APRS-IS
+    /// (true) or the TNCs (false), the switch left aside, for that switch (docs/features/F1.45-aprs-is-uplink.md); null
+    /// takes every source whose switch is on, and says Transmit is off when neither is (behavior 2). Call under
     /// <see cref="_gate"/>.
     /// </summary>
-    private EngineError? TransmitBlock(AppSettings settings)
+    private EngineError? TransmitBlock(AppSettings settings, bool? toAprsIs = null)
     {
+        var toggles = settings.EffectiveToggles;
+        if (toAprsIs is null && !toggles.Transmit && !toggles.UplinkOn)
+        {
+            return new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.");
+        }
         if (ProfileBlock(settings) is { } profileBlock)
         {
             return profileBlock;
         }
-        var sources = TransmitSources(settings);
+        var sources = TransmitSources(settings)
+            .Where(s => toAprsIs is not { } aprsIs || (s.Kind == SourceKind.AprsIs) == aprsIs)
+            .ToList();
         if (sources.Count == 0)
         {
-            return NoSource();
+            return toAprsIs == true ? NoAprsIs() : NoSource();
         }
         EngineError? first = null;
         foreach (var source in sources)
         {
-            if (SourceBlock(settings, source) is not { } block)
+            var block = toAprsIs is null ? SendBlock(settings, source) : SourceBlock(settings, source);
+            if (block is null)
             {
                 return null;
             }
@@ -1316,6 +1332,30 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         }
         return first;
     }
+
+    /// <summary>
+    /// The refusal when <paramref name="source"/>'s switch is off (docs/features/F1.45-aprs-is-uplink.md, behavior 2):
+    /// the APRS-IS uplink for APRS-IS, Transmit for a TNC; null when it's on.
+    /// </summary>
+    private static EngineError? SwitchBlock(AppSettings settings, SourceSettings source) =>
+        settings.EffectiveToggles.SwitchedOnToSend(source.Kind) ? null
+        : source.Kind == SourceKind.AprsIs
+            ? new EngineError(
+                EngineErrorCodes.TransmitUplinkOff,
+                "APRS-IS uplink is off. Turn it on in the APRS-IS menu."
+            )
+        : new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.");
+
+    /// <summary>
+    /// Why the station couldn't send on <paramref name="source"/> now, its switch included: RX only first, as the reason
+    /// that outlasts any switch, then the switch, then the rest (F2.1 behavior 5, F1.45 behavior 2).
+    /// </summary>
+    private EngineError? SendBlock(AppSettings settings, SourceSettings source) =>
+        source.MaySend ? SwitchBlock(settings, source) ?? SourceBlock(settings, source) : SourceBlock(settings, source);
+
+    /// <summary>The refusal when the profile has no APRS-IS source that may send (F1.45 behavior 3).</summary>
+    private static EngineError NoAprsIs() =>
+        new(EngineErrorCodes.TransmitNoAprsIs, "This profile has no APRS-IS source that can send.");
 
     /// <summary>Why the active profile may not transmit (behavior 4), or null. Call under <see cref="_gate"/>.</summary>
     private EngineError? ProfileBlock(AppSettings settings)
@@ -1449,9 +1489,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         EngineError? blocked;
         lock (_gate)
         {
-            blocked = !settings.EffectiveToggles.Transmit
-                ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
-                : ProfileBlock(settings);
+            var toggles = settings.EffectiveToggles;
+            blocked =
+                !toggles.Transmit && !toggles.UplinkOn
+                    ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
+                    : ProfileBlock(settings);
             if (blocked is null)
             {
                 var profile = settings.GetActiveProfile()!;
@@ -1469,7 +1511,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                 }
                 foreach (var source in candidates)
                 {
-                    if (SourceBlock(settings, source) is { } block)
+                    // Each source by its own switch, Transmit or the uplink (F1.45 behavior 2).
+                    if (SendBlock(settings, source) is { } block)
                     {
                         blocked ??= block;
                     }
@@ -1877,12 +1920,11 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         lock (_gate)
         {
             var settings = _settings ?? AppSettings.Empty;
-            return settings.EffectiveToggles.Transmit
-                && ProfileBlock(settings) is null
+            return ProfileBlock(settings) is null
                 && settings.GetActiveProfile() is { } profile
                 && settings.SourceList.FirstOrDefault(s => s.Id == sourceId) is { } source
                 && profile.Uses(source)
-                && SourceBlock(settings, source) is null;
+                && SendBlock(settings, source) is null;
         }
     }
 
@@ -1919,18 +1961,22 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
         lock (_gate)
         {
             var settings = _settings ?? AppSettings.Empty;
-            if (!settings.EffectiveToggles.Transmit)
+            if (sourceId is null)
             {
-                return new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.");
+                return TransmitBlock(settings); // any source, each by its switch (F1.45 behavior 2)
+            }
+            var source = settings.SourceList.FirstOrDefault(s => s.Id == sourceId);
+            // A source's own switch first: the IGate's uploads are held by the uplink, gating to RF by Transmit.
+            if (source is { MaySend: true } && SwitchBlock(settings, source) is { } off)
+            {
+                return off;
             }
             if (ProfileBlock(settings) is { } profileBlock)
             {
                 return profileBlock;
             }
-            var profile = settings.GetActiveProfile();
-            return sourceId is null ? TransmitBlock(settings)
-                : settings.SourceList.FirstOrDefault(s => s.Id == sourceId) is { } source && profile!.Uses(source)
-                    ? SourceBlock(settings, source)
+            return source is not null && settings.GetActiveProfile()!.Uses(source)
+                ? SourceBlock(settings, source)
                 : NoSource();
         }
     }
@@ -1956,19 +2002,23 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
                     } // F3.6 behavior 7.1
                     : active
                 : null;
-            var held = !settings.EffectiveToggles.Transmit
-                ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
-                : ProfileBlock(settings)
-                    ?? (
-                        profile is not { Latitude: not null, Longitude: not null }
-                            ? new EngineError(EngineErrorCodes.TransmitNoPosition, "Set the station's location first.")
-                        : !profile.PositionConfirmed
-                            ? new EngineError(
-                                EngineErrorCodes.TransmitPositionUnconfirmed,
-                                "Send your position once by hand to start beaconing."
-                            )
-                        : null
-                    );
+            var held =
+                !settings.EffectiveToggles.Transmit && !settings.EffectiveToggles.UplinkOn
+                    ? new EngineError(EngineErrorCodes.TransmitOff, "Transmit is off.")
+                    : ProfileBlock(settings)
+                        ?? (
+                            profile is not { Latitude: not null, Longitude: not null }
+                                ? new EngineError(
+                                    EngineErrorCodes.TransmitNoPosition,
+                                    "Set the station's location first."
+                                )
+                            : !profile.PositionConfirmed
+                                ? new EngineError(
+                                    EngineErrorCodes.TransmitPositionUnconfirmed,
+                                    "Send your position once by hand to start beaconing."
+                                )
+                            : null
+                        );
             return (profile, held, [.. TransmitSources(settings).Select(s => (s.Id, s.Kind != SourceKind.AprsIs))]);
         }
     }
@@ -3023,8 +3073,8 @@ public sealed partial class Engine : IEngineService, IDisposable, IMessengerHost
     [LoggerMessage(Level = LogLevel.Information, Message = "Reconnect requested; reconnecting now")]
     private static partial void LogReconnectRequested(ILogger logger);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Transmit turned {State}.")]
-    private static partial void LogTransmit(ILogger logger, string state);
+    [LoggerMessage(Level = LogLevel.Information, Message = "{Switch} turned {State}.")]
+    private static partial void LogTransmit(ILogger logger, string @switch, string state);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Sent {Packet} on {Source}")]
     private static partial void LogSent(ILogger logger, string packet, string source);

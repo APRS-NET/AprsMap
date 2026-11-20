@@ -24,6 +24,9 @@ public sealed class GatewayTransmitTests(TrustedGatewayFactory trusted, GatewayF
         var turn = await Assert.ThrowsAsync<EngineAccessException>(() =>
             remote.SetToggleAsync(Toggle.Transmit, true, Ct)
         );
+        var uplink = await Assert.ThrowsAsync<EngineAccessException>(() =>
+            remote.SetToggleAsync(Toggle.AprsIsUplink, true, Ct) // the uplink too (F1.45 behavior 3)
+        );
         var send = await Assert.ThrowsAsync<EngineAccessException>(() => remote.SendPositionAsync(null, Ct));
         var status = await Assert.ThrowsAsync<EngineAccessException>(() => remote.SendStatusAsync(null, Ct));
         var place = await Assert.ThrowsAsync<EngineAccessException>(() =>
@@ -34,6 +37,7 @@ public sealed class GatewayTransmitTests(TrustedGatewayFactory trusted, GatewayF
         var test = await Assert.ThrowsAsync<EngineAccessException>(() => remote.TestSendAsync("rotate", Ct));
 
         Assert.Equal(EngineErrorCodes.OperatorOnly, turn.EngineError.Code);
+        Assert.Equal(EngineErrorCodes.OperatorOnly, uplink.EngineError.Code);
         Assert.Equal(EngineErrorCodes.OperatorOnly, send.EngineError.Code);
         Assert.Equal(EngineErrorCodes.OperatorOnly, status.EngineError.Code);
         Assert.Equal(EngineErrorCodes.OperatorOnly, place.EngineError.Code);
@@ -41,6 +45,7 @@ public sealed class GatewayTransmitTests(TrustedGatewayFactory trusted, GatewayF
         Assert.Equal(EngineErrorCodes.OperatorOnly, qru.EngineError.Code);
         Assert.Equal(EngineErrorCodes.OperatorOnly, test.EngineError.Code);
         Assert.False((await remote.GetSettingsAsync(Ct)).EffectiveToggles.Transmit);
+        Assert.False((await remote.GetSettingsAsync(Ct)).EffectiveToggles.UplinkOn);
     }
 
     [Theory]

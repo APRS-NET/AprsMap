@@ -88,13 +88,18 @@ public sealed record AppSettings(
 /// empty when all are on. The Internet switch doesn't turn them off: a TNC is local equipment.
 /// </param>
 /// <param name="Transmit">
-/// Transmitting (docs/features/F2.1-own-station.md, behaviors 4–8): off until the user turns it on and the engine has
-/// checked the station may; saving settings never turns it on.
+/// Transmitting on RF (docs/features/F2.1-own-station.md, behaviors 4–8): everything sent on the TNCs, off until the user
+/// turns it on and the engine has checked the station may; saving settings never turns it on. What goes to APRS-IS is
+/// <paramref name="AprsIsUplink"/>'s (docs/features/F1.45-aprs-is-uplink.md).
 /// </param>
 /// <param name="AprsIsFeed">
 /// Track and plot what APRS-IS sends (docs/features/F1.44-aprs-is-feed.md, behavior 1.2): the status bar pill's switch.
 /// Off, APRS-IS packets still reach the IGate, messages, heard-back and queries, but aren't listed, plotted or counted.
 /// Null for a station saved before it existed: it follows <paramref name="AprsIs"/> (behavior 4).
+/// </param>
+/// <param name="AprsIsUplink">
+/// Sending to APRS-IS (docs/features/F1.45-aprs-is-uplink.md): own beacons and messages and the IGate's uploads, checked
+/// and kept like <paramref name="Transmit"/>. Null for a station saved before it existed: as Transmit (decision 3).
 /// </param>
 public sealed record StationToggles(
     bool Internet = true,
@@ -102,10 +107,11 @@ public sealed record StationToggles(
     bool Tiles = true,
     IReadOnlyList<string>? SourcesOff = null,
     bool Transmit = false,
-    bool? AprsIsFeed = null
+    bool? AprsIsFeed = null,
+    bool? AprsIsUplink = null
 )
 {
-    /// <summary>Every receiving toggle on, and transmitting off.</summary>
+    /// <summary>Every receiving toggle on, and transmitting off, on RF and to APRS-IS.</summary>
     public static StationToggles AllOn { get; } = new();
 
     /// <summary>Whether the source with <paramref name="id"/> is switched on.</summary>
@@ -129,6 +135,12 @@ public sealed record StationToggles(
     /// <summary>Whether what APRS-IS sends is tracked and plotted: connected, and the feed on (F1.44 behavior 2).</summary>
     public bool ShowsAprsIs => ConnectsAprsIs && FeedOn;
 
+    /// <summary>Whether the uplink is on, a station saved before it following Transmit (F1.45 behavior 1).</summary>
+    public bool UplinkOn => AprsIsUplink ?? Transmit;
+
+    /// <summary>Whether a source of <paramref name="kind"/> may send by its switch: APRS-IS by the uplink, a TNC by Transmit.</summary>
+    public bool SwitchedOnToSend(SourceKind kind) => kind == SourceKind.AprsIs ? UplinkOn : Transmit;
+
     /// <summary>Whether tiles may be downloaded: they and the Internet are on.</summary>
     public bool DownloadsTiles => Internet && Tiles;
 }
@@ -150,6 +162,9 @@ public enum Toggle
 
     /// <summary>The APRS-IS feed: track and plot what APRS-IS sends (docs/features/F1.44-aprs-is-feed.md).</summary>
     AprsIsFeed,
+
+    /// <summary>Sending to APRS-IS, the IGate's uploads too (docs/features/F1.45-aprs-is-uplink.md).</summary>
+    AprsIsUplink,
 }
 
 /// <summary>
