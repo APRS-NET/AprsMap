@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.0-alpha.2](https://github.com/APRS-NET/AprsMap/compare/v0.9.0-alpha.1...v0.9.0-alpha.2) (2026-11-20)
+
+
+### Features
+
+* separate the APRS-IS uplink from Transmit ([8b14d18](https://github.com/APRS-NET/AprsMap/commit/8b14d18e01f933b283136136a019513b71aef330))
+* show the app as zedMap, with the code renamed to ZedMap ([7268bd7](https://github.com/APRS-NET/AprsMap/commit/7268bd713a632f1692653263bfadaa9c9c8af783))
+
+
+### Bug Fixes
+
+* **deps:** Bump the aprs-net group with 12 updates ([5e5a072](https://github.com/APRS-NET/AprsMap/commit/5e5a0723fb674abc1a6916d242537e9229424a5e))
+* **deps:** Bump the microsoft-extensions group with 1 update ([073b620](https://github.com/APRS-NET/AprsMap/commit/073b6206305195afb247b7acc7edd73cfc7a6692))
+
 ## [0.9.0-alpha.1](https://github.com/APRS-NET/AprsMap/compare/v0.8.0-alpha.15...v0.9.0-alpha.1) (2026-11-19)
 
 
