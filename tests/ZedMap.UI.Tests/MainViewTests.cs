@@ -143,7 +143,10 @@ public class MainViewTests
             ],
             items.Select(i => i.Name)
         );
-        Assert.Equal(ZedMap.Contracts.Toggle.AprsIsUplink, items.Single(i => i.Name == "AprsIsUplinkToggle").CommandParameter);
+        Assert.Equal(
+            ZedMap.Contracts.Toggle.AprsIsUplink,
+            items.Single(i => i.Name == "AprsIsUplinkToggle").CommandParameter
+        );
         var item = items[0];
         Assert.Same(vm.ReconnectCommand, item.Command);
         item.Command!.Execute(null);
