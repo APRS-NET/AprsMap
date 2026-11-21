@@ -121,7 +121,9 @@ jobs:
         env:
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
-          name="aprsmap-${TAG}-${{ matrix.rid }}"
+          # Named by the slug (build/Branding.props), which the update check looks for (docs/branding.md).
+          slug="$(sed -n 's:.*<ProductSlug>\(.*\)</ProductSlug>.*:\1:p' build/Branding.props)"
+          name="${slug}-${TAG}-${{ matrix.rid }}"
           mkdir -p artifacts
           if [ "${{ matrix.archive }}" = zip ]; then
             (cd "publish/${{ matrix.rid }}" && zip -qr "../../artifacts/${name}.zip" .)
@@ -163,6 +165,9 @@ jobs:
           # What the updater needs (F1.40): the installed version, and where its releases come from.
           echo "${{ needs.release-please.outputs.tag_name }}" > "publish/${{ matrix.rid }}/version"
           echo "${{ github.server_url }}/${{ github.repository }}" > "publish/${{ matrix.rid }}/release-source"
+          # The slug a rename under way moves to (docs/branding.md, "Renaming in two steps"), so this release's
+          # updater can take the release that renames the gateway; empty when none is.
+          sed -n 's:.*<NextSlug>\(.*\)</NextSlug>.*:\1:p' build/Branding.props > "publish/${{ matrix.rid }}/next-slug"
       - name: The browser app
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -172,11 +177,12 @@ jobs:
         env:
           TAG: ${{ needs.release-please.outputs.tag_name }}
         run: |
+          slug="$(sed -n 's:.*<ProductSlug>\(.*\)</ProductSlug>.*:\1:p' build/Branding.props)"
+          name="${slug}-gateway-${TAG}-${{ matrix.rid }}.tar.gz"
           mkdir -p artifacts
-          tar -C "publish/${{ matrix.rid }}" -czf "artifacts/aprsmap-gateway-${TAG}-${{ matrix.rid }}.tar.gz" .
+          tar -C "publish/${{ matrix.rid }}" -czf "artifacts/${name}" .
           # Its checksum beside it: a service release is ready with both (F1.40 behavior 3).
-          (cd artifacts && sha256sum "aprsmap-gateway-${TAG}-${{ matrix.rid }}.tar.gz" \
-            > "aprsmap-gateway-${TAG}-${{ matrix.rid }}.tar.gz.sha256")
+          (cd artifacts && sha256sum "${name}" > "${name}.sha256")
       - name: Attach to the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

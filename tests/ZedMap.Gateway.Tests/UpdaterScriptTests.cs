@@ -13,6 +13,12 @@ namespace ZedMap.Gateway.Tests;
 public sealed class UpdaterScriptTests : IDisposable
 {
     private const string Source = "https://github.com/test/repo";
+
+    /// <summary>
+    /// The next slug in these tests: any slug other than this one; not the real NextSlug, which a rename (and
+    /// rename-check) rewrites along with this one's.
+    /// </summary>
+    private const string Next = "nextname";
     private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("aprsmap-updater-");
 
     private string Root => _root.FullName;
@@ -108,6 +114,37 @@ public sealed class UpdaterScriptTests : IDisposable
         var path = Path.Combine(Root, "bin", name);
         File.WriteAllText(path, "#!/usr/bin/env bash\n" + body.Replace("\r", "", StringComparison.Ordinal) + "\n");
         File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+    }
+
+    /// <summary>
+    /// Publishes <paramref name="version"/> under the next slug, as the release that renames the gateway will
+    /// (docs/branding.md, "Renaming in two steps"): <c>{Next}-gateway-vX</c>, holding <c>{Next}-gateway</c> and an
+    /// <c>install.sh</c> stand-in that logs how it was called and exits with <paramref name="installExit"/>.
+    /// </summary>
+    private async Task RenamedReleaseAsync(string version, int installExit = 0)
+    {
+        var build = Path.Combine(Root, "build-" + version);
+        Directory.CreateDirectory(build);
+        await File.WriteAllTextAsync(Path.Combine(build, $"{Next}-gateway"), "#!/bin/sh\n", Ct);
+        await File.WriteAllTextAsync(Path.Combine(build, "version"), "v" + version + "\n", Ct);
+        await File.WriteAllTextAsync(
+            Path.Combine(build, "install.sh"),
+            $"#!/usr/bin/env bash\necho \"$@\" > \"{Root}/install.log\"\nexit {installExit}\n",
+            Ct
+        );
+        foreach (var file in new[] { $"{Next}-gateway", "install.sh" })
+        {
+            File.SetUnixFileMode(
+                Path.Combine(build, file),
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
+            );
+        }
+        var folder = Path.Combine(Releases, "v" + version);
+        Directory.CreateDirectory(folder);
+        var tarball = Path.Combine(folder, $"{Next}-gateway-v{version}-{Rid}.tar.gz");
+        await RunAsync("tar", "-C", build, "-czf", tarball, ".");
+        var hash = Convert.ToHexStringLower(SHA256.HashData(await File.ReadAllBytesAsync(tarball, Ct)));
+        await File.WriteAllTextAsync(tarball + ".sha256", $"{hash}  {Path.GetFileName(tarball)}\n", Ct);
     }
 
     /// <summary>Publishes <paramref name="version"/> as a release: its tarball and checksum, or a wrong checksum.</summary>
@@ -259,6 +296,73 @@ public sealed class UpdaterScriptTests : IDisposable
         Assert.Contains(why, Status, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(Root, "curl.log")));
         Assert.False(File.Exists(Path.Combine(Data, "update-request.json")));
+    }
+
+    [Fact]
+    public async Task AReleaseUnderTheNextSlugIsFetchedAndHandedToItsOwnInstaller()
+    {
+        // docs/branding.md, "Renaming in two steps": this install knows the next slug (next-slug, from NextSlug); the
+        // release that renames has no aprsmap-gateway tarball, so the updater takes <next>-gateway's and lets that
+        // release's install.sh move the install over, as only it knows the new names.
+        File.WriteAllText(Path.Combine(App, "next-slug"), Next + "\n");
+        await RenamedReleaseAsync("0.10.0");
+
+        var (exit, output) = await UpdateAsync("""{"version":"0.10.0"}""");
+
+        Assert.True(exit == 0, output);
+        Assert.Equal(
+            [
+                $"{Source}/releases/download/v0.10.0/aprsmap-gateway-v0.10.0-{Rid}.tar.gz",
+                $"{Source}/releases/download/v0.10.0/{Next}-gateway-v0.10.0-{Rid}.tar.gz",
+                $"{Source}/releases/download/v0.10.0/{Next}-gateway-v0.10.0-{Rid}.tar.gz.sha256",
+            ],
+            File.ReadAllLines(Path.Combine(Root, "curl.log"))
+        );
+        var install = (await File.ReadAllTextAsync(Path.Combine(Root, "install.log"), Ct)).Trim();
+        Assert.StartsWith("--migrate-from aprsmap ", install, StringComparison.Ordinal);
+        Assert.EndsWith($"{Next}-gateway-v0.10.0-{Rid}.tar.gz", install, StringComparison.Ordinal);
+        Assert.Contains("\"step\":\"done\"", Status, StringComparison.Ordinal);
+        Assert.Equal("v0.8.0", Installed); // the installer moves it; the updater leaves the old folder alone
+        Assert.False(File.Exists(Path.Combine(Root, "systemctl.log"))); // nor stops it: the installer does
+    }
+
+    [Fact]
+    public async Task WhenTheNewReleasesInstallerFailsTheInstalledOneStays()
+    {
+        File.WriteAllText(Path.Combine(App, "next-slug"), Next + "\n");
+        await RenamedReleaseAsync("0.10.0", installExit: 1);
+
+        var (exit, _) = await UpdateAsync("""{"version":"0.10.0"}""");
+
+        Assert.NotEqual(0, exit);
+        Assert.Equal("v0.8.0", Installed);
+        Assert.Contains($"the move to {Next} failed", Status, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task WithoutANextSlugARenamedReleaseIsNotTaken()
+    {
+        await RenamedReleaseAsync("0.10.0");
+
+        var (exit, _) = await UpdateAsync("""{"version":"0.10.0"}""");
+
+        Assert.NotEqual(0, exit);
+        Assert.Contains("couldn't download aprsmap-gateway-v0.10.0", Status, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(Root, "install.log")));
+    }
+
+    [Theory]
+    [InlineData(Next + "\n../evil")]
+    [InlineData("Zed Map")]
+    public async Task ANextSlugThatIsntASlugIsIgnored(string next)
+    {
+        File.WriteAllText(Path.Combine(App, "next-slug"), next);
+        await RenamedReleaseAsync("0.10.0");
+
+        var (exit, _) = await UpdateAsync("""{"version":"0.10.0"}""");
+
+        Assert.NotEqual(0, exit);
+        Assert.False(File.Exists(Path.Combine(Root, "install.log")));
     }
 
     [Theory]
