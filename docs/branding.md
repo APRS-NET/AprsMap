@@ -62,6 +62,9 @@ release that changes the slug in one go would be invisible to every install. So 
    `ProductDisplayName` by hand, fix the prose the script wrote in PascalCase, and set `NextSlug` to the new slug: the
    update check then also takes releases named by it (`Brand.ReleaseSlugs`). Saved window layouts name their panels'
    types, so `LayoutFile` reads `<Old>.UI.Shell.*` as this version's.
+   The gateway's updater has to follow too: each gateway tarball carries `next-slug`, and an updater that finds no
+   tarball under its own name takes `<next>-gateway-…` and hands it to that release's `install.sh --migrate-from <old>`
+   (F1.40 behavior 13). So a gateway must run a release with this updater (0.9.0-alpha.4 or later) before step 2.
 2. **Once installs have step 1**, with the repository rename: the slug, `PreviousSlugs` (the old slug), `NextSlug`
    cleared, `ProductSourceUrl`, the gateway service ([#546](https://github.com/APRS-NET/AprsMap/issues/546)) and the
    container image.

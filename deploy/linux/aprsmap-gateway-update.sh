@@ -102,6 +102,10 @@ for candidate in "$app"/*-gateway; do
   [ -f "$candidate" ] && [ -x "$candidate" ] && program="$(basename "$candidate")" && break
 done
 [ -n "$program" ] || fail "the installed gateway isn't in $app"
+# The slug a rename under way moves to (docs/branding.md, "Renaming in two steps"), written by the release workflow
+# from NextSlug: the release that renames publishes the gateway as <next>-gateway, which this install can then take.
+next="$(tr -d '[:space:]' <"$app/next-slug" 2>/dev/null || true)"
+[[ "$next" =~ ^[a-z][a-z0-9]{0,31}$ && "$next-gateway" != "$program" ]] || next=""
 name="$program-v$version-$rid.tar.gz"
 url="$source/releases/download/v$version/$name"
 
@@ -116,7 +120,13 @@ fetch() {
     wget -q --https-only -O "$2" "$1"
   fi
 }
-fetch "$url" "$work/$name" || fail "couldn't download $name"
+if ! fetch "$url" "$work/$name"; then
+  [ -n "$next" ] || fail "couldn't download $name"
+  # Not under this name: the release may be the one that renames the gateway.
+  name="$next-gateway-v$version-$rid.tar.gz"
+  url="$source/releases/download/v$version/$name"
+  fetch "$url" "$work/$name" || fail "couldn't download $program-v$version-$rid.tar.gz or $name"
+fi
 fetch "$url.sha256" "$work/$name.sha256" || fail "couldn't download $name.sha256"
 
 report checking
@@ -129,6 +139,18 @@ report installing
 rm -rf "$staging"
 mkdir -p "$staging"
 tar -xzf "$work/$name" -C "$staging" --no-same-owner || fail "the download couldn't be unpacked"
+if [ -n "$next" ] && [ ! -e "$staging/$program" ] && [ -f "$staging/$next-gateway" ]; then
+  # The release that renames the gateway: only it knows the new names (folders, units, user), so its own installer
+  # moves this install over, given the old slug and the checked tarball. It stops this service and keeps the old
+  # folders until the new one runs; this script leaves them alone (docs/features/F1.40-gateway-service-updates.md,
+  # behavior 13).
+  [ -f "$staging/install.sh" ] || fail "the download has no install.sh to move to $next"
+  chmod +x "$staging/install.sh"
+  "$staging/install.sh" --migrate-from "${program%-gateway}" "$work/$name" ||
+    fail "the move to $next failed; still on $installed (journalctl -u ${program%-gateway}-gateway-update)"
+  report done
+  exit 0
+fi
 [ -x "$staging/$program" ] || chmod +x "$staging/$program" 2>/dev/null || fail "the download has no $program"
 
 # Puts the units and this updater from $app in place.
