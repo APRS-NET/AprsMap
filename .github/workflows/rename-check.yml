@@ -46,6 +46,9 @@ jobs:
           # The names are built from parts, or the rename would rewrite this check too.
           old="aprs""map|zed""map"
           left="$(grep -rIl -i -E "$old" --exclude-dir=.git . | grep -v '^./build/Branding.props$' || true)"
+          # The installers' package id never changes (build/Branding.props), so the rename must have kept it.
+          grep -q "<ProductPackageId>aprs""map</ProductPackageId>" build/Branding.props ||
+            { echo "::error::The rename changed ProductPackageId"; exit 1; }
           if [ -n "$left" ]; then
             echo "::error::The rename left the old name in: $left"
             exit 1

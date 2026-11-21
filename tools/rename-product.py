@@ -17,6 +17,7 @@ not yet). Repeat it for each.
 """
 import argparse
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -53,8 +54,13 @@ def walk(root: pathlib.Path):
         yield p, rel
 
 
+# Kept in every mode: the installers' package id, which installed copies update by (build/Branding.props).
+ALWAYS_KEPT = re.compile(r"<ProductPackageId>[^<]*</ProductPackageId>")
+
+
 def replace(text: str, pairs: list[tuple[str, str]], keep: list[str]) -> str:
     # Kept text is swapped for placeholders first, so no replacement can touch it.
+    keep = keep + sorted(set(ALWAYS_KEPT.findall(text)))
     holders = [(k, f"\x00KEEP{i}\x00") for i, k in enumerate(keep)]
     for k, h in holders:
         text = text.replace(k, h)
