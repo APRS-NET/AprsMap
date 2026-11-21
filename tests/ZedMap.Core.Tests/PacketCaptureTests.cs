@@ -19,7 +19,7 @@ public sealed class PacketCaptureTests : IDisposable
     private const string UserDefined = "N0USR>APRS:{Xhello";
     private const string UnknownPath = "N0PTH>APRS,TOOLONGCALL-99:!4903.50N/07201.75W>p";
 
-    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("aprsmap-capture-");
+    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("zedmap-capture-");
     private readonly FakeTimeProvider _time = new(DateTimeOffset.Parse("2026-10-18T12:00:00Z", null));
 
     public void Dispose() => _folder.Delete(recursive: true);

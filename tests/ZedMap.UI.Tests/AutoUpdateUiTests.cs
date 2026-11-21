@@ -21,7 +21,7 @@ public sealed class AutoUpdateUiTests
     private static readonly UpdateInfo Newer = new(
         "0.9.0",
         DateTimeOffset.Parse("2026-10-20T12:00:00Z", null),
-        new Uri("https://github.com/APRS-NET/AprsMap/releases/tag/v0.9.0"),
+        new Uri("https://github.com/APRS-NET/zedMap/releases/tag/v0.9.0"),
         "- a change",
         null,
         [new("releases.linux-x64.json", new Uri("https://example.org/v0.9.0/releases.linux-x64.json"), 100)]

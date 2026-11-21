@@ -6,10 +6,7 @@ namespace ZedMap.Core.Tests;
 
 public sealed class SettingsTests : IDisposable
 {
-    private readonly string _root = Path.Combine(
-        Path.GetTempPath(),
-        "aprsmap-settings-" + Guid.NewGuid().ToString("N")
-    );
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "zedmap-settings-" + Guid.NewGuid().ToString("N"));
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -101,7 +98,7 @@ public sealed class SettingsTests : IDisposable
     [Fact]
     public async Task AFileStoreRoundTripsSettingsAndWritesReadableJson()
     {
-        var store = new FileSettingsStore(Path.Combine(_root, "aprsmap"));
+        var store = new FileSettingsStore(Path.Combine(_root, "zedmap"));
         Assert.Null(await store.LoadAsync(Ct));
 
         var settings = TwoProfiles();
@@ -155,9 +152,9 @@ public sealed class SettingsTests : IDisposable
     [Fact]
     public void TheCurrentUsersFolderEndsWithTheVendorAndProductFolders()
     {
-        var folder = SettingsLocation.UserFolder("aprsmap");
+        var folder = SettingsLocation.UserFolder("zedmap");
 
-        Assert.Equal("aprsmap", Path.GetFileName(folder));
+        Assert.Equal("zedmap", Path.GetFileName(folder));
         Assert.EndsWith(SettingsLocation.VendorFolder, Path.GetDirectoryName(folder)!, StringComparison.Ordinal);
     }
 

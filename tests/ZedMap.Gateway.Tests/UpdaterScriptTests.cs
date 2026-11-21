@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 namespace ZedMap.Gateway.Tests;
 
 /// <summary>
-/// The service gateway's updater, <c>deploy/linux/aprsmap-gateway-update.sh</c>
+/// The service gateway's updater, <c>deploy/linux/zedmap-gateway-update.sh</c>
 /// (docs/features/F1.40-gateway-service-updates.md, acceptance tests 4, 5): run against folders of its own, with
 /// stand-ins for <c>systemctl</c> and <c>curl</c> that serve a fake release. Linux only, as the service is.
 /// </summary>
@@ -19,11 +19,11 @@ public sealed class UpdaterScriptTests : IDisposable
     /// rename-check) rewrites along with this one's.
     /// </summary>
     private const string Next = "nextname";
-    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("aprsmap-updater-");
+    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("zedmap-updater-");
 
     private string Root => _root.FullName;
 
-    private string App => Path.Combine(Root, "opt", "aprsmap-gateway");
+    private string App => Path.Combine(Root, "opt", "zedmap-gateway");
 
     private string Data => Path.Combine(Root, "data");
 
@@ -100,9 +100,9 @@ public sealed class UpdaterScriptTests : IDisposable
         {
             File.Copy(file, Path.Combine(folder, Path.GetFileName(file)), overwrite: true);
         }
-        File.WriteAllText(Path.Combine(folder, "aprsmap-gateway"), "#!/bin/sh\n");
+        File.WriteAllText(Path.Combine(folder, "zedmap-gateway"), "#!/bin/sh\n");
         File.SetUnixFileMode(
-            Path.Combine(folder, "aprsmap-gateway"),
+            Path.Combine(folder, "zedmap-gateway"),
             UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
         );
         File.WriteAllText(Path.Combine(folder, "version"), version + "\n");
@@ -158,7 +158,7 @@ public sealed class UpdaterScriptTests : IDisposable
         }
         var folder = Path.Combine(Releases, "v" + version);
         Directory.CreateDirectory(folder);
-        var tarball = Path.Combine(folder, $"aprsmap-gateway-v{version}-{Rid}.tar.gz");
+        var tarball = Path.Combine(folder, $"zedmap-gateway-v{version}-{Rid}.tar.gz");
         await RunAsync("tar", "-C", build, "-czf", tarball, ".");
         var hash = Convert.ToHexStringLower(SHA256.HashData(await File.ReadAllBytesAsync(tarball, Ct)));
         await File.WriteAllTextAsync(
@@ -173,7 +173,7 @@ public sealed class UpdaterScriptTests : IDisposable
     private async Task<(int Exit, string Output)> UpdateAsync(string request, params string[] args)
     {
         await File.WriteAllTextAsync(Path.Combine(Data, "update-request.json"), request, Ct);
-        return await RunAsync("bash", [Path.Combine(Deploy, "aprsmap-gateway-update.sh"), .. args]);
+        return await RunAsync("bash", [Path.Combine(Deploy, "zedmap-gateway-update.sh"), .. args]);
     }
 
     private async Task<(int Exit, string Output)> RunAsync(string program, params string[] args)
@@ -189,11 +189,11 @@ public sealed class UpdaterScriptTests : IDisposable
             start.ArgumentList.Add(arg);
         }
         start.Environment["PATH"] = Path.Combine(Root, "bin") + ":" + Environment.GetEnvironmentVariable("PATH");
-        start.Environment["APRSMAP_DATA"] = Data;
-        start.Environment["APRSMAP_APP"] = App;
-        start.Environment["APRSMAP_SETTLE_SECONDS"] = "0";
-        start.Environment["APRSMAP_UNITS"] = Path.Combine(Root, "units");
-        start.Environment["APRSMAP_LIBEXEC"] = Path.Combine(Root, "libexec");
+        start.Environment["ZEDMAP_DATA"] = Data;
+        start.Environment["ZEDMAP_APP"] = App;
+        start.Environment["ZEDMAP_SETTLE_SECONDS"] = "0";
+        start.Environment["ZEDMAP_UNITS"] = Path.Combine(Root, "units");
+        start.Environment["ZEDMAP_LIBEXEC"] = Path.Combine(Root, "libexec");
         using var process = Process.Start(start)!;
         var output = process.StandardOutput.ReadToEndAsync(Ct);
         var errors = process.StandardError.ReadToEndAsync(Ct);
@@ -217,12 +217,12 @@ public sealed class UpdaterScriptTests : IDisposable
         Assert.Equal("v0.8.0", File.ReadAllText(Path.Combine(App + ".previous", "version")).Trim());
         Assert.Contains("\"step\":\"done\"", Status, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(Data, "update-request.json")));
-        Assert.True(File.Exists(Path.Combine(Root, "libexec", "aprsmap-gateway-update")));
-        Assert.True(File.Exists(Path.Combine(Root, "units", "aprsmap-gateway-update.path")));
+        Assert.True(File.Exists(Path.Combine(Root, "libexec", "zedmap-gateway-update")));
+        Assert.True(File.Exists(Path.Combine(Root, "units", "zedmap-gateway-update.path")));
         Assert.Equal(
             [
-                $"{Source}/releases/download/v0.9.0/aprsmap-gateway-v0.9.0-{Rid}.tar.gz",
-                $"{Source}/releases/download/v0.9.0/aprsmap-gateway-v0.9.0-{Rid}.tar.gz.sha256",
+                $"{Source}/releases/download/v0.9.0/zedmap-gateway-v0.9.0-{Rid}.tar.gz",
+                $"{Source}/releases/download/v0.9.0/zedmap-gateway-v0.9.0-{Rid}.tar.gz.sha256",
             ],
             File.ReadAllLines(Path.Combine(Root, "curl.log"))
         );
@@ -302,7 +302,7 @@ public sealed class UpdaterScriptTests : IDisposable
     public async Task AReleaseUnderTheNextSlugIsFetchedAndHandedToItsOwnInstaller()
     {
         // docs/branding.md, "Renaming in two steps": this install knows the next slug (next-slug, from NextSlug); the
-        // release that renames has no aprsmap-gateway tarball, so the updater takes <next>-gateway's and lets that
+        // release that renames has no zedmap-gateway tarball, so the updater takes <next>-gateway's and lets that
         // release's install.sh move the install over, as only it knows the new names.
         File.WriteAllText(Path.Combine(App, "next-slug"), Next + "\n");
         await RenamedReleaseAsync("0.10.0");
@@ -312,14 +312,14 @@ public sealed class UpdaterScriptTests : IDisposable
         Assert.True(exit == 0, output);
         Assert.Equal(
             [
-                $"{Source}/releases/download/v0.10.0/aprsmap-gateway-v0.10.0-{Rid}.tar.gz",
+                $"{Source}/releases/download/v0.10.0/zedmap-gateway-v0.10.0-{Rid}.tar.gz",
                 $"{Source}/releases/download/v0.10.0/{Next}-gateway-v0.10.0-{Rid}.tar.gz",
                 $"{Source}/releases/download/v0.10.0/{Next}-gateway-v0.10.0-{Rid}.tar.gz.sha256",
             ],
             File.ReadAllLines(Path.Combine(Root, "curl.log"))
         );
         var install = (await File.ReadAllTextAsync(Path.Combine(Root, "install.log"), Ct)).Trim();
-        Assert.StartsWith("--migrate-from aprsmap ", install, StringComparison.Ordinal);
+        Assert.StartsWith("--migrate-from zedmap ", install, StringComparison.Ordinal);
         Assert.EndsWith($"{Next}-gateway-v0.10.0-{Rid}.tar.gz", install, StringComparison.Ordinal);
         Assert.Contains("\"step\":\"done\"", Status, StringComparison.Ordinal);
         Assert.Equal("v0.8.0", Installed); // the installer moves it; the updater leaves the old folder alone
@@ -347,7 +347,7 @@ public sealed class UpdaterScriptTests : IDisposable
         var (exit, _) = await UpdateAsync("""{"version":"0.10.0"}""");
 
         Assert.NotEqual(0, exit);
-        Assert.Contains("couldn't download aprsmap-gateway-v0.10.0", Status, StringComparison.Ordinal);
+        Assert.Contains("couldn't download zedmap-gateway-v0.10.0", Status, StringComparison.Ordinal);
         Assert.False(File.Exists(Path.Combine(Root, "install.log")));
     }
 
@@ -377,7 +377,7 @@ public sealed class UpdaterScriptTests : IDisposable
     [InlineData("0.7.9", "0.8.0-alpha.1", false)]
     public async Task VersionsCompareAsSemVer(string a, string b, bool newer)
     {
-        var (exit, _) = await RunAsync("bash", Path.Combine(Deploy, "aprsmap-gateway-update.sh"), "--semver-gt", a, b);
+        var (exit, _) = await RunAsync("bash", Path.Combine(Deploy, "zedmap-gateway-update.sh"), "--semver-gt", a, b);
 
         Assert.Equal(newer, exit == 0);
     }

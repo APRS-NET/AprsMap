@@ -14,7 +14,7 @@ public sealed class HistoryRestoreTests : IDisposable
     private const string Moving = "N0POS-9>APRS,WIDE1-1:!4903.50N/07201.75W>moving";
     private const string Old = "N0OLD>APRS:!4803.50N/07101.75W>long gone";
 
-    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("aprsmap-restore-");
+    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("zedmap-restore-");
     private readonly FakeTimeProvider _time = new(DateTimeOffset.Parse("2026-10-27T12:00:00Z", null));
     private readonly InMemorySettingsStore _settings = InMemorySettingsStore.WithProfile();
 

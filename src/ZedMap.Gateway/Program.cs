@@ -7,7 +7,7 @@ using ZedMap.Gateway;
 using ZedMap.Hosting;
 using ZedMap.Server;
 
-// aprsmap-gateway operator add|password|remove|list NAME: sets up who may sign in (F2.9 behavior 1), then exits.
+// zedmap-gateway operator add|password|remove|list NAME: sets up who may sign in (F2.9 behavior 1), then exits.
 if (args is ["operator", .. var command])
 {
     var settings = new ConfigurationBuilder()

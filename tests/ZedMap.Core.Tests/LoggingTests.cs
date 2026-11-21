@@ -137,7 +137,7 @@ public sealed class LoggingTests
     [Fact]
     public async Task AFolderThatCantBeWrittenIsRefused()
     {
-        var file = Path.Combine(Path.GetTempPath(), "aprsmap-not-a-folder-" + Guid.NewGuid().ToString("N"));
+        var file = Path.Combine(Path.GetTempPath(), "zedmap-not-a-folder-" + Guid.NewGuid().ToString("N"));
         await File.WriteAllTextAsync(file, "", Ct);
         try
         {

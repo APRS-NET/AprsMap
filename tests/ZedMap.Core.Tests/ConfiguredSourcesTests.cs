@@ -280,7 +280,7 @@ public sealed class ConfiguredSourcesTests
         {
             return;
         }
-        var folder = Directory.CreateTempSubdirectory("aprsmap-tty").FullName;
+        var folder = Directory.CreateTempSubdirectory("zedmap-tty").FullName;
         try
         {
             var device = Path.Combine(folder, "ttyACM0");

@@ -111,7 +111,7 @@ foreach (var path in ProjectPaths(outdatedPath))
 }
 
 var md = new StringBuilder();
-md.Append("<!-- aprsmap-package-report -->\n## Package report\n\n### Vulnerable packages\n\n");
+md.Append("<!-- zedmap-package-report -->\n## Package report\n\n### Vulnerable packages\n\n");
 if (vulnerable.Count == 0)
 {
     md.Append("No known vulnerabilities in direct or transitive packages.\n");

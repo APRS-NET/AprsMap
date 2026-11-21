@@ -36,7 +36,7 @@ public sealed class UpdateTests
     private static string Release(string tag, bool draft = false, params string[] assets) =>
         $$"""
             {"tag_name":"{{tag}}","draft":{{(draft ? "true" : "false")}},"published_at":"2026-10-20T12:00:00Z",
-             "html_url":"https://github.com/APRS-NET/AprsMap/releases/tag/{{tag}}","body":"Notes for {{tag}}",
+             "html_url":"https://github.com/APRS-NET/zedMap/releases/tag/{{tag}}","body":"Notes for {{tag}}",
              "assets":[{{string.Join(
                 ',',
                 assets.Select(a =>
@@ -161,7 +161,7 @@ public sealed class UpdateTests
         Assert.Equal(time.GetUtcNow(), (await store.LoadAsync(Ct))!.EffectiveUpdates.LastChecked);
         var request = Assert.Single(github.Requests);
         Assert.EndsWith(
-            "/repos/APRS-NET/AprsMap/releases?per_page=20",
+            "/repos/APRS-NET/zedMap/releases?per_page=20",
             request.RequestUri!.ToString(),
             StringComparison.Ordinal
         );
@@ -452,7 +452,7 @@ public sealed class UpdateTests
     public async Task UpdateAndRestartChecksAgainFirstAndRefusesAVersionNoLongerTheNewest()
     {
         // #553, F1.40 behavior 4.0: the notice offered 0.9.0 from a check hours old; 0.9.1 is out since.
-        var data = Directory.CreateTempSubdirectory("aprsmap-service-");
+        var data = Directory.CreateTempSubdirectory("zedmap-service-");
         try
         {
             var (engine, _, github) = await ServiceWithGitHubAsync(data);
@@ -487,7 +487,7 @@ public sealed class UpdateTests
     public async Task UpdateAndRestartStillWorksWhenTheCheckBeforeItFails()
     {
         // #553: GitHub unreachable at the moment of the click: what was offered is installed, as before.
-        var data = Directory.CreateTempSubdirectory("aprsmap-service-");
+        var data = Directory.CreateTempSubdirectory("zedmap-service-");
         try
         {
             var (engine, _, github) = await ServiceWithGitHubAsync(data);
@@ -509,7 +509,7 @@ public sealed class UpdateTests
     [Fact]
     public async Task UpdateAndRestartOnTheServiceWritesTheVersionOnlyAndFollowsTheUpdater()
     {
-        var data = Directory.CreateTempSubdirectory("aprsmap-service-");
+        var data = Directory.CreateTempSubdirectory("zedmap-service-");
         try
         {
             var (engine, _) = await ServiceAsync(data);
@@ -531,7 +531,7 @@ public sealed class UpdateTests
                 );
                 Assert.Equal(EngineErrorCodes.UpdateNotOffered, busy.EngineError.Code);
 
-                // The updater picks it up and reports, as aprsmap-gateway-update.sh writes it.
+                // The updater picks it up and reports, as zedmap-gateway-update.sh writes it.
                 File.Delete(request);
                 var report = Path.Combine(data.FullName, Engine.UpdateStatusFile);
                 await File.WriteAllTextAsync(report, """{"version":"0.9.0","step":"downloading","reason":""}""", Ct);
@@ -559,7 +559,7 @@ public sealed class UpdateTests
     [Fact]
     public async Task OnlyTheOfferedVersionOnTheServiceIsInstalledAndARequestNeverPickedUpIsDropped()
     {
-        var data = Directory.CreateTempSubdirectory("aprsmap-service-");
+        var data = Directory.CreateTempSubdirectory("zedmap-service-");
         try
         {
             var (engine, time) = await ServiceAsync(data);
@@ -578,7 +578,7 @@ public sealed class UpdateTests
 
                 var stale = (await engine.GetUpdateStatusAsync(Ct)).Install!;
                 Assert.Equal(ServiceInstallStep.Failed, stale.Step);
-                Assert.Contains("aprsmap-gateway-update.path", stale.Reason, StringComparison.Ordinal);
+                Assert.Contains("zedmap-gateway-update.path", stale.Reason, StringComparison.Ordinal);
                 Assert.False(File.Exists(Path.Combine(data.FullName, Engine.UpdateRequestFile)));
             }
         }
@@ -666,7 +666,7 @@ public sealed class UpdateTests
 
     private static async Task WithData(Func<DirectoryInfo, Task> test)
     {
-        var data = Directory.CreateTempSubdirectory("aprsmap-auto-");
+        var data = Directory.CreateTempSubdirectory("zedmap-auto-");
         try
         {
             await test(data);
@@ -755,7 +755,7 @@ public sealed class UpdateTests
             using (engine)
             {
                 Assert.True(await engine.AutoInstallIfDueAsync(Ct));
-                // The updater rolled it back, as aprsmap-gateway-update.sh reports it.
+                // The updater rolled it back, as zedmap-gateway-update.sh reports it.
                 File.Delete(Path.Combine(data.FullName, Engine.UpdateRequestFile));
                 await File.WriteAllTextAsync(
                     Path.Combine(data.FullName, Engine.UpdateStatusFile),

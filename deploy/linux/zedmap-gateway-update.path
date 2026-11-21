@@ -5,8 +5,8 @@
 Description=zedMap gateway: watch for update requests
 
 [Path]
-PathExists=/var/lib/aprsmap/update-request.json
-Unit=aprsmap-gateway-update.service
+PathExists=/var/lib/zedmap/update-request.json
+Unit=zedmap-gateway-update.service
 
 [Install]
 WantedBy=multi-user.target

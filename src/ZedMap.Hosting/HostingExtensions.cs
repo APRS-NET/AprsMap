@@ -173,7 +173,7 @@ public static class HostingExtensions
     }
 
     /// <summary>Each target's exporters get their own options, by name.</summary>
-    private static string ExporterName(OtlpTarget target) => "aprsmap-target-" + target.Id;
+    private static string ExporterName(OtlpTarget target) => "zedmap-target-" + target.Id;
 
     /// <summary>
     /// A target's endpoint, protocol and headers (behavior 13). Over HTTP, an endpoint without a path gets the signal's

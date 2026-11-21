@@ -19,7 +19,7 @@ public sealed class HistoryFileTests : IDisposable
         CultureInfo.InvariantCulture
     );
 
-    private readonly string _folder = Directory.CreateTempSubdirectory("aprsmap-history-").FullName;
+    private readonly string _folder = Directory.CreateTempSubdirectory("zedmap-history-").FullName;
 
     public void Dispose() => Directory.Delete(_folder, recursive: true);
 

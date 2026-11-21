@@ -57,6 +57,6 @@ VOLUME /data
 EXPOSE 8080
 LABEL org.opencontainers.image.title="zedMap gateway" \
       org.opencontainers.image.description="APRS map: engine, web UI and SignalR gateway" \
-      org.opencontainers.image.source="https://github.com/APRS-NET/AprsMap" \
+      org.opencontainers.image.source="https://github.com/APRS-NET/zedMap" \
       org.opencontainers.image.licenses="AGPL-3.0-only"
-ENTRYPOINT ["./aprsmap-gateway"]
+ENTRYPOINT ["./zedmap-gateway"]

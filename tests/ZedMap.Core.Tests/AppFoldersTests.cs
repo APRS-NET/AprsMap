@@ -8,7 +8,7 @@ public sealed class AppFoldersTests : IDisposable
 {
     private static readonly char S = Path.DirectorySeparatorChar;
 
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "aprsmap-folders-" + Guid.NewGuid().ToString("N"));
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "zedmap-folders-" + Guid.NewGuid().ToString("N"));
 
     public void Dispose()
     {
@@ -28,41 +28,41 @@ public sealed class AppFoldersTests : IDisposable
     [Fact]
     public void WindowsKeepsSettingsInRoamingAndWhatGrowsInLocalAppData()
     {
-        var folders = For("aprsmap", Env(OSPlatform.Windows));
+        var folders = For("zedmap", Env(OSPlatform.Windows));
 
-        Assert.Equal(P("/roaming/aprsnet/aprsmap"), folders.Settings);
-        Assert.Equal(P("/local/aprsnet/aprsmap"), folders.Data);
-        Assert.Equal(P("/local/aprsnet/aprsmap"), folders.Cache);
-        Assert.Equal([P("/programdata/aprsnet/aprsmap")], folders.Machine);
+        Assert.Equal(P("/roaming/aprsnet/zedmap"), folders.Settings);
+        Assert.Equal(P("/local/aprsnet/zedmap"), folders.Data);
+        Assert.Equal(P("/local/aprsnet/zedmap"), folders.Cache);
+        Assert.Equal([P("/programdata/aprsnet/zedmap")], folders.Machine);
     }
 
     [Fact]
     public void MacOsUsesApplicationSupportAndCaches()
     {
-        var folders = For("aprsmap", Env(OSPlatform.MacOS));
+        var folders = For("zedmap", Env(OSPlatform.MacOS));
 
-        Assert.Equal(P("/home/me/Library/Application Support/aprsnet/aprsmap"), folders.Settings);
+        Assert.Equal(P("/home/me/Library/Application Support/aprsnet/zedmap"), folders.Settings);
         Assert.Equal(folders.Settings, folders.Data);
-        Assert.Equal(P("/home/me/Library/Caches/aprsnet/aprsmap"), folders.Cache);
-        Assert.Equal([P("/Library/Application Support/aprsnet/aprsmap")], folders.Machine);
+        Assert.Equal(P("/home/me/Library/Caches/aprsnet/zedmap"), folders.Cache);
+        Assert.Equal([P("/Library/Application Support/aprsnet/zedmap")], folders.Machine);
     }
 
     [Fact]
     public void LinuxFollowsTheXdgDefaults()
     {
-        var folders = For("aprsmap", Env(OSPlatform.Other));
+        var folders = For("zedmap", Env(OSPlatform.Other));
 
-        Assert.Equal(P("/home/me/.config/aprsnet/aprsmap"), folders.Settings);
-        Assert.Equal(P("/home/me/.local/share/aprsnet/aprsmap"), folders.Data);
-        Assert.Equal(P("/home/me/.cache/aprsnet/aprsmap"), folders.Cache);
-        Assert.Equal([P("/etc/xdg/aprsnet/aprsmap")], folders.Machine);
+        Assert.Equal(P("/home/me/.config/aprsnet/zedmap"), folders.Settings);
+        Assert.Equal(P("/home/me/.local/share/aprsnet/zedmap"), folders.Data);
+        Assert.Equal(P("/home/me/.cache/aprsnet/zedmap"), folders.Cache);
+        Assert.Equal([P("/etc/xdg/aprsnet/zedmap")], folders.Machine);
     }
 
     [Fact]
     public void LinuxHonoursTheXdgVariablesButIgnoresRelativeOnes()
     {
         var folders = For(
-            "aprsmap",
+            "zedmap",
             Env(
                 OSPlatform.Other,
                 new()
@@ -75,18 +75,18 @@ public sealed class AppFoldersTests : IDisposable
             )
         );
 
-        Assert.Equal(P("/cfg/aprsnet/aprsmap"), folders.Settings);
-        Assert.Equal(P("/home/me/.local/share/aprsnet/aprsmap"), folders.Data);
-        Assert.Equal(P("/home/me/.cache/aprsnet/aprsmap"), folders.Cache);
-        Assert.Equal([P("/opt/xdg/aprsnet/aprsmap"), P("/etc/xdg/aprsnet/aprsmap")], folders.Machine);
+        Assert.Equal(P("/cfg/aprsnet/zedmap"), folders.Settings);
+        Assert.Equal(P("/home/me/.local/share/aprsnet/zedmap"), folders.Data);
+        Assert.Equal(P("/home/me/.cache/aprsnet/zedmap"), folders.Cache);
+        Assert.Equal([P("/opt/xdg/aprsnet/zedmap"), P("/etc/xdg/aprsnet/zedmap")], folders.Machine);
     }
 
     [Fact]
     public void EarlierVersionsUsedOneFolderOnLinuxAndRoamingOnWindows()
     {
-        Assert.Equal(P("/home/me/.aprsnet/aprsmap"), Legacy("aprsmap", Env(OSPlatform.Other)));
-        Assert.Equal(P("/roaming/aprsnet/aprsmap"), Legacy("aprsmap", Env(OSPlatform.Windows)));
-        Assert.Null(Legacy("aprsmap", Env(OSPlatform.MacOS)));
+        Assert.Equal(P("/home/me/.aprsnet/zedmap"), Legacy("zedmap", Env(OSPlatform.Other)));
+        Assert.Equal(P("/roaming/aprsnet/zedmap"), Legacy("zedmap", Env(OSPlatform.Windows)));
+        Assert.Null(Legacy("zedmap", Env(OSPlatform.MacOS)));
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public sealed class AppFoldersTests : IDisposable
     public async Task AnEarlierVersionsFolderIsMovedAndThenRemoved()
     {
         var ct = TestContext.Current.CancellationToken;
-        var legacy = Path.Combine(_root, ".aprsnet", "aprsmap");
+        var legacy = Path.Combine(_root, ".aprsnet", "zedmap");
         Directory.CreateDirectory(Path.Combine(legacy, "capture"));
         await File.WriteAllTextAsync(Path.Combine(legacy, "settings.json"), "{}", ct);
         await File.WriteAllTextAsync(Path.Combine(legacy, "layout.json"), "{}", ct);

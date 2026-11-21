@@ -275,7 +275,7 @@ public sealed class ApiKeyTests(ApiKeyGatewayFactory gateway) : IClassFixture<Ap
 /// <summary>A gateway's single key from before per-app keys (F1.38 behavior 10), on a gateway of its own.</summary>
 public sealed class LegacyApiKeyTests : IDisposable
 {
-    private readonly string _folder = Directory.CreateTempSubdirectory("aprsmap-keys").FullName;
+    private readonly string _folder = Directory.CreateTempSubdirectory("zedmap-keys").FullName;
 
     public void Dispose() => Directory.Delete(_folder, recursive: true);
 

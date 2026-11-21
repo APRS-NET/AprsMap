@@ -11,7 +11,7 @@ public sealed class WebViewerTests(GatewayFactory gateway) : IClassFixture<Gatew
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private readonly string _webRoot = Directory.CreateTempSubdirectory("aprsmap-webroot-").FullName;
+    private readonly string _webRoot = Directory.CreateTempSubdirectory("zedmap-webroot-").FullName;
 
     public void Dispose() => Directory.Delete(_webRoot, recursive: true);
 

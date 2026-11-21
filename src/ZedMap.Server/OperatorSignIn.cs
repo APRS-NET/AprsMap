@@ -435,7 +435,7 @@ internal sealed partial class SignInAudit(ILogger<SignInAudit> logger) : IDispos
 
     private Counter<long> SignIns =>
         _signIns ??= _meter.CreateCounter<long>(
-            "aprsmap.gateway.sign_ins",
+            "zedmap.gateway.sign_ins",
             unit: "{sign-in}",
             description: "Operator sign-ins by outcome."
         );
@@ -536,13 +536,13 @@ internal sealed class OperatorFilter(
 ) : IHubFilter
 {
     /// <summary>Where a call's operator name is kept while it runs; absent for a viewer.</summary>
-    public const string OperatorKey = "aprsmap.operator";
+    public const string OperatorKey = "zedmap.operator";
 
     /// <summary>
     /// Where a connection let in by the API key keeps the key's stamp (docs/features/F1.38-gateway-api-key.md): checked
     /// on every call, so a replaced or removed key is refused at once.
     /// </summary>
-    public const string ApiKeyStampKey = "aprsmap.api-key";
+    public const string ApiKeyStampKey = "zedmap.api-key";
 
     public async ValueTask<object?> InvokeMethodAsync(
         HubInvocationContext invocationContext,

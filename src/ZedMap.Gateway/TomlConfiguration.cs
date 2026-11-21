@@ -16,7 +16,7 @@ namespace ZedMap.Gateway;
 internal static class TomlConfiguration
 {
     /// <summary>The environment variable that names the file, when <c>--config</c> doesn't.</summary>
-    public const string EnvironmentVariable = "APRSMAP_CONFIG";
+    public const string EnvironmentVariable = "ZEDMAP_CONFIG";
 
     /// <summary>
     /// The file to read: <c>--config PATH</c> (or <c>--config=PATH</c>) in <paramref name="args"/>, else

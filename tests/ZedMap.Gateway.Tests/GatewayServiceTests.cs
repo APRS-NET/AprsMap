@@ -15,7 +15,7 @@ public sealed class GatewayServiceTests
         allowed_origins = ["https://a.example", "https://b.example"]
 
         [engine]
-        settings_folder = "/var/lib/aprsmap"
+        settings_folder = "/var/lib/zedmap"
         callsign = "N0CALL-10"
         passcode = -1
         receive_only = false
@@ -58,7 +58,7 @@ public sealed class GatewayServiceTests
     public void TheFileGoesAfterAppsettingsAndBeforeTheEnvironment()
     {
         // As WebApplication.CreateBuilder orders them: prefixed variables, appsettings.json, then the environment.
-        var directory = Directory.CreateTempSubdirectory("aprsmap-toml-");
+        var directory = Directory.CreateTempSubdirectory("zedmap-toml-");
         try
         {
             File.WriteAllText(
@@ -88,9 +88,9 @@ public sealed class GatewayServiceTests
     public void AFileThatIsntTomlStopsTheGatewayWithItsLine()
     {
         var error = Assert.Throws<InvalidDataException>(() =>
-            TomlConfiguration.Read("[gateway]\nlisten = \"0.0.0.0:8080\nnext = 1\n", "/etc/aprsmap/gateway.toml")
+            TomlConfiguration.Read("[gateway]\nlisten = \"0.0.0.0:8080\nnext = 1\n", "/etc/zedmap/gateway.toml")
         );
-        Assert.Contains("/etc/aprsmap/gateway.toml", error.Message, StringComparison.Ordinal);
+        Assert.Contains("/etc/zedmap/gateway.toml", error.Message, StringComparison.Ordinal);
         Assert.Contains("2", error.Message, StringComparison.Ordinal); // the line
     }
 
@@ -99,7 +99,7 @@ public sealed class GatewayServiceTests
     {
         Assert.Equal("/etc/a.toml", TomlConfiguration.PathFrom(["--config", "/etc/a.toml"], _ => null));
         Assert.Equal("/etc/b.toml", TomlConfiguration.PathFrom(["--config=/etc/b.toml"], _ => null));
-        Assert.Equal("/etc/c.toml", TomlConfiguration.PathFrom([], v => v == "APRSMAP_CONFIG" ? "/etc/c.toml" : null));
+        Assert.Equal("/etc/c.toml", TomlConfiguration.PathFrom([], v => v == "ZEDMAP_CONFIG" ? "/etc/c.toml" : null));
         Assert.Null(TomlConfiguration.PathFrom([], _ => null));
         Assert.Equal(["add", "alice"], TomlConfiguration.WithoutConfig(["add", "alice", "--config", "/etc/a.toml"]));
     }

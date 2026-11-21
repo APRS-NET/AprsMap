@@ -18,7 +18,7 @@ public sealed class ServiceUpdateUiTests
     private static readonly UpdateInfo Newer = new(
         "0.9.0",
         DateTimeOffset.Parse("2026-10-27T12:00:00Z", null),
-        new Uri("https://github.com/APRS-NET/AprsMap/releases/tag/v0.9.0"),
+        new Uri("https://github.com/APRS-NET/zedMap/releases/tag/v0.9.0"),
         "- a change",
         null,
         []

@@ -27,7 +27,7 @@ public sealed class AboutFilesTests
     public async Task OnTheDesktopEachFolderHasItsPathCopyAndOpenFolder()
     {
         var engine = new FakeEngine();
-        engine.StorageFolders.Add(new(StorageFolderKind.Machine, "/etc/xdg/aprsnet/aprsmap", false, false));
+        engine.StorageFolders.Add(new(StorageFolderKind.Machine, "/etc/xdg/aprsnet/zedmap", false, false));
         var copied = new List<string>();
         var opener = new Opener(works: true);
         var about = new AboutViewModel(English()) { FolderOpener = opener };
@@ -51,8 +51,8 @@ public sealed class AboutFilesTests
         await settings.CopyCommand.ExecuteAsync(null);
         await settings.OpenCommand.ExecuteAsync(null);
 
-        Assert.Equal(["/home/test/.config/aprsnet/aprsmap"], copied);
-        Assert.Equal(["/home/test/.config/aprsnet/aprsmap"], opener.Opened);
+        Assert.Equal(["/home/test/.config/aprsnet/zedmap"], copied);
+        Assert.Equal(["/home/test/.config/aprsnet/zedmap"], opener.Opened);
         Assert.Null(about.FilesNote);
     }
 
@@ -70,7 +70,7 @@ public sealed class AboutFilesTests
 
         await about.Folders[1].OpenCommand.ExecuteAsync(null);
 
-        Assert.Equal(["/home/test/.local/share/aprsnet/aprsmap"], copied);
+        Assert.Equal(["/home/test/.local/share/aprsnet/zedmap"], copied);
         Assert.Equal("Couldn't open the folder; its path is copied instead.", about.Folders[1].Said);
     }
 

@@ -25,7 +25,7 @@ a hunt through the code.
    `ZedMapStationStore` and `IZedMapService` are not. That keeps a rename a prefix swap: `IEngineService`, not
    `IZedMapService`.
 3. **One spelling per form**, so a rename is a fixed set of replacements:
-   `ZedMap` (the code prefix), `aprsmap` (slugs, paths, config folder, container image), `APRSMAP`
+   `ZedMap` (the code prefix), `zedmap` (slugs, paths, config folder, container image), `ZEDMAP`
    (environment-variable prefix); `aprs-map` is not used. The brand itself is written **`zedMap`** (lower-case z,
    maintainer decision, 2026-11-19): `ProductDisplayName` and the spelling in prose, titles and installers. `ZedMap` is
    only the code prefix (`ZedMap.Core`), since .NET namespaces are PascalCase. The slug becomes `zedmap` and the env
@@ -33,7 +33,7 @@ a hunt through the code.
 4. **The TOCALL is a separate decision.** The transmitted device ID is the `APZAMP` placeholder for now, in the
    experimental `APZ` range. The plan is to request **`APMAPZ`**, exactly, with no version wildcard, in the
    aprs-deviceid list after the rename to zedMap, and switch to it once it's assigned (maintainer decision, 2026-11-19,
-   replacing `APNETM`; [#547](https://github.com/APRS-NET/AprsMap/issues/547)). It is otherwise not tied to the product
+   replacing `APNETM`; [#547](https://github.com/APRS-NET/zedMap/issues/547)). It is otherwise not tied to the product
    name: renaming the product never changes the TOCALL, because receivers identify existing installs by it.
 5. **User data survives a rename.** Settings and caches are found through `Brand.Slug`; the app looks for the previous
    slug's folder on first start and migrates it (`Branding.props` keeps a `PreviousSlugs` list).
@@ -55,7 +55,7 @@ The slug names every file an install has: the desktop and gateway executables (`
 gateway's folders and units, the release assets and the container image. An install's update check looks for the
 release files under its own slug, and the gateway's updater downloads `<its executable>-v<version>-<rid>.tar.gz`. A
 release that changes the slug in one go would be invisible to every install. So a rename goes in two steps
-([#545](https://github.com/APRS-NET/AprsMap/issues/545)):
+([#545](https://github.com/APRS-NET/zedMap/issues/545)):
 
 1. **The code and the display name**, slug unchanged: `rename-product.py OLD NEW --code-only` replaces only the
    PascalCase form, leaves the GitHub links and the changelog alone, and doesn't touch `PreviousSlugs`. Set
@@ -66,7 +66,7 @@ release that changes the slug in one go would be invisible to every install. So 
    tarball under its own name takes `<next>-gateway-…` and hands it to that release's `install.sh --migrate-from <old>`
    (F1.40 behavior 13). So a gateway must run a release with this updater (0.9.0-alpha.4 or later) before step 2.
 2. **Once installs have step 1**, with the repository rename: the slug, `PreviousSlugs` (the old slug), `NextSlug`
-   cleared, `ProductSourceUrl`, the gateway service ([#546](https://github.com/APRS-NET/AprsMap/issues/546)) and the
+   cleared, `ProductSourceUrl`, the gateway service ([#546](https://github.com/APRS-NET/zedMap/issues/546)) and the
    container image.
 
 **The installers' package id never changes.** Velopack's `packId` names the desktop install folder and the update
@@ -77,5 +77,6 @@ installers' main executable (`-e`, the slug) changes in step 2; whether Velopack
 one package id has to be tried on an installed Windows and macOS copy before step 2 ships.
 
 For zedMap: the brand is **zedMap** (lower-case z) in prose and `ProductDisplayName`; `ZedMap` is the code prefix,
-`zedmap` the next slug, `ZEDMAP` the next environment-variable prefix. Until step 2, the slug, the environment-variable
-prefix (`APRSMAP_`) and the repository (`APRS-NET/AprsMap`) keep the old name.
+`zedmap` the slug, `ZEDMAP` the environment-variable prefix, `APRS-NET/zedMap` the repository (step 2 done in 0.10.0;
+`PreviousSlugs` is `aprsmap`, so user data, `APRSMAP_CONFIG` and "aprsmap ping" still work). `aprsmap` stays only as
+the installers' package id.

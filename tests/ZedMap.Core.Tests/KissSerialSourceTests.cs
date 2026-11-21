@@ -173,7 +173,7 @@ public sealed class KissSerialSourceTests
     [Fact]
     public async Task APortThatIsntThereSaysTheTncCantBeReachedAndKeepsTrying()
     {
-        var tnc = SourceSettings.KissSerialFor("/dev/aprsmap-no-such-port");
+        var tnc = SourceSettings.KissSerialFor("/dev/zedmap-no-such-port");
         using var engine = Create(tnc);
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         var run = engine.RunAsync(cts.Token);
@@ -349,7 +349,7 @@ internal sealed class PtyPair : IAsyncDisposable
         {
             Assert.Skip("Needs Linux and socat for a pseudo-terminal pair.");
         }
-        var dir = Directory.CreateTempSubdirectory("aprsmap-serial-");
+        var dir = Directory.CreateTempSubdirectory("zedmap-serial-");
         var socat = Process.Start(
             new ProcessStartInfo(
                 "/usr/bin/socat",

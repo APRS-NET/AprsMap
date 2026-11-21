@@ -1,8 +1,8 @@
 # zedMap
 
-[![CI](https://github.com/APRS-NET/AprsMap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/APRS-NET/AprsMap/actions/workflows/ci.yml)
-[![Packages](https://github.com/APRS-NET/AprsMap/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/APRS-NET/AprsMap/actions/workflows/packages.yml)
-[![Line coverage](https://raw.githubusercontent.com/APRS-NET/AprsMap/badges/badge_linecoverage.svg)](#code-coverage)
+[![CI](https://github.com/APRS-NET/zedMap/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/APRS-NET/zedMap/actions/workflows/ci.yml)
+[![Packages](https://github.com/APRS-NET/zedMap/actions/workflows/packages.yml/badge.svg?branch=main)](https://github.com/APRS-NET/zedMap/actions/workflows/packages.yml)
+[![Line coverage](https://raw.githubusercontent.com/APRS-NET/zedMap/badges/badge_linecoverage.svg)](#code-coverage)
 [![AI-DECLARATION: copilot](https://img.shields.io/badge/䷼%20AI--DECLARATION-copilot-fee2e2?labelColor=fee2e2)](https://ai-declaration.md)
 
 An APRS map client for amateur radio, built on .NET 10 and Avalonia: a native desktop app for Windows, Linux and
@@ -23,11 +23,10 @@ port places the station, with a sky view and statistics over time. Station lists
 event's volunteers or the spotters you work with in one click, wherever they are. The gateway runs as a Linux service
 that updates itself, and the desktop app can be its client, with a revocable API key of its own; every release carries
 an SBOM. The IGate follows aprsc's IGate hints (APRS.NET 0.9.0), and APRS-IS's feed can be switched off to watch only
-what the radio hears while the station stays connected for the IGate and messages. The app is being renamed from
-AprsMap to zedMap: the 0.9.0 alphas carry the new name in the app and the code, while its files, folders, gateway
-service and this repository keep `aprsmap` until 0.10.0, which finishes the rename and transmits with the registered
-TOCALL, `APMAPZ` ([docs/branding.md](docs/branding.md#renaming-in-two-steps)); then, in 0.11.0, APRS.NET's IS2
-features.
+what the radio hears while the station stays connected for the IGate and messages. 0.10.0 finishes the rename from
+AprsMap to zedMap: files, folders, the gateway service, the container image and this repository are `zedmap` now, and
+installs from 0.9.0-alpha.4 on move over by themselves ([docs/branding.md](docs/branding.md#renaming-in-two-steps)).
+Next: transmitting with the registered TOCALL, `APMAPZ`, then, in 0.11.0, APRS.NET's IS2 features.
 See [docs/status.md](docs/status.md) for what
 to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 
@@ -39,8 +38,8 @@ to expect when you run it, and [docs/scope.md](docs/scope.md) for the plan.
 
 | App | Get it |
 | --- | --- |
-| Desktop | [GitHub releases](https://github.com/APRS-NET/AprsMap/releases): `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64` archives. Self-contained, no .NET install needed. Unsigned for now. |
-| Web (gateway) | `docker run -p 8080:8080 ghcr.io/aprs-net/aprsmap:alpha`, then open <http://localhost:8080>. Multi-arch (`linux/amd64`, `linux/arm64`). See [docs/deployment.md](docs/deployment.md). |
+| Desktop | [GitHub releases](https://github.com/APRS-NET/zedMap/releases): `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64` archives. Self-contained, no .NET install needed. Unsigned for now. |
+| Web (gateway) | `docker run -p 8080:8080 ghcr.io/aprs-net/zedmap:alpha`, then open <http://localhost:8080>. Multi-arch (`linux/amd64`, `linux/arm64`). See [docs/deployment.md](docs/deployment.md). |
 
 Without a passcode the app logs in to APRS-IS receive-only, and nothing is transmitted.
 
@@ -272,7 +271,7 @@ logs, metrics and traces over OTLP from the desktop app or the gateway. Exported
 
 | Name | From | Metrics |
 | --- | --- | --- |
-| `ZedMap.Core` | The engine | `aprsmap.packets.received` (by packet type), `aprsmap.lines.rejected`, `aprsmap.connection.failures`, `aprsmap.gps.fix.time` (seconds by fix: 3d, 2d, none, silent) and `aprsmap.gps.fix.losses` for the GPS in use, `aprsmap.digipeated`; an `aprs-is.session` trace per connection |
+| `ZedMap.Core` | The engine | `zedmap.packets.received` (by packet type), `zedmap.lines.rejected`, `zedmap.connection.failures`, `zedmap.gps.fix.time` (seconds by fix: 3d, 2d, none, silent) and `zedmap.gps.fix.losses` for the GPS in use, `zedmap.digipeated`; an `aprs-is.session` trace per connection |
 | `AprsNet.*` | APRS.NET, today `AprsNet.AprsIsTcpClient` | `aprsnet.aprsis.lines.received` (packets and server comments), `…packets.received` (by type and outcome), `…packets.parse_failures` (by reason), `…connection.attempts`, `…connection.reconnects`, `…connection.active`, `…login.results`, `…packets.dropped`, `…connection.idle_timeouts` |
 | runtime, HTTP client (and ASP.NET Core on the gateway) | OpenTelemetry instrumentation | The standard .NET ones |
 
@@ -282,7 +281,7 @@ To watch them while developing (for example in Rider), either:
   and add `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317` to the run configuration's environment; open
   <http://localhost:18888> (the login token is in the container's log); or
 - without exporting anything, attach `dotnet-counters` (`dotnet tool install -g dotnet-counters`):
-  `dotnet-counters monitor -n aprsmap --counters ZedMap.Core,AprsNet.AprsIsTcpClient`.
+  `dotnet-counters monitor -n zedmap --counters ZedMap.Core,AprsNet.AprsIsTcpClient`.
 
 ## Code coverage
 

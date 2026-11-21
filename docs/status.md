@@ -3,7 +3,7 @@
 What you should expect to see when you run zedMap today, and what isn't there yet. Per-feature status lives in
 [scope.md](scope.md); this page is the short version for someone trying the app.
 
-As of 2026-10-27 (`main`, `0.7.0-alpha.4`, most of [0.8.0](https://github.com/APRS-NET/AprsMap/milestone/6)):
+As of 2026-10-27 (`main`, `0.7.0-alpha.4`, most of [0.8.0](https://github.com/APRS-NET/zedMap/milestone/6)):
 **receive and transmit, over APRS-IS and your own TNCs.** The app connects to APRS-IS and to KISS TNCs over TCP
 (Direwolf, soundmodem) and on serial ports (a TH-D72A's built-in TNC, TNC-X, NinoTNC), draws the stations on a live map
 with their tracks, RF paths and dead-reckoned positions, lists them and their packets, and has a dashboard of live
@@ -15,9 +15,9 @@ port, and only a signed-in operator (or an app with the gateway's API key) can t
 service configured in TOML. The desktop app installs, finds and installs its own updates, and can show a gateway
 instead of running its own engine. In the browser, a panel can open in a tab of its own.
 
-**Next:** the rest of [0.8.0](https://github.com/APRS-NET/AprsMap/milestone/6): AGWPE TNCs as sources
-([#384](https://github.com/APRS-NET/AprsMap/issues/384)) and transmitting with the registered TOCALL
-([#211](https://github.com/APRS-NET/AprsMap/issues/211)).
+**Next:** the rest of [0.8.0](https://github.com/APRS-NET/zedMap/milestone/6): AGWPE TNCs as sources
+([#384](https://github.com/APRS-NET/zedMap/issues/384)) and transmitting with the registered TOCALL
+([#211](https://github.com/APRS-NET/zedMap/issues/211)).
 
 ## What you'll see
 
@@ -31,8 +31,8 @@ through that entry). See [deployment.md](deployment.md#desktop-app) for where ea
 1. **First run:** the setup wizard covers the window. It asks for your callsign, an optional location (Maidenhead
    locator, address or postal code, coordinates, or a point on a map; in the browser also "this device's location"),
    the APRS-IS server or **a TNC instead** (RF only, no passcode), and an optional passcode. The passcode calculator is there, behind the "licensed, own callsign" tick.
-   Settings are saved in your user folder (`~/.config/aprsnet/aprsmap` on Linux, `%APPDATA%\aprsnet\aprsmap` on Windows,
-   `~/Library/Application Support/aprsnet/aprsmap` on macOS).
+   Settings are saved in your user folder (`~/.config/aprsnet/zedmap` on Linux, `%APPDATA%\aprsnet\zedmap` on Windows,
+   `~/Library/Application Support/aprsnet/zedmap` on macOS).
 2. **The window:** the map in the centre, with panels around it that dock, tab, split, auto-hide and float. The layout
    and the window's place are remembered. The menus (File, View, Station, Tools, Help) are hidden until Alt or F10 on
    Windows and Linux, in the system menu bar on macOS, and under ☰ everywhere; View › Panels brings back closed panels,
@@ -90,7 +90,7 @@ The web app runs only when the **gateway** serves it: the gateway runs the engin
 the same window as the desktop app, live.
 
 - **To try it:** `APRS_CALLSIGN=YOURCALL-10 docker compose up --build`, then open <http://localhost:8080>. Release images
-  are at `ghcr.io/aprs-net/aprsmap`.
+  are at `ghcr.io/aprs-net/zedmap`.
 - **First start:** the callsign, server and filter come from the environment the first time only, and are then stored
   in the `settings` volume. The compose file's sample filter is around Boulder, Colorado (`r/40.0/-105.0/50`). Change
   `Engine__Filter` before the first start, or remove the volume to start over.
@@ -109,9 +109,9 @@ the same window as the desktop app, live.
 
 | What | Where it's planned |
 | --- | --- |
-| AGWPE TNCs as sources | F3.8, [0.8.0](https://github.com/APRS-NET/AprsMap/milestone/6) ([#384](https://github.com/APRS-NET/AprsMap/issues/384)) |
-| Transmitting with the registered TOCALL (today `APZAMP`) | [0.8.0](https://github.com/APRS-NET/AprsMap/milestone/6) ([#211](https://github.com/APRS-NET/AprsMap/issues/211)) |
-| A conversation per ANSRVR group | F2.5 ([#285](https://github.com/APRS-NET/AprsMap/issues/285)), in review |
+| AGWPE TNCs as sources | F3.8, [0.8.0](https://github.com/APRS-NET/zedMap/milestone/6) ([#384](https://github.com/APRS-NET/zedMap/issues/384)) |
+| Transmitting with the registered TOCALL (today `APZAMP`) | [0.8.0](https://github.com/APRS-NET/zedMap/milestone/6) ([#211](https://github.com/APRS-NET/zedMap/issues/211)) |
+| A conversation per ANSRVR group | F2.5 ([#285](https://github.com/APRS-NET/zedMap/issues/285)), in review |
 | GPS from the OS location API or the browser | F3.6, later |
 | Signed installers (Windows SmartScreen and macOS warn on first install) | F4.15 behavior 14, when there's a signing provider |
 | Translations | F0.9 groundwork is done (English only); translations come from contributors |

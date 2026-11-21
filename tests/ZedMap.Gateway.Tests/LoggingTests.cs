@@ -20,7 +20,7 @@ public sealed class LoggingTests : IDisposable
     // Never the real user folders: every file and setting here is in a temporary folder.
     private readonly string _folder = Path.Combine(
         Path.GetTempPath(),
-        "aprsmap-logging-" + Guid.NewGuid().ToString("N")
+        "zedmap-logging-" + Guid.NewGuid().ToString("N")
     );
 
     public void Dispose()
@@ -63,7 +63,7 @@ public sealed class LoggingTests : IDisposable
         }
         provider.Dispose(); // flushes
 
-        var path = Path.Combine(_folder, "logs", "aprsmap-2026-10-19.log");
+        var path = Path.Combine(_folder, "logs", "zedmap-2026-10-19.log");
         var lines = Lines(path);
         Assert.Equal("2026-10-19T13:45:07.123Z INF ZedMap.Connections Connected to T2TEST", lines[0]);
         Assert.Matches(
@@ -84,15 +84,15 @@ public sealed class LoggingTests : IDisposable
 
         time.Advance(TimeSpan.FromMinutes(2)); // past midnight UTC
         Write(logger, LogLevel.Information, "after midnight");
-        Assert.EndsWith("aprsmap-2026-10-20.log", provider.CurrentFile, StringComparison.Ordinal);
+        Assert.EndsWith("zedmap-2026-10-20.log", provider.CurrentFile, StringComparison.Ordinal);
 
         state.Update(LoggingSettings.Default with { File = new LogFileSettings(On: false) });
         Assert.Null(provider.CurrentFile);
         Assert.False(logger.IsEnabled(LogLevel.Error));
         provider.Dispose();
 
-        Assert.Contains("before midnight", Lines(Path.Combine(_folder, "logs", "aprsmap-2026-10-19.log"))[0]);
-        Assert.Contains("after midnight", Lines(Path.Combine(_folder, "logs", "aprsmap-2026-10-20.log"))[0]);
+        Assert.Contains("before midnight", Lines(Path.Combine(_folder, "logs", "zedmap-2026-10-19.log"))[0]);
+        Assert.Contains("after midnight", Lines(Path.Combine(_folder, "logs", "zedmap-2026-10-20.log"))[0]);
     }
 
     [Fact]
@@ -101,24 +101,24 @@ public sealed class LoggingTests : IDisposable
         Directory.CreateDirectory(_folder);
         void Make(string name, int kilobytes) =>
             File.WriteAllBytes(Path.Combine(_folder, name), new byte[kilobytes * 1024]);
-        Make("aprsmap-2026-09-01.log", 1); // 48 days old
-        Make("aprsmap-2026-10-10.log", 600);
-        Make("aprsmap-2026-10-10_001.log", 600);
-        Make("aprsmap-2026-10-18.log", 600);
-        Make("aprsmap-2026-10-19.log", 10); // today's
+        Make("zedmap-2026-09-01.log", 1); // 48 days old
+        Make("zedmap-2026-10-10.log", 600);
+        Make("zedmap-2026-10-10_001.log", 600);
+        Make("zedmap-2026-10-18.log", 600);
+        Make("zedmap-2026-10-19.log", 10); // today's
         Make("notes.log", 1); // not ours
-        Make("aprsmap-backup.log", 1); // not a day
+        Make("zedmap-backup.log", 1); // not a day
 
         var settings = new LogFileSettings(KeepDays: 14, TotalMegabytes: 1); // 1 MB in all, for the test
         FileLoggerProvider.Clean(
             _folder,
             settings,
             DateTimeOffset.Parse("2026-10-19T12:00:00Z", null),
-            Path.Combine(_folder, "aprsmap-2026-10-19.log")
+            Path.Combine(_folder, "zedmap-2026-10-19.log")
         );
 
         // Both sides sorted: with another product name (tools/rename-product.py), its files sort elsewhere.
-        string[] kept = ["aprsmap-2026-10-18.log", "aprsmap-2026-10-19.log", "aprsmap-backup.log", "notes.log"];
+        string[] kept = ["zedmap-2026-10-18.log", "zedmap-2026-10-19.log", "zedmap-backup.log", "notes.log"];
         Assert.Equal(
             kept.Order(StringComparer.Ordinal),
             Directory.GetFiles(_folder).Select(Path.GetFileName).Order(StringComparer.Ordinal)
@@ -126,10 +126,10 @@ public sealed class LoggingTests : IDisposable
     }
 
     [Theory]
-    [InlineData("aprsmap-2026-10-19.log", true)]
-    [InlineData("aprsmap-2026-10-19_003.log", true)]
-    [InlineData("aprsmap-2026-13-19.log", false)]
-    [InlineData("aprsmap-2026-10-19.txt", false)]
+    [InlineData("zedmap-2026-10-19.log", true)]
+    [InlineData("zedmap-2026-10-19_003.log", true)]
+    [InlineData("zedmap-2026-13-19.log", false)]
+    [InlineData("zedmap-2026-10-19.txt", false)]
     [InlineData("other-2026-10-19.log", false)]
     public void ADayIsReadOnlyFromThisAppsFileNames(string name, bool ours) =>
         Assert.Equal(ours, FileLoggerProvider.DayOf(name) is not null);

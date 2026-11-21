@@ -24,7 +24,7 @@ import websockets
 
 URL, OUT = sys.argv[1], sys.argv[2]
 PORT = 9343
-KEY = "aprsmap.layout"
+KEY = "zedmap.layout"
 HEADER_HEIGHTS = [67, 62, 72, 58, 78]
 # Harmless messages from Avalonia's browser script: it asks for a permission Firefox doesn't know without catching the
 # refusal, and on a machine without a GPU (CI runners) it logs each WebGL mode it can't get before drawing in software.

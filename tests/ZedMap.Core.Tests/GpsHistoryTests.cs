@@ -174,7 +174,7 @@ public sealed class GpsHistoryTests
         {
             if (
                 instrument.Meter.Name == EngineTelemetry.Name
-                && instrument.Name.StartsWith("aprsmap.gps.", StringComparison.Ordinal)
+                && instrument.Name.StartsWith("zedmap.gps.", StringComparison.Ordinal)
             )
             {
                 l.EnableMeasurementEvents(instrument);

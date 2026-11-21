@@ -7,20 +7,20 @@
     <!-- What users see in titles, About, installers and the web manifest. Lower-case z: the brand is zedMap. -->
     <ProductDisplayName>zedMap</ProductDisplayName>
     <!-- Lower-case slug: config/cache folder, container image, URLs. -->
-    <ProductSlug>aprsmap</ProductSlug>
+    <ProductSlug>zedmap</ProductSlug>
     <!-- The desktop installers' package id (Velopack's packId): it names the install folder and the update feed's
          packages, so an installed copy only updates from packages with the same id. It never changes, not even with
          a rename (docs/branding.md, "Renaming in two steps"); tools/rename-product.py leaves this line alone. -->
     <ProductPackageId>aprsmap</ProductPackageId>
     <!-- Earlier slugs, semicolon-separated, so user data can be migrated after a rename. -->
-    <PreviousSlugs></PreviousSlugs>
+    <PreviousSlugs>aprsmap</PreviousSlugs>
     <!-- The slug the next rename moves to, so this release's update check already finds releases published under it
          (docs/branding.md, "Renaming in two steps"). Empty when no rename is under way. -->
-    <NextSlug>zedmap</NextSlug>
+    <NextSlug></NextSlug>
     <!-- Transmitted device ID: the APZAMP placeholder (experimental APZ range) until APMAPZ is registered in
          aprs-deviceid. Not tied to the product name; see docs/branding.md. -->
     <ProductTocall>APZAMP</ProductTocall>
-    <ProductSourceUrl>https://github.com/APRS-NET/AprsMap</ProductSourceUrl>
+    <ProductSourceUrl>https://github.com/APRS-NET/zedMap</ProductSourceUrl>
     <Company>Derek Rowland</Company>
     <Product>$(ProductDisplayName)</Product>
   </PropertyGroup>

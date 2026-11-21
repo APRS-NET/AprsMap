@@ -7,7 +7,7 @@ namespace ZedMap.UI.Tests;
 
 public sealed class AppearancePreferencesTests : IDisposable
 {
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "aprsmap-prefs-" + Guid.NewGuid().ToString("N"));
+    private readonly string _folder = Path.Combine(Path.GetTempPath(), "zedmap-prefs-" + Guid.NewGuid().ToString("N"));
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 

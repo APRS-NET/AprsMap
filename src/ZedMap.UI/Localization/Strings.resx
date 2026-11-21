@@ -1361,7 +1361,7 @@ Start the gateway (for example with docker compose up), then open the app from t
   </data>
   <data name="About.Files.JournalLogs" xml:space="preserve">
     <value>The gateway's log is in the system journal (journalctl -u {service}), unless a log file is turned on in Settings › Logging.</value>
-    <comment>journalctl -u is a command; keep it. service: the service's name, such as aprsmap-gateway.</comment>
+    <comment>journalctl -u is a command; keep it. service: the service's name, such as zedmap-gateway.</comment>
   </data>
   <data name="About.Files.DockerLogs" xml:space="preserve">
     <value>The gateway's log is the container's output (docker logs), unless a log file is turned on in Settings › Logging.</value>
