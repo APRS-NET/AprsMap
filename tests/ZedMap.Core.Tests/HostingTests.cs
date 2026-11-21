@@ -51,7 +51,7 @@ public class HostingTests
     [Fact]
     public async Task EnabledEngineStartsConnectingWithTheHost()
     {
-        var data = Directory.CreateTempSubdirectory("aprsmap-hosting-");
+        var data = Directory.CreateTempSubdirectory("zedmap-hosting-");
         using var cleanup = new Cleanup(data);
         var factory = new BlockingSourceFactory();
         var services = new ServiceCollection()
@@ -79,7 +79,7 @@ public class HostingTests
     public async Task AnEngineForUpdatesOnlyOpensNoSourceAndKeepsNoHistory()
     {
         // The desktop as a gateway's client (F1.39 behavior 5): its own engine checks for updates and nothing else.
-        var data = Directory.CreateTempSubdirectory("aprsmap-hosting-");
+        var data = Directory.CreateTempSubdirectory("zedmap-hosting-");
         using var cleanup = new Cleanup(data);
         var factory = new BlockingSourceFactory();
         var services = new ServiceCollection()
@@ -109,7 +109,7 @@ public class HostingTests
     public async Task AprsIsOnStartIsIgnoredNow()
     {
         // #415's option is deprecated (F1.44 behavior 5): the switches keep their saved state.
-        var data = Directory.CreateTempSubdirectory("aprsmap-hosting-");
+        var data = Directory.CreateTempSubdirectory("zedmap-hosting-");
         using var cleanup = new Cleanup(data);
         var factory = new BlockingSourceFactory();
         var store = InMemorySettingsStore.WithProfile();

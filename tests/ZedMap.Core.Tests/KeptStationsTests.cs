@@ -13,7 +13,7 @@ public sealed class KeptStationsTests : IDisposable
 
     private static readonly DateTimeOffset T0 = DateTimeOffset.Parse("2026-10-20T12:00:00Z", null);
 
-    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("aprsmap-kept-");
+    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("zedmap-kept-");
     private readonly FakeTimeProvider _time = new(T0);
 
     public void Dispose() => _folder.Delete(recursive: true);

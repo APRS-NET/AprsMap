@@ -106,7 +106,7 @@ public sealed class FileLoggerProvider : ILoggerProvider
                             outputTemplate: "{Message:l}{NewLine}{Exception}",
                             formatProvider: CultureInfo.InvariantCulture,
                             fileSizeLimitBytes: (long)file.MaxFileMegabytes * 1024 * 1024,
-                            rollOnFileSizeLimit: true, // aprsmap-2026-10-19_001.log and on, within the day
+                            rollOnFileSizeLimit: true, // zedmap-2026-10-19_001.log and on, within the day
                             retainedFileCountLimit: null, // kept by age and total, below
                             encoding: new UTF8Encoding(false)
                         )
@@ -188,7 +188,7 @@ public sealed class FileLoggerProvider : ILoggerProvider
         }
     }
 
-    /// <summary>The UTC day in a log file's name (<c>aprsmap-2026-10-19.log</c>, <c>aprsmap-2026-10-19_001.log</c>), or null.</summary>
+    /// <summary>The UTC day in a log file's name (<c>zedmap-2026-10-19.log</c>, <c>zedmap-2026-10-19_001.log</c>), or null.</summary>
     internal static DateOnly? DayOf(string name)
     {
         var prefix = Brand.Slug + "-";

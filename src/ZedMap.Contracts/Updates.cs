@@ -65,7 +65,7 @@ public sealed record UpdateSettings(
 }
 
 /// <summary>A file attached to a release.</summary>
-/// <param name="Name">Its name, such as <c>aprsmap-v0.5.0-linux-x64.tar.gz</c>.</param>
+/// <param name="Name">Its name, such as <c>zedmap-v0.5.0-linux-x64.tar.gz</c>.</param>
 /// <param name="Url">Where to download it.</param>
 /// <param name="Size">Its size in bytes.</param>
 public sealed record UpdateFile(string Name, Uri Url, long Size);

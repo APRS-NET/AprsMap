@@ -7,18 +7,18 @@ namespace ZedMap.UI.Tests;
 public sealed class ReleaseNotesTests
 {
     private const string Notes = """
-        ## [0.5.0-alpha.6](https://github.com/APRS-NET/AprsMap/compare/v0.5.0-alpha.5...v0.5.0-alpha.6) (2026-10-25)
+        ## [0.5.0-alpha.6](https://github.com/APRS-NET/zedMap/compare/v0.5.0-alpha.5...v0.5.0-alpha.6) (2026-10-25)
 
 
         ### Features
 
-        * **updates:** check on start and every two hours ([f8e75a7](https://github.com/APRS-NET/AprsMap/commit/f8e75a7)), closes [#361](https://github.com/APRS-NET/AprsMap/issues/361)
+        * **updates:** check on start and every two hours ([f8e75a7](https://github.com/APRS-NET/zedMap/commit/f8e75a7)), closes [#361](https://github.com/APRS-NET/zedMap/issues/361)
         * the `browser` folder ships with the desktop app
 
 
         ### Bug Fixes
 
-        * **deps:** release APRS.NET 0.6.0-alpha.2 ([341c23d](https://github.com/APRS-NET/AprsMap/commit/341c23d))
+        * **deps:** release APRS.NET 0.6.0-alpha.2 ([341c23d](https://github.com/APRS-NET/zedMap/commit/341c23d))
           * a nested note
         Some closing words
         over two lines.
@@ -47,7 +47,7 @@ public sealed class ReleaseNotesTests
         var feature = blocks[1].Spans;
         Assert.Equal(new NoteSpan("updates:", Bold: true), feature[0]);
         Assert.Equal(" check on start and every two hours (", feature[1].Text);
-        Assert.Equal(new Uri("https://github.com/APRS-NET/AprsMap/commit/f8e75a7"), feature[2].Link);
+        Assert.Equal(new Uri("https://github.com/APRS-NET/zedMap/commit/f8e75a7"), feature[2].Link);
         Assert.Equal("f8e75a7", feature[2].Text);
         Assert.Equal("#361", feature[^1].Text);
 

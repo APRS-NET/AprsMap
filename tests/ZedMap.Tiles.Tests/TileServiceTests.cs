@@ -14,7 +14,7 @@ namespace ZedMap.Tiles.Tests;
 public sealed class TileServiceTests : IDisposable
 {
     private static readonly byte[] Png = [0x89, 0x50, 0x4E, 0x47];
-    private readonly string _folder = Path.Combine(Path.GetTempPath(), "aprsmap-tiles-" + Guid.NewGuid().ToString("N"));
+    private readonly string _folder = Path.Combine(Path.GetTempPath(), "zedmap-tiles-" + Guid.NewGuid().ToString("N"));
     private readonly FakeTimeProvider _time = new(new DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero));
     private readonly FakeServer _server = new();
 

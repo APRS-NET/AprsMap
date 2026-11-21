@@ -205,7 +205,7 @@ internal sealed class OperatorStore
 internal sealed partial class OperatorJson : JsonSerializerContext;
 
 /// <summary>
-/// <c>aprsmap-gateway operator add|password|remove|list NAME</c> (behavior 1): sets operators up on the host. A password
+/// <c>zedmap-gateway operator add|password|remove|list NAME</c> (behavior 1): sets operators up on the host. A password
 /// is asked for twice without echo and only its hash is stored.
 /// </summary>
 internal static class OperatorCommand

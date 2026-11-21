@@ -14,7 +14,7 @@ namespace ZedMap.Server;
 /// </summary>
 internal sealed partial class Viewers : IDisposable
 {
-    /// <summary>The gateway's meter, for <c>aprsmap.gateway.viewers</c>.</summary>
+    /// <summary>The gateway's meter, for <c>zedmap.gateway.viewers</c>.</summary>
     public const string MeterName = "ZedMap.Gateway";
 
     private readonly Lock _gate = new();
@@ -29,7 +29,7 @@ internal sealed partial class Viewers : IDisposable
         _options = options;
         _logger = logger;
         _meter.CreateObservableGauge(
-            "aprsmap.gateway.viewers",
+            "zedmap.gateway.viewers",
             () => Count,
             unit: "{viewer}",
             description: "Browsers connected to the gateway."
@@ -176,7 +176,7 @@ internal static class ViewerGate
 internal sealed class ViewerFilter(Viewers viewers, IOptionsMonitor<GatewayOptions> options, Core.Engine engine)
     : IHubFilter
 {
-    private const string LimiterKey = "aprsmap.limiter";
+    private const string LimiterKey = "zedmap.limiter";
 
     public async Task OnConnectedAsync(HubLifetimeContext context, Func<HubLifetimeContext, Task> next)
     {

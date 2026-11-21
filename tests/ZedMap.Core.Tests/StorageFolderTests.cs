@@ -15,7 +15,7 @@ public sealed class StorageFolderTests
     public async Task TheEnginesFoldersAndTheOthersAreListedInOrderSayingWhatsConfiguredOrMissing()
     {
         // Never the real user folders: a temp folder, created for settings only.
-        var root = Path.Combine(Path.GetTempPath(), "aprsmap-folders-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "zedmap-folders-" + Guid.NewGuid().ToString("N"));
         var settings = Path.Combine(root, "settings");
         Directory.CreateDirectory(settings);
         try

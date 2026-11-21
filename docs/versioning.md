@@ -14,7 +14,7 @@ release as a pre-release, and the container image is tagged with the exact versi
    - runs the tests;
    - publishes the desktop app self-contained and single-file for `win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`,
      `osx-x64` and `osx-arm64`, and attaches the archives to the release;
-   - builds the gateway image for `linux/amd64` and `linux/arm64` and pushes it to `ghcr.io/aprs-net/aprsmap`.
+   - builds the gateway image for `linux/amd64` and `linux/arm64` and pushes it to `ghcr.io/aprs-net/zedmap`.
 4. [MinVer](https://github.com/adamralph/minver) derives every assembly version from the nearest tag, so no version
    number is stored in the repo. Builds between releases look like `0.1.1-alpha.0.3`. The Docker build, which can't see
    git history, receives the version as a build argument.

@@ -15,9 +15,9 @@ public sealed class UpdatesUiTests
     private static readonly UpdateInfo Newer = new(
         "0.5.0-alpha.1",
         DateTimeOffset.Parse("2026-10-20T12:00:00Z", null),
-        new Uri("https://github.com/APRS-NET/AprsMap/releases/tag/v0.5.0-alpha.1"),
+        new Uri("https://github.com/APRS-NET/zedMap/releases/tag/v0.5.0-alpha.1"),
         string.Join('\n', Enumerable.Range(1, 50).Select(i => $"- change {i}")),
-        "ghcr.io/aprs-net/aprsmap:0.5.0-alpha.1",
+        "ghcr.io/aprs-net/zedmap:0.5.0-alpha.1",
         []
     );
 
@@ -84,7 +84,7 @@ public sealed class UpdatesUiTests
 
         var dialog = updates.Dialog!;
         Assert.False(dialog.CanDownload);
-        Assert.Contains("ghcr.io/aprs-net/aprsmap:0.5.0-alpha.1", dialog.PullText, StringComparison.Ordinal);
+        Assert.Contains("ghcr.io/aprs-net/zedmap:0.5.0-alpha.1", dialog.PullText, StringComparison.Ordinal);
     }
 
     [Fact]

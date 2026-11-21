@@ -15,7 +15,7 @@ public sealed class DeviceListTests : IDisposable
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private readonly string _folder = Directory.CreateTempSubdirectory("aprsmap-devicelist-").FullName;
+    private readonly string _folder = Directory.CreateTempSubdirectory("zedmap-devicelist-").FullName;
 
     public void Dispose() => Directory.Delete(_folder, recursive: true);
 
@@ -93,7 +93,7 @@ public sealed class DeviceListTests : IDisposable
         {
             DeviceListHttp = new HttpClient(server),
         };
-        engine.DeviceListHttp.DefaultRequestHeaders.UserAgent.ParseAdd("aprsmap/0.0 (test)");
+        engine.DeviceListHttp.DefaultRequestHeaders.UserAgent.ParseAdd("zedmap/0.0 (test)");
         return (engine, server, time, store, sources);
     }
 
@@ -142,7 +142,7 @@ public sealed class DeviceListTests : IDisposable
             ); // named at once (behavior 3)
             Assert.Equal("\"v1\"", (await engine.GetSettingsAsync(Ct)).EffectiveDeviceList.ETag);
             Assert.Contains(
-                "aprsmap",
+                "zedmap",
                 server.Requests[0].Headers.UserAgent.ToString(),
                 StringComparison.OrdinalIgnoreCase
             );

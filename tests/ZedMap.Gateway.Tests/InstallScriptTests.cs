@@ -14,7 +14,7 @@ namespace ZedMap.Gateway.Tests;
 public sealed class InstallScriptTests : IDisposable
 {
     private const string Old = "oldmap";
-    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("aprsmap-install-");
+    private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("zedmap-install-");
 
     private string Root => _root.FullName;
 

@@ -17,7 +17,7 @@ public class TelemetryTests
         // Never the real user folders: the settings are read here as the host starts (F1.32), so a temp folder.
         builder.Configuration["Engine:SettingsFolder"] = Path.Combine(
             Path.GetTempPath(),
-            "aprsmap-telemetry-" + Guid.NewGuid().ToString("N")
+            "zedmap-telemetry-" + Guid.NewGuid().ToString("N")
         );
         if (otlp)
         {
@@ -32,7 +32,7 @@ public class TelemetryTests
 
     [Theory]
     [InlineData("AprsNet.AprsIsTcpClient", "aprsnet.aprsis.lines.received")]
-    [InlineData(EngineTelemetry.Name, "aprsmap.test.counter")]
+    [InlineData(EngineTelemetry.Name, "zedmap.test.counter")]
     public void APRSNETsAndTheEnginesMetricsAreExported(string meterName, string counter)
     {
         var (host, exported) = Build(otlp: true);

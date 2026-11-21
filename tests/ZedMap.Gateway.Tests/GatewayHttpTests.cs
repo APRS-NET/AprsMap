@@ -13,7 +13,7 @@ public sealed class ProxiedGatewayFactory : GatewayFactory
 {
     public const string HashedFile = "_framework/app.0123456789.wasm";
 
-    public string WebRoot { get; } = Path.Combine(Path.GetTempPath(), "aprsmap-www-" + Guid.NewGuid().ToString("N"));
+    public string WebRoot { get; } = Path.Combine(Path.GetTempPath(), "zedmap-www-" + Guid.NewGuid().ToString("N"));
 
     /// <summary>The client address each request seemed to come from, after forwarded headers.</summary>
     public System.Collections.Concurrent.ConcurrentQueue<string?> SeenFrom { get; } = new();

@@ -11,7 +11,7 @@ on:
 permissions: {}
 
 env:
-  IMAGE: ghcr.io/aprs-net/aprsmap
+  IMAGE: ghcr.io/aprs-net/zedmap
 
 jobs:
   release-please:
@@ -380,7 +380,7 @@ jobs:
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
-          marker="aprsmap-${TAG}-image.txt"
+          marker="zedmap-${TAG}-image.txt"
           { echo "$TAGS"; echo "digest: $DIGEST"; } > "$marker"
           gh release upload "$TAG" "$marker" --clobber --repo "$GITHUB_REPOSITORY"
       # The image's SBOM (F4.17 behavior 3): CycloneDX, with its OS packages as well as the apps', made from the pushed
@@ -391,7 +391,7 @@ jobs:
         with:
           image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
           format: cyclonedx-json
-          output-file: aprsmap-${{ needs.release-please.outputs.tag_name }}-image.cdx.json
+          output-file: zedmap-${{ needs.release-please.outputs.tag_name }}-image.cdx.json
           upload-artifact: false
           upload-release-assets: false
       - name: Attest the SBOM to the image
@@ -399,10 +399,10 @@ jobs:
         with:
           subject-name: ${{ env.IMAGE }}
           subject-digest: ${{ steps.build.outputs.digest }}
-          sbom-path: aprsmap-${{ needs.release-please.outputs.tag_name }}-image.cdx.json
+          sbom-path: zedmap-${{ needs.release-please.outputs.tag_name }}-image.cdx.json
           push-to-registry: true
       - name: Attach the image's SBOM
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.release-please.outputs.tag_name }}
-        run: gh release upload "$TAG" "aprsmap-${TAG}-image.cdx.json" --clobber --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$TAG" "zedmap-${TAG}-image.cdx.json" --clobber --repo "$GITHUB_REPOSITORY"

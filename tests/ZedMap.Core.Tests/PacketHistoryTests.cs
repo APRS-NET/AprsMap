@@ -14,7 +14,7 @@ public sealed class PacketHistoryTests : IDisposable
     private const string Position = "N0POS-9>APRS,WIDE1-1:!4903.50N/07201.75W>moving";
     private const string Object = "N0OBJ>APRS:;AID-3    *111111z4903.50N/07201.75WAaid station";
 
-    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("aprsmap-history-");
+    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("zedmap-history-");
     private readonly FakeTimeProvider _time = new(DateTimeOffset.Parse("2026-10-27T12:00:00Z", null));
 
     public void Dispose() => _folder.Delete(recursive: true);

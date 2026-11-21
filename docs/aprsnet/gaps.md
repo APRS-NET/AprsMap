@@ -321,7 +321,7 @@ nothing for that long. zedMap shows both on the source's pill (F3.1 behavior 13)
 
 ## G14: Radios' built-in TNCs: KISS setup, and reading a radio in APRS mode
 
-**Need.** F3.2 (zedMap 0.5.0, [#242](https://github.com/APRS-NET/AprsMap/issues/242)): a radio's built-in TNC as a
+**Need.** F3.2 (zedMap 0.5.0, [#242](https://github.com/APRS-NET/zedMap/issues/242)): a radio's built-in TNC as a
 source, starting with the Kenwood TH-D72A.
 
 **Scope** ([APRS.NET#249](https://github.com/APRS-NET/APRS.NET/issues/249), rescoped 2026-10-18, part of #160):
@@ -429,7 +429,7 @@ unproto/raw frames, multi-port enumeration (`G`). It feeds G12 `Ax25Frame` so pa
 **Acceptance.** Recorded sessions; Direwolf AGW interop smoke test (manual).
 
 Tracked as [APRS.NET#224](https://github.com/APRS-NET/APRS.NET/issues/224) (the connection is #225), milestone 0.8.0-alpha.1;
-zedMap's side is [#384](https://github.com/APRS-NET/AprsMap/issues/384).
+zedMap's side is [#384](https://github.com/APRS-NET/zedMap/issues/384).
 
 ## G24: Station track anomaly analysis
 
@@ -572,7 +572,7 @@ subclass, as `LoginRejectedException` is. zedMap waits for it rather than matchi
 
 ## G33: A traffic event for a troubleshooting console
 
-**Need.** zedMap F1.28 Source console (0.5.0, [#246](https://github.com/APRS-NET/AprsMap/issues/246)): a source's live
+**Need.** zedMap F1.28 Source console (0.5.0, [#246](https://github.com/APRS-NET/zedMap/issues/246)): a source's live
 traffic, mostly what never becomes a packet. `ReadPacketsAsync` and `ReadFramesAsync` each have one reader and yield only
 good frames, so the app can't watch them without taking packets away, and what's dropped is only counted. Why something
 was dropped is protocol knowledge, so it belongs in the library.
@@ -597,7 +597,7 @@ no subscriber; a throwing handler doesn't stop reading.
 
 ## G34: Bulletin repeat schedule and ANSRVR group helpers
 
-**Need.** zedMap F2.5 (0.5.0, [#193](https://github.com/APRS-NET/AprsMap/issues/193)): posting bulletins and
+**Need.** zedMap F2.5 (0.5.0, [#193](https://github.com/APRS-NET/zedMap/issues/193)): posting bulletins and
 announcements, and joining announcement groups through ANSRVR.
 
 **Scope** ([APRS.NET#272](https://github.com/APRS-NET/APRS.NET/issues/272), APRS.NET 0.5.0).

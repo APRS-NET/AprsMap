@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-only
 # The gateway's updater (docs/features/F1.40-gateway-service-updates.md, behavior 4), run as root by
-# aprsmap-gateway-update.service when the gateway leaves update-request.json in its data folder. The request holds a
+# zedmap-gateway-update.service when the gateway leaves update-request.json in its data folder. The request holds a
 # version and nothing else: the addresses are built here, from the release address fixed at install and this
 # machine's architecture. Downloads the release tarball and its checksum, checks it, swaps it in keeping the installed
 # one, restarts the service and puts the previous one back if the new one doesn't stay running. Reports each step in
-# update-status.json, which the gateway shows its operator. The APRSMAP_* variables below are for the tests.
+# update-status.json, which the gateway shows its operator. The ZEDMAP_* variables below are for the tests.
 set -euo pipefail
 export LC_ALL=C # SemVer compares identifiers in ASCII order
 
-data="${APRSMAP_DATA:-/var/lib/aprsmap}"
-app="${APRSMAP_APP:-/opt/aprsmap-gateway}"
-service="${APRSMAP_SERVICE:-aprsmap-gateway}"
-settle="${APRSMAP_SETTLE_SECONDS:-30}"
-units="${APRSMAP_UNITS:-/etc/systemd/system}"
-libexec="${APRSMAP_LIBEXEC:-/usr/local/libexec}"
+data="${ZEDMAP_DATA:-/var/lib/zedmap}"
+app="${ZEDMAP_APP:-/opt/zedmap-gateway}"
+service="${ZEDMAP_SERVICE:-zedmap-gateway}"
+settle="${ZEDMAP_SETTLE_SECONDS:-30}"
+units="${ZEDMAP_UNITS:-/etc/systemd/system}"
+libexec="${ZEDMAP_LIBEXEC:-/usr/local/libexec}"
 request="$data/update-request.json"
 status="$data/update-status.json"
 previous="$app.previous"
@@ -155,13 +155,13 @@ fi
 
 # Puts the units and this updater from $app in place.
 install_units() {
-  install -m 0644 "$app/aprsmap-gateway.service" "$units/aprsmap-gateway.service"
-  install -m 0644 "$app/aprsmap-gateway-update.path" "$units/aprsmap-gateway-update.path"
-  install -m 0644 "$app/aprsmap-gateway-update.service" "$units/aprsmap-gateway-update.service"
+  install -m 0644 "$app/zedmap-gateway.service" "$units/zedmap-gateway.service"
+  install -m 0644 "$app/zedmap-gateway-update.path" "$units/zedmap-gateway-update.path"
+  install -m 0644 "$app/zedmap-gateway-update.service" "$units/zedmap-gateway-update.service"
   install -d "$libexec"
   # A copy then a rename, so this running script's own file is never written over.
-  install -m 0755 "$app/aprsmap-gateway-update.sh" "$libexec/aprsmap-gateway-update.tmp"
-  mv -f "$libexec/aprsmap-gateway-update.tmp" "$libexec/aprsmap-gateway-update"
+  install -m 0755 "$app/zedmap-gateway-update.sh" "$libexec/zedmap-gateway-update.tmp"
+  mv -f "$libexec/zedmap-gateway-update.tmp" "$libexec/zedmap-gateway-update"
   systemctl daemon-reload
 }
 

@@ -6,9 +6,9 @@ The gateway image contains the ASP.NET Core gateway, the engine and the browser 
 serves everything on port 8080.
 
 ```sh
-docker run -d --name aprsmap -p 8080:8080 -v aprsmap-settings:/data \
+docker run -d --name zedmap -p 8080:8080 -v zedmap-settings:/data \
   -e Engine__Callsign=YOURCALL-10 -e Engine__Filter="r/40.0/-105.0/50" \
-  ghcr.io/aprs-net/aprsmap:alpha
+  ghcr.io/aprs-net/zedmap:alpha
 ```
 
 Or with Compose, from a clone: `APRS_CALLSIGN=YOURCALL-10 docker compose up --build`.
@@ -75,10 +75,10 @@ Only a signed-in operator may transmit, change the station's settings, read its 
 browser (docs/features/F2.9-operator-sign-in.md). Operators are set up on the host, never from a browser:
 
 ```sh
-docker exec -it aprsmap aprsmap-gateway operator add NAME       # asks for the password twice
-docker exec -it aprsmap aprsmap-gateway operator password NAME  # changes it, ending NAME's sessions
-docker exec -it aprsmap aprsmap-gateway operator remove NAME
-docker exec -it aprsmap aprsmap-gateway operator list
+docker exec -it zedmap zedmap-gateway operator add NAME       # asks for the password twice
+docker exec -it zedmap zedmap-gateway operator password NAME  # changes it, ending NAME's sessions
+docker exec -it zedmap zedmap-gateway operator remove NAME
+docker exec -it zedmap zedmap-gateway operator list
 ```
 
 Passwords have at least 12 characters and are stored in `/data/operators.json` as salted PBKDF2-SHA256 hashes; the
@@ -123,10 +123,10 @@ A KISS TNC on USB serial (a radio's built-in TNC, a TNC-X, a NinoTNC) plugs into
 needs the device passed in, plus access to it: the image runs as the non-root `app` user, so add the device's group.
 
 ```sh
-docker run -d --name aprsmap -p 8080:8080 -v aprsmap-settings:/data \
+docker run -d --name zedmap -p 8080:8080 -v zedmap-settings:/data \
   --device /dev/serial/by-id/usb-Silicon_Labs_CP2102-if00-port0:/dev/ttyTNC \
   --group-add "$(stat -c %g /dev/serial/by-id/usb-Silicon_Labs_CP2102-if00-port0)" \
-  ghcr.io/aprs-net/aprsmap:alpha
+  ghcr.io/aprs-net/zedmap:alpha
 ```
 
 Then add a **KISS over serial** source on `/dev/ttyTNC` in Settings › Sources (an operator action, like any source
@@ -144,9 +144,9 @@ scheme; forwarded headers from anyone else are ignored. With Compose and Caddy (
 
 ```yaml
 services:
-  aprsmap:
-    image: ghcr.io/aprs-net/aprsmap:alpha
-    volumes: [aprsmap-settings:/data]
+  zedmap:
+    image: ghcr.io/aprs-net/zedmap:alpha
+    volumes: [zedmap-settings:/data]
     environment:
       Engine__Callsign: YOURCALL-10
       Gateway__PathBase: /aprs
@@ -156,14 +156,14 @@ services:
     image: caddy:2
     ports: ["80:80", "443:443"]
     command: >
-      sh -c "printf 'aprs.example.org {\n handle /aprs/* {\n  reverse_proxy aprsmap:8080\n }\n}\n' > /etc/caddy/Caddyfile
+      sh -c "printf 'aprs.example.org {\n handle /aprs/* {\n  reverse_proxy zedmap:8080\n }\n}\n' > /etc/caddy/Caddyfile
       && caddy run --config /etc/caddy/Caddyfile"
     networks: [web]
 networks:
   web:
     ipam: { config: [{ subnet: 172.30.0.0/24 }] }
 volumes:
-  aprsmap-settings:
+  zedmap-settings:
 ```
 
 Caddy passes WebSocket upgrades through by itself; other proxies need it set for `/hubs/engine`. Every response
@@ -203,14 +203,14 @@ On a home server such as Unraid, with `/data` in appdata (owned by the image's `
 
 ```yaml
 services:
-  aprsmap:
-    image: ghcr.io/aprs-net/aprsmap:alpha
+  zedmap:
+    image: ghcr.io/aprs-net/zedmap:alpha
     restart: unless-stopped
     ports:
       - "8080:8080"             # the public page, behind your TLS proxy
       - "127.0.0.1:8081:8081"   # the operator port: this host only
     volumes:
-      - /mnt/user/appdata/aprsmap:/data
+      - /mnt/user/appdata/zedmap:/data
     environment:
       Engine__Callsign: YOURCALL-10
       Engine__Server: ""                 # no APRS-IS: what the TNC hears
@@ -253,24 +253,24 @@ SoundModem do on port 8001, KISS over TCP is the simpler choice; AGWPE is for se
 ## Gateway as a Linux service
 
 Without Docker, the gateway runs as a systemd service on a Linux PC, for example one with the TNC on USB and gpsd
-already running. Each release has `aprsmap-gateway-<version>-linux-x64.tar.gz` and `…-linux-arm64.tar.gz`:
+already running. Each release has `zedmap-gateway-<version>-linux-x64.tar.gz` and `…-linux-arm64.tar.gz`:
 self-contained, with the web app in it, so nothing else needs installing.
 
 ```sh
-mkdir aprsmap-gateway && tar -xzf aprsmap-gateway-v0.8.0-linux-x64.tar.gz -C aprsmap-gateway
-sudo aprsmap-gateway/install.sh aprsmap-gateway-v0.8.0-linux-x64.tar.gz
-sudoedit /etc/aprsmap/gateway.toml   # your callsign, TNC and gpsd, before the first start
-sudo systemctl start aprsmap-gateway
-sudo -u aprsmap /opt/aprsmap-gateway/aprsmap-gateway operator add YOURNAME --config /etc/aprsmap/gateway.toml
-journalctl -u aprsmap-gateway -f
+mkdir zedmap-gateway && tar -xzf zedmap-gateway-v0.8.0-linux-x64.tar.gz -C zedmap-gateway
+sudo zedmap-gateway/install.sh zedmap-gateway-v0.8.0-linux-x64.tar.gz
+sudoedit /etc/zedmap/gateway.toml   # your callsign, TNC and gpsd, before the first start
+sudo systemctl start zedmap-gateway
+sudo -u zedmap /opt/zedmap-gateway/zedmap-gateway operator add YOURNAME --config /etc/zedmap/gateway.toml
+journalctl -u zedmap-gateway -f
 ```
 
-The script installs the gateway in `/opt/aprsmap-gateway`, creates the `aprsmap` user (in `dialout`, for the TNC),
-installs `aprsmap-gateway.service`, the updater (below) and a commented `/etc/aprsmap/gateway.toml` (never over one you
+The script installs the gateway in `/opt/zedmap-gateway`, creates the `zedmap` user (in `dialout`, for the TNC),
+installs `zedmap-gateway.service`, the updater (below) and a commented `/etc/zedmap/gateway.toml` (never over one you
 already have), and enables the service. On a first install it doesn't start it: the first start stores the station
 (callsign, passcode, server) from the file, and after that the admin web app changes them. The TNC and gpsd follow the
 file on every start. Run the script again with a newer
-tarball to update; it keeps the file and the data in `/var/lib/aprsmap`, and restarts the service.
+tarball to update; it keeps the file and the data in `/var/lib/zedmap`, and restarts the service.
 
 `install.sh --migrate-from OLD <tarball>` moves a gateway installed under an earlier name to this one: it copies
 `/etc/OLD` and `/var/lib/OLD`, starts this gateway, and disables the old one's units once it stays running (or starts the
@@ -280,7 +280,7 @@ follows a rename (F1.40 behaviors 13, 14).
 The TOML file holds the same settings as the table above: each table is a section and `snake_case` keys are the
 settings' names, so `[gateway] operator_listen` is `Gateway__OperatorListen` and `[engine.kiss_serial] port` is
 `Engine__KissSerial__Port`. It's read after `appsettings.json`, so environment variables still win. Use it anywhere
-with `--config PATH` or `APRSMAP_CONFIG`; a file that isn't valid TOML stops the gateway with the line at fault.
+with `--config PATH` or `ZEDMAP_CONFIG`; a file that isn't valid TOML stops the gateway with the line at fault.
 
 ```toml
 [gateway]
@@ -288,7 +288,7 @@ listen = "0.0.0.0:8080"            # the published, read-only app, on every addr
 operator_listen = "127.0.0.1:8081" # the admin app: only on this PC; 0.0.0.0:8081 to reach it from the network
 
 [engine]
-settings_folder = "/var/lib/aprsmap"
+settings_folder = "/var/lib/zedmap"
 callsign = "N0CALL-10"             # first run only; the devices below are set from here on every start
 
 [engine.kiss_serial]
@@ -300,11 +300,11 @@ host = "localhost"
 
 **Updating and restarting.** When a new version is out, the operator sees it in the admin web app's status bar; its
 dialog has **Update and restart** (docs/features/F1.40-gateway-service-updates.md). The gateway only leaves a request
-in `/var/lib/aprsmap`; `aprsmap-gateway-update.path` starts the updater as root, which downloads the release's tarball
-for this machine and its `.sha256`, checks it, swaps it into `/opt/aprsmap-gateway` (keeping the old one as
-`/opt/aprsmap-gateway.previous`) and restarts the service. If the new version doesn't stay up for 30 seconds, the old
+in `/var/lib/zedmap`; `zedmap-gateway-update.path` starts the updater as root, which downloads the release's tarball
+for this machine and its `.sha256`, checks it, swaps it into `/opt/zedmap-gateway` (keeping the old one as
+`/opt/zedmap-gateway.previous`) and restarts the service. If the new version doesn't stay up for 30 seconds, the old
 one is put back, with `settings.json` as it was before the update. Your TOML file and data are kept. Help › About has
-**Restart gateway**. Its log: `journalctl -u aprsmap-gateway-update`. A Docker gateway has neither: Docker restarts it,
+**Restart gateway**. Its log: `journalctl -u zedmap-gateway-update`. A Docker gateway has neither: Docker restarts it,
 and you update it by pulling the new image.
 
 **Automatic updates.** Settings › Data › Updates has **Install updates automatically** for the operator, off by default.
@@ -338,7 +338,7 @@ Each release attaches an installer for every platform, built with Velopack. An i
 | --- | --- | --- |
 | Windows x64, arm64 | the `.msi` for `win-<arch>` | `C:\Program Files\<publisher>\<product>`, for every user of the PC |
 | macOS x64, arm64 | the `.pkg` for `osx-<arch>` | `/Applications` (or `~/Applications`, which the installer offers) |
-| Linux x64, arm64 | `aprsmap-linux-<arch>.AppImage` | wherever you put it; `~/Applications` is usual |
+| Linux x64, arm64 | `zedmap-linux-<arch>.AppImage` | wherever you put it; `~/Applications` is usual |
 
 - **Windows:** installing asks for administrator approval, and so does each update, because Program Files is
   protected. An administrator can install somewhere else with `msiexec /i <file>.msi VELOPACK_INSTALLDIR="D:\Apps\..."`.
@@ -349,8 +349,8 @@ Each release attaches an installer for every platform, built with Velopack. An i
 - **Unsigned:** the Windows installer isn't signed yet, so SmartScreen warns on the first install, but not on updates,
   which the app applies itself. Code signing is scope F4.8.
 
-The self-contained archives (`aprsmap-v<version>-<rid>.zip` or `.tar.gz`) are still attached. Unpack one anywhere and run
-`aprsmap` (`aprsmap.exe` on Windows). An archive can't update itself, so it offers **Download** instead.
+The self-contained archives (`zedmap-v<version>-<rid>.zip` or `.tar.gz`) are still attached. Unpack one anywhere and run
+`zedmap` (`zedmap.exe` on Windows). An archive can't update itself, so it offers **Download** instead.
 
 ### The desktop app as a gateway's client
 
@@ -374,16 +374,16 @@ where the operating system expects it:
 
 | | Windows | Linux | macOS |
 | --- | --- | --- | --- |
-| Settings, profiles, layout | `%APPDATA%\aprsnet\aprsmap` | `~/.config/aprsnet/aprsmap` | `~/Library/Application Support/aprsnet/aprsmap` |
-| Message history, captures | `%LOCALAPPDATA%\aprsnet\aprsmap` | `~/.local/share/aprsnet/aprsmap` | as settings |
-| Map tiles | `%LOCALAPPDATA%\aprsnet\aprsmap\tiles` | `~/.cache/aprsnet/aprsmap/tiles` | `~/Library/Caches/aprsnet/aprsmap/tiles` |
-| Logs (Settings › Logging; one file a UTC day, kept 14 days, 100 MB at most) | `%LOCALAPPDATA%\aprsnet\aprsmap\logs` | `~/.local/share/aprsnet/aprsmap/logs` | `~/Library/Application Support/aprsnet/aprsmap/logs` |
-| Defaults for every user | `%ProgramData%\aprsnet\aprsmap\appsettings.json` | `/etc/xdg/aprsnet/aprsmap/appsettings.json` | `/Library/Application Support/aprsnet/aprsmap/appsettings.json` |
+| Settings, profiles, layout | `%APPDATA%\aprsnet\zedmap` | `~/.config/aprsnet/zedmap` | `~/Library/Application Support/aprsnet/zedmap` |
+| Message history, captures | `%LOCALAPPDATA%\aprsnet\zedmap` | `~/.local/share/aprsnet/zedmap` | as settings |
+| Map tiles | `%LOCALAPPDATA%\aprsnet\zedmap\tiles` | `~/.cache/aprsnet/zedmap/tiles` | `~/Library/Caches/aprsnet/zedmap/tiles` |
+| Logs (Settings › Logging; one file a UTC day, kept 14 days, 100 MB at most) | `%LOCALAPPDATA%\aprsnet\zedmap\logs` | `~/.local/share/aprsnet/zedmap/logs` | `~/Library/Application Support/aprsnet/zedmap/logs` |
+| Defaults for every user | `%ProgramData%\aprsnet\zedmap\appsettings.json` | `/etc/xdg/aprsnet/zedmap/appsettings.json` | `/Library/Application Support/aprsnet/zedmap/appsettings.json` |
 
 - **Linux:** follows the XDG Base Directory specification, so `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME` and
   `XDG_CONFIG_DIRS` move these folders. The app creates its folders readable only by you, because the settings hold
   passcodes.
-- **Earlier versions:** on Linux, versions before 0.5 kept everything in `~/.aprsnet/aprsmap`, and on Windows the
+- **Earlier versions:** on Linux, versions before 0.5 kept everything in `~/.aprsnet/zedmap`, and on Windows the
   message history sat with the settings in `%APPDATA%`. The first start of a newer version moves those files to the
   folders above, never replacing one that's already there, and removes the old folder once it's empty.
 - **Defaults for every user:** `appsettings.json` beside the program holds the shipped defaults, and an update replaces

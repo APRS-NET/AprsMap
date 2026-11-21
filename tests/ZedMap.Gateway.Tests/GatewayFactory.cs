@@ -22,7 +22,7 @@ public class GatewayFactory : WebApplicationFactory<Program>
     public const int Passcode = 12345;
 
     public string SettingsFolder { get; } =
-        Path.Combine(Path.GetTempPath(), "aprsmap-gateway-" + Guid.NewGuid().ToString("N"));
+        Path.Combine(Path.GetTempPath(), "zedmap-gateway-" + Guid.NewGuid().ToString("N"));
 
     protected virtual bool AllowSettingsChanges => false;
 

@@ -17,7 +17,7 @@ public sealed class DashboardWeekTests : IDisposable
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("aprsmap-week-");
+    private readonly DirectoryInfo _folder = Directory.CreateTempSubdirectory("zedmap-week-");
     private readonly FakeTimeProvider _time = new(T0);
 
     public void Dispose() => _folder.Delete(recursive: true);

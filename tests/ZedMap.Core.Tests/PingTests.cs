@@ -79,7 +79,7 @@ public sealed class PingTests
         var (run, cts, aprsIs, tnc) = await Run(station);
         using (cts)
         {
-            await tnc.Write("NZ0P-9>APRS,WIDE1-1::NZ0P-10  :aprsmap PING from the car{5");
+            await tnc.Write("NZ0P-9>APRS,WIDE1-1::NZ0P-10  :zedmap PING from the car{5");
 
             await WaitUntil(() => Task.FromResult(Pongs(tnc).Any()));
             var pong = Assert.Single(Pongs(tnc));

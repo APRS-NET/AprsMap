@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # The gateway's updater (docs/features/F1.40-gateway-service-updates.md, behavior 4), as root, once per request:
 # downloads the release asked for, checks it, swaps it in and restarts the gateway, or puts the previous one back.
-# Started by aprsmap-gateway-update.path; its log is in the journal (journalctl -u aprsmap-gateway-update).
+# Started by zedmap-gateway-update.path; its log is in the journal (journalctl -u zedmap-gateway-update).
 [Unit]
 Description=zedMap gateway: install a requested update
 Wants=network-online.target
@@ -9,7 +9,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/libexec/aprsmap-gateway-update
+ExecStart=/usr/local/libexec/zedmap-gateway-update
 TimeoutStartSec=15min
 ProtectHome=true
 PrivateTmp=true

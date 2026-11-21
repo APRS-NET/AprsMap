@@ -31,7 +31,7 @@ public static class TilesServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>For example <c>ZedMap/0.3.0 (+https://github.com/APRS-NET/AprsMap)</c>.</summary>
+    /// <summary>For example <c>ZedMap/0.3.0 (+https://github.com/APRS-NET/zedMap)</c>.</summary>
     internal static string UserAgent() =>
         $"{Product(Brand.DisplayName)}/{Product(Brand.Version.Split('+')[0])} (+{Brand.SourceUrl})";
 

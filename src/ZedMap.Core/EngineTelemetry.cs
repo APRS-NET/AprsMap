@@ -18,37 +18,37 @@ public static class EngineTelemetry
     internal static readonly Meter Meter = new(Name);
 
     internal static readonly Counter<long> PacketsReceived = Meter.CreateCounter<long>(
-        "aprsmap.packets.received",
+        "zedmap.packets.received",
         unit: "{packet}",
         description: "APRS packets received, tagged by packet type."
     );
 
     internal static readonly Counter<long> LinesRejected = Meter.CreateCounter<long>(
-        "aprsmap.lines.rejected",
+        "zedmap.lines.rejected",
         unit: "{line}",
         description: "Received lines dropped because they could not be parsed at all."
     );
 
     internal static readonly Counter<long> ConnectionFailures = Meter.CreateCounter<long>(
-        "aprsmap.connection.failures",
+        "zedmap.connection.failures",
         unit: "{failure}",
         description: "Failed APRS-IS connection attempts and dropped connections."
     );
 
     internal static readonly Counter<double> GpsFixTime = Meter.CreateCounter<double>(
-        "aprsmap.gps.fix.time",
+        "zedmap.gps.fix.time",
         unit: "s",
         description: "Time the station's GPS in use spent in each fix state, tagged fix: 3d, 2d, none or silent."
     );
 
     internal static readonly Counter<long> GpsFixLosses = Meter.CreateCounter<long>(
-        "aprsmap.gps.fix.losses",
+        "zedmap.gps.fix.losses",
         unit: "{loss}",
         description: "Fixes the station's GPS in use lost: no fix, or silent, straight after a fix."
     );
 
     internal static readonly Counter<long> Digipeated = Meter.CreateCounter<long>(
-        "aprsmap.digipeated",
+        "zedmap.digipeated",
         unit: "{frame}",
         description: "Frames the station repeated on RF as a digipeater (F3.5)."
     );

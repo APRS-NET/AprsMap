@@ -149,7 +149,7 @@ public sealed class OperatorSignInTests
     [Fact]
     public void TheOperatorCommandStoresOnlyAHashAndRefusesShortPasswords()
     {
-        var folder = Directory.CreateTempSubdirectory("aprsmap-operators-").FullName;
+        var folder = Directory.CreateTempSubdirectory("zedmap-operators-").FullName;
         try
         {
             var output = new StringWriter();
@@ -463,7 +463,7 @@ public sealed class OperatorSignInTests
     [Fact]
     public void SessionsEndWhenUnusedFor12HoursOrAfter7Days()
     {
-        var folder = Directory.CreateTempSubdirectory("aprsmap-sessions-").FullName;
+        var folder = Directory.CreateTempSubdirectory("zedmap-sessions-").FullName;
         try
         {
             var options = new OptionsMonitorStub(new GatewayOptions());

@@ -34,17 +34,14 @@ jobs:
         with:
           global-json-file: global.json
           dotnet-version: 10.0.x
-      # Part-way through the rename to zedMap (docs/branding.md, "Renaming in two steps"): the code prefix is ZedMap,
-      # the slug and the repository's links are still aprsmap and AprsMap, and the brand is spelled zedMap. Every
-      # form goes to the test name.
+      # Every form of the name goes to the test name; the brand is spelled zedMap in prose. The previous name,
+      # aprsmap, stays where it's history: PreviousSlugs, the installers' package id, the changelog and the docs.
       - name: Rename to a test name
-        run: >-
-          python3 tools/rename-product.py ZedMap SkyTrack --apply
-          --also AprsMap=SkyTrack --also aprsmap=skytrack --also APRSMAP=SKYTRACK --also zedMap=skyTrack
+        run: python3 tools/rename-product.py ZedMap SkyTrack --apply --also zedMap=skyTrack
       - name: Only the migration list still names the old product
         run: |
-          # The names are built from parts, or the rename would rewrite this check too.
-          old="aprs""map|zed""map"
+          # The name is built from parts, or the rename would rewrite this check too.
+          old="zed""map"
           left="$(grep -rIl -i -E "$old" --exclude-dir=.git . | grep -v '^./build/Branding.props$' || true)"
           # The installers' package id never changes (build/Branding.props), so the rename must have kept it.
           grep -q "<ProductPackageId>aprs""map</ProductPackageId>" build/Branding.props ||

@@ -2,7 +2,7 @@
 # The zedMap gateway's configuration (docs/features/F1.37-gateway-service.md). Each table is a section of the
 # gateway's settings and each key one setting, snake_case for the setting's name; docs/deployment.md lists them all.
 # Environment variables still win over this file. Restart the service after changing it:
-#   sudo systemctl restart aprsmap-gateway
+#   sudo systemctl restart zedmap-gateway
 
 [gateway]
 # The published, read-only web app: every address on port 8080.
@@ -20,7 +20,7 @@ home_privacy = "Grid"
 
 [engine]
 # Where the station keeps its settings, operators, API key, message and dashboard history, and map tiles.
-settings_folder = "/var/lib/aprsmap"
+settings_folder = "/var/lib/zedmap"
 
 # The first-run station: used only when the folder above has no settings yet. After that, change the station in
 # the admin web app; the gateway logs a warning at start for each of these that no longer matches it. APRS-IS refuses N0CALL: use your own callsign.
@@ -52,4 +52,4 @@ name = "gpsd"
 # max_megabytes = 1024
 
 [tiles]
-cache_folder = "/var/lib/aprsmap/tiles"
+cache_folder = "/var/lib/zedmap/tiles"

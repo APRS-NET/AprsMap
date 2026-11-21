@@ -324,7 +324,7 @@ internal sealed class FakeEngine : IEngineService
         Task.FromResult(Components);
 
     /// <summary>What <see cref="GetLoggingStatusAsync"/> answers.</summary>
-    public LoggingStatus LoggingStatus { get; set; } = new("/home/test/.local/share/aprsnet/aprsmap/logs", true);
+    public LoggingStatus LoggingStatus { get; set; } = new("/home/test/.local/share/aprsnet/zedmap/logs", true);
 
     public Task<LoggingStatus> GetLoggingStatusAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(LoggingStatus);
@@ -332,8 +332,8 @@ internal sealed class FakeEngine : IEngineService
     /// <summary>What <see cref="GetStorageFoldersAsync"/> answers.</summary>
     public List<StorageFolder> StorageFolders { get; } =
     [
-        new(StorageFolderKind.Settings, "/home/test/.config/aprsnet/aprsmap", false, true),
-        new(StorageFolderKind.Data, "/home/test/.local/share/aprsnet/aprsmap", false, true),
+        new(StorageFolderKind.Settings, "/home/test/.config/aprsnet/zedmap", false, true),
+        new(StorageFolderKind.Data, "/home/test/.local/share/aprsnet/zedmap", false, true),
     ];
 
     public Task<IReadOnlyList<StorageFolder>> GetStorageFoldersAsync(CancellationToken cancellationToken = default) =>
