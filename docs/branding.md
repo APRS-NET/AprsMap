@@ -69,6 +69,13 @@ release that changes the slug in one go would be invisible to every install. So 
    cleared, `ProductSourceUrl`, the gateway service ([#546](https://github.com/APRS-NET/AprsMap/issues/546)) and the
    container image.
 
+**The installers' package id never changes.** Velopack's `packId` names the desktop install folder and the update
+feed's packages, and an installed copy only takes packages with its own id, so `ProductPackageId` in
+`build/Branding.props` stays `aprsmap` through every rename (proposed 2026-11-20; the alternative is a one-time manual
+reinstall for every desktop user). `rename-product.py` leaves that line alone and `rename-check` checks it. Open: the
+installers' main executable (`-e`, the slug) changes in step 2; whether Velopack takes a new main executable within
+one package id has to be tried on an installed Windows and macOS copy before step 2 ships.
+
 For zedMap: the brand is **zedMap** (lower-case z) in prose and `ProductDisplayName`; `ZedMap` is the code prefix,
 `zedmap` the next slug, `ZEDMAP` the next environment-variable prefix. Until step 2, the slug, the environment-variable
 prefix (`APRSMAP_`) and the repository (`APRS-NET/AprsMap`) keep the old name.

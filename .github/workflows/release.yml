@@ -259,9 +259,12 @@ jobs:
         # From build/Branding.props, so a rename (tools/rename-product.py) carries through to the installers.
         run: |
           props=$(dotnet msbuild src/ZedMap.Desktop/ZedMap.Desktop.csproj \
-            -getProperty:ProductSlug -getProperty:ProductDisplayName -getProperty:Company -getProperty:ProductSourceUrl)
+            -getProperty:ProductSlug -getProperty:ProductDisplayName -getProperty:Company -getProperty:ProductSourceUrl \
+            -getProperty:ProductPackageId)
           {
             echo "SLUG=$(jq -r .Properties.ProductSlug <<< "$props")"
+            # The installers' package id, which never changes (build/Branding.props): installed copies update by it.
+            echo "PACKAGE_ID=$(jq -r .Properties.ProductPackageId <<< "$props")"
             echo "TITLE=$(jq -r .Properties.ProductDisplayName <<< "$props")"
             echo "AUTHORS=$(jq -r .Properties.Company <<< "$props")"
             echo "REPO_URL=$(jq -r .Properties.ProductSourceUrl <<< "$props")"
@@ -310,14 +313,14 @@ jobs:
             macOS) extra=(--noPortable -i icon.icns -e "$SLUG") ;;
             *) extra=(--categories "Network;HamRadio" -i build/branding/icon-256.png -e "$SLUG") ;;
           esac
-          dotnet vpk pack -u "$SLUG" -v "$VERSION" -p publish -c "$RID" -r "$RID" --packTitle "$TITLE" \
+          dotnet vpk pack -u "$PACKAGE_ID" -v "$VERSION" -p publish -c "$RID" -r "$RID" --packTitle "$TITLE" \
             --packAuthors "$AUTHORS" -o releases "${extra[@]}"
       - name: Attach to the GitHub release
         # Only this version's packages, the feed and the installer: on Windows the per-machine MSI, not the per-user
         # Setup.exe.
         run: |
           shopt -s nullglob
-          files=(releases/releases."$RID".json releases/"$SLUG-$VERSION-$RID"-*.nupkg)
+          files=(releases/releases."$RID".json releases/"$PACKAGE_ID-$VERSION-$RID"-*.nupkg)
           files+=(releases/*.msi releases/*.pkg releases/*.AppImage)
           ls -l "${files[@]}"
           gh release upload "$TAG" "${files[@]}" --clobber --repo "$GITHUB_REPOSITORY"
