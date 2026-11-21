@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.9.0-alpha.3...v0.9.0-alpha.4) (2026-11-21)
+
+
+### Features
+
+* carry a previous name's folders and config variable over to the new name ([e3908ae](https://github.com/APRS-NET/AprsMap/commit/e3908ae13d49dcf87adcbb6c40583e5b57e1abe0))
+* let the gateway's updater follow the rename to zedmap ([da67437](https://github.com/APRS-NET/AprsMap/commit/da67437a64ffb721ad651a791b10eeee4781a5de))
+* move a gateway installed under the old name with install.sh --migrate-from ([c169756](https://github.com/APRS-NET/AprsMap/commit/c169756d917a852e9b8cfac81395856476aaa2da))
+
+
+### Bug Fixes
+
+* check for updates again before Update and restart ([63ade90](https://github.com/APRS-NET/AprsMap/commit/63ade90599b245e6d5a715e055faa8c0f2fc6058)), closes [#553](https://github.com/APRS-NET/AprsMap/issues/553)
+
 ## [0.9.0-alpha.3](https://github.com/APRS-NET/AprsMap/compare/v0.9.0-alpha.2...v0.9.0-alpha.3) (2026-11-20)
 
 
