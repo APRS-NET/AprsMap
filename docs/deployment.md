@@ -272,6 +272,11 @@ already have), and enables the service. On a first install it doesn't start it: 
 file on every start. Run the script again with a newer
 tarball to update; it keeps the file and the data in `/var/lib/aprsmap`, and restarts the service.
 
+`install.sh --migrate-from OLD <tarball>` moves a gateway installed under an earlier name to this one: it copies
+`/etc/OLD` and `/var/lib/OLD`, starts this gateway, and disables the old one's units once it stays running (or starts the
+old one again if it doesn't). The old folders and user are left for you to remove. The updater runs it by itself when it
+follows a rename (F1.40 behaviors 13, 14).
+
 The TOML file holds the same settings as the table above: each table is a section and `snake_case` keys are the
 settings' names, so `[gateway] operator_listen` is `Gateway__OperatorListen` and `[engine.kiss_serial] port` is
 `Engine__KissSerial__Port`. It's read after `appsettings.json`, so environment variables still win. Use it anywhere
