@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using Tomlyn;
 using Tomlyn.Model;
+using ZedMap.Contracts;
 
 namespace ZedMap.Gateway;
 
@@ -34,8 +35,16 @@ internal static class TomlConfiguration
                 return args[i]["--config=".Length..];
             }
         }
-        return environment(EnvironmentVariable) is { Length: > 0 } path ? path : null;
+        // A previous name's variable still works after a rename (docs/branding.md, rule 5), this name's first.
+        return EnvironmentVariables.Select(environment).FirstOrDefault(path => path is { Length: > 0 });
     }
+
+    /// <summary>
+    /// <see cref="EnvironmentVariable"/>, then the same variable under each previous slug, upper-cased
+    /// (<c>Brand.PreviousSlugs</c>).
+    /// </summary>
+    internal static IEnumerable<string> EnvironmentVariables =>
+        [EnvironmentVariable, .. Brand.PreviousSlugs.Select(slug => slug.ToUpperInvariant() + "_CONFIG")];
 
     /// <summary><paramref name="args"/> without <c>--config PATH</c> or <c>--config=PATH</c>.</summary>
     public static string[] WithoutConfig(string[] args)

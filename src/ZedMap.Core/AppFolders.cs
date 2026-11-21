@@ -137,6 +137,51 @@ public sealed record AppFolders(string Settings, string Data, string Cache, IRea
         return moved;
     }
 
+    /// <summary>
+    /// Copies a previous name's files into these folders (docs/branding.md, rule 5): when <see cref="Settings"/> has
+    /// no settings yet and <paramref name="previous"/>'s does, everything in its <see cref="Settings"/> and
+    /// <see cref="Data"/> (layouts, preferences, lists, message and packet history, captures), not the cache, which is
+    /// fetched again. Nothing already here is replaced, and the previous folders are left as they were, so the version
+    /// with the old name still runs. Returns whether it copied.
+    /// </summary>
+    public bool CopyFromPreviousName(AppFolders previous)
+    {
+        ArgumentNullException.ThrowIfNull(previous);
+        if (
+            SamePath(Settings, previous.Settings)
+            || File.Exists(Path.Combine(Settings, FileSettingsStore.FileName))
+            || !File.Exists(Path.Combine(previous.Settings, FileSettingsStore.FileName))
+        )
+        {
+            return false;
+        }
+        foreach (var (from, to) in new[] { (previous.Settings, Settings), (previous.Data, Data) }.Distinct())
+        {
+            if (Directory.Exists(from))
+            {
+                CopyMissing(from, to);
+            }
+        }
+        return true;
+    }
+
+    private static void CopyMissing(string from, string to)
+    {
+        Directory.CreateDirectory(to);
+        foreach (var file in Directory.EnumerateFiles(from))
+        {
+            var target = Path.Combine(to, Path.GetFileName(file));
+            if (!Path.Exists(target))
+            {
+                File.Copy(file, target);
+            }
+        }
+        foreach (var folder in Directory.EnumerateDirectories(from))
+        {
+            CopyMissing(folder, Path.Combine(to, Path.GetFileName(folder)));
+        }
+    }
+
     /// <summary>The captures' folder name in <see cref="Data"/> (docs/features/F1.27-packet-capture.md).</summary>
     public const string PacketCaptureFolder = "capture";
 
