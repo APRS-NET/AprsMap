@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.0-alpha.5](https://github.com/APRS-NET/zedMap/compare/v0.9.0-alpha.4...v0.9.0-alpha.5) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* gateways update to it only from 0.9.0-alpha.4 or later, whose updater hands the release to its install.sh --migrate-from aprsmap; older ones must take 0.9.0-alpha.4 first. Docker users switch to ghcr.io/aprs-net/zedmap. Dashboards on aprsmap.* metrics need the new names. Operators sign in again once.
+
+### Features
+
+* rename the slug to zedmap: folders, gateway service, image and repository links ([835bd82](https://github.com/APRS-NET/zedMap/commit/835bd824758333e71c7875f0e6797eb3d988017f))
+
 ## [0.9.0-alpha.4](https://github.com/APRS-NET/AprsMap/compare/v0.9.0-alpha.3...v0.9.0-alpha.4) (2026-11-21)
 
 
