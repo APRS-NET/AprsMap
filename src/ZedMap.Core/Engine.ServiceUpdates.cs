@@ -51,6 +51,21 @@ public sealed partial class Engine
             throw NotAService();
         }
         var status = await GetUpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+        if (status.Update?.Version == version && status.Install is not { Running: true } && _options.Updates.Check)
+        {
+            // The offer may come from a check hours old (#553): look again, so a newer release isn't passed over. A
+            // check that fails keeps what was found, so the click still works offline (F1.40 behavior 4.0).
+            await CheckUpdatesNowAsync(cancellationToken).ConfigureAwait(false);
+            status = await GetUpdateStatusAsync(cancellationToken).ConfigureAwait(false);
+            if (status.Update is { } newer && newer.Version != version)
+            {
+                throw EngineErrors.Create(
+                    EngineErrorCodes.UpdateNewerOut,
+                    $"A newer version, {newer.Version}, is out. The notice offers it now: update again to install it.",
+                    new Dictionary<string, string>(StringComparer.Ordinal) { [EngineErrorArgs.Version] = newer.Version }
+                );
+            }
+        }
         if (status.Update?.Version != version || status.Install is { Running: true })
         {
             throw EngineErrors.Create(
