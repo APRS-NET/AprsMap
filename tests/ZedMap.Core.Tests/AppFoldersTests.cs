@@ -138,6 +138,61 @@ public sealed class AppFoldersTests : IDisposable
         Assert.Equal(0, folders.MoveFromLegacy(legacy));
     }
 
+    private AppFolders Under(string name) =>
+        new(
+            Path.Combine(_root, name, "config"),
+            Path.Combine(_root, name, "data"),
+            Path.Combine(_root, name, "cache"),
+            []
+        );
+
+    [Fact]
+    public async Task APreviousNamesFilesAreCopiedOnceAndLeftInPlace()
+    {
+        // docs/branding.md, rule 5: after a rename, the desktop app starts under its new name with everything the old
+        // one had (not only settings.json), and the old version can still run from its folders.
+        var ct = TestContext.Current.CancellationToken;
+        var old = Under("oldname");
+        old.Create();
+        await File.WriteAllTextAsync(Path.Combine(old.Settings, "settings.json"), "old settings", ct);
+        await File.WriteAllTextAsync(Path.Combine(old.Settings, "layout.json"), "{}", ct);
+        await File.WriteAllTextAsync(Path.Combine(old.Data, "messages-home.json"), "[]", ct);
+        Directory.CreateDirectory(Path.Combine(old.Data, "history"));
+        await File.WriteAllTextAsync(Path.Combine(old.Data, "history", "2026-11-20.db"), "packets", ct);
+        await File.WriteAllTextAsync(Path.Combine(old.Cache, "tile.png"), "x", ct);
+        var current = Under("newname");
+
+        var prepared = SettingsLocation.Prepare(current, legacy: null, [Under("oldest"), old]);
+
+        Assert.Equal(current, prepared);
+        Assert.Equal("old settings", await File.ReadAllTextAsync(Path.Combine(current.Settings, "settings.json"), ct));
+        Assert.True(File.Exists(Path.Combine(current.Settings, "layout.json")));
+        Assert.True(File.Exists(Path.Combine(current.Data, "messages-home.json")));
+        Assert.True(File.Exists(Path.Combine(current.Data, "history", "2026-11-20.db")));
+        Assert.False(File.Exists(Path.Combine(current.Cache, "tile.png"))); // fetched again
+        Assert.True(File.Exists(Path.Combine(old.Settings, "settings.json"))); // left as it was
+        Assert.True(File.Exists(Path.Combine(old.Data, "history", "2026-11-20.db")));
+
+        // Once the new name has settings, nothing is copied again, even what the old one has since.
+        await File.WriteAllTextAsync(Path.Combine(old.Settings, "later.json"), "{}", ct);
+        Assert.False(current.CopyFromPreviousName(old));
+        Assert.False(File.Exists(Path.Combine(current.Settings, "later.json")));
+    }
+
+    [Fact]
+    public async Task APreviousNameWithoutSettingsIsNotCopiedFrom()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var old = Under("oldname");
+        old.Create();
+        await File.WriteAllTextAsync(Path.Combine(old.Settings, "layout.json"), "{}", ct);
+        var current = Under("newname");
+        current.Create();
+
+        Assert.False(current.CopyFromPreviousName(old));
+        Assert.False(File.Exists(Path.Combine(current.Settings, "layout.json")));
+    }
+
     [Fact]
     public async Task NothingAlreadyInPlaceIsReplaced()
     {

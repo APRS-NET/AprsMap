@@ -105,6 +105,30 @@ public sealed class GatewayServiceTests
     }
 
     [Fact]
+    public void APreviousNamesConfigVariableStillNamesTheFileAndThisNamesComesFirst()
+    {
+        // docs/branding.md, rule 5: a unit or shell that still sets OLD_CONFIG keeps working after the rename.
+        var variables = TomlConfiguration.EnvironmentVariables.ToList();
+        Assert.Equal(
+            [
+                TomlConfiguration.EnvironmentVariable,
+                .. Brand.PreviousSlugs.Select(s => s.ToUpperInvariant() + "_CONFIG"),
+            ],
+            variables
+        );
+        foreach (var previous in variables.Skip(1))
+        {
+            Assert.Equal("/etc/old.toml", TomlConfiguration.PathFrom([], v => v == previous ? "/etc/old.toml" : null));
+        }
+        Assert.Equal(
+            "/etc/new.toml",
+            TomlConfiguration.PathFrom([], v =>
+                v == TomlConfiguration.EnvironmentVariable ? "/etc/new.toml" : "/etc/old.toml"
+            )
+        );
+    }
+
+    [Fact]
     public void TheAdminAppListensOnItsOwnAddressAndPort()
     {
         var both = GatewayListen.Urls(Configuration(("Gateway:OperatorListen", "127.0.0.1:8081")))!.Value;

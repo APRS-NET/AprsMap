@@ -188,13 +188,21 @@ public static class SettingsLocation
     /// looking a folder up, as the tests and the gateway do, never touches what's on the machine.
     /// </summary>
     public static AppFolders PrepareUserFolders() =>
-        Prepare(UserFolders(), AppFolders.Legacy(Brand.Slug, AppFolders.FolderEnvironment.Current));
+        Prepare(
+            UserFolders(),
+            AppFolders.Legacy(Brand.Slug, AppFolders.FolderEnvironment.Current),
+            Brand.PreviousSlugs.Select(AppFolders.For)
+        );
 
-    internal static AppFolders Prepare(AppFolders folders, string? legacy)
+    /// <summary>
+    /// Creates <paramref name="folders"/>, moves an earlier version's files in, then copies the files of the first
+    /// previous name that has settings, when these have none (docs/branding.md, rule 5).
+    /// </summary>
+    internal static AppFolders Prepare(AppFolders folders, string? legacy, IEnumerable<AppFolders> previousNames)
     {
         folders.Create();
         folders.MoveFromLegacy(legacy);
-        MigrateIfMissing(folders.Settings, Brand.PreviousSlugs.Select(UserFolder));
+        _ = previousNames.Any(folders.CopyFromPreviousName); // the first that copies
         return folders;
     }
 }
