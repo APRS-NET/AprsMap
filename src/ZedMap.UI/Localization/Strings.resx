@@ -5650,6 +5650,10 @@ pause 1s</value>
   <data name="Error.gateway.not-a-service" xml:space="preserve">
     <value>Only a gateway installed as the Linux service updates and restarts itself from here. A Docker gateway is updated and restarted by Docker.</value>
   </data>
+  <data name="Error.updates.newer-out" xml:space="preserve">
+    <value>A newer version, {version}, is out. The notice offers it now: update again to install it.</value>
+    <comment>version: the newer release's version, such as 0.9.1.</comment>
+  </data>
   <data name="Error.updates.not-offered" xml:space="preserve">
     <value>That isn't the update offered, or an update is already under way.</value>
   </data>

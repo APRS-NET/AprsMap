@@ -211,6 +211,12 @@ public static class EngineErrorCodes
     /// <summary>That version isn't the update offered, or an update is already under way (F1.40 behaviors 4, 7).</summary>
     public const string UpdateNotOffered = "updates.not-offered";
 
+    /// <summary>
+    /// A newer release came out since the update offered was found (#553, F1.40 behavior 4): the notice now offers it,
+    /// named in <see cref="EngineErrorArgs.Version"/>.
+    /// </summary>
+    public const string UpdateNewerOut = "updates.newer-out";
+
     /// <summary>Only a gateway has an API key; the desktop's own engine has none (F1.38).</summary>
     public const string ApiKeyNotHere = "gateway.api-key-not-here";
 
@@ -506,6 +512,9 @@ public static class EngineErrorArgs
 
     /// <summary>How many minutes to wait, as a whole number.</summary>
     public const string Minutes = "minutes";
+
+    /// <summary>A release version, such as an update's (#553).</summary>
+    public const string Version = "version";
 
     /// <summary>A server's own words, such as why it refused a login (not translated).</summary>
     public const string Reason = "reason";

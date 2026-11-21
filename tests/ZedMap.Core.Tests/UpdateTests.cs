@@ -398,20 +398,34 @@ public sealed class UpdateTests
     /// <summary>A service gateway's engine (F1.40), its data in <paramref name="data"/>, offered 0.9.0.</summary>
     private static async Task<(Engine Engine, FakeTimeProvider Time)> ServiceAsync(DirectoryInfo data)
     {
-        var github = new FakeGitHub
-        {
-            Answer = _ =>
-                Json(
-                    "["
-                        + Release(
-                            "v0.9.0",
+        var (engine, time, _) = await ServiceWithGitHubAsync(data);
+        return (engine, time);
+    }
+
+    /// <summary>A service gateway's release list with these versions' tarballs, newest first.</summary>
+    private static HttpResponseMessage GatewayReleases(params string[] versions) =>
+        Json(
+            "["
+                + string.Join(
+                    ",",
+                    versions.Select(v =>
+                        Release(
+                            $"v{v}",
                             false,
-                            $"{Slug}-gateway-v0.9.0-linux-x64.tar.gz",
-                            $"{Slug}-gateway-v0.9.0-linux-x64.tar.gz.sha256"
+                            $"{Slug}-gateway-v{v}-linux-x64.tar.gz",
+                            $"{Slug}-gateway-v{v}-linux-x64.tar.gz.sha256"
                         )
-                        + "]"
-                ),
-        };
+                    )
+                )
+                + "]"
+        );
+
+    /// <summary>As <see cref="ServiceAsync"/>, with the fake GitHub, so a test can publish a release later.</summary>
+    private static async Task<(Engine Engine, FakeTimeProvider Time, FakeGitHub GitHub)> ServiceWithGitHubAsync(
+        DirectoryInfo data
+    )
+    {
+        var github = new FakeGitHub { Answer = _ => GatewayReleases("0.9.0") };
         var time = new FakeTimeProvider(DateTimeOffset.UtcNow);
         var engine = new Engine(
             Options.Create(
@@ -431,7 +445,65 @@ public sealed class UpdateTests
             RunningVersion = "0.8.0",
         };
         await engine.CheckForUpdateAsync(Ct);
-        return (engine, time);
+        return (engine, time, github);
+    }
+
+    [Fact]
+    public async Task UpdateAndRestartChecksAgainFirstAndRefusesAVersionNoLongerTheNewest()
+    {
+        // #553, F1.40 behavior 4.0: the notice offered 0.9.0 from a check hours old; 0.9.1 is out since.
+        var data = Directory.CreateTempSubdirectory("aprsmap-service-");
+        try
+        {
+            var (engine, _, github) = await ServiceWithGitHubAsync(data);
+            using (engine)
+            {
+                Assert.Equal("0.9.0", (await engine.GetUpdateStatusAsync(Ct)).Update!.Version);
+                github.Answer = _ => GatewayReleases("0.9.1", "0.9.0");
+
+                var stale = await Assert.ThrowsAsync<EngineOperationException>(() =>
+                    engine.InstallUpdateAsync("0.9.0", Ct)
+                );
+
+                Assert.Equal(EngineErrorCodes.UpdateNewerOut, stale.EngineError.Code);
+                Assert.Contains("0.9.1", stale.Message, StringComparison.Ordinal);
+                Assert.False(File.Exists(Path.Combine(data.FullName, Engine.UpdateRequestFile)));
+                Assert.Equal("0.9.1", (await engine.GetUpdateStatusAsync(Ct)).Update!.Version); // the notice moves on
+
+                await engine.InstallUpdateAsync("0.9.1", Ct);
+                Assert.Equal(
+                    """{"version":"0.9.1"}""",
+                    await File.ReadAllTextAsync(Path.Combine(data.FullName, Engine.UpdateRequestFile), Ct)
+                );
+            }
+        }
+        finally
+        {
+            data.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateAndRestartStillWorksWhenTheCheckBeforeItFails()
+    {
+        // #553: GitHub unreachable at the moment of the click: what was offered is installed, as before.
+        var data = Directory.CreateTempSubdirectory("aprsmap-service-");
+        try
+        {
+            var (engine, _, github) = await ServiceWithGitHubAsync(data);
+            using (engine)
+            {
+                github.Answer = _ => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable);
+
+                await engine.InstallUpdateAsync("0.9.0", Ct);
+
+                Assert.True(File.Exists(Path.Combine(data.FullName, Engine.UpdateRequestFile)));
+            }
+        }
+        finally
+        {
+            data.Delete(recursive: true);
+        }
     }
 
     [Fact]
